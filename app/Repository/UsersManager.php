@@ -48,4 +48,12 @@ class UsersManager
         ]);
     }
 
+
+    public static function acceptTerms($user) 
+    {
+        $user->terms_and_conditions = true;
+        $user->save();
+        return $user;
+    }
+
 }

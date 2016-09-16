@@ -16,14 +16,14 @@ class CreateUsersTable extends Migration {
 		{
 			$table->bigIncrements('id');
 			//$table->bigInteger('facebook_uid')->unique();
-			$table->string('username',255);
+			$table->string('username',255)->nullable();
 			$table->string('name');
 			$table->string('email')->unique();
 			$table->string('password', 60);
 
 			$table->integer("terms_and_conditions");
-			$table->date("birthday");
-			$table->string('gender',255);
+			$table->date("birthday")->nullable();
+			$table->string('gender',255)->nullable();
 
 			$able->boolean("banned");
 
