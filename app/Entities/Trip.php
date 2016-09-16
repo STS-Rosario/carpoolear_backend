@@ -38,5 +38,9 @@ class Trip extends Model {
 		return $this->hasMany('App\Entities\TripDay','trip_id');
 	}
 
+	public function califications() {
+        return $this->hasMany('App\Entities\Calification','viajes_id');
+    } 
+
 
 }

@@ -11,9 +11,10 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	protected $table = 'users';
 	protected $fillable = [
 		'name', 
+		'username',
 		'email', 
 		'password',
-		'facebook_uid',
+		//'facebook_uid',
 		'username',
 		'terms_and_conditions',
 		'birthday',

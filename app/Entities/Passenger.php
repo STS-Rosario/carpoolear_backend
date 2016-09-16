@@ -7,6 +7,10 @@ class Passenger extends Model {
     const STATE_ACEPTADO    = 1;
     const STATE_PENDIENTE   = 2;
 
+	const TYPE_CONDUCTOR 			= 0;
+    const TYPE_PASAJERO 			= 1;
+    const TYPE_CONDUCTORRECURRENTE 	= 2;
+
 	protected $table = 'trip_passengers';
 	protected $fillable = [
 		'user_id',

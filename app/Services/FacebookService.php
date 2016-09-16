@@ -13,7 +13,7 @@ class FacebookService
     {
         $fb->setDefaultAccessToken($token);
         try {
-            $response = $fb->get('/me?fields=id,name,email,age_range,locale,picture.width(300)');
+            $response = $fb->get('/me?fields=id,name,email,picture.width(300),');
         } catch (Facebook\Exceptions\FacebookSDKException $e) {
             die($e->getMessage());
         }
@@ -72,9 +72,15 @@ class FacebookService
             if (!$user) {
 
                 $user = User::create([
+                    'username'  => $fuser->getId(),
                     'email'     => $fuser->getEmail(),
                     'name'      => $fuser->getName(),
-                    'image'     => $fuser->getPicture()->getUrl(),
+                    'gender'    => $user->getGender(),
+                    'birthday'  => $fuser->getBirthDay(),
+                    'banned'    => 0,
+                    'terms_and_conditions' => 0,
+
+                    //'image'     => $fuser->getPicture()->getUrl(),
                 ]);
 
             }
