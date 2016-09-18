@@ -1,10 +1,15 @@
 <?php namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use STS\Entities\Passenger;
 
 class Trip extends Model {
 	const FINALIZADO 	= 0;
     const ACTIVO 		= 1;
+
+	const PRIVACY_PUBLIC = 2;
+	const PRIVACY_FRIENDS = 0;
+	const PRIVACY_FOF = 1;
 
 	protected $table = 'trips';
 	protected $fillable = [
@@ -21,7 +26,9 @@ class Trip extends Model {
 		'co2',
 		'es_recurrente',
 		'esta_carpooleado',
-		'tripscol'
+		'tripscol',
+		'es_pasajero',
+		'mail_send'
 	];
 	protected $hidden = [];
 
@@ -31,16 +38,30 @@ class Trip extends Model {
 
 
 	public function passenger() {
-        return $this->hasMany('App\Entities\Passenger','trip_id')->with("user");
+        return $this->hasMany('STS\Entities\Passenger','trip_id')->with("user");
     } 
 
 	public function days() {
-		return $this->hasMany('App\Entities\TripDay','trip_id');
+		return $this->hasMany('STS\Entities\TripDay','trip_id');
 	}
 
 	public function califications() {
-        return $this->hasMany('App\Entities\Calification','viajes_id');
+        return $this->hasMany('STS\Entities\Calification','viajes_id');
     } 
+
+	public function passengerCount() 
+	{
+		return $this->passenger()->where("request_state",Passenger::STATE_ACEPTADO)->count();
+		//return ($viajeActual->total_seats - count($pasajeros));
+    }
+
+	public function esConductor()
+	{
+		return $this->passenger()
+		            ->where("request_state",Passenger::STATE_ACEPTADO)
+					->where('passenger_type', '=', Passenger::TYPE_CONDUCTOR)
+					->where("user_id",$this->user_id)->count() > 0;
+	}
 
 
 }

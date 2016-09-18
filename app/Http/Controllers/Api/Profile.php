@@ -11,6 +11,7 @@ use STS\Repository\UsersManager;
 use STS\User;
 use STS\Entities\Device;
 use JWTAuth;
+use Auth;
 
 class AuthController extends Controller
 {
@@ -18,7 +19,11 @@ class AuthController extends Controller
     public function __construct(Request $r)
     { 
         $this->middleware('jwt.auth');
-        $this->user = \JWTAuth::parseToken()->authenticate();
+        try {
+            $this->user = \JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+
+        }   
     }
 
     public function update(Request $request, UsersManager $manager)
@@ -26,36 +31,10 @@ class AuthController extends Controller
         return $manager->update($this->user, $request->all());
     }
 
-    public function show($id)
+    public function show($id,UsersManager $manager)
     {
-        $user = User::find($id);
-
-        $user->cantidadViajes = $user->cantidadViajes();
-        $user->distanciaRecorrida = $user->distanciaRecorrida();
-        if ($this->user->id != $user->id) {
-
-            $user_id = $this->user->id;
-            $patente = $user->trips()->whereHas('passenger',function ($q) use ($user_id) {
-                $q->whereUserId($user_id);
-                $q->whereRequestState(Passenger::STATE_ACEPTADO);
-            })->first();
-            if (is_null($patente)) {
-                $user->patente = null;
-
-                $user_id = $user->id;
-                $dni = $this->user->trips()->whereHas('passenger',function ($q) use ($user_id) {
-                    $q->whereUserId($user_id);
-                    $q->whereRequestState(Passenger::STATE_ACEPTADO);
-                })->first();
-                if (is_null($dni)) {
-                    $user->nro_doc = null;
-                }
-
-            }
-
-
-        }
-
+        $profile = User::find($id);
+        $manager->show($this->user,$profile); 
         return response()->json($user);
     }
 

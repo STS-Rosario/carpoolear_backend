@@ -28,7 +28,9 @@ class TripsTable extends Migration {
 			$table->string('estimated_time',500);
 			$table->integer("co2");
 			$table->integer("es_recurrente");
+			$table->integer("es-pasajero");
 			$table->integer("esta_carpooleado");
+			$table->boolean("mail_send");
 			$table->string('tripscol',45);
 			$table->timestamps();
 			$table->foreign('user_id')->references('id')->on('users')

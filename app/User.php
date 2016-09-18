@@ -51,28 +51,40 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
         })->get();
     }
 
-    public function trips()
+    public function trips($state = null)
     {
-        return $this->hasMany("App\Entities\Trip","user_id");
+        $trips = $this->hasMany("App\Entities\Trip","user_id");
+		if ($state == Trip::FINALIZADO ) {
+			$trips->where("trip_date","<",Carbon::Now());
+		} else if ($state == Trip::ACTIVO) {
+			$trips->where("trip_date",">=",Carbon::Now());
+		}
+		return $trips;
     }
 
-	public function tripsAsPassenger()
+	public function tripsAsPassenger($state = null)
     {
 		$user_id = $this->id;
-		return Trip::whereHas('passenger',function ($q) use ($user_id) {
+		$trips =  Trip::whereHas('passenger',function ($q) use ($user_id) {
 			$q->whereUserId($user_id);
 			$q->whereRequestState(Passenger::STATE_ACEPTADO);
-		});        
+		});      
+		if ($state == Trip::FINALIZADO ) {
+			$trips->where("trip_date","<",Carbon::Now());
+		} else if ($state == Trip::ACTIVO) {
+			$trips->where("trip_date",">=",Carbon::Now());
+		}
+		return $trips;
     }
 
 	public function cantidadViajes($type = null)
 	{
 		$cantidad = 0;
 		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {
-			$cantidad += $this->trips()->where("trip_date","<",Carbon::Now())->count();
+			$cantidad += $this->trips(Trip::FINALIZADO)->count();
 		}
 		if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
-			$cantidad += $this->tripsAsPassenger()->where("trip_date","<",Carbon::Now())->count();
+			$cantidad += $this->tripsAsPassenger(Trip::FINALIZADO)->count();
 		}
 		return $cantidad;
 	}
@@ -81,10 +93,10 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 	{
 		$distancia = 0;
 		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {
-			$distancia += $this->trips()->where("trip_date","<",Carbon::Now())->sum("distance");
+			$distancia += $this->trips(Trip::FINALIZADO)->sum("distance");
 		}
 		if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
-			$distancia += $this->tripsAsPassenger()->where("trip_date","<",Carbon::Now())->sum("distance");
+			$distancia += $this->tripsAsPassenger(Trip::FINALIZADO)->sum("distance");
 		}
 		return $distancia;
 	}
