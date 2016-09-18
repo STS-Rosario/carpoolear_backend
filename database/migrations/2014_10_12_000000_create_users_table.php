@@ -25,6 +25,14 @@ class CreateUsersTable extends Migration {
 			$table->date("birthday")->nullable();
 			$table->string('gender',255)->nullable();
 
+			$table->string("nro_doc",15);
+			$table->string("patente",15);
+			$table->string("descripcion",500);
+			$table->string("mobile_phone",50);
+			$table->string("l_perfil",255);
+
+			
+
 			$able->boolean("banned");
 
 			$table->rememberToken();

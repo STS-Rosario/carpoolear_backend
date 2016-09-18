@@ -23,7 +23,12 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		'terms_and_conditions',
 		'birthday',
 		'gender',
-		'banned'
+		'banned',
+		'nro_doc',
+		'patente',
+		'descripcion',
+		'mobile_phone',
+		'l_perfil'
 	];
 	protected $hidden = ['password', 'remember_token'];
 
@@ -70,7 +75,18 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 			$cantidad += $this->tripsAsPassenger()->where("trip_date","<",Carbon::Now())->count();
 		}
 		return $cantidad;
+	}
 
+	public function distanciaRecorrida($type = null)
+	{
+		$distancia = 0;
+		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {
+			$distancia += $this->trips()->where("trip_date","<",Carbon::Now())->sum("distance");
+		}
+		if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
+			$distancia += $this->tripsAsPassenger()->where("trip_date","<",Carbon::Now())->sum("distance");
+		}
+		return $distancia;
 	}
 
 }

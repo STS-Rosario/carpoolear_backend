@@ -42,10 +42,43 @@ class UsersManager
             'gender' => isset($data['gender']) ? $data['gender'] : "", 
             'birthday' => isset($data['birdthday']) ? $data['birdthday'] : null, 
 
+            'nro_doc' => isset($data['nro_doc']) ? $data['nro_doc'] : "", 
+            'patente' => isset($data['patente']) ? $data['patente'] : "", 
+            'descripcion' => isset($data['descripcion']) ? $data['descripcion'] : "", 
+            'mobile_phone' => isset($data['mobile_phone']) ? $data['mobile_phone'] : "", 
+            'l_perfil' => isset($data['l_perfil']) ? $data['l_perfil'] : "", 
+
             'terms_and_conditions' => 0,
             'banned' => 0
 
         ]);
+    }
+
+    public function update($user, array $data)
+    {
+        if (isset($data['name'])) {
+            $user->name = $data['name'];
+        }
+        if (isset($data['email'])) {
+            $user->email = $data['email'];
+        } 
+
+        if (isset($data['nro_doc'])) {
+            $user->nro_doc = $data['nro_doc'];
+        }
+        if (isset($data['patente'])) {
+            $user->patente = $data['patente'];
+        } 
+        if (isset($data['descripcion'])) {
+            $user->descripcion = $data['descripcion'];
+        }
+        if (isset($data['mobile_phone'])) {
+            $user->mobile_phone = $data['mobile_phone'];
+        }
+        if (isset($data['l_perfil'])) {
+            $user->l_perfil = $data['l_perfil'];
+        }  
+        return $user->save();
     }
 
 
