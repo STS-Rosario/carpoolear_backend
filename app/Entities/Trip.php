@@ -41,6 +41,14 @@ class Trip extends Model {
         return $this->hasMany('STS\Entities\Passenger','trip_id')->with("user");
     } 
 
+	public function pasajeros() {
+		return $this->passenger()->whereRequestState(Passenger::STATE_ACEPTADO);
+	}
+
+	public function pendientes() {
+		return $this->passenger()->whereRequestState(Passenger::STATE_PENDIENTE);
+	}
+
 	public function days() {
 		return $this->hasMany('STS\Entities\TripDay','trip_id');
 	}
@@ -51,9 +59,14 @@ class Trip extends Model {
 
 	public function passengerCount() 
 	{
-		return $this->passenger()->where("request_state",Passenger::STATE_ACEPTADO)->count();
+		return $this->pasajeros()->count();
 		//return ($viajeActual->total_seats - count($pasajeros));
     }
+
+	public function disponibles() 
+	{
+		return $this->total_seats - $this->pasajeros()->count();
+	}
 
 	public function esConductor()
 	{

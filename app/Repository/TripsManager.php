@@ -6,7 +6,7 @@ use STS\Entities\Trip;
 use STS\User;
 use Validator;
 
-class UsersManager
+class TripsManager
 {
         /**
      * Get a validator for an incoming registration request.
