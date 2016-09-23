@@ -76,5 +76,23 @@ class Trip extends Model {
 					->where("user_id",$this->user_id)->count() > 0;
 	}
 
+	public function checkFriendship($user) 
+	{
+		$conductor 	= $this->user;
+		$fiends  	= $conductor->friends()->whereId($user->id)->first();
+		$fof  		= $conductor->relativeFriends()->whereId($user->id)->first();
+
+		if ($conductor->id == $user->id) return true;
+
+		switch ($this->friendship_type_id) {
+			case Trip::PRIVACY_PUBLIC:
+				return true;
+			case Trip::PRIVACY_FRIENDS:
+				return !is_null($fiends);
+			case Trip::PRIVACY_FOF:
+				return !is_null($fiends) || !is_null($fof);			
+		}
+	}
+
 
 }

@@ -58,28 +58,32 @@ class PassengerManager
         return null;
     }
 
-    public function confirmar($user, $trip)
+    public function confirmar($user, $trip, $who)
     {
-        $p = $this->find($user, $trip);
-        if ($p && $p->request_state == Passenger::STATE_PENDIENTE ) {
-            if ($trip->disponibles() > 0) {
-                $p->request_state = Passenger::STATE_ACEPTADO;
-                return $p->save();
-            } else {
-                return null;
+        if ($trip->user->id == $user->id) {
+            $p = $this->find($who, $trip);
+            if ($p && $p->request_state == Passenger::STATE_PENDIENTE ) {
+                if ($trip->disponibles() > 0) {
+                    $p->request_state = Passenger::STATE_ACEPTADO;
+                    return $p->save(); 
+                } else {
+                    return "No hay más espacio disponible";
+                }
             }
         }
         return null;
     }
 
-    public function rechazar($user, $trip)
+    public function rechazar($user, $trip, $who)
     {
-        $p = $this->find($user, $trip);
-        if ($p && $p->request_state == Passenger::STATE_PENDIENTE ) { 
-            $p->request_state = Passenger::STATE_RECHAZADO;
-            return $p->save();
+        if ($trip->user->id == $user->id) {
+            $p = $this->find($user, $trip);
+            if ($p && $p->request_state == Passenger::STATE_PENDIENTE ) { 
+                $p->request_state = Passenger::STATE_RECHAZADO;
+                return $p->save();
+            }  
         }
-        return null;
+        return null; 
     }
 
 }
