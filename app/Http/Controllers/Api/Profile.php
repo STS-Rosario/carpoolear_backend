@@ -31,10 +31,10 @@ class AuthController extends Controller
         return $manager->update($this->user, $request->all());
     }
 
-    public function show($id,UsersManager $manager)
+    public function show($id, UsersManager $manager)
     {
         $profile = User::find($id);
-        $manager->show($this->user,$profile); 
+        $manager->show($this->user, $profile); 
         return response()->json($user);
     }
 

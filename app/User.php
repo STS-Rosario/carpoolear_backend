@@ -8,11 +8,15 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
-use Carbon\Carbon;
+use \Carbon\Carbon;
 
 class User extends Model implements AuthenticatableContract, CanResetPasswordContract {
 	use Authenticatable, CanResetPassword;
-	protected $table = 'users';
+	const FRIENDSHIP_SYSTEM = 0;
+	const FRIENDSHIP_FACEBOOK = 1;
+
+	protected $table = 'users'; 
+
 	protected $fillable = [
 		'name', 
 		'username',
@@ -31,10 +35,14 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		'l_perfil'
 	];
 	protected $hidden = ['password', 'remember_token'];
+	protected $cast = [
+		'banned' => 'boolean',
+		'terms_and_conditions' => 'boolean'
+	];
 
 	public function age() {
 		if ($this->birthday) {
-			return Carbon\Carbon::parse($this->birthday)->diff()->year;
+			return Carbon::parse($this->birthday)->diff()->year;
 		}
 	}
 
@@ -76,8 +84,8 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		}
 		return $trips;
     }
-
-	public function cantidadViajes($type = null)
+ 
+	public function tripsCount($type = null)
 	{
 		$cantidad = 0;
 		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {
@@ -89,7 +97,7 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		return $cantidad;
 	}
 
-	public function distanciaRecorrida($type = null)
+	public function tripsDistance($type = null)
 	{
 		$distancia = 0;
 		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {

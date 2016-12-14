@@ -44,8 +44,8 @@ class FacebookService
                 $fuser->friends()->detach($user->id);
                 $user->friends()->detach($fuser->id);
 
-                $fuser->friends()->attach($user->id);
-                $user->friends()->attach($fuser->id);
+                $fuser->friends()->attach($user->id, ['type' => User::FRIENDSHIP_FACEBOOK]);
+                $user->friends()->attach($fuser->id, ['type' => User::FRIENDSHIP_FACEBOOK]);
 
             }                            
         }
@@ -77,8 +77,8 @@ class FacebookService
                     'name'      => $fuser->getName(),
                     'gender'    => $user->getGender(),
                     'birthday'  => $fuser->getBirthDay(),
-                    'banned'    => 0,
-                    'terms_and_conditions' => 0,
+                    'banned'    => false,
+                    'terms_and_conditions' => false,
 
                     //'image'     => $fuser->getPicture()->getUrl(),
                 ]);

@@ -31,6 +31,13 @@ class Trip extends Model {
 		'mail_send'
 	];
 	protected $hidden = [];
+	protected $appends = ['passenger_count', 'seats_available', 'is_driver'];
+	protected $casts = [
+        'es_pasajero' => 'boolean',
+		'es_recurrente' => 'boolean',
+		'esta_carpooleado' => 'boolean',
+		'is_active' => 'boolean'
+    ];
 
 	public function user() {
         return $this->belongsTo('STS\User','user_id');
@@ -41,11 +48,11 @@ class Trip extends Model {
         return $this->hasMany('STS\Entities\Passenger','trip_id')->with("user");
     } 
 
-	public function pasajeros() {
+	public function passengerAccepted() {
 		return $this->passenger()->whereRequestState(Passenger::STATE_ACEPTADO);
 	}
 
-	public function pendientes() {
+	public function passengerPending() {
 		return $this->passenger()->whereRequestState(Passenger::STATE_PENDIENTE);
 	}
 
@@ -57,24 +64,21 @@ class Trip extends Model {
         return $this->hasMany('STS\Entities\Calification','viajes_id');
     } 
 
-	public function passengerCount() 
+	public function getPassengerCountAttribute() 
 	{
-		return $this->pasajeros()->count();
+		return $this->passengerAccepted()->count();
 		//return ($viajeActual->total_seats - count($pasajeros));
     }
 
-	public function disponibles() 
-	{
-		return $this->total_seats - $this->pasajeros()->count();
-	}
+	public function getSeatsAvailableAttribute()
+    {
+        return $this->total_seats - $this->passengerAccepted()->count();
+    } 
 
-	public function esConductor()
-	{
-		return $this->passenger()
-		            ->where("request_state",Passenger::STATE_ACEPTADO)
-					->where('passenger_type', '=', Passenger::TYPE_CONDUCTOR)
-					->where("user_id",$this->user_id)->count() > 0;
-	}
+	public function getIsDriverAttribute()
+    {
+        return !$this->es_pasajero;
+    } 
 
 	public function checkFriendship($user) 
 	{

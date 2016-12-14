@@ -82,7 +82,7 @@ class UsersManager
     }
 
 
-    public static function acceptTerms($user) 
+    public function acceptTerms($user) 
     {
         $user->terms_and_conditions = true;
         $user->save();
@@ -91,18 +91,18 @@ class UsersManager
 
     public function show($user, $profile)
     { 
-        $profile->cantidadViajes = $profile->cantidadViajes();
-        $profile->distanciaRecorrida = $profile->distanciaRecorrida();
+        $profile->cantidadViajes = $profile->tripsCount();
+        $profile->distanciaRecorrida = $profile->tripsDistance();
         if ($user->id != $profile->id) {
             $user_id = $user->id;
-            $patente = $profile->trips()->whereHas('passenger',function ($q) use ($user_id) {
+            $patente = $profile->trips()->whereHas('passenger', function ($q) use ($user_id) {
                 $q->whereUserId($user_id);
                 $q->whereRequestState(Passenger::STATE_ACEPTADO);
             })->first();
             if (is_null($patente)) {
                 $profile->patente = null;
                 $user_id = $profile->id;
-                $dni = $user->trips()->whereHas('passenger',function ($q) use ($user_id) {
+                $dni = $user->trips()->whereHas('passenger', function ($q) use ($user_id) {
                     $q->whereUserId($user_id);
                     $q->whereRequestState(Passenger::STATE_ACEPTADO);
                 })->first();

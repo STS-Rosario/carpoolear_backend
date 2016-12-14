@@ -18,6 +18,7 @@ class FriendsTable extends Migration {
             $table->bigInteger('uid2')->unsigned();
             $table->foreign('uid1')  ->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 
             $table->foreign('uid2')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 	
+			$table->integer("type");
             $table->timestamps();
 		});
 	}

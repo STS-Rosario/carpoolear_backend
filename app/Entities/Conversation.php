@@ -11,7 +11,7 @@ class Conversation extends Model {
 	protected $hidden = [];
 
 	public function user() {
-        return $this->belongsTo('STS\User','activo_id');
+        return $this->belongsTo('STS\User','user_id');
     }
 
 }

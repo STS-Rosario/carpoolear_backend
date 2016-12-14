@@ -5,6 +5,8 @@ namespace STS\Repository;
 use STS\Entities\Trip;
 use STS\User;
 use Validator;
+use Carbon\Carbon;
+use DB;
 
 class TripsManager
 {
@@ -52,7 +54,7 @@ class TripsManager
         $trip->co2                  = $data["friendship_type_id"];
 
         $trip->description          = htmlentities($data["description"]);
-        $trip->is_active            = 1;
+        $trip->is_active            = true;
 
         $trip->mail_send            = false;
 
@@ -67,7 +69,7 @@ class TripsManager
         
     }
 
-    public function update($user,$trip, array $data)
+    public function update($user, $trip, array $data)
     {
         // [FALTA] Lo de los viajes recurrente
         return $trip->update($data);
@@ -95,10 +97,11 @@ class TripsManager
     public function index($user,$data)
     {  
         if (isset($data["date"])){
-            $trips = Event::where($data["date"],DB::Raw("DATE(trip_date)"));
+            $trips = Trip::where($data["date"], DB::Raw("DATE(trip_date)"));
         } else {
-            $trips = Event::where("date",">=",Carbon::Now());
+            $trips = Trip::where("date",">=", Carbon::Now());
         }
+        
         $trips->where(function ($q) use ($user) {
             $q->whereUserId($user->id);
             $q->orWhere(function ($q) use ($user) {

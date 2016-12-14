@@ -17,6 +17,9 @@ class Calification extends Model {
 		'tipo_pasajero',  
 	];
 	protected $hidden = [];
+	protected $casts = [
+        'viajo' => 'boolean', 
+    ];
 
 	public function activo() {
         return $this->belongsTo('STS\User','activo_id');
