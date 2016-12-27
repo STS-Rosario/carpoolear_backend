@@ -14,8 +14,9 @@ class FriendsTable extends Migration {
 	{
 		Schema::create('friends', function(Blueprint $table)
 		{
-			$table->bigInteger('uid1')->unsigned();	
-            $table->bigInteger('uid2')->unsigned();
+			$table->integer('uid1')->unsigned();	
+            $table->integer('uid2')->unsigned();
+			
             $table->foreign('uid1')  ->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 
             $table->foreign('uid2')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 	
 			$table->integer("type");

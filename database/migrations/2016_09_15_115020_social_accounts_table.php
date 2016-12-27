@@ -15,7 +15,7 @@ class SocialAccountsTable extends Migration {
 		Schema::create('social_accounts', function(Blueprint $table)
 		{ 
 			$table->increments('id');
-            $table->bigInteger('user_id')->unsigned();
+            $table->integer('user_id')->unsigned();
             $table->string('provider_user_id');
             $table->string('provider');
             $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 

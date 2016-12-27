@@ -16,8 +16,8 @@ class CalificacionesTable extends Migration {
 		{
 			$table->increments('id');
 			$table->integer("viajes_id")->unsigned(); 
-			$table->bigInteger("activo_id")->unsigned();
-			$table->bigInteger("pasivo_id")->unsigned();
+			$table->integer("activo_id")->unsigned();
+			$table->integer("pasivo_id")->unsigned();
 			$table->integer("puntuacion");
 			$table->string("descripcion");
 			$table->integer("viajo");

@@ -3,19 +3,15 @@
 namespace STS\Repository; 
 
 use STS\Entities\Trip;
+use STS\Entities\TripPoint;
 use STS\User;
 use Validator;
 use Carbon\Carbon;
 use DB;
 
 class TripsManager
-{
-        /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
+{ 
+    
     public function validator(array $data)
     {
         return Validator::make($data, [
@@ -27,17 +23,16 @@ class TripsManager
             'friendship_type_id' => 'required|integer|in:0,1,2',
             'estimated_time' => 'required|time',
             'distance' => 'required|numeric',
-            'co2' => 'required|integer'            
-        ]);
-    }
+            'co2' => 'required|integer', 
 
-    /**
-     * Create a new user instance after a valid registration.
-     *
-     * @param  array  $data
-     * @return User
-     */
-    public function create($user,array $data)
+            'points.*.address' => 'required|string', 
+            'points.*.json_address' => 'required|array',
+            'points.*.lat' => 'required|numeric',
+            'points.*.lng' => 'required|numeric',
+        ]);
+    } 
+
+    public function create($user, array $data)
     {
         $trip = new Trip();
         $trip->es_pasajero          = $data["passenger_types"];
@@ -51,7 +46,7 @@ class TripsManager
         $trip->estimated_time       = $data["estimated_time"];
 
         $trip->distance             = $data["total_seats"];
-        $trip->co2                  = $data["friendship_type_id"];
+        $trip->co2                  = $data["co2"];
 
         $trip->description          = htmlentities($data["description"]);
         $trip->is_active            = true;
@@ -72,14 +67,29 @@ class TripsManager
     public function update($user, $trip, array $data)
     {
         // [FALTA] Lo de los viajes recurrente
-        return $trip->update($data);
+        $trip->update($data);
+        $trip->points()->delete();
+
+        return $trip;
     }
 
 
-    public function delete($user,$trip)
+    public function delete($user, $trip)
     {
         $trip->delete();
         // [FALTA] ver que hacer
+    }
+
+    public function updatePoints($trip, $data) {
+        foreach ($data as $p) {
+            $point = new TripPoint;
+            $point->address = $p["address"];
+            $point->json_address = $p["json_address"];
+            $point->lat = $p["lat"];
+            $point->lng = $p["lng"];
+
+            $trip->points()->save($point);
+        }
     }
 
     public function seatUp($trip)
@@ -99,7 +109,7 @@ class TripsManager
         if (isset($data["date"])){
             $trips = Trip::where($data["date"], DB::Raw("DATE(trip_date)"));
         } else {
-            $trips = Trip::where("date",">=", Carbon::Now());
+            $trips = Trip::where("date", ">=", Carbon::Now());
         }
         
         $trips->where(function ($q) use ($user) {

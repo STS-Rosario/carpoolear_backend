@@ -16,7 +16,7 @@ class DevicesTable extends Migration {
 		{
 			$table->engine = 'InnoDB';
             $table->increments('id');
-            $table->bigInteger("user_id")->unsigned();
+            $table->integer("user_id")->unsigned();
             $table->string('session_id', 500);
             $table->string('device_id', 500);
             $table->string('device_type', 12);

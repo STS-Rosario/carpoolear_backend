@@ -1,9 +1,15 @@
-<?php namespace STS\Entities;
+<?php 
+
+namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
-use STS\Entities\Passenger;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+use STS\Entities\Passenger;
+ 
 class Trip extends Model {
+	use SoftDeletes;
+
 	const FINALIZADO 	= 0;
     const ACTIVO 		= 1;
 
@@ -38,14 +44,16 @@ class Trip extends Model {
 		'esta_carpooleado' => 'boolean',
 		'is_active' => 'boolean'
     ];
+	protected $dates = ['deleted_at'];
+
 
 	public function user() {
-        return $this->belongsTo('STS\User','user_id');
+        return $this->belongsTo('STS\User', 'user_id');
     }
 
 
 	public function passenger() {
-        return $this->hasMany('STS\Entities\Passenger','trip_id')->with("user");
+        return $this->hasMany('STS\Entities\Passenger', 'trip_id')->with("user");
     } 
 
 	public function passengerAccepted() {
@@ -57,11 +65,15 @@ class Trip extends Model {
 	}
 
 	public function days() {
-		return $this->hasMany('STS\Entities\TripDay','trip_id');
+		return $this->hasMany('STS\Entities\TripDay', 'trip_id');
+	}
+
+	public function points() {
+		return $this->hasMany('STS\Entities\TripPoint', 'trip_id');
 	}
 
 	public function califications() {
-        return $this->hasMany('STS\Entities\Calification','viajes_id');
+        return $this->hasMany('STS\Entities\Calification', 'viajes_id');
     } 
 
 	public function getPassengerCountAttribute() 

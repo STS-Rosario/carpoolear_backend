@@ -15,7 +15,7 @@ class TripPassengersTable extends Migration {
 		Schema::create('trip_passengers', function(Blueprint $table)
 		{
 			$table->increments('id');
-			$table->bigInteger("user_id")->unsigned();
+			$table->integer("user_id")->unsigned();
 			$table->integer("trip_id")->unsigned();
 			$table->integer("passenger_type");
 			$table->integer("request_state");

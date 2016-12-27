@@ -15,7 +15,7 @@ class ConversationsTable extends Migration {
 		Schema::create('conversations', function(Blueprint $table)
 		{
 			$table->increments('id');
-			$table->bigInteger("user_id")->unsigned();
+			$table->integer("user_id")->unsigned();
 			$table->foreign('user_id')->references('id')->on('users')
 			                             ->onDelete('cascade')
 										 ->onUpdate('cascade');
