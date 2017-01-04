@@ -1,6 +1,6 @@
 <?php
 
-namespace STS\Services; 
+namespace STS\Services\Social; 
 
 use STS\Entities\SocialAccount;
 use STS\User;
@@ -32,7 +32,7 @@ class FacebookService
         return $response->getGraphEdge(); 
     }
 
-    public function matchUserFriends($user,$friends) 
+    public function matchUserFriends($user, $friends) 
     {
         foreach ($friends as $friend) {
             $account = SocialAccount::whereProvider('facebook')

@@ -21,8 +21,7 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		'name', 
 		'username',
 		'email', 
-		'password',
-		//'facebook_uid',
+		'password', 
 		'username',
 		'terms_and_conditions',
 		'birthday',
@@ -61,7 +60,7 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 
     public function trips($state = null)
     {
-        $trips = $this->hasMany("App\Entities\Trip","user_id");
+        $trips = $this->hasMany("STS\Entities\Trip","user_id");
 		if ($state == Trip::FINALIZADO ) {
 			$trips->where("trip_date","<",Carbon::Now());
 		} else if ($state == Trip::ACTIVO) {
@@ -84,29 +83,4 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		}
 		return $trips;
     }
- 
-	public function tripsCount($type = null)
-	{
-		$cantidad = 0;
-		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {
-			$cantidad += $this->trips(Trip::FINALIZADO)->count();
-		}
-		if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
-			$cantidad += $this->tripsAsPassenger(Trip::FINALIZADO)->count();
-		}
-		return $cantidad;
-	}
-
-	public function tripsDistance($type = null)
-	{
-		$distancia = 0;
-		if ($type == Passenger::TYPE_CONDUCTOR || is_null($type)) {
-			$distancia += $this->trips(Trip::FINALIZADO)->sum("distance");
-		}
-		if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
-			$distancia += $this->tripsAsPassenger(Trip::FINALIZADO)->sum("distance");
-		}
-		return $distancia;
-	}
-
 }
