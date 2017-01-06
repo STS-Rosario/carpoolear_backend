@@ -2,7 +2,7 @@
 
 namespace STS\Services\Logic; 
 
-use STS\Exceptions\ValidationException;
+use \STS\Exceptions\ValidationException;
 use STS\Repository\UserRepository;
 use STS\Entities\Trip;
 use STS\User;
@@ -15,6 +15,18 @@ class UsersManager
     public function __construct()
     { 
         $this->repo = new UserRepository();
+    }
+
+    protected $errors; 
+    
+    public function setErrors($errs)
+    {
+        $this->errors = $errs;
+    }
+
+    public function getErrors()
+    {
+        return $this->errors;
     }
 
 
@@ -43,7 +55,8 @@ class UsersManager
     {
         $v = $this->validator($data);
         if ($v->fails()) {
-            throw new ValidationException($v->errors());
+            $this->setErrors($v->errors());
+            return null;
         } else { 
             $data['password'] = bcrypt($data['password']);
             $u = $this->repo->create($data);
@@ -55,12 +68,13 @@ class UsersManager
     {
         $v = $this->validator($data);
         if ($v->fails()) {
-            throw new ValidationException($v->errors());
+            $this->setErrors($v->errors());
+            return null;
         } else { 
             if (isset($data['password'])) {
                 $data["password"] = bcrypt($data['password']);
             }
-
+            
             $u = $this->repo->update($user, $data);
             return $u;
         } 

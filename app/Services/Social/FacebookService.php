@@ -9,7 +9,7 @@ use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
 class FacebookService
 {
 
-    public function getFacebookUser($fb,$token)
+    public function getFacebookUser($fb, $token)
     {
         $fb->setDefaultAccessToken($token);
         try {
