@@ -1,6 +1,6 @@
 <?php
 
-namespace STS\Repository; 
+namespace STS\Services\Logic; 
 
 use STS\Entities\Trip;
 use STS\Entities\TripPoint;

@@ -12,11 +12,8 @@ use \Carbon\Carbon;
 
 class User extends Model implements AuthenticatableContract, CanResetPasswordContract {
 	use Authenticatable, CanResetPassword;
-	const FRIENDSHIP_SYSTEM = 0;
-	const FRIENDSHIP_FACEBOOK = 1;
 
 	protected $table = 'users'; 
-
 	protected $fillable = [
 		'name', 
 		'username',

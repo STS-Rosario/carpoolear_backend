@@ -19,7 +19,7 @@ class FriendsTable extends Migration {
 			
             $table->foreign('uid1')  ->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 
             $table->foreign('uid2')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 	
-			$table->integer("type");
+			$table->string("origin");
             $table->timestamps();
 		});
 	}
