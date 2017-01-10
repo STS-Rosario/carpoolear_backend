@@ -32,6 +32,7 @@ class CreateUsersTable extends Migration {
 			$table->string("l_perfil",255);			
 
 			$table->boolean("banned");
+			$table->boolean("is_admin");
 
 			$table->rememberToken();
 			$table->timestamps();
