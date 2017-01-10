@@ -20,24 +20,24 @@ class SocialRepository
         $this->provider = $provider;
     }
 
-    public function find($provider_id, $provider = null)
+    public function find($provider_user_id, $provider = null)
     {
         if (is_null($provider)) {
             $provider = $this->provider;
         }
         $account = SocialAccount::whereProvider($provider)
-                                    ->whereProviderUserId($provider_id)
+                                    ->whereProviderUserId($provider_user_id)
                                     ->first();
         return $account;                            
     }
 
-    public function create($user, $provider_id, $provider = null)
+    public function create($user, $provider_user_id, $provider = null)
     {
         if (is_null($provider)) {
             $provider = $this->provider;
         }
         $account = new SocialAccount([
-            'provider_user_id' => $provider_id,
+            'provider_user_id' => $provider_user_id,
             'provider' => $provider
         ]);
         $account->user()->associate($user);

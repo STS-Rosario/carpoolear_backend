@@ -8,27 +8,15 @@ use STS\Entities\Trip;
 use STS\User;
 use Validator;
 
-class UsersManager
+class UsersManager extends BaseManager
 {
 
     protected $repo;
     public function __construct()
     { 
         $this->repo = new UserRepository();
-    }
+    } 
 
-    protected $errors; 
-    
-    public function setErrors($errs)
-    {
-        $this->errors = $errs;
-    }
-
-    public function getErrors()
-    {
-        return $this->errors;
-    }
- 
     public function validator(array $data, $id = null)
     {
         if ($id) {
@@ -41,7 +29,7 @@ class UsersManager
             return Validator::make($data, [
                 'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users',
-                'password' => 'min:6|confirmed',            
+                'password' => 'required|min:6|confirmed',            
             ]);
         }
     }
@@ -79,7 +67,6 @@ class UsersManager
             $u = $this->repo->update($user, $data);
             return $u;
         } 
-
     }
 
 
@@ -117,7 +104,6 @@ class UsersManager
             return $profile;
         }
         return null;
-        
     }
 
     public function tripsCount($user, $type = null)
