@@ -23,13 +23,13 @@ class TripsTable extends Migration {
 			$table->string('description', 1500);
 			$table->integer('total_seats');
 			$table->integer("friendship_type_id");
-			$table->integer("is_active");
+			//$table->integer("is_active");
 			$table->double("distance");
 			$table->string('estimated_time', 500);
 			$table->integer("co2");
 			$table->integer("es_recurrente");
-			$table->integer("es-pasajero");
-			$table->integer("esta_carpooleado");
+			$table->integer("trip_type");
+			//$table->integer("esta_carpooleado");
 			$table->boolean("mail_send");
 			$table->string('tripscol', 45);
 

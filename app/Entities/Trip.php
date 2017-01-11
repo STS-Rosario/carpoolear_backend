@@ -6,16 +6,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 use STS\Entities\Passenger;
- 
+
+/*************************************************
+ *  Clase Trip:
+ *  
+ *             ->  es_pasajero se llama is_passenger
+ *             ->  esta_carpooleado y el contador de pasajero no existen más
+ *             ->  activo dejo de funcionar 
+ *
+ *************************************************/
+
+
+
 class Trip extends Model {
 	use SoftDeletes;
 
-	const FINALIZADO 	= 0;
-    const ACTIVO 		= 1;
+	const FINALIZADO 		= 0;
+    const ACTIVO 			= 1;
 
-	const PRIVACY_PUBLIC = 2;
-	const PRIVACY_FRIENDS = 0;
-	const PRIVACY_FOF = 1;
+	const PRIVACY_PUBLIC 	= 2;
+	const PRIVACY_FRIENDS 	= 0;
+	const PRIVACY_FOF 		= 1; 
 
 	protected $table = 'trips';
 	protected $fillable = [
@@ -33,16 +44,14 @@ class Trip extends Model {
 		'es_recurrente',
 		'esta_carpooleado',
 		'tripscol',
-		'es_pasajero',
+		'is_passenger',
 		'mail_send'
 	];
 	protected $hidden = [];
 	protected $appends = ['passenger_count', 'seats_available', 'is_driver'];
 	protected $casts = [
-        'es_pasajero' => 'boolean',
-		'es_recurrente' => 'boolean',
-		'esta_carpooleado' => 'boolean',
-		'is_active' => 'boolean'
+        'is_passenger' => 'boolean',
+		'es_recurrente' => 'boolean'
     ];
 	protected $dates = ['deleted_at'];
 
@@ -89,8 +98,15 @@ class Trip extends Model {
 
 	public function getIsDriverAttribute()
     {
-        return !$this->es_pasajero;
+        return !$this->is_passenger;
     } 
+
+	public function setDescriptionAttribute($value)
+    {
+        $this->attributes['description'] = htmlentities($value);
+    }
+
+
 
 	public function checkFriendship($user) 
 	{
