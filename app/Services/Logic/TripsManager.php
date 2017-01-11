@@ -71,31 +71,43 @@ class TripsManager extends BaseManager
         }        
     }
 
-    public function update($user, $trip, array $data)
+    public function update($user, $trip_id, array $data)
     {
-        if ($user->id == $trip->user->id) {
-            $v = $this->validator($data);
-            if ($v->fails()) {
-                $this->setErrors($v->errors());
+        $trip = $this->tripRepo->show($trip_id);
+        if ($trip) {
+            if ($user->id == $trip->user->id) {
+                $v = $this->validator($data);
+                if ($v->fails()) {
+                    $this->setErrors($v->errors());
+                    return null;
+                } else {   
+                    $trip = $this->tripRepo->update($trip, $data);
+                    return $trip;
+                } 
+            } else {
+                $this->setErrors(["No puedes modificar este viaje"]);
                 return null;
-            } else {   
-                $trip = $this->tripRepo->update($trip, $data);
-                return $trip;
-            } 
+            }
         } else {
-            $this->setErrors(["No puedes modificar este viaje"]);
+            $this->setErrors(["No existe el viaje"]);
             return null;
         }
     }
 
 
-    public function delete($user, $trip)
+    public function delete($user, $trip_id)
     {
-        // [TODO] Agregar lógica de pasajeros
-        if ($user->id == $trip->user->id) {
-            $this->tripRepo->delete($trip);
+        $trip = $this->tripRepo->show($trip_id);
+        if ($trip) {
+            // [TODO] Agregar lógica de pasajeros
+            if ($user->id == $trip->user->id) {
+                $this->tripRepo->delete($trip);
+            } else {
+                $this->setErrors(["No puedes eliminar este viaje"]);
+                return null;
+            }
         } else {
-            $this->setErrors(["No puedes eliminar este viaje"]);
+            $this->setErrors(["No existe el viaje"]);
             return null;
         }
     }
@@ -104,7 +116,7 @@ class TripsManager extends BaseManager
 
     }
 
-    public function index($user,$data)
+    public function index($user, $data)
     {  
         if (isset($data["date"])){
             $trips = Trip::where($data["date"], DB::Raw("DATE(trip_date)"));
