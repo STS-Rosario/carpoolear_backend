@@ -8,41 +8,30 @@ use STS\Entities\Trip;
 use STS\User;
 use Validator;
 
-class UsersManager
+class UsersManager extends BaseManager
 {
 
     protected $repo;
     public function __construct()
     { 
         $this->repo = new UserRepository();
-    }
+    } 
 
-    protected $errors; 
-    
-    public function setErrors($errs)
+    public function validator(array $data, $id = null)
     {
-        $this->errors = $errs;
-    }
-
-    public function getErrors()
-    {
-        return $this->errors;
-    }
-
-
-    /**
-     * Get a validator for an incoming registration request.
-     *
-     * @param  array  $data
-     * @return \Illuminate\Contracts\Validation\Validator
-     */
-    public function validator(array $data)
-    {
-        return Validator::make($data, [
-            'name' => 'required|max:255',
-            'email' => 'required|email|max:255|unique:users',
-            'password' => 'min:6|confirmed',            
-        ]);
+        if ($id) {
+            return Validator::make($data, [
+                'name' => 'max:255',
+                'email' => 'email|max:255|unique:users,email' . $id,
+                'password' => 'min:6|confirmed',            
+            ]);
+        } else {
+            return Validator::make($data, [
+                'name' => 'required|max:255',
+                'email' => 'required|email|max:255|unique:users',
+                'password' => 'required|min:6|confirmed',            
+            ]);
+        }
     }
 
     /**
@@ -66,7 +55,7 @@ class UsersManager
 
     public function update($user, array $data)
     {
-        $v = $this->validator($data);
+        $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
             return null;
@@ -78,7 +67,6 @@ class UsersManager
             $u = $this->repo->update($user, $data);
             return $u;
         } 
-
     }
 
 
@@ -116,7 +104,6 @@ class UsersManager
             return $profile;
         }
         return null;
-        
     }
 
     public function tripsCount($user, $type = null)

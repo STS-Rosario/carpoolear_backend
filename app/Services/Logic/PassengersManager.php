@@ -1,7 +1,8 @@
 <?php
 
-namespace STS\Repository; 
+namespace STS\Services\Logic; 
 
+use STS\Repository\PassengerRepository;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\User;
@@ -9,10 +10,10 @@ use Validator;
 
 class PassengerManager
 {
-    protected $friendsManager;
+    protected $passengerRepo;
     public function __construct()
     {
-        $this->friendsManager = new FriendsManager();
+        $this->passengerRepo = new PassengerRepository();
     }
 
     public function add ($user, $trip)

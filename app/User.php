@@ -12,11 +12,8 @@ use \Carbon\Carbon;
 
 class User extends Model implements AuthenticatableContract, CanResetPasswordContract {
 	use Authenticatable, CanResetPassword;
-	const FRIENDSHIP_SYSTEM = 0;
-	const FRIENDSHIP_FACEBOOK = 1;
 
 	protected $table = 'users'; 
-
 	protected $fillable = [
 		'name', 
 		'username',
@@ -31,12 +28,14 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 		'patente',
 		'descripcion',
 		'mobile_phone',
-		'l_perfil'
+		'l_perfil',
+		'is_admin'
 	];
 	protected $hidden = ['password', 'remember_token'];
 	protected $cast = [
 		'banned' => 'boolean',
-		'terms_and_conditions' => 'boolean'
+		'terms_and_conditions' => 'boolean',
+		'is_admin' => 'boolean'
 	];
 
 	public function age() {

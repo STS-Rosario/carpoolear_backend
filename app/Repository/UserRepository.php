@@ -34,4 +34,20 @@ class UserRepository
         return User::all();
     }        
 
+    public function addFriend($user, $friend, $provider = "") {
+        $friend->friends()->detach($user->id);
+        $user->friends()->detach($friend->id);
+        $friend->friends()->attach($user->id, ['origin' => $provider]);
+        $user->friends()->attach($friend->id, ['origin' => $provider]);
+    }
+
+    public function deleteFriend($user, $friend) {
+        $friend->friends()->detach($user->id);
+        $user->friends()->detach($friend->id); 
+    }
+
+    public function friendList($user) {
+        $user->friends();
+    }
+
 }
