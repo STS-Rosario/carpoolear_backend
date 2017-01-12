@@ -20,7 +20,7 @@ class DevicesTable extends Migration {
             $table->string('session_id', 500);
             $table->string('device_id', 500);
             $table->string('device_type', 12);
-			$table->integer("version_app");
+			$table->integer("app_version");
 			$table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')
 			                             ->onDelete('cascade')

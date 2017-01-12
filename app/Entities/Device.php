@@ -4,7 +4,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Device extends Model {
 	protected $table = 'users_devices';
-	protected $fillable = ['device_id', 'device_type','session_id','user_id'];
+	protected $fillable = ['device_id', 'device_type', 'session_id', 'user_id', 'app_version'];
 	protected $hidden = [];
 
     public function user() {

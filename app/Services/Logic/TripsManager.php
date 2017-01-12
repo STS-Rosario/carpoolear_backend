@@ -85,11 +85,11 @@ class TripsManager extends BaseManager
                     return $trip;
                 } 
             } else {
-                $this->setErrors(["No puedes modificar este viaje"]);
+                $this->setErrors(trans('errors.tripowner'));
                 return null;
             }
         } else {
-            $this->setErrors(["No existe el viaje"]);
+            $this->setErrors(trans('errors.notrip'));
             return null;
         }
     }
@@ -103,11 +103,11 @@ class TripsManager extends BaseManager
             if ($user->id == $trip->user->id) {
                 $this->tripRepo->delete($trip);
             } else {
-                $this->setErrors(["No puedes eliminar este viaje"]);
+                $this->setErrors(trans('errors.tripowner'));
                 return null;
             }
         } else {
-            $this->setErrors(["No existe el viaje"]);
+            $this->setErrors(trans('errors.notrip'));
             return null;
         }
     }

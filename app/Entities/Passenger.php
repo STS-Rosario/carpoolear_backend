@@ -3,9 +3,10 @@
 use Illuminate\Database\Eloquent\Model;
 
 class Passenger extends Model {
-    const STATE_RECHAZADO   = 0;
-    const STATE_ACEPTADO    = 1;
-    const STATE_PENDIENTE   = 2;
+    const STATE_PENDING     = 0;
+    const STATE_ACCEPTED    = 1;
+    const STATE_REJECTED    = 2;
+    const STATE_CANCELED    = 3;
 
 	const TYPE_CONDUCTOR 			= 0;
     const TYPE_PASAJERO 			= 1;
