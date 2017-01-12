@@ -12,7 +12,7 @@
 */
 
 $app = new Illuminate\Foundation\Application(
-	realpath(__DIR__.'/../')
+    realpath(__DIR__.'/../')
 );
 
 /*
@@ -27,18 +27,18 @@ $app = new Illuminate\Foundation\Application(
 */
 
 $app->singleton(
-	'Illuminate\Contracts\Http\Kernel',
-	'STS\Http\Kernel'
+    Illuminate\Contracts\Http\Kernel::class,
+    STS\Http\Kernel::class
 );
 
 $app->singleton(
-	'Illuminate\Contracts\Console\Kernel',
-	'STS\Console\Kernel'
+    Illuminate\Contracts\Console\Kernel::class,
+    STS\Console\Kernel::class
 );
 
 $app->singleton(
-	'Illuminate\Contracts\Debug\ExceptionHandler',
-	'STS\Exceptions\Handler'
+    Illuminate\Contracts\Debug\ExceptionHandler::class,
+    STS\Exceptions\Handler::class
 );
 
 /*

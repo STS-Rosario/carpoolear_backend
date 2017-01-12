@@ -1,5 +1,0 @@
-suites:
-    main:
-        namespace: STS
-        psr4_prefix: STS
-        src_path: app

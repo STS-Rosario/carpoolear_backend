@@ -1,85 +1,26 @@
-<?php namespace STS;
+<?php
 
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Auth\Passwords\CanResetPassword;
-use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
-use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+namespace STS;
 
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
-use \Carbon\Carbon;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class User extends Model implements AuthenticatableContract, CanResetPasswordContract {
-	use Authenticatable, CanResetPassword;
+class User extends Authenticatable
+{
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'name', 'email', 'password',
+    ];
 
-	protected $table = 'users'; 
-	protected $fillable = [
-		'name', 
-		'username',
-		'email', 
-		'password', 
-		'username',
-		'terms_and_conditions',
-		'birthday',
-		'gender',
-		'banned',
-		'nro_doc',
-		'patente',
-		'descripcion',
-		'mobile_phone',
-		'l_perfil',
-		'is_admin'
-	];
-	protected $hidden = ['password', 'remember_token'];
-	protected $cast = [
-		'banned' => 'boolean',
-		'terms_and_conditions' => 'boolean',
-		'is_admin' => 'boolean'
-	];
-
-	public function age() {
-		if ($this->birthday) {
-			return Carbon::parse($this->birthday)->diff()->year;
-		}
-	}
-
-	public function friends() 
-    {
-        return $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2');
-    } 
-
-    public function relativeFriends()
-    {
-        $u = $this;
-        return User::whereHas("friends.friends", function ($q) use ($u) {
-            $q->whereId($u->id);
-        })->get();
-    }
-
-    public function trips($state = null)
-    {
-        $trips = $this->hasMany("STS\Entities\Trip","user_id");
-		if ($state == Trip::FINALIZADO ) {
-			$trips->where("trip_date","<",Carbon::Now());
-		} else if ($state == Trip::ACTIVO) {
-			$trips->where("trip_date",">=",Carbon::Now());
-		}
-		return $trips;
-    }
-
-	public function tripsAsPassenger($state = null)
-    {
-		$user_id = $this->id;
-		$trips =  Trip::whereHas('passenger',function ($q) use ($user_id) {
-			$q->whereUserId($user_id);
-			$q->whereRequestState(Passenger::STATE_ACEPTADO);
-		});      
-		if ($state == Trip::FINALIZADO ) {
-			$trips->where("trip_date","<",Carbon::Now());
-		} else if ($state == Trip::ACTIVO) {
-			$trips->where("trip_date",">=",Carbon::Now());
-		}
-		return $trips;
-    }
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'password', 'remember_token',
+    ];
 }

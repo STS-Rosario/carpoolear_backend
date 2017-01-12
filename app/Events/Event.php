@@ -1,7 +1,8 @@
-<?php namespace STS\Events;
+<?php
 
-abstract class Event {
+namespace STS\Events;
 
-	//
-
+abstract class Event
+{
+    //
 }
