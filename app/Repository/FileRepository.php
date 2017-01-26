@@ -14,9 +14,16 @@ class FileRepository
     public function __construct() {
  
     }
+
+    public function nomalize($str) {
+        if ($str[strlen($str) - 1] == "/") {
+            return $str;
+        }
+        return $str . "/";
+    }
  
     public function create($filename, $folder = "image/") {
-        $folder_path = $path = public_path($folder);
+        $folder_path =  $this->nomalize(public_path($folder));
         if (!File::isDirectory($folder_path)) {
             File::makeDirectory($folder_path, 0777, true, true);
         }
@@ -31,7 +38,7 @@ class FileRepository
     }
 
     public function delete($filename, $folder) {
-        $folder_path = $path = public_path($folder);
+        $folder_path = $this->nomalize(public_path($folder));
         File::move( $folder_path . $filename);
     }
 

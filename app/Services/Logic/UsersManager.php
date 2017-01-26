@@ -4,6 +4,7 @@ namespace STS\Services\Logic;
 
 use \STS\Exceptions\ValidationException;
 use STS\Repository\UserRepository;
+use STS\Repository\FileRepository;
 use STS\Entities\Trip;
 use STS\User;
 use Validator;
@@ -67,14 +68,20 @@ class UsersManager extends BaseManager
             $u = $this->repo->update($user, $data);
             return $u;
         } 
-    }
+    } 
 
-
-    public function acceptTerms($user) 
-    {
-        $user->terms_and_conditions = true;
-        $user->save();
-        return $user;
+    public function updatePhoto($user, $data) {
+        $v = Validator::make($data, ['profile' => 'required|image']);
+        if ($v->fails()) {
+            $this->setErrors($v->errors());
+            return null;
+        } else { 
+            $fileManager = new FileRepository();
+            $filename = $data["profile"]["tmp_name"];
+            $name = $fileManager->create($filename, "image/profile");
+            $user = $this->repo->updatePhoto($user, $name);
+            return $user;
+        }
     }
 
     public function show($user, $profile_id)

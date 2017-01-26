@@ -29,6 +29,20 @@ class UserRepository
         return User::find($id);
     }
 
+    public function acceptTerms($user) 
+    {
+        $user->terms_and_conditions = true;
+        $user->save();
+        return $user;
+    }
+
+    public function updatePhoto($user, $filename) 
+    {
+        $user->image = $filename;
+        $user->save();
+        return $user;
+    }
+
     public function index()
     { 
         return User::all();
