@@ -22,7 +22,7 @@ class UsersManager extends BaseManager
         if ($id) {
             return Validator::make($data, [
                 'name' => 'max:255',
-                'email' => 'email|max:255|unique:users,email' . $id,
+                'email' => 'email|max:255|unique:users,email,' . $id,
                 'password' => 'min:6|confirmed',            
             ]);
         } else {
