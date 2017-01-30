@@ -7,7 +7,7 @@ use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
 use STS\Http\Controllers\Controller;
 use STS\Http\Requests;
 use Illuminate\Http\Request; 
-use STS\Repository\UsersManager;
+use STS\Services\Logic\UsersManager;
 use STS\User;
 use STS\Entities\Device;
 use JWTAuth;
@@ -28,13 +28,22 @@ class AuthController extends Controller
 
     public function update(Request $request, UsersManager $manager)
     {
-        return $manager->update($this->user, $request->all());
+        $user = $manager->update($this->user, $request->all());
+        if (!$user) {
+            return response()->json($manager()->getErrors(), 400);
+        }
+        return $user;
     }
 
-    public function show($id, UsersManager $manager)
+    public function show($id = null , UsersManager $manager)
     {
-        $profile = User::find($id);
-        $manager->show($this->user, $profile); 
+        if (!$id) {
+            $id = $this->user;
+        }
+        $user = $manager->show($this->user, $id); 
+        if (!$user) {
+            return response()->json($manager()->getErrors(), 400);
+        }
         return response()->json($user);
     }
 

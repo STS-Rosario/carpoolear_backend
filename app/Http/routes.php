@@ -14,3 +14,16 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () {
+    Route::post("/login", 'Api\AuthController@login');
+    Route::post("/registrar", 'Api\AuthController@registrar'); 
+    Route::post("/retoken", 'Api\AuthController@retoken'); 
+    Route::post("/logoff", 'Api\AuthController@logoff');   
+
+    Route::group(['prefix' => 'profile'], function () {
+        Route::post("/show/{id?}", 'Api\Profile@show');    
+        Route::post("/update", 'Api\Profile@update');
+    });
+
+});
