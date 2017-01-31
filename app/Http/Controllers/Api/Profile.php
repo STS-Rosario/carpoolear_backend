@@ -1,19 +1,14 @@
 <?php
 
 namespace STS\Http\Controllers\Api;
-
-use STS\Services\FacebookService;
-use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
-use STS\Http\Controllers\Controller;
-use STS\Http\Requests;
+ 
+use STS\Http\Controllers\Controller; 
 use Illuminate\Http\Request; 
-use STS\Services\Logic\UsersManager;
-use STS\User;
-use STS\Entities\Device;
+use STS\Services\Logic\UsersManager; 
 use JWTAuth;
 use Auth;
 
-class AuthController extends Controller
+class Profile extends Controller
 {
     protected $user;
     public function __construct(Request $r)

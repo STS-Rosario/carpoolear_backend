@@ -9,7 +9,7 @@ class UserTest extends TestCase {
         $userManager = new \STS\Services\Logic\UsersManager();
         $data = [
             "name" => "Mariano", 
-            "email" => "mariano@g1.com", 
+            "email" => "mariano@g2.com", 
             "password" => "123456",
             "password_confirmation" => "123456"
         ];

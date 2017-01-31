@@ -1,11 +1,8 @@
 <?php
 
 namespace STS\Http\Controllers\Api;
-
-use STS\Services\FacebookService;
-use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
-use STS\Http\Controllers\Controller;
-use STS\Http\Requests;
+ 
+use STS\Http\Controllers\Controller; 
 use Illuminate\Http\Request; 
 use STS\Services\Logic\UsersManager;
 use STS\User;
@@ -54,14 +51,14 @@ class AuthController extends Controller
 
         // Registro mi devices
         if ($request->has("device_id") || $request->has("device_type")) {
-            $d = Devices::where("device_id", $request->get("device_id"))->first();
+            $d = Device::where("device_id", $request->get("device_id"))->first();
             if (is_null($d)) {
                 $d          = new Device();
             }            
             $d->session_id  = $token;
             $d->device_id   = $request->get("device_id");
             $d->device_type = $request->get("device_type");
-            $d->usuario_id  = $user->id;
+            $d->user_id     = $user->id;
             if ($request->has("app_version")) {
                 $d->app_version = $request->get("app_version");
             } else {
@@ -114,7 +111,7 @@ class AuthController extends Controller
         $user = null;
         $token = \JWTAuth::getToken();
         $newToken = \JWTAuth::refresh($token);
-        $d = Devices::where("session_id", $token)->first();
+        $d = Device::where("session_id", $token)->first();
         if ($d) {
             $user = $d->usuario;
             if ($request->has("app_version")) {
