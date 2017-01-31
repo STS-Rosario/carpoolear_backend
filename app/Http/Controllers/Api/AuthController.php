@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api;
 use STS\Http\Controllers\Controller; 
 use Illuminate\Http\Request; 
 use STS\Services\Logic\UsersManager;
+use STS\Services\Logic\DeviceManager;
 use STS\User;
 use STS\Entities\Device;
 use JWTAuth;
@@ -24,14 +25,11 @@ class AuthController extends Controller
             return response()->json($manager()->getErrors(), 400);
         }
 
-
-        // [TODO] Falta logica de login!
-        $token = JWTAuth::fromUser($user);
-        return response()->json(compact('token','user'));
+        return response()->json(compact('user'));
 
     }
 
-    public function login(Request $request)
+    public function login(Request $request, DeviceManager $devices)
     { 
         $credentials = $request->only('email', 'password');
         
@@ -50,23 +48,9 @@ class AuthController extends Controller
         }
 
         // Registro mi devices
-        if ($request->has("device_id") || $request->has("device_type")) {
-            $d = Device::where("device_id", $request->get("device_id"))->first();
-            if (is_null($d)) {
-                $d          = new Device();
-            }            
-            $d->session_id  = $token;
-            $d->device_id   = $request->get("device_id");
-            $d->device_type = $request->get("device_type");
-            $d->user_id     = $user->id;
-            if ($request->has("app_version")) {
-                $d->app_version = $request->get("app_version");
-            } else {
-                $d->app_version = 0;
-            } 
-            $d->save();
-        }
-
+        if ($request->has("device_id") && $request->has("device_type")) {
+            $devices->register($user, $token, $request->all());
+        } 
         return response()->json(compact('token','user'));
     }
 
@@ -106,27 +90,23 @@ class AuthController extends Controller
     }
     */ 
 
-    public function retoken(Request $request) {
+    public function retoken(Request $request, DeviceManager $devices) {
         //$user = \JWTAuth::parseToken()->authenticate();
         $user = null;
         $token = \JWTAuth::getToken();
         $newToken = \JWTAuth::refresh($token);
-        $d = Device::where("session_id", $token)->first();
+
+        $d = $devices->updateSession($token, $newToken, $request->get("app_version") );
         if ($d) {
             $user = $d->usuario;
-            if ($request->has("app_version")) {
-                $d->app_version = $request->get("app_version");
-            }
-            $d->session_id = $newToken;
-            $d->save();
-        }
+        } 
+
         return response()->json(compact('token','user'));
     }
 
-    public function logoff (Request $request) {
+    public function logoff (Request $request, DeviceManager $devices) {
         $token = \JWTAuth::parseToken()->getToken(); 
-        Devices::where("session_id", $token)->delete();
-        //\JWTAuth::parseToken()->invalidate();
+        $devices->deleteBySession($token);  
         return response()->json("OK");
     }
 }

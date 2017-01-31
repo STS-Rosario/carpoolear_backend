@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Repository\DeviceRepository;
 
 class ApiAuthTest extends TestCase { 
     use DatabaseTransactions;
@@ -41,13 +42,22 @@ class ApiAuthTest extends TestCase {
             "email" => $user->email, 
             "password" => "123456",
             "device_id" => 123456,
-            "device_type" => "Android"
+            "device_type" => "Android",
+            "app_version" => 1
         ];
         $response = $this->call('POST', 'api/login', $data);
         $this->assertTrue($response->status() == 200);
 
         $json = $this->parseJson($response);     
         $this->assertTrue($json->token != null);
+
+        $devices = new DeviceRepository;
+        $this->assertTrue( $devices->getUserDevices($json->user->id)->count() > 0 );
+
+        $response = $this->call('POST', 'api/logoff?token=' . $json->token);
+        $this->assertTrue($response->status() == 200);
+        $this->assertTrue( $devices->getUserDevices($json->user->id)->count() == 0 );
+
 
 	}
 
@@ -60,7 +70,8 @@ class ApiAuthTest extends TestCase {
             "email" => $user->email, 
             "password" => "123456",
             "device_id" => 123456,
-            "device_type" => "Android"
+            "device_type" => "Android",
+            "app_version" => 1
         ];
         $response = $this->call('POST', 'api/login', $data); 
         $json = $this->parseJson($response);     

@@ -1,11 +1,7 @@
 <?php
 
 namespace STS\Repository; 
-
-use STS\Entities\Trip;
-use STS\User;
-use Validator;
-use STS\Entities\SocialAccount;
+  
 use File;
 
 class FileRepository
