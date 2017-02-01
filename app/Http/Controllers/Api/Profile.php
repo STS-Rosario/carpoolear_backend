@@ -30,6 +30,15 @@ class Profile extends Controller
         return $user;
     }
 
+    public function updatePhoto(Request $request, UsersManager $manager)
+    {
+        $user = $manager->updatePhoto($this->user, $request->all());
+        if (!$user) {
+            return response()->json($manager()->getErrors(), 400);
+        }
+        return $user;
+    }
+
     public function show($id = null , UsersManager $manager)
     {
         if (!$id) {

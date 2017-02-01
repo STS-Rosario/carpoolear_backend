@@ -24,6 +24,7 @@ Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () {
     Route::group(['prefix' => 'profile'], function () {
         Route::get("/show/{id?}", 'Api\Profile@show');    
         Route::get("/update", 'Api\Profile@update');
+        Route::get("/update/photo", 'Api\Profile@updatePhoto');
     });
 
 });

@@ -105,9 +105,7 @@ class Trip extends Model {
     {
         $this->attributes['description'] = htmlentities($value);
     }
-
-
-
+	
 	public function checkFriendship($user) 
 	{
 		$conductor 	= $this->user;
