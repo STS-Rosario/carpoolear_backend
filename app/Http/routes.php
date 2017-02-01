@@ -21,6 +21,8 @@ Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () {
     Route::post("/retoken", 'Api\AuthController@retoken'); 
     Route::post("/logoff", 'Api\AuthController@logoff');   
 
+    Route::get("/facebook", 'Api\AuthController@facebookLogin');
+
     Route::group(['prefix' => 'profile'], function () {
         Route::get("/show/{id?}", 'Api\Profile@show');    
         Route::get("/update", 'Api\Profile@update');

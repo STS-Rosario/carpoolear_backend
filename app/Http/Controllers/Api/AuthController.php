@@ -10,6 +10,10 @@ use STS\User;
 use STS\Entities\Device;
 use JWTAuth;
 
+
+use \GuzzleHttp\Client;
+
+
 class AuthController extends Controller
 {
     protected $user;
@@ -54,41 +58,21 @@ class AuthController extends Controller
         return response()->json(compact('token','user'));
     }
 
-    /*
-    public function facebookLogin(Request $request,FacebookService $service,LaravelFacebookSdk $fb)
+     
+
+    //  https://graph.facebook.com/v2.7/me?fields=email,name,gender,picture.width(300),birthday&access_token=EAALyfIRbBbYBADS2SZCk0X7bU20uuXizOqF1njbFfDWAMnF71kWRaV3xSlJlGft3XHzhNhG0UBKZAmiQQigpFVgQLno3LOneY1WDtdQAmPcqg30JZAxJ5goJnprdETUcGbZB1zU4T0Wg6kc5Ye40BfINMwIAzS386RNUbqYzj4M6iX34xZCVt
+    public function facebookLogin(Request $request)
     {
         // credenciales para loguear al usuario
-        $accessToken = $request->get("accessToken");
+        $accessToken = $request->get("access_token");
+        $client = new Client();
+        $res = $client->request('GET', 'https://graph.facebook.com/v2.7/me?fields=email,name,gender,picture.width(300),birthday&access_token=' . $accessToken);
+        echo $res->getStatusCode();
+        // "200"
+        // 'application/json; charset=utf8'
+        echo json_decode($res->getBody())->email;
         
-        $facebook_user = $service->getFacebookUser($fb,$accessToken);
-
-        $user = $service->createOrGetUser($facebook_user);
-
-        if ($user->banned) {
-            return response()->json(['error' => 'user_banned'], 401);
-        }
-
-        $token = JWTAuth::fromUser($user);
-
-        $result = $service->getFacebookFriends($fb,$accessToken); 
-        $service->matchUserFriends($user,$result);
-
-        // Registro mi devices
-        if ($request->has("device_id") || $request->has("device_type")) {
-            $d = Devices::where("device_id",$request->get("device_id"))->first();
-            if (is_null($d)) {
-                $d          = new Device();
-            }            
-            $d->session_id  = $token;
-            $d->device_id   = $request->get("device_id");
-            $d->device_type = $request->get("device_type");
-            $d->usuario_id  = $user->id;
-            $d->save();
-        }
-
-        return response()->json(compact('token','user'));
-    }
-    */ 
+    } 
 
     public function retoken(Request $request, DeviceManager $devices) {
         //$user = \JWTAuth::parseToken()->authenticate();
