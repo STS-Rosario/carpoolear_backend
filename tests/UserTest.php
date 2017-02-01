@@ -1,24 +1,20 @@
 <?php
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class UserTest extends TestCase { 
-
-    protected $userManager;
-    public function __construct() {
-
-    } 
-
-	public function testCreateUser()
+    use DatabaseTransactions;
+ 
+ 	public function testCreateUser()
 	{
         $userManager = new \STS\Services\Logic\UsersManager();
-		$data = [
+        $data = [
             "name" => "Mariano", 
-            "email" => "mariano@g.com", 
-            "password" => "123456", 
+            "email" => "mariano@g2.com", 
+            "password" => "123456",
             "password_confirmation" => "123456"
         ];
 
         $u = $userManager->create($data);
-
         $this->assertTrue($u != null);
 	}
 
@@ -56,8 +52,18 @@ class UserTest extends TestCase {
 
     public function testUpdateUser()
 	{
-        $user = \STS\User::find(1);
+        
         $userManager = new \STS\Services\Logic\UsersManager();
+
+        $data = [
+            "name" => "Mariano", 
+            "email" => "mariano@g1.com", 
+            "password" => "123456",
+            "password_confirmation" => "123456"
+        ];
+
+        $u1 = $userManager->create($data);
+
 		$data = [
             "name" => "Pablo", 
             "password" => "gatogato",
@@ -65,7 +71,7 @@ class UserTest extends TestCase {
             "patente" => "SOF 034"
         ];
 
-        $u1 = $userManager->update($user, $data);  
+        $u1 = $userManager->update($u1, $data);  
         $this->assertTrue($u1 != null);
     
 	}

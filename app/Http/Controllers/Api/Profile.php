@@ -1,19 +1,14 @@
 <?php
 
 namespace STS\Http\Controllers\Api;
-
-use STS\Services\FacebookService;
-use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
-use STS\Http\Controllers\Controller;
-use STS\Http\Requests;
+ 
+use STS\Http\Controllers\Controller; 
 use Illuminate\Http\Request; 
-use STS\Repository\UsersManager;
-use STS\User;
-use STS\Entities\Device;
+use STS\Services\Logic\UsersManager; 
 use JWTAuth;
 use Auth;
 
-class AuthController extends Controller
+class Profile extends Controller
 {
     protected $user;
     public function __construct(Request $r)
@@ -28,13 +23,31 @@ class AuthController extends Controller
 
     public function update(Request $request, UsersManager $manager)
     {
-        return $manager->update($this->user, $request->all());
+        $user = $manager->update($this->user, $request->all());
+        if (!$user) {
+            return response()->json($manager()->getErrors(), 400);
+        }
+        return $user;
     }
 
-    public function show($id, UsersManager $manager)
+    public function updatePhoto(Request $request, UsersManager $manager)
     {
-        $profile = User::find($id);
-        $manager->show($this->user, $profile); 
+        $user = $manager->updatePhoto($this->user, $request->all());
+        if (!$user) {
+            return response()->json($manager()->getErrors(), 400);
+        }
+        return $user;
+    }
+
+    public function show($id = null , UsersManager $manager)
+    {
+        if (!$id) {
+            $id = $this->user;
+        }
+        $user = $manager->show($this->user, $id); 
+        if (!$user) {
+            return response()->json($manager()->getErrors(), 400);
+        }
         return response()->json($user);
     }
 
