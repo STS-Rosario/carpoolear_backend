@@ -16,12 +16,10 @@ Route::get('/', function () {
 });
 
 Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () { 
-    Route::post("/login", 'Api\AuthController@login');
+    Route::post("/login/{provider?}", 'Api\AuthController@login');
     Route::post("/registrar", 'Api\AuthController@registrar'); 
     Route::post("/retoken", 'Api\AuthController@retoken'); 
-    Route::post("/logoff", 'Api\AuthController@logoff');   
-
-    Route::get("/facebook", 'Api\AuthController@facebookLogin');
+    Route::post("/logoff", 'Api\AuthController@logoff');    
 
     Route::group(['prefix' => 'profile'], function () {
         Route::get("/show/{id?}", 'Api\Profile@show');    

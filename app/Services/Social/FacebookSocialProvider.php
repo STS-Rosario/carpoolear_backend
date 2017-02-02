@@ -4,7 +4,8 @@ namespace STS\Services\Social;
 
 use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
 use \GuzzleHttp\Client;
-
+use File;
+use STS\Repository\FileRepository;
 class FacebookSocialProvider implements SocialProviderInterface {
 
     protected $facebook;
@@ -22,8 +23,9 @@ class FacebookSocialProvider implements SocialProviderInterface {
 
     public function getUserData() { 
         $response = $this->request('/me?fields=email,name,gender,picture.width(300),birthday');
-        if ($res->getStatusCode() == 200) {
-            $body = json_decode($res->getBody());
+        if ($response->getStatusCode() == 200) {
+            $body = json_decode($response->getBody());
+             
             return [
                 'provider_user_id'      => $body->id,
                 'email'                 => $body->email,
@@ -43,13 +45,13 @@ class FacebookSocialProvider implements SocialProviderInterface {
 
     public function getUserFriends() { 
         $response = $this->request('/me/friends?limit=5000');
-        if ($res->getStatusCode() == 200) {       
-            $body = json_decode($res->getBody());
+        if ($response->getStatusCode() == 200) {       
+            $body = json_decode($response->getBody());
             $res = [];
             foreach($body->data as $friend) {
-                $res[] = $friend["id"];
+                $res[] = $friend->id;
             }
-            return $friends;
+            return $res;
         } else {
             $this->error = "Error de auth";
             return null;
@@ -61,7 +63,7 @@ class FacebookSocialProvider implements SocialProviderInterface {
     }
 
     private function request($url) {
-        $res = $client->request('GET', 'https://graph.facebook.com/v2.7' . $url .  '&access_token=' . $this->token);
+        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.7' . $url .  '&access_token=' . $this->token);
         return $res;
     }
 

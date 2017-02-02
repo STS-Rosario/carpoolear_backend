@@ -5,8 +5,7 @@ namespace STS\Repository;
 use File;
 
 class FileRepository
-{
-    protected $provider;
+{ 
     public function __construct() {
  
     }
@@ -18,7 +17,7 @@ class FileRepository
         return $str . "/";
     }
  
-    public function create($filename, $folder = "image/") {
+    public function createFromFile($filename, $folder = "image/") {
         $folder_path =  $this->nomalize(public_path($folder));
         if (!File::isDirectory($folder_path)) {
             File::makeDirectory($folder_path, 0777, true, true);
@@ -29,6 +28,20 @@ class FileRepository
         $mil = str_replace(" ", "", $mil);
         $newfilename = date('mdYHis') . $mil . "." . $ext;
         File::move($filename, $folder_path . $newfilename);
+
+        return $newfilename;
+    }
+
+    public function createFromData($data, $extension, $folder = "image/") {
+        $folder_path =  $this->nomalize(public_path($folder));
+        if (!File::isDirectory($folder_path)) {
+            File::makeDirectory($folder_path, 0777, true, true);
+        }
+        
+        $mil = str_replace(".", "", microtime());
+        $mil = str_replace(" ", "", $mil);
+        $newfilename = date('mdYHis') . $mil . "." . $extension;
+        File::put($folder_path . $newfilename, $data);
 
         return $newfilename;
     }

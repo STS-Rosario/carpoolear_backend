@@ -78,7 +78,7 @@ class UsersManager extends BaseManager
         } else { 
             $fileManager = new FileRepository();
             $filename = $data["profile"]["tmp_name"];
-            $name = $fileManager->create($filename, "image/profile");
+            $name = $fileManager->createFromFile($filename, "image/profile");
             $user = $this->repo->updatePhoto($user, $name);
             return $user;
         }

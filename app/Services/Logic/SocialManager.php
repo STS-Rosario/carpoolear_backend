@@ -7,6 +7,8 @@ use STS\Entities\SocialAccount;
 use STS\User; 
 use STS\Services\Social\SocialProviderInterface;
 use STS\Repository\UserRepository; 
+use STS\Repository\FileRepository;
+use Validator;
 
 class SocialManager extends BaseManager
 {
@@ -47,7 +49,7 @@ class SocialManager extends BaseManager
             return $this->userRepo->show($account->user_id);            
         }  else {
             unset($data["provider_user_id"]);
-            return $this->create($data);
+            return $this->create($provider_user_id, $data);
         }
     }
 
@@ -58,22 +60,29 @@ class SocialManager extends BaseManager
             return null;
         } else { 
             $data['password'] = null;
+            if (isset($data['image'])){
+                $img = file_get_contents($data['image']);
+                $files = new FileRepository();
+                $data['image'] = $files->createFromData($img, 'jpg', 'image/profile/');
+            }
             $user = $this->userRepo->create($data);
             $this->socialRepository->create($user, $provider_user_id);
             return $user;
         } 
     }
 
-    public function matchUserFriends($user) 
+    public function getUserFriends() 
     {
+        $list = [];
         $friends = $this->provider->getUserFriends();
         foreach ($friends as $friend) {
             $account = $this->socialRepository->find($friend);
             if ($account) {
                 $friend_user = $this->userRepo->show($account->user_id); 
-                $this->userRepo->addFriend($user, $friend_user);
+                $list[] = $account->user;
             }                            
         }
+        return $list;
     } 
     
 }
