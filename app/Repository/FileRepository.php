@@ -2,9 +2,10 @@
 
 namespace STS\Repository; 
   
+use STS\Contracts\Repository\Files as FilesRepo;  
 use File;
 
-class FileRepository
+class FileRepository implements FilesRepo
 { 
     public function __construct() {
  
@@ -46,7 +47,7 @@ class FileRepository
         return $newfilename;
     }
 
-    public function delete($filename, $folder) {
+    public function delete($filename, $folder = "image/") {
         $folder_path = $this->nomalize(public_path($folder));
         File::move( $folder_path . $filename);
     }

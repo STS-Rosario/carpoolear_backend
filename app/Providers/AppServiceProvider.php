@@ -31,5 +31,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind('\STS\Contracts\Repository\Friends', '\STS\Repository\FriendsRepository');
         $this->app->bind('\STS\Contracts\Logic\Friends', '\STS\Services\Logic\FriendsManager');
+
+        $this->app->bind('\STS\Contracts\Repository\Files', '\STS\Repository\FileRepository');
     }
 }

@@ -4,12 +4,12 @@ namespace STS\Services\Logic;
 
 use STS\Contracts\Repository\User as UserRep;
 use STS\Contracts\Repository\Friends as FriendsRep;
+use STS\Contracts\Repository\Files as FilesRep;
 
 use STS\Repository\SocialRepository;
 use STS\Entities\SocialAccount;
 use STS\User; 
-use STS\Services\Social\SocialProviderInterface; 
-use STS\Repository\FileRepository;
+use STS\Services\Social\SocialProviderInterface;  
 use Validator;
 
 class SocialManager extends BaseManager
@@ -17,14 +17,16 @@ class SocialManager extends BaseManager
 
     protected $friendsRepo;
     protected $userRepo;
+    protected $filesRepo;
     protected $socialRepository;
     protected $provider;
 
-    public function __construct(SocialProviderInterface $provider, UserRep $userRep, FriendsRep $friendsRepo)
+    public function __construct(SocialProviderInterface $provider, UserRep $userRep, FriendsRep $friendsRepo, FilesRep $files)
     { 
         $this->provider = $provider;
         $this->userRepo = $userRep;
-        $this->friendsRepo = $friendsRepo;
+        $this->filesRepo = $files;
+        $this->userRepo = $userRep;
         $this->socialRepository = new SocialRepository($provider->getProviderName());        
     }
 
@@ -73,9 +75,8 @@ class SocialManager extends BaseManager
         } else { 
             $data['password'] = null;
             if (isset($data['image'])){
-                $img = file_get_contents($data['image']);
-                $files = new FileRepository();
-                $data['image'] = $files->createFromData($img, 'jpg', 'image/profile/');
+                $img = file_get_contents($data['image']); 
+                $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
             }
             $user = $this->userRepo->create($data);
             $this->socialRepository->create($user, $provider_user_id);

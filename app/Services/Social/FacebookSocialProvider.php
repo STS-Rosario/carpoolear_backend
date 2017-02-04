@@ -1,11 +1,10 @@
 <?php
 
 namespace STS\Services\Social; 
-
-use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
+ 
 use \GuzzleHttp\Client;
-use File;
-use STS\Repository\FileRepository;
+use File; 
+
 class FacebookSocialProvider implements SocialProviderInterface {
 
     protected $facebook;
