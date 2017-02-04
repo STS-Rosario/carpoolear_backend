@@ -3,6 +3,7 @@
 namespace STS\Services\Logic; 
 
 use STS\Contracts\Repository\User as UserRep;
+use STS\Contracts\Repository\Friends as FriendsRep;
 
 use STS\Repository\SocialRepository;
 use STS\Entities\SocialAccount;
@@ -14,16 +15,17 @@ use Validator;
 class SocialManager extends BaseManager
 {
 
+    protected $friendsRepo;
     protected $userRepo;
     protected $socialRepository;
     protected $provider;
 
-    public function __construct(SocialProviderInterface $provider, UserRep $userRep)
+    public function __construct(SocialProviderInterface $provider, UserRep $userRep, FriendsRep $friendsRepo)
     { 
         $this->provider = $provider;
         $this->userRepo = $userRep;
-        $this->socialRepository = new SocialRepository($provider->getProviderName());
-        
+        $this->friendsRepo = $friendsRepo;
+        $this->socialRepository = new SocialRepository($provider->getProviderName());        
     }
 
     public function validator(array $data, $id = null)
@@ -57,7 +59,7 @@ class SocialManager extends BaseManager
     public function syncFriends($user) {
         $friends = $this->getUserFriends();
         foreach ($friends as $friend) {
-            $this->userRepo->addFriend($user, $friend, $this->provider->getProviderName());
+            $this->friendsRepo->make($user, $friend);
         }
         return true;
     }

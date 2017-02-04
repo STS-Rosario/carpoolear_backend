@@ -5,8 +5,7 @@ namespace STS;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
-{
-    use Authenticatable, CanResetPassword;
+{ 
     protected $table = 'users'; 
 
     const FRIEND_REQUEST  = 0;

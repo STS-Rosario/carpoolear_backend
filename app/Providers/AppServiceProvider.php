@@ -28,5 +28,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind('\STS\Contracts\Logic\Devices', '\STS\Services\Logic\DeviceManager');
         $this->app->bind('\STS\Contracts\Repository\Devices', '\STS\Repository\DeviceRepository');
+
+        $this->app->bind('\STS\Contracts\Repository\Friends', '\STS\Repository\FriendsRepository');
+        $this->app->bind('\STS\Contracts\Logic\Friends', '\STS\Services\Logic\FriendsManager');
     }
 }
