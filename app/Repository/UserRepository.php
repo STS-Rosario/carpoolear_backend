@@ -2,11 +2,10 @@
 
 namespace STS\Repository; 
 
-use STS\Entities\Trip;
+use STS\Contracts\Repository\User as UserRep;
 use STS\User;
-use Validator;
 
-class UserRepository
+class UserRepository implements UserRep
 {
     /**
      * Create a new user instance after a valid registration.
@@ -51,8 +50,8 @@ class UserRepository
     public function addFriend($user, $friend, $provider = "") {
         $friend->friends()->detach($user->id);
         $user->friends()->detach($friend->id);
-        $friend->friends()->attach($user->id, ['origin' => $provider]);
-        $user->friends()->attach($friend->id, ['origin' => $provider]);
+        $friend->friends()->attach($user->id, ['origin' => $provider, 'state' => User::FRIEND_ACCEPTED]);
+        $user->friends()->attach($friend->id, ['origin' => $provider, 'state' => User::FRIEND_ACCEPTED]);
     }
 
     public function deleteFriend($user, $friend) {

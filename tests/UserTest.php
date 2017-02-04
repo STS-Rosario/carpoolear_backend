@@ -1,12 +1,13 @@
 <?php
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use \STS\Contracts\Logic\User as UserLogic;
 
 class UserTest extends TestCase { 
     use DatabaseTransactions;
  
  	public function testCreateUser()
 	{
-        $userManager = new \STS\Services\Logic\UsersManager();
+        $userManager = \App::make('\STS\Contracts\Logic\User');
         $data = [
             "name" => "Mariano", 
             "email" => "mariano@g2.com", 
@@ -20,7 +21,7 @@ class UserTest extends TestCase {
 
     public function testCreateUserFail()
 	{
-        $userManager = new \STS\Services\Logic\UsersManager();
+        $userManager = \App::make('\STS\Contracts\Logic\User');
 		$data = [
             "name" => "Mariano", 
             "email" => "mariano@g.com", 
@@ -34,7 +35,7 @@ class UserTest extends TestCase {
 
     public function testCreateUserRepited()
 	{
-        $userManager = new \STS\Services\Logic\UsersManager();
+        $userManager = \App::make('\STS\Contracts\Logic\User');
 		$data = [
             "name" => "Mariano", 
             "email" => "mariano@g1.com", 
@@ -53,7 +54,7 @@ class UserTest extends TestCase {
     public function testUpdateUser()
 	{
         
-        $userManager = new \STS\Services\Logic\UsersManager();
+        $userManager = \App::make('\STS\Contracts\Logic\User');
 
         $data = [
             "name" => "Mariano", 

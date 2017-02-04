@@ -4,7 +4,7 @@ namespace STS\Http\Controllers\Api;
  
 use STS\Http\Controllers\Controller; 
 use Illuminate\Http\Request; 
-use STS\Services\Logic\UsersManager; 
+use \STS\Contracts\Logic\User as UserLogic;
 use JWTAuth;
 use Auth;
 
@@ -21,7 +21,7 @@ class Profile extends Controller
         }   
     }
 
-    public function update(Request $request, UsersManager $manager)
+    public function update(Request $request, UserLogic $manager)
     {
         $user = $manager->update($this->user, $request->all());
         if (!$user) {
@@ -30,7 +30,7 @@ class Profile extends Controller
         return $user;
     }
 
-    public function updatePhoto(Request $request, UsersManager $manager)
+    public function updatePhoto(Request $request, UserLogic $manager)
     {
         $user = $manager->updatePhoto($this->user, $request->all());
         if (!$user) {
@@ -39,7 +39,7 @@ class Profile extends Controller
         return $user;
     }
 
-    public function show($id = null , UsersManager $manager)
+    public function show(UserLogic $manager, $id = null)
     {
         if (!$id) {
             $id = $this->user;

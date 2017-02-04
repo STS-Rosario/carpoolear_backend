@@ -2,20 +2,23 @@
 
 namespace STS\Services\Logic; 
 
+use \STS\Contracts\Logic\User as UserLogic;
+use STS\Contracts\Repository\User as UserRep;
+
 use \STS\Exceptions\ValidationException;
-use STS\Repository\UserRepository;
 use STS\Repository\FileRepository;
 use STS\Entities\Trip;
 use STS\User;
 use Validator;
 
-class UsersManager extends BaseManager
+
+class UsersManager extends BaseManager implements UserLogic
 {
 
     protected $repo;
-    public function __construct()
+    public function __construct(UserRep $userRep)
     { 
-        $this->repo = new UserRepository();
+        $this->repo = $userRep;
     } 
 
     public function validator(array $data, $id = null)

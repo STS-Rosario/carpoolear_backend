@@ -2,70 +2,55 @@
 
 namespace STS\Services\Logic; 
 
-use STS\Repository\SocialRepository;
-use STS\Entities\SocialAccount;
-use STS\User; 
-use STS\Services\Social\SocialProviderInterface;
-use STS\Repository\DeviceRepository; 
+use \STS\Contracts\Repository\Devices as DeviceRepository;
+use \STS\Contracts\Logic\Devices as DeviceLogic;
 
-class DeviceManager extends BaseManager
+use STS\Entities\Device; 
+use STS\User;  
+
+class DeviceManager extends BaseManager implements DeviceLogic
 {
+    protected $deviceRepo;
 
-    protected $userRepo;
-    protected $socialRepository;
-    protected $provider;
-
-    public function __construct()
+    public function __construct(DeviceRepository $deviceRepo)
     { 
-        $this->repository = new DeviceRepository();   
+        $this->deviceRepo = $deviceRepo;   
     }
 
-    public function register($user, $token, $data) {
-        $d = $this->repository->getByDeviceId($data["device_id"]);
-        
-        if (!$d) {
-            $d = $this->repository->create(); 
+    public function register(User $user, array $data) {
+        $device = $this->deviceRepo->getDeviceBy("session_id", $data['session_id']);
+        if ($device) {
+            $this->deviceRepo->delete($device);
         }
         
-        $d->session_id  = $token;    
-        $d->device_id   = $data["device_id"];
-        $d->device_type = $data["device_type"];
-        $d->user_id     = $user->id;      
-        $d->app_version = $data["app_version"];
-        
-        $this->repository->update($d);
+        $device = new Device();
+        $device->session_id  = $data["session_id"];    
+        $device->device_id   = $data["device_id"];
+        $device->device_type = $data["device_type"];
+        $device->app_version = $data["app_version"];
+        $device->user_id     = $user->id;      
+        $this->deviceRepo->store($device);
+        return $device;
     }
 
-    public function create($provider_user_id, $data) { 
-        $v = $this->validator($data);
-        if ($v->fails()) {
-            $this->setErrors($v->errors());
-            return null;
-        } else { 
-            $data['password'] = null;
-            $user = $this->userRepo->create($data);
-            $this->socialRepository->create($user, $provider_user_id);
-            return $user;
-        } 
+    public function updateBySession($session_id, array $data) {
+        $device = $this->deviceRepo->getDeviceBy("session_id", $session_id);
+        if ($device) {
+            $device->session_id   = $data["session_id"]; 
+            $device->app_version   = $data["app_version"]; 
+            $this->deviceRepo->update($device);
+        }
+        return $device;
     }
 
-    public function updateSession($session_id, $newToken, $version) { 
-         $d = $this->repository->getBySessionId($session_id);
-         if ($d) {
-             $d->session_id  = $newToken; 
-             $d->app_version  = $version;
-             $this->repository->update($d);
-         }
-         return $d;
-    } 
+    public function delete($session_id) {
+        $device = $this->deviceRepo->getDeviceBy("session_id", $session_id);
+        if ($device) {
+            $this->deviceRepo->delete($device);
+        }
+    }
 
-    public function deleteBySession($session_id) { 
-         $d = $this->repository->getBySessionId($session_id);
-         if ($d) {
-             $this->repository->delete($d);
-         }
-    } 
-
-    
-    
+    public function getDevices(User $user) {
+        $this->deviceRepo->getDevices($user);
+    }    
 }

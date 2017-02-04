@@ -3,8 +3,7 @@
 namespace STS\Http\Controllers\Api;
  
 use STS\Http\Controllers\Controller; 
-use Illuminate\Http\Request; 
-use STS\Services\Logic\UsersManager;
+use Illuminate\Http\Request;  
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\SocialManager;
 
@@ -16,28 +15,31 @@ use JWTAuth;
 
 
 use \GuzzleHttp\Client;
-
+use \STS\Contracts\Logic\User as UserLogic;
+use STS\Contracts\Logic\Devices as DeviceLogic;
 
 class AuthController extends Controller
 {
-    protected $user;
-    public function __construct(Request $r)
+    protected $user, $userLogic, $deviceLogic;
+    public function __construct(UserLogic $userLogic, DeviceLogic $devices)
     {  
+        $this->userLogic = $userLogic;
+        $this->deviceLogic = $devices;
         $this->middleware('jwt.auth', ['except' => ['login', 'registrar', 'facebook', 'retoken']]);
     }
 
-    public function registrar(Request $request, UsersManager $manager) {
+    public function registrar(Request $request) {
         $data = $request->all();
-        $user = $manager->create($data);
+        $user = $this->userLogic->create($data);
         if (!$user) {
-            return response()->json($manager()->getErrors(), 400);
+            return response()->json($this->userLogic->getErrors(), 400);
         }
 
         return response()->json(compact('user'));
 
     }
 
-    public function login($provider = null, Request $request, DeviceManager $devices)
+    public function login(Request $request, $provider = null)
     { 
         if ($provider) {
             if ($provider == "facebook") {
@@ -72,7 +74,9 @@ class AuthController extends Controller
 
         // Registro mi devices
         if ($request->has("device_id") && $request->has("device_type")) {
-            $devices->register($user, $token, $request->all());
+            $data = $request->all();
+            $data["session_id"] = $token;
+            $this->deviceLogic->register($user, $data);
         } 
         return response()->json(compact('token','user'));
     }
@@ -91,23 +95,28 @@ class AuthController extends Controller
         return $socialServices->getUserFriends();
     } 
 
-    public function retoken(Request $request, DeviceManager $devices) {
+    public function retoken(Request $request) {
         //$user = \JWTAuth::parseToken()->authenticate();
         $user = null;
         $token = \JWTAuth::getToken();
         $newToken = \JWTAuth::refresh($token);
 
-        $d = $devices->updateSession($token, $newToken, $request->get("app_version") );
-        if ($d) {
-            $user = $d->usuario;
+        $data = [
+            "session_id" => $newToken,
+            "app_version" => $request->get("app_version")
+        ];
+
+        $device = $this->deviceLogic->updateBySession($token, $data );
+        if ($device) {
+            $user = $device->usuario;
         } 
 
-        return response()->json(compact('token','user'));
+        return response()->json(compact('token', 'user'));
     }
 
-    public function logoff (Request $request, DeviceManager $devices) {
+    public function logoff (Request $request) {
         $token = \JWTAuth::parseToken()->getToken(); 
-        $devices->deleteBySession($token);  
+        $this->deviceLogic->delete($token);  
         return response()->json("OK");
     }
 }
