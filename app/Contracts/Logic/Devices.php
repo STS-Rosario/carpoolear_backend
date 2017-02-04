@@ -14,4 +14,8 @@ interface Devices
     public function delete($token);
 
     public function getDevices(UserModel $user);
+
+    public function setErrors($errs);
+    
+    public function getErrors();
 }

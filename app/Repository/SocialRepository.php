@@ -2,12 +2,14 @@
 
 namespace STS\Repository; 
 
+use STS\Contracts\Repository\Social as SocialRepo;
+
 use STS\Entities\Trip;
 use STS\User;
 use Validator;
 use STS\Entities\SocialAccount;
 
-class SocialRepository
+class SocialRepository implements SocialRepo
 {
     protected $provider;
     public function __construct($provider = null) {
@@ -31,7 +33,7 @@ class SocialRepository
         return $account;                            
     }
 
-    public function create($user, $provider_user_id, $provider = null)
+    public function create(User $user, $provider_user_id, $provider = null)
     {
         if (is_null($provider)) {
             $provider = $this->provider;
@@ -44,7 +46,7 @@ class SocialRepository
         $account->save();
     }
 
-    public function delete($account)
+    public function delete(SocialAccount $account)
     { 
         $account->delete();
     }

@@ -1,11 +1,14 @@
 <?php
 
 namespace STS\Services\Social; 
- 
+
+use STS\Contracts\SocialProvider; 
 use \GuzzleHttp\Client;
 use File; 
 
-class FacebookSocialProvider implements SocialProviderInterface {
+
+
+class FacebookSocialProvider implements SocialProvider {
 
     protected $facebook;
     protected $token;

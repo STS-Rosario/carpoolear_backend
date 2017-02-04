@@ -21,4 +21,8 @@ interface Friends
 
     public function getPendings(UserModel $Who);
 
+    public function setErrors($errs);
+    
+    public function getErrors();
+
 }

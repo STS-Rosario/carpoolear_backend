@@ -13,7 +13,6 @@ use STS\User;
 use STS\Entities\Device;
 use JWTAuth;
 
-
 use \GuzzleHttp\Client;
 use \STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Devices as DeviceLogic;
@@ -39,34 +38,21 @@ class AuthController extends Controller
 
     }
 
-    public function login(Request $request, $provider = null)
+    public function login(Request $request)
     { 
-        if ($provider) {
-            if ($provider == "facebook") {
-                $accessToken = $request->get("access_token");
-                $fb = new FacebookSocialProvider($accessToken);
-                $socialServices = new SocialManager($fb); 
-                // credenciales para loguear al usuario
-                    
-                $user = $socialServices->loginOrCreate();
-                $token = JWTAuth::fromUser($user);
-                //return $socialServices->getUserFriends();
-            } else {
-                return response()->json(['error' => 'provider not supported'], 401);
+ 
+        $credentials = $request->only('email', 'password');
+        
+        try {
+            if (! $token = JWTAuth::attempt($credentials)) {
+                return response()->json(['error' => 'invalid_credentials'], 401);
             }
-        } else { 
-            $credentials = $request->only('email', 'password');
-            
-            try {
-                if (! $token = JWTAuth::attempt($credentials)) {
-                    return response()->json(['error' => 'invalid_credentials'], 401);
-                }
-            } catch (JWTException $e) {
-                return response()->json(['error' => 'could_not_create_token'], 500);
-            }
-
-            $user = \JWTAuth::authenticate($token);
+        } catch (JWTException $e) {
+            return response()->json(['error' => 'could_not_create_token'], 500);
         }
+
+        $user = \JWTAuth::authenticate($token);
+ 
 
         if ($user->banned) {
             return response()->json(['error' => 'user_banned'], 401);
@@ -80,20 +66,6 @@ class AuthController extends Controller
         } 
         return response()->json(compact('token','user'));
     }
-
-     
-
-    //  https://graph.facebook.com/v2.7/me?fields=email,name,gender,picture.width(300),birthday&access_token=EAALyfIRbBbYBADS2SZCk0X7bU20uuXizOqF1njbFfDWAMnF71kWRaV3xSlJlGft3XHzhNhG0UBKZAmiQQigpFVgQLno3LOneY1WDtdQAmPcqg30JZAxJ5goJnprdETUcGbZB1zU4T0Wg6kc5Ye40BfINMwIAzS386RNUbqYzj4M6iX34xZCVt
-    public function facebook(Request $request)
-    {
-        $accessToken = $request->get("access_token");
-        $fb = new FacebookSocialProvider($accessToken);
-        $socialServices = new SocialManager($fb); 
-        // credenciales para loguear al usuario
-         
-        $u = $socialServices->loginOrCreate();
-        return $socialServices->getUserFriends();
-    } 
 
     public function retoken(Request $request) {
         //$user = \JWTAuth::parseToken()->authenticate();

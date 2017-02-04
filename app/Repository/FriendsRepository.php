@@ -15,7 +15,7 @@ class FriendsRepository implements FriendsRepo
         $user1->friends()->detach($user2->id);
     }
 
-    public function get(UserModel $user1, UserModel $user2, $state = null) {
+    public function get(UserModel $user1, UserModel $user2 = null, $state = null) {
         $friends = $user1->friends();
         if ($user2) {
             $friends->where("uid2", $user2->id);
