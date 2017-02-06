@@ -22,6 +22,10 @@ class SocialRepository implements SocialRepo
         $this->provider = $provider;
     }
 
+    public function getProvider($provider) {
+        return $this->provider;
+    }
+
     public function find($provider_user_id, $provider = null)
     {
         if (is_null($provider)) {
@@ -49,6 +53,14 @@ class SocialRepository implements SocialRepo
     public function delete(SocialAccount $account)
     { 
         $account->delete();
+    }
+
+    public function get(User $user, $provider = null) {
+        $accounts = $user->accounts();
+        if ($provider) {
+            $accounts->where('provider',$provider);
+        }
+        return $accounts->get();
     }
 
 

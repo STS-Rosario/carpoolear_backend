@@ -27,7 +27,7 @@ class SocialController extends Controller
         $this->middleware('jwt.auth', ['except' => ['login']]);
     }
  
-    public function installProvider($provider) {
+    public function installProvider($provider, $accessToken) {
         $provider = ucfirst(strtolower($provider));
         $providerClass = 'STS\Services\Social\\' . $provider . 'SocialProvider'; 
 
@@ -41,11 +41,14 @@ class SocialController extends Controller
     public function login(Request $request, $provider)
     {  
         $accessToken = $request->get("access_token");
-        $this->installProvider($provider);
+        $this->installProvider($provider, $accessToken);
 
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate();
+            if (!$user) {
+               return response()->json($socialServices->gerErrors(), 401); 
+            }
             $token = JWTAuth::fromUser($user); 
         } catch (\ReflectionException $e) {
             return response()->json(['error' => 'provider not supported'], 401);
@@ -65,22 +68,24 @@ class SocialController extends Controller
     }
 
     public function update(Request $request, $provider) {
+        $user = \JWTAuth::parseToken()->authenticate();
         $accessToken = $request->get("access_token");
-        $this->installProvider($provider);        
+        $this->installProvider($provider, $accessToken);        
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->updateProfile(); 
+            $user = $socialServices->updateProfile($user); 
         } catch (\ReflectionException $e) {
             return response()->json(['error' => 'provider not supported'], 401);
         }
     }
 
     public function friends(Request $request, $provider) {
-        $accessToken = $request->get("access_token");
+        $user = \JWTAuth::parseToken()->authenticate();
+        $accessToken = $request->get("access_token", $accessToken);
         $this->installProvider($provider);        
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->makeFriends(); 
+            $user = $socialServices->makeFriends($user); 
         } catch (\ReflectionException $e) {
             return response()->json(['error' => 'provider not supported'], 401);
         }

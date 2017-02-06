@@ -18,5 +18,7 @@ interface Social
     public function create(UserModel $user, $provider_user_id, $provider = null);
 
     public function delete(SocialAccount $account);
+
+    public function get(UserModel $user, $provider = null) {
     
 }

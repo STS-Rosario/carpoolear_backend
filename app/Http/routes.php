@@ -28,9 +28,16 @@ Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () {
     });
 
     Route::group(['prefix' => 'profile'], function () {
-        Route::get("/show/{id?}", 'Api\Profile@show');    
-        Route::get("/update", 'Api\Profile@update');
-        Route::get("/update/photo", 'Api\Profile@updatePhoto');
+        Route::get("/show/{id?}", 'Api\ProfileController@show');    
+        Route::post("/update", 'Api\ProfileController@update');
+        Route::post("/update/photo", 'Api\ProfileController@updatePhoto');
+    });
+
+    Route::group(['prefix' => 'friends'], function () {
+        Route::post("/accept/{id?}", 'Api\FriendsController@accept');    
+        Route::post("/request/{id?}", 'Api\FriendsController@request');
+        Route::post("/delete/{id?}", 'Api\FriendsController@delete');
+        Route::post("/reject/{id?}", 'Api\FriendsController@reject');
     });
 
 });

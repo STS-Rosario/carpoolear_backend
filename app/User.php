@@ -36,15 +36,32 @@ class User extends Authenticatable
 		'terms_and_conditions' => 'boolean'
 	];
 
+	public function accounts() 
+	{ 
+		return $this->hasMany('STS\Entities\SocialAccount', 'user_id');
+	}
+
 	public function age() {
 		if ($this->birthday) {
 			return Carbon::parse($this->birthday)->diff()->year;
 		}
 	}
 
-	public function friends() 
+	public function allFriends($state = null) 
     {
-        return $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')->withTimestamps();;
+        $friends = $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')
+		            ->withTimestamps();
+		if ($state) {
+			$friends->where('state', $state);
+		}			
+		return $friends;
+    } 
+
+	public function friends($state = null) 
+    { 
+        return $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')
+		            ->withTimestamps()
+					->where("state", User::FRIEND_ACCEPTED);
     } 
 
     public function relativeFriends()

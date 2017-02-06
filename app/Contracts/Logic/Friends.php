@@ -7,6 +7,8 @@ use STS\User as UserModel;
 interface Friends
 {
   
+    public function areFriend(UserModel $Who, UserModel $user, $friendOfFriends = false);
+
     public function request(UserModel $Who, UserModel $user);
 
     public function accept(UserModel $Who, UserModel $user);

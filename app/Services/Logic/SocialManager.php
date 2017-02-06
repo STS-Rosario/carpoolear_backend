@@ -7,29 +7,30 @@ use STS\Contracts\Repository\Friends as FriendsRep;
 use STS\Contracts\Repository\Files as FilesRep;
 use STS\Contracts\Repository\Social as SocialRepo;
 use STS\Contracts\Logic\Social as SocialLogic;
+use STS\Contracts\Logic\User as UserLogic;
+
 
 use STS\Contracts\SocialProvider;
 
 use STS\Entities\SocialAccount;
-use STS\User;  
+use STS\User as UserModel;  
 use Validator;
 
 class SocialManager extends BaseManager implements SocialLogic
 {
 
     protected $friendsRepo;
-    protected $userRepo;
+    protected $userLogic;
     protected $filesRepo;
     protected $socialRepo;
     protected $provider;
     protected $userData;
 
-    public function __construct(SocialProvider $provider, UserRep $userRep, FriendsRep $friendsRepo, FilesRep $files, SocialRepo $social)
+    public function __construct(SocialProvider $provider, UserLogic $userRep, FriendsRep $friendsRepo, FilesRep $files, SocialRepo $social)
     { 
         $this->provider     = $provider;
-        $this->userRepo     = $userRep;
-        $this->filesRepo    = $files;
-        $this->userRepo     = $userRep;
+        $this->userLogic    = $userRep;
+        $this->filesRepo    = $files; 
         $this->socialRepo   = $social;        
         $this->socialRepo->setDefaultProvider($provider->getProviderName());
     }
@@ -52,46 +53,59 @@ class SocialManager extends BaseManager implements SocialLogic
     public function loginOrCreate() {
         $account = $this->getAccounts();
         if ($account) {
-            return $this->userRepo->show($account->user_id);            
+            return $account->user;            
         }  else {            
-            return $this->create($provider_user_id, $this->userData);
+            return $this->create($this->provider_user_id, $this->userData);
         }
     }
 
-    public function makeFriends(User $user) {
+    public function makeFriends(UserModel $user) {
         $account = $this->getAccounts();
-        if ($account) {
+        if ($account && $user->id == $account->user->id) {
             return $this->syncFriends($account->user);
+        } else {
+            $this->setErrors(['error' => 'No tiene asociado ningun perfil']);
         }
         return null;
     }
 
-    public function updateProfile(User $user) {
+    public function updateProfile(UserModel $user) {
+        
         $account = $this->getAccounts();
-        if ($account) {
-             if (isset($data['image'])){
-                $img = file_get_contents($data['image']); 
+        if ($account && $user->id == $account->user->id) {
+             if (isset($this->userData['image'])){
+                $img = file_get_contents($this->userData['image']); 
                 $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
             }
-            unset($data['email']);
-            $user = $this->userRepo->update($user, $data);
+            //unset($data['email']);
+            $user = $this->userLogic->update($user, $this->userData);
+            if (!$user) {
+                $this->setErrors($this->userLogic->getErrors());
+                return null;
+            }
+            return $user;
+        } else {
+            $this->setErrors(['error' => 'No tiene asociado ningun perfil']);
         }
         return null;
     }
 
     public function linkAccount(UserModel $user) {
         $account = $this->getAccounts();
-        if (!$account) {
-            $this->socialRepo->create($user, $provider_user_id);     
+        $userAccounts = $this->socialRepo->get($user, $this->socialRepo->getProvider());
+        if (!$account && $userAccounts->count() == 0) {
+            $this->socialRepo->create($user, $this->provider_user_id);     
             return true;
+        } else {
+            $this->setErrors(['error' => 'Ya tienes asociado un perfil']);
         }
         return null;
     }
 
     private function getAccounts() {
         $this->userData = $this->provider->getUserData();
-        $provider_user_id = $data["provider_user_id"];
-        $account = $this->socialRepo->find($provider_user_id);
+        $this->provider_user_id = $this->userData["provider_user_id"];
+        $account = $this->socialRepo->find($this->provider_user_id);
         return $account;
     }
 
@@ -106,21 +120,19 @@ class SocialManager extends BaseManager implements SocialLogic
 
     private function create($provider_user_id, $data) { 
         unset($data["provider_user_id"]);
-        $v = $this->validator($data);
-        if ($v->fails()) {
-            $this->setErrors($v->errors());
+        $data['password'] = null;
+        if (isset($data['image'])){
+            $img = file_get_contents($data['image']); 
+            $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
+        }
+        $user = $this->userLogic->create($data);
+        if (!$user) {
+            $this->setErrors($this->userLogic->getErrors());
             return null;
-        } else { 
-            $data['password'] = null;
-            if (isset($data['image'])){
-                $img = file_get_contents($data['image']); 
-                $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
-            }
-            $user = $this->userRepo->create($data);
-            $this->socialRepo->create($user, $provider_user_id);
-            $this->syncFriends($user);
-            return $user;
-        } 
+        }
+        $this->socialRepo->create($user, $provider_user_id);
+        $this->syncFriends($user);
+        return $user;
     }
 
     private function getUserFriends() 
@@ -130,7 +142,7 @@ class SocialManager extends BaseManager implements SocialLogic
         foreach ($friends as $friend) {
             $account = $this->socialRepo->find($friend);
             if ($account) {
-                $friend_user = $this->userRepo->show($account->user_id); 
+                $friend_user = $this->userLogic->show($account->user_id); 
                 $list[] = $account->user;
             }                            
         }

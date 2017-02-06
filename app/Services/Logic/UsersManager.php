@@ -33,7 +33,7 @@ class UsersManager extends BaseManager implements UserLogic
             return Validator::make($data, [
                 'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users',
-                'password' => 'required|min:6|confirmed',            
+                'password' => 'min:6|confirmed',            
             ]);
         }
     }
@@ -51,7 +51,9 @@ class UsersManager extends BaseManager implements UserLogic
             $this->setErrors($v->errors());
             return null;
         } else { 
-            $data['password'] = bcrypt($data['password']);
+            if (isset($data['password'])) {
+                $data['password'] = bcrypt($data['password']);
+            }
             $u = $this->repo->create($data);
             return $u;
         } 
@@ -86,6 +88,12 @@ class UsersManager extends BaseManager implements UserLogic
             return $user;
         }
     }
+
+    public function find($user_id)  
+    {
+        return $this->repo->show($profile_id);
+    }
+
 
     public function show($user, $profile_id)
     { 

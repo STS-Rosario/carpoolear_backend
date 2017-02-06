@@ -76,7 +76,7 @@ class ApiAuthTest extends TestCase {
         ];
         $response = $this->call('POST', 'api/login', $data); 
         $json = $this->parseJson($response);     
-        $token = $json->token;
+        $token = $json->token; 
 
         $response = $this->call('POST', 'api/retoken?token=' . $json->token);
         $this->assertTrue($response->status() == 200);
