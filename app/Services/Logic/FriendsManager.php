@@ -1,6 +1,6 @@
 <?php
 
-namespace STS\Services\Logic; 
+namespace STS\Services\Logic;
 
 use STS\Contracts\Repository\Friends as FriendsRepo;
 use STS\Contracts\Logic\Friends as FriendsLogic;
@@ -11,25 +11,28 @@ class FriendsManager extends BaseManager implements FriendsLogic
 {
     protected $friendsRepo;
 
-    public function __construct (FriendsRepo $friends) {
+    public function __construct(FriendsRepo $friends)
+    {
         $this->friendsRepo = $friends;
     }
     
-    public function areFriend(UserModel $who, UserModel $user, $friendOfFriends = false) {
+    public function areFriend(UserModel $who, UserModel $user, $friendOfFriends = false)
+    {
         $areFriend = $this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() > 0;
         if ($friendOfFriends) {
-            $areFriend = $areFriend || $this->friendsRepo->closestFriend($who, $user);    
+            $areFriend = $areFriend || $this->friendsRepo->closestFriend($who, $user);
         }
         return $areFriend;
     }
 
 
-    public function request(UserModel $who, UserModel $user) {
+    public function request(UserModel $who, UserModel $user)
+    {
         if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() == 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
 
-            $this->friendsRepo->add($who, $user, UserModel::FRIEND_REQUEST );
+            $this->friendsRepo->add($who, $user, UserModel::FRIEND_REQUEST);
             //$this->friendsRepo->add($user, $who, UserModel::FRIEND_REQUEST );
 
             return true;
@@ -39,13 +42,14 @@ class FriendsManager extends BaseManager implements FriendsLogic
         }
     }
 
-    public function accept(UserModel $who, UserModel $user) {
+    public function accept(UserModel $who, UserModel $user)
+    {
         if ($this->friendsRepo->get($user, $who, UserModel::FRIEND_REQUEST)->count() > 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
 
-            $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED );
-            $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED );
+            $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED);
+            $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED);
 
             return true;
         } else {
@@ -54,10 +58,11 @@ class FriendsManager extends BaseManager implements FriendsLogic
         }
     }
 
-    public function reject(UserModel $who, UserModel $user) {
+    public function reject(UserModel $who, UserModel $user)
+    {
         if ($this->friendsRepo->get($user, $who, UserModel::FRIEND_REQUEST)->count() > 0) {
             $this->friendsRepo->delete($user, $who);
-            //$this->friendsRepo->add($who, $user, UserModel::FRIEND_REJECT ); 
+            //$this->friendsRepo->add($who, $user, UserModel::FRIEND_REJECT );
             return true;
         } else {
             $this->setErrors(['error' => 'Operacion invaidad']);
@@ -65,10 +70,11 @@ class FriendsManager extends BaseManager implements FriendsLogic
         }
     }
 
-    public function delete(UserModel $who, UserModel $user) {
+    public function delete(UserModel $who, UserModel $user)
+    {
         if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() >  0) {
             $this->friendsRepo->delete($who, $user);
-            $this->friendsRepo->delete($user, $who); 
+            $this->friendsRepo->delete($user, $who);
             return true;
         } else {
             $this->setErrors(['error' => 'Operacion invalidad']);
@@ -76,20 +82,22 @@ class FriendsManager extends BaseManager implements FriendsLogic
         }
     }
 
-    public function make(UserModel $who, UserModel $user) {
+    public function make(UserModel $who, UserModel $user)
+    {
         $this->friendsRepo->delete($who, $user);
-        $this->friendsRepo->delete($user, $who); 
-        $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED ); 
-        $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED ); 
+        $this->friendsRepo->delete($user, $who);
+        $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED);
+        $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED);
         return true;
     }
 
-    public function getFriends(UserModel $who) {
+    public function getFriends(UserModel $who)
+    {
         return $this->friendsRepo->get($who, null, UserModel::FRIEND_ACCEPTED);
     }
 
-    public function getPendings(UserModel $who) {
+    public function getPendings(UserModel $who)
+    {
         return $this->friendsRepo->get($who, null, UserModel::FRIEND_REQUEST);
     }
-
 }

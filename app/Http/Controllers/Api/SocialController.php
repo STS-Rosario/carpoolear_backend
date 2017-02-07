@@ -1,9 +1,9 @@
 <?php
 
 namespace STS\Http\Controllers\Api;
- 
-use STS\Http\Controllers\Controller; 
-use Illuminate\Http\Request;  
+
+use STS\Http\Controllers\Controller;
+use Illuminate\Http\Request;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\SocialManager;
 
@@ -19,17 +19,20 @@ use STS\Contracts\Logic\Devices as DeviceLogic;
 
 class SocialController extends Controller
 {
-    protected $user, $userLogic, $deviceLogic;
+    protected $user;
+    protected $userLogic;
+    protected $deviceLogic;
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
-    {  
+    {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
         $this->middleware('jwt.auth', ['except' => ['login']]);
     }
  
-    public function installProvider($provider, $accessToken) {
+    public function installProvider($provider, $accessToken)
+    {
         $provider = ucfirst(strtolower($provider));
-        $providerClass = 'STS\Services\Social\\' . $provider . 'SocialProvider'; 
+        $providerClass = 'STS\Services\Social\\' . $provider . 'SocialProvider';
 
         \App::when($providerClass)
                     ->needs('$token')
@@ -39,17 +42,17 @@ class SocialController extends Controller
     }
 
     public function login(Request $request, $provider)
-    {  
-        $accessToken = $request->get("access_token");
+    {
+        $accessToken = $request->get('access_token');
         $this->installProvider($provider, $accessToken);
 
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate();
             if (!$user) {
-               return response()->json($socialServices->gerErrors(), 401); 
+                return response()->json($socialServices->gerErrors(), 401);
             }
-            $token = JWTAuth::fromUser($user); 
+            $token = JWTAuth::fromUser($user);
         } catch (\ReflectionException $e) {
             return response()->json(['error' => 'provider not supported'], 401);
         }
@@ -59,36 +62,37 @@ class SocialController extends Controller
         }
 
         // Registro mi devices
-        if ($request->has("device_id") && $request->has("device_type")) {
+        if ($request->has('device_id') && $request->has('device_type')) {
             $data = $request->all();
-            $data["session_id"] = $token;
+            $data['session_id'] = $token;
             $this->deviceLogic->register($user, $data);
-        } 
-        return response()->json(compact('token','user'));
+        }
+        return response()->json(compact('token', 'user'));
     }
 
-    public function update(Request $request, $provider) {
+    public function update(Request $request, $provider)
+    {
         $user = \JWTAuth::parseToken()->authenticate();
-        $accessToken = $request->get("access_token");
-        $this->installProvider($provider, $accessToken);        
+        $accessToken = $request->get('access_token');
+        $this->installProvider($provider, $accessToken);
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->updateProfile($user); 
+            $user = $socialServices->updateProfile($user);
         } catch (\ReflectionException $e) {
             return response()->json(['error' => 'provider not supported'], 401);
         }
     }
 
-    public function friends(Request $request, $provider) {
+    public function friends(Request $request, $provider)
+    {
         $user = \JWTAuth::parseToken()->authenticate();
-        $accessToken = $request->get("access_token", $accessToken);
-        $this->installProvider($provider);        
+        $accessToken = $request->get('access_token', $accessToken);
+        $this->installProvider($provider);
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->makeFriends($user); 
+            $user = $socialServices->makeFriends($user);
         } catch (\ReflectionException $e) {
             return response()->json(['error' => 'provider not supported'], 401);
         }
     }
- 
 }
