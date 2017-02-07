@@ -29,6 +29,23 @@ class FacebookSocialProvider implements SocialProvider
         if ($response->getStatusCode() == 200) {
             $body = json_decode($response->getBody());
              
+            if (isset($body->gender)) {
+                if ($body->gender == "male") {
+                    $body->gender = "Masculino";
+                } else if ($usuario->getProperty('gender') == "female") {
+                    $body->gender = "Femenino";
+                }
+            }else {
+                $user->gender = "N/A";
+            }
+
+            if (isset($body->birthday)) {
+                $auxBirth = explode("/", $body->birthday);
+                if (is_array($auxBirth) && count($auxBirth) >= 3) {
+                    $body->birthday = $auxBirth[2] . "-" . $auxBirth[0] . "-" . $auxBirth[1];
+                }
+            }
+
             return [
                 'provider_user_id'      => $body->id,
                 'email'                 => $body->email,
