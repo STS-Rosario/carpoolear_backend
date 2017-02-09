@@ -4,9 +4,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Conversation extends Model { 
 
+	const TYPE_TRIP_CONVERSATION = 0;
+	const TYPE_PRIVATE_CONVERSATION = 1;
+
 	protected $table = 'conversations';
 	protected $fillable = [
-		'user_id', 
+		'trip_id', 
 	];
 	protected $hidden = [];
 

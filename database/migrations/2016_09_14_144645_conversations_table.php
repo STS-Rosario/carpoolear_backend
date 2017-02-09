@@ -14,13 +14,10 @@ class ConversationsTable extends Migration {
 	{
 		Schema::create('conversations', function(Blueprint $table)
 		{
-			$table->integer('id');
-			$table->integer("user_id")->unsigned();
-			$table->foreign('user_id')->references('id')->on('users')
-			                             ->onDelete('cascade')
-										 ->onUpdate('cascade');
-			$table->primary('id', 'user_id');							 
-			//$table->timestamps();
+			$table->increments('id');
+			$table->integer('type')->unsigned();
+			$table->integer("trip_id")->unsigned();
+			$table->timestamps();
 		});
 	}
 

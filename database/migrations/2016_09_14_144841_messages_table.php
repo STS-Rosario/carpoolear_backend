@@ -17,14 +17,14 @@ class MessagesTable extends Migration {
 			$table->increments('id');
 			$table->string("text");
 			$table->integer("estado");
-			$table->integer("conversation_id");
 			$table->integer("user_id")->unsigned();
+			$table->integer("conversation_id")->unsigned();
 			$table->foreign('user_id')->references('id')->on('users')
 			                             ->onDelete('cascade')
 										 ->onUpdate('cascade');
 			$table->foreign('conversation_id')->references('id')->on('conversations')
-			                             ->onDelete('cascade')
-										 ->onUpdate('cascade');							 
+																	->onDelete('cascade')
+																	->onUpdate('cascade');						 	
 			$table->timestamps();
 		});
 	}

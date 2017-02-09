@@ -94,6 +94,9 @@ class TripsManager extends BaseManager
         }
     }
 
+    public static function exist ( $trip_id ) {
+        return true;
+    }
 
     public function delete($user, $trip_id)
     {
