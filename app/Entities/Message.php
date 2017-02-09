@@ -1,18 +1,20 @@
 <?php namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Conversation extends Model { 
-
+class Message extends Model { 
     const STATE_NOLEIDO = 0;
     const STATE_LEIDO = 1;
 
 	protected $table = 'messages';
 	protected $fillable = [
+        'id',
 		'user_id', 
         'text',
         'estado',
-        'conversation_id'
+        'conversation_id',
+        'time'
 	];
 
 	protected $hidden = [];

@@ -37,5 +37,10 @@ $factory->define(STS\Entities\Trip::class, function (Faker\Generator $faker) {
         "trip_type" => 0,
         "mail_send" => false,
         'tripscol' => 'asd'
+
+$factory->define(STS\Entities\Conversation::class, function (Faker\Generator $faker) {
+    return [
+        'trip_id' => null,
+        'title' => $faker->safeEmail        
     ];
 });

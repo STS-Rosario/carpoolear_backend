@@ -15,9 +15,12 @@ class ConversationsTable extends Migration {
 		Schema::create('conversations', function(Blueprint $table)
 		{
 			$table->increments('id');
-			$table->integer('type')->unsigned();
-			$table->integer("trip_id")->unsigned();
+			$table->integer('type');
+			$table->string('title', 255);
+			$table->integer('trip_id')->unsigned()->nullable();
+
 			$table->timestamps();
+			$table->softDeletes();
 		});
 	}
 
