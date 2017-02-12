@@ -1,8 +1,8 @@
 <?php
 
-namespace STS\Services\Social; 
+namespace STS\Contracts; 
 
-interface SocialProviderInterface {
+interface SocialProvider {
 
     public function getProviderName();
 

@@ -16,10 +16,12 @@ class FriendsTable extends Migration {
 		{
 			$table->integer('uid1')->unsigned();	
             $table->integer('uid2')->unsigned();
+			$table->string("origin");
+			$table->integer("state");
 			
             $table->foreign('uid1')  ->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 
             $table->foreign('uid2')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade'); 	
-			$table->string("origin");
+			
             $table->timestamps();
 		});
 	}

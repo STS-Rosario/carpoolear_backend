@@ -1,6 +1,6 @@
 <?php
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use STS\Repository\DeviceRepository;
+use \STS\Contracts\Repository\Devices as DeviceRepository;
 
 class ApiAuthTest extends TestCase { 
     use DatabaseTransactions;
@@ -51,12 +51,13 @@ class ApiAuthTest extends TestCase {
         $json = $this->parseJson($response);     
         $this->assertTrue($json->token != null);
 
-        $devices = new DeviceRepository;
-        $this->assertTrue( $devices->getUserDevices($json->user->id)->count() > 0 );
+        $devices = \App::make('\STS\Contracts\Repository\Devices');
+        $user = STS\User::find($json->user->id);
+        $this->assertTrue( $devices->getDevices($user)->count() > 0 );
 
         $response = $this->call('POST', 'api/logoff?token=' . $json->token);
         $this->assertTrue($response->status() == 200);
-        $this->assertTrue( $devices->getUserDevices($json->user->id)->count() == 0 );
+        $this->assertTrue($devices->getDevices($user)->count() == 0);
 
 
 	}
@@ -75,7 +76,7 @@ class ApiAuthTest extends TestCase {
         ];
         $response = $this->call('POST', 'api/login', $data); 
         $json = $this->parseJson($response);     
-        $token = $json->token;
+        $token = $json->token; 
 
         $response = $this->call('POST', 'api/retoken?token=' . $json->token);
         $this->assertTrue($response->status() == 200);

@@ -1,6 +1,8 @@
 <?php
 
-namespace STS\Repository; 
+namespace STS\Repository;
+
+use STS\Contracts\Repository\Devices as DeviceRepo;
 
 use STS\Entities\Device;
 use STS\User;
@@ -8,43 +10,30 @@ use Validator;
 use STS\Entities\SocialAccount;
 use File;
 
-class DeviceRepository
+class DeviceRepository implements DeviceRepo
 {
-    protected $provider;
-    public function __construct() {
- 
-    }
-
-    public function create() 
-    {
-        return new Device;
-    }
-
-    public function delete($device)
-    {
-        return $device->delete();
-    }
-
-    public function update($device)
+    public function store(Device $device)
     {
         return $device->save();
     }
 
-    public function getUserDevices($id)
+    public function delete(Device $device)
     {
-        return Device::where("user_id", $id)->get();
+        $device->delete();
     }
 
-    public function getByDeviceId($id)
+    public function update(Device $device)
     {
-        return Device::where("device_id", $id)->first();
-    }
- 
-    public function getBySessionId($id)
-    {
-        return Device::where("session_id", $id)->first();
+        return $device->save();
     }
 
-    
+    public function getDevices(User $user)
+    {
+        return Device::where('user_id', $user->id)->get();
+    }
 
+    public function getDeviceBy($key, $value)
+    {
+        return Device::where($key, $value)->first();
+    }
 }
