@@ -163,3 +163,4 @@ class TripsManager extends BaseManager
  
 
 }
+ 

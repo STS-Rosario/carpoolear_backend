@@ -1,6 +1,6 @@
 <?php
 
-namespace STS\Services\Logic; 
+namespace STS\Services\Logic;
 
 use STS\Repository\PassengerRepository;
 use STS\Entities\Trip;
@@ -16,7 +16,7 @@ class PassengerManager
         $this->passengerRepo = new PassengerRepository();
     }
 
-    public function add ($user, $trip)
+    public function add($user, $trip)
     {
         $p = new Passenger;
         $p->user_id = $user->id;
@@ -25,12 +25,12 @@ class PassengerManager
         return $trip->passenger()->save($p);
     }
 
-    public function remove ($user, $trip)
+    public function remove($user, $trip)
     {
         return $trip->passenger()->whereUserId($user->id)->delete();
     }
  
-    public function find ($user, $trip)
+    public function find($user, $trip)
     {
         return $trip->passenger()->whereUserId($user->id)->first();
     }
@@ -39,10 +39,10 @@ class PassengerManager
     {
         if ($trip->disponibles() > 0) {
             $p = $this->find($user, $trip);
-            if ($p && $p->request_state == Passenger::STATE_RECHAZADO ) {
+            if ($p && $p->request_state == Passenger::STATE_RECHAZADO) {
                 $p->request_state = Passenger::STATE_PENDIENTE;
                 return $p->save();
-            } else if (is_null($p)) {
+            } elseif (is_null($p)) {
                 return $this->add($user, $trip);
             }
         }
@@ -50,9 +50,9 @@ class PassengerManager
     }
 
     public function rideDown($user, $trip)
-    { 
+    {
         $p = $this->find($user, $trip);
-        if ($p && $p->request_state == Passenger::STATE_ACEPTADO ) {
+        if ($p && $p->request_state == Passenger::STATE_ACEPTADO) {
             $p->delete();
             return true;
         }
@@ -63,12 +63,12 @@ class PassengerManager
     {
         if ($trip->user->id == $user->id) {
             $p = $this->find($who, $trip);
-            if ($p && $p->request_state == Passenger::STATE_PENDIENTE ) {
+            if ($p && $p->request_state == Passenger::STATE_PENDIENTE) {
                 if ($trip->disponibles() > 0) {
                     $p->request_state = Passenger::STATE_ACEPTADO;
-                    return $p->save(); 
+                    return $p->save();
                 } else {
-                    return "No hay más espacio disponible";
+                    return 'No hay más espacio disponible';
                 }
             }
         }
@@ -79,12 +79,11 @@ class PassengerManager
     {
         if ($trip->user->id == $user->id) {
             $p = $this->find($user, $trip);
-            if ($p && $p->request_state == Passenger::STATE_PENDIENTE ) { 
+            if ($p && $p->request_state == Passenger::STATE_PENDIENTE) {
                 $p->request_state = Passenger::STATE_RECHAZADO;
                 return $p->save();
-            }  
+            }
         }
-        return null; 
+        return null;
     }
-
 }

@@ -9,12 +9,12 @@ class FileTest extends TestCase {
 
 	public function testCreateFile()
 	{
-        $filesSystem = new \STS\Repository\FileRepository();
+        $filesSystem = \App::make('\STS\Contracts\Repository\Files');
 
 		$path = base_path("tests/test_file.txt","image");
         File::put($path, "HOLA");
 
-        $name = $filesSystem->create($path);
+        $name = $filesSystem->createFromFile($path);
         
         $true = File::exists(public_path("image/" . $name));
         $this->assertTrue($true);

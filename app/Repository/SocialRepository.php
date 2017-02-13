@@ -1,23 +1,32 @@
 <?php
 
-namespace STS\Repository; 
+namespace STS\Repository;
+
+use STS\Contracts\Repository\Social as SocialRepo;
 
 use STS\Entities\Trip;
 use STS\User;
 use Validator;
 use STS\Entities\SocialAccount;
 
-class SocialRepository
+class SocialRepository implements SocialRepo
 {
     protected $provider;
-    public function __construct($provider = null) {
+    public function __construct($provider = null)
+    {
         if ($provider) {
             $this->setDefaultProvider($provider);
         }
     }
 
-    public function setDefaultProvider($provider) {
+    public function setDefaultProvider($provider)
+    {
         $this->provider = $provider;
+    }
+
+    public function getProvider($provider)
+    {
+        return $this->provider;
     }
 
     public function find($provider_user_id, $provider = null)
@@ -28,10 +37,10 @@ class SocialRepository
         $account = SocialAccount::whereProvider($provider)
                                     ->whereProviderUserId($provider_user_id)
                                     ->first();
-        return $account;                            
+        return $account;
     }
 
-    public function create($user, $provider_user_id, $provider = null)
+    public function create(User $user, $provider_user_id, $provider = null)
     {
         if (is_null($provider)) {
             $provider = $this->provider;
@@ -44,10 +53,17 @@ class SocialRepository
         $account->save();
     }
 
-    public function delete($account)
-    { 
+    public function delete(SocialAccount $account)
+    {
         $account->delete();
     }
 
-
+    public function get(User $user, $provider = null)
+    {
+        $accounts = $user->accounts();
+        if ($provider) {
+            $accounts->where('provider', $provider);
+        }
+        return $accounts->get();
+    }
 }

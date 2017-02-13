@@ -1,62 +1,91 @@
 <?php
 
-namespace STS\Services\Social; 
+namespace STS\Services\Social;
 
-use SammyK\LaravelFacebookSdk\LaravelFacebookSdk;
+use STS\Contracts\SocialProvider;
+use \GuzzleHttp\Client;
+use File;
 
-class FacebookSocialProvider implements SocialProviderInterface {
-
+class FacebookSocialProvider implements SocialProvider
+{
     protected $facebook;
     protected $token;
     protected $error;
 
-    public function __construct($token) {
-        $this->facebook     = new LaravelFacebookSdk();
+    public function __construct($token)
+    {
         $this->token        = $token;
-        $this->facebook->setDefaultAccessToken($this->token);
+        $this->client       = new Client();
     }
 
-    public function getProviderName() {
-        return "facebook";
+    public function getProviderName()
+    {
+        return 'facebook';
     }
 
-    public function getUserData() { 
-        try {
-            $response = $this->facebook->get('/me?fields=id,name,email,picture.width(300),');
-            $fuser = $response->getGraphUser();
+    public function getUserData()
+    {
+        $response = $this->request('/me?fields=email,name,gender,picture.width(300),birthday');
+        if ($response->getStatusCode() == 200) {
+            $body = json_decode($response->getBody());
+             
+            if (isset($body->gender)) {
+                if ($body->gender == "male") {
+                    $body->gender = "Masculino";
+                } else if ($usuario->getProperty('gender') == "female") {
+                    $body->gender = "Femenino";
+                }
+            }else {
+                $user->gender = "N/A";
+            }
+
+            if (isset($body->birthday)) {
+                $auxBirth = explode("/", $body->birthday);
+                if (is_array($auxBirth) && count($auxBirth) >= 3) {
+                    $body->birthday = $auxBirth[2] . "-" . $auxBirth[0] . "-" . $auxBirth[1];
+                }
+            }
+
             return [
-                'provider_user_id'      => $fuser->getId(),
-                'email'                 => $fuser->getEmail(),
-                'name'                  => $fuser->getName(),
-                'gender'                => $user->getGender(),
-                'birthday'              => $fuser->getBirthDay(),
+                'provider_user_id'      => $body->id,
+                'email'                 => $body->email,
+                'name'                  => $body->name,
+                'gender'                => isset($body->gender) ? $body->gender : null ,
+                'birthday'              => isset($body->birthday) ? $body->birthday : null ,
                 'banned'                => false,
                 'terms_and_conditions'  => false,
-                'l_image'               => $fuser->getPicture()->getUrl(),
+                'image'                 => $body->picture->data->url
             ];
-        } catch (Facebook\Exceptions\FacebookSDKException $e) {
-            $this->error = ($e->getMessage());
+        } else {
+            $this->error = ['error' => 'Error obteniendo el perfil'];
             return null;
         }
     }
 
-    public function getUserFriends() { 
-        try {
-            $response = $this->facebook->get('/me/friends?limit=5000');
-            $friends = $response->getGraphEdge();
+    public function getUserFriends()
+    {
+        $response = $this->request('/me/friends?limit=5000');
+        if ($response->getStatusCode() == 200) {
+            $body = json_decode($response->getBody());
             $res = [];
-            foreach($friends as $friend) {
-                $res[] = $friend["id"];
+            foreach ($body->data as $friend) {
+                $res[] = $friend->id;
             }
-            return $friends;
-        } catch (Facebook\Exceptions\FacebookSDKException $e) {
-            $this->error = ($e->getMessage());
+            return $res;
+        } else {
+            $this->error = ['error' => 'Error obteniendo amistades'];
             return null;
-        } 
+        }
     }
 
-    public function getError() {
+    public function getError()
+    {
         return $this->error;
     }
 
+    private function request($url)
+    {
+        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.7' . $url .  '&access_token=' . $this->token);
+        return $res;
+    }
 }

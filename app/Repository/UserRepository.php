@@ -1,12 +1,11 @@
 <?php
 
-namespace STS\Repository; 
+namespace STS\Repository;
 
-use STS\Entities\Trip;
+use STS\Contracts\Repository\User as UserRep;
 use STS\User;
-use Validator;
 
-class UserRepository
+class UserRepository implements UserRep
 {
     /**
      * Create a new user instance after a valid registration.
@@ -25,18 +24,18 @@ class UserRepository
     }
 
     public function show($id)
-    { 
+    {
         return User::find($id);
     }
 
-    public function acceptTerms($user) 
+    public function acceptTerms($user)
     {
         $user->terms_and_conditions = true;
         $user->save();
         return $user;
     }
 
-    public function updatePhoto($user, $filename) 
+    public function updatePhoto($user, $filename)
     {
         $user->image = $filename;
         $user->save();
@@ -44,24 +43,26 @@ class UserRepository
     }
 
     public function index()
-    { 
+    {
         return User::all();
-    }        
+    }
 
-    public function addFriend($user, $friend, $provider = "") {
+    public function addFriend($user, $friend, $provider = '')
+    {
         $friend->friends()->detach($user->id);
         $user->friends()->detach($friend->id);
-        $friend->friends()->attach($user->id, ['origin' => $provider]);
-        $user->friends()->attach($friend->id, ['origin' => $provider]);
+        $friend->friends()->attach($user->id, ['origin' => $provider, 'state' => User::FRIEND_ACCEPTED]);
+        $user->friends()->attach($friend->id, ['origin' => $provider, 'state' => User::FRIEND_ACCEPTED]);
     }
 
-    public function deleteFriend($user, $friend) {
+    public function deleteFriend($user, $friend)
+    {
         $friend->friends()->detach($user->id);
-        $user->friends()->detach($friend->id); 
+        $user->friends()->detach($friend->id);
     }
 
-    public function friendList($user) {
+    public function friendList($user)
+    {
         $user->friends();
     }
-
 }
