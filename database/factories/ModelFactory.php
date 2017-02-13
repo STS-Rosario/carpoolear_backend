@@ -22,8 +22,7 @@ $factory->define(STS\User::class, function (Faker\Generator $faker) {
 
 $factory->define(STS\Entities\Trip::class, function (Faker\Generator $faker) {
     return [
-        'name' => $faker->name,
-        'user_id' => 1,
+        'user_id' => $faker->randomDigitNotNull,
         'from_town' => $faker->city,
         'to_town' => $faker->city,
         "trip_date" => $faker->dateTime,
@@ -37,6 +36,8 @@ $factory->define(STS\Entities\Trip::class, function (Faker\Generator $faker) {
         "trip_type" => 0,
         "mail_send" => false,
         'tripscol' => 'asd'
+    ];
+});
 
 $factory->define(STS\Entities\Conversation::class, function (Faker\Generator $faker) {
     return [
