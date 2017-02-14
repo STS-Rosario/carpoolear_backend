@@ -5,14 +5,15 @@ namespace STS\Repository;
 use STS\Entities\Conversation;
 use STS\Entities\Trip;
 use STS\User;
+use STS\Contracts\Repository\Conversations as ConversationRepo;
 
-class conversationRepository {
+class ConversationRepository implements ConversationRepo {
 
     public function store (Conversation $conversation) {
         return $conversation->save();
     }
 
-    public function delete (Message $conversation) {
+    public function delete (Conversation $conversation) {
         return $conversation->delete();
     }
 
@@ -23,17 +24,17 @@ class conversationRepository {
     }
 
     public function getConversationFromId ( $conversation_id, User $user = null ) {
-        $conversation = Conversation::where('id', $conversation_id);
+        $conversation = Conversation::where('id', $conversation_id)->first();
         if ($user) {
-            $conversation->users()->where('id', $user_id);
+            $conversation->users()->where('id', $user->id);
         }
         return $conversation->first();
     }
 
     public function getConversationByTripId ( $tripId, User $user = null ) {
-        $conversation = Conversation::where('trip_id', $trip_id);
+        $conversation = Conversation::where('trip_id', $trip_id)->first();
         if ($user) {
-            $conversation->users()->where('id', $user_id);
+            $conversation->users()->where('id', $user->id);
         }
         return $conversation->first();
     } 

@@ -2,22 +2,23 @@
 
 namespace STS\Services\Logic; 
 
-use STS\Repository\ConversationRepository;
-use STS\Repository\MessageRepository;
+use STS\Contracts\Repository\Conversations as ConversationRepository;
+use STS\Contracts\Repository\Messages as MessageRepository;
+use STS\Contracts\Logic\Conversation as ConversationRepo;
 use STS\Entities\Message;
 use STS\Entities\Conversation;
 use STS\Services\Logic\TripsManager;
 use STS\User;
 
-class ConversationsManager {
+class ConversationsManager implements ConversationRepo {
 
     protected $messageRepository;
     protected $conversationRepository;
 
-    public function __construct() 
+    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository) 
     { 
-        $this->conversationRepository = new ConversationRepository();
-        $this->messageRepository = new MessageRepository();
+        $this->conversationRepository = $conversationRepository;
+        $this->messageRepository = $messageRepository;
     } 
 
     /* CONVERSATION CREATION */
@@ -94,7 +95,7 @@ class ConversationsManager {
         if ($user->is_admin) {
             $user = null;
         }
-        return $this->$conversationRepository->getConversationFromId ( $conversation_id, $user );
+        return $this->conversationRepository->getConversationFromId ( $conversation_id, $user );
     }
 
     public function getConversationByTrip ( User $user, $trip_id)
@@ -102,7 +103,7 @@ class ConversationsManager {
         if ($user->is_admin) {
             $user = null;
         }
-        return $this->$conversationRepository->getConversationByTripId ( $trip_id, $user );
+        return $this->conversationRepository->getConversationByTripId ( $trip_id, $user );
     }
 
     /* CONVERSATION - USER MANIPULATION */
@@ -140,7 +141,7 @@ class ConversationsManager {
             return $message;
     }
 
-    public function validator(array $data)
+    private function validator(array $data)
     {
             return Validator::make($data, [
                 'user_id'               => 'required|integer',
@@ -157,7 +158,7 @@ class ConversationsManager {
              'conversation_id' => $conversationId
         ];
         if (validator($data)) {
-            $existConversation = $this->conversationRepository->getConversationFromId($conversationId);
+            $existConversation = $this->getConversation($user, $conversationId);
             if ($existConversation) {
                 return $this->newMessage($data);
             }

@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Pagination\Paginator;
 
 class MessagesTest extends TestCase { 
     
@@ -7,14 +8,9 @@ class MessagesTest extends TestCase {
       
     protected $userManager;
 
-    public function __construct() 
-    {
-        parent::setUp();
-    } 
-
     public function test_createPrivateConversation()
     {
-        $conversationManager = new \STS\Services\Logic\ConversationsManager();
+        $conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create();
         $user3 = factory(\STS\User::class)->create();
@@ -38,7 +34,7 @@ class MessagesTest extends TestCase {
 
     public function test_addUserToConversation_Success()
     {
-        $conversationManager = new \STS\Services\Logic\ConversationsManager();
+        $conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create();
         $user3 = factory(\STS\User::class)->create();
@@ -64,7 +60,7 @@ class MessagesTest extends TestCase {
     public function test_TripConversationCreate_Success()
     {
         /* Create a conversation */
-        $conversationManager = new \STS\Services\Logic\ConversationsManager();
+        $conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
         $user = factory(\STS\User::class)->create();
         $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
 
@@ -75,7 +71,7 @@ class MessagesTest extends TestCase {
     public function test_TripConversationCreate_RepeatTrip_Fail()
     {
         /* Creating a conversation two times - ERROR */
-        $conversationManager = new \STS\Services\Logic\ConversationsManager();
+        $conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
         $user = factory(\STS\User::class)->create();
         $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
 
@@ -87,7 +83,7 @@ class MessagesTest extends TestCase {
     public function test_TripConversationCreate_ValidateTripId_Fail()
     {
         /* Creating a conversation validation. If not a positive integer throw error */
-        $conversationManager = new \STS\Services\Logic\ConversationsManager();
+        $conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
         $user = factory(\STS\User::class)->create();
 
         $conversation = $conversationManager->createTripConversation ( 'asdd' ) || $conversationManager->createTripConversation ( '-1' ) || $conversationManager->createTripConversation ( '' ) || $conversationManager->createTripConversation ( null ) || $conversationManager->createTripConversation ( false ) || $conversationManager->createTripConversation ( true );
@@ -96,8 +92,7 @@ class MessagesTest extends TestCase {
 
     public function testMatchSuccess()
 	  {
-        $repo    = new \STS\Repository\ConversationRepository();
-        $manager = new \STS\Services\Logic\ConversationsManager();
+        $repo = $this->app->make('\STS\Contracts\Repository\Conversations');
         $c = factory(STS\Entities\Conversation::class)->create();
 
         $u1 = factory(STS\User::class)->create();
@@ -113,8 +108,7 @@ class MessagesTest extends TestCase {
  
     public function testMatchFail()
 	  {
-        $repo    = new \STS\Repository\ConversationRepository();
-        $manager = new \STS\Services\Logic\ConversationsManager();
+        $repo = $this->app->make('\STS\Contracts\Repository\Conversations');
         $c = factory(STS\Entities\Conversation::class)->create();
         $c2 = factory(STS\Entities\Conversation::class)->create();
 
@@ -134,7 +128,33 @@ class MessagesTest extends TestCase {
         $this->assertFalse($cc1->id == $cc2->id);
 	  }
 
+      public function testMessages()
+      {
+        $u3 = factory(STS\User::class, 15)->create();
+        Paginator::currentPageResolver(function () {
+            return 2;
+        });
+        $user = STS\User::paginate(5);
+        $user->setPath('conversation/12/messages');
+        Log::info(json_encode($user));
+      }
 
+    public function testSendMessage()
+	  {
+        $repoM = $this->app->make('\STS\Contracts\Repository\Messages');
+        $repo = $this->app->make('\STS\Contracts\Repository\Conversations');
+        $manager = $this->app->make('\STS\Contracts\Logic\Conversation');
+        $c = factory(STS\Entities\Conversation::class)->create();
 
+        $u1 = factory(STS\User::class)->create();
+        $u2 = factory(STS\User::class)->create();
 
+        $repo->addUser($c, $u1);
+        $manager->send($u1, $c->id, "test 1");
+        $manager->send($u2, $c->id, "test 2");
+
+        $messages = $repoM->getMessages($c, 1, 1);
+        echo('HOLA!!:');
+        var_dump($messages);
+	  }
 }

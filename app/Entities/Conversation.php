@@ -26,7 +26,7 @@ class Conversation extends Model {
     }
 
 	public function messages() {
-        return $this->hasMany('STS\Entity\Message', 'conversation_id');
+        return $this->hasMany('STS\Entities\Message', 'conversation_id');
     }
 
 }
