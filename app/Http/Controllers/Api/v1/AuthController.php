@@ -15,8 +15,10 @@ use JWTAuth;
 
 use \GuzzleHttp\Client;
 use \STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Logic\Devices as DeviceLogic;
-
+use STS\Contracts\Logic\Devices as DeviceLogic; 
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 class AuthController extends Controller
 {
     protected $user;
@@ -26,17 +28,6 @@ class AuthController extends Controller
     {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
-    }
-
-    public function registrar(Request $request)
-    {
-        $data = $request->all();
-        $user = $this->userLogic->create($data);
-        if (!$user) {
-            return response()->json($this->userLogic->getErrors(), 400);
-        }
-
-        return response()->json(compact('user'));
     }
 
     public function login(Request $request)
@@ -55,7 +46,7 @@ class AuthController extends Controller
  
 
         if ($user->banned) {
-            return response()->json(['error' => 'user_banned'], 401);
+            throw new UnauthorizedHttpException('User kick');
         }
 
         // Registro mi devices
@@ -71,7 +62,7 @@ class AuthController extends Controller
     { 
         $oldToken = JWTAuth::getToken(); 
         if(!$oldToken){
-            throw new BadRequestHtttpException('Token not provided');
+            throw new BadRequestHttpException('Token not provided');
         }
         try{
             $token = JWTAuth::refresh($oldToken);

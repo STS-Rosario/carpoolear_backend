@@ -98,6 +98,7 @@ class UsersManager extends BaseManager implements UserLogic
     {
         $profile = $this->repo->show($profile_id);
         if ($profile) {
+            /*
             $profile->cantidadViajes = $this->tripsCount($profile);
             $profile->distanciaRecorrida = $this->tripsDistance($profile);
             if ($user->id != $profile->id) {
@@ -118,8 +119,10 @@ class UsersManager extends BaseManager implements UserLogic
                     }
                 }
             }
+            */
             return $profile;
         }
+        $this->setErrors(["error" => 'profile not found']);
         return null;
     }
 
