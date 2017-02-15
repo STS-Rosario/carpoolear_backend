@@ -1,6 +1,6 @@
 <?php
 
-namespace STS\Http\Controllers\Api;
+namespace STS\Http\Controllers\Api\v1;
 
 use STS\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -26,7 +26,6 @@ class AuthController extends Controller
     {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
-        $this->middleware('jwt.auth', ['except' => ['login', 'registrar', 'facebook', 'retoken']]);
     }
 
     public function registrar(Request $request)
@@ -52,7 +51,7 @@ class AuthController extends Controller
             return response()->json(['error' => 'could_not_create_token'], 500);
         }
 
-        $user = \JWTAuth::authenticate($token);
+        $user = JWTAuth::authenticate($token);
  
 
         if ($user->banned) {
@@ -64,33 +63,34 @@ class AuthController extends Controller
             $data = $request->all();
             $data['session_id'] = $token;
             $this->deviceLogic->register($user, $data);
-        }
-        return response()->json(compact('token', 'user'));
+        } 
+        return $this->response->withArray(['token' => $token]);
     }
 
     public function retoken(Request $request)
-    {
-        //$user = \JWTAuth::parseToken()->authenticate();
-        $user = null;
-        $token = \JWTAuth::getToken();
-        $newToken = \JWTAuth::refresh($token);
-
-        $data = [
-            'session_id' => $newToken,
-            'app_version' => $request->get('app_version')
-        ];
-
-        $device = $this->deviceLogic->updateBySession($token, $data);
-        if ($device) {
-            $user = $device->usuario;
+    { 
+        $oldToken = JWTAuth::getToken(); 
+        if(!$oldToken){
+            throw new BadRequestHtttpException('Token not provided');
+        }
+        try{
+            $token = JWTAuth::refresh($oldToken);
+        }catch(TokenInvalidException $e){
+            throw new AccessDeniedHttpException('The token is invalid');
         }
 
-        return response()->json(compact('token', 'user'));
+        $data = [
+            'session_id' => $token,
+            'app_version' => $request->get('app_version')
+        ];
+        $device = $this->deviceLogic->updateBySession($oldToken, $data);
+
+        return $this->response->withArray(['token' => $token]);
     }
 
-    public function logoff(Request $request)
+    public function logout(Request $request)
     {
-        $token = \JWTAuth::parseToken()->getToken();
+        $token = JWTAuth::parseToken()->getToken();
         $this->deviceLogic->delete($token);
         return response()->json('OK');
     }
