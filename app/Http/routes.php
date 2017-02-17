@@ -15,7 +15,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () { 
+Route::group([ 'middleware' => 'cors', 'prefix' => 'api'], function () { 
     //Route::post("/login", 'Api\AuthController@login');
     //Route::post("/registrar", 'Api\AuthController@registrar'); 
     //Route::post("/retoken", 'Api\AuthController@retoken'); 
