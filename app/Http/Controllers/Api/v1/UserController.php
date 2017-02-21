@@ -4,14 +4,14 @@ namespace STS\Http\Controllers\Api\v1;
 
 use STS\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use \STS\Contracts\Logic\User as UserLogic;  
+use \STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
 use Dingo\Api\Exception\ResourceException;
 
 class UserController extends Controller
 {
-    protected $userLogic; 
+    protected $userLogic;
 
     public function __construct(UserLogic $userLogic)
     {
@@ -24,7 +24,7 @@ class UserController extends Controller
         $data = $request->all();
         $user = $this->userLogic->create($data);
         if (!$user) {
-            throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());            
+            throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());
         }
         return $this->response->withArray(['user' => $user]);
     }
@@ -36,7 +36,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
-        return $this->response->withArray(['user' => $profile]); 
+        return $this->response->withArray(['user' => $profile]);
     }
 
     public function updatePhoto(Request $request)
@@ -46,7 +46,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new  UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
-        return $this->response->withArray(['user' => $profile]);  
+        return $this->response->withArray(['user' => $profile]);
     }
 
     public function show($id = null)
@@ -59,9 +59,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new ResourceException('Users not found.', $this->userLogic->getErrors());
         }
-        return $this->response->withArray(['user' => $profile]); 
+        return $this->response->withArray(['user' => $profile]);
         return $profile;
     }
-
-     
 }

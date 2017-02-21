@@ -11,6 +11,9 @@ use STS\Entities\Trip;
 use STS\User;
 use Validator;
 
+use STS\Events\User\Create as CreateEvent;
+use STS\Events\User\Update as UpdateEvent;
+
 class UsersManager extends BaseManager implements UserLogic
 {
     protected $repo;
@@ -53,6 +56,7 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['password'] = bcrypt($data['password']);
             }
             $u = $this->repo->create($data);
+            event(new CreateEvent($u->id));
             return $u;
         }
     }
@@ -69,6 +73,7 @@ class UsersManager extends BaseManager implements UserLogic
             }
             
             $this->repo->update($user, $data);
+            event(new UpdateEvent($user->id));
             return $user;
         }
     }
@@ -84,6 +89,7 @@ class UsersManager extends BaseManager implements UserLogic
             $filename = $data['profile']['tmp_name'];
             $name = $fileManager->createFromFile($filename, 'image/profile');
             $this->repo->updatePhoto($user, $name);
+            event(new UpdateEvent($user->id));
             return $user;
         }
     }
