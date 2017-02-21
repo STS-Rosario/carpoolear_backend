@@ -7,6 +7,7 @@ use \STS\Contracts\Logic\Devices as DeviceLogic;
 
 use STS\Entities\Device;
 use STS\User;
+use Validator;
 
 class DeviceManager extends BaseManager implements DeviceLogic
 {

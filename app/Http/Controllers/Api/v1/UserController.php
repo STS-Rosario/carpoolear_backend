@@ -26,7 +26,7 @@ class UserController extends Controller
         if (!$user) {
             throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());            
         }
-        return response()->json(compact('user'));
+        return $this->response->withArray(['user' => $user]);
     }
 
     public function update(Request $request)
@@ -36,7 +36,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
-        return $user;
+        return $this->response->withArray(['user' => $profile]); 
     }
 
     public function updatePhoto(Request $request)
@@ -46,7 +46,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new  UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
-        return $user;
+        return $this->response->withArray(['user' => $profile]);  
     }
 
     public function show($id = null)
@@ -55,11 +55,12 @@ class UserController extends Controller
         if (!$id) {
             $id = $me->id;
         }
-        $user = $this->userLogic->show($me, $id);
-        if (!$user) {
+        $profile = $this->userLogic->show($me, $id);
+        if (!$profile) {
             throw new ResourceException('Users not found.', $this->userLogic->getErrors());
         }
-        return response()->json($user);
+        return $this->response->withArray(['user' => $profile]); 
+        return $profile;
     }
 
      

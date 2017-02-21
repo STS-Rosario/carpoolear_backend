@@ -10,6 +10,13 @@ class ApiAuthTest extends TestCase {
 
     } 
 
+    protected function actingAsApiUser($user)
+    {
+        $this->app['api.auth']->setUser($user);
+
+        return $this;
+    }
+
     protected function parseJson($response)
     {
         return json_decode($response->getContent());
@@ -17,22 +24,19 @@ class ApiAuthTest extends TestCase {
 
 	public function testCreateUser()
 	{
-        /*
+        
         $data = [
             "name" => "Mariano", 
             "email" => "mariano@g1.com", 
             "password" => "123456",
             "password_confirmation" => "123456"
         ];
-        $response = $this->call('POST', 'api/registrar', $data);
+        $response = $this->call('POST', 'api/users', $data);
+ 
         $this->assertTrue($response->status() == 200);
 
         $json = $this->parseJson($response);        
         $this->assertTrue($json->user != null);
-        */
-        //$response = $this->call('POST', 'api/registrar', $data);
-        //$this->assertResponseStatus(400);
-        //$this->assertTrue($response->status() == 400);
     }
 
     public function testLogin()
@@ -51,17 +55,6 @@ class ApiAuthTest extends TestCase {
 
         $json = $this->parseJson($response);     
         $this->assertTrue($json->token != null);
-
-        /*
-        $devices = \App::make('\STS\Contracts\Repository\Devices');
-        $user = STS\User::find($json->user->id);
-        $this->assertTrue( $devices->getDevices($user)->count() > 0 );
-
-        $response = $this->call('POST', 'api/logoff?token=' . $json->token);
-        $this->assertTrue($response->status() == 200);
-        $this->assertTrue($devices->getDevices($user)->count() == 0);
-        */
-
 	}
 
     public function testRetoken() 
@@ -86,5 +79,39 @@ class ApiAuthTest extends TestCase {
         $json = $this->parseJson($response);     
         $this->assertTrue($json->token != null);
         //$this->assertTrue($json->token != $token);
+    } 
+
+    public function testUpdateProfile() 
+    {
+        $user = factory(STS\User::class)->create();
+        $this->actingAsApiUser($user);
+
+        $data = [
+            "name" => 'Mariano Botta'
+        ];
+        $response = $this->call('PUT', 'api/users', $data); 
+        
+        $userUpdated = $this->parseJson($response);          
+        $this->assertTrue($response->status() == 200);
+        $this->assertEquals($userUpdated->user->name, $data['name']); 
+
+        $u2 = STS\User::find($user->id);
+        $this->assertEquals($userUpdated->user->name, $u2->name);
     }
+
+    public function testShowProfile() 
+    {
+        $u1 = factory(STS\User::class)->create();
+        $u2 = factory(STS\User::class)->create();
+        $this->actingAsApiUser($u1);
+
+        $response = $this->call('GET', 'api/users/' . $u2->id); 
+        
+        $this->assertTrue($response->status() == 200);
+
+        $profile = $this->parseJson($response);
+        $this->assertEquals($profile->user->name, $u2->name); 
+    }
+
+
 }

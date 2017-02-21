@@ -10,10 +10,10 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->post('logout',    $v1_path . 'AuthController@logout');
 
     $api->group(['prefix' => 'users'], function ($api) use ($v1_path) {
-        $api->post("/",                 $v1_path . 'ProfileController@create');    
-        $api->get("/{id?}",             $v1_path . 'ProfileController@show');    
-        $api->put("/",                  $v1_path . 'ProfileController@update');
-        $api->put("/photo",             $v1_path . 'ProfileController@updatePhoto');
+        $api->post("/",                 $v1_path . 'UserController@create');    
+        $api->get("/{id?}",             $v1_path . 'UserController@show');    
+        $api->put("/",                  $v1_path . 'UserController@update');
+        $api->put("/photo",             $v1_path . 'UserController@updatePhoto');
     });
 
     $api->group(['prefix' => 'friends'], function ($api) use ($v1_path) {

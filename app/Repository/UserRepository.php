@@ -20,7 +20,7 @@ class UserRepository implements UserRep
 
     public function update($user, array $data)
     {
-        return $user->update($data);
+        $user->update($data);
     }
 
     public function show($id)

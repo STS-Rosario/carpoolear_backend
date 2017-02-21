@@ -68,8 +68,8 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['password'] = bcrypt($data['password']);
             }
             
-            $u = $this->repo->update($user, $data);
-            return $u;
+            $this->repo->update($user, $data);
+            return $user;
         }
     }
 
@@ -83,7 +83,7 @@ class UsersManager extends BaseManager implements UserLogic
             $fileManager = new FileRepository();
             $filename = $data['profile']['tmp_name'];
             $name = $fileManager->createFromFile($filename, 'image/profile');
-            $user = $this->repo->updatePhoto($user, $name);
+            $this->repo->updatePhoto($user, $name);
             return $user;
         }
     }
