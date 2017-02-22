@@ -59,9 +59,7 @@ class ApiAuthTest extends TestCase
 
     public function testRetoken()
     {
-        $user = factory(STS\User::class)->create();
-        //$token = \JWTAuth::fromUser($user);
-
+        $user = factory(STS\User::class)->create(); 
         $data = [
             "email" => $user->email,
             "password" => "123456",
@@ -111,5 +109,5 @@ class ApiAuthTest extends TestCase
 
         $profile = $this->parseJson($response);
         $this->assertEquals($profile->user->name, $u2->name);
-    }
+    } 
 }

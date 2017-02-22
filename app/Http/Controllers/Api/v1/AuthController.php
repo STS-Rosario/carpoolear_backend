@@ -85,4 +85,20 @@ class AuthController extends Controller
         $this->deviceLogic->delete($token);
         return response()->json('OK');
     }
+
+    public function active($activation_token, Request $request)
+    {
+        $user = $this->userLogic->activeAccount($activation_token);
+        if (!$user) {
+            throw new ResourceException('invalid_activation_token', $this->userLogic->getErrors());
+        }
+        $token = JWTAuth::fromUser($user);
+        if ($request->has('device_id') && $request->has('device_type')) {
+            $data = $request->all();
+            $data['session_id'] = $token;
+            $this->deviceLogic->register($user, $data);
+        }
+        return $this->response->withArray(['token' => $token]);
+    }
+
 }

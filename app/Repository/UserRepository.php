@@ -42,6 +42,11 @@ class UserRepository implements UserRep
         return $user;
     }
 
+    public function getUserBy($key, $value)
+    {
+        return User::where($key, $value)->first();
+    }
+
     public function index()
     {
         return User::all();
