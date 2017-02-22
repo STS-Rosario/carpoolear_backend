@@ -96,7 +96,7 @@ class UsersManager extends BaseManager implements UserLogic
 
     public function find($user_id)
     {
-        return $this->repo->show($profile_id);
+        return $this->repo->show($user_id);
     }
 
 

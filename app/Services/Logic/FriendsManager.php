@@ -29,7 +29,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
 
 
     public function request(UserModel $who, UserModel $user)
-    {
+    { 
         if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() == 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
