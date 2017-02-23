@@ -1,23 +1,19 @@
 <?php
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use \STS\Contracts\Repository\Devices as DeviceRepository;
+use Mockery as m;
 
 class ApiAuthTest extends TestCase
 {
     use DatabaseTransactions;
 
     protected $userManager;
+    protected $userLogic;
     public function __construct()
     {
+        
     }
-
-    protected function actingAsApiUser($user)
-    {
-        $this->app['api.auth']->setUser($user);
-
-        return $this;
-    }
-
+ 
     protected function parseJson($response)
     {
         return json_decode($response->getContent());
@@ -48,9 +44,10 @@ class ApiAuthTest extends TestCase
             "password" => "123456",
             "device_id" => 123456,
             "device_type" => "Android",
-            "app_version" => 1
+            "app_version" => 1,
+            
         ];
-        $response = $this->call('POST', 'api/login', $data);
+        $response = $this->call('POST', 'api/login', $data); 
         $this->assertTrue($response->status() == 200);
 
         $json = $this->parseJson($response);
@@ -110,4 +107,20 @@ class ApiAuthTest extends TestCase
         $profile = $this->parseJson($response);
         $this->assertEquals($profile->user->name, $u2->name);
     } 
+
+    public function testActive()
+    {
+        $u1 = factory(STS\User::class)->create();
+        $this->userLogic = $this->mock('STS\Contracts\Logic\User');        
+        $this->userLogic->shouldReceive('activeAccount')->once()->andReturn($u1);
+
+        $response = $this->call('POST', 'api/active/1234567890'); 
+        $this->assertTrue($response->status() == 200);
+        
+        $response = $this->parseJson($response);
+        $this->assertTrue($response->token != null);
+        m::close();
+    } 
+
+
 }
