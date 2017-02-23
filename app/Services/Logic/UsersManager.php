@@ -55,6 +55,10 @@ class UsersManager extends BaseManager implements UserLogic
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
+            if (!isset($data['active'])) {
+                $data['active'] = false;
+                $data['activation_token'] = str_random(40);
+            }
             $u = $this->repo->create($data);
             event(new CreateEvent($u->id));
             return $u;

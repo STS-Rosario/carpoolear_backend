@@ -42,11 +42,14 @@ class AuthController extends Controller
             return response()->json(['error' => 'could_not_create_token'], 500);
         }
 
-        $user = JWTAuth::authenticate($token);
- 
+        $user = JWTAuth::authenticate($token); 
 
         if ($user->banned) {
-            throw new UnauthorizedHttpException('User kick');
+            throw new UnauthorizedHttpException('user_banned');
+        }
+
+        if (!$user->active) {
+            throw new UnauthorizedHttpException('user_not_active');
         }
 
         // Registro mi devices
