@@ -100,9 +100,20 @@ class UsersManager extends BaseManager implements UserLogic
 
     public function find($user_id)
     {
-        return $this->repo->show($profile_id);
+        return $this->repo->show($user_id);
     }
 
+    public function activeAccount($activation_token)
+    {
+        $user = $this->repo->getUserBy('activation_token', $activation_token);
+        if ($user) {
+            $this->repo->update($user, ['active' => true, 'activation_token' => null]);
+            return $user;
+        } else {
+            $this->setErrors(['error' => 'invalid_activation_token']);
+            return null;
+        }
+    }
 
     public function show($user, $profile_id)
     {

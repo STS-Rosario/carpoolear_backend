@@ -8,6 +8,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->post('login',     $v1_path . 'AuthController@login');
     $api->post('retoken',   $v1_path . 'AuthController@retoken');
     $api->post('logout',    $v1_path . 'AuthController@logout');
+    $api->post('active/{activation_token?}', $v1_path . 'AuthController@active');
 
     $api->group(['prefix' => 'users'], function ($api) use ($v1_path) {
         $api->post("/",                 $v1_path . 'UserController@create');    

@@ -15,7 +15,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('api.auth', ['except' => ['create']]);
+        $this->middleware('api.auth', ['except' => ['create', 'active']]);
         $this->userLogic = $userLogic;
     }
 
@@ -59,7 +59,6 @@ class UserController extends Controller
         if (!$profile) {
             throw new ResourceException('Users not found.', $this->userLogic->getErrors());
         }
-        return $this->response->withArray(['user' => $profile]);
-        return $profile;
+        return $this->response->withArray(['user' => $profile]); 
     }
 }

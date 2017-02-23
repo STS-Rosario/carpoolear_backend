@@ -27,7 +27,7 @@ class FriendsController extends Controller
     {
         $friend = $this->users->find($id);
         if ($friend) {
-            $ret = $friends->request($this->user, $friend);
+            $ret = $this->friends->request($this->user, $friend);
             if ($ret) {
                 return response()->json('OK');
             }
