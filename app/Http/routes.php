@@ -11,16 +11,16 @@
 |
 */
 
-Route::get('/', function () { 
+Route::get('/', function () {  
     return view('welcome');
 });
 
-Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () { 
-    Route::post("/login", 'Api\AuthController@login');
-    Route::post("/registrar", 'Api\AuthController@registrar'); 
-    Route::post("/retoken", 'Api\AuthController@retoken'); 
-    Route::post("/logoff", 'Api\AuthController@logoff');    
-
+Route::group([ 'middleware' => 'cors', 'prefix' => 'api'], function () { 
+    //Route::post("/login", 'Api\AuthController@login');
+    //Route::post("/registrar", 'Api\AuthController@registrar'); 
+    //Route::post("/retoken", 'Api\AuthController@retoken'); 
+    //Route::post("/logoff", 'Api\AuthController@logoff');    
+    /*
     Route::group(['prefix' => 'social'], function () {
         Route::post("/login/{provider?}", 'Api\SocialController@login');    
         Route::post("/friends/{provider?}", 'Api\SocialController@friends');
@@ -39,5 +39,5 @@ Route::group([ /*'middleware' => 'cors', */ 'prefix' => 'api'], function () {
         Route::post("/delete/{id?}", 'Api\FriendsController@delete');
         Route::post("/reject/{id?}", 'Api\FriendsController@reject');
     });
-
+    */
 });

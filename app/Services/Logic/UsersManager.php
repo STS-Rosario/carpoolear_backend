@@ -11,6 +11,9 @@ use STS\Entities\Trip;
 use STS\User;
 use Validator;
 
+use STS\Events\User\Create as CreateEvent;
+use STS\Events\User\Update as UpdateEvent;
+
 class UsersManager extends BaseManager implements UserLogic
 {
     protected $repo;
@@ -52,7 +55,12 @@ class UsersManager extends BaseManager implements UserLogic
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
+            if (!isset($data['active'])) {
+                $data['active'] = false;
+                $data['activation_token'] = str_random(40);
+            }
             $u = $this->repo->create($data);
+            event(new CreateEvent($u->id));
             return $u;
         }
     }
@@ -68,8 +76,9 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['password'] = bcrypt($data['password']);
             }
             
-            $u = $this->repo->update($user, $data);
-            return $u;
+            $this->repo->update($user, $data);
+            event(new UpdateEvent($user->id));
+            return $user;
         }
     }
 
@@ -83,21 +92,34 @@ class UsersManager extends BaseManager implements UserLogic
             $fileManager = new FileRepository();
             $filename = $data['profile']['tmp_name'];
             $name = $fileManager->createFromFile($filename, 'image/profile');
-            $user = $this->repo->updatePhoto($user, $name);
+            $this->repo->updatePhoto($user, $name);
+            event(new UpdateEvent($user->id));
             return $user;
         }
     }
 
     public function find($user_id)
     {
-        return $this->repo->show($profile_id);
+        return $this->repo->show($user_id);
     }
 
+    public function activeAccount($activation_token)
+    {
+        $user = $this->repo->getUserBy('activation_token', $activation_token);
+        if ($user) {
+            $this->repo->update($user, ['active' => true, 'activation_token' => null]);
+            return $user;
+        } else {
+            $this->setErrors(['error' => 'invalid_activation_token']);
+            return null;
+        }
+    }
 
     public function show($user, $profile_id)
     {
         $profile = $this->repo->show($profile_id);
         if ($profile) {
+            /*
             $profile->cantidadViajes = $this->tripsCount($profile);
             $profile->distanciaRecorrida = $this->tripsDistance($profile);
             if ($user->id != $profile->id) {
@@ -118,8 +140,10 @@ class UsersManager extends BaseManager implements UserLogic
                     }
                 }
             }
+            */
             return $profile;
         }
+        $this->setErrors(["error" => 'profile not found']);
         return null;
     }
 

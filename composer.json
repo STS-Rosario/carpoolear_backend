@@ -9,7 +9,7 @@
         "laravel/framework": "5.2.*",
         "davibennun/laravel-push-notification": "dev-laravel5",
         "tymon/jwt-auth": "0.5.*",
-        "barryvdh/laravel-cors": "0.7.*",
+        "barryvdh/laravel-cors": "0.8.x",
 		"sammyk/laravel-facebook-sdk": "^3.0",
         "guzzlehttp/guzzle": "^6.2"
     },

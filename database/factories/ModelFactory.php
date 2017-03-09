@@ -17,5 +17,6 @@ $factory->define(STS\User::class, function (Faker\Generator $faker) {
         'email' => $faker->safeEmail,
         'password' => bcrypt("123456"),
         'remember_token' => str_random(10),
+        'active' => true
     ];
 });

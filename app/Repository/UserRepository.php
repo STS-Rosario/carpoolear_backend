@@ -20,7 +20,7 @@ class UserRepository implements UserRep
 
     public function update($user, array $data)
     {
-        return $user->update($data);
+        $user->update($data);
     }
 
     public function show($id)
@@ -40,6 +40,11 @@ class UserRepository implements UserRep
         $user->image = $filename;
         $user->save();
         return $user;
+    }
+
+    public function getUserBy($key, $value)
+    {
+        return User::where($key, $value)->first();
     }
 
     public function index()
