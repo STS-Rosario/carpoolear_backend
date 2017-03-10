@@ -4,8 +4,10 @@ namespace STS\Services\Logic;
 
 use STS\Contracts\Repository\Friends as FriendsRepo;
 use STS\Contracts\Logic\Friends as FriendsLogic;
-
 use STS\User as UserModel;
+use STS\Events\Friend\Accept  as AcceptEvent;
+use STS\Events\Friend\Reject  as RejectEvent;
+use STS\Events\Friend\Request as RequestEvent;
 
 class FriendsManager extends BaseManager implements FriendsLogic
 {
@@ -27,13 +29,15 @@ class FriendsManager extends BaseManager implements FriendsLogic
 
 
     public function request(UserModel $who, UserModel $user)
-    {
+    { 
         if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() == 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
 
             $this->friendsRepo->add($who, $user, UserModel::FRIEND_REQUEST);
             //$this->friendsRepo->add($user, $who, UserModel::FRIEND_REQUEST );
+
+            event(new RequestEvent($who->id, $user->id));
 
             return true;
         } else {
@@ -47,10 +51,9 @@ class FriendsManager extends BaseManager implements FriendsLogic
         if ($this->friendsRepo->get($user, $who, UserModel::FRIEND_REQUEST)->count() > 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
-
             $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED);
             $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED);
-
+            event(new AcceptEvent($who->id, $user->id));
             return true;
         } else {
             $this->setErrors(['error' => 'Operacion invaidad']);
@@ -63,6 +66,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
         if ($this->friendsRepo->get($user, $who, UserModel::FRIEND_REQUEST)->count() > 0) {
             $this->friendsRepo->delete($user, $who);
             //$this->friendsRepo->add($who, $user, UserModel::FRIEND_REJECT );
+            event(new RejectEvent($who->id, $user->id));
             return true;
         } else {
             $this->setErrors(['error' => 'Operacion invaidad']);

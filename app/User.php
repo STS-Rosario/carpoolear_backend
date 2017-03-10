@@ -28,12 +28,15 @@ class User extends Authenticatable {
 		'patente',
 		'descripcion',
 		'mobile_phone',
-		'image'
+		'image',
+		'active',
+		'activation_token'
 	];
 	protected $hidden = ['password', 'remember_token'];
 	protected $cast = [
 		'banned' => 'boolean',
-		'terms_and_conditions' => 'boolean'
+		'terms_and_conditions' => 'boolean',
+		'active' => 'boolean',
 	];
 
 	public function accounts() 

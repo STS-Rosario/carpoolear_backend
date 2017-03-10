@@ -126,6 +126,7 @@ class SocialManager extends BaseManager implements SocialLogic
     {
         unset($data['provider_user_id']);
         $data['password'] = null;
+        $data['active'] = true;
         if (isset($data['image'])) {
             $img = file_get_contents($data['image']);
             $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');

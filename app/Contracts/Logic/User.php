@@ -15,6 +15,8 @@ interface User
 
     public function find($user_id);  
 
+    public function activeAccount($activation_token);
+
     public function setErrors($errs);
     
     public function getErrors();

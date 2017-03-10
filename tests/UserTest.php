@@ -21,7 +21,7 @@ class UserTest extends TestCase {
         ];
 
         $u = $userManager->create($data);
-        $this->assertTrue($u != null);
+        $this->assertTrue($u != null); 
 	}
 
     public function testCreateUserFail()
@@ -79,6 +79,22 @@ class UserTest extends TestCase {
         $u1 = $userManager->update($u1, $data);  
         $this->assertTrue($u1 != null);
 
+	}
+
+    public function testActiveUser()
+	{
+        $token = str_random(40);
+        $userManager = \App::make('\STS\Contracts\Logic\User');
+        $u1 = factory(STS\User::class)->create([
+            "activation_token" => $token,
+            "active" => false 
+        ]);
+		 
+        $user = $userManager->activeAccount($token);
+
+        $this->assertTrue($user->id == $u1->id);
+        $this->assertTrue($user->active);
+    
 	}
 
 }

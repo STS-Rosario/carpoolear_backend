@@ -16,6 +16,8 @@ interface User
 
     public function index();
 
+    public function getUserBy($key, $value);
+
     public function addFriend($user, $friend, $provider = "");
 
     public function deleteFriend($user, $friend);
