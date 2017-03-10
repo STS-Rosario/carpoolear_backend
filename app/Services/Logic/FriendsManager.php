@@ -41,7 +41,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
 
             return true;
         } else {
-            $this->setErrors(['error' => 'Operacion invaidad']);
+            $this->setErrors(['error' => 'Operación inválida']);
             return null;
         }
     }
@@ -56,7 +56,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
             event(new AcceptEvent($who->id, $user->id));
             return true;
         } else {
-            $this->setErrors(['error' => 'Operacion invaidad']);
+            $this->setErrors(['error' => 'Operación inválida']);
             return null;
         }
     }
@@ -69,7 +69,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
             event(new RejectEvent($who->id, $user->id));
             return true;
         } else {
-            $this->setErrors(['error' => 'Operacion invaidad']);
+            $this->setErrors(['error' => 'Operación inválida']);
             return null;
         }
     }
@@ -81,7 +81,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
             $this->friendsRepo->delete($user, $who);
             return true;
         } else {
-            $this->setErrors(['error' => 'Operacion invalidad']);
+            $this->setErrors(['error' => 'Operación inválida']);
             return null;
         }
     }
