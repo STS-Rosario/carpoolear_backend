@@ -2,6 +2,7 @@
 
 namespace STS\Repository;
 
+use STS\Contracts\Repository\Trip as TripRepo;
 use STS\Entities\Trip;
 use STS\Entities\TripPoint;
 use STS\User;
@@ -9,7 +10,7 @@ use Carbon\Carbon;
 use Validator;
 use DB;
 
-class TripRepository
+class TripRepository implements TripRepo
 {
     public function create(array $data)
     {
@@ -37,15 +38,18 @@ class TripRepository
 
     public function show($id)
     {
-        return Trip::with('points')->whereId($id)->first();
+        return Trip::with(['user','points'])->whereId($id)->first();
     }
 
     public function index($user, $data)
     {
         if (isset($data['date'])) {
             $trips = Trip::where($data['date'], DB::Raw('DATE(trip_date)'));
+            $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), ?)"));
+            $trips->setBindings([$data['date']]);
         } else {
             $trips = Trip::where('date', '>=', Carbon::Now());
+            $trips->orderBy('trip_date');
         }
         
         $trips->where(function ($q) use ($user) {
@@ -72,10 +76,51 @@ class TripRepository
             });
         });
 
-        $trips->with('user');
-        $trips->orderBy('trip_date');
+        if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
+            $distance = 1000.0;
+            if (isset($data["origin_radio"])) {
+                $distance = floatval($data["origin_radio"]);
+            }
+            $this->whereLocation($trips, $data["origin_lat"], $data["origin_lng"], "origin", $distance);
+        }
+
+        if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
+            $distance = 1000.0;
+            if (isset($data["destination_radio"])) {
+                $distance = floatval($data["destination_radio"]);
+            }
+            $this->whereLocation($trips, $data["destination_lat"], $data["destination_lng"], "destination", $distance);
+        }
+
+        $trips->with(['user', 'points']);
+        
         return $trips->get();
         // [FALTA] Tema de la localizacion para viajes publicos
+    }
+
+    private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)
+    {
+        $deg2radMultiplier = M_PI / 180.0;
+        $latd = $lat * $deg2radMultiplier;
+        $lngd = $lng * $deg2radMultiplier;
+        $sin_lat = str_replace(',', '.', sin($latd));
+        $cos_lat = str_replace(',', '.', cos($latd));
+        $sin_lng = str_replace(',', '.', sin($lngd));
+        $cos_lng = str_replace(',', '.', cos($lngd));
+
+        $distance = max($distance, 1000.0);
+        $dist = cos(($distance /1000.0) / 6371.0);
+        $dist = str_replace(',', '.', $dist);
+
+        $trips->whereHas('points', function ($q) use ($way, $sin_lat, $sin_lng, $cos_lat, $cos_lng, $dist) {
+            if ($way == "origin") {
+                $q->where("id", DB::Raw("(select min(`id`) from trips_points where trip_id = `trips`.`id`)"));
+            }
+            if ($way == "destination") {
+                $q->where("id", DB::Raw("(select max(`id`) from trips_points where trip_id = `trips`.`id`)"));
+            }
+            $q->whereRaw("sin_lat * " . $sin_lat . " + cos_lat * " . $cos_lat . " *  (cos_lng * " . $cos_lng . " + sin_lng * "  . $sin_lng . ") > " . $dist);
+        });
     }
 
     public function delete($trip)

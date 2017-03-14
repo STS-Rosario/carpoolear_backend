@@ -15,7 +15,7 @@ interface Trip
 
     public function show($id);
 
-    public function index();
+    public function index($user, $data);
 
     public function delete($trip);
  

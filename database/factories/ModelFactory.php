@@ -20,3 +20,30 @@ $factory->define(STS\User::class, function (Faker\Generator $faker) {
         'active' => true
     ];
 });
+
+$factory->define(STS\Entities\TripPoint::class, function (Faker\Generator $faker) {
+    return [
+        'address' => $faker->streetAddress,
+        'json_address' => ['city' => $faker->city],
+        'lat' => $faker->latitude,
+        'lng' => $faker->longitude
+    ];
+});
+
+$factory->define(STS\Entities\Trip::class, function ($faker) {
+    return [
+        'is_passenger'          => 0,
+        'from_town'             => $faker->streetAddress,
+        'to_town'               => $faker->streetAddress,
+        'trip_date'             => Carbon\Carbon::now(),
+        'total_seats'           => 5,
+        'friendship_type_id'    => 0,
+        'estimated_time'        => '05:00',
+        'distance'              => 365,
+        'co2'                   => 50,
+        'description'           => 'hola mundo', 
+        'user_id' => function () {
+            return factory(STS\User::class)->create()->id;
+        }
+    ];
+});

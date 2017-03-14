@@ -30,6 +30,7 @@ class TripsTable extends Migration {
 			$table->integer("es_recurrente");
 			$table->integer("trip_type");
 			//$table->integer("esta_carpooleado");
+			$table->boolean("is_passenger");
 			$table->boolean("mail_send");
 			$table->string('tripscol', 45);
 

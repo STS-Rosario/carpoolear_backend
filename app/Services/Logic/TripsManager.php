@@ -2,6 +2,7 @@
 
 namespace STS\Services\Logic;
 
+use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Contracts\Repository\Trip as TripRepo;
 use STS\Entities\Trip;
 use STS\Entities\TripPoint;
@@ -10,7 +11,7 @@ use Validator;
 use Carbon\Carbon;
 use DB;
 
-class TripsManager extends BaseManager
+class TripsManager extends BaseManager implements TripLogic
 {
     protected $tripRepo;
     
@@ -24,14 +25,15 @@ class TripsManager extends BaseManager
         if (is_null($id)) {
             return Validator::make($data, [
                 'is_passenger'           => 'required|in:0,1',
-                'from_town'             => 'required|strng|max:255',
-                'to_town'               => 'required|strng|max:255',
-                'trip_date'             => 'required|datetime',
+                'from_town'             => 'required|string|max:255',
+                'to_town'               => 'required|string|max:255',
+                'trip_date'             => 'required|date',
                 'total_seats'           => 'required|integer|max:5|min:1',
                 'friendship_type_id'    => 'required|integer|in:0,1,2',
-                'estimated_time'        => 'required|time',
+                'estimated_time'        => 'required|string',
                 'distance'              => 'required|numeric',
                 'co2'                   => 'required|integer',
+                'description'           => 'string',
 
                 'points.*.address'      => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -41,12 +43,12 @@ class TripsManager extends BaseManager
         } else {
             return Validator::make($data, [
                 'is_passenger'          => 'in:0,1',
-                'from_town'             => 'strng|max:255',
-                'to_town'               => 'strng|max:255',
-                'trip_date'             => 'datetime',
+                'from_town'             => 'string|max:255',
+                'to_town'               => 'string|max:255',
+                'trip_date'             => 'date',
                 'total_seats'           => 'integer|max:5|min:1',
                 'friendship_type_id'    => 'integer|in:0,1,2',
-                'estimated_time'        => 'time',
+                'estimated_time'        => 'string',
                 'distance'              => 'numeric',
                 'co2'                   => 'integer',
 
@@ -76,7 +78,7 @@ class TripsManager extends BaseManager
         $trip = $this->tripRepo->show($trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
-                $v = $this->validator($data);
+                $v = $this->validator($data, $trip_id);
                 if ($v->fails()) {
                     $this->setErrors($v->errors());
                     return null;
@@ -120,6 +122,6 @@ class TripsManager extends BaseManager
 
     public function index($user, $data)
     {
-        
+        return $this->tripRepo->index($user, $data); 
     }
 }
