@@ -4,6 +4,7 @@ use \STS\Contracts\Logic\User as UserLogic;
 
 class UserTest extends TestCase { 
 
+    use DatabaseTransactions;
 
     protected $userManager;
     public function __construct() {
