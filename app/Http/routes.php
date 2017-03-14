@@ -11,7 +11,8 @@
 |
 */
 
-Route::get('/', function () {  
+Route::get('/', function () {
+    make_pagination();  
     return view('welcome');
 });
 
