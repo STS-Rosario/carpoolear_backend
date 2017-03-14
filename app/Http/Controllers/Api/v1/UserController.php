@@ -15,7 +15,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('api.auth', ['except' => ['create', 'active']]);
+        $this->middleware('api.auth', ['except' => ['create']]);
         $this->userLogic = $userLogic;
     }
 

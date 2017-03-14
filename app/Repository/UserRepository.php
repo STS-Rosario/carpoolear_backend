@@ -4,6 +4,8 @@ namespace STS\Repository;
 
 use STS\Contracts\Repository\User as UserRep;
 use STS\User;
+use Carbon\Carbon;
+use DB;
 
 class UserRepository implements UserRep
 {
@@ -70,4 +72,24 @@ class UserRepository implements UserRep
     {
         $user->friends();
     }
+
+    public function storeResetToken($user, $token)
+    {
+        DB::table('password_resets')->insert(
+            ['email' => $user->email, 'token' => $token, 'created_at' => Carbon::now()]
+        );
+    }
+
+    public function deleteResetToken($key, $value)
+    {
+        DB::table('password_resets')->where($key, $value)->delete();
+    }
+
+    public function getUserByResetToken($token)
+    {
+        $pr = DB::table('password_resets')->where('token', $token)->first();
+        return User::where('email', $pr->email)->first();
+    }
+
+
 }

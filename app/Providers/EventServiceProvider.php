@@ -15,6 +15,7 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         'STS\Events\User\Create' => ['STS\Listeners\User\CreateHandle'],
         'STS\Events\User\Update' => ['STS\Listeners\User\UpdateHandle'],
+        'STS\Events\User\Reset' => ['STS\Listeners\Notification\ResetPasswordHandle'],
         'STS\Events\Friend\Request' => [
             'STS\Listeners\Notification\FriendRequest'
         ],
