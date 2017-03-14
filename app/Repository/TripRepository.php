@@ -1,15 +1,16 @@
 <?php
 
-namespace STS\Repository; 
+namespace STS\Repository;
 
 use STS\Entities\Trip;
 use STS\Entities\TripPoint;
 use STS\User;
+use Carbon\Carbon;
 use Validator;
+use DB;
 
 class TripRepository
-{ 
-
+{
     public function create(array $data)
     {
         $points = $data['points'];
@@ -35,22 +36,56 @@ class TripRepository
     }
 
     public function show($id)
-    { 
+    {
         return Trip::with('points')->whereId($id)->first();
     }
 
-    public function index()
-    { 
-        return Trip::all();
-    }   
+    public function index($user, $data)
+    {
+        if (isset($data['date'])) {
+            $trips = Trip::where($data['date'], DB::Raw('DATE(trip_date)'));
+        } else {
+            $trips = Trip::where('date', '>=', Carbon::Now());
+        }
+        
+        $trips->where(function ($q) use ($user) {
+            $q->whereUserId($user->id);
+            $q->orWhere(function ($q) use ($user) {
+                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                $q->orWhere(function ($q) use ($user) {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
+                    $q->whereHas('user.friends', function ($q) use ($user) {
+                        $q->whereId($user->id);
+                    });
+                });
+                $q->orWhere(function ($q) use ($user) {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOFF);
+                    $q->where(function ($q) use ($user) {
+                        $q->whereHas('user.friends', function ($q) use ($user) {
+                            $q->whereId($user->id);
+                        });
+                        $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
+                            $q->whereId($user->id);
+                        });
+                    });
+                });
+            });
+        });
+
+        $trips->with('user');
+        $trips->orderBy('trip_date');
+        return $trips->get();
+        // [FALTA] Tema de la localizacion para viajes publicos
+    }
 
     public function delete($trip)
-    { 
+    {
         return $trip-delete();
-    }         
+    }
  
-    public function addPoints($trip, $points) {
-        foreach($points as $point) {
+    public function addPoints($trip, $points)
+    {
+        foreach ($points as $point) {
             $p = new TripPoint;
             $p->address = $point["address"];
             $p->json_address = $point["json_address"];
@@ -60,8 +95,8 @@ class TripRepository
         }
     }
 
-    public function deletePoints($trip, $points) {
+    public function deletePoints($trip, $points)
+    {
         $trip->points()->delete();
     }
-
 }

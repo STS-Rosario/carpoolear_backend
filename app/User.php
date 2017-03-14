@@ -34,9 +34,10 @@ class User extends Authenticatable
 	];
 	protected $hidden = ['password', 'remember_token'];
 	protected $cast = [
-		'banned' => 'boolean',
+		'banned' 	=> 'boolean',
 		'terms_and_conditions' => 'boolean',
-		'active' => 'boolean',
+		'active' 	=> 'boolean',
+		'is_admin' 	=> 'boolean'
 	];
 
 	public function accounts() 
