@@ -3,9 +3,9 @@
 namespace STS\Services\Logic;
 
 use STS\Repository\PassengerRepository;
-use STS\Entities\Trip;
+use STS\Entities\Trip as TripModel;
 use STS\Entities\Passenger;
-use STS\User;
+use STS\User as UserModel;
 use Validator;
 
 class PassengerManager
@@ -59,7 +59,7 @@ class PassengerManager
         return null;
     }
 
-    public function confirmar($user, $trip, $who)
+    public function confirm($user, $trip, $who)
     {
         if ($trip->user->id == $user->id) {
             $p = $this->find($who, $trip);
@@ -75,7 +75,7 @@ class PassengerManager
         return null;
     }
 
-    public function rechazar($user, $trip, $who)
+    public function reject($user, $trip, $who)
     {
         if ($trip->user->id == $user->id) {
             $p = $this->find($user, $trip);
@@ -85,5 +85,9 @@ class PassengerManager
             }
         }
         return null;
+    }
+
+    public function userIsOnTrip (TripModel $trip, UserModel $user) {
+        return true; //stub function
     }
 }
