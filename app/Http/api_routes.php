@@ -32,4 +32,8 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->put("/update/{provider?}",    $v1_path . 'SocialController@update');
     });
 
+    $api->group(['prefix' => 'conversations'], function ($api) use ($v1_path) {
+        $api->get("/", $v1_path . 'ConversationController@index');
+    });
+
 }); 

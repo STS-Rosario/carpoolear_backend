@@ -17,13 +17,7 @@ class MessageRepository implements MessageRepo {
     }
 
     public function getMessages (Conversation $conversation, $pageNumber = null, $pageSize = 20) {
-        $conversationMessages = $conversation->messages();
-        /*if ($pageNumber) {
-            $conversationMessages->orderBy('created_at','desc')
-                                 ->skip(($pageNumber - 1) * $page_size)
-                                 ->take($pageSize);
-        }
-        return $conversationMessages->get();*/
+        $conversationMessages = $conversation->messages()->orderBy('created_at','desc');
         if (!$pageNumber) {
             $pageNumber = 1;
         }
@@ -33,7 +27,7 @@ class MessageRepository implements MessageRepo {
             \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($pageNumber) {
                 return $pageNumber;
             });
-            return $conversation->messages()->orderBy('created_at','desc')->paginate($pageSize);
+            return $conversationMessages->paginate($pageSize);
         }
     }
 }

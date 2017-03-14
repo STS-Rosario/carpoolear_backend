@@ -87,7 +87,7 @@ class ConversationsManager implements ConversationRepo {
 
     public function getUserConversations( User $user)
     {
-        $conversation = $this->$conversationRepository->getConversationsFromUser($user);
+        return $this->conversationRepository->getConversationsFromUser($user);
     }
 
     public function getConversation( User $user, $conversation_id )

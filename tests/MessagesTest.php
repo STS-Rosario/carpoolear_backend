@@ -136,7 +136,6 @@ class MessagesTest extends TestCase {
         });
         $user = STS\User::paginate(5);
         $user->setPath('conversation/12/messages');
-        Log::info(json_encode($user));
       }
 
     public function testSendMessage()

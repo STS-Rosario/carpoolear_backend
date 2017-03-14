@@ -6,6 +6,7 @@ use STS\Entities\Conversation;
 use STS\Entities\Trip;
 use STS\User;
 use STS\Contracts\Repository\Conversations as ConversationRepo;
+use Illuminate\Pagination\Paginator;
 
 class ConversationRepository implements ConversationRepo {
 
@@ -19,8 +20,20 @@ class ConversationRepository implements ConversationRepo {
 
     /* CONVERSATION GETTERS */
 
-    public function getConversationsFromUser (User $user) {
-        return  $user->conversations()->get();
+    public function getConversationsFromUser (User $user, $pageNumber = null, $pageSize = 20) {
+        $userConversations = $user->conversations();
+        
+        if (!$pageNumber) {
+            $pageNumber = 1;
+        }
+        if ($pageSize == null) {
+            //return $conversation->messages;
+        } else {
+            Paginator::currentPageResolver(function () use ($pageNumber) {
+                return $pageNumber;
+            }); 
+            return $userConversations->paginate($pageSize);
+        }
     }
 
     public function getConversationFromId ( $conversation_id, User $user = null ) {
