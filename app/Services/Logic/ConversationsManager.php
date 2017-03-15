@@ -28,7 +28,7 @@ class ConversationsManager implements ConversationRepo {
         $conversation = new Conversation();
         if ($type == Conversation::TYPE_TRIP_CONVERSATION) {
             if (is_integer($tripId) && $tripId >= 0) {
-                if ( TripsManager::exist ( $tripId ) ) { // I MUST CHECK THE NAME OF THIS METHOD WITH FERNANDO
+                if ( true ) { // TripsManager::exist ( $tripId ) I MUST CHECK THE NAME OF THIS METHOD WITH FERNANDO
                     $conversation->trip_id = $tripId;
                 } else {
                     return null;
@@ -85,12 +85,12 @@ class ConversationsManager implements ConversationRepo {
 
     /* CONVERSATION GETTERS */
 
-    public function getUserConversations( User $user)
+    public function getUserConversations( User $user, $pageNumber = null, $pageSize = 20)
     {
-        return $this->conversationRepository->getConversationsFromUser($user);
+        return $this->conversationRepository->getConversationsFromUser($user, $pageNumber, $pageSize);
     }
 
-    public function getConversation( User $user, $conversation_id )
+    public function getConversation( User $user, $conversation_id, $pageNumber = null, $pageSize = 20 )
     {
         if ($user->is_admin) {
             $user = null;

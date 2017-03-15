@@ -20,7 +20,7 @@ class ConversationRepository implements ConversationRepo {
 
     /* CONVERSATION GETTERS */
 
-    public function getConversationsFromUser (User $user, $pageNumber = null, $pageSize = 20) {
+    public function getConversationsFromUser (User $user, $pageNumber, $pageSize) {
         $userConversations = $user->conversations();
         
         if (!$pageNumber) {

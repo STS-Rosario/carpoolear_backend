@@ -10,9 +10,9 @@ interface Conversation {
 
     function findOrCreatePrivateConversation(UserModel $user1, UserModel $user2);
 
-    function getUserConversations( UserModel $user);
+    function getUserConversations( UserModel $user, $pageNumber, $pageSize);
 
-    function getConversation( UserModel $user, $conversation_id );
+    function getConversation( UserModel $user, $conversation_id, $pageNumber, $pageSize );
 
     function getConversationByTrip ( UserModel $user, $trip_id);
 

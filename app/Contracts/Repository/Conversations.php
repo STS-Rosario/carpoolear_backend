@@ -12,7 +12,7 @@ interface Conversations {
 
     public function delete (Conversation $conversation);
 
-    public function getConversationsFromUser (UserModel $user);
+    public function getConversationsFromUser (UserModel $user, $pageNumber, $pageSize);
 
     public function getConversationFromId ( $conversation_id, UserModel $user = null );
 
