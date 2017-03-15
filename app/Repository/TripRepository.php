@@ -28,7 +28,7 @@ class TripRepository implements TripRepo
             $points = $data['points'];
             unset($data['points']);
         }
-        $trip = $trip->update($data);
+        $trip->update($data);
         if ($points) {
             $this->deletePoints($trip);
             $this->addPoints($trip, $points);
@@ -125,7 +125,7 @@ class TripRepository implements TripRepo
 
     public function delete($trip)
     {
-        return $trip-delete();
+        return $trip->delete();
     }
  
     public function addPoints($trip, $points)

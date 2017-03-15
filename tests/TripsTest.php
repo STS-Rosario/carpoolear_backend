@@ -39,32 +39,36 @@ class TripsTest extends TestCase {
         ];
 
         $u = $tripManager->create($user, $data);
-        if (!$u) {
-            var_dump($tripManager->getErrors());
-        }
         $this->assertTrue($u != null); 
 	}
 
     public function testUpdateTrip()
     {
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)
-            ->create();
-            /*->each(function ($trip) {
-                    $trip->points()->save(factory(STS\Entities\TripPoint::class)->make());
-            });
-            */
-        var_dump(json_encode($trip));    
-
+        $trip = factory(STS\Entities\Trip::class)->create(); 
         $from = $trip->from_town;
-
         $trip = $tripManager->update($trip->user, $trip->id, ['from_town' => "Usuahia"]);
-        if (!$trip) {
-
-            var_dump($tripManager->getErrors());
-        }
         $this->assertTrue($trip->from_town != $from);
          
+    }
+
+    public function testDeleteTrip()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $trip = factory(STS\Entities\Trip::class)->create();
+
+        $from = $trip->from_town;
+        $result = $tripManager->delete($trip->user, $trip->id);
+        $this->assertTrue($result);
+    }
+
+    public function testShowTrip()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $trip = factory(STS\Entities\Trip::class)->create();
+
+        $result = $tripManager->show($trip->user, $trip->id);
+        $this->assertTrue($result != null);
     }
 
 }
