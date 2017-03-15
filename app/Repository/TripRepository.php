@@ -43,12 +43,12 @@ class TripRepository implements TripRepo
 
     public function index($user, $data)
     {
-        if (isset($data['date'])) {
-            $trips = Trip::where($data['date'], DB::Raw('DATE(trip_date)'));
-            $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), ?)"));
-            $trips->setBindings([$data['date']]);
+        if (isset($data['date'])) { 
+            $trips = Trip::where(DB::Raw('DATE(trip_date)') , $data['date'] );
+            $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), '" . $data['date'] . "' )"));
+            //$trips->setBindings([$data['date']]);
         } else {
-            $trips = Trip::where('date', '>=', Carbon::Now());
+            $trips = Trip::where('trip_date', '>=', Carbon::Now());
             $trips->orderBy('trip_date');
         }
         
@@ -63,7 +63,7 @@ class TripRepository implements TripRepo
                     });
                 });
                 $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOFF);
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
                     $q->where(function ($q) use ($user) {
                         $q->whereHas('user.friends', function ($q) use ($user) {
                             $q->whereId($user->id);

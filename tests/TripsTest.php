@@ -4,6 +4,8 @@ use \STS\Contracts\Logic\User as UserLogic;
 use \STS\Contracts\Logic\Trip as TripsLogic;
 use Carbon\Carbon;
 use Mockery as m;
+use STS\Entities\TripPoint; 
+use STS\Entities\Trip;
 
 class TripsTest extends TestCase { 
     use DatabaseTransactions;
@@ -98,4 +100,26 @@ class TripsTest extends TestCase {
 
         m::close();
     }
+
+    public function testTripSeeder()
+    {
+        $this->seed('TripsTestSeeder');
+
+        $todos = TripPoint::all();
+        $this->assertTrue($todos->count() == 2);
+    }
+
+    public function testSimpleSearch()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+
+        $this->seed('TripsTestSeeder');
+        $other = factory(STS\User::class)->create();
+        $data = [ 
+            'date' => Carbon::now()->toDateString()
+        ]; 
+        $trips = $tripManager->index($other, $data); 
+        $this->assertTrue($trips->count() > 0);
+    }
+
 }

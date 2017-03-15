@@ -35,7 +35,7 @@ $factory->define(STS\Entities\Trip::class, function ($faker) {
         'is_passenger'          => 0,
         'from_town'             => $faker->streetAddress,
         'to_town'               => $faker->streetAddress,
-        'trip_date'             => Carbon\Carbon::now(),
+        'trip_date'             => Carbon\Carbon::now()->addHour(),
         'total_seats'           => 5,
         'friendship_type_id'    => 2,
         'estimated_time'        => '05:00',
@@ -45,5 +45,41 @@ $factory->define(STS\Entities\Trip::class, function ($faker) {
         'user_id' => function () {
             return factory(STS\User::class)->create()->id;
         }
+    ];
+});
+
+$factory->defineAs(STS\Entities\TripPoint::class, 'rosario', function ($faker) {
+    return [
+        'address' => 'Rosario, Santa Fe, ARgentina',
+        'json_address' => ['city' => 'Rosario'],
+        'lat' => -32.946525, 
+        'lng' => -60.669847
+    ];
+});
+
+$factory->defineAs(STS\Entities\TripPoint::class, 'buenos_Aires', function ($faker) {
+    return [
+        'address' => 'Buenos Aires, Argentina',
+        'json_address' => ['city' => 'Buenos Aires'],
+        'lat' => -34.608903,  
+        'lng' => -58.404521
+    ];
+});
+
+$factory->defineAs(STS\Entities\TripPoint::class, 'cordoba', function ($faker) {
+    return [
+        'address' => 'Cordoba, Cordoba, Argentina',
+        'json_address' => ['city' => 'Cordoba'],
+        'lat' => -31.421045, 
+        'lng' => -64.190543
+    ];
+});
+
+$factory->defineAs(STS\Entities\TripPoint::class, 'mendoza', function ($faker) {
+    return [
+        'address' => 'Mendoza, Mendoza, Argentina',
+        'json_address' => ['city' => 'Mendoza'],
+        'lat' => -32.897273,  
+        'lng' => -68.834067
     ];
 });
