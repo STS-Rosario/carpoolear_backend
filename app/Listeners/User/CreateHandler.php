@@ -1,12 +1,12 @@
 <?php
 
-namespace STS\Listeners\Notification;
+namespace STS\Listeners\User;
 
-use STS\Events\User\Reset;
+use STS\Events\User\Create;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ResetPasswordHandle
+class CreateHandler
 {
     /**
      * Create the event listener.
@@ -21,10 +21,10 @@ class ResetPasswordHandle
     /**
      * Handle the event.
      *
-     * @param  Reset  $event
+     * @param  Create  $event
      * @return void
      */
-    public function handle(Reset $event)
+    public function handle(Create $event)
     {
         //
     }

@@ -1,12 +1,12 @@
 <?php
 
-namespace STS\Listeners\User;
+namespace STS\Listeners\Notification;
 
-use STS\Events\User\Update;
+use STS\Events\User\Reset;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdateHandle implements ShouldQueue
+class ResetPasswordHandler
 {
     /**
      * Create the event listener.
@@ -21,10 +21,10 @@ class UpdateHandle implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  Update  $event
+     * @param  Reset  $event
      * @return void
      */
-    public function handle(Update $event)
+    public function handle(Reset $event)
     {
         //
     }
