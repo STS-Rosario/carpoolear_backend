@@ -26,6 +26,7 @@ class AuthController extends Controller
     protected $deviceLogic;
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
     {
+        $this->middleware('api.auth', ['only' => ['logout, retoken']]);
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
     }
@@ -102,6 +103,33 @@ class AuthController extends Controller
             $this->deviceLogic->register($user, $data);
         }
         return $this->response->withArray(['token' => $token]);
+    }
+
+    public function reset(Request $request) 
+    {
+        $email = $request->get('email');
+        if ($email) {
+            $token = $this->userLogic->resetPassword($email);
+            if ($token) {
+                return $this->response->withArray(['status' => 'ok']);    
+            } else {
+                throw new BadRequestHttpException('User not found');
+            }
+        } else {
+            throw new BadRequestHttpException('E-mail not provided');
+        }
+    }
+
+
+    public function changePasswod($token, Request $request) 
+    {
+        $data = $request->all();
+        $status = $this->userLogic->changePassword($token, $data);
+        if ($status) {
+            return $this->response->withArray(['status' => 'ok']);  
+        } else {
+            throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
+        }
     }
 
 }

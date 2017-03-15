@@ -13,8 +13,9 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        'STS\Events\User\Create' => ['STS\Listeners\User\CreateHandle'],
-        'STS\Events\User\Update' => ['STS\Listeners\User\UpdateHandle'],
+        'STS\Events\User\Create' => ['STS\Listeners\User\CreateHandler'],
+        'STS\Events\User\Update' => ['STS\Listeners\User\UpdateHandler'],
+        'STS\Events\User\Reset' => ['STS\Listeners\Notification\ResetPasswordHandler'],
         'STS\Events\Friend\Request' => [
             'STS\Listeners\Notification\FriendRequest'
         ],

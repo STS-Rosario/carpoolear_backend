@@ -24,4 +24,10 @@ interface User
 
     public function friendList($user);
 
+    public function storeResetToken($user, $token);
+
+    public function deleteResetToken($key, $value);
+
+    public function getUserByResetToken($token);
+
 }
