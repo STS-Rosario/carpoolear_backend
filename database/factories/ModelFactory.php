@@ -37,7 +37,7 @@ $factory->define(STS\Entities\Trip::class, function ($faker) {
         'to_town'               => $faker->streetAddress,
         'trip_date'             => Carbon\Carbon::now(),
         'total_seats'           => 5,
-        'friendship_type_id'    => 0,
+        'friendship_type_id'    => 2,
         'estimated_time'        => '05:00',
         'distance'              => 365,
         'co2'                   => 50,

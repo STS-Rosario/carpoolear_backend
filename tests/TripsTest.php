@@ -3,6 +3,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use \STS\Contracts\Logic\User as UserLogic;
 use \STS\Contracts\Logic\Trip as TripsLogic;
 use Carbon\Carbon;
+use Mockery as m;
 
 class TripsTest extends TestCase { 
     use DatabaseTransactions;
@@ -71,4 +72,30 @@ class TripsTest extends TestCase {
         $this->assertTrue($result != null);
     }
 
+    public function testCanSeeTrip()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $trip = factory(STS\Entities\Trip::class)->create();
+
+        $other = factory(STS\User::class)->create();
+
+        $result = $tripManager->userCanSeeTrip($other, $trip);
+        $this->assertTrue($result);
+    }
+
+    public function testCanSeeTripFriend()
+    {
+        $this->userLogic = $this->mock('STS\Contracts\Logic\Friends');        
+        $this->userLogic->shouldReceive('areFriend')->once()->andReturn(true);
+
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $trip = factory(STS\Entities\Trip::class)->create(['friendship_type_id' => 0 ]);
+
+        $other = factory(STS\User::class)->create();
+
+        $result = $tripManager->userCanSeeTrip($other, $trip);
+        $this->assertTrue($result);
+
+        m::close();
+    }
 }

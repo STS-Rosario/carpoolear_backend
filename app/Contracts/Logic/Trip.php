@@ -14,5 +14,6 @@ interface Trip
 
     public function index($user, $data);
 
+    public function userCanSeeTrip($user, $trip);
 }
  

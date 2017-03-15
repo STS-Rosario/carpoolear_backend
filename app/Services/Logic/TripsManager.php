@@ -96,14 +96,13 @@ class TripsManager extends BaseManager implements TripLogic
         }
     }
 
-
     public function delete($user, $trip_id)
     {
         $trip = $this->tripRepo->show($trip_id);
         if ($trip) {
             // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {
-                return $this->tripRepo->delete($trip);                 
+                return $this->tripRepo->delete($trip);
             } else {
                 $this->setErrors(trans('errors.tripowner'));
                 return null;
@@ -117,11 +116,42 @@ class TripsManager extends BaseManager implements TripLogic
     public function show($user, $trip_id)
     {
         $trip = $this->tripRepo->show($trip_id);
-        return $trip;
+        if ($this->userCanSeeTrip($user, $trip)) {
+            return $trip;
+        } else {
+            $this->setErrors("trip_not_foound");
+            return null;
+        }
+        
     }
 
     public function index($user, $data)
     {
-        return $this->tripRepo->index($user, $data); 
+        return $this->tripRepo->index($user, $data);
+    }
+
+    public function userCanSeeTrip($user, $trip) 
+    {
+        $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
+        if ($user->id == $trip->user->id) {
+            return true;
+        }
+
+        if ($trip->friendship_type_id == Trip::PRIVACY_PUBLIC) {
+            return true;
+        }
+
+        if ($trip->friendship_type_id == Trip::PRIVACY_FRIENDS) {
+            return $friendsManager->areFriend($user, $trip->user);
+        }
+
+        if ($trip->friendship_type_id == Trip::PRIVACY_FOF) {
+            return $friendsManager->areFriend($user, $trip->user, true);
+        }
+
+        // [TODO] Faltaría saber si sos pasajero
+
+        return false;
+
     }
 }

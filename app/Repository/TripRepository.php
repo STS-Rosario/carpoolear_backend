@@ -94,7 +94,12 @@ class TripRepository implements TripRepo
 
         $trips->with(['user', 'points']);
         
-        return $trips->get();
+        $pageNumber = isset($data['page']) ? $data['page'] : null;
+        $pageSize   = isset($data['page_size']) ? $data['page_size'] : null;
+
+        return make_pagination($trips, $pageNumber, $pageSize);
+
+        //return $trips->get();
         // [FALTA] Tema de la localizacion para viajes publicos
     }
 

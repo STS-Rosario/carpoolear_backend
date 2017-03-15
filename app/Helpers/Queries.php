@@ -2,17 +2,17 @@
 
 use \Illuminate\Pagination\Paginator;
 
-function make_pagination ($query, $pageNumber = null, $pageSize = 20) 
+function make_pagination($query, $pageNumber = null, $pageSize = 20)
 {
     if (!$pageNumber) {
-      $pageNumber = 1;
+        $pageNumber = 1;
     }
     if ($pageSize == null) {
-      return $query->get();
+        return $query->get();
     } else {
-      \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($pageNumber) {
-          return $pageNumber;
-      });
-      return $query->paginate($pageSize);
+        \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($pageNumber) {
+            return $pageNumber;
+        });
+        return $query->paginate($pageSize);
     }
 }
