@@ -13,6 +13,7 @@ use Validator;
 
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent;
+use STS\Events\User\Reset  as ResetEvent;
 
 class UsersManager extends BaseManager implements UserLogic
 {
@@ -29,12 +30,14 @@ class UsersManager extends BaseManager implements UserLogic
                 'name' => 'max:255',
                 'email' => 'email|max:255|unique:users,email,' . $id,
                 'password' => 'min:6|confirmed',
+                'gender' => 'string|in:Masculino,Feminino'
             ]);
         } else {
             return Validator::make($data, [
                 'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users',
                 'password' => 'min:6|confirmed',
+                'gender' => 'string|in:Masculino,Feminino'
             ]);
         }
     }
@@ -113,6 +116,35 @@ class UsersManager extends BaseManager implements UserLogic
             $this->setErrors(['error' => 'invalid_activation_token']);
             return null;
         }
+    }
+
+    public function resetPassword($email)
+    {
+        $user = $this->repo->getUserBy('email', $email);
+        if ($user) {
+            $token = str_random(40);
+            $this->repo->deleteResetToken('email', $user->email);
+            $this->repo->storeResetToken($user, $token);
+            $this->repo->update($user, ['active' => false]);
+            event(new ResetEvent($user->id, $token));
+            return $token;
+        } else {
+            $this->setErrors(['error' => 'user_not_found']);
+            return null;
+        }
+    }
+
+    public function changePassword($token, $data)
+    {
+        $user = $this->repo->getUserByResetToken($token);
+        if ($user) {
+            $data['active'] = true;
+            if ($this->update($user, $data)) {
+                $this->repo->deleteResetToken('email', $user->email);
+                return true;
+            }
+        }
+        return null;
     }
 
     public function show($user, $profile_id)

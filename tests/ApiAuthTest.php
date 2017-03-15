@@ -115,10 +115,37 @@ class ApiAuthTest extends TestCase
         $this->userLogic->shouldReceive('activeAccount')->once()->andReturn($u1);
 
         $response = $this->call('POST', 'api/active/1234567890'); 
+        
         $this->assertTrue($response->status() == 200);
         
         $response = $this->parseJson($response);
         $this->assertTrue($response->token != null);
+        m::close();
+    } 
+
+    public function testResetPassword()
+    {
+        $u1 = factory(STS\User::class)->create();
+        $this->userLogic = $this->mock('STS\Contracts\Logic\User');        
+        $this->userLogic->shouldReceive('resetPassword')->once()->andReturn('asdqweasdqwe');
+
+        $response = $this->call('POST', 'api/reset-password', ['email' => $u1->email]); 
+        
+        $this->assertTrue($response->status() == 200);
+
+        m::close();
+    } 
+
+    public function testChagePassword()
+    {
+        $u1 = factory(STS\User::class)->create();
+        $this->userLogic = $this->mock('STS\Contracts\Logic\User');        
+        $this->userLogic->shouldReceive('changePassword')->once()->andReturn(true);
+
+        $response = $this->call('POST', 'api/change-password/1234567890'); 
+        \Log::info($response->getContent());
+        $this->assertTrue($response->status() == 200);
+
         m::close();
     } 
 

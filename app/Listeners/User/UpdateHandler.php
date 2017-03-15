@@ -6,7 +6,7 @@ use STS\Events\User\Update;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class UpdateHandle implements ShouldQueue
+class UpdateHandler
 {
     /**
      * Create the event listener.

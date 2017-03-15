@@ -6,7 +6,7 @@ use STS\Events\User\Create;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class CreateHandle implements ShouldQueue
+class CreateHandler
 {
     /**
      * Create the event listener.
@@ -26,6 +26,6 @@ class CreateHandle implements ShouldQueue
      */
     public function handle(Create $event)
     {
-        \Log::info("User Create Event");
+        //
     }
 }
