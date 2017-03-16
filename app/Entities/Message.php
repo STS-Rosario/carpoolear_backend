@@ -17,10 +17,24 @@ class Message extends Model {
         'time'
 	];
 
-	protected $hidden = [];
+    protected $touches = ['conversation'];
 
-	public function user() {
-        return $this->belongsTo('STS\User','activo_id');
+    public function conversation()
+    {
+        return $this->belongsTo('STS\Entities\Conversation','conversation_id');
     }
 
+	protected $hidden = [];
+
+	public function from() {
+        return $this->belongsTo('STS\User','user_id');
+    }
+
+    public function users() {
+        return $this->belongsToMany('STS\User','user_message_read', 'message_id','user_id')->withPivot('read');
+    }
+
+    public function read(User $user) {
+        return $this->users()->where('user_id', $user->id)->first()->pivot->read;
+    }
 }

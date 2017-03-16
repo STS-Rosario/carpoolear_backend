@@ -102,7 +102,7 @@ class User extends Authenticatable {
     }
 
     public function conversations() {
-        return $this->belongsToMany('STS\Entities\Conversation','conversations_users', 'user_id','conversation_id');
+        return $this->belongsToMany('STS\Entities\Conversation','conversations_users', 'user_id','conversation_id')->withPivot('read');
     }
 
 }

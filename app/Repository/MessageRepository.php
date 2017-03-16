@@ -4,6 +4,7 @@ namespace STS\Repository;
 
 use STS\Entities\Message;
 use STS\Entities\Conversation;
+use STS\User;
 use STS\Contracts\Repository\Messages as MessageRepo;
 
 class MessageRepository implements MessageRepo {
@@ -16,18 +17,23 @@ class MessageRepository implements MessageRepo {
         return $message->delete();
     }
 
-    public function getMessages (Conversation $conversation, $pageNumber = null, $pageSize = 20) {
-        $conversationMessages = $conversation->messages()->orderBy('created_at','desc');
-        if (!$pageNumber) {
-            $pageNumber = 1;
-        }
-        if ($pageSize == null) {
-            return $conversation->messages;
-        } else {
-            \Illuminate\Pagination\Paginator::currentPageResolver(function () use ($pageNumber) {
-                return $pageNumber;
-            });
-            return $conversationMessages->paginate($pageSize);
-        }
+    public function getMessages (Conversation $conversation, $pageNumber, $pageSize) {
+        $conversationMessages = $conversation->messages()->orderBy('updated_at','desc');
+        return make_pagination($conversationMessages, $pageNumber, $pageSize);
+    }
+
+    public function getUnreadMessages (Conversation $conversation, User $user) {
+        return $conversation->messages()->whereHas('users', function($q) use ($user) {
+            $q->where('user_id', $user->id)
+                ->where('read', false);
+        })->get();
+    }
+
+    public function changeMessageReadState (Message $message, User $user, $read_state) {
+        $message->users()->updateExistingPivot($user->id, ['read' => $read_state]);
+    }
+
+    public function createMessageReadState (Message $message, User $user, $read_state) {
+        $message->users()->attach($user->id, ['read' => $read_state]);
     }
 }

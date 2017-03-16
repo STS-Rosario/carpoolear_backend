@@ -21,31 +21,26 @@ class ConversationRepository implements ConversationRepo {
     /* CONVERSATION GETTERS */
 
     public function getConversationsFromUser (User $user, $pageNumber, $pageSize) {
-        $userConversations = $user->conversations();
-        
-        if (!$pageNumber) {
-            $pageNumber = 1;
-        }
-        if ($pageSize == null) {
-            //return $conversation->messages;
-        } else {
-            Paginator::currentPageResolver(function () use ($pageNumber) {
-                return $pageNumber;
-            }); 
-            return $userConversations->paginate($pageSize);
-        }
+        $userConversations = $user->conversations()
+            ->orderBy("updated_at","desc");
+        return make_pagination($userConversations, $pageNumber, $pageSize);
     }
 
     public function getConversationFromId ( $conversation_id, User $user = null ) {
         $conversation = Conversation::where('id', $conversation_id)->first();
-        if ($user) {
-            $conversation->users()->where('id', $user->id);
+        if ($conversation == null) {
+            return null; // el viaje no existe;
         }
-        return $conversation->first();
+        if ($user != null) {
+            if ($conversation->users()->where('user_id', $user->id)->count() == 0) {
+                return null; // handlear error
+            }
+        }
+        return $conversation;
     }
 
     public function getConversationByTripId ( $tripId, User $user = null ) {
-        $conversation = Conversation::where('trip_id', $trip_id)->first();
+        $conversation = Conversation::where('trip_id', $tripId)->first();
         if ($user) {
             $conversation->users()->where('id', $user->id);
         }
@@ -59,7 +54,7 @@ class ConversationRepository implements ConversationRepo {
     }
 
     public function addUser (Conversation $conversation, User $user) {
-        $conversation->users()->attach($user->id);
+        $conversation->users()->attach($user->id, ['read' => true]);
     }
 
     public function removeUser (Conversation $conversation, User $user) {
@@ -72,5 +67,9 @@ class ConversationRepository implements ConversationRepo {
         })->whereHas('users', function ($query) use ($user2) {
             $query->where('id', $user2->id);
         })->where("type", Conversation::TYPE_PRIVATE_CONVERSATION)->first();
+    }
+    
+    public function changeConversationReadState (Conversation $conversation, User $user, $read_state) {
+        $conversation->users()->updateExistingPivot($user->id, ['read' => $read_state]);
     }
 }

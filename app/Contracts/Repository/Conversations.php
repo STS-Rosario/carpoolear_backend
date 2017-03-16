@@ -26,4 +26,6 @@ interface Conversations {
 
     public function matchUser(UserModel $user1, UserModel $user2);
 
+    public function changeConversationReadState (Conversation $conversation, UserModel $user, $read_state);
+
 }

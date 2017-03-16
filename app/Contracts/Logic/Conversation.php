@@ -24,5 +24,7 @@ interface Conversation {
 
     function send( UserModel $user, $conversationId, $message);
 
-    function getMessagesFromConversation( $conversation_id, UserModel $user, $unreadMessages);
+    function getAllMessagesFromConversation( $conversation_id, UserModel $user, $read, $pageNumber, $pageSize);
+
+    function getUnreadMessagesFromConversation( $conversation_id, UserModel $user, $read);
 }

@@ -1,6 +1,7 @@
 <?php
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Pagination\Paginator;
+use Carbon\Carbon;
 
 class MessagesTest extends TestCase { 
     
@@ -43,7 +44,7 @@ class MessagesTest extends TestCase {
         $this->assertTrue($conversation2->id == $conversation->id);
     }
 
-    public function test_addUserToConversation_Success()
+    public function test_addUserToConversation_and_removeUserFromConversation_Success()
     {
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create();
@@ -53,15 +54,24 @@ class MessagesTest extends TestCase {
 
         $this->conversationManager->addUserToConversation($conversation->id, $user1);
         $this->conversationManager->addUserToConversation($conversation->id, $user2);
+
         $isUser1 = $conversation->users()->where('id', $user1->id)->count();
         $this->assertTrue($isUser1 == 1);
 
         $isUser2 = $conversation->users()->where('id', $user2->id)->count();
         $this->assertTrue($isUser2 == 1);
-        
         $isUser3 = $conversation->users()->where('id', $user3->id)->count();
         $this->assertTrue($isUser3 == 0);
 
+        $this->conversationManager->removeUsertFromConversation($conversation->id, $user1);
+        $isUser1 = $conversation->users()->where('id', $user1->id)->count();
+        $this->assertTrue($isUser1 == 0);
+
+        $isUser2 = $conversation->users()->where('id', $user2->id)->count();
+        $this->assertTrue($isUser2 == 1);
+
+        $conversation = $this->conversationManager->getConversation($user2, $conversation->id);
+        $this->assertTrue(count($conversation) == 1);
     }
 
     public function test_TripConversationCreate_Success()
@@ -94,7 +104,7 @@ class MessagesTest extends TestCase {
         $this->assertFalse($conversation);
     }
 
-    public function testMatchSuccess()
+    public function test_Match_Success()
 	  {
         $c = factory(STS\Entities\Conversation::class)->create();
 
@@ -109,7 +119,7 @@ class MessagesTest extends TestCase {
         $this->assertTrue($c->id == $c2->id);
 	  }
  
-    public function testMatchFail()
+    public function test_Match_Fail()
 	  {
         $c = factory(STS\Entities\Conversation::class)->create();
         $c2 = factory(STS\Entities\Conversation::class)->create();
@@ -130,30 +140,33 @@ class MessagesTest extends TestCase {
         $this->assertFalse($cc1->id == $cc2->id);
 	  }
 
-    public function testSendMessage()
+    public function test_Send_Message()
 	  {
         $c = factory(STS\Entities\Conversation::class)->create();
 
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
+        $u3 = factory(STS\User::class)->create();
 
         $m1 = "test 1";
         $m2 = "test 2";
         $m3 = "test 3";
 
         $this->conversationRepository->addUser($c, $u1);
+        $this->conversationRepository->addUser($c, $u2);
         $this->conversationManager->send($u1, $c->id, $m1);
         $this->conversationManager->send($u2, $c->id, $m2);
         $this->conversationManager->send($u1, $c->id, $m3);
+        $this->conversationManager->send($u3, $c->id, $m3);
 
-        $messages = $this->messageRepository->getMessages($c, 1);
+        $messages = $this->messageRepository->getMessages($c, 1, 20);
         $messagesDecode = json_decode(json_encode($messages));
         $this->assertTrue($messagesDecode->total == 3 && $messagesDecode->data[0]->user_id == $u1->id && $messagesDecode->data[0]->text == $m1 && $messagesDecode->data[0]->conversation_id == $c->id  );
         $this->assertTrue($messagesDecode->data[1]->user_id == $u2->id && $messagesDecode->data[1]->text == $m2 && $messagesDecode->data[1]->conversation_id == $c->id  );
         $this->assertTrue($messagesDecode->data[2]->user_id == $u1->id && $messagesDecode->data[2]->text == $m3 && $messagesDecode->data[2]->conversation_id == $c->id  );
       }
 
-      public function testGetUserConversations()
+      public function test_Get_User_Conversations()
       {
         $u1 = factory(STS\User::class)->create();
 
@@ -168,18 +181,123 @@ class MessagesTest extends TestCase {
         $this->assertTrue($userConversations->total == 20);
       }
 
-      public function testGetConversation()
+      public function test_Get_Conversation()
       {
           $u = factory(STS\User::class)->create();
           $c = factory(STS\Entities\Conversation::class)->create();
+          $this->conversationRepository->addUser($c, $u);
 
-            for ($i = 0; $i <20; $i++) {
-                $m = 'text' - $i;
-                $this->conversationManager->send($u, $c->id, $m);
-            }
+            $this->conversation = $this->conversationManager->getConversation($u, $c->id);
+            $this->assertTrue($this->conversation->id == $c->id);
 
-            $this->conversationManager->getConversation($u);
-
-            //invalid user
+            //invalid user - never have'benn tested'
       }
+
+      public function test_conversation_entity_unread()
+      {
+          $users = factory(STS\User::class, 4)->create();
+          $c = factory(STS\Entities\Conversation::class)->create();
+
+          for ( $i = 0;  $i < 4;  $i++) {
+            $this->conversationRepository->addUser($c, $users[$i]);
+          }
+        $this->conversationManager->send($users[1], $c->id, "test1");
+        $this->conversationManager->send($users[1], $c->id, "test2");
+        $this->assertTrue($c->read($users[0]) == false && $c->read($users[2]) == false && $c->read($users[3]) == false);
+        $this->assertTrue($c->read($users[1]) == true);
+        $this->assertTrue($c->users()->wherePivot('read', true)->count() == 1);
+        $this->assertTrue($c->users()->wherePivot('read', false)->count() == 3);
+      }
+
+      public function test_touching()
+      {
+          $u = factory(STS\User::class)->create();
+          $c1 = factory(STS\Entities\Conversation::class)->create();
+          $c2 = factory(STS\Entities\Conversation::class)->create();
+          $c3 = factory(STS\Entities\Conversation::class)->create();
+
+          $c1->updated_at = Carbon::create(1999, 1, 1, 0, 0, 0);
+          $c2->updated_at = Carbon::create(2000, 1, 1, 0, 0, 0);
+          $c3->updated_at = Carbon::create(2001, 1, 1, 0, 0, 0);
+          $c1->save(['timestamps' => FALSE]);
+          $c2->save(['timestamps' => FALSE]);
+          $c3->save(['timestamps' => FALSE]);
+
+          $this->conversationManager->addUserToConversation($c1->id, $u);
+          $this->conversationManager->addUserToConversation($c2->id, $u);
+          $this->conversationManager->addUserToConversation($c3->id, $u);
+
+          $userConversations = $this->conversationManager->getUserConversations($u);
+          $this->assertTrue($userConversations[0]->id == $c3->id && 
+                            $userConversations[1]->id == $c2->id && 
+                            $userConversations[2]->id == $c1->id);
+
+          $this->conversationManager->send($u, $c2->id, 'test');
+          $userConversations = $this->conversationManager->getUserConversations($u);
+
+          $this->assertTrue($userConversations[0]->id == $c2->id && 
+                            $userConversations[1]->id == $c3->id && 
+                            $userConversations[2]->id == $c1->id);
+      }
+
+      public function test_get_all_messages_from_conversation ()
+      {
+          $u1 = factory(STS\User::class)->create();
+          $u2 = factory(STS\User::class)->create();
+          $c = factory(STS\Entities\Conversation::class)->create();
+         $this->conversationManager->addUserToConversation($c->id, $u1);
+         $this->conversationManager->addUserToConversation($c->id, $u2);
+            for ($i = 0; $i <27; $i++) {
+                $m = 'text' . $i;
+                $this->conversationManager->send($u1, $c->id, $m);
+            }
+        $this->conversationManager->send($u2, $c->id, 'new');
+           
+        $messages = $this->conversationManager->getAllMessagesFromConversation($c->id, $u2, false);
+        $messages = json_decode(json_encode($messages));
+        $this->assertTrue($messages->total == 28);
+
+        $this->conversationManager->send($u1, $c->id, 'new');
+
+        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false);
+        $messages = json_decode(json_encode($messages));
+        $this->assertTrue(count($messages) == 28);
+
+        $this->conversationManager->send($u1, $c->id, 'new');
+        $this->conversationManager->send($u2, $c->id, 'new');
+
+        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, true);
+        $messages = json_decode(json_encode($messages));
+        $this->assertTrue(count($messages) == 29);
+
+        $this->conversationManager->send($u1, $c->id, 'new');
+
+        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false);
+        $messages = json_decode(json_encode($messages));
+        $this->assertTrue(count($messages) == 1);
+        
+      }
+
+        public function test_getConversationByTrip_and_delete_Success()
+        {
+            $u = factory(\STS\User::class)->create();
+            $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
+
+            $c = $this->conversationManager->createTripConversation ( $t->id );
+
+            $conversation = $this->conversationManager->getConversationByTrip($u, $t->id);
+
+            $this->assertTrue($conversation->id == $c->id);
+
+            $this->conversationManager->delete ( $c->id);
+
+            $conversation = $this->conversationManager->getConversation($u, $c->id);
+
+            $this->assertTrue($conversation == null);
+
+            $conversationResult = $this->conversationManager->delete ( $c->id);
+
+            $this->assertTrue($conversationResult == null);
+        }
+
 }

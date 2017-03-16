@@ -45,6 +45,5 @@ class ConversationApiTest extends TestCase
 
         $this->actingAsApiUser($user1);
         $response = $this->call('GET', 'api/conversations/'); 
-        \Log::info($response->getContent());
     }
 }

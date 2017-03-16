@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use STS\User as UserModel;
 
 class Conversation extends Model { 
 
@@ -17,16 +18,20 @@ class Conversation extends Model {
 		'title',
 		'trip_id', 
 	];
-	protected $dates = ['deleted_at'];
+	protected $dates = ['created_at', 'updated_at', 'deleted_at'];
 
 	protected $hidden = [];
 
 	public function users() {
-        return $this->belongsToMany('STS\User','conversations_users', 'conversation_id','user_id');
+			return $this->belongsToMany('STS\User','conversations_users', 'conversation_id','user_id')->withPivot('read');
     }
 
+	public function read(UserModel $user) {
+		return $this->users()->where('user_id', $user->id)->first()->pivot->read;
+	}
+
 	public function messages() {
-        return $this->hasMany('STS\Entities\Message', 'conversation_id');
-    }
+			return $this->hasMany('STS\Entities\Message', 'conversation_id');
+	}
 
 }

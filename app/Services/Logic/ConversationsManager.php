@@ -121,15 +121,19 @@ class ConversationsManager implements ConversationRepo {
     {
         $conversation = $this->getConversation( $user, $conversationId);
         if ( $conversation != null ) {
-            $conversationRepository->removeUser( $conversation, $user );
+            $this->conversationRepository->removeUser( $conversation, $user );
         }
     }
 
     /* DELETE CONVERSATION */
 
     public function delete ( $conversationId) {
-        $conversation = $conversationRepository->getConversationFromId( $conversationId );
-        $conversationRepository->delete( $conversation);
+        $conversation = $this->conversationRepository->getConversationFromId( $conversationId );
+        if ($conversation) {
+            $this->conversationRepository->delete( $conversation);
+        } else {
+            return null; //la conversación no existe
+        }
     }
 
     /* MESSAGES LOGIC */
@@ -158,17 +162,54 @@ class ConversationsManager implements ConversationRepo {
              'conversation_id' => $conversationId
         ];
         if (validator($data)) {
-            $existConversation = $this->getConversation($user, $conversationId);
-            if ($existConversation) {
-                return $this->newMessage($data);
+            $conversation = $this->getConversation($user, $conversationId);
+            if ($conversation) {
+                $newMessage = $this->newMessage($data);
+                //when i create a new message, i must mark conversations as unread, and new message us unread
+                $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get();
+                foreach ($otherUsers as $user) {
+                    $this->messageRepository->createMessageReadState($newMessage, $user, false);
+                    $this->conversationRepository->changeConversationReadState($conversation, $user, false);
+                }
+                return $newMessage;
+            } else {
+                //return an error because the conversation doesn't exis or create it??
             }
         }
         return null;
     }
 
-    public function getMessagesFromConversation( $conversation_id, User $user, $unreadMessages)
+    public function getAllMessagesFromConversation( $conversation_id, User $user, $read = false, $pageNumber = null, $pageSize = 20)
     {
-        
+        return $this->getMessagesFromConversation($conversation_id, $user, $read, false, $pageNumber, $pageSize);
+    }
+
+    public function getUnreadMessagesFromConversation( $conversation_id, User $user, $read = false)
+    {
+        return $this->getMessagesFromConversation($conversation_id, $user, $read, true, null, null);
+    }
+
+    private function getMessagesFromConversation( $conversation_id, User $user, $read, $unreadMessages, $pageNumber = null, $pageSize = null)
+    {
+        $conversation = $this->getConversation( $user, $conversation_id);
+
+        if ($unreadMessages) {
+            $messages = $this->messageRepository->getUnreadMessages($conversation, $user);
+            if ($read) {
+                foreach ($messages as $message) {
+                    $this->messageRepository->changeMessageReadState($message, $user, true);   
+                }
+            }
+        } else {
+            $messages = $this->messageRepository->getMessages($conversation, $pageNumber, $pageSize); 
+        }
+
+        if ($read) {
+            $this->conversationRepository->changeConversationReadState($conversation, $user, true);
+        }
+
+        return $messages;
+
     }
 
 }
