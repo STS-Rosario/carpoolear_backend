@@ -34,4 +34,12 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->put("/update/{provider?}",    $v1_path . 'SocialController@update');
     });
 
+    $api->group(['prefix' => 'trips'], function ($api) use ($v1_path) {
+        $api->get("/",                  $v1_path . 'TripController@index');    
+        $api->post("/",                 $v1_path . 'TripController@create');
+        $api->put("/{id?}",             $v1_path . 'TripController@update');
+        $api->delete("/{id?}",          $v1_path . 'TripController@delete'); 
+        $api->get("/{id?}",             $v1_path . 'TripController@show'); 
+    });
+
 }); 

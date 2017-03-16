@@ -56,6 +56,10 @@ class TripRepository implements TripRepo
             $trips->orderBy('trip_date');
         }
         
+        if (isset($data['user_id'])) {
+            $trips->whereUserId($user->id);
+        }
+
         $trips->where(function ($q) use ($user) {
             if ($user) {
                 $q->whereUserId($user->id);
