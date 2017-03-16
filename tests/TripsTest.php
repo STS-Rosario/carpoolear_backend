@@ -4,14 +4,16 @@ use \STS\Contracts\Logic\User as UserLogic;
 use \STS\Contracts\Logic\Trip as TripsLogic;
 use Carbon\Carbon;
 use Mockery as m;
-use STS\Entities\TripPoint; 
+use STS\Entities\TripPoint;
 use STS\Entities\Trip;
 
-class TripsTest extends TestCase { 
+class TripsTest extends TestCase
+{
     use DatabaseTransactions;
  
- 	public function testCreateTrip()
-	{
+    public function testCreateTrip()
+    {
+        $this->expectsEvents(STS\Events\Trip\Create::class);
         $user = factory(STS\User::class)->create();
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
 
@@ -38,21 +40,28 @@ class TripsTest extends TestCase {
                     'lat' => 0,
                     'lng' => 0
                 ]
-            ]
+            ],
+            'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@',
         ];
 
         $u = $tripManager->create($user, $data);
-        $this->assertTrue($u != null); 
-	}
+        $this->assertTrue($u != null);
+    }
 
     public function testUpdateTrip()
     {
+        $this->expectsEvents(STS\Events\Trip\Update::class);
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create(); 
+        $trip = factory(STS\Entities\Trip::class)->create();
         $from = $trip->from_town;
-        $trip = $tripManager->update($trip->user, $trip->id, ['from_town' => "Usuahia"]);
+
+        $data = [
+            'from_town' => "Usuahia",
+            'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@'
+        ];
+        
+        $trip = $tripManager->update($trip->user, $trip->id, $data);
         $this->assertTrue($trip->from_town != $from);
-         
     }
 
     public function testDeleteTrip()
@@ -87,7 +96,7 @@ class TripsTest extends TestCase {
 
     public function testCanSeeTripFriend()
     {
-        $this->userLogic = $this->mock('STS\Contracts\Logic\Friends');        
+        $this->userLogic = $this->mock('STS\Contracts\Logic\Friends');
         $this->userLogic->shouldReceive('areFriend')->once()->andReturn(true);
 
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
@@ -115,11 +124,53 @@ class TripsTest extends TestCase {
 
         $this->seed('TripsTestSeeder');
         $other = factory(STS\User::class)->create();
-        $data = [ 
+        $data = [
             'date' => Carbon::now()->toDateString()
-        ]; 
-        $trips = $tripManager->index($other, $data); 
+        ];
+        $trips = $tripManager->index($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 
+    public function testOriginSearch()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+
+        $this->seed('TripsTestSeeder');
+        $other = factory(STS\User::class)->create();
+        $data = [
+            'origin_lat' => -32.946500,
+            'origin_lng' => -60.669800,
+            'origin_radio' => 10000,
+            'date' => Carbon::now()->toDateString()
+        ];
+        $trips = $tripManager->index($other, $data);
+        $this->assertTrue($trips->count() > 0);
+    }
+
+    public function testDestinationSearch()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+
+        $this->seed('TripsTestSeeder');
+        $other = factory(STS\User::class)->create();
+        $data = [
+            'destination_lat' => -32.897273,
+            'destination_lng' => -68.834067,
+            'destination_radio' => 10000
+        ];
+        $trips = $tripManager->index($other, $data);
+        $this->assertTrue($trips->count() > 0);
+    }
+
+    public function testInbounds()
+    {
+        $in = factory(STS\Entities\Trip::class)->create();
+        $out = factory(STS\Entities\Trip::class)->create();
+
+        $out->return_trip_id = $in->id;
+        $out->save();
+        
+        $this->assertTrue($in->outbound != null);
+        $this->assertTrue($out->inbound != null);
+    }
 }

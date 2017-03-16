@@ -17,15 +17,15 @@ class TripPoint extends Model {
     public function setLatAttribute($value)
     {
         $this->attributes['lat'] = $value;
-        $this->attributes['sin_lat'] = sin($value);
-        $this->attributes['cos_lat'] = cos($value);
+        $this->attributes['sin_lat'] = sin(deg2rad($value));
+        $this->attributes['cos_lat'] = cos(deg2rad($value));
     }
 
     public function setLngAttribute($value)
     {
         $this->attributes['lng'] = $value;
-        $this->attributes['sin_lng'] = sin($value);
-        $this->attributes['cos_lng'] = cos($value);
+        $this->attributes['sin_lng'] = sin(deg2rad($value));
+        $this->attributes['cos_lng'] = cos(deg2rad($value));
     }
 
     public function trip() {

@@ -104,7 +104,7 @@ class TripRepository implements TripRepo
     }
 
     private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)
-    {
+    { 
         $deg2radMultiplier = M_PI / 180.0;
         $latd = $lat * $deg2radMultiplier;
         $lngd = $lng * $deg2radMultiplier;

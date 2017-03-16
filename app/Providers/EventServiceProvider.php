@@ -22,6 +22,12 @@ class EventServiceProvider extends ServiceProvider
         'STS\Events\Friend\Accept' => [],
         'STS\Events\Friend\Reject' => [],
 
+        'STS\Events\Trip\Create' => [
+            'STS\Listeners\DownloadStaticImage'
+        ],
+        'STS\Events\Trip\Update' => [
+            'STS\Listeners\DownloadStaticImage'
+        ],
     ];
 
     /**

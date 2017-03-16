@@ -35,16 +35,21 @@ class FileRepository implements FilesRepo
         return $newfilename;
     }
 
-    public function createFromData($data, $extension, $folder = 'image/')
+    public function createFromData($data, $extension, $folder = 'image/', $name = null)
     {
         $folder_path =  $this->nomalize(public_path($folder));
         if (!File::isDirectory($folder_path)) {
             File::makeDirectory($folder_path, 0777, true, true);
         }
         
-        $mil = str_replace('.', '', microtime());
-        $mil = str_replace(' ', '', $mil);
-        $newfilename = date('mdYHis') . $mil . '.' . $extension;
+        if ($name) {
+            $newfilename = $name . '.' . $extension;
+        } else {
+            $mil = str_replace('.', '', microtime());
+            $mil = str_replace(' ', '', $mil);
+            $newfilename = date('mdYHis') . $mil . '.' . $extension;
+        }
+
         File::put($folder_path . $newfilename, $data);
 
         return $newfilename;
@@ -53,6 +58,6 @@ class FileRepository implements FilesRepo
     public function delete($filename, $folder = 'image/')
     {
         $folder_path = $this->nomalize(public_path($folder));
-        File::move($folder_path . $filename);
+        File::delete($folder_path . $filename);
     }
 }

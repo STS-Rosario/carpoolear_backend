@@ -46,7 +46,8 @@ class Trip extends Model
         'esta_carpooleado',
         'tripscol',
         'is_passenger',
-        'mail_send'
+        'mail_send',
+        'return_trip_id'
     ];
     protected $hidden = [];
     protected $appends = ['passenger_count', 'seats_available', 'is_driver'];
@@ -92,6 +93,16 @@ class Trip extends Model
         return $this->hasMany('STS\Entities\Calification', 'viajes_id');
     }
 
+    public function outbound()
+    {
+        return $this->hasOne('STS\Entities\Trip', 'return_trip_id');
+    }
+
+    public function inbound()
+    {
+        return $this->belongsTo('STS\Entities\Trip', 'return_trip_id');
+    }
+
     public function getPassengerCountAttribute()
     {
         return $this->passengerAccepted()->count();
@@ -115,8 +126,8 @@ class Trip extends Model
     
     public function checkFriendship($user)
     {
-        $conductor    = $this->user;
-        $fiends    = $conductor->friends()->whereId($user->id)->first();
+        $conductor  = $this->user;
+        $fiends     = $conductor->friends()->whereId($user->id)->first();
         $fof        = $conductor->relativeFriends()->whereId($user->id)->first();
 
         if ($conductor->id == $user->id) {

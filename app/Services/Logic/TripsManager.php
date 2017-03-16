@@ -11,6 +11,9 @@ use Validator;
 use Carbon\Carbon;
 use DB;
 
+use STS\Events\Trip\Create  as CreateEvent;
+use STS\Events\Trip\Update  as UpdateEvent;
+
 class TripsManager extends BaseManager implements TripLogic
 {
     protected $tripRepo;
@@ -34,6 +37,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'distance'              => 'required|numeric',
                 'co2'                   => 'required|integer',
                 'description'           => 'string',
+                'return_trip_id'        => 'exists:trips,id',
 
                 'points.*.address'      => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -51,7 +55,8 @@ class TripsManager extends BaseManager implements TripLogic
                 'estimated_time'        => 'string',
                 'distance'              => 'numeric',
                 'co2'                   => 'integer',
-
+                'return_trip_id'        => 'exists:trips,id',
+                
                 'points.*.address'      => 'string',
                 'points.*.json_address' => 'array',
                 'points.*.lat'          => 'numeric',
@@ -69,6 +74,7 @@ class TripsManager extends BaseManager implements TripLogic
         } else {
             $data["user_id"] = $user->id;
             $trip = $this->tripRepo->create($data);
+            event(new CreateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null ));
             return $trip;
         }
     }
@@ -84,6 +90,7 @@ class TripsManager extends BaseManager implements TripLogic
                     return null;
                 } else {
                     $trip = $this->tripRepo->update($trip, $data);
+                    event(new UpdateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null ));
                     return $trip;
                 }
             } else {
