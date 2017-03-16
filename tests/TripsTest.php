@@ -11,6 +11,12 @@ class TripsTest extends TestCase
 {
     use DatabaseTransactions;
  
+    public function setUp()
+    {
+        parent::setUp();
+        start_log_query();
+    }
+
     public function testCreateTrip()
     {
         $this->expectsEvents(STS\Events\Trip\Create::class);
@@ -127,7 +133,7 @@ class TripsTest extends TestCase
         $data = [
             'date' => Carbon::now()->toDateString()
         ];
-        $trips = $tripManager->index($other, $data);
+        $trips = $tripManager->index($other, $data); 
         $this->assertTrue($trips->count() > 0);
     }
 
@@ -172,5 +178,7 @@ class TripsTest extends TestCase
         
         $this->assertTrue($in->outbound != null);
         $this->assertTrue($out->inbound != null);
+
+        start_log_query();
     }
 }

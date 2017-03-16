@@ -44,7 +44,11 @@ class TripRepository implements TripRepo
     public function index($user, $data)
     {
         if (isset($data['date'])) { 
-            $trips = Trip::where(DB::Raw('DATE(trip_date)') , $data['date'] );
+
+            $from = parse_date($data['date'])->subDays(5);
+            $to   = parse_date($data['date'])->addDays(5);
+            //$trips = Trip::where(DB::Raw('DATE(trip_date)') , $data['date'] );
+            $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)') , [date_to_string($from), date_to_string($to)] );
             $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), '" . $data['date'] . "' )"));
             //$trips->setBindings([$data['date']]);
         } else {
@@ -53,27 +57,31 @@ class TripRepository implements TripRepo
         }
         
         $trips->where(function ($q) use ($user) {
-            $q->whereUserId($user->id);
-            $q->orWhere(function ($q) use ($user) {
-                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+            if ($user) {
+                $q->whereUserId($user->id);
                 $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
-                    $q->whereHas('user.friends', function ($q) use ($user) {
-                        $q->whereId($user->id);
-                    });
-                });
-                $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
-                    $q->where(function ($q) use ($user) {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                    $q->orWhere(function ($q) use ($user) {
+                        $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
                         $q->whereHas('user.friends', function ($q) use ($user) {
                             $q->whereId($user->id);
                         });
-                        $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
-                            $q->whereId($user->id);
+                    });
+                    $q->orWhere(function ($q) use ($user) {
+                        $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
+                        $q->where(function ($q) use ($user) {
+                            $q->whereHas('user.friends', function ($q) use ($user) {
+                                $q->whereId($user->id);
+                            });
+                            $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
+                                $q->whereId($user->id);
+                            });
                         });
                     });
                 });
-            });
+            } else {
+                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+            }
         });
 
         if (isset($data['origin_lat']) && isset($data['origin_lng'])) {

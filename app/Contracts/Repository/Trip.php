@@ -4,7 +4,7 @@ namespace STS\Contracts\Repository;
 
 use STS\Entities\Trip as TripModel;
 use STS\Entities\TripPoint;
-use STS\User;
+use STS\User as UserModel;
 use Validator;
 
 interface Trip
