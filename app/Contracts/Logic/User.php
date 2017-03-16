@@ -17,6 +17,10 @@ interface User
 
     public function activeAccount($activation_token);
 
+    public function resetPassword($user);
+
+    public function changePassword($token, $data);
+
     public function setErrors($errs);
     
     public function getErrors();

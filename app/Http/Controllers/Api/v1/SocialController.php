@@ -27,7 +27,7 @@ class SocialController extends Controller
     {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
-        $this->middleware('api.auth', ['except' => ['create']]);
+        $this->middleware('api.auth', ['except' => ['login']]);
     }
  
     public function installProvider($provider, $accessToken)
