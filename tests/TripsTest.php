@@ -21,6 +21,7 @@ class TripsTest extends TestCase
     {
         $this->expectsEvents(STS\Events\Trip\Create::class);
         $user = factory(STS\User::class)->create();
+        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
 
         $data = [
@@ -34,6 +35,7 @@ class TripsTest extends TestCase
             'distance'              => 365,
             'co2'                   => 50,
             'description'           => 'hola mundo',
+            'car_id'                => $car->id,
             'points' => [
                 [
                     'address' => 'Rosario, Santa Fe, Argentina',
@@ -178,7 +180,5 @@ class TripsTest extends TestCase
         
         $this->assertTrue($in->outbound != null);
         $this->assertTrue($out->inbound != null);
-
-        start_log_query();
     }
 }

@@ -83,3 +83,10 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'mendoza', function ($faker) {
         'lng' => -68.834067
     ];
 });
+
+$factory->define(STS\Entities\Car::class, function ($faker) {
+    return [
+        'patente' => 'ASD 123',
+        'description' => 'sandero'
+    ];
+});

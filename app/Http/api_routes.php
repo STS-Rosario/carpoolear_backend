@@ -42,4 +42,12 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get("/{id?}",             $v1_path . 'TripController@show'); 
     });
 
+    $api->group(['prefix' => 'cars'], function ($api) use ($v1_path) {
+        $api->get("/",                  $v1_path . 'CarController@index');    
+        $api->post("/",                 $v1_path . 'CarController@create');
+        $api->put("/{id?}",             $v1_path . 'CarController@update');
+        $api->delete("/{id?}",          $v1_path . 'CarController@delete'); 
+        $api->get("/{id?}",             $v1_path . 'CarController@show'); 
+    });
+
 }); 

@@ -23,11 +23,11 @@ class TripsManager extends BaseManager implements TripLogic
         $this->tripRepo = $trips;
     }
     
-    public function validator(array $data, $id = null)
+    public function validator(array $data, $user_id, $id = null)
     {
         if (is_null($id)) {
             return Validator::make($data, [
-                'is_passenger'           => 'required|in:0,1',
+                'is_passenger'          => 'required|in:0,1',
                 'from_town'             => 'required|string|max:255',
                 'to_town'               => 'required|string|max:255',
                 'trip_date'             => 'required|date',
@@ -38,6 +38,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'co2'                   => 'required|integer',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
+                'car_id'                => 'exists:cars,id,user_id,' . $user_id,
 
                 'points.*.address'      => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -56,7 +57,8 @@ class TripsManager extends BaseManager implements TripLogic
                 'distance'              => 'numeric',
                 'co2'                   => 'integer',
                 'return_trip_id'        => 'exists:trips,id',
-                
+                'car_id'                => 'exists:cars,id,user_id,' . $user_id,
+
                 'points.*.address'      => 'string',
                 'points.*.json_address' => 'array',
                 'points.*.lat'          => 'numeric',
@@ -67,7 +69,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function create($user, array $data)
     {
-        $v = $this->validator($data);
+        $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
             return null;
@@ -84,7 +86,7 @@ class TripsManager extends BaseManager implements TripLogic
         $trip = $this->tripRepo->show($trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
-                $v = $this->validator($data, $trip_id);
+                $v = $this->validator($data, $user->id, $trip_id);
                 if ($v->fails()) {
                     $this->setErrors($v->errors());
                     return null;

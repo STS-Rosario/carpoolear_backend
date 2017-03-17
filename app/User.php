@@ -51,6 +51,11 @@ class User extends Authenticatable
 		}
 	}
 
+	public function cars()
+    {
+        return $this->hasMany('STS\Entities\Car', 'user_id');
+    }
+
 	public function allFriends($state = null) 
     {
         $friends = $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')

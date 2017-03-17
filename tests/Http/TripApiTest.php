@@ -4,11 +4,11 @@ use \STS\Contracts\Repository\Devices as DeviceRepository;
 
 use Mockery as m;
 
-class FriendApiTest extends TestCase
+class TripApiTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected $friendsLogic;
+    protected $tripsLogic;
     public function __construct()
     {
     }
