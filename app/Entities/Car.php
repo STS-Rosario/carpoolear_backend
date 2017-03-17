@@ -21,9 +21,8 @@ class Car extends Model
         return $this->hasMany('STS\Entities\Trip', 'car_id');
     }
 
-
     public function getTripsCountAttribute()
     {
-        return $this->trips()->count(); 
+        return $this->trips()->count();
     }
 }

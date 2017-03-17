@@ -9,7 +9,7 @@ class Create extends Event
 {
     use SerializesModels;
 
-    public $trip; 
+    public $trip;
 
     /**
      * Create a new event instance.
@@ -18,7 +18,7 @@ class Create extends Event
      */
     public function __construct($trip)
     {
-        $this->trip = $trip; 
+        $this->trip = $trip;
     }
 
     /**
