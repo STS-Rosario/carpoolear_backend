@@ -29,7 +29,7 @@ class TripController extends Controller
         if (!$trip) {
             throw new StoreResourceFailedException('Could not create new trip.', $this->tripsLogic->getErrors());
         }
-        return $this->response->withArray(['trip' => $trip]);
+        return $this->response->withArray(['data' => $trip]);
     }
 
     public function update($id, Request $request)
@@ -40,7 +40,7 @@ class TripController extends Controller
         if (!$trip) {
             throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
         }
-        return $this->response->withArray(['trip' => $trip]);
+        return $this->response->withArray(['data' => $trip]);
     }
 
     public function delete($id, Request $request)
@@ -50,7 +50,7 @@ class TripController extends Controller
         if (!$result) {
             throw new StoreResourceFailedException('Could not delete trip.', $this->tripsLogic->getErrors());
         }
-        return $this->response->withArray(['status' => 'ok']);
+        return $this->response->withArray(['data' => 'ok']);
     }
 
     public function show($id, Request $request)
@@ -60,7 +60,7 @@ class TripController extends Controller
         if (!$trip) {
             throw new ResourceException('Could not found trip.', $this->tripsLogic->getErrors());
         }
-        return $this->response->withArray(['trip' => $trip]);
+        return $this->response->withArray(['data' => $trip]);
     }
 
     public function index(Request $request)

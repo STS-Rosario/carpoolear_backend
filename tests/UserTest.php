@@ -66,8 +66,7 @@ class UserTest extends TestCase
         $data = [
             "name" => "Pablo",
             "password" => "gatogato",
-            "password_confirmation" => "gatogato",
-            "patente" => "SOF 034"
+            "password_confirmation" => "gatogato", 
         ];
 
         $u1 = $userManager->update($u1, $data);

@@ -7,7 +7,7 @@ use Mockery as m;
 use STS\Entities\TripPoint;
 use STS\Entities\Trip;
 
-class TripsTest extends TestCase
+class CarsTest extends TestCase
 {
     use DatabaseTransactions;
  

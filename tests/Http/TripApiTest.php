@@ -76,7 +76,7 @@ class TripApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
 
         $response = $this->parseJson($response);
-        $this->assertTrue($trip->id == $response->trip->id);
+        $this->assertTrue($trip->id == $response->data->id);
     }
 
     public function testIndex()

@@ -4,7 +4,7 @@ use \STS\Contracts\Repository\Devices as DeviceRepository;
 
 use Mockery as m;
 
-class FriendApiTest extends TestCase
+class CarApiTest extends TestCase
 {
     use DatabaseTransactions;
 
