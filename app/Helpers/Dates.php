@@ -11,3 +11,8 @@ function date_to_string($date, $format = 'Y-m-d')
 {
     return $date->format($format);
 }
+
+function parse_boolean($value)
+{
+    return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+}

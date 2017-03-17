@@ -43,7 +43,7 @@ class Trip extends Model
         'is_passenger',
         'mail_send',
         'return_trip_id',
-        'enc_path'
+        'enc_path', 
     ];
 
     protected $hidden = [
