@@ -1,7 +1,6 @@
 <?php
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use \STS\Contracts\Repository\Devices as DeviceRepository;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery as m;
 
 class CarApiTest extends TestCase
@@ -9,6 +8,7 @@ class CarApiTest extends TestCase
     use DatabaseTransactions;
 
     protected $carsLogic;
+
     public function __construct()
     {
     }
@@ -22,7 +22,7 @@ class CarApiTest extends TestCase
     public function tearDown()
     {
         m::close();
-    } 
+    }
 
     protected function parseJson($response)
     {
@@ -37,7 +37,7 @@ class CarApiTest extends TestCase
 
         $this->carsLogic->shouldReceive('create')->once()->andReturn($car);
 
-        $response = $this->call('POST', 'api/cars/'); 
+        $response = $this->call('POST', 'api/cars/');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -49,7 +49,7 @@ class CarApiTest extends TestCase
 
         $this->carsLogic->shouldReceive('update')->once()->andReturn($car);
 
-        $response = $this->call('PUT', 'api/cars/' . $car->id); 
+        $response = $this->call('PUT', 'api/cars/'.$car->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -61,7 +61,7 @@ class CarApiTest extends TestCase
 
         $this->carsLogic->shouldReceive('delete')->once()->andReturn(true);
 
-        $response = $this->call('DELETE', 'api/cars/' . $car->id); 
+        $response = $this->call('DELETE', 'api/cars/'.$car->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -73,7 +73,7 @@ class CarApiTest extends TestCase
 
         $this->carsLogic->shouldReceive('show')->once()->andReturn($car);
 
-        $response = $this->call('GET', 'api/cars/' . $car->id); 
+        $response = $this->call('GET', 'api/cars/'.$car->id);
         $this->assertTrue($response->status() == 200);
 
         $response = $this->parseJson($response);
@@ -88,7 +88,7 @@ class CarApiTest extends TestCase
 
         $this->carsLogic->shouldReceive('index')->once()->andReturn([$car]);
 
-        $response = $this->call('GET', 'api/cars/'); 
+        $response = $this->call('GET', 'api/cars/');
         $this->assertTrue($response->status() == 200);
     }
 }

@@ -1,7 +1,6 @@
 <?php
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use \STS\Contracts\Repository\Devices as DeviceRepository;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery as m;
 
 class TripApiTest extends TestCase
@@ -9,6 +8,7 @@ class TripApiTest extends TestCase
     use DatabaseTransactions;
 
     protected $tripsLogic;
+
     public function __construct()
     {
     }
@@ -22,7 +22,7 @@ class TripApiTest extends TestCase
     public function tearDown()
     {
         m::close();
-    } 
+    }
 
     protected function parseJson($response)
     {
@@ -36,7 +36,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('create')->once()->andReturn($u1);
 
-        $response = $this->call('POST', 'api/trips/'); 
+        $response = $this->call('POST', 'api/trips/');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -48,7 +48,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('update')->once()->andReturn($trip);
 
-        $response = $this->call('PUT', 'api/trips/' . $trip->id); 
+        $response = $this->call('PUT', 'api/trips/'.$trip->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -60,7 +60,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('delete')->once()->andReturn(true);
 
-        $response = $this->call('DELETE', 'api/trips/' . $trip->id); 
+        $response = $this->call('DELETE', 'api/trips/'.$trip->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -72,7 +72,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('show')->once()->andReturn($trip);
 
-        $response = $this->call('GET', 'api/trips/' . $trip->id); 
+        $response = $this->call('GET', 'api/trips/'.$trip->id);
         $this->assertTrue($response->status() == 200);
 
         $response = $this->parseJson($response);
@@ -87,7 +87,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('index')->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/trips/'); 
+        $response = $this->call('GET', 'api/trips/');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -98,8 +98,7 @@ class TripApiTest extends TestCase
         //$this->actingAsApiUser($u1);
         $this->tripsLogic->shouldReceive('index')->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/trips/'); 
+        $response = $this->call('GET', 'api/trips/');
         $this->assertTrue($response->status() == 200);
     }
-
 }

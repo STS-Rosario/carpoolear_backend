@@ -2,15 +2,11 @@
 
 namespace STS\Contracts\Repository;
 
-use STS\Entities\Device;
-use STS\User as UserModel;
-use Validator;
 use STS\Entities\SocialAccount;
-use File;
+use STS\User as UserModel;
 
 interface Social
 {
-
     public function setDefaultProvider($provider);
 
     public function find($provider_user_id, $provider = null);
@@ -20,5 +16,4 @@ interface Social
     public function delete(SocialAccount $account);
 
     public function get(UserModel $user, $provider = null);
-    
 }

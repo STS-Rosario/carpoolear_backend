@@ -1,16 +1,15 @@
 <?php
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+
 use \STS\Contracts\Logic\User as UserLogic;
-use \STS\Contracts\Logic\Trip as TripsLogic;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery as m;
 use STS\Entities\TripPoint;
-use STS\Entities\Trip;
 
 class TripsTest extends TestCase
 {
     use DatabaseTransactions;
- 
+
     public function setUp()
     {
         parent::setUp();
@@ -36,18 +35,18 @@ class TripsTest extends TestCase
             'co2'                   => 50,
             'description'           => 'hola mundo',
             'car_id'                => $car->id,
-            'points' => [
+            'points'                => [
                 [
-                    'address' => 'Rosario, Santa Fe, Argentina',
+                    'address'      => 'Rosario, Santa Fe, Argentina',
                     'json_address' => ['street' => 'Pampa'],
-                    'lat' => 0,
-                    'lng' => 0
-                ] , [
-                    'address' => 'Santa Fe, Santa Fe, Argentina',
+                    'lat'          => 0,
+                    'lng'          => 0,
+                ], [
+                    'address'      => 'Santa Fe, Santa Fe, Argentina',
                     'json_address' => ['street' => 'Pampa'],
-                    'lat' => 0,
-                    'lng' => 0
-                ]
+                    'lat'          => 0,
+                    'lng'          => 0,
+                ],
             ],
             'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@',
         ];
@@ -64,10 +63,10 @@ class TripsTest extends TestCase
         $from = $trip->from_town;
 
         $data = [
-            'from_town' => "Usuahia",
-            'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@'
+            'from_town' => 'Usuahia',
+            'enc_path'  => 'sgwpEjbkaP_AvQjQlApD{l@',
         ];
-        
+
         $trip = $tripManager->update($trip->user, $trip->id, $data);
         $this->assertTrue($trip->from_town != $from);
     }
@@ -108,7 +107,7 @@ class TripsTest extends TestCase
         $this->userLogic->shouldReceive('areFriend')->once()->andReturn(true);
 
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create(['friendship_type_id' => 0 ]);
+        $trip = factory(STS\Entities\Trip::class)->create(['friendship_type_id' => 0]);
 
         $other = factory(STS\User::class)->create();
 
@@ -133,9 +132,9 @@ class TripsTest extends TestCase
         $this->seed('TripsTestSeeder');
         $other = factory(STS\User::class)->create();
         $data = [
-            'date' => Carbon::now()->toDateString()
+            'date' => Carbon::now()->toDateString(),
         ];
-        $trips = $tripManager->index($other, $data); 
+        $trips = $tripManager->index($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 
@@ -146,10 +145,10 @@ class TripsTest extends TestCase
         $this->seed('TripsTestSeeder');
         $other = factory(STS\User::class)->create();
         $data = [
-            'origin_lat' => -32.946500,
-            'origin_lng' => -60.669800,
+            'origin_lat'   => -32.946500,
+            'origin_lng'   => -60.669800,
             'origin_radio' => 10000,
-            'date' => Carbon::now()->toDateString()
+            'date'         => Carbon::now()->toDateString(),
         ];
         $trips = $tripManager->index($other, $data);
         $this->assertTrue($trips->count() > 0);
@@ -162,9 +161,9 @@ class TripsTest extends TestCase
         $this->seed('TripsTestSeeder');
         $other = factory(STS\User::class)->create();
         $data = [
-            'destination_lat' => -32.897273,
-            'destination_lng' => -68.834067,
-            'destination_radio' => 10000
+            'destination_lat'   => -32.897273,
+            'destination_lng'   => -68.834067,
+            'destination_radio' => 10000,
         ];
         $trips = $tripManager->index($other, $data);
         $this->assertTrue($trips->count() > 0);
@@ -177,7 +176,7 @@ class TripsTest extends TestCase
 
         $out->return_trip_id = $in->id;
         $out->save();
-        
+
         $this->assertTrue($in->outbound != null);
         $this->assertTrue($out->inbound != null);
     }

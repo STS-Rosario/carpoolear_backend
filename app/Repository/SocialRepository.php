@@ -3,15 +3,13 @@
 namespace STS\Repository;
 
 use STS\Contracts\Repository\Social as SocialRepo;
-
-use STS\Entities\Trip;
-use STS\User;
-use Validator;
 use STS\Entities\SocialAccount;
+use STS\User;
 
 class SocialRepository implements SocialRepo
 {
     protected $provider;
+
     public function __construct($provider = null)
     {
         if ($provider) {
@@ -37,6 +35,7 @@ class SocialRepository implements SocialRepo
         $account = SocialAccount::whereProvider($provider)
                                     ->whereProviderUserId($provider_user_id)
                                     ->first();
+
         return $account;
     }
 
@@ -47,7 +46,7 @@ class SocialRepository implements SocialRepo
         }
         $account = new SocialAccount([
             'provider_user_id' => $provider_user_id,
-            'provider' => $provider
+            'provider'         => $provider,
         ]);
         $account->user()->associate($user);
         $account->save();
@@ -64,6 +63,7 @@ class SocialRepository implements SocialRepo
         if ($provider) {
             $accounts->where('provider', $provider);
         }
+
         return $accounts->get();
     }
 }

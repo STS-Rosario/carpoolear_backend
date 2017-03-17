@@ -5,24 +5,20 @@ namespace STS\Services\Logic;
 use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Contracts\Repository\Trip as TripRepo;
 use STS\Entities\Trip;
-use STS\Entities\TripPoint;
-use STS\User;
-use Validator;
-use Carbon\Carbon;
-use DB;
-
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
+use STS\User;
+use Validator;
 
 class TripsManager extends BaseManager implements TripLogic
 {
     protected $tripRepo;
-    
+
     public function __construct(TripRepo $trips)
     {
         $this->tripRepo = $trips;
     }
-    
+
     public function validator(array $data, $user_id, $id = null)
     {
         if (is_null($id)) {
@@ -38,7 +34,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'co2'                   => 'required|integer',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
-                'car_id'                => 'exists:cars,id,user_id,' . $user_id,
+                'car_id'                => 'exists:cars,id,user_id,'.$user_id,
 
                 'points.*.address'      => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -57,7 +53,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'distance'              => 'numeric',
                 'co2'                   => 'integer',
                 'return_trip_id'        => 'exists:trips,id',
-                'car_id'                => 'exists:cars,id,user_id,' . $user_id,
+                'car_id'                => 'exists:cars,id,user_id,'.$user_id,
 
                 'points.*.address'      => 'string',
                 'points.*.json_address' => 'array',
@@ -72,11 +68,13 @@ class TripsManager extends BaseManager implements TripLogic
         $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-            return null;
+
+            return;
         } else {
-            $data["user_id"] = $user->id;
+            $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
-            event(new CreateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null ));
+            event(new CreateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null));
+
             return $trip;
         }
     }
@@ -89,19 +87,23 @@ class TripsManager extends BaseManager implements TripLogic
                 $v = $this->validator($data, $user->id, $trip_id);
                 if ($v->fails()) {
                     $this->setErrors($v->errors());
-                    return null;
+
+                    return;
                 } else {
                     $trip = $this->tripRepo->update($trip, $data);
-                    event(new UpdateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null ));
+                    event(new UpdateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null));
+
                     return $trip;
                 }
             } else {
                 $this->setErrors(trans('errors.tripowner'));
-                return null;
+
+                return;
             }
         } else {
             $this->setErrors(trans('errors.notrip'));
-            return null;
+
+            return;
         }
     }
 
@@ -114,24 +116,26 @@ class TripsManager extends BaseManager implements TripLogic
                 return $this->tripRepo->delete($trip);
             } else {
                 $this->setErrors(trans('errors.tripowner'));
-                return null;
+
+                return;
             }
         } else {
             $this->setErrors(trans('errors.notrip'));
-            return null;
+
+            return;
         }
     }
- 
+
     public function show($user, $trip_id)
     {
         $trip = $this->tripRepo->show($trip_id);
         if ($this->userCanSeeTrip($user, $trip)) {
             return $trip;
         } else {
-            $this->setErrors("trip_not_foound");
-            return null;
+            $this->setErrors('trip_not_foound');
+
+            return;
         }
-        
     }
 
     public function index($user, $data)
@@ -139,7 +143,7 @@ class TripsManager extends BaseManager implements TripLogic
         return $this->tripRepo->index($user, $data);
     }
 
-    public function userCanSeeTrip($user, $trip) 
+    public function userCanSeeTrip($user, $trip)
     {
         $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
         if ($user->id == $trip->user->id) {
@@ -161,6 +165,5 @@ class TripsManager extends BaseManager implements TripLogic
         // [TODO] Faltaría saber si sos pasajero
 
         return false;
-
     }
 }

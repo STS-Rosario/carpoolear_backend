@@ -3,8 +3,6 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\User\Reset;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ResetPasswordHandler
 {
@@ -21,7 +19,8 @@ class ResetPasswordHandler
     /**
      * Handle the event.
      *
-     * @param  Reset  $event
+     * @param Reset $event
+     *
      * @return void
      */
     public function handle(Reset $event)

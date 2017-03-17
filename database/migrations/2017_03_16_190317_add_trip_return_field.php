@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class AddTripReturnField extends Migration
 {
@@ -27,7 +27,7 @@ class AddTripReturnField extends Migration
     {
         Schema::table('trips', function (Blueprint $table) {
             $table->dropForeign('trips_return_trip_id_foreign');
-            $table->dropColumn('return_trip_id'); 
+            $table->dropColumn('return_trip_id');
         });
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-use Illuminate\Pagination\Paginator; 
+use Illuminate\Pagination\Paginator;
 
 function make_pagination($query, $pageNumber = null, $pageSize = 20)
 {
@@ -13,6 +13,7 @@ function make_pagination($query, $pageNumber = null, $pageSize = 20)
         Paginator::currentPageResolver(function () use ($pageNumber) {
             return $pageNumber;
         });
+
         return $query->paginate($pageSize);
     }
 }
@@ -31,12 +32,13 @@ function get_query($index = null)
 {
     $laQuery = DB::getQueryLog();
     if (!$index) {
-        $index = count($laQuery) -1;
+        $index = count($laQuery) - 1;
     }
 
     $query = $laQuery[$index]['query'];
     $bindings = $laQuery[$index]['bindings'];
-    return $query . " " . json_encode($bindings);
+
+    return $query.' '.json_encode($bindings);
 }
 
 function console_log($obj)

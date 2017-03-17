@@ -2,9 +2,8 @@
 
 namespace STS\Services\Social;
 
+use GuzzleHttp\Client;
 use STS\Contracts\SocialProvider;
-use \GuzzleHttp\Client;
-use File;
 
 class FacebookSocialProvider implements SocialProvider
 {
@@ -14,8 +13,8 @@ class FacebookSocialProvider implements SocialProvider
 
     public function __construct($token)
     {
-        $this->token        = $token;
-        $this->client       = new Client();
+        $this->token = $token;
+        $this->client = new Client();
     }
 
     public function getProviderName()
@@ -28,21 +27,21 @@ class FacebookSocialProvider implements SocialProvider
         $response = $this->request('/me?fields=email,name,gender,picture.width(300),birthday');
         if ($response->getStatusCode() == 200) {
             $body = json_decode($response->getBody());
-             
+
             if (isset($body->gender)) {
-                if ($body->gender == "male") {
-                    $body->gender = "Masculino";
-                } else if ($usuario->getProperty('gender') == "female") {
-                    $body->gender = "Femenino";
+                if ($body->gender == 'male') {
+                    $body->gender = 'Masculino';
+                } elseif ($usuario->getProperty('gender') == 'female') {
+                    $body->gender = 'Femenino';
                 }
-            }else {
-                $user->gender = "N/A";
+            } else {
+                $user->gender = 'N/A';
             }
 
             if (isset($body->birthday)) {
-                $auxBirth = explode("/", $body->birthday);
+                $auxBirth = explode('/', $body->birthday);
                 if (is_array($auxBirth) && count($auxBirth) >= 3) {
-                    $body->birthday = $auxBirth[2] . "-" . $auxBirth[0] . "-" . $auxBirth[1];
+                    $body->birthday = $auxBirth[2].'-'.$auxBirth[0].'-'.$auxBirth[1];
                 }
             }
 
@@ -50,15 +49,16 @@ class FacebookSocialProvider implements SocialProvider
                 'provider_user_id'      => $body->id,
                 'email'                 => $body->email,
                 'name'                  => $body->name,
-                'gender'                => isset($body->gender) ? $body->gender : null ,
-                'birthday'              => isset($body->birthday) ? $body->birthday : null ,
+                'gender'                => isset($body->gender) ? $body->gender : null,
+                'birthday'              => isset($body->birthday) ? $body->birthday : null,
                 'banned'                => false,
                 'terms_and_conditions'  => false,
-                'image'                 => $body->picture->data->url
+                'image'                 => $body->picture->data->url,
             ];
         } else {
             $this->error = ['error' => 'Error obteniendo el perfil'];
-            return null;
+
+            return;
         }
     }
 
@@ -71,10 +71,12 @@ class FacebookSocialProvider implements SocialProvider
             foreach ($body->data as $friend) {
                 $res[] = $friend->id;
             }
+
             return $res;
         } else {
             $this->error = ['error' => 'Error obteniendo amistades'];
-            return null;
+
+            return;
         }
     }
 
@@ -85,7 +87,8 @@ class FacebookSocialProvider implements SocialProvider
 
     private function request($url)
     {
-        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.7' . $url .  '&access_token=' . $this->token);
+        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.7'.$url.'&access_token='.$this->token);
+
         return $res;
     }
 }

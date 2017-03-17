@@ -3,12 +3,8 @@
 namespace STS\Repository;
 
 use STS\Contracts\Repository\Devices as DeviceRepo;
-
 use STS\Entities\Device;
 use STS\User;
-use Validator;
-use STS\Entities\SocialAccount;
-use File;
 
 class DeviceRepository implements DeviceRepo
 {

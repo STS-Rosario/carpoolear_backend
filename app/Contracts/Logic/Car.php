@@ -2,7 +2,6 @@
 
 namespace STS\Contracts\Logic;
 
-use STS\Entities\Car as CarModel;
 use STS\User as UserModel;
 
 interface Car
@@ -18,6 +17,6 @@ interface Car
     public function index(UserModel $user);
 
     public function setErrors($errs);
-    
+
     public function getErrors();
 }
