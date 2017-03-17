@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class AddCarsFieldTrips extends Migration
 {
@@ -27,7 +27,7 @@ class AddCarsFieldTrips extends Migration
     {
         Schema::table('trips', function (Blueprint $table) {
             $table->dropForeign('trips_car_id_foreign');
-            $table->dropColumn('car_id'); 
+            $table->dropColumn('car_id');
         });
     }
 }

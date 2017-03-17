@@ -4,7 +4,6 @@ namespace STS\Services\Logic;
 
 use STS\Contracts\Logic\Car as CarLogic;
 use STS\Contracts\Repository\Car as CarRepo;
-
 use STS\Entities\Car as CarModel;
 use STS\User as UserModel;
 use Validator;
@@ -21,8 +20,8 @@ class CarsManager extends BaseManager implements CarLogic
     public function validator(array $data)
     {
         return Validator::make($data, [
-            'patente' => 'required|string',
-            'description' => 'required|string'
+            'patente'     => 'required|string',
+            'description' => 'required|string',
         ]);
     }
 
@@ -31,13 +30,15 @@ class CarsManager extends BaseManager implements CarLogic
         $v = $this->validator($data);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-            return null;
+
+            return;
         } else {
-            $car = new CarModel;
-            $car->description = $data["description"];
-            $car->patente = $data["patente"];
+            $car = new CarModel();
+            $car->description = $data['description'];
+            $car->patente = $data['patente'];
             $car->user_id = $user->id;
             $this->repo->create($car);
+
             return $car;
         }
     }
@@ -49,16 +50,19 @@ class CarsManager extends BaseManager implements CarLogic
             $v = $this->validator($data);
             if ($v->fails()) {
                 $this->setErrors($v->errors());
-                return null;
-            } else { 
-                $car->description = $data["description"];
-                $car->patente = $data["patente"];
+
+                return;
+            } else {
+                $car->description = $data['description'];
+                $car->patente = $data['patente'];
                 $this->repo->update($car);
+
                 return $car;
             }
         } else {
-            $this->setErrors(["error" => 'car_not_found']);
-            return null;
+            $this->setErrors(['error' => 'car_not_found']);
+
+            return;
         }
     }
 
@@ -68,8 +72,9 @@ class CarsManager extends BaseManager implements CarLogic
         if ($car && $car->user_id == $user->id) {
             return $car;
         } else {
-            $this->setErrors(["error" => 'car_not_found']);
-            return null;
+            $this->setErrors(['error' => 'car_not_found']);
+
+            return;
         }
     }
 
@@ -77,15 +82,17 @@ class CarsManager extends BaseManager implements CarLogic
     {
         $car = $this->show($user, $id);
         if ($car) {
-             if ($this->repo->delete($car)) {
-                 return true;
-             } else {
-                $this->setErrors(["error" => 'can_delete_car']);
-                return null;     
-             }
+            if ($this->repo->delete($car)) {
+                return true;
+            } else {
+                $this->setErrors(['error' => 'can_delete_car']);
+
+                return;
+            }
         } else {
-            $this->setErrors(["error" => 'car_not_found']);
-            return null;
+            $this->setErrors(['error' => 'car_not_found']);
+
+            return;
         }
     }
 

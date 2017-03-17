@@ -2,9 +2,8 @@
 
 namespace STS\Events\Friend;
 
-use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use STS\Events\Event;
 
 class Request extends Event
 {

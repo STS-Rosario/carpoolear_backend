@@ -2,9 +2,8 @@
 
 namespace STS\Events\Friend;
 
-use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use STS\Events\Event;
 
 class Reject extends Event
 {
@@ -12,7 +11,7 @@ class Reject extends Event
 
     protected $from;
     protected $to;
-    
+
     /**
      * Create a new event instance.
      *

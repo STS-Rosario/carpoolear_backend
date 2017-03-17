@@ -1,7 +1,6 @@
 <?php
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use \STS\Contracts\Repository\Devices as DeviceRepository;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery as m;
 
 class FriendApiTest extends TestCase
@@ -9,6 +8,7 @@ class FriendApiTest extends TestCase
     use DatabaseTransactions;
 
     protected $friendsLogic;
+
     public function __construct()
     {
     }
@@ -22,7 +22,7 @@ class FriendApiTest extends TestCase
     public function tearDown()
     {
         m::close();
-    } 
+    }
 
     protected function parseJson($response)
     {
@@ -37,7 +37,7 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('request')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/friends/request/' . $u2->id); 
+        $response = $this->call('POST', 'api/friends/request/'.$u2->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -49,7 +49,7 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('accept')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/friends/accept/' . $u2->id); 
+        $response = $this->call('POST', 'api/friends/accept/'.$u2->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -61,7 +61,7 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('reject')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/friends/reject/' . $u2->id); 
+        $response = $this->call('POST', 'api/friends/reject/'.$u2->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -73,7 +73,7 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('delete')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/friends/delete/' . $u2->id); 
+        $response = $this->call('POST', 'api/friends/delete/'.$u2->id);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -85,12 +85,11 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn([$u2]);
 
-        $response = $this->call('GET', 'api/friends/'); 
-        $this->assertTrue($response->status() == 200);  
+        $response = $this->call('GET', 'api/friends/');
+        $this->assertTrue($response->status() == 200);
         $friends = $this->parseJson($response);
 
         $this->assertTrue($friends[0]->id == $u2->id);
-
     }
 
     public function testPendings()
@@ -101,12 +100,10 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/friends/pedings'); 
-        $this->assertTrue($response->status() == 200); 
+        $response = $this->call('GET', 'api/friends/pedings');
+        $this->assertTrue($response->status() == 200);
         $friends = $this->parseJson($response);
 
         $this->assertTrue(count($friends) == 0);
-
     }
- 
 }

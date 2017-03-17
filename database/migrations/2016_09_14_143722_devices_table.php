@@ -1,41 +1,39 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
-class DevicesTable extends Migration {
-
-	/**
-	 * Run the migrations.
-	 *
-	 * @return void
-	 */
-	public function up()
-	{
-		Schema::create('users_devices', function(Blueprint $table)
-		{
-			$table->engine = 'InnoDB';
+class DevicesTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('users_devices', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->increments('id');
-            $table->integer("user_id")->unsigned();
+            $table->integer('user_id')->unsigned();
             $table->string('session_id', 500);
             $table->string('device_id', 500);
             $table->string('device_type', 12);
-			$table->integer("app_version");
-			$table->timestamps();
+            $table->integer('app_version');
+            $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')
-			                             ->onDelete('cascade')
-										 ->onUpdate('cascade');
-		});
-	}
+                                         ->onDelete('cascade')
+                                         ->onUpdate('cascade');
+        });
+    }
 
-	/**
-	 * Reverse the migrations.
-	 *
-	 * @return void
-	 */
-	public function down()
-	{
-		Schema::drop('users_devices');
-	}
-
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::drop('users_devices');
+    }
 }

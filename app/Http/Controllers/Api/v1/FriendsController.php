@@ -2,13 +2,12 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use STS\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use \STS\Contracts\Logic\User as UserLogic;
-use \STS\Contracts\Logic\Friends as FriendsLogic;
-use JWTAuth;
 use Auth;
+use Illuminate\Http\Request;
+use STS\Contracts\Logic\Friends as FriendsLogic;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Http\Controllers\Controller;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class FriendsController extends Controller
 {
@@ -16,14 +15,14 @@ class FriendsController extends Controller
     protected $friends;
     protected $users;
 
-    public function __construct(Request $r,  FriendsLogic $friends, UserLogic $users)
+    public function __construct(Request $r, FriendsLogic $friends, UserLogic $users)
     {
         $this->middleware('api.auth');
         $this->user = $this->auth->user();
         $this->friends = $friends;
         $this->users = $users;
     }
- 
+
     public function request(Request $request, $id)
     {
         $friend = $this->users->find($id);
@@ -35,7 +34,6 @@ class FriendsController extends Controller
         }
         throw new BadRequestHttpException('Bad request exceptions', $this->friends()->getErrors());
     }
-
 
     public function accept(Request $request, $id)
     {
@@ -82,5 +80,4 @@ class FriendsController extends Controller
     {
         return $this->friends->getPendings($this->user);
     }
-
 }

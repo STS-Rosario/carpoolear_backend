@@ -23,6 +23,7 @@ class FriendsRepository implements FriendsRepo
         if ($user2) {
             $friends->where('id', $user2->id);
         }
+
         return $friends->get();
     }
 
@@ -34,7 +35,7 @@ class FriendsRepository implements FriendsRepo
                                 $q->whereId($user2->id);
                             }
                          )->count();
-                         
+
         return $friends > 0;
     }
 }

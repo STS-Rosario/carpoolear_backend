@@ -1,11 +1,9 @@
-<?php 
+<?php
 
 namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
-use STS\Entities\Passenger;
 
 /*************************************************
  *  Clase Trip:
@@ -16,18 +14,16 @@ use STS\Entities\Passenger;
  *
  *************************************************/
 
-
-
 class Trip extends Model
 {
     use SoftDeletes;
 
-    const FINALIZADO        = 0;
-    const ACTIVO            = 1;
+    const FINALIZADO = 0;
+    const ACTIVO = 1;
 
-    const PRIVACY_PUBLIC    = 2;
-    const PRIVACY_FRIENDS    = 0;
-    const PRIVACY_FOF        = 1;
+    const PRIVACY_PUBLIC = 2;
+    const PRIVACY_FRIENDS = 0;
+    const PRIVACY_FOF = 1;
 
     protected $table = 'trips';
     protected $fillable = [
@@ -47,16 +43,15 @@ class Trip extends Model
         'tripscol',
         'is_passenger',
         'mail_send',
-        'return_trip_id'
+        'return_trip_id',
     ];
     protected $hidden = [];
     protected $appends = ['passenger_count', 'seats_available', 'is_driver'];
     protected $casts = [
-        'is_passenger' => 'boolean',
-        'es_recurrente' => 'boolean'
+        'is_passenger'  => 'boolean',
+        'es_recurrente' => 'boolean',
     ];
     protected $dates = ['deleted_at'];
-
 
     public function user()
     {
@@ -65,7 +60,7 @@ class Trip extends Model
 
     public function passenger()
     {
-        return $this->hasMany('STS\Entities\Passenger', 'trip_id')->with("user");
+        return $this->hasMany('STS\Entities\Passenger', 'trip_id')->with('user');
     }
 
     public function passengerAccepted()
@@ -123,23 +118,23 @@ class Trip extends Model
     {
         $this->attributes['description'] = htmlentities($value);
     }
-    
+
     public function checkFriendship($user)
     {
-        $conductor  = $this->user;
-        $fiends     = $conductor->friends()->whereId($user->id)->first();
-        $fof        = $conductor->relativeFriends()->whereId($user->id)->first();
+        $conductor = $this->user;
+        $fiends = $conductor->friends()->whereId($user->id)->first();
+        $fof = $conductor->relativeFriends()->whereId($user->id)->first();
 
         if ($conductor->id == $user->id) {
             return true;
         }
 
         switch ($this->friendship_type_id) {
-            case Trip::PRIVACY_PUBLIC:
+            case self::PRIVACY_PUBLIC:
                 return true;
-            case Trip::PRIVACY_FRIENDS:
+            case self::PRIVACY_FRIENDS:
                 return !is_null($fiends);
-            case Trip::PRIVACY_FOF:
+            case self::PRIVACY_FOF:
                 return !is_null($fiends) || !is_null($fof);
         }
     }

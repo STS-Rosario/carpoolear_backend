@@ -1,14 +1,12 @@
 <?php
 
-use Illuminate\Foundation\Testing\WithoutMiddleware;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class QueriesTest extends TestCase
 {
     use DatabaseTransactions;
- 
-    function test_make_pagination () 
+
+    public function test_make_pagination()
     {
         $users = factory(STS\User::class, 50)->create();
 

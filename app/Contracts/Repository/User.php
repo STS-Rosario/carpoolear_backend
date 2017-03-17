@@ -1,9 +1,9 @@
 <?php
 
-namespace STS\Contracts\Repository; 
+namespace STS\Contracts\Repository;
 
 interface User
-{ 
+{
     public function create(array $data);
 
     public function update($user, array $data);
@@ -18,7 +18,7 @@ interface User
 
     public function getUserBy($key, $value);
 
-    public function addFriend($user, $friend, $provider = "");
+    public function addFriend($user, $friend, $provider = '');
 
     public function deleteFriend($user, $friend);
 
@@ -29,5 +29,4 @@ interface User
     public function deleteResetToken($key, $value);
 
     public function getUserByResetToken($token);
-
 }

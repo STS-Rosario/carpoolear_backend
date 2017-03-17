@@ -1,18 +1,20 @@
-<?php namespace STS\Entities;
+<?php
+
+namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 
-class TripPoint extends Model {
-	protected $table = 'trips_points';
-	protected $fillable = [
-        'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id'
+class TripPoint extends Model
+{
+    protected $table = 'trips_points';
+    protected $fillable = [
+        'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id',
     ];
 
-	protected $hidden = [];
+    protected $hidden = [];
     protected $casts = [
         'json_address' => 'array',
     ];
-
 
     public function setLatAttribute($value)
     {
@@ -28,8 +30,8 @@ class TripPoint extends Model {
         $this->attributes['cos_lng'] = cos(deg2rad($value));
     }
 
-    public function trip() {
+    public function trip()
+    {
         return $this->belongsTo('STS\Entities\Trip', 'trip_id');
     }
-    
 }

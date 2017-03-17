@@ -2,12 +2,12 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use STS\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use \STS\Contracts\Logic\User as UserLogic;
+use Dingo\Api\Exception\ResourceException;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
-use Dingo\Api\Exception\ResourceException;
+use Illuminate\Http\Request;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Http\Controllers\Controller;
 
 class UserController extends Controller
 {
@@ -26,6 +26,7 @@ class UserController extends Controller
         if (!$user) {
             throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());
         }
+
         return $this->response->withArray(['user' => $user]);
     }
 
@@ -36,6 +37,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
+
         return $this->response->withArray(['user' => $profile]);
     }
 
@@ -46,6 +48,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new  UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
+
         return $this->response->withArray(['user' => $profile]);
     }
 
@@ -59,6 +62,7 @@ class UserController extends Controller
         if (!$profile) {
             throw new ResourceException('Users not found.', $this->userLogic->getErrors());
         }
-        return $this->response->withArray(['user' => $profile]); 
+
+        return $this->response->withArray(['user' => $profile]);
     }
 }

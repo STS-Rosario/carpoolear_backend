@@ -2,8 +2,8 @@
 
 namespace STS\Http\Controllers\Auth;
 
-use STS\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\ResetsPasswords;
+use STS\Http\Controllers\Controller;
 
 class PasswordController extends Controller
 {
