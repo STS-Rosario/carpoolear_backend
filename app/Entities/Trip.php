@@ -26,6 +26,7 @@ class Trip extends Model
     const PRIVACY_FOF = 1;
 
     protected $table = 'trips';
+
     protected $fillable = [
         'user_id',
         'from_town',
@@ -33,25 +34,34 @@ class Trip extends Model
         'trip_date',
         'description',
         'total_seats',
-        'friendship_type_id',
-        'is_active',
+        'friendship_type_id', 
         'distance',
         'estimated_time',
         'co2',
-        'es_recurrente',
-        'esta_carpooleado',
+        'es_recurrente', 
         'tripscol',
         'is_passenger',
         'mail_send',
         'return_trip_id',
+        'enc_path'
     ];
-    protected $hidden = [];
-    protected $appends = ['passenger_count', 'seats_available', 'is_driver'];
+
+    protected $hidden = [
+        'enc_path'
+    ];
+
+    protected $appends = [
+        'passenger_count', 'seats_available', 'is_driver'
+    ];
+
     protected $casts = [
         'is_passenger'  => 'boolean',
         'es_recurrente' => 'boolean',
     ];
-    protected $dates = ['deleted_at'];
+
+    protected $dates = [
+        'deleted_at'
+    ];
 
     public function user()
     {

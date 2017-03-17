@@ -32,6 +32,7 @@ class TripsTable extends Migration
             $table->boolean('is_passenger');
             $table->boolean('mail_send');
             $table->string('tripscol', 45);
+            $table->string('enc_path');
 
             $table->timestamps();
             $table->softDeletes();

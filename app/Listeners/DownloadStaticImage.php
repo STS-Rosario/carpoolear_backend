@@ -29,7 +29,7 @@ class DownloadStaticImage
     public function handle($event)
     {
         $trip = $event->trip;
-        $enc_path = $event->enc_path;
+        $enc_path = $trip->enc_path;
         //$target_dir = public_path("image/paths/" . $id . ".png");
 
         if ($event->enc_path) {

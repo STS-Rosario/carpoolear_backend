@@ -9,18 +9,16 @@ class Create extends Event
 {
     use SerializesModels;
 
-    public $trip;
-    public $enc_path;
+    public $trip; 
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($trip, $enc_path)
+    public function __construct($trip)
     {
-        $this->trip = $trip;
-        $this->enc_path = $enc_path;
+        $this->trip = $trip; 
     }
 
     /**

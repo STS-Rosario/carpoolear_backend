@@ -73,7 +73,7 @@ class TripsManager extends BaseManager implements TripLogic
         } else {
             $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
-            event(new CreateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null));
+            event(new CreateEvent($trip));
 
             return $trip;
         }
@@ -91,7 +91,7 @@ class TripsManager extends BaseManager implements TripLogic
                     return;
                 } else {
                     $trip = $this->tripRepo->update($trip, $data);
-                    event(new UpdateEvent($trip, isset($data['enc_path']) ? $data['enc_path'] : null));
+                    event(new UpdateEvent($trip));
 
                     return $trip;
                 }
