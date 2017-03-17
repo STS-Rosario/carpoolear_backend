@@ -2,10 +2,10 @@
 
 namespace STS\Services\Logic;
 
+use STS\User as UserModel;
 use STS\Entities\Passenger;
 use STS\Entities\Trip as TripModel;
 use STS\Repository\PassengerRepository;
-use STS\User as UserModel;
 
 class PassengersManager
 {

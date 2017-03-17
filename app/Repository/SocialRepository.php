@@ -2,9 +2,9 @@
 
 namespace STS\Repository;
 
-use STS\Contracts\Repository\Social as SocialRepo;
-use STS\Entities\SocialAccount;
 use STS\User;
+use STS\Entities\SocialAccount;
+use STS\Contracts\Repository\Social as SocialRepo;
 
 class SocialRepository implements SocialRepo
 {

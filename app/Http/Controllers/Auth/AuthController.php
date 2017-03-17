@@ -2,11 +2,11 @@
 
 namespace STS\Http\Controllers\Auth;
 
-use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
-use Illuminate\Foundation\Auth\ThrottlesLogins;
-use STS\Http\Controllers\Controller;
 use STS\User;
 use Validator;
+use STS\Http\Controllers\Controller;
+use Illuminate\Foundation\Auth\ThrottlesLogins;
+use Illuminate\Foundation\Auth\AuthenticatesAndRegistersUsers;
 
 class AuthController extends Controller
 {

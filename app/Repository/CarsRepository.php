@@ -2,9 +2,9 @@
 
 namespace STS\Repository;
 
-use STS\Contracts\Repository\Car as CarRepository;
-use STS\Entities\Car as CarModel;
 use STS\User as UserModel;
+use STS\Entities\Car as CarModel;
+use STS\Contracts\Repository\Car as CarRepository;
 
 class CarsRepository implements CarRepository
 {

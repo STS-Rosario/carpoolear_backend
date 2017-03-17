@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Database\Seeder;
 use STS\Entities\Trip;
 use STS\Entities\TripPoint;
+use Illuminate\Database\Seeder;
 
 class TripsTestSeeder extends Seeder
 {

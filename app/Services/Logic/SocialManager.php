@@ -2,14 +2,14 @@
 
 namespace STS\Services\Logic;
 
-use STS\Contracts\Logic\Social as SocialLogic;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Repository\Files as FilesRep;
-use STS\Contracts\Repository\Friends as FriendsRep;
-use STS\Contracts\Repository\Social as SocialRepo;
-use STS\Contracts\SocialProvider;
-use STS\User as UserModel;
 use Validator;
+use STS\User as UserModel;
+use STS\Contracts\SocialProvider;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Contracts\Logic\Social as SocialLogic;
+use STS\Contracts\Repository\Files as FilesRep;
+use STS\Contracts\Repository\Social as SocialRepo;
+use STS\Contracts\Repository\Friends as FriendsRep;
 
 class SocialManager extends BaseManager implements SocialLogic
 {
@@ -74,7 +74,7 @@ class SocialManager extends BaseManager implements SocialLogic
             }
             //unset($data['email']);
             $user = $this->userLogic->update($user, $this->userData);
-            if (!$user) {
+            if (! $user) {
                 $this->setErrors($this->userLogic->getErrors());
 
                 return;
@@ -90,7 +90,7 @@ class SocialManager extends BaseManager implements SocialLogic
     {
         $account = $this->getAccounts();
         $userAccounts = $this->socialRepo->get($user, $this->socialRepo->getProvider());
-        if (!$account && $userAccounts->count() == 0) {
+        if (! $account && $userAccounts->count() == 0) {
             $this->socialRepo->create($user, $this->provider_user_id);
 
             return true;
@@ -128,7 +128,7 @@ class SocialManager extends BaseManager implements SocialLogic
             $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
         }
         $user = $this->userLogic->create($data);
-        if (!$user) {
+        if (! $user) {
             $this->setErrors($this->userLogic->getErrors());
 
             return;

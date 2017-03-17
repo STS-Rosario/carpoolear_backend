@@ -17,7 +17,7 @@ class ValidationException extends \Exception
     {
         parent::__construct('Validation Error');
 
-        if (!is_null($errors)) {
+        if (! is_null($errors)) {
             $this->setErrors($errors);
         }
     }

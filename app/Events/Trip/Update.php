@@ -2,8 +2,8 @@
 
 namespace STS\Events\Trip;
 
-use Illuminate\Queue\SerializesModels;
 use STS\Events\Event;
+use Illuminate\Queue\SerializesModels;
 
 class Update extends Event
 {
