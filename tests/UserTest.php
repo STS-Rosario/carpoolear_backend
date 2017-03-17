@@ -77,12 +77,8 @@ class UserTest extends TestCase {
 
         $u1 = $userManager->update($u1, $data);
         $this->assertTrue($u1 != null);
-<<<<<<< HEAD
 
-	}
-=======
     }
->>>>>>> develop
 
     public function testActiveUser()
     {
