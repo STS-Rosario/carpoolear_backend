@@ -2,11 +2,11 @@
 
 namespace STS\Services\Logic;
 
-use STS\Contracts\Logic\Devices as DeviceLogic;
-use STS\Contracts\Repository\Devices as DeviceRepository;
-use STS\Entities\Device;
 use STS\User;
 use Validator;
+use STS\Entities\Device;
+use STS\Contracts\Logic\Devices as DeviceLogic;
+use STS\Contracts\Repository\Devices as DeviceRepository;
 
 class DeviceManager extends BaseManager implements DeviceLogic
 {

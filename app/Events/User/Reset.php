@@ -2,8 +2,8 @@
 
 namespace STS\Events\User;
 
-use Illuminate\Queue\SerializesModels;
 use STS\Events\Event;
+use Illuminate\Queue\SerializesModels;
 
 class Reset extends Event
 {

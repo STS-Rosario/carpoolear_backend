@@ -4,8 +4,8 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Auth;
 use Illuminate\Http\Request;
-use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\Trip as TripLogic;
 
 class TripController extends Controller
 {
@@ -23,7 +23,7 @@ class TripController extends Controller
         $this->user = $this->auth->user();
         $data = $request->all();
         $trip = $this->tripsLogic->create($this->user, $data);
-        if (!$trip) {
+        if (! $trip) {
             throw new StoreResourceFailedException('Could not create new trip.', $this->tripsLogic->getErrors());
         }
 
@@ -35,7 +35,7 @@ class TripController extends Controller
         $this->user = $this->auth->user();
         $data = $request->all();
         $trip = $this->tripsLogic->update($this->user, $id, $data);
-        if (!$trip) {
+        if (! $trip) {
             throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
@@ -46,7 +46,7 @@ class TripController extends Controller
     {
         $this->user = $this->auth->user();
         $result = $this->tripsLogic->delete($this->user, $id);
-        if (!$result) {
+        if (! $result) {
             throw new StoreResourceFailedException('Could not delete trip.', $this->tripsLogic->getErrors());
         }
 
@@ -57,7 +57,7 @@ class TripController extends Controller
     {
         $this->user = $this->auth->user();
         $trip = $this->tripsLogic->show($this->user, $id);
-        if (!$trip) {
+        if (! $trip) {
             throw new ResourceException('Could not found trip.', $this->tripsLogic->getErrors());
         }
 

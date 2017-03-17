@@ -2,12 +2,12 @@
 
 namespace STS\Repository;
 
-use Carbon\Carbon;
 use DB;
-use STS\Contracts\Repository\Trip as TripRepo;
+use STS\User;
+use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\TripPoint;
-use STS\User;
+use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripRepository implements TripRepo
 {

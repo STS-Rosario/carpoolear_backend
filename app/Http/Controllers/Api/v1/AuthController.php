@@ -2,14 +2,14 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Illuminate\Http\Request;
 use JWTAuth;
-use STS\Contracts\Logic\Devices as DeviceLogic;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Http\Controllers\Controller;
 use STS\User;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Illuminate\Http\Request;
+use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Contracts\Logic\Devices as DeviceLogic;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class AuthController extends Controller
@@ -30,7 +30,7 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
 
         try {
-            if (!$token = JWTAuth::attempt($credentials)) {
+            if (! $token = JWTAuth::attempt($credentials)) {
                 return response()->json(['error' => 'invalid_credentials'], 401);
             }
         } catch (JWTException $e) {
@@ -43,7 +43,7 @@ class AuthController extends Controller
             throw new UnauthorizedHttpException('user_banned');
         }
 
-        if (!$user->active) {
+        if (! $user->active) {
             throw new UnauthorizedHttpException('user_not_active');
         }
 
@@ -60,7 +60,7 @@ class AuthController extends Controller
     public function retoken(Request $request)
     {
         $oldToken = JWTAuth::getToken();
-        if (!$oldToken) {
+        if (! $oldToken) {
             throw new BadRequestHttpException('Token not provided');
         }
         try {
@@ -89,7 +89,7 @@ class AuthController extends Controller
     public function active($activation_token, Request $request)
     {
         $user = $this->userLogic->activeAccount($activation_token);
-        if (!$user) {
+        if (! $user) {
             throw new ResourceException('invalid_activation_token', $this->userLogic->getErrors());
         }
         $token = JWTAuth::fromUser($user);

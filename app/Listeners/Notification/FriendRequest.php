@@ -2,8 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Events\Friend\Request;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
 class FriendRequest implements ShouldQueue
 {

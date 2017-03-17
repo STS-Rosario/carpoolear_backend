@@ -4,8 +4,8 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Auth;
 use Illuminate\Http\Request;
-use STS\Contracts\Logic\Car  as CarLogic;
 use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\Car  as CarLogic;
 
 class CarController extends Controller
 {
@@ -23,7 +23,7 @@ class CarController extends Controller
     {
         $data = $request->all();
         $car = $this->carsLogic->create($this->user, $data);
-        if (!$car) {
+        if (! $car) {
             throw new StoreResourceFailedException('Could not create new car.', $this->carsLogic->getErrors());
         }
 
@@ -34,7 +34,7 @@ class CarController extends Controller
     {
         $data = $request->all();
         $car = $this->carsLogic->update($this->user, $id, $data);
-        if (!$car) {
+        if (! $car) {
             throw new StoreResourceFailedException('Could not update car.', $this->carsLogic->getErrors());
         }
 
@@ -44,7 +44,7 @@ class CarController extends Controller
     public function delete($id, Request $request)
     {
         $result = $this->carsLogic->delete($this->user, $id);
-        if (!$result) {
+        if (! $result) {
             throw new StoreResourceFailedException('Could not delete car.', $this->carsLogic->getErrors());
         }
 
@@ -55,7 +55,7 @@ class CarController extends Controller
     {
         $this->user = $this->auth->user();
         $car = $this->carsLogic->show($this->user, $id);
-        if (!$car) {
+        if (! $car) {
             throw new ResourceException('Could not found car.', $this->carsLogic->getErrors());
         }
 

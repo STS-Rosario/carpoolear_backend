@@ -2,13 +2,13 @@
 
 namespace STS\Services\Logic;
 
-use STS\Contracts\Logic\Trip as TripLogic;
-use STS\Contracts\Repository\Trip as TripRepo;
-use STS\Entities\Trip;
-use STS\Events\Trip\Create  as CreateEvent;
-use STS\Events\Trip\Update  as UpdateEvent;
 use STS\User;
 use Validator;
+use STS\Entities\Trip;
+use STS\Contracts\Logic\Trip as TripLogic;
+use STS\Events\Trip\Create  as CreateEvent;
+use STS\Events\Trip\Update  as UpdateEvent;
+use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripsManager extends BaseManager implements TripLogic
 {

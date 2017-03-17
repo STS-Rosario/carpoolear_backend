@@ -3,8 +3,8 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Contracts\Auth\Guard;
 use Tymon\JWTAuth\JWTAuth;
+use Illuminate\Contracts\Auth\Guard;
 
 class UserAdmin
 {

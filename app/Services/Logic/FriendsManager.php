@@ -2,12 +2,12 @@
 
 namespace STS\Services\Logic;
 
-use STS\Contracts\Logic\Friends as FriendsLogic;
-use STS\Contracts\Repository\Friends as FriendsRepo;
+use STS\User as UserModel;
 use STS\Events\Friend\Accept  as AcceptEvent;
 use STS\Events\Friend\Reject  as RejectEvent;
 use STS\Events\Friend\Request as RequestEvent;
-use STS\User as UserModel;
+use STS\Contracts\Logic\Friends as FriendsLogic;
+use STS\Contracts\Repository\Friends as FriendsRepo;
 
 class FriendsManager extends BaseManager implements FriendsLogic
 {
