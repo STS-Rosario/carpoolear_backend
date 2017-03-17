@@ -2,9 +2,9 @@
 
 namespace STS\Repository;
 
-use STS\Contracts\Repository\Devices as DeviceRepo;
-use STS\Entities\Device;
 use STS\User;
+use STS\Entities\Device;
+use STS\Contracts\Repository\Devices as DeviceRepo;
 
 class DeviceRepository implements DeviceRepo
 {

@@ -2,8 +2,8 @@
 
 namespace STS\Contracts\Repository;
 
-use STS\Entities\Car as CarModel;
 use STS\User as UserModel;
+use STS\Entities\Car as CarModel;
 
 interface Car
 {

@@ -2,15 +2,15 @@
 
 namespace STS\Services\Logic;
 
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Repository\User as UserRep;
-use STS\Entities\Trip;
-use STS\Events\User\Create as CreateEvent;
-use STS\Events\User\Reset  as ResetEvent;
-use STS\Events\User\Update as UpdateEvent;
-use STS\Repository\FileRepository;
 use STS\User;
 use Validator;
+use STS\Entities\Trip;
+use STS\Repository\FileRepository;
+use STS\Events\User\Reset  as ResetEvent;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Events\User\Create as CreateEvent;
+use STS\Events\User\Update as UpdateEvent;
+use STS\Contracts\Repository\User as UserRep;
 
 class UsersManager extends BaseManager implements UserLogic
 {
@@ -58,7 +58,7 @@ class UsersManager extends BaseManager implements UserLogic
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
-            if (!isset($data['active'])) {
+            if (! isset($data['active'])) {
                 $data['active'] = false;
                 $data['activation_token'] = str_random(40);
             }

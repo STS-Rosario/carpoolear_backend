@@ -2,10 +2,10 @@
 
 namespace STS\Repository;
 
-use Carbon\Carbon;
 use DB;
-use STS\Contracts\Repository\User as UserRep;
 use STS\User;
+use Carbon\Carbon;
+use STS\Contracts\Repository\User as UserRep;
 
 class UserRepository implements UserRep
 {

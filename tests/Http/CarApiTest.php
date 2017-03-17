@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery as m;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class CarApiTest extends TestCase
 {

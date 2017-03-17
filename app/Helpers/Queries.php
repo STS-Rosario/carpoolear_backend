@@ -4,7 +4,7 @@ use Illuminate\Pagination\Paginator;
 
 function make_pagination($query, $pageNumber = null, $pageSize = 20)
 {
-    if (!$pageNumber) {
+    if (! $pageNumber) {
         $pageNumber = 1;
     }
     if ($pageSize == null) {
@@ -31,7 +31,7 @@ function stop_log_query()
 function get_query($index = null)
 {
     $laQuery = DB::getQueryLog();
-    if (!$index) {
+    if (! $index) {
         $index = count($laQuery) - 1;
     }
 

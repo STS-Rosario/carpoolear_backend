@@ -2,8 +2,8 @@
 
 namespace STS\Listeners;
 
-use STS\Contracts\Repository\Files as FilesRepo;
 use STS\Events\Trip\Create;
+use STS\Contracts\Repository\Files as FilesRepo;
 
 class DownloadStaticImage
 {

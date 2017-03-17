@@ -4,9 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Auth;
 use Illuminate\Http\Request;
-use STS\Contracts\Logic\Friends as FriendsLogic;
-use STS\Contracts\Logic\User as UserLogic;
 use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Contracts\Logic\Friends as FriendsLogic;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class FriendsController extends Controller

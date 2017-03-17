@@ -2,12 +2,12 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Illuminate\Http\Request;
 use JWTAuth;
-use STS\Contracts\Logic\Devices as DeviceLogic;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Http\Controllers\Controller;
 use STS\User;
+use Illuminate\Http\Request;
+use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Contracts\Logic\Devices as DeviceLogic;
 
 class SocialController extends Controller
 {
@@ -42,7 +42,7 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate();
-            if (!$user) {
+            if (! $user) {
                 throw new StoreResourceFailedException('Could not create new user.', $socialServices->gerErrors());
             }
             $token = JWTAuth::fromUser($user);
@@ -72,7 +72,7 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->updateProfile($user);
-            if (!$ret) {
+            if (! $ret) {
                 throw new StoreResourceFailedException('Could not update user.', $socialServices->gerErrors());
             }
 
@@ -90,7 +90,7 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->makeFriends($user);
-            if (!$ret) {
+            if (! $ret) {
                 throw new StoreResourceFailedException('Could not refresh for friends.', $socialServices->gerErrors());
             }
 

@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Contracts\Repository\Friends as FriendsRepo;
 use STS\User as UserModel;
+use STS\Contracts\Repository\Friends as FriendsRepo;
 
 class FriendsRepository implements FriendsRepo
 {

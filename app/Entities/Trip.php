@@ -111,7 +111,7 @@ class Trip extends Model
 
     public function getIsDriverAttribute()
     {
-        return !$this->is_passenger;
+        return ! $this->is_passenger;
     }
 
     public function setDescriptionAttribute($value)
@@ -133,9 +133,9 @@ class Trip extends Model
             case self::PRIVACY_PUBLIC:
                 return true;
             case self::PRIVACY_FRIENDS:
-                return !is_null($fiends);
+                return ! is_null($fiends);
             case self::PRIVACY_FOF:
-                return !is_null($fiends) || !is_null($fof);
+                return ! is_null($fiends) || ! is_null($fof);
         }
     }
 }
