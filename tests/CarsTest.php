@@ -65,6 +65,6 @@ class CarsTest extends TestCase
         $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
 
         $result = $this->carManager->index($user);
-        $this->assertTrue($result->count() == 2); 
+        $this->assertTrue($result->count() == 2);
     }
 }

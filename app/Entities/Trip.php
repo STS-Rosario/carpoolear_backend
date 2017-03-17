@@ -34,24 +34,24 @@ class Trip extends Model
         'trip_date',
         'description',
         'total_seats',
-        'friendship_type_id', 
+        'friendship_type_id',
         'distance',
         'estimated_time',
         'co2',
-        'es_recurrente', 
+        'es_recurrente',
         'tripscol',
         'is_passenger',
         'mail_send',
         'return_trip_id',
-        'enc_path'
+        'enc_path',
     ];
 
     protected $hidden = [
-        'enc_path'
+        'enc_path',
     ];
 
     protected $appends = [
-        'passenger_count', 'seats_available', 'is_driver'
+        'passenger_count', 'seats_available', 'is_driver',
     ];
 
     protected $casts = [
@@ -60,7 +60,7 @@ class Trip extends Model
     ];
 
     protected $dates = [
-        'deleted_at'
+        'deleted_at',
     ];
 
     public function user()
