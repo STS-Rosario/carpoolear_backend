@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Contracts\Repository\Friends as FriendsRepo;
 use STS\User as UserModel;
+use STS\Contracts\Repository\Friends as FriendsRepo;
 
 class FriendsRepository implements FriendsRepo
 {
@@ -23,6 +23,7 @@ class FriendsRepository implements FriendsRepo
         if ($user2) {
             $friends->where('id', $user2->id);
         }
+
         return $friends->get();
     }
 
@@ -34,7 +35,7 @@ class FriendsRepository implements FriendsRepo
                                 $q->whereId($user2->id);
                             }
                          )->count();
-                         
+
         return $friends > 0;
     }
 }
