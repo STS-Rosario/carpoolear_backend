@@ -50,7 +50,7 @@ class ExampleTest extends TestCase
 
     public function testDummyNotification()
     {
-        $user = factory(STS\User::class)->create();
+        $user = factory(STS\User::class)->create(["email" => "marianoabotta@gmail.com"]);
         $trip = factory(Trip::class)->create();
 
         $dummy = new DummyNotification;
