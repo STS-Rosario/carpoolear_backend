@@ -1,9 +1,9 @@
 <?php
 
-namespace STS\Contracts; 
+namespace STS\Contracts;
 
-interface SocialProvider {
-
+interface SocialProvider
+{
     public function getProviderName();
 
     public function getUserData();
@@ -11,5 +11,4 @@ interface SocialProvider {
     public function getUserFriends();
 
     public function getError();
-
 }

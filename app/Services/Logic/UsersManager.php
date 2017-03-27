@@ -2,18 +2,20 @@
 
 namespace STS\Services\Logic;
 
-use \STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Repository\User as UserRep;
-
-use \STS\Exceptions\ValidationException;
-use STS\Repository\FileRepository;
-use STS\Entities\Trip;
 use STS\User;
 use Validator;
+use STS\Entities\Trip;
+use STS\Repository\FileRepository;
+use STS\Events\User\Reset  as ResetEvent;
+use STS\Contracts\Logic\User as UserLogic;
+use STS\Events\User\Create as CreateEvent;
+use STS\Events\User\Update as UpdateEvent;
+use STS\Contracts\Repository\User as UserRep;
 
 class UsersManager extends BaseManager implements UserLogic
 {
     protected $repo;
+
     public function __construct(UserRep $userRep)
     {
         $this->repo = $userRep;
@@ -23,15 +25,17 @@ class UsersManager extends BaseManager implements UserLogic
     {
         if ($id) {
             return Validator::make($data, [
-                'name' => 'max:255',
-                'email' => 'email|max:255|unique:users,email,' . $id,
+                'name'     => 'max:255',
+                'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
+                'gender'   => 'string|in:Masculino,Feminino',
             ]);
         } else {
             return Validator::make($data, [
-                'name' => 'required|max:255',
-                'email' => 'required|email|max:255|unique:users',
+                'name'     => 'required|max:255',
+                'email'    => 'required|email|max:255|unique:users',
                 'password' => 'min:6|confirmed',
+                'gender'   => 'string|in:Masculino,Feminino',
             ]);
         }
     }
@@ -39,7 +43,8 @@ class UsersManager extends BaseManager implements UserLogic
     /**
      * Create a new user instance after a valid registration.
      *
-     * @param  array  $data
+     * @param array $data
+     *
      * @return User
      */
     public function create(array $data)
@@ -47,12 +52,19 @@ class UsersManager extends BaseManager implements UserLogic
         $v = $this->validator($data);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-            return null;
+
+            return;
         } else {
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
+            if (! isset($data['active'])) {
+                $data['active'] = false;
+                $data['activation_token'] = str_random(40);
+            }
             $u = $this->repo->create($data);
+            event(new CreateEvent($u->id));
+
             return $u;
         }
     }
@@ -62,14 +74,17 @@ class UsersManager extends BaseManager implements UserLogic
         $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-            return null;
+
+            return;
         } else {
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
-            
-            $u = $this->repo->update($user, $data);
-            return $u;
+
+            $this->repo->update($user, $data);
+            event(new UpdateEvent($user->id));
+
+            return $user;
         }
     }
 
@@ -78,26 +93,74 @@ class UsersManager extends BaseManager implements UserLogic
         $v = Validator::make($data, ['profile' => 'required|image']);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-            return null;
+
+            return;
         } else {
             $fileManager = new FileRepository();
             $filename = $data['profile']['tmp_name'];
             $name = $fileManager->createFromFile($filename, 'image/profile');
-            $user = $this->repo->updatePhoto($user, $name);
+            $this->repo->updatePhoto($user, $name);
+            event(new UpdateEvent($user->id));
+
             return $user;
         }
     }
 
     public function find($user_id)
     {
-        return $this->repo->show($profile_id);
+        return $this->repo->show($user_id);
     }
 
+    public function activeAccount($activation_token)
+    {
+        $user = $this->repo->getUserBy('activation_token', $activation_token);
+        if ($user) {
+            $this->repo->update($user, ['active' => true, 'activation_token' => null]);
+
+            return $user;
+        } else {
+            $this->setErrors(['error' => 'invalid_activation_token']);
+
+            return;
+        }
+    }
+
+    public function resetPassword($email)
+    {
+        $user = $this->repo->getUserBy('email', $email);
+        if ($user) {
+            $token = str_random(40);
+            $this->repo->deleteResetToken('email', $user->email);
+            $this->repo->storeResetToken($user, $token);
+            $this->repo->update($user, ['active' => false]);
+            event(new ResetEvent($user->id, $token));
+
+            return $token;
+        } else {
+            $this->setErrors(['error' => 'user_not_found']);
+
+            return;
+        }
+    }
+
+    public function changePassword($token, $data)
+    {
+        $user = $this->repo->getUserByResetToken($token);
+        if ($user) {
+            $data['active'] = true;
+            if ($this->update($user, $data)) {
+                $this->repo->deleteResetToken('email', $user->email);
+
+                return true;
+            }
+        }
+    }
 
     public function show($user, $profile_id)
     {
         $profile = $this->repo->show($profile_id);
         if ($profile) {
+            /*
             $profile->cantidadViajes = $this->tripsCount($profile);
             $profile->distanciaRecorrida = $this->tripsDistance($profile);
             if ($user->id != $profile->id) {
@@ -118,9 +181,10 @@ class UsersManager extends BaseManager implements UserLogic
                     }
                 }
             }
+            */
             return $profile;
         }
-        return null;
+        $this->setErrors(['error' => 'profile not found']);
     }
 
     public function tripsCount($user, $type = null)
@@ -132,6 +196,7 @@ class UsersManager extends BaseManager implements UserLogic
         if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
             $cantidad += $user->tripsAsPassenger(Trip::FINALIZADO)->count();
         }
+
         return $cantidad;
     }
 
@@ -144,6 +209,7 @@ class UsersManager extends BaseManager implements UserLogic
         if ($type == Passenger::TYPE_PASAJERO || is_null($type)) {
             $distancia += $user->tripsAsPassenger(Trip::FINALIZADO)->sum('distance');
         }
+
         return $distancia;
     }
 }

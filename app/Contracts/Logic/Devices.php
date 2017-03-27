@@ -1,8 +1,7 @@
 <?php
 
-namespace STS\Contracts\Logic; 
+namespace STS\Contracts\Logic;
 
-use STS\Entities\Device; 
 use STS\User as UserModel;
 
 interface Devices
@@ -16,6 +15,6 @@ interface Devices
     public function getDevices(UserModel $user);
 
     public function setErrors($errs);
-    
+
     public function getErrors();
 }

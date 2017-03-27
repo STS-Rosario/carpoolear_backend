@@ -1,20 +1,12 @@
 <?php
 
-namespace STS\Http\Controllers\Api;
+namespace STS\Http\Controllers\Api\v1;
 
-use STS\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use STS\Services\Logic\DeviceManager;
-use STS\Services\Logic\SocialManager;
-
-use STS\Services\Social\FacebookSocialProvider;
-
-use STS\User;
-use STS\Entities\Device;
 use JWTAuth;
-
-use \GuzzleHttp\Client;
-use \STS\Contracts\Logic\User as UserLogic;
+use STS\User;
+use Illuminate\Http\Request;
+use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Devices as DeviceLogic;
 
 class SocialController extends Controller
@@ -22,17 +14,18 @@ class SocialController extends Controller
     protected $user;
     protected $userLogic;
     protected $deviceLogic;
+
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
     {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
-        $this->middleware('jwt.auth', ['except' => ['login']]);
+        $this->middleware('api.auth', ['except' => ['login']]);
     }
- 
+
     public function installProvider($provider, $accessToken)
     {
         $provider = ucfirst(strtolower($provider));
-        $providerClass = 'STS\Services\Social\\' . $provider . 'SocialProvider';
+        $providerClass = 'STS\Services\Social\\'.$provider.'SocialProvider';
 
         \App::when($providerClass)
                     ->needs('$token')
@@ -49,8 +42,8 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate();
-            if (!$user) {
-                return response()->json($socialServices->gerErrors(), 401);
+            if (! $user) {
+                throw new StoreResourceFailedException('Could not create new user.', $socialServices->gerErrors());
             }
             $token = JWTAuth::fromUser($user);
         } catch (\ReflectionException $e) {
@@ -58,7 +51,7 @@ class SocialController extends Controller
         }
 
         if ($user->banned) {
-            return response()->json(['error' => 'user_banned'], 401);
+            throw new UnauthorizedHttpException('User kick');
         }
 
         // Registro mi devices
@@ -67,32 +60,43 @@ class SocialController extends Controller
             $data['session_id'] = $token;
             $this->deviceLogic->register($user, $data);
         }
-        return response()->json(compact('token', 'user'));
+
+        return $this->response->withArray(['token' => $token]);
     }
 
     public function update(Request $request, $provider)
     {
-        $user = \JWTAuth::parseToken()->authenticate();
+        $user = $this->auth->user();
         $accessToken = $request->get('access_token');
         $this->installProvider($provider, $accessToken);
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->updateProfile($user);
+            $ret = $socialServices->updateProfile($user);
+            if (! $ret) {
+                throw new StoreResourceFailedException('Could not update user.', $socialServices->gerErrors());
+            }
+
+            return response()->json('OK');
         } catch (\ReflectionException $e) {
-            return response()->json(['error' => 'provider not supported'], 401);
+            throw new BadRequestHttpException('provider not supported');
         }
     }
 
     public function friends(Request $request, $provider)
     {
-        $user = \JWTAuth::parseToken()->authenticate();
+        $user = $this->auth->user();
         $accessToken = $request->get('access_token', $accessToken);
         $this->installProvider($provider);
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->makeFriends($user);
+            $ret = $socialServices->makeFriends($user);
+            if (! $ret) {
+                throw new StoreResourceFailedException('Could not refresh for friends.', $socialServices->gerErrors());
+            }
+
+            return response()->json('OK');
         } catch (\ReflectionException $e) {
-            return response()->json(['error' => 'provider not supported'], 401);
+            throw new BadRequestHttpException('provider not supported');
         }
     }
 }

@@ -22,7 +22,7 @@ class AppServiceProvider extends ServiceProvider
      * @return void
      */
     public function register()
-    {  
+    {
         $this->app->bind('\STS\Contracts\Logic\User', '\STS\Services\Logic\UsersManager');
         $this->app->bind('\STS\Contracts\Repository\User', '\STS\Repository\UserRepository');
 
@@ -37,5 +37,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind('\STS\Contracts\Repository\Social', '\STS\Repository\SocialRepository');
         $this->app->bind('\STS\Contracts\Logic\Social', '\STS\Services\Logic\SocialManager');
 
+        $this->app->bind('\STS\Contracts\Repository\Trip', '\STS\Repository\TripRepository');
+        $this->app->bind('\STS\Contracts\Logic\Trip', '\STS\Services\Logic\TripsManager');
+
+        $this->app->bind('\STS\Contracts\Repository\Car', '\STS\Repository\CarsRepository');
+        $this->app->bind('\STS\Contracts\Logic\Car', '\STS\Services\Logic\CarsManager');
     }
 }
