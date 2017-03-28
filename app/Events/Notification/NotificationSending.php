@@ -16,19 +16,16 @@ class NotificationSending extends Event
 
     public $channel;
 
-    public $device;
-
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($notification, $user, $channel, $device = null)
+    public function __construct($notification, $user, $channel)
     {
         $this->notification = $notification;
         $this->user = $user;
         $this->channel = $channel;
-        $this->device = $device;
     }
 
     /**
