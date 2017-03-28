@@ -2,63 +2,125 @@
 
 namespace STS\Repository;
 
+use DB;
+use STS\User;
+use Carbon\Carbon;
 use STS\Entities\Passenger;
+use STS\Contracts\Repository\IPassengerRepository;
 
-class PassengerRepository
+class PassengerRepository implements IPassengerRepository
 {
-    public function add($trip, $user)
+    public function getPassengers($tripId, $user, $data)
     {
-        $p = new Passenger();
-        $p->user_id = $user->id;
-        $p->passenger_type = Passenger::TYPE_PASAJERO;
-        $p->request_state = Passenger::STATE_PENDING;
+        $passengers = Passenger::where('trip_id', $tripId);
 
-        return $trip->passenger()->save($p);
+        $passengers->whereIn('request_state', [Passanger::STATE_ACCEPTED]); //TODO: ver si hace falta obtener pasajeros con otro request_state
+
+        $pageNumber = isset($data['page']) ? $data['page'] : null;
+        $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
+
+        return make_pagination($passengers, $pageNumber, $pageSize);
     }
 
-    public function delete($trip, $user)
-    {
-        return $trip->passenger()->whereUserId($user->id)->delete();
+     public function getPendingRequests($tripId, $user, $data)
+     {
+        $passengers = Passenger::where('trip_id', $tripId);
+
+        $passengers->whereIn('request_state', [Passanger::STATE_PENDING]);
+
+        $pageNumber = isset($data['page']) ? $data['page'] : null;
+        $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
+
+        return make_pagination($passengers, $pageNumber, $pageSize);
     }
 
-    public function find($trip, $user)
-    {
-        return $trip->passenger()->whereUserId($user->id)->first();
+     public function newRequest($tripId, $user, $data)
+     {
+        $newRequestData = [
+            'tripId' => $tripId,
+            'userId' => $user->id,
+            'request_type' => Passanger::STATE_PENDING,
+            'passenger_type' => Passanger::TYPE_PASAJERO
+        ];
+
+        $newRequest = Passenger::create($newRequestData);
+
+        return $newRequest;
     }
 
-    public function accept($passenger)
+    private function changeRequestState($tripId, $userId, $newState, $criterias)
     {
-        $passenger->request_state = Passenger::STATE_ACCEPTED;
+         $updateData = [
+            'request_type' => $newState
+        ];
 
-        return $p->save();
+        $request = Passenger::where('trip_id', $tripId);
+
+        $request->where('user_id', $userId);
+
+        if(!empty($criterias))
+        {
+            foreach ($criterias as $column => $value) 
+            {
+                $request->where($columnkey, $value);
+            }
+        }
+
+        $request->where('passenger_type', $user->Passanger::TYPE_PASAJERO);
+
+        $request->update($updateData);
+
+        return $request;
     }
 
-    public function reject($passenger)
+    public function cancelRequest($tripId, $user, $data)
     {
-        $passenger->request_state = Passenger::STATE_REJECTED;
+        $criteria = [
+            'request_type' => $user->Passanger::STATE_PENDING
+        ];
 
-        return $p->save();
+        $cancelRequest = $this->changeRequestState($tripId, $user->id, Passanger::STATE_CANCELED, $criteria);
+
+        return $cancelRequest;
     }
 
-    public function cancel($passenger)
+    public function acceptRequest($tripId, $acceptedUserId, $user, $data)
     {
-        $passenger->request_state = Passenger::STATE_CANCELED;
+        $acceptRequest = $this->changeRequestState($tripId, $acceptedUserIdd, Passanger::STATE_ACCEPTED, NULL);
 
-        return $p->save();
+        return $acceptRequest;
     }
 
-    public function count($trip)
+    public function rejectRequest($tripId, $rejectedUserId, $user, $data)
     {
-        return $trip->passenger_count;
+        $rejectedRequest = $this->changeRequestState($tripId, $rejectedUserId, Passanger::STATE_REJECTED, NULL);
+
+        return $rejectedRequest;
     }
 
-    public function available($trip)
+    private function isUserInRequestType($tripId, $userId, $requestType)
     {
-        return $trip->seats_available;
+        $query = Passanger::where('trip_id', $tripId);
+
+        $query->where('user_id', $userId);
+
+        $query->where('request_type', $requestType);
+
+        return $query->get()-count() > 0;
     }
 
-    public function penddingRequest($trip)
+    public function isUserRequestAccepted($tripId, $userId)
     {
-        return $trip->passengerPending()->get();
+        return $this->isUserInRequestType(Passanger::STATE_ACCEPTED);
+    }
+    
+    public function isUserRequestRejected($tripId, $userId)
+    {
+        return $this->isUserInRequestType(Passanger::STATE_REJECTED);
+    }
+    
+    public function isUserRequestPending($tripId, $userId)
+    {
+        return $this->isUserInRequestType(Passanger::STATE_PENDING);
     }
 }
