@@ -17,4 +17,9 @@ class DummyNotification extends BaseNotification
             'email_view' => 'dummy'
         ];
     }
+
+    public function toString()
+    {
+        return "Dummy Notification " . $this->getAttribute("dummy");
+    }
 }

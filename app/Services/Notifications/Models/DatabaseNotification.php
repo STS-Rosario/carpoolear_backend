@@ -4,6 +4,7 @@ namespace STS\Services\Notifications\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use STS\User;
+use STS\Services\Notifications\Collections\NotificationCollection;
 
 class DatabaseNotification extends Model
 {
@@ -47,4 +48,20 @@ class DatabaseNotification extends Model
 
         return $this->_attributes;
     }
+
+    public function asNotification()
+    {
+        $type = new $this->type;
+        foreach($this->attributes() as $key => $value) {
+            $type->setAttribute($key, $value);
+        }
+        return $type;
+
+    }
+
+    public function newCollection(array $models = Array())
+    { 
+        return new NotificationCollection($models);
+    }
+
 }
