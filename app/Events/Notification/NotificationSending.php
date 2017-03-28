@@ -10,22 +10,25 @@ class NotificationSending extends Event
 {
     use SerializesModels;
 
-    protected $notification;
+    public $notification;
 
-    protected $user;
+    public $user;
 
-    protected $channel;
+    public $channel;
+
+    public $device;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($notification, $user, $channel)
+    public function __construct($notification, $user, $channel, $device = null)
     {
         $this->notification = $notification;
         $this->user = $user;
         $this->channel = $channel;
+        $this->device = $device;
     }
 
     /**

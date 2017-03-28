@@ -8,10 +8,11 @@ class UserTest extends TestCase
 
     public function testCreateUser()
     {
+        $this->expectsEvents(STS\Events\User\Create::class);
         $userManager = \App::make('\STS\Contracts\Logic\User');
         $data = [
             'name'                  => 'Mariano',
-            'email'                 => 'mariano@g2.com',
+            'email'                 => 'marianoabotta@gmail.com',
             'password'              => '123456',
             'password_confirmation' => '123456',
         ];
@@ -25,7 +26,7 @@ class UserTest extends TestCase
         $userManager = \App::make('\STS\Contracts\Logic\User');
         $data = [
             'name'     => 'Mariano',
-            'email'    => 'mariano@g.com',
+            'email'    => 'marianoabotta@gmail.com',
             'password' => '123456',
         ];
 
@@ -35,6 +36,7 @@ class UserTest extends TestCase
 
     public function testCreateUserRepited()
     {
+        $this->expectsEvents(STS\Events\User\Create::class);
         $userManager = \App::make('\STS\Contracts\Logic\User');
         $data = [
             'name'                  => 'Mariano',
