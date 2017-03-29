@@ -76,11 +76,17 @@ class NotificationTest extends TestCase
         $datos = $manager->getNotifications($user, []);
         $this->assertEquals(count($datos), 1); 
 
+        $noti = $datos[0];
+
         $count = $manager->getUnreadCount($user);
         $this->assertEquals($count, 1);
 
         $datos = $manager->getNotifications($user, ['mark' => true]);
         $count = $manager->getUnreadCount($user);
         $this->assertEquals($count, 0);
+
+        $manager->delete($user, $noti['id']);
+        $datos = $manager->getNotifications($user, []);
+        $this->assertEquals(count($datos), 0); 
     }
 }

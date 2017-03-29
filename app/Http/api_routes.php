@@ -19,7 +19,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
     });
 
-    $api->group(['prefix' => 'ntifications'], function ($api) use ($v1_path) {
+    $api->group(['prefix' => 'notifications'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'NotificationController@index');
         $api->delete('/{id?}', $v1_path.'NotificationController@delete');
         $api->get('/count', $v1_path.'NotificationController@count'); 
