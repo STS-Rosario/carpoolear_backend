@@ -11,7 +11,7 @@ class NotificationRepository implements INotification
 {
     public function getNotifications($user, $unread = false, $page_size = null, $page = null)
     {
-        if (!$readed) {
+        if (!$unread) {
             $query = $user->notifications();
         } else {
             $query = $user->unreadNotifications();

@@ -39,7 +39,7 @@ class NotificationTest extends TestCase
     }
 
     public function testDummyNotification()
-    {
+    { 
         $user = factory(STS\User::class)->create(["email" => "marianoabotta@gmail.com"]);
         $trip = factory(Trip::class)->create();
 
@@ -58,5 +58,29 @@ class NotificationTest extends TestCase
         $first = $notifications->asNotifications()->first();  
 
         $this->assertEquals($first->toString(), "Dummy Notification dummy"); 
+    }
+
+    public function testNotificationLogic()
+    { 
+        $user = factory(STS\User::class)->create(["email" => "marianoabotta@gmail.com"]);
+        $trip = factory(Trip::class)->create();
+
+        $dummy = new DummyNotification;
+        $dummy->setAttribute("dummy", "dummy");
+        $dummy->setAttribute("trip", $trip);
+
+        $dummy->notify($user); 
+
+        $manager = \App::make('\STS\Contracts\Logic\INotification');
+
+        $datos = $manager->getNotifications($user, []);
+        $this->assertEquals(count($datos), 1); 
+
+        $count = $manager->getUnreadCount($user);
+        $this->assertEquals($count, 1);
+
+        $datos = $manager->getNotifications($user, ['mark' => true]);
+        $count = $manager->getUnreadCount($user);
+        $this->assertEquals($count, 0);
     }
 }

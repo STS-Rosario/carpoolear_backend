@@ -31,7 +31,9 @@ class NotificationManager implements NotificationLogic
 
         $response = [];
         foreach ($notifications as $n) {
-            $this->repo->markAsRead($n);
+            if ($mark) {
+                $this->repo->markAsRead($n);
+            }
             $texto = $n->asNotification()->toString();
             $data = [
                 'id' => $n->id,
