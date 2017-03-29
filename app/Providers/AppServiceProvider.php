@@ -42,5 +42,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind('\STS\Contracts\Repository\Car', '\STS\Repository\CarsRepository');
         $this->app->bind('\STS\Contracts\Logic\Car', '\STS\Services\Logic\CarsManager');
+
+        $this->app->bind('\STS\Contracts\Repository\INotification', '\STS\Repository\NotificationRepository');
     }
 }

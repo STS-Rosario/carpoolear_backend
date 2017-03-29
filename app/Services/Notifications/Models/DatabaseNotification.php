@@ -10,7 +10,7 @@ class DatabaseNotification extends Model
 {
     protected $table = 'notifications';
 
-    protected $fillable = ['user_id', 'type'];
+    protected $fillable = ['user_id', 'type', 'read_at'];
 
     protected $hidden = [];
 
@@ -55,8 +55,13 @@ class DatabaseNotification extends Model
         foreach($this->attributes() as $key => $value) {
             $type->setAttribute($key, $value);
         }
-        return $type;
+        return $type; 
+    }
 
+    public function readed()
+    {
+        $this->read_at = Carbon::now();
+        $this->save();
     }
 
     public function newCollection(array $models = Array())

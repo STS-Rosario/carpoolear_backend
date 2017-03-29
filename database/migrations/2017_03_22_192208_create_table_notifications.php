@@ -18,6 +18,7 @@ class CreateTableNotifications extends Migration
             $table->text("type");
             
             $table->datetime('read_at')->nullable();
+            $table->datetime('deleted_at')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')

@@ -94,4 +94,18 @@ class UserRepository implements UserRep
 
         return User::where('email', $pr->email)->first();
     }
+
+    public function getNotifications($user, $unread = false)
+    {
+        if (!$readed) {
+            return $user->notifications;
+        } else {
+            return $user->unreadNotifications;
+        }
+    }
+
+    public function markNotification($notification)
+    {
+        $notification->readed();
+    }
 }
