@@ -3,33 +3,35 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class ConversationsTable extends Migration
+class ConversationsTable extends Migration 
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
-    public function up()
-    {
-        Schema::create('conversations', function (Blueprint $table) {
-            $table->integer('id');
-            $table->integer('user_id')->unsigned();
-            $table->foreign('user_id')->references('id')->on('users')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
-            $table->primary('id', 'user_id');
-            //$table->timestamps();
-        });
-    }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
-    public function down()
-    {
-        Schema::drop('conversations');
-    }
+	/**
+	 * Run the migrations.
+	 *
+	 * @return void
+	 */
+	public function up()
+	{
+		Schema::create('conversations', function(Blueprint $table)
+		{
+			$table->increments('id');
+			$table->integer('type');
+			$table->string('title', 255);
+			$table->integer('trip_id')->unsigned()->nullable();
+
+			$table->timestamps();
+			$table->softDeletes();
+		});
+	}
+
+	/**
+	 * Reverse the migrations.
+	 *
+	 * @return void
+	 */
+	public function down()
+	{
+		Schema::drop('conversations');
+	}
 }
