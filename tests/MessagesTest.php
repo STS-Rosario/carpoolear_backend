@@ -53,6 +53,7 @@ class MessagesTest extends TestCase {
         $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user1->id]);
         $conversation = factory(STS\Entities\Conversation::class)->create();
         
+        $this->conversationRepository->addUser($conversation, $user);
         $this->conversationManager->addUserToConversation($user, $conversation->id, $user1->id);
         $this->conversationManager->addUserToConversation($user, $conversation->id, $user2->id);
         
@@ -224,9 +225,10 @@ class MessagesTest extends TestCase {
         $c2->save(['timestamps' => FALSE]);
         $c3->save(['timestamps' => FALSE]);
         
-        $this->conversationManager->addUserToConversation($u, $c1->id, $u->id);
-        $this->conversationManager->addUserToConversation($u, $c2->id, $u->id);
-        $this->conversationManager->addUserToConversation($u, $c3->id, $u->id);
+        $this->conversationRepository->addUser($c1, $u);
+        $this->conversationRepository->addUser($c2, $u);
+        $this->conversationRepository->addUser($c3, $u);
+        
         
         $userConversations = $this->conversationManager->getUserConversations($u);
         $this->assertTrue($userConversations[0]->id == $c3->id &&
@@ -246,8 +248,8 @@ class MessagesTest extends TestCase {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
         $c = factory(STS\Entities\Conversation::class)->create();
-        $this->conversationManager->addUserToConversation($u1, $c->id, $u1->id);
-        $this->conversationManager->addUserToConversation($u1, $c->id, $u2->id);
+        $this->conversationRepository->addUser($c, $u1);
+        $this->conversationRepository->addUser($c, $u2);
         for ($i = 0; $i <27; $i++) {
             $m = 'text' . $i;
             $this->conversationManager->send($u1, $c->id, $m);
@@ -309,7 +311,7 @@ class MessagesTest extends TestCase {
         $c = factory(STS\Entities\Conversation::class)->create();
         
         for ($i = 0; $i < 22; $i++) {
-            $this->conversationManager->addUserToConversation($u[0], $c->id, $u[$i]->id);
+            $this->conversationRepository->addUser($c, $u[$i]);
         }
         $this->assertTrue(count($this->conversationManager->getUsersFromConversation($u[0], $c->id)) == 22);
         
