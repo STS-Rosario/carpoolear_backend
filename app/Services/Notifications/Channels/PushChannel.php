@@ -9,7 +9,7 @@ use STS\Services\Notifications\Models\DatabaseNotification;
 use STS\Services\Notifications\Models\ValueNotification;
 use STS\Entities\Device;
 
-class MailChannel
+class PushChannel
 {
 
     protected $android_actions = [];
