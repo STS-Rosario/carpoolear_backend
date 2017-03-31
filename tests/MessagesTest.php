@@ -46,14 +46,15 @@ class MessagesTest extends TestCase {
     
     public function test_addUserToConversation_and_removeUserFromConversation_Success()
     {
+        $user = factory(\STS\User::class)->create();
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create();
         $user3 = factory(\STS\User::class)->create();
         $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user1->id]);
         $conversation = factory(STS\Entities\Conversation::class)->create();
         
-        $this->conversationManager->addUserToConversation($conversation->id, $user1);
-        $this->conversationManager->addUserToConversation($conversation->id, $user2);
+        $this->conversationManager->addUserToConversation($user, $conversation->id, $user1->id);
+        $this->conversationManager->addUserToConversation($user, $conversation->id, $user2->id);
         
         $isUser1 = $conversation->users()->where('id', $user1->id)->count();
         $this->assertTrue($isUser1 == 1);
@@ -63,7 +64,7 @@ class MessagesTest extends TestCase {
         $isUser3 = $conversation->users()->where('id', $user3->id)->count();
         $this->assertTrue($isUser3 == 0);
         
-        $this->conversationManager->removeUsertFromConversation($conversation->id, $user1);
+        $value = $this->conversationManager->removeUsertFromConversation($user2, $conversation->id, $user1);
         $isUser1 = $conversation->users()->where('id', $user1->id)->count();
         $this->assertTrue($isUser1 == 0);
         
@@ -223,9 +224,9 @@ class MessagesTest extends TestCase {
         $c2->save(['timestamps' => FALSE]);
         $c3->save(['timestamps' => FALSE]);
         
-        $this->conversationManager->addUserToConversation($c1->id, $u);
-        $this->conversationManager->addUserToConversation($c2->id, $u);
-        $this->conversationManager->addUserToConversation($c3->id, $u);
+        $this->conversationManager->addUserToConversation($u, $c1->id, $u->id);
+        $this->conversationManager->addUserToConversation($u, $c2->id, $u->id);
+        $this->conversationManager->addUserToConversation($u, $c3->id, $u->id);
         
         $userConversations = $this->conversationManager->getUserConversations($u);
         $this->assertTrue($userConversations[0]->id == $c3->id &&
@@ -245,8 +246,8 @@ class MessagesTest extends TestCase {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
         $c = factory(STS\Entities\Conversation::class)->create();
-        $this->conversationManager->addUserToConversation($c->id, $u1);
-        $this->conversationManager->addUserToConversation($c->id, $u2);
+        $this->conversationManager->addUserToConversation($u1, $c->id, $u1->id);
+        $this->conversationManager->addUserToConversation($u1, $c->id, $u2->id);
         for ($i = 0; $i <27; $i++) {
             $m = 'text' . $i;
             $this->conversationManager->send($u1, $c->id, $m);
@@ -298,6 +299,20 @@ class MessagesTest extends TestCase {
         $conversationResult = $this->conversationManager->delete ( $c->id);
         
         $this->assertTrue($conversationResult == null);
+    }
+    
+    
+    
+    public function test_getUsers()
+    {
+        $u = factory(STS\User::class, 24)->create();
+        $c = factory(STS\Entities\Conversation::class)->create();
+        
+        for ($i = 0; $i < 22; $i++) {
+            $this->conversationManager->addUserToConversation($u[0], $c->id, $u[$i]->id);
+        }
+        $this->assertTrue(count($this->conversationManager->getUsersFromConversation($u[0], $c->id)) == 22);
+        
     }
     
 }

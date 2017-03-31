@@ -9,8 +9,9 @@ use STS\Entities\Message;
 use STS\Entities\Conversation;
 use STS\Services\Logic\TripsManager;
 use STS\User;
+use Validator;
 
-class ConversationsManager implements ConversationRepo {
+class ConversationsManager extends BaseManager implements ConversationRepo {
     
     protected $messageRepository;
     protected $conversationRepository;
@@ -108,20 +109,52 @@ class ConversationsManager implements ConversationRepo {
     
     /* CONVERSATION - USER MANIPULATION */
     
-    public function addUserToConversation( $conversationId, User $user)
+    public function getUsersFromConversation( User $user, $conversationId)
     {
+        //Falta chequear permisos
         $conversation = $this->conversationRepository->getConversationFromId( $conversationId );
-        if ( $conversation->type == Conversation::TYPE_TRIP_CONVERSATION) {
-            /* CALL: check if user it's in the trip */
-        }
-        $this->conversationRepository->addUser( $conversation, $user );
+        return $conversation->users;
     }
     
-    public function removeUsertFromConversation( $conversationId, User $user)
+    public function addUserToConversation( User $user, $conversationId, $users )
     {
+        //Falta chequear permisos -> User puede agregar
+        $conversation = $this->getConversation( $user, $conversationId);
+        if ($conversation != null) {
+            if ( $conversation->type == Conversation::TYPE_TRIP_CONVERSATION) {
+                //* CALL: check if user it's in the trip
+            }
+            if (is_int($users)) {
+                $users = array($users);
+            }
+            $userArray = array();
+            foreach ($users as $userId) {
+                $user =  User::find($userId);
+                if ($user) {
+                    $usersArray[] = $user;
+                } else {
+                    $this->setErrors(['user' => "user_" . $userId . "_does_not_exist"]);
+                    return null;
+                }
+            }
+            foreach ($usersArray as $user) {
+                $this->conversationRepository->addUser( $conversation, $user );
+            }
+            return true;
+        } else {
+            $this->setErrors(['conversation_id' => "user_does_not_have_access_to_conversation"]);
+        }
+    }
+    
+    public function removeUsertFromConversation( User $user, $conversationId, User $userToDelete)
+    {
+        //Falta chequear permisos -> User puede agregar
         $conversation = $this->getConversation( $user, $conversationId);
         if ( $conversation != null ) {
-            $this->conversationRepository->removeUser( $conversation, $user );
+            $this->conversationRepository->removeUser( $conversation, $userToDelete );
+            return true;
+        } else {
+            $this->setErrors(['conversation_id' => "user_does_not_have_access_to_conversation"]);
         }
     }
     
@@ -132,7 +165,7 @@ class ConversationsManager implements ConversationRepo {
         if ($conversation) {
             $this->conversationRepository->delete( $conversation);
         } else {
-            return null; //la conversación no existe
+            $this->setErrors(['conversation_id' => "conversation_does_not_exist"]);
         }
     }
     
@@ -149,7 +182,7 @@ class ConversationsManager implements ConversationRepo {
     {
         return Validator::make($data, [
         'user_id'               => 'required|integer',
-        'text'                  => 'required|strng|max:500',
+        'text'                  => 'required|string|max:500',
         'conversation_id'       => 'required|integer',
         ]);
     }
@@ -161,11 +194,11 @@ class ConversationsManager implements ConversationRepo {
         'text' => $message,
         'conversation_id' => $conversationId
         ];
-        if (validator($data)) {
+        $validator = $this->validator($data);
+        if (!$validator->fails()) {
             $conversation = $this->getConversation($user, $conversationId);
             if ($conversation) {
                 $newMessage = $this->newMessage($data);
-                //when i create a new message, i must mark conversations as unread, and new message us unread
                 $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get();
                 foreach ($otherUsers as $user) {
                     $this->messageRepository->createMessageReadState($newMessage, $user, false);
@@ -173,10 +206,11 @@ class ConversationsManager implements ConversationRepo {
                 }
                 return $newMessage;
             } else {
-                //return an error because the conversation doesn't exis or create it??
+                $this->setErrors(['conversation_id' => "conversation_does_not_exist"]);
             }
+        } else {
+            $this->setErrors($validator->errors());
         }
-        return null;
     }
     
     public function getAllMessagesFromConversation( $conversation_id, User $user, $read = false, $pageNumber = null, $pageSize = 20)
@@ -191,25 +225,32 @@ class ConversationsManager implements ConversationRepo {
     
     private function getMessagesFromConversation( $conversation_id, User $user, $read, $unreadMessages, $pageNumber = null, $pageSize = null)
     {
+        //FALTA CHEQUEAR PERMISOS
         $conversation = $this->getConversation( $user, $conversation_id);
         
-        if ($unreadMessages) {
-            $messages = $this->messageRepository->getUnreadMessages($conversation, $user);
-            if ($read) {
-                foreach ($messages as $message) {
-                    $this->messageRepository->changeMessageReadState($message, $user, true);
+        if ($conversation) {
+            
+            if ($unreadMessages) {
+                $messages = $this->messageRepository->getUnreadMessages($conversation, $user);
+                if ($read) {
+                    foreach ($messages as $message) {
+                        $this->messageRepository->changeMessageReadState($message, $user, true);
+                    }
                 }
+            } else {
+                $messages = $this->messageRepository->getMessages($conversation, $pageNumber, $pageSize);
             }
+            
+            if ($read) {
+                $this->conversationRepository->changeConversationReadState($conversation, $user, true);
+            }
+            
         } else {
-            $messages = $this->messageRepository->getMessages($conversation, $pageNumber, $pageSize);
+            $messages = null;
+            $this->setErrors(['conversation_id' => "user_does_not_have_access_to_conversation"]);
         }
-        
-        if ($read) {
-            $this->conversationRepository->changeConversationReadState($conversation, $user, true);
-        }
-        
         return $messages;
         
+        
     }
-    
 }
