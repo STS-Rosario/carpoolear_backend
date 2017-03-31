@@ -16,7 +16,7 @@ class NotificationManager implements NotificationLogic
 
     public function getNotifications($user, $data)
     {
-        $mark = false; 
+        $mark = false;
         if (isset($data['page']) && isset($data['page_size'])) {
             $pageNumber = isset($data['page']) ? $data['page'] : null;
             $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
@@ -42,6 +42,7 @@ class NotificationManager implements NotificationLogic
             ];
             $response[] = array_merge($data, $n->attributes());
         }
+
         return $response;
     }
 
@@ -56,7 +57,7 @@ class NotificationManager implements NotificationLogic
         if ($notification) {
             return $this->repo->delete($notification);
         } else {
-            return null;
+            return;
         }
     }
 }

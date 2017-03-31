@@ -4,7 +4,6 @@ namespace STS\Events\Notification;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class NotificationSending extends Event
 {

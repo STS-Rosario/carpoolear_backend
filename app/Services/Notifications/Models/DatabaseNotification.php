@@ -2,8 +2,8 @@
 
 namespace STS\Services\Notifications\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use STS\User;
+use Illuminate\Database\Eloquent\Model;
 use STS\Services\Notifications\Collections\NotificationCollection;
 
 class DatabaseNotification extends Model
@@ -25,14 +25,13 @@ class DatabaseNotification extends Model
 
     public function plain_values()
     {
-        return $this->hasMany(ValueNotification::class, 'notification_id')->with("value");
+        return $this->hasMany(ValueNotification::class, 'notification_id')->with('value');
     }
 
     public function attributes()
     {
         // [MEJORA] $_attributes=new stdClass();
         if ($this->_attributes) {
-
             return $this->_attributes;
         }
 
@@ -52,10 +51,11 @@ class DatabaseNotification extends Model
     public function asNotification()
     {
         $type = new $this->type;
-        foreach($this->attributes() as $key => $value) {
+        foreach ($this->attributes() as $key => $value) {
             $type->setAttribute($key, $value);
         }
-        return $type; 
+
+        return $type;
     }
 
     public function readed()
@@ -64,9 +64,8 @@ class DatabaseNotification extends Model
         $this->save();
     }
 
-    public function newCollection(array $models = Array())
-    { 
+    public function newCollection(array $models = [])
+    {
         return new NotificationCollection($models);
     }
-
 }

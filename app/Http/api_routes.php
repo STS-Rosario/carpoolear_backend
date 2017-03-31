@@ -22,7 +22,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->group(['prefix' => 'notifications'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'NotificationController@index');
         $api->delete('/{id?}', $v1_path.'NotificationController@delete');
-        $api->get('/count', $v1_path.'NotificationController@count'); 
+        $api->get('/count', $v1_path.'NotificationController@count');
     });
 
     $api->group(['prefix' => 'friends'], function ($api) use ($v1_path) {

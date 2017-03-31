@@ -25,7 +25,7 @@ class NotificationController extends Controller
         $notifications = $this->logic->getNotifications($this->user, $data);
 
         return $this->response->withArray(['data' => $notifications]);
-    } 
+    }
 
     public function count(Request $request)
     {
@@ -33,7 +33,7 @@ class NotificationController extends Controller
         $count = $this->logic->getUnreadCount($this->user);
 
         return $this->response->withArray(['data' => $count]);
-    } 
+    }
 
     public function delete($id, Request $request)
     {
@@ -43,5 +43,5 @@ class NotificationController extends Controller
         }
 
         return $this->response->withArray(['data' => 'ok']);
-    } 
+    }
 }

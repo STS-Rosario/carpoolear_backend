@@ -97,7 +97,7 @@ class UserRepository implements UserRep
 
     public function getNotifications($user, $unread = false)
     {
-        if (!$readed) {
+        if (! $readed) {
             return $user->notifications;
         } else {
             return $user->unreadNotifications;

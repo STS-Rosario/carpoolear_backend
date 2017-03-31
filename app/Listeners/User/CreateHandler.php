@@ -3,13 +3,14 @@
 namespace STS\Listeners\User;
 
 use STS\Events\User\Create;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\NewUserNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Repository\User as UserRepository;
 
 class CreateHandler implements ShouldQueue
-{ 
+{
     protected $userRepo;
+
     /**
      * Create the event listener.
      *

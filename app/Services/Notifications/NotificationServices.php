@@ -2,29 +2,24 @@
 
 namespace STS\Services\Notifications;
 
-use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Model;
-use STS\Events\Notification\NotificationSending;
 use Event;
-use STS\User as UserModel;
+use Illuminate\Support\Collection;
+use STS\Events\Notification\NotificationSending;
 
-class NotificationServices 
-{  
-
+class NotificationServices
+{
     public function __construct()
-    { 
-
+    {
     }
-
 
     public function driver($name)
     {
-        return (new $name);
+        return new $name;
     }
- 
+
     public function send($notification, $users, $channel)
     {
-        $users = (is_array($users) ||  $users instanceof Collection) ? $users : [$users];
+        $users = (is_array($users) || $users instanceof Collection) ? $users : [$users];
         $driver = $this->driver($channel);
         foreach ($users as $user) {
             if ($this->shouldSendNotification($notification, $user, $driver)) {
@@ -34,10 +29,9 @@ class NotificationServices
     }
 
     protected function shouldSendNotification($notification, $user, $channel)
-    { 
+    {
         return Event::until(
             new NotificationSending($notification, $user, $channel)
         ) !== false;
     }
-
 }

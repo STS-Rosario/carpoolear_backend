@@ -28,5 +28,5 @@ interface User
 
     public function deleteResetToken($key, $value);
 
-    public function getUserByResetToken($token); 
+    public function getUserByResetToken($token);
 }
