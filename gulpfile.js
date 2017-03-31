@@ -49,14 +49,14 @@ gulp.task('deploy', function() {
     
     rsyncConf.hostname = '138.197.64.208'; // hostname
     rsyncConf.username = argv.user || 'movilizame' ; // ssh username
-    rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev'; // path where uploaded files go
+    rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev/'; // path where uploaded files go
     
   // Production
   } else if (argv.production) {
 
     rsyncConf.hostname = '138.197.64.208'; // hostname
     rsyncConf.username = argv.user || 'movilizame'; // ssh username
-    rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev'; // path where uploaded files go
+    rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev/'; // path where uploaded files go
     
   
   // Missing/Invalid Target  
