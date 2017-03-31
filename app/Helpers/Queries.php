@@ -25,3 +25,8 @@ function console_log($obj)
        info(json_encode($obj));
    }
 }
+
+function transform($obj)
+{
+    return json_decode(json_encode($obj));
+}
