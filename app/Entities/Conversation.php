@@ -1,13 +1,15 @@
-<?php namespace STS\Entities;
+<?php
+
+namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use STS\User as UserModel;
 
-class Conversation extends Model { 
 
-
- use SoftDeletes;
+class Conversation extends Model
+{
+ 	use SoftDeletes;
 
 	const TYPE_PRIVATE_CONVERSATION = 0;
 	const TYPE_TRIP_CONVERSATION 	= 1;

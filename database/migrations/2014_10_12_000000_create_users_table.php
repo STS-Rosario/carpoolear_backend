@@ -5,7 +5,6 @@ use Illuminate\Database\Migrations\Migration;
 
 class CreateUsersTable extends Migration
 {
-
     /**
      * Run the migrations.
      *
@@ -19,21 +18,21 @@ class CreateUsersTable extends Migration
             $table->string('email')->unique();
             $table->string('password', 60)->nullable();
 
-            $table->boolean("terms_and_conditions");
-            $table->date("birthday")->nullable();
+            $table->boolean('terms_and_conditions');
+            $table->date('birthday')->nullable();
             $table->string('gender', 255)->nullable();
 
-            $table->string("nro_doc", 15);
-            $table->string("patente", 15);
-            $table->string("description", 500);
-            $table->string("mobile_phone", 50);
-            $table->string("image", 255);
+            $table->string('nro_doc', 15);
+            //$table->string("patente", 15);
+            $table->string('description', 500);
+            $table->string('mobile_phone', 50);
+            $table->string('image', 255);
 
-            $table->boolean("banned");
-            $table->boolean("is_admin");
+            $table->boolean('banned');
+            $table->boolean('is_admin');
 
-            $table->boolean("active");
-            $table->string("activation_token", 50)->nullable();
+            $table->boolean('active');
+            $table->string('activation_token', 50)->nullable();
 
             $table->rememberToken();
             $table->timestamps();

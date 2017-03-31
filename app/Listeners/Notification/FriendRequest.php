@@ -3,7 +3,6 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Friend\Request;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class FriendRequest implements ShouldQueue
@@ -21,7 +20,8 @@ class FriendRequest implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  Request  $event
+     * @param Request $event
+     *
      * @return void
      */
     public function handle(Request $event)

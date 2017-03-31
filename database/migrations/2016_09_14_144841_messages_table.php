@@ -3,7 +3,8 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class MessagesTable extends Migration {
+class MessagesTable extends Migration 
+{
 
 	/**
 	 * Run the migrations.
@@ -38,5 +39,6 @@ class MessagesTable extends Migration {
 	{
 		Schema::drop('messages');
 	}
+
 
 }

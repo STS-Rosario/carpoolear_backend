@@ -2,17 +2,18 @@
 
 namespace STS\Repository;
 
-use STS\Contracts\Repository\User as UserRep;
+use DB;
 use STS\User;
 use Carbon\Carbon;
-use DB;
+use STS\Contracts\Repository\User as UserRep;
 
 class UserRepository implements UserRep
 {
     /**
      * Create a new user instance after a valid registration.
      *
-     * @param  array  $data
+     * @param array $data
+     *
      * @return User
      */
     public function create(array $data)
@@ -34,6 +35,7 @@ class UserRepository implements UserRep
     {
         $user->terms_and_conditions = true;
         $user->save();
+
         return $user;
     }
 
@@ -41,6 +43,7 @@ class UserRepository implements UserRep
     {
         $user->image = $filename;
         $user->save();
+
         return $user;
     }
 
@@ -88,8 +91,7 @@ class UserRepository implements UserRep
     public function getUserByResetToken($token)
     {
         $pr = DB::table('password_resets')->where('token', $token)->first();
+
         return User::where('email', $pr->email)->first();
     }
-
-
 }

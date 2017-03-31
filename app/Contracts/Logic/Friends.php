@@ -1,12 +1,11 @@
 <?php
 
-namespace STS\Contracts\Logic; 
+namespace STS\Contracts\Logic;
 
 use STS\User as UserModel;
 
 interface Friends
 {
-  
     public function areFriend(UserModel $Who, UserModel $user, $friendOfFriends = false);
 
     public function request(UserModel $Who, UserModel $user);
@@ -24,7 +23,6 @@ interface Friends
     public function getPendings(UserModel $Who);
 
     public function setErrors($errs);
-    
-    public function getErrors();
 
+    public function getErrors();
 }

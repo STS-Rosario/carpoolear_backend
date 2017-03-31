@@ -2,19 +2,11 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use STS\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use STS\Services\Logic\DeviceManager;
-use STS\Services\Logic\SocialManager;
-
-use STS\Services\Social\FacebookSocialProvider;
-
-use STS\User;
-use STS\Entities\Device;
 use JWTAuth;
-
-use \GuzzleHttp\Client;
-use \STS\Contracts\Logic\User as UserLogic;
+use STS\User;
+use Illuminate\Http\Request;
+use STS\Http\Controllers\Controller;
+use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Devices as DeviceLogic;
 
 class SocialController extends Controller
@@ -29,11 +21,11 @@ class SocialController extends Controller
         $this->deviceLogic = $devices;
         $this->middleware('api.auth', ['except' => ['login']]);
     }
- 
+
     public function installProvider($provider, $accessToken)
     {
         $provider = ucfirst(strtolower($provider));
-        $providerClass = 'STS\Services\Social\\' . $provider . 'SocialProvider';
+        $providerClass = 'STS\Services\Social\\'.$provider.'SocialProvider';
 
         \App::when($providerClass)
                     ->needs('$token')
@@ -50,8 +42,8 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate();
-            if (!$user) {
-                throw new StoreResourceFailedException('Could not create new user.', $socialServices->gerErrors()); 
+            if (! $user) {
+                throw new StoreResourceFailedException('Could not create new user.', $socialServices->gerErrors());
             }
             $token = JWTAuth::fromUser($user);
         } catch (\ReflectionException $e) {
@@ -68,6 +60,7 @@ class SocialController extends Controller
             $data['session_id'] = $token;
             $this->deviceLogic->register($user, $data);
         }
+
         return $this->response->withArray(['token' => $token]);
     }
 
@@ -79,12 +72,13 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->updateProfile($user);
-            if (!$ret) {
-                throw new StoreResourceFailedException('Could not update user.', $socialServices->gerErrors()); 
+            if (! $ret) {
+                throw new StoreResourceFailedException('Could not update user.', $socialServices->gerErrors());
             }
+
             return response()->json('OK');
         } catch (\ReflectionException $e) {
-            throw new BadRequestHttpException('provider not supported'); 
+            throw new BadRequestHttpException('provider not supported');
         }
     }
 
@@ -96,12 +90,13 @@ class SocialController extends Controller
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->makeFriends($user);
-            if (!$ret) {
-                throw new StoreResourceFailedException('Could not refresh for friends.', $socialServices->gerErrors()); 
+            if (! $ret) {
+                throw new StoreResourceFailedException('Could not refresh for friends.', $socialServices->gerErrors());
             }
+
             return response()->json('OK');
         } catch (\ReflectionException $e) {
-            throw new BadRequestHttpException('provider not supported'); 
+            throw new BadRequestHttpException('provider not supported');
         }
     }
 }
