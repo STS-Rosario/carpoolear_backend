@@ -4,7 +4,6 @@ namespace STS\Events\User;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class Create extends Event
 {

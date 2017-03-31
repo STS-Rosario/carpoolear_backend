@@ -29,7 +29,8 @@
             "STS\\": "app/"
         },
         "files": [
-            "app/Helpers/Queries.php"
+            "app/Helpers/Queries.php",
+            "app/Helpers/Dates.php"
         ]
     },
     "autoload-dev": {
