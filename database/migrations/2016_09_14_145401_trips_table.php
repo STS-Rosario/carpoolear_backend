@@ -26,7 +26,7 @@ class TripsTable extends Migration
             $table->double('distance');
             $table->string('estimated_time', 500);
             $table->integer('co2');
-            $table->integer('es_recurrente'); 
+            $table->integer('es_recurrente');
             //$table->integer("esta_carpooleado");
             $table->boolean('is_passenger');
             $table->boolean('mail_send');

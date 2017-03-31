@@ -55,7 +55,7 @@ return [
     |
     */
 
-    'from' => ['address' => "cuandollega@movilizame.com.ar", 'name' => "Carpoolear"],
+    'from' => ['address' => 'cuandollega@movilizame.com.ar', 'name' => 'Carpoolear'],
 
     /*
     |--------------------------------------------------------------------------

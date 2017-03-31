@@ -38,11 +38,11 @@ class Trip extends Model
         'distance',
         'estimated_time',
         'co2',
-        'es_recurrente', 
+        'es_recurrente',
         'is_passenger',
         'mail_send',
-        'return_trip_id', 
-        'enc_path', 
+        'return_trip_id',
+        'enc_path',
     ];
 
     protected $hidden = [

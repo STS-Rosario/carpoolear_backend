@@ -2,8 +2,6 @@
 
 namespace STS\Repository;
 
-use DB;
-use STS\User;
 use Carbon\Carbon;
 use STS\Contracts\Repository\INotification;
 
@@ -11,7 +9,7 @@ class NotificationRepository implements INotification
 {
     public function getNotifications($user, $unread = false, $page_size = null, $page = null)
     {
-        if (!$unread) {
+        if (! $unread) {
             $query = $user->notifications();
         } else {
             $query = $user->unreadNotifications();
@@ -19,6 +17,7 @@ class NotificationRepository implements INotification
         if ($page_size && $page) {
             $query->take($page_size)->skip($page_size * ($page - 1));
         }
+
         return $query->get();
     }
 
@@ -28,7 +27,7 @@ class NotificationRepository implements INotification
             $notification->read_at = Carbon::now();
             $notification->save();
         } else {
-            $user->unreadNotifications()->update(['read_at' => Carbon::now() ]);
+            $user->unreadNotifications()->update(['read_at' => Carbon::now()]);
         }
     }
 

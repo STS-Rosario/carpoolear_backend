@@ -14,9 +14,9 @@ class CreateTableNotifications extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer("user_id")->unsigned();
-            $table->text("type");
-            
+            $table->integer('user_id')->unsigned();
+            $table->text('type');
+
             $table->datetime('read_at')->nullable();
             $table->datetime('deleted_at')->nullable();
             $table->timestamps();
@@ -24,7 +24,6 @@ class CreateTableNotifications extends Migration
             $table->foreign('user_id')->references('id')->on('users')
                                       ->onDelete('cascade')
                                       ->onUpdate('cascade');
-                                      
         });
     }
 
