@@ -8,7 +8,7 @@ class ValueNotification extends Model
 {
     protected $table = 'notifications_params';
     protected $fillable = ['value_text', 'key', 'notification_id'];
-    protected $hidden = []; 
+    protected $hidden = [];
 
     public function value()
     {

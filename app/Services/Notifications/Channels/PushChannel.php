@@ -2,21 +2,14 @@
 
 namespace STS\Services\Notifications\Channels;
 
-use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Model;
-use STS\User as UserModel;
-use STS\Services\Notifications\Models\DatabaseNotification;
-use STS\Services\Notifications\Models\ValueNotification;
 use STS\Entities\Device;
 
 class PushChannel
 {
-
     protected $android_actions = [];
 
     public function __construct()
     {
-        
     }
 
     public function send($notification, $user)
@@ -43,29 +36,29 @@ class PushChannel
 
     public function sendAndroid($device, $data)
     {
-        $message = $data["message"];
+        $message = $data['message'];
 
         $defaultData = [
-            'title' => isset($data['title']) ? $data['title'] : 'Carpoolear' ,
+            'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
         ];
 
         if (isset($data['sound'])) {
-            $defaultData["soundname"] = $data['sound'];
+            $defaultData['soundname'] = $data['sound'];
         }
 
         if (isset($data['url'])) {
-            $defaultData["url"] = $data['url'];
+            $defaultData['url'] = $data['url'];
         }
 
         if (isset($data['extras'])) {
-            $defaultData["extras"] = $data['extras'];
+            $defaultData['extras'] = $data['extras'];
         }
 
         if (isset($data['action'])) {
-            $defaultData["actions"] = $android_actions[$data['action']];
+            $defaultData['actions'] = $android_actions[$data['action']];
         }
 
-        $defaultData["image"] = isset($data['image']) ? $data['image'] : 'www/logo.png';
+        $defaultData['image'] = isset($data['image']) ? $data['image'] : 'www/logo.png';
 
         $collection = PushNotification::app('android')
                                     ->to($device->device_id)
@@ -75,27 +68,27 @@ class PushChannel
 
     public function sendIOS($device, $data)
     {
-        $message = $data["message"];
+        $message = $data['message'];
 
         $defaultData = [
             'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
         ];
 
         if (isset($data['sound'])) {
-            $defaultData["sound"] = "www/audio/" . $data['sound'] . ".wav";
+            $defaultData['sound'] = 'www/audio/'.$data['sound'].'.wav';
         }
 
-        $defaultData["custom"] = [];
+        $defaultData['custom'] = [];
         if (isset($data['url'])) {
-            $defaultData["custom"]["url"] = $data['url'];
+            $defaultData['custom']['url'] = $data['url'];
         }
 
         if (isset($data['extras'])) {
-            $defaultData["custom"]["extras"] = $data['extras'];
+            $defaultData['custom']['extras'] = $data['extras'];
         }
 
         if (isset($data['action'])) {
-            $defaultData["category"] = $data['action'];
+            $defaultData['category'] = $data['action'];
         }
 
         $collection = PushNotification::app('ios')
@@ -103,27 +96,26 @@ class PushChannel
                         ->send($message, $defaultData);
     }
 
-
     public function _inspectGoogleResponse($device, $collection)
     {
         foreach ($collection->pushManager as $push) {
             $response = $push->getAdapter()->getResponse()->getResponse();
-            if ($response["canonical_ids"] > 0) {
-                $newID =  $response["results"][0]["registration_id"];
-                $d = Device::where("device_id", $newID)->first();
+            if ($response['canonical_ids'] > 0) {
+                $newID = $response['results'][0]['registration_id'];
+                $d = Device::where('device_id', $newID)->first();
                 if ($d) {
                     $device->delete();
                 } else {
-                    $hash           = $device->session_id;
-                    $usuario        = $device->usuario_id;
-                    $device_type    = $device->device_type;
+                    $hash = $device->session_id;
+                    $usuario = $device->usuario_id;
+                    $device_type = $device->device_type;
                     $device->delete();
-                    
-                    $device                 = new Devices();
-                    $device->device_id      = $device_id;
-                    $device->session_id     = $hash;
-                    $device->usuario_id     = $usuario;
-                    $device->device_type    = $device_type;
+
+                    $device = new Devices();
+                    $device->device_id = $device_id;
+                    $device->session_id = $hash;
+                    $device->usuario_id = $usuario;
+                    $device->device_type = $device_type;
                     $device->save();
                 }
             }

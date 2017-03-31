@@ -3,7 +3,6 @@
 use Mockery as m;
 use Carbon\Carbon;
 use STS\Entities\TripPoint;
-use \STS\Contracts\Logic\User as UserLogic;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class TripsTest extends TestCase

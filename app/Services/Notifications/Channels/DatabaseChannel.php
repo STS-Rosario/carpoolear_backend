@@ -2,18 +2,14 @@
 
 namespace STS\Services\Notifications\Channels;
 
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model;
-use STS\User as UserModel;
-use STS\Services\Notifications\Models\DatabaseNotification;
 use STS\Services\Notifications\Models\ValueNotification;
+use STS\Services\Notifications\Models\DatabaseNotification;
 
-class DatabaseChannel 
-{  
-
+class DatabaseChannel
+{
     public function __construct()
-    { 
-
+    {
     }
 
     public function send($notification, $user)
@@ -23,7 +19,7 @@ class DatabaseChannel
         $n->type = $notification->getType();
         $n->save();
 
-        foreach($notification->keys() as $key) {
+        foreach ($notification->keys() as $key) {
             $value = $notification->getAttribute($key);
             if ($value) {
                 $v = new ValueNotification();
@@ -36,6 +32,5 @@ class DatabaseChannel
                 $n->plain_values()->save($v);
             }
         }
-
     }
 }

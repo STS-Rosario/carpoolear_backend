@@ -2,7 +2,6 @@
 
 namespace STS\Services\Logic;
 
-use STS\User;
 use Validator;
 use STS\Entities\Trip;
 use STS\Contracts\Logic\Trip as TripLogic;
