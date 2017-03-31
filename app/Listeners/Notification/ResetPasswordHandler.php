@@ -3,17 +3,21 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\User\Reset;
+use STS\Notifications\ResetPasswordNotification;
+use STS\Contracts\Repository\User as UserRepository;
 
 class ResetPasswordHandler
 {
+
+    protected $userRepo;
     /**
      * Create the event listener.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(UserRepository $userRepo)
     {
-        //
+        $this->userRepo = $userRepo;
     }
 
     /**
@@ -25,6 +29,12 @@ class ResetPasswordHandler
      */
     public function handle(Reset $event)
     {
-        //
+        $token = $event->token; 
+        $user = $this->userRepo->show($event->id);
+        if ($user) {
+            $notification = new ResetPasswordNotification();
+            $notification->setAttribute('token', $token);
+            $notification->notify($user);
+        }
     }
 }
