@@ -11,14 +11,14 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->post('active/{activation_token?}', $v1_path.'AuthController@active');
     $api->post('reset-password', $v1_path.'AuthController@reset');
     $api->post('change-password/{token?}', $v1_path.'AuthController@changePasswod');
-
+    
     $api->group(['prefix' => 'users'], function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/{id?}', $v1_path.'UserController@show');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
     });
-
+    
     $api->group(['prefix' => 'friends'], function ($api) use ($v1_path) {
         $api->post('/accept/{id?}', $v1_path.'FriendsController@accept');
         $api->post('/request/{id?}', $v1_path.'FriendsController@request');
@@ -27,13 +27,13 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'FriendsController@index');
         $api->get('/pedings', $v1_path.'FriendsController@pedings');
     });
-
+    
     $api->group(['prefix' => 'social'], function ($api) use ($v1_path) {
         $api->post('/login/{provider?}', $v1_path.'SocialController@login');
         $api->post('/friends/{provider?}', $v1_path.'SocialController@friends');
         $api->put('/update/{provider?}', $v1_path.'SocialController@update');
     });
-
+    
     $api->group(['prefix' => 'trips'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'TripController@index');
         $api->post('/', $v1_path.'TripController@create');
@@ -41,7 +41,16 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->delete('/{id?}', $v1_path.'TripController@delete');
         $api->get('/{id?}', $v1_path.'TripController@show');
     });
-
+    
+    $api->group(['prefix' => 'conversations'], function ($api) use ($v1_path) {
+        $api->get("/",  $v1_path . 'ConversationController@index');
+        $api->post("/", $v1_path . 'ConversationController@create');
+        $api->get("/{id?}",  $v1_path . 'ConversationController@getConversation');
+        $api->get("/{id?}/users",  $v1_path . 'ConversationController@users');
+        $api->post("/{id?}/users",  $v1_path . 'ConversationController@addUser');
+        $api->delete("/{id?}/users/{userId?}", $v1_path . 'ConversationController@deleteUser');
+    });
+    
     $api->group(['prefix' => 'cars'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'CarController@index');
         $api->post('/', $v1_path.'CarController@create');

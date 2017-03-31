@@ -95,6 +95,11 @@ class User extends Authenticatable
         return $trips;
     }
 
+    public function conversations() 
+    {
+        return $this->belongsToMany('STS\Entities\Conversation','conversations_users', 'user_id','conversation_id')->withPivot('read');
+    }
+    
     public function tripsAsPassenger($state = null)
     {
         $user_id = $this->id;
