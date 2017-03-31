@@ -12,23 +12,23 @@ class CalificacionesTable extends Migration
      */
     public function up()
     {
-        Schema::create('calificaciones', function (Blueprint $table) {
+        Schema::create('rating', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('viajes_id')->unsigned();
-            $table->integer('activo_id')->unsigned();
-            $table->integer('pasivo_id')->unsigned();
-            $table->integer('puntuacion');
-            $table->string('descripcion');
-            $table->integer('viajo');
-            $table->integer('tipo_pasajero');
+            $table->integer('trip_id')->unsigned();
+            $table->integer('user_id_from')->unsigned();
+            $table->integer('user_id_to')->unsigned();
+            $table->integer('rating');
+            $table->string('comment');
+            $table->string('reply_comment');
+            $table->datetime('reply_comment_created_at');
             $table->timestamps();
-            $table->foreign('activo_id')->references('id')->on('users')
+            $table->foreign('user_id_from')->references('id')->on('users')
                                          ->onDelete('cascade')
                                          ->onUpdate('cascade');
-            $table->foreign('pasivo_id')->references('id')->on('users')
+            $table->foreign('user_id_to')->references('id')->on('users')
                                          ->onDelete('cascade')
                                          ->onUpdate('cascade');
-            $table->foreign('viajes_id')->references('id')->on('trips')
+            $table->foreign('trip_id')->references('id')->on('trips')
                                          ->onDelete('cascade')
                                          ->onUpdate('cascade');
         });
@@ -41,6 +41,6 @@ class CalificacionesTable extends Migration
      */
     public function down()
     {
-        Schema::drop('calificaciones');
+        Schema::drop('rating');
     }
 }

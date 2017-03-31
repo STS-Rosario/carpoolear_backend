@@ -9,7 +9,7 @@ use STS\Entities\Passanger;
 use STS\Contracts\Logic\IPassengersLogic;
 use STS\Contracts\Repository\IPassengerRepository;
 
-class PassengersLogic extends BaseManager implements IPassengersLogic
+class PassengersManager extends BaseManager implements IPassengersLogic
 {
     protected $passengerRepository;
     
@@ -145,4 +145,6 @@ class PassengersLogic extends BaseManager implements IPassengersLogic
     {
         return $this->passengerRepository->isUserRequestPending($tripId, $userId);
     }
+
+    
  }

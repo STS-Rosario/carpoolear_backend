@@ -3,6 +3,7 @@
 namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use STS\Entities\Rating as RatingModel;
 
 class Passenger extends Model
 {
@@ -32,5 +33,15 @@ class Passenger extends Model
     public function trip()
     {
         return $this->belongsTo('STS\Entities\Trip', 'trip_id');
+    }
+
+    public function ratingGiven()
+    {
+        return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('trip_id', $this->trip_id);
+    }
+
+    public function ratingReceived()
+    {
+        return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('trip_id', $this->trip_id);
     }
 }
