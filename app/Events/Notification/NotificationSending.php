@@ -1,24 +1,30 @@
 <?php
 
-namespace STS\Events\User;
+namespace STS\Events\Notification;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
 
-class Create extends Event
+class NotificationSending extends Event
 {
     use SerializesModels;
 
-    public $id;
+    public $notification;
+
+    public $user;
+
+    public $channel;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($id)
+    public function __construct($notification, $user, $channel)
     {
-        $this->id = $id;
+        $this->notification = $notification;
+        $this->user = $user;
+        $this->channel = $channel;
     }
 
     /**

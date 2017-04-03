@@ -17,7 +17,13 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{id?}', $v1_path.'UserController@show');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
-    });
+    }); 
+
+    $api->group(['prefix' => 'notifications'], function ($api) use ($v1_path) {
+        $api->get('/', $v1_path.'NotificationController@index');
+        $api->delete('/{id?}', $v1_path.'NotificationController@delete');
+        $api->get('/count', $v1_path.'NotificationController@count');
+    }); 
     
     $api->group(['prefix' => 'friends'], function ($api) use ($v1_path) {
         $api->post('/accept/{id?}', $v1_path.'FriendsController@accept');
