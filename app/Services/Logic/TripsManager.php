@@ -8,6 +8,7 @@ use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
 use STS\Contracts\Repository\Trip as TripRepo;
+use Illuminate\Database\Eloquent\Model;
 
 class TripsManager extends BaseManager implements TripLogic
 {
@@ -146,9 +147,10 @@ class TripsManager extends BaseManager implements TripLogic
         return $this->tripRepo->index($user, $data);
     }
 
-    public function tripOwner($user, $trip_id)
+    public function tripOwner($user, $trip)
     {
-        if ($trip = $this->tripRepo->show($trip_id)) {
+        $trip = $trip instanceof Model ? $trip : $this->tripRepo->show($trip);
+        if ($trip) {
             return $trip->user_id == $user->id || $user->is_admin;
         }
         return false;

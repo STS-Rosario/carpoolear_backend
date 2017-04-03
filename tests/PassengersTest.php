@@ -62,7 +62,7 @@ class PassengersTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $driver->id ]); 
         $this->passengerRepository->newRequest($trip->id, $passenger);
         
-        $result = $this->passengerManager->cancelRequest($trip->id, $passenger);
+        $result = $this->passengerManager->cancelRequest($trip->id, $passenger->id, $passenger);
         $this->assertNotNull($result);
         $this->assertTrue( $trip->passengerPending->count() == 0);
     }

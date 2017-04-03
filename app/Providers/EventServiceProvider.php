@@ -29,6 +29,18 @@ class EventServiceProvider extends ServiceProvider
             'STS\Listeners\DownloadStaticImage',
         ],
         'STS\Events\Notification\NotificationSending' => [],
+        'STS\Events\Passenger\Request' => [
+            'STS\Listeners\Notification\PassengerRequest'
+        ],
+        'STS\Events\Passenger\Cancel' => [
+            'STS\Listeners\Notification\PassengerCancel'
+        ],
+        'STS\Events\Passenger\Accept' => [
+            'STS\Listeners\Notification\PassengerAccept'
+        ],
+        'STS\Events\Passenger\Reject' => [
+            'STS\Listeners\Notification\PassengerReject'
+        ],
     ];
 
     /**
