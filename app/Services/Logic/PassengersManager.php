@@ -7,26 +7,37 @@ use Validator;
 use STS\User;
 use STS\Entities\Passanger;
 use STS\Contracts\Logic\IPassengersLogic;
-use STS\Contracts\Repository\IPassengerRepository;
+use STS\Contracts\Repository\IPassengersRepository;
+use STS\Contracts\Logic\Trip as TripLogic;
 
 class PassengersManager extends BaseManager implements IPassengersLogic
 {
     protected $passengerRepository;
+    protected $tripLogic;
     
-    public function __construct(IPassengerRepository $passengerRepository)
+    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic)
     {
         $this->passengerRepository = $passengerRepository;
+        $this->tripLogic = $tripLogic;
     }
     
     public function getPassengers($tripId, $user, $data)
     {
-        //todo: se tendria que validar que el usuario sea dueño del viaje o pasajero?
+        if (!$this->tripLogic->tripOwner($user, $tripId) || $this->isUserRequestAccepted($tripId, $user->id)) {
+            $this->setErrors(['error' => 'access_denied']);
+
+            return;
+        }
         return $this->passengerRepository->getPassengers($tripId, $user, $data);
     }
     
     public function getPendingRequests($tripId, $user, $data)
     {
-        //TODO: validar que el usuario sea el dueño del viaje
+        if (!$this->tripLogic->tripOwner($user, $tripId)) {
+            $this->setErrors(['error' => 'access_denied']);
+
+            return;
+        }
         return $this->passengerRepository->getPendingRequests($tripId, $user, $data);
     }
     
@@ -79,7 +90,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
 
         //TODO: validar que el usuario este como pasajero del viaje
-        if(!$this->isUserRequestPending($trip, $userId) || !$this->isUserRequestAccepted($trip, $userId))
+        if(!$this->isUserRequestPending($tripId, $userId) || !$this->isUserRequestAccepted($tripId, $userId))
         {
             //throw new
         }
@@ -101,7 +112,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         //TODO: validar que el user sea el dueño del viaje
         
         //TODO: validar que el acceptedUserId este como pasajero del viaje
-        if(!$this->isUserRequestPending($trip, $acceptedUserId))
+        if(!$this->isUserRequestPending($tripId, $acceptedUserId))
         {
             //throw new
         }
@@ -123,7 +134,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         //TODO: validar que el user sea el dueño del viaje
         
         //TODO: validar que el rejectedUserId este como pasajero del viaje
-        if(!$this->isUserRequestPending($trip, $acceptedUserId))
+        if(!$this->isUserRequestPending($tripId, $acceptedUserId))
         {
             //throw new
         }
