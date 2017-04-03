@@ -49,10 +49,11 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         ]);
     }
 
-    private function isInputValid($input) {
+    private function isInputValid($input)
+    {
         $validation = $this->validateInput($input);
         
-        if($result = $validation->fails()){
+        if ($result = $validation->fails()) {
             $this->setErrors($validation->errors());
         }
         
@@ -68,12 +69,17 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $userId
         ];
         
-        if(!$this->isInputValid($input)){
+        if (!$this->isInputValid($input)) {
             return;
         }
 
-        //TODO: validar que el usuario pueda ver el viaje
-        return $this->passengerRepository->newRequest($tripId, $user, $data);
+        if ($this->tripLogic->userCanSeeTrip($user, $tripId)) {
+            return $this->passengerRepository->newRequest($tripId, $user, $data);
+        } else {
+            $this->setErrors(['error' => 'access_denied']);
+
+            return;
+        }
     }
     
     public function cancelRequest($tripId, $user, $data)
@@ -85,14 +91,14 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $user->id
         ];
         
-        if(!$this->isInputValid($input)){
+        if (!$this->isInputValid($input)) {
             return;
         }
+ 
+        if (!$this->isUserRequestPending($tripId, $userId) || !$this->isUserRequestAccepted($tripId, $userId)) {
+            $this->setErrors(['error' => 'not_a_passenger']);
 
-        //TODO: validar que el usuario este como pasajero del viaje
-        if(!$this->isUserRequestPending($tripId, $userId) || !$this->isUserRequestAccepted($tripId, $userId))
-        {
-            //throw new
+            return;
         }
         
         return $this->passengerRepository->cancelRequest($tripId, $user, $data);
@@ -105,16 +111,21 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $acceptedUserId
         ];
         
-        if(!$this->isInputValid($input)){
+        if (!$this->isInputValid($input)) {
             return;
         }
         
-        //TODO: validar que el user sea el dueño del viaje
-        
-        //TODO: validar que el acceptedUserId este como pasajero del viaje
-        if(!$this->isUserRequestPending($tripId, $acceptedUserId))
-        {
-            //throw new
+        if (!$this->isUserRequestPending($tripId, $acceptedUserId) || !$this->tripLogic->tripOwner($user, $tripId)) {
+            $this->setErrors(['error' => 'not_valid_request']);
+
+            return;
+        }
+
+        $trip = $this->tripLogic->show($user, $tripId);
+        if ($trip->seats_available == 0) {
+            $this->setErrors(['error' => 'not_seat_available']);
+
+            return;
         }
 
         return $this->passengerRepository->acceptRequest($tripId, $acceptedUserId, $user, $data);
@@ -127,16 +138,14 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $rejectedUserId
         ];
         
-        if(!$this->isInputValid($input)){
+        if (!$this->isInputValid($input)) {
             return;
         }
-        
-        //TODO: validar que el user sea el dueño del viaje
-        
-        //TODO: validar que el rejectedUserId este como pasajero del viaje
-        if(!$this->isUserRequestPending($tripId, $acceptedUserId))
-        {
-            //throw new
+         
+        if (!$this->isUserRequestPending($tripId, $acceptedUserId) || !$this->tripLogic->tripOwner($user, $tripId)) {
+            $this->setErrors(['error' => 'not_valid_request']);
+
+            return;
         }
 
         return $this->passengerRepository->rejectRequest($tripId, $rejectedUserId, $user, $data);
@@ -156,6 +165,4 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     {
         return $this->passengerRepository->isUserRequestPending($tripId, $userId);
     }
-
-    
- }
+}
