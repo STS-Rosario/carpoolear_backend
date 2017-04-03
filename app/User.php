@@ -3,6 +3,7 @@
 namespace STS;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use STS\Services\Notifications\Models\DatabaseNotification;
 
 class User extends Authenticatable
 {
@@ -44,6 +45,11 @@ class User extends Authenticatable
         return $this->hasMany('STS\Entities\SocialAccount', 'user_id');
     }
 
+    public function devices()
+    {
+        return $this->hasMany('STS\Entities\Devices', 'user_id');
+    }
+
     public function age()
     {
         if ($this->birthday) {
@@ -83,6 +89,16 @@ class User extends Authenticatable
         })->get();
     }
 
+    public function notifications()
+    {
+        return $this->hasMany(DatabaseNotification::class, 'user_id')->whereNull('deleted_at');
+    }
+
+    public function unreadNotifications()
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
     public function trips($state = null)
     {
         $trips = $this->hasMany("STS\Entities\Trip", 'user_id');
@@ -95,6 +111,11 @@ class User extends Authenticatable
         return $trips;
     }
 
+    public function conversations() 
+    {
+        return $this->belongsToMany('STS\Entities\Conversation','conversations_users', 'user_id','conversation_id')->withPivot('read');
+    }
+    
     public function tripsAsPassenger($state = null)
     {
         $user_id = $this->id;

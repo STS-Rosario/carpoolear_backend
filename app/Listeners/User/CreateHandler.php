@@ -3,17 +3,22 @@
 namespace STS\Listeners\User;
 
 use STS\Events\User\Create;
+use STS\Notifications\NewUserNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Contracts\Repository\User as UserRepository;
 
-class CreateHandler
+class CreateHandler implements ShouldQueue
 {
+    protected $userRepo;
+
     /**
      * Create the event listener.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(UserRepository $userRepo)
     {
-        //
+        $this->userRepo = $userRepo;
     }
 
     /**
@@ -25,6 +30,10 @@ class CreateHandler
      */
     public function handle(Create $event)
     {
-        //
+        $user = $this->userRepo->show($event->id);
+        if ($user) {
+            $notification = new NewUserNotification();
+            $notification->notify($user);
+        }
     }
 }

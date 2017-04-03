@@ -90,3 +90,29 @@ $factory->define(STS\Entities\Car::class, function ($faker) {
         'description' => 'sandero',
     ];
 });
+
+$factory->define(STS\Entities\Trip::class, function (Faker\Generator $faker) {
+    return [
+        'user_id' => $faker->randomDigitNotNull,
+        'from_town' => $faker->city,
+        'to_town' => $faker->city,
+        "trip_date" => $faker->dateTime,
+        'description' => $faker->realText,
+        'total_seats' => $faker->randomDigitNotNull,
+        "friendship_type_id" => $faker->randomDigitNotNull,
+        "distance" => $faker->randomNumber,
+        'estimated_time' => "sth hours",
+        "co2" => $faker->randomNumber,
+        "es_recurrente" => 0,
+        //"trip_type" => 0,
+        "mail_send" => false,
+        //'tripscol' => 'asd'
+    ];
+});
+
+$factory->define(STS\Entities\Conversation::class, function (Faker\Generator $faker) {
+    return [
+        'trip_id' => null,
+        'title' => $faker->safeEmail        
+    ];
+});

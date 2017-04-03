@@ -37,13 +37,20 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind('\STS\Contracts\Repository\Social', '\STS\Repository\SocialRepository');
         $this->app->bind('\STS\Contracts\Logic\Social', '\STS\Services\Logic\SocialManager');
 
+        $this->app->bind('\STS\Contracts\Repository\Conversations', '\STS\Repository\ConversationRepository');
+        $this->app->bind('\STS\Contracts\Repository\Messages', '\STS\Repository\MessageRepository');
+        $this->app->bind('\STS\Contracts\Logic\Conversation', '\STS\Services\Logic\ConversationsManager');
         $this->app->bind('\STS\Contracts\Repository\Trip', '\STS\Repository\TripRepository');
         $this->app->bind('\STS\Contracts\Logic\Trip', '\STS\Services\Logic\TripsManager');
 
         $this->app->bind('\STS\Contracts\Repository\Car', '\STS\Repository\CarsRepository');
         $this->app->bind('\STS\Contracts\Logic\Car', '\STS\Services\Logic\CarsManager');
-
+ 
         $this->app->bind('\STS\Contracts\Repository\IPassengersRepository', '\STS\Repository\PassengersRepository');
         $this->app->bind('\STS\Contracts\Logic\IPassengersLogic', '\STS\Services\Logic\PassengersManager');
+ 
+        $this->app->bind('\STS\Contracts\Repository\INotification', 'STS\Repository\NotificationRepository');
+        $this->app->bind('\STS\Contracts\Logic\INotification', '\STS\Services\Logic\NotificationManager');
+ 
     }
 }

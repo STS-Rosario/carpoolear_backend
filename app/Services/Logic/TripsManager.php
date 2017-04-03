@@ -2,7 +2,6 @@
 
 namespace STS\Services\Logic;
 
-use STS\User;
 use Validator;
 use STS\Entities\Trip;
 use STS\Contracts\Logic\Trip as TripLogic;
@@ -105,6 +104,10 @@ class TripsManager extends BaseManager implements TripLogic
 
             return;
         }
+    }
+
+    public static function exist ( $trip_id ) {
+        return true;
     }
 
     public function delete($user, $trip_id)

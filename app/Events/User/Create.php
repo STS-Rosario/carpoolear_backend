@@ -9,7 +9,7 @@ class Create extends Event
 {
     use SerializesModels;
 
-    protected $id;
+    public $id;
 
     /**
      * Create a new event instance.
