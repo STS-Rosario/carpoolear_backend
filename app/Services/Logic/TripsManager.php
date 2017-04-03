@@ -106,6 +106,10 @@ class TripsManager extends BaseManager implements TripLogic
         }
     }
 
+    public static function exist ( $trip_id ) {
+        return true;
+    }
+
     public function delete($user, $trip_id)
     {
         $trip = $this->tripRepo->show($trip_id);

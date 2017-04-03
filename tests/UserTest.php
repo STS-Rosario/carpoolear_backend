@@ -2,12 +2,17 @@
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-class UserTest extends TestCase
-{
-    use DatabaseTransactions;
+class UserTest extends TestCase { 
 
-    public function testCreateUser()
-    {
+    use DatabaseTransactions;
+ 
+    protected $userManager;
+    public function __construct() {
+
+    } 
+
+	public function testCreateUser()
+	{
         $this->expectsEvents(STS\Events\User\Create::class);
         $userManager = \App::make('\STS\Contracts\Logic\User');
         $data = [
@@ -55,7 +60,6 @@ class UserTest extends TestCase
     public function testUpdateUser()
     {
         $userManager = \App::make('\STS\Contracts\Logic\User');
-
         $data = [
             'name'                  => 'Mariano',
             'email'                 => 'mariano@g1.com',
