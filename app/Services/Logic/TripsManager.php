@@ -157,6 +157,10 @@ class TripsManager extends BaseManager implements TripLogic
     public function userCanSeeTrip($user, $trip)
     {
         $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
+        if (is_int($trip)) {
+            $trip = $this->tripRepo->show($trip);
+        }
+
         if ($user->id == $trip->user->id) {
             return true;
         }

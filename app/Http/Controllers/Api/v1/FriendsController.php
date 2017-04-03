@@ -32,7 +32,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function accept(Request $request, $id)
@@ -44,7 +44,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function delete(Request $request, $id)
@@ -56,7 +56,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function reject(Request $request, $id)
@@ -68,7 +68,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function index(Request $request)

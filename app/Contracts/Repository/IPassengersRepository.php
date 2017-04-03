@@ -10,7 +10,7 @@ interface IPassengersRepository
     
     public function newRequest($tripId, $user, $data);
     
-    public function cancelRequest($tripId, Request $request);
+    public function cancelRequest($tripId, $user, $data);
     
     public function acceptRequest($tripId, $acceptedUserId, $user, $data);
     

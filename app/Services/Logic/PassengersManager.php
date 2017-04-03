@@ -53,14 +53,14 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     {
         $validation = $this->validateInput($input);
         
-        if ($result = $validation->fails()) {
+        if ($result = $validation->fails()) { 
             $this->setErrors($validation->errors());
-        }
-        
-        return $result;
+        } 
+
+        return true;
     }
     
-    public function newRequest($tripId, $user, $data)
+    public function newRequest($tripId, $user, $data = [])
     {
         $userId = $user->id;
 
@@ -69,7 +69,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $userId
         ];
         
-        if (!$this->isInputValid($input)) {
+        if (!$this->isInputValid($input)) { 
             return;
         }
 
@@ -82,7 +82,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
     }
     
-    public function cancelRequest($tripId, $user, $data)
+    public function cancelRequest($tripId, $user, $data = [])
     {
         $userId = $user->id;
 
@@ -92,10 +92,11 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         ];
         
         if (!$this->isInputValid($input)) {
+
             return;
         }
- 
-        if (!$this->isUserRequestPending($tripId, $userId) || !$this->isUserRequestAccepted($tripId, $userId)) {
+        
+        if (! $this->isUserRequestPending($tripId, $userId) && ! $this->isUserRequestAccepted($tripId, $userId)) {
             $this->setErrors(['error' => 'not_a_passenger']);
 
             return;
@@ -104,7 +105,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         return $this->passengerRepository->cancelRequest($tripId, $user, $data);
     }
     
-    public function acceptRequest($tripId, $acceptedUserId, $user, $data)
+    public function acceptRequest($tripId, $acceptedUserId, $user, $data = [])
     {
         $input = [
             'trip_id' => $tripId,
@@ -131,7 +132,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         return $this->passengerRepository->acceptRequest($tripId, $acceptedUserId, $user, $data);
     }
     
-    public function rejectRequest($tripId, $rejectedUserId, $user, $data)
+    public function rejectRequest($tripId, $rejectedUserId, $user, $data = [])
     {
         $input = [
             'trip_id' => $tripId,
@@ -142,7 +143,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             return;
         }
          
-        if (!$this->isUserRequestPending($tripId, $acceptedUserId) || !$this->tripLogic->tripOwner($user, $tripId)) {
+        if (!$this->isUserRequestPending($tripId, $rejectedUserId) || !$this->tripLogic->tripOwner($user, $tripId)) {
             $this->setErrors(['error' => 'not_valid_request']);
 
             return;

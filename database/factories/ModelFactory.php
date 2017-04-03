@@ -90,25 +90,7 @@ $factory->define(STS\Entities\Car::class, function ($faker) {
         'description' => 'sandero',
     ];
 });
-
-$factory->define(STS\Entities\Trip::class, function (Faker\Generator $faker) {
-    return [
-        'user_id' => $faker->randomDigitNotNull,
-        'from_town' => $faker->city,
-        'to_town' => $faker->city,
-        "trip_date" => $faker->dateTime,
-        'description' => $faker->realText,
-        'total_seats' => $faker->randomDigitNotNull,
-        "friendship_type_id" => $faker->randomDigitNotNull,
-        "distance" => $faker->randomNumber,
-        'estimated_time' => "sth hours",
-        "co2" => $faker->randomNumber,
-        "es_recurrente" => 0,
-        //"trip_type" => 0,
-        "mail_send" => false,
-        //'tripscol' => 'asd'
-    ];
-});
+ 
 
 $factory->define(STS\Entities\Conversation::class, function (Faker\Generator $faker) {
     return [
@@ -116,3 +98,19 @@ $factory->define(STS\Entities\Conversation::class, function (Faker\Generator $fa
         'title' => $faker->safeEmail        
     ];
 });
+
+$factory->define(STS\Entities\Passenger::class, function (Faker\Generator $faker) {
+    return [ 
+        'request_state' => STS\Entities\Passenger::STATE_PENDING,
+        'passenger_type' => STS\Entities\Passenger::TYPE_PASAJERO
+    ];
+});
+
+$factory->defineAs(STS\Entities\Passenger::class, 'aceptado', function ($faker) {
+    return [
+        'request_state' => STS\Entities\Passenger::STATE_ACCEPTED,
+        'passenger_type' => STS\Entities\Passenger::TYPE_PASAJERO
+    ];
+});
+            
+
