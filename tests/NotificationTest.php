@@ -13,8 +13,8 @@ class NotificationTest extends TestCase
 
     public function testMorph()
     {
-        $t = factory(Trip::class)->create();
         $u1 = factory(STS\User::class)->create();
+        $t = factory(Trip::class)->create(['user_id' => $u1->id ]);
         $n = new DatabaseNotification();
         $n->user_id = $u1->id;
         $n->save();
@@ -36,7 +36,7 @@ class NotificationTest extends TestCase
     public function testDummyNotification()
     {
         $user = factory(STS\User::class)->create(['email' => 'marianoabotta@gmail.com']);
-        $trip = factory(Trip::class)->create();
+        $trip = factory(Trip::class)->create(['user_id' => $user->id ]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'dummy');
@@ -58,7 +58,7 @@ class NotificationTest extends TestCase
     public function testNotificationLogic()
     {
         $user = factory(STS\User::class)->create(['email' => 'marianoabotta@gmail.com']);
-        $trip = factory(Trip::class)->create();
+        $trip = factory(Trip::class)->create(['user_id' => $user->id ]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'dummy');
