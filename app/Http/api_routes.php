@@ -50,7 +50,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{tripId}/passengers', $v1_path.'PassengerController@passengers');
         $api->get('/{tripId}/requests', $v1_path.'PassengerController@requests');
         $api->post('/{tripId}/requests', $v1_path.'PassengerController@newRequest');
-        $api->delete('/{tripId}/requests', $v1_path.'PassengerController@cancelRequest');
+        $api->post('/{tripId}/requests/{userId}/cancel', $v1_path.'PassengerController@cancelRequest');
         $api->post('/{tripId}/requests/{userId}/accept', $v1_path.'PassengerController@acceptRequest');
         $api->post('/{tripId}/requests/{userId}/reject', $v1_path.'PassengerController@rejectRequest');
     });
