@@ -92,8 +92,11 @@ class PassengersTest extends TestCase
         factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $result = $this->passengerManager->getPassengers($trip->id, $driver, []);
+        $result = $this->passengerManager->getPendingRequests($trip->id, $driver, []);
         $this->assertNotNull($result);
+        $this->assertTrue( $result->count() > 0);
+
+        $result = $this->passengerManager->getPendingRequests(null, $driver, []); 
         $this->assertTrue( $result->count() > 0);
     }
 

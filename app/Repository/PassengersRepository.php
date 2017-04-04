@@ -24,8 +24,13 @@ class PassengersRepository implements IPassengersRepository
 
     public function getPendingRequests($tripId, $user, $data)
     {
-        $passengers = Passenger::where('trip_id', $tripId);
-
+        if ($tripId) {
+            $passengers = Passenger::where('trip_id', $tripId);
+        } else {
+            $passengers = Passenger::whereHas('trip', function ($q) use ($user){
+                $q->where('user_id', $user->id);
+            });       
+        }
         $passengers->whereIn('request_state', [Passenger::STATE_PENDING]);
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;

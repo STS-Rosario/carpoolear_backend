@@ -38,10 +38,13 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     
     public function getPendingRequests($tripId, $user, $data)
     {
-        if (!$this->tripLogic->tripOwner($user, $tripId)) {
-            $this->setErrors(['error' => 'access_denied']);
+        if ($tripId) {
+            
+            if (!$this->tripLogic->tripOwner($user, $tripId)) {
+                $this->setErrors(['error' => 'access_denied']);
 
-            return;
+                return;
+            }
         }
         return $this->passengerRepository->getPendingRequests($tripId, $user, $data);
     }

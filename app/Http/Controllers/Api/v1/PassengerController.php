@@ -29,10 +29,19 @@ class PassengerController extends Controller
     }
 
     public function requests($tripId, Request $request)
-    {
+    { 
         $data = $request->all();
 
-        $passengers = $this->passengerLogic->requests($tripId, $this->user, $data);
+        $passengers = $this->passengerLogic->getPendingRequests($tripId, $this->user, $data);
+        
+        return $passengers;
+    }
+
+    public function allRequests(Request $request)
+    { 
+        $data = $request->all();
+
+        $passengers = $this->passengerLogic->getPendingRequests(null, $this->user, $data);
         
         return $passengers;
     }
