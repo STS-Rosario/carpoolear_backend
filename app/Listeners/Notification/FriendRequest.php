@@ -26,6 +26,6 @@ class FriendRequest implements ShouldQueue
      */
     public function handle(Request $event)
     {
-        //
+        
     }
 }

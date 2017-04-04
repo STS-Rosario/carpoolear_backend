@@ -28,7 +28,9 @@ class EventServiceProvider extends ServiceProvider
         'STS\Events\Trip\Update' => [
             'STS\Listeners\DownloadStaticImage',
         ],
-        'STS\Events\Notification\NotificationSending' => [],
+        'STS\Events\Notification\NotificationSending' => [
+            'STS\Listeners\Notification\CanSendEmail'
+        ],
         'STS\Events\Passenger\Request' => [
             'STS\Listeners\Notification\PassengerRequest'
         ],

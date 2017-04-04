@@ -8,7 +8,7 @@ use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class AcceptPassengerNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class]; 
 
     public function toEmail($user)
     {

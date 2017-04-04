@@ -31,6 +31,7 @@ class User extends Authenticatable
         'image',
         'active',
         'activation_token',
+        'emails_notifications'
     ];
     protected $hidden = ['password', 'remember_token'];
     protected $cast = [

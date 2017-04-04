@@ -9,6 +9,8 @@ class NewUserNotification extends BaseNotification
 {
     protected $via = [MailChannel::class];
 
+    public $force_email = true;
+
     public function toEmail($user)
     {
         return [

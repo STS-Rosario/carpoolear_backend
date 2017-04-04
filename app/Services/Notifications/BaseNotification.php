@@ -14,6 +14,8 @@ class BaseNotification
 
     protected $manager = null;
 
+    public $force_email = false;
+
     public function __construct()
     {
         $this->type = get_class($this);

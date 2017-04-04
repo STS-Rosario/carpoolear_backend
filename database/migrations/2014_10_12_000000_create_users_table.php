@@ -34,6 +34,8 @@ class CreateUsersTable extends Migration
             $table->boolean('active');
             $table->string('activation_token', 50)->nullable();
 
+            $table->boolean('emails_notifications');
+
             $table->rememberToken();
             $table->timestamps();
         });

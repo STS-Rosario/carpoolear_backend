@@ -10,6 +10,14 @@ class DummyNotification extends BaseNotification
 {
     protected $via = [DatabaseChannel::class, MailChannel::class];
 
+    /*
+
+    Send Email althoug email_notifications is false
+    public $force_email = true;
+
+    */
+
+
     public function toEmail($user)
     {
         return [
