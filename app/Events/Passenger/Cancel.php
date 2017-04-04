@@ -8,11 +8,11 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class Cancel extends Event
 {
-    use SerializesModels;
+    // use SerializesModels;
 
-    protected $trip_id;
-    protected $from_id;
-    protected $to_id;
+    public $trip_id;
+    public $from_id;
+    public $to_id;
     /**
      * Create a new event instance.
      *

@@ -4,6 +4,7 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
+use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class RequestPassengerNotification extends BaseNotification
 {

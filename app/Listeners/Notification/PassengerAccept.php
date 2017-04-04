@@ -7,11 +7,14 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Repository\IPassengersRepository;
 use STS\Contracts\Repository\Trip as TripRepository;
+use STS\Contracts\Repository\User as UserRepository;
+
+use STS\Notifications\AcceptPassengerNotification;
 
 class PassengerAccept implements ShouldQueue
 {
 
-    protected $passengerRepository;
+    protected $userRepository;
     protected $tripRepository;
 
     /**
@@ -19,9 +22,9 @@ class PassengerAccept implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(TripRepository $tripRepository, IPassengersRepository $passengerRepository)
+    public function __construct(TripRepository $tripRepository, UserRepository $userRepository)
     {
-        $this->passengerRepository = $passengerRepository;
+        $this->userRepository = $userRepository;
         $this->tripRepository = $tripRepository;
     }
 
@@ -32,7 +35,17 @@ class PassengerAccept implements ShouldQueue
      * @return void
      */
     public function handle(Accept $event)
-    {
-        //
+    { 
+
+        $trip = $this->tripRepository->show($event->trip_id);
+        $from = $this->userRepository->show($event->from_id);
+        $to   = $this->userRepository->show($event->to_id);
+        if ($to) {
+            $notification = new AcceptPassengerNotification();
+            $notification->setAttribute('trip', $trip);
+            $notification->setAttribute('from', $from);
+            //$notification->setAttribute('token', $to);
+            $notification->notify($to);
+        }
     }
 }
