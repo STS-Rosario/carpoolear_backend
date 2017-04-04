@@ -19,15 +19,19 @@ class Rating extends Model
         'comment',
         'reply_comment',
         'reply_comment_created_at',
+        'user_to_type',
+        'user_to_state',
+        'voted',
+        'voted_hash'
     ];
     protected $hidden = [];
 
-    public function user_from()
+    public function from()
     {
         return $this->belongsTo('STS\User', 'user_id_from');
     }
 
-    public function user_to()
+    public function to()
     {
         return $this->belongsTo('STS\User', 'user_id_to');
     }

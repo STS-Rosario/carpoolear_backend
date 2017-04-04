@@ -4,7 +4,7 @@ use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Entities\Trip;
 
-class FriendApiTest extends TestCase
+class PassengerApiTest extends TestCase
 {
     use DatabaseTransactions;
 

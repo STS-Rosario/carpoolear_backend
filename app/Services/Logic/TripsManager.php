@@ -142,9 +142,14 @@ class TripsManager extends BaseManager implements TripLogic
         }
     }
 
-    public function index($user, $data)
+    public function index($data)
     {
-        return $this->tripRepo->index($user, $data);
+        return $this->tripRepo->search($user, $data);
+    }
+
+    public function search($user, $data)
+    {
+        return $this->tripRepo->search($user, $data);
     }
 
     public function tripOwner($user, $trip)

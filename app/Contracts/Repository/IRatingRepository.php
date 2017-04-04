@@ -4,14 +4,17 @@ namespace STS\Contracts\Repository;
 
 interface IRatingRepository
 {
-    public function getRating($id);
+    public function getRating($user_from_id, $user_to_id, $trip_id);
 
-    public function getRatings($user, $data);
+    public function getRatings($user, $data = []);
     
     public function getPendingRatings($user);
+
+    public function find ($id);
+
+    public function findBy($key, $value);
     
-    public function rateUser ($user_from, $user_to, $trip, $value, $comment);
+    public function create ($user_from_id, $user_to_id, $trip_id, $hash);
 
-    public function replyRating ($rating, $user, $comment);
-
+    public function update ($rateModel, $data) ;
 }

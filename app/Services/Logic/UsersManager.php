@@ -28,7 +28,7 @@ class UsersManager extends BaseManager implements UserLogic
                 'name'     => 'max:255',
                 'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
-                'gender'   => 'string|in:Masculino,Feminino',
+                'gender'   => 'string|in:Masculino,Femenino',
             ]);
         } else {
             return Validator::make($data, [

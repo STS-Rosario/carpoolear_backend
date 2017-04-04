@@ -42,14 +42,35 @@ class TripRepository implements TripRepo
         return Trip::with(['user', 'points'])->whereId($id)->first();
     }
 
-    public function index($user, $data)
+    public function index($criterias, $withs = [])
+    {
+        $trips = Trip::orderBy('trip_date');
+        foreach ($criterias as $key => $value) {
+            if (strpos($key, '.')) {
+                $trips->where(DB::Raw($key), $value);
+            } else {
+                $trips->where($key, $value);
+            }
+        }
+        if ($withs) {
+            $trips->with($withs);
+        }
+        return $trips->get();
+    }
+
+    public function search($user, $data)
     {
         if (isset($data['date'])) {
-            $from = parse_date($data['date'])->subDays(3);
-            $to = parse_date($data['date'])->addDays(3);
-            //$trips = Trip::where(DB::Raw('DATE(trip_date)') , $data['date'] );
-            $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)'), [date_to_string($from), date_to_string($to)]);
-            $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), '".$data['date']."' )"));
+            if (isset($data['strict'])) {
+                $trips = Trip::where(DB::Raw('DATE(trip_date)') , $data['date'] );
+                $trips->orderBy('trip_date');
+            } else {
+                $from = parse_date($data['date'])->subDays(3);
+                $to = parse_date($data['date'])->addDays(3);
+                
+                $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)'), [date_to_string($from), date_to_string($to)]);
+                $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), '".$data['date']."' )"));
+            }
             //$trips->setBindings([$data['date']]);
         } else {
             $trips = Trip::where('trip_date', '>=', Carbon::Now());

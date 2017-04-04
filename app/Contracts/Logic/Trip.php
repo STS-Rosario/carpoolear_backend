@@ -12,7 +12,9 @@ interface Trip
 
     public function show($user, $trip);
 
-    public function index($user, $data);
+    public function index($data);
+
+    public function search($user, $data);
 
     public function userCanSeeTrip($user, $trip);
 

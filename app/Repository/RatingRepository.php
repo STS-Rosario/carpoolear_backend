@@ -12,14 +12,24 @@ use STS\Contracts\Repository\IRatingRepository;
 class RatingRepository implements IRatingRepository
 {
 
-    public function getRating($id)
+    public function getRating($user_from_id, $user_to_id, $trip_id)
     {
-        return RatingModel::find($id);
+        $rate = RatingModel::where('user_id_from', $user_from_id);
+        $rate->where('user_id_to', $user_to_id);
+        $rate->where('trip_id', $trip_id);
+        $rate->first();
     }
 
-    public function getRatings($user, $data) 
+    public function getRatings($user, $data = []) 
     {
         $ratings = RatingModel::where('user_id_to', $user->id);
+        $ratings->where('voted', true);
+        
+        if (isset($data['value'])) {
+            $value = parse_boolean($data['value']);
+            $value = $value ? RatingModel::STATE_POSITIVO : RatingModel::STATE_NEGATIVO;
+            $ratings->where('rating', $value);
+        }
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
@@ -29,98 +39,36 @@ class RatingRepository implements IRatingRepository
     
     public function getPendingRatings($user) 
     {
-        $trips_as_driver = PassengerModel::where('user_id', $user->id)
-                                ->where('passenger_type', PassengerModel::TYPE_CONDUCTOR)
-                                ->whereHas('trip', function ($query) {
-                                    $query->where('trip_date', '>=', DB::Raw(' DATE_SUB(NOW(), INTERVAL ' . RatingModel::RATING_INTERVAL .' DAY)') );
-                                    $query->where('trip_date', '<', DB::Raw(' NOW()'));
-                                })->get();
+         $ratings = RatingModel::where('user_id_from', $user->id);
+         $ratings->where('voted', false);
+         $ratings->with(['from', 'to', 'trip']);
+         return $ratings->get();
+    }
 
-        $trips_as_passengers = PassengerModel::where('user_id', $user->id)
-                                    ->where('passenger_type', PassengerModel::TYPE_PASAJERO)
-                                    ->where(function ($query) {
-                                        $query->where('request_state', PassengerModel::STATE_ACCEPTED);
-                                        $query->orWhere('request_state', PassengerModel::STATE_CANCELED);
-                                    })
-                                    ->whereHas('trip', function ($query) {
-                                        $query->where('trip_date', '>=', DB::Raw(' DATE_SUB(NOW(), INTERVAL ' . RatingModel::RATING_INTERVAL .' DAY)') );
-                                        $query->where('trip_date', '<', DB::Raw(' NOW()'));
-                                    })->get();
+    public function find ($id) 
+    {
+        return RatingModel::find($id);
+    }
 
-        $map_function = function ($trip) { return $trip->id; };
-
-		$trips_as_driver = array_map($map_function, $trips_as_driver);
-		$trips_as_passengers = array_map($map_function, $trips_as_passengers);
-
-		$pending_as_driver = array();
-		$pending_as_passenger = array();	
-
-        if(count($trips_as_driver) > 0) {
-            $pending_as_driver = PassengerModel::where_in('trip_id', $trips_as_driver)
-                                    ->where('passenger_type', PassengerModel::TYPE_PASAJERO)
-                                    ->whereDoesntHave('ratingReceived', function ($query) use ($user) {
-                                        $query->where('user_id_from', $user->id);
-                                    })->get();
-
-            //Todos los pasajeros para un viaje dado, que no tengan una calificacion mia
-
-        }
-        if(count($pending_as_passenger) > 0) {
-            $pending_as_passenger = PassengerModel::where_in('trip_id', $trips_as_passengers)
-                                        ->where('passenger_type', PassengerModel::TYPE_CONDUCTOR)
-                                        ->whereDoesntHave('ratingGiven', function ($query) use ($user) {
-                                            $query->where('user_id_from', $user->id);
-                                        })->get();
-        }
-        return  array_merge($pending_as_driver, $pending_as_passenger);	
-        /*
-			
-		if (count($trip_as_conductor)>0) {	
-			$pendientes1 = DB::table('trip_passengers as tp')
-								->where_in("tp.trip_id",$trip_as_conductor)
-								->where("tp.request_state","=" , trip_request_state::Aceptado)
-								->where("tp.passenger_type","=",passenger_types::Pasajero)
-								->left_join("calificaciones as c" , function($join) use ($userID)
-					        	{
-									$join->on('c.trip_id', '=', 'tp.trip_id');
-									$join->on('c.to_id', '=', 'tp.user_id');
-                                    $join->on('c.from_id','=',DB::Raw($userID));			
-								})
-								->where_null("c.to_id")
-								->get(array("tp.trip_id","tp.user_id","tp.passenger_type")); 	
-			//print_r(DB::last_query());die;					
-		}	
-		if (count($trip_as_pasajero)>0) {		
-			$pendientes2 = DB::table('trip_passengers as tp')
-								->where_in("tp.trip_id",$trip_as_pasajero)
-								->where("tp.request_state","=" , trip_request_state::Aceptado)
-								->where("tp.passenger_type","=",passenger_types::Conductor)
-								->left_join("calificaciones as c" , function($join) use ($userID)
-					        	{
-									$join->on('c.trip_id', '=', 'tp.trip_id');
-									$join->on('c.to_id', '=', 'tp.user_id');
-                                    $join->on('c.from_id','=',DB::Raw($userID));			
-								})
-								->where_null("c.to_id")
-								->get(array("tp.trip_id","tp.user_id","tp.passenger_type"));
-		}
-		return  array_merge($pendientes1,$pendientes2);	
-        */
-
-        //TODO: Implement this
-
-
-        return array();
+    public function findBy($key, $value)
+    {
+        return RatingModel::where($key, $value)->get();
     }
     
-    public function rateUser ($user_from, $user_to, $trip, $value, $comment) 
+    public function create ($user_from_id, $user_to_id, $trip_id, $user_to_type, $user_to_state, $hash) 
     {
-        $newRating= [
+        $newRating = [
             'trip_id' => $trip->id,
             'user_id_from' => $user_from->id,
             'user_id_to' => $user_to->id,
-            'value' => $value ? RatingModel::STATE_POSITIVO : RatingModel::STATE_NEGATIVO,
-            'comment' => $comment
+            'rating' => null,
+            'comment' => '',
+            'voted' => false,
+            'reply_comment_created_at' => null,
+            'reply_comment' => '',
+            'voted_hash' => $hash,
+            'user_to_type' => $user_to_type,
+            'user_to_state' => $user_to_state
         ];
 
         $newRating = RatingModel::create($newRating);
@@ -128,18 +76,9 @@ class RatingRepository implements IRatingRepository
         return $newRating;
     }
 
-    public function replyRating ($rating, $comment)
+    public function update ($rateModel, $data) 
     {
-        $rating = $this->getRating($rating->id);
-
-        $rating->reply_comment = $comment;
-        $rating->reply_comment_created_at = date("Y-m-d H:i:s");
-
-        $rating->save();
-
-        return $rating;
+        return $rateModel->save();
     }
-
-
 
 }

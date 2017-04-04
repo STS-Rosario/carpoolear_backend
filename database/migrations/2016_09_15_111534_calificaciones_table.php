@@ -17,10 +17,14 @@ class CalificacionesTable extends Migration
             $table->integer('trip_id')->unsigned();
             $table->integer('user_id_from')->unsigned();
             $table->integer('user_id_to')->unsigned();
-            $table->integer('rating');
+            $table->integer('user_to_type');
+            $table->integer('user_to_state');
+            $table->integer('rating')->nullable();
             $table->string('comment');
             $table->string('reply_comment');
-            $table->datetime('reply_comment_created_at');
+            $table->datetime('reply_comment_created_at')->nullable();
+            $table->boolean('voted');
+            $table->string('voted_hash');
             $table->timestamps();
             $table->foreign('user_id_from')->references('id')->on('users')
                                          ->onDelete('cascade')

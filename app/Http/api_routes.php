@@ -8,7 +8,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->post('login', $v1_path.'AuthController@login');
     $api->post('retoken', $v1_path.'AuthController@retoken');
     $api->post('logout', $v1_path.'AuthController@logout');
-    $api->post('active/{activation_token?}', $v1_path.'AuthController@active');
+    $api->post('activate/{activation_token?}', $v1_path.'AuthController@active');
     $api->post('reset-password', $v1_path.'AuthController@reset');
     $api->post('change-password/{token?}', $v1_path.'AuthController@changePasswod');
     
@@ -43,7 +43,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->group(['prefix' => 'trips'], function ($api) use ($v1_path) {
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
 
-        $api->get('/', $v1_path.'TripController@index');
+        $api->get('/', $v1_path.'TripController@search');
         $api->post('/', $v1_path.'TripController@create');
         $api->put('/{id?}', $v1_path.'TripController@update');
         $api->delete('/{id?}', $v1_path.'TripController@delete');

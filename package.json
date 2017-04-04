@@ -2,7 +2,8 @@
   "private": true,
   "scripts": {
     "prod": "gulp --production",
-    "dev": "gulp watch"
+    "dev": "gulp watch",
+    "test": "./vendor/bin/phpunit"
   },
   "devDependencies": {
     "gulp": "^3.9.1",
