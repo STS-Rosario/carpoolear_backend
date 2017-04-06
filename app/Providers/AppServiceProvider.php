@@ -52,5 +52,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind('\STS\Contracts\Repository\INotification', 'STS\Repository\NotificationRepository');
         $this->app->bind('\STS\Contracts\Logic\INotification', '\STS\Services\Logic\NotificationManager');
  
+        $this->app->bind('\STS\Contracts\Repository\IRatingRepository', 'STS\Repository\RatingRepository');
+        $this->app->bind('\STS\Contracts\Logic\IRateLogic', '\STS\Services\Logic\RatingManager');
+
     }
 }

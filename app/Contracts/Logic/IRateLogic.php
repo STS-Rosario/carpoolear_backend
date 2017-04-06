@@ -16,5 +16,5 @@ interface IRateLogic
     
     public function replyRating($user_from, $user_to_id, $trip_id, $comment);
 
-    public function activeRatings($when)
+    public function activeRatings($when);
 }
