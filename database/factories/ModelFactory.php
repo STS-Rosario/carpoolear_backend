@@ -43,6 +43,7 @@ $factory->define(STS\Entities\Trip::class, function ($faker) {
         'distance'              => 365,
         'co2'                   => 50,
         'description'           => 'hola mundo',
+        'mail_send'             => false,
         'user_id'               => function () {
             return factory(STS\User::class)->create()->id;
         },

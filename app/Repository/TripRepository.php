@@ -46,7 +46,7 @@ class TripRepository implements TripRepo
     {
         $trips = Trip::orderBy('trip_date');
         foreach ($criterias as $key => $value) {
-            if (strpos($key, '.')) {
+            if (strpos($key, '(')) {
                 $trips->where(DB::Raw($key), $value);
             } else {
                 $trips->where($key, $value);

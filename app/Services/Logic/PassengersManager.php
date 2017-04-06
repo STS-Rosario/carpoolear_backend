@@ -5,7 +5,7 @@ namespace STS\Services\Logic;
 use Validator;
 
 use STS\User;
-use STS\Entities\Passanger;
+use STS\Entities\Passsnger;
 use STS\Contracts\Logic\IPassengersLogic;
 use STS\Contracts\Repository\IPassengersRepository;
 use STS\Contracts\Logic\Trip as TripLogic;

@@ -16,5 +16,5 @@ interface IRatingRepository
     
     public function create ($user_from_id, $user_to_id, $trip_id, $user_to_type, $user_to_state, $hash);
 
-    public function update ($rateModel, $data) ;
+    public function update ($rateModel) ;
 }

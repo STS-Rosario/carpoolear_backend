@@ -53,7 +53,7 @@ class RatingController extends Controller
     {
         $me = $this->auth->user();
 
-        $response = $this->rateLogic->update($me, $userId, $tripId, $request->all());
+        $response = $this->rateLogic->rateUser($me, $userId, $tripId, $request->all());
 
         if (! $response) {
             throw new UpdateResourceFailedException('Could not rate user.', $this->rateLogic->getErrors());
@@ -68,7 +68,7 @@ class RatingController extends Controller
 
         $comment = $request->get('comment');
 
-        $response = $this->rateLogic->update($me, $userId, $tripId, $comment);
+        $response = $this->rateLogic->replyRating($me, $userId, $tripId, $comment);
 
         if (! $response) {
             throw new UpdateResourceFailedException('Could not replay user.', $this->rateLogic->getErrors());

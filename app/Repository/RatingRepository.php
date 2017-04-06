@@ -17,7 +17,7 @@ class RatingRepository implements IRatingRepository
         $rate = RatingModel::where('user_id_from', $user_from_id);
         $rate->where('user_id_to', $user_to_id);
         $rate->where('trip_id', $trip_id);
-        $rate->first();
+        return $rate->first();
     }
 
     public function getRatings($user, $data = []) 
@@ -58,9 +58,9 @@ class RatingRepository implements IRatingRepository
     public function create ($user_from_id, $user_to_id, $trip_id, $user_to_type, $user_to_state, $hash) 
     {
         $newRating = [
-            'trip_id' => $trip->id,
-            'user_id_from' => $user_from->id,
-            'user_id_to' => $user_to->id,
+            'trip_id' => $trip_id,
+            'user_id_from' => $user_from_id,
+            'user_id_to' => $user_to_id,
             'rating' => null,
             'comment' => '',
             'voted' => false,
@@ -76,7 +76,7 @@ class RatingRepository implements IRatingRepository
         return $newRating;
     }
 
-    public function update ($rateModel, $data) 
+    public function update ($rateModel) 
     {
         return $rateModel->save();
     }

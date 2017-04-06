@@ -10,7 +10,7 @@ class PendingRate extends Event
 {
     use SerializesModels;
 
-    protected $rate;
+    public $rate;
     /**
      * Create a new event instance.
      *
