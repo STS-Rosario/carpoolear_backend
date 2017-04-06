@@ -22,8 +22,11 @@ class Rating extends Model
         'user_to_type',
         'user_to_state',
         'voted',
-        'voted_hash'
+        'voted_hash',
+        'rate_at'
     ];
+
+    protected $dates = ['created_at', 'updated_at', 'reply_comment_created_at', 'rate_at'];
     protected $hidden = [];
 
     public function from()

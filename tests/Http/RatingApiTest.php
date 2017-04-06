@@ -4,7 +4,7 @@ use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Entities\Trip;
 
-class PassengerApiTest extends TestCase
+class RatingApiTest extends TestCase
 {
     use DatabaseTransactions;
 
@@ -78,8 +78,7 @@ class PassengerApiTest extends TestCase
         ];
         $this->logic->shouldReceive('rateUser')->with($driver, 5, 10, $data)->once()->andReturn(true);
 
-        $response = $this->call('GET', 'api/trips/10/rate/5', $data);  
-        console_log($response->getContent());
+        $response = $this->call('GET', 'api/trips/10/rate/5', $data);   
         $this->assertTrue($response->status() == 200);
     }
 
@@ -95,8 +94,7 @@ class PassengerApiTest extends TestCase
         ];
         $this->logic->shouldReceive('replyRating')->with($driver, 5, 10, "test comment")->once()->andReturn(true);
 
-        $response = $this->call('GET', 'api/trips/10/reply/5', $data);  
-        console_log($response->getContent());
+        $response = $this->call('GET', 'api/trips/10/reply/5', $data);   
         $this->assertTrue($response->status() == 200);
     }
 

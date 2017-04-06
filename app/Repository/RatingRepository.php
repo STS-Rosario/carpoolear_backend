@@ -68,7 +68,8 @@ class RatingRepository implements IRatingRepository
             'reply_comment' => '',
             'voted_hash' => $hash,
             'user_to_type' => $user_to_type,
-            'user_to_state' => $user_to_state
+            'user_to_state' => $user_to_state,
+            'rate_at' => null
         ];
 
         $newRating = RatingModel::create($newRating);

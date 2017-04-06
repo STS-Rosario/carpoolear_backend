@@ -29,8 +29,7 @@ class NotificationTest extends TestCase
         $v->value()->associate($u1);
         $n->plain_values()->save($v);
 
-        $nn = DatabaseNotification::find($n->id);
-        //console_log($nn->attributes());
+        $nn = DatabaseNotification::find($n->id); 
     }
 
     public function testDummyNotification()

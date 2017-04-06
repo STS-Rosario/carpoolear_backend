@@ -92,6 +92,7 @@ class RatingManager extends BaseManager implements IRateLogic
             $rate->voted = true;
             $rate->comment = $data['comment'];
             $rate->voted_hash = "";
+            $rate->rate_at = Carbon::now();
             $rate->rating = parse_boolean($data['rating']) ? Rating::STATE_POSITIVO : Rating::STATE_NEGATIVO;
 
             return $this->ratingRepository->update($rate);    

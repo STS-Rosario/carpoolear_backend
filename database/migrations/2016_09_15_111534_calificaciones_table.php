@@ -24,6 +24,7 @@ class CalificacionesTable extends Migration
             $table->string('reply_comment');
             $table->datetime('reply_comment_created_at')->nullable();
             $table->boolean('voted');
+            $table->datetime('rate_at')->nullable();
             $table->string('voted_hash');
             $table->timestamps();
             $table->foreign('user_id_from')->references('id')->on('users')
