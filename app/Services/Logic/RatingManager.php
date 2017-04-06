@@ -10,6 +10,7 @@ use STS\Entities\Rating;
 use STS\Contracts\Logic\IRateLogic;
 use STS\Contracts\Repository\IRatingRepository;
 use STS\Contracts\Repository\Trip as TripRepo;
+use STS\Events\Rating\PendingRate as PendingEvent;
 
 class RatingManager extends BaseManager implements IRateLogic
 {
@@ -49,7 +50,7 @@ class RatingManager extends BaseManager implements IRateLogic
         return;
     }
     
-    public function getRatings ($user, $data) 
+    public function getRatings ($user, $data = []) 
     {
 
         return $this->ratingRepository->getRatings($user, $data);
@@ -115,7 +116,7 @@ class RatingManager extends BaseManager implements IRateLogic
     public function activeRatings($when)
     {   
         $criterias = [
-            'DATE(trip_date)' => $data['date'],
+            'DATE(trip_date)' => $when,
             'mail_send' => false
         ];
         $trips = $this->tripRepo->index($data, ['user', 'passenger']);
@@ -128,10 +129,11 @@ class RatingManager extends BaseManager implements IRateLogic
                 if ($passenger->request_state == Passanger::STATE_ACCEPTED || $passenger->request_state == Passanger::STATE_CANCELED) {
 
                     $passener_hash = str_random(40);
-                    $this->ratingsRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);                    
+                    $rate = $this->ratingsRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);                    
+                    event(new PendingEvent($rate));
 
-                    $this->ratingsRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
-
+                    $rate = $this->ratingsRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
+                    event(new PendingEvent($rate));
                 }
             }
 

@@ -43,6 +43,9 @@ class EventServiceProvider extends ServiceProvider
         'STS\Events\Passenger\Reject' => [
             'STS\Listeners\Notification\PassengerReject'
         ],
+        'STS\Events\Rating\PendingRate' => [
+            'STS\Listeners\Notification\PendingRate'
+        ],
     ];
 
     /**

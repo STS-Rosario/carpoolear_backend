@@ -17,6 +17,9 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{id?}', $v1_path.'UserController@show');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto'); 
+
+        $api->get('/ratings', $v1_path.'RatingController@ratings');
+        $api->get('/ratings/pending', $v1_path.'RatingController@pendingRate');
     });  
 
     $api->group(['prefix' => 'notifications'], function ($api) use ($v1_path) {
@@ -56,6 +59,10 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->post('/{tripId}/requests/{userId}/cancel', $v1_path.'PassengerController@cancelRequest');
         $api->post('/{tripId}/requests/{userId}/accept', $v1_path.'PassengerController@acceptRequest');
         $api->post('/{tripId}/requests/{userId}/reject', $v1_path.'PassengerController@rejectRequest');
+
+        $api->get('/{tripId}/rate/{userId}', $v1_path.'RatingController@rate');
+        $api->get('/{tripId}/replay/{userId}', $v1_path.'RatingController@replay');
+
     });
      
     $api->group(['prefix' => 'conversations'], function ($api) use ($v1_path) {

@@ -14,7 +14,7 @@ interface IRatingRepository
 
     public function findBy($key, $value);
     
-    public function create ($user_from_id, $user_to_id, $trip_id, $hash);
+    public function create ($user_from_id, $user_to_id, $trip_id, $user_to_type, $user_to_state, $hash);
 
     public function update ($rateModel, $data) ;
 }

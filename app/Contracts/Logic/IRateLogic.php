@@ -4,15 +4,17 @@ namespace STS\Contracts\Logic;
 
 interface IRateLogic
 {
-    public function getRating($id);
+    public function getRate($userOrHash, $user_to_id, $trip_id);
 
-    public function getRatings($user, $data);
+    public function getRatings($user, $data = []);
 
-    public function rateUser ($user_from, $user_to, $trip, $value, $comment);
+    public function getPendingRatings($user);
 
-    public function getPendingRatings ($user);
+    public function getPendingRatingsByHash($hash) ;
 
-    public function replyRating ($rating, $comment);
+    public function rateUser($user_from, $user_to_id, $trip_id, $data);
+    
+    public function replyRating($user_from, $user_to_id, $trip_id, $comment);
 
-
+    public function activeRatings($when)
 }
