@@ -7,21 +7,21 @@ use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 
-class RequestPassengerNotification extends BaseNotification
+class FriendCancelNotification extends BaseNotification
 {
     protected $via = [DatabaseChannel::class, MailChannel::class];
 
     public function toEmail($user)
     {
         return [
-            'title' => 'Nueva solicitud de viaje',
-            'email_view' => 'passenger_email',
-            'type' => 'request'
+            'title' => $this->getAttribute('from')->name . 'ha dejado de ser tu amigo',
+            'email_view' => 'friends_email',
+            'type' => 'cancel'
         ];
     }
 
     public function toString()
     {
-        return $this->getAttribute('from')->name . ' quiere subirse a unos de tus viajes.';
+        return $this->getAttribute('from')->name . ' ha dejado de ser tu amigo';
     }
 }

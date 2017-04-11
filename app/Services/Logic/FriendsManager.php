@@ -6,6 +6,8 @@ use STS\User as UserModel;
 use STS\Events\Friend\Accept  as AcceptEvent;
 use STS\Events\Friend\Reject  as RejectEvent;
 use STS\Events\Friend\Request as RequestEvent;
+use STS\Events\Friend\Cancel as CancelEvent;
+
 use STS\Contracts\Logic\Friends as FriendsLogic;
 use STS\Contracts\Repository\Friends as FriendsRepo;
 
@@ -35,9 +37,8 @@ class FriendsManager extends BaseManager implements FriendsLogic
             $this->friendsRepo->delete($user, $who);
 
             $this->friendsRepo->add($who, $user, UserModel::FRIEND_REQUEST);
-            //$this->friendsRepo->add($user, $who, UserModel::FRIEND_REQUEST );
 
-            event(new RequestEvent($who->id, $user->id));
+            event(new RequestEvent($who, $user));
 
             return true;
         } else {
@@ -54,7 +55,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
             $this->friendsRepo->delete($user, $who);
             $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED);
             $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED);
-            event(new AcceptEvent($who->id, $user->id));
+            event(new AcceptEvent($who, $user));
 
             return true;
         } else {
@@ -69,7 +70,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
         if ($this->friendsRepo->get($user, $who, UserModel::FRIEND_REQUEST)->count() > 0) {
             $this->friendsRepo->delete($user, $who);
             //$this->friendsRepo->add($who, $user, UserModel::FRIEND_REJECT );
-            event(new RejectEvent($who->id, $user->id));
+            event(new RejectEvent($who, $user));
 
             return true;
         } else {
@@ -84,6 +85,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
         if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() > 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
+            event(new CancelEvent($who, $user));
 
             return true;
         } else {
