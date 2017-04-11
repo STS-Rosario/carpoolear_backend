@@ -3,7 +3,6 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Friend\Cancel;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\FriendCancelNotification;
 
@@ -29,8 +28,8 @@ class FriendCancel implements ShouldQueue
     {
         $from = $event->from;
         $to = $event->to;
-        $notification = new FriendCancelNotification(); 
-        $notification->setAttribute('from', $from); 
+        $notification = new FriendCancelNotification();
+        $notification->setAttribute('from', $from);
         $notification->notify($to);
     }
 }

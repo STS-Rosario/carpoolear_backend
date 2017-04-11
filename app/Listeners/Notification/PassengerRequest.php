@@ -3,11 +3,9 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Passenger\Request;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Contracts\Repository\IPassengersRepository;
-use STS\Contracts\Repository\Trip as TripRepository;
 use STS\Notifications\RequestPassengerNotification;
+use STS\Contracts\Repository\Trip as TripRepository;
 use STS\Contracts\Repository\User as UserRepository;
 
 class PassengerRequest implements ShouldQueue
@@ -33,11 +31,10 @@ class PassengerRequest implements ShouldQueue
      * @return void
      */
     public function handle(Request $event)
-    { 
-
+    {
         $trip = $this->tripRepository->show($event->trip_id);
         $from = $this->userRepository->show($event->from_id);
-        $to   = $this->userRepository->show($event->to_id);
+        $to = $this->userRepository->show($event->to_id);
         if ($to) {
             $notification = new RequestPassengerNotification();
             $notification->setAttribute('trip', $trip);

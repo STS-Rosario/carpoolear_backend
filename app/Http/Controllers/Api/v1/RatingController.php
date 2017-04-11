@@ -3,10 +3,8 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller;
-use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\IRateLogic;
-use Dingo\Api\Exception\StoreResourceFailedException;
+use STS\Http\Controllers\Controller;
 use Dingo\Api\Exception\UpdateResourceFailedException;
 
 class RatingController extends Controller
@@ -24,7 +22,7 @@ class RatingController extends Controller
         $data = $request->all();
 
         $me = $this->auth->user();
-        
+
         $data = $this->rateLogic->getRatings($me, $data);
 
         return $this->response->withArray(['data' => $data]);
@@ -45,7 +43,7 @@ class RatingController extends Controller
                 throw new BadRequestHttpException('Hash not provided');
             }
         }
-        
+
         return $this->response->withArray(['data' => $data]);
     }
 
@@ -62,7 +60,7 @@ class RatingController extends Controller
             } else {
                 throw new BadRequestHttpException('Hash not provided');
             }
-        } 
+        }
 
         if (! $response) {
             throw new UpdateResourceFailedException('Could not rate user.', $this->rateLogic->getErrors());
@@ -84,5 +82,5 @@ class RatingController extends Controller
         }
 
         return $this->response->withArray(['data' => 'ok']);
-    } 
+    }
 }

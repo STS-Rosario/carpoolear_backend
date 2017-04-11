@@ -3,7 +3,6 @@
 namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
-use STS\Entities\Rating as RatingModel;
 
 class Passenger extends Model
 {

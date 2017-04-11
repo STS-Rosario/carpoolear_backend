@@ -10,10 +10,10 @@ interface IRateLogic
 
     public function getPendingRatings($user);
 
-    public function getPendingRatingsByHash($hash) ;
+    public function getPendingRatingsByHash($hash);
 
     public function rateUser($user_from, $user_to_id, $trip_id, $data);
-    
+
     public function replyRating($user_from, $user_to_id, $trip_id, $comment);
 
     public function activeRatings($when);

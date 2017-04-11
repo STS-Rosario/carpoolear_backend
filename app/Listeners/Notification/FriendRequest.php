@@ -29,8 +29,8 @@ class FriendRequest implements ShouldQueue
     {
         $from = $event->from;
         $to = $event->to;
-        $notification = new FriendRequestNotification(); 
-        $notification->setAttribute('from', $from); 
+        $notification = new FriendRequestNotification();
+        $notification->setAttribute('from', $from);
         $notification->notify($to);
     }
 }

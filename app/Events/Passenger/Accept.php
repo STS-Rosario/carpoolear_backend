@@ -4,7 +4,6 @@ namespace STS\Events\Passenger;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class Accept extends Event
 {

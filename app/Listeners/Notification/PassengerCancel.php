@@ -3,12 +3,10 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Passenger\Cancel;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Contracts\Repository\IPassengersRepository;
+use STS\Notifications\CancelPassengerNotification;
 use STS\Contracts\Repository\Trip as TripRepository;
 use STS\Contracts\Repository\User as UserRepository;
-use STS\Notifications\CancelPassengerNotification;
 
 class PassengerCancel implements ShouldQueue
 {
@@ -33,11 +31,10 @@ class PassengerCancel implements ShouldQueue
      * @return void
      */
     public function handle(Cancel $event)
-    { 
-
+    {
         $trip = $this->tripRepository->show($event->trip_id);
         $from = $this->userRepository->show($event->from_id);
-        $to   = $this->userRepository->show($event->to_id);
+        $to = $this->userRepository->show($event->to_id);
         if ($to) {
             $notification = new CancelPassengerNotification();
             $notification->setAttribute('trip', $trip);

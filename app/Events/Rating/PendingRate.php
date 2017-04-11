@@ -4,7 +4,6 @@ namespace STS\Events\Rating;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class PendingRate extends Event
 {
@@ -13,6 +12,7 @@ class PendingRate extends Event
     public $to;
     public $trip;
     public $hash;
+
     /**
      * Create a new event instance.
      *

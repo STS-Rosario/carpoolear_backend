@@ -2,9 +2,9 @@
 
 namespace STS\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use STS\Contracts\Logic\IRateLogic;
-use Carbon\Carbon;
 
 class CreateRates extends Command
 {
@@ -22,9 +22,7 @@ class CreateRates extends Command
      */
     protected $description = 'Create rates from ending rates';
 
-
     protected $rateLogic;
-
 
     /**
      * Create a new command instance.

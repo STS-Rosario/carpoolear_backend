@@ -5,27 +5,25 @@ namespace STS\Contracts\Repository;
 use STS\User as UserModel;
 use STS\Entities\Conversation;
 
+interface Conversations
+{
+    public function store(Conversation $conversation);
 
-interface Conversations {
+    public function delete(Conversation $conversation);
 
-    public function store (Conversation $conversation);
+    public function getConversationsFromUser(UserModel $user, $pageNumber, $pageSize);
 
-    public function delete (Conversation $conversation);
+    public function getConversationFromId($conversation_id, UserModel $user = null);
 
-    public function getConversationsFromUser (UserModel $user, $pageNumber, $pageSize);
+    public function getConversationByTripId($tripId, UserModel $user = null);
 
-    public function getConversationFromId ( $conversation_id, UserModel $user = null );
+    public function users(Conversation $conversation);
 
-    public function getConversationByTripId ( $tripId, UserModel $user = null );
+    public function addUser(Conversation $conversation, UserModel $user);
 
-    public function users (Conversation $conversation);
-
-    public function addUser (Conversation $conversation, UserModel $user);
-
-    public function removeUser (Conversation $conversation, UserModel $user);
+    public function removeUser(Conversation $conversation, UserModel $user);
 
     public function matchUser(UserModel $user1, UserModel $user2);
 
-    public function changeConversationReadState (Conversation $conversation, UserModel $user, $read_state);
-
+    public function changeConversationReadState(Conversation $conversation, UserModel $user, $read_state);
 }

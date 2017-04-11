@@ -18,7 +18,7 @@ $factory->define(STS\User::class, function (Faker\Generator $faker) {
         'password'       => bcrypt('123456'),
         'remember_token' => str_random(10),
         'active'         => true,
-        'emails_notifications' => true
+        'emails_notifications' => true,
     ];
 });
 
@@ -92,27 +92,24 @@ $factory->define(STS\Entities\Car::class, function ($faker) {
         'description' => 'sandero',
     ];
 });
- 
 
 $factory->define(STS\Entities\Conversation::class, function (Faker\Generator $faker) {
     return [
         'trip_id' => null,
-        'title' => $faker->safeEmail        
+        'title' => $faker->safeEmail,
     ];
 });
 
 $factory->define(STS\Entities\Passenger::class, function (Faker\Generator $faker) {
-    return [ 
+    return [
         'request_state' => STS\Entities\Passenger::STATE_PENDING,
-        'passenger_type' => STS\Entities\Passenger::TYPE_PASAJERO
+        'passenger_type' => STS\Entities\Passenger::TYPE_PASAJERO,
     ];
 });
 
 $factory->defineAs(STS\Entities\Passenger::class, 'aceptado', function ($faker) {
     return [
         'request_state' => STS\Entities\Passenger::STATE_ACCEPTED,
-        'passenger_type' => STS\Entities\Passenger::TYPE_PASAJERO
+        'passenger_type' => STS\Entities\Passenger::TYPE_PASAJERO,
     ];
 });
-            
-
