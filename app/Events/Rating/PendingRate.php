@@ -10,15 +10,19 @@ class PendingRate extends Event
 {
     use SerializesModels;
 
-    public $rate;
+    public $to;
+    public $trip;
+    public $hash;
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($rate)
+    public function __construct($to, $trip, $hash)
     {
-        $this->rate = $rate;
+        $this->to = $to;
+        $this->trip = $trip;
+        $this->hash = $hash;
     }
 
     /**

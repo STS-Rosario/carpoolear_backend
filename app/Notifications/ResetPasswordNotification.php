@@ -17,7 +17,7 @@ class ResetPasswordNotification extends BaseNotification
         return [
             'title' => "Password Reset",
             'email_view' => 'reset_password',
-            'url' => 'http://www.carpoolear.com.ar/app#Reset/' . $this->getAttribute('token')
+            'url' => config('app.url') . '/app/#Reset/' . $this->getAttribute('token')
         ];
     }
 }

@@ -16,7 +16,7 @@ class NewUserNotification extends BaseNotification
         return [
             'title' => 'Bienvenido a Carpoolear',
             'email_view' => 'create_account',
-            'url' => 'http://www.carpoolear.com.ar/app#Active/'. $user->activation_token,
+            'url' => config('app.url') . '/app/#Active/'. $user->activation_token,
         ];
     }
 }

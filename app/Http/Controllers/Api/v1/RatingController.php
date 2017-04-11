@@ -15,7 +15,7 @@ class RatingController extends Controller
 
     public function __construct(IRateLogic $rateLogic)
     {
-        $this->middleware('api.auth', ['except' => ['pendingRate']]);
+        $this->middleware('api.auth', ['except' => ['pendingRate', 'rate']]);
         $this->rateLogic = $rateLogic;
     }
 
@@ -53,7 +53,16 @@ class RatingController extends Controller
     {
         $me = $this->auth->user();
 
-        $response = $this->rateLogic->rateUser($me, $userId, $tripId, $request->all());
+        if ($me) {
+            $response = $this->rateLogic->rateUser($me, $userId, $tripId, $request->all());
+        } else {
+            if ($request->has('hash')) {
+                $hash = $request->has('hash');
+                $response = $this->rateLogic->rateUser($me, $hash, $tripId, $request->all());
+            } else {
+                throw new BadRequestHttpException('Hash not provided');
+            }
+        } 
 
         if (! $response) {
             throw new UpdateResourceFailedException('Could not rate user.', $this->rateLogic->getErrors());

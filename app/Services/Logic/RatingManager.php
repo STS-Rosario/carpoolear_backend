@@ -32,13 +32,13 @@ class RatingManager extends BaseManager implements IRateLogic
             'comment' => 'required|string',
             'rating' => 'required|integer|in:0,1,',
         ]);
-    } 
+    }
 
     public function getRate($userOrHash, $user_to_id, $trip_id)
     {
         if ($userOrHash instanceof User) {
             $rate = $this->ratingRepository->getRating($userOrHash->id, $user_to_id, $trip_id);
-        } else if (is_int($userOrHash)) {
+        } elseif (is_int($userOrHash)) {
             $rate = $this->ratingRepository->getRating($userOrHash, $user_to_id, $trip_id);
         } else {
             $rate = $this->ratingRepository->findBy('voted_hash', $userOrHash)
@@ -47,30 +47,27 @@ class RatingManager extends BaseManager implements IRateLogic
                          ->first();
         }
         if (!$rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
-
             return $rate;
         }
 
         return;
     }
     
-    public function getRatings ($user, $data = []) 
+    public function getRatings($user, $data = [])
     {
-
         return $this->ratingRepository->getRatings($user, $data);
     }
 
-    public function getPendingRatings ($user) 
+    public function getPendingRatings($user)
     {
-
         return $this->ratingRepository->getPendingRatings($user);
-    } 
+    }
 
-    public function getPendingRatingsByHash ($hash) 
+    public function getPendingRatingsByHash($hash)
     {
         $response = [];
         $rates = $this->ratingRepository->findBy('voted_hash', $hash);
-        foreach($rates as $rate) {
+        foreach ($rates as $rate) {
             if (!$rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
                 $response[] = $rate;
             }
@@ -79,7 +76,7 @@ class RatingManager extends BaseManager implements IRateLogic
         return new Collection($response);
     }
 
-    public function rateUser ($user_from, $user_to_id, $trip_id, $data)
+    public function rateUser($user_from, $user_to_id, $trip_id, $data)
     {
         $v = $this->validator($data);
         if ($v->fails()) {
@@ -95,7 +92,7 @@ class RatingManager extends BaseManager implements IRateLogic
             $rate->rate_at = Carbon::now();
             $rate->rating = parse_boolean($data['rating']) ? Rating::STATE_POSITIVO : Rating::STATE_NEGATIVO;
 
-            return $this->ratingRepository->update($rate);    
+            return $this->ratingRepository->update($rate);
         } else {
             $this->setErrors(['error' => 'user_have_already_voted']);
 
@@ -103,7 +100,7 @@ class RatingManager extends BaseManager implements IRateLogic
         }
     }
  
-    public function replyRating ($user_from, $user_to_id, $trip_id, $comment)
+    public function replyRating($user_from, $user_to_id, $trip_id, $comment)
     {
         $rate = $this->ratingRepository->getRating($user_to_id, $user_from->id, $trip_id);
         if ($rate && !$rate->reply_comment_created_at) {
@@ -120,7 +117,7 @@ class RatingManager extends BaseManager implements IRateLogic
 
 
     public function activeRatings($when)
-    {   
+    {
         $criterias = [
             'DATE(trip_date)' => $when,
             'mail_send' => false
@@ -130,25 +127,24 @@ class RatingManager extends BaseManager implements IRateLogic
         foreach ($trips as $trip) {
             $driver = $trip->user;
             $driver_hash = str_random(40);
-
+            $has_passenger = false;
             foreach ($trip->passenger as $passenger) {
                 if ($passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED) {
-
                     $passenger_hash = str_random(40);
-                    $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);                    
-                    event(new PendingEvent($rate));
-
+                    $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
+                    
                     $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
-                    event(new PendingEvent($rate));
+                    $has_passenger = true;
+                    event(new PendingEvent($passenger->user, $trip, $passenger_hash));
                 }
             }
-
+            if ($has_passenger) {
+                event(new PendingEvent($driver, $trip, $driver_hash));
+            }
             $this->tripRepo->update($trip, ['mail_send' => true]);
         }
 
 
         return ;
     }
-    
-    
- }
+}
