@@ -17,7 +17,6 @@ class DummyNotification extends BaseNotification
 
     */
 
-
     public function toEmail($user)
     {
         return [

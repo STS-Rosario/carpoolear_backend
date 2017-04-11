@@ -5,7 +5,6 @@ namespace STS\Notifications;
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
 
 class FriendRejectNotification extends BaseNotification
 {
@@ -14,14 +13,14 @@ class FriendRejectNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name . 'ha rechazado tu solicitud de amistad.',
+            'title' => $this->getAttribute('from')->name.'ha rechazado tu solicitud de amistad.',
             'email_view' => 'friends_email',
-            'type' => 'reject'
+            'type' => 'reject',
         ];
     }
 
     public function toString()
     {
-        return $this->getAttribute('from')->name . ' ha rechazado tu solicitud de amistad.';
+        return $this->getAttribute('from')->name.' ha rechazado tu solicitud de amistad.';
     }
 }

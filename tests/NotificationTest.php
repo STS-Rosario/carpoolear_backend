@@ -14,7 +14,7 @@ class NotificationTest extends TestCase
     public function testMorph()
     {
         $u1 = factory(STS\User::class)->create();
-        $t = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $t = factory(Trip::class)->create(['user_id' => $u1->id]);
         $n = new DatabaseNotification();
         $n->user_id = $u1->id;
         $n->save();
@@ -29,13 +29,13 @@ class NotificationTest extends TestCase
         $v->value()->associate($u1);
         $n->plain_values()->save($v);
 
-        $nn = DatabaseNotification::find($n->id); 
+        $nn = DatabaseNotification::find($n->id);
     }
 
     public function testDummyNotification()
     {
         $user = factory(STS\User::class)->create(['email' => 'marianoabotta@gmail.com']);
-        $trip = factory(Trip::class)->create(['user_id' => $user->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $user->id]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'dummy');
@@ -57,7 +57,7 @@ class NotificationTest extends TestCase
     public function testNotificationLogic()
     {
         $user = factory(STS\User::class)->create(['email' => 'marianoabotta@gmail.com']);
-        $trip = factory(Trip::class)->create(['user_id' => $user->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $user->id]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'dummy');

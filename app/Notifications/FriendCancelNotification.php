@@ -5,7 +5,6 @@ namespace STS\Notifications;
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
 
 class FriendCancelNotification extends BaseNotification
 {
@@ -14,14 +13,14 @@ class FriendCancelNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name . 'ha dejado de ser tu amigo',
+            'title' => $this->getAttribute('from')->name.'ha dejado de ser tu amigo',
             'email_view' => 'friends_email',
-            'type' => 'cancel'
+            'type' => 'cancel',
         ];
     }
 
     public function toString()
     {
-        return $this->getAttribute('from')->name . ' ha dejado de ser tu amigo';
+        return $this->getAttribute('from')->name.' ha dejado de ser tu amigo';
     }
 }

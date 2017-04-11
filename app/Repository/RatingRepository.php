@@ -2,29 +2,25 @@
 
 namespace STS\Repository;
 
-use DB;
-use STS\User;
-use Carbon\Carbon;
 use STS\Entities\Rating as RatingModel;
-use STS\Entities\Passenger as PassengerModel;
 use STS\Contracts\Repository\IRatingRepository;
 
 class RatingRepository implements IRatingRepository
 {
-
     public function getRating($user_from_id, $user_to_id, $trip_id)
     {
         $rate = RatingModel::where('user_id_from', $user_from_id);
         $rate->where('user_id_to', $user_to_id);
         $rate->where('trip_id', $trip_id);
+
         return $rate->first();
     }
 
-    public function getRatings($user, $data = []) 
+    public function getRatings($user, $data = [])
     {
         $ratings = RatingModel::where('user_id_to', $user->id);
         $ratings->where('voted', true);
-        
+
         if (isset($data['value'])) {
             $value = parse_boolean($data['value']);
             $value = $value ? RatingModel::STATE_POSITIVO : RatingModel::STATE_NEGATIVO;
@@ -36,16 +32,17 @@ class RatingRepository implements IRatingRepository
 
         return make_pagination($ratings, $pageNumber, $pageSize);
     }
-    
-    public function getPendingRatings($user) 
+
+    public function getPendingRatings($user)
     {
-         $ratings = RatingModel::where('user_id_from', $user->id);
-         $ratings->where('voted', false);
-         $ratings->with(['from', 'to', 'trip']);
-         return $ratings->get();
+        $ratings = RatingModel::where('user_id_from', $user->id);
+        $ratings->where('voted', false);
+        $ratings->with(['from', 'to', 'trip']);
+
+        return $ratings->get();
     }
 
-    public function find ($id) 
+    public function find($id)
     {
         return RatingModel::find($id);
     }
@@ -54,8 +51,8 @@ class RatingRepository implements IRatingRepository
     {
         return RatingModel::where($key, $value)->get();
     }
-    
-    public function create ($user_from_id, $user_to_id, $trip_id, $user_to_type, $user_to_state, $hash) 
+
+    public function create($user_from_id, $user_to_id, $trip_id, $user_to_type, $user_to_state, $hash)
     {
         $newRating = [
             'trip_id' => $trip_id,
@@ -69,7 +66,7 @@ class RatingRepository implements IRatingRepository
             'voted_hash' => $hash,
             'user_to_type' => $user_to_type,
             'user_to_state' => $user_to_state,
-            'rate_at' => null
+            'rate_at' => null,
         ];
 
         $newRating = RatingModel::create($newRating);
@@ -77,9 +74,8 @@ class RatingRepository implements IRatingRepository
         return $newRating;
     }
 
-    public function update ($rateModel) 
+    public function update($rateModel)
     {
         return $rateModel->save();
     }
-
 }

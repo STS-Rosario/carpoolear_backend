@@ -98,7 +98,7 @@ class TripApiTest extends TestCase
         //$this->actingAsApiUser($u1);
         $this->tripsLogic->shouldReceive('search')->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/trips/'); 
+        $response = $this->call('GET', 'api/trips/');
         $this->assertTrue($response->status() == 200);
     }
 }

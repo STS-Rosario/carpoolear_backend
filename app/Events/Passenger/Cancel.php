@@ -4,7 +4,6 @@ namespace STS\Events\Passenger;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class Cancel extends Event
 {
@@ -13,6 +12,7 @@ class Cancel extends Event
     public $trip_id;
     public $from_id;
     public $to_id;
+
     /**
      * Create a new event instance.
      *

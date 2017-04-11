@@ -3,10 +3,9 @@
 namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\MailChannel;
 
-class ResetPasswordNotification extends BaseNotification 
+class ResetPasswordNotification extends BaseNotification
 {
     protected $via = [MailChannel::class];
 
@@ -15,9 +14,9 @@ class ResetPasswordNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => "Password Reset",
+            'title' => 'Password Reset',
             'email_view' => 'reset_password',
-            'url' => config('app.url') . '/app/#Reset/' . $this->getAttribute('token')
+            'url' => config('app.url').'/app/#Reset/'.$this->getAttribute('token'),
         ];
     }
 }

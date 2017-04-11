@@ -38,24 +38,24 @@ class EventServiceProvider extends ServiceProvider
         ],
 
         'STS\Events\Notification\NotificationSending' => [
-            'STS\Listeners\Notification\CanSendEmail'
+            'STS\Listeners\Notification\CanSendEmail',
         ],
 
         'STS\Events\Passenger\Request' => [
-            'STS\Listeners\Notification\PassengerRequest'
+            'STS\Listeners\Notification\PassengerRequest',
         ],
         'STS\Events\Passenger\Cancel' => [
-            'STS\Listeners\Notification\PassengerCancel'
+            'STS\Listeners\Notification\PassengerCancel',
         ],
         'STS\Events\Passenger\Accept' => [
-            'STS\Listeners\Notification\PassengerAccept'
+            'STS\Listeners\Notification\PassengerAccept',
         ],
         'STS\Events\Passenger\Reject' => [
-            'STS\Listeners\Notification\PassengerReject'
+            'STS\Listeners\Notification\PassengerReject',
         ],
 
         'STS\Events\Rating\PendingRate' => [
-            'STS\Listeners\Notification\PendingRate'
+            'STS\Listeners\Notification\PendingRate',
         ],
     ];
 

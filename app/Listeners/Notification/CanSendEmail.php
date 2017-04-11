@@ -3,10 +3,7 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Notification\NotificationSending;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class CanSendEmail
 {
@@ -28,9 +25,9 @@ class CanSendEmail
      */
     public function handle(NotificationSending $event)
     {
-        if ($event->channel instanceof MailChannel ) {
-            if (!$event->user->emails_notifications) {
-                if (!$event->notification->force_email) {
+        if ($event->channel instanceof MailChannel) {
+            if (! $event->user->emails_notifications) {
+                if (! $event->notification->force_email) {
                     return false;
                 }
             }

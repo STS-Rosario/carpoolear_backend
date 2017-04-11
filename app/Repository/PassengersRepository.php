@@ -2,9 +2,6 @@
 
 namespace STS\Repository;
 
-use DB;
-use STS\User;
-use Carbon\Carbon;
 use STS\Entities\Passenger;
 use STS\Contracts\Repository\IPassengersRepository;
 
@@ -27,9 +24,9 @@ class PassengersRepository implements IPassengersRepository
         if ($tripId) {
             $passengers = Passenger::where('trip_id', $tripId);
         } else {
-            $passengers = Passenger::whereHas('trip', function ($q) use ($user){
+            $passengers = Passenger::whereHas('trip', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
-            });       
+            });
         }
         $passengers->whereIn('request_state', [Passenger::STATE_PENDING]);
 
@@ -45,7 +42,7 @@ class PassengersRepository implements IPassengersRepository
             'trip_id' => $tripId,
             'user_id' => $user->id,
             'request_state' => Passenger::STATE_PENDING,
-            'passenger_type' => Passenger::TYPE_PASAJERO
+            'passenger_type' => Passenger::TYPE_PASAJERO,
         ];
 
         $newRequest = Passenger::create($newRequestData);
@@ -56,14 +53,14 @@ class PassengersRepository implements IPassengersRepository
     private function changeRequestState($tripId, $userId, $newState, $criterias)
     {
         $updateData = [
-            'request_state' => $newState
+            'request_state' => $newState,
         ];
 
         $request = Passenger::where('trip_id', $tripId);
 
         $request->where('user_id', $userId);
 
-        if (!empty($criterias)) {
+        if (! empty($criterias)) {
             foreach ($criterias as $column => $value) {
                 $request->where($column, $value);
             }
@@ -79,7 +76,7 @@ class PassengersRepository implements IPassengersRepository
     public function cancelRequest($tripId, $user, $data)
     {
         $criteria = [
-            'request_state' => Passenger::STATE_PENDING
+            'request_state' => Passenger::STATE_PENDING,
         ];
 
         $cancelRequest = $this->changeRequestState($tripId, $user->id, Passenger::STATE_CANCELED, $criteria);
@@ -116,12 +113,12 @@ class PassengersRepository implements IPassengersRepository
     {
         return $this->isUserInRequestType($tripId, $userId, Passenger::STATE_ACCEPTED);
     }
-    
+
     public function isUserRequestRejected($tripId, $userId)
     {
         return $this->isUserInRequestType($tripId, $userId, Passenger::STATE_REJECTED);
     }
-    
+
     public function isUserRequestPending($tripId, $userId)
     {
         return $this->isUserInRequestType($tripId, $userId, Passenger::STATE_PENDING);

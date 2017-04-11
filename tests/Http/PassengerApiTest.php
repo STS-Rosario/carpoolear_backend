@@ -1,8 +1,8 @@
 <?php
 
 use Mockery as m;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Entities\Trip;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class PassengerApiTest extends TestCase
 {
@@ -34,12 +34,12 @@ class PassengerApiTest extends TestCase
     {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u1);
 
         $this->logic->shouldReceive('index')->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/trips/' . $trip->id . '/passengers'); 
+        $response = $this->call('GET', 'api/trips/'.$trip->id.'/passengers');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -47,12 +47,12 @@ class PassengerApiTest extends TestCase
     {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u1);
 
         $this->logic->shouldReceive('getPendingRequests')->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/trips/requests');  
+        $response = $this->call('GET', 'api/trips/requests');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -60,12 +60,12 @@ class PassengerApiTest extends TestCase
     {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u2);
 
         $this->logic->shouldReceive('newRequest')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/trips/' . $trip->id . '/requests');  
+        $response = $this->call('POST', 'api/trips/'.$trip->id.'/requests');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -73,12 +73,12 @@ class PassengerApiTest extends TestCase
     {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u1);
 
-        $this->logic->shouldReceive('acceptRequest')->with($trip->id, $u2->id, $u1, [] )->once()->andReturn(true);
+        $this->logic->shouldReceive('acceptRequest')->with($trip->id, $u2->id, $u1, [])->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/trips/' . $trip->id . '/requests/' . $u2->id . "/accept");  
+        $response = $this->call('POST', 'api/trips/'.$trip->id.'/requests/'.$u2->id.'/accept');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -86,12 +86,12 @@ class PassengerApiTest extends TestCase
     {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u2);
 
         $this->logic->shouldReceive('cancelRequest')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/trips/' . $trip->id . '/requests/' . $u2->id . "/cancel");  
+        $response = $this->call('POST', 'api/trips/'.$trip->id.'/requests/'.$u2->id.'/cancel');
         $this->assertTrue($response->status() == 200);
     }
 
@@ -99,13 +99,12 @@ class PassengerApiTest extends TestCase
     {
         $u1 = factory(STS\User::class)->create();
         $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id ]);
+        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u2);
 
         $this->logic->shouldReceive('rejectRequest')->once()->andReturn(true);
 
-        $response = $this->call('POST', 'api/trips/' . $trip->id . '/requests/' . $u2->id . "/reject");  
+        $response = $this->call('POST', 'api/trips/'.$trip->id.'/requests/'.$u2->id.'/reject');
         $this->assertTrue($response->status() == 200);
     }
-     
 }

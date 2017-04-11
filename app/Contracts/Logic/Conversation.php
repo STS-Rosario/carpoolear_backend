@@ -4,33 +4,33 @@ namespace STS\Contracts\Logic;
 
 use STS\User as UserModel;
 
-interface Conversation {
-    
-    function setErrors($errs);
-    
-    function getErrors();
-    
-    function createTripConversation($trip_id);
-    
-    function findOrCreatePrivateConversation(UserModel $user1, UserModel $user2);
-    
-    function getUserConversations( UserModel $user, $pageNumber, $pageSize);
-    
-    function getConversation( UserModel $user, $conversation_id, $pageNumber, $pageSize );
-    
-    function getConversationByTrip ( UserModel $user, $trip_id);
-    
-    function getUsersFromConversation( UserModel $user, $conversationId);
-    
-    function addUserToConversation( UserModel $user, $conversationId, $users);
-    
-    function removeUsertFromConversation( UserModel $user, $conversationId, UserModel $userToDelete);
-    
-    function delete ( $conversationId);
-    
-    function send( UserModel $user, $conversationId, $message);
-    
-    function getAllMessagesFromConversation( $conversation_id, UserModel $user, $read, $pageNumber, $pageSize);
-    
-    function getUnreadMessagesFromConversation( $conversation_id, UserModel $user, $read);
+interface Conversation
+{
+    public function setErrors($errs);
+
+    public function getErrors();
+
+    public function createTripConversation($trip_id);
+
+    public function findOrCreatePrivateConversation(UserModel $user1, UserModel $user2);
+
+    public function getUserConversations(UserModel $user, $pageNumber, $pageSize);
+
+    public function getConversation(UserModel $user, $conversation_id, $pageNumber, $pageSize);
+
+    public function getConversationByTrip(UserModel $user, $trip_id);
+
+    public function getUsersFromConversation(UserModel $user, $conversationId);
+
+    public function addUserToConversation(UserModel $user, $conversationId, $users);
+
+    public function removeUsertFromConversation(UserModel $user, $conversationId, UserModel $userToDelete);
+
+    public function delete($conversationId);
+
+    public function send(UserModel $user, $conversationId, $message);
+
+    public function getAllMessagesFromConversation($conversation_id, UserModel $user, $read, $pageNumber, $pageSize);
+
+    public function getUnreadMessagesFromConversation($conversation_id, UserModel $user, $read);
 }

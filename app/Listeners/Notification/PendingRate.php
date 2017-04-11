@@ -2,11 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Rating\PendingRate as PendingEvent;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
-
 use STS\Notifications\PendingRateNotification;
+use STS\Events\Rating\PendingRate as PendingEvent;
 
 class PendingRate
 {
@@ -37,6 +34,5 @@ class PendingRate
         $notification->setAttribute('hash', $hash);
         //$notification->setAttribute('token', $to);
         $notification->notify($to);
-        
     }
 }

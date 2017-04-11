@@ -3,11 +3,10 @@
 namespace STS\Services\Logic;
 
 use STS\User as UserModel;
+use STS\Events\Friend\Cancel as CancelEvent;
 use STS\Events\Friend\Accept  as AcceptEvent;
 use STS\Events\Friend\Reject  as RejectEvent;
 use STS\Events\Friend\Request as RequestEvent;
-use STS\Events\Friend\Cancel as CancelEvent;
-
 use STS\Contracts\Logic\Friends as FriendsLogic;
 use STS\Contracts\Repository\Friends as FriendsRepo;
 

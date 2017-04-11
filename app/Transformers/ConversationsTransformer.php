@@ -2,23 +2,20 @@
 
 namespace STS\Transformers;
 
-use League\Fractal\TransformerAbstract;
 use STS\Entities\Conversation;
-
+use League\Fractal\TransformerAbstract;
 
 class ConversationsTransformer extends TransformerAbstract
 {
-
     /**
-     * Turn this item object into a generic array
+     * Turn this item object into a generic array.
      *
      * @return array
      */
     public function transform(Conversation $conversation)
     {
         return [
-            'id' => $conversation->id
+            'id' => $conversation->id,
         ];
     }
-
 }

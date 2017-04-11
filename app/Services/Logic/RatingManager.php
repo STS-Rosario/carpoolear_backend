@@ -2,24 +2,23 @@
 
 namespace STS\Services\Logic;
 
-use Validator;
-
-use Carbon\Carbon;
 use STS\User;
-use STS\Entities\Passenger;
+use Validator;
+use Carbon\Carbon;
 use STS\Entities\Rating;
+use STS\Entities\Passenger;
 use STS\Contracts\Logic\IRateLogic;
-use STS\Contracts\Repository\IRatingRepository;
-use STS\Contracts\Repository\Trip as TripRepo;
-use STS\Events\Rating\PendingRate as PendingEvent;
 use Illuminate\Database\Eloquent\Collection;
+use STS\Contracts\Repository\Trip as TripRepo;
+use STS\Contracts\Repository\IRatingRepository;
+use STS\Events\Rating\PendingRate as PendingEvent;
 
 class RatingManager extends BaseManager implements IRateLogic
 {
     protected $ratingRepository;
 
     protected $tripRepo;
-    
+
     public function __construct(IRatingRepository $ratingRepository, TripRepo $tripRepo)
     {
         $this->ratingRepository = $ratingRepository;
@@ -46,13 +45,11 @@ class RatingManager extends BaseManager implements IRateLogic
                          ->where('trip_id', $trip_id)
                          ->first();
         }
-        if (!$rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
+        if (! $rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
             return $rate;
         }
-
-        return;
     }
-    
+
     public function getRatings($user, $data = [])
     {
         return $this->ratingRepository->getRatings($user, $data);
@@ -68,7 +65,7 @@ class RatingManager extends BaseManager implements IRateLogic
         $response = [];
         $rates = $this->ratingRepository->findBy('voted_hash', $hash);
         foreach ($rates as $rate) {
-            if (!$rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
+            if (! $rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
                 $response[] = $rate;
             }
         }
@@ -88,7 +85,7 @@ class RatingManager extends BaseManager implements IRateLogic
         if ($rate = $this->getRate($user_from, $user_to_id, $trip_id)) {
             $rate->voted = true;
             $rate->comment = $data['comment'];
-            $rate->voted_hash = "";
+            $rate->voted_hash = '';
             $rate->rate_at = Carbon::now();
             $rate->rating = parse_boolean($data['rating']) ? Rating::STATE_POSITIVO : Rating::STATE_NEGATIVO;
 
@@ -99,11 +96,11 @@ class RatingManager extends BaseManager implements IRateLogic
             return;
         }
     }
- 
+
     public function replyRating($user_from, $user_to_id, $trip_id, $comment)
     {
         $rate = $this->ratingRepository->getRating($user_to_id, $user_from->id, $trip_id);
-        if ($rate && !$rate->reply_comment_created_at) {
+        if ($rate && ! $rate->reply_comment_created_at) {
             $rate->reply_comment_created_at = Carbon::now();
             $rate->reply_comment = $comment;
 
@@ -115,12 +112,11 @@ class RatingManager extends BaseManager implements IRateLogic
         }
     }
 
-
     public function activeRatings($when)
     {
         $criterias = [
             'DATE(trip_date)' => $when,
-            'mail_send' => false
+            'mail_send' => false,
         ];
         $trips = $this->tripRepo->index($criterias, ['user', 'passenger']);
 
@@ -132,7 +128,7 @@ class RatingManager extends BaseManager implements IRateLogic
                 if ($passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED) {
                     $passenger_hash = str_random(40);
                     $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
-                    
+
                     $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
                     $has_passenger = true;
                     event(new PendingEvent($passenger->user, $trip, $passenger_hash));
@@ -143,8 +139,5 @@ class RatingManager extends BaseManager implements IRateLogic
             }
             $this->tripRepo->update($trip, ['mail_send' => true]);
         }
-
-
-        return ;
     }
 }

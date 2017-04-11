@@ -5,7 +5,6 @@ namespace STS\Notifications;
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
 
 class RequestPassengerNotification extends BaseNotification
 {
@@ -16,12 +15,12 @@ class RequestPassengerNotification extends BaseNotification
         return [
             'title' => 'Nueva solicitud de viaje',
             'email_view' => 'passenger_email',
-            'type' => 'request'
+            'type' => 'request',
         ];
     }
 
     public function toString()
     {
-        return $this->getAttribute('from')->name . ' quiere subirse a unos de tus viajes.';
+        return $this->getAttribute('from')->name.' quiere subirse a unos de tus viajes.';
     }
 }

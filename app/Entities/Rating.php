@@ -23,7 +23,7 @@ class Rating extends Model
         'user_to_state',
         'voted',
         'voted_hash',
-        'rate_at'
+        'rate_at',
     ];
 
     protected $dates = ['created_at', 'updated_at', 'reply_comment_created_at', 'rate_at'];
