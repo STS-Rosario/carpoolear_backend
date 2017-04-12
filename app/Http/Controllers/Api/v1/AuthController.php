@@ -48,11 +48,13 @@ class AuthController extends Controller
         }
 
         // Registro mi devices
+        /*
         if ($request->has('device_id') && $request->has('device_type')) {
             $data = $request->all();
             $data['session_id'] = $token;
             $this->deviceLogic->register($user, $data);
         }
+        */
 
         return $this->response->withArray(['token' => $token]);
     }
@@ -69,11 +71,13 @@ class AuthController extends Controller
             throw new AccessDeniedHttpException('The token is invalid');
         }
 
+        /*
         $data = [
             'session_id'  => $token,
             'app_version' => $request->get('app_version'),
         ];
         $device = $this->deviceLogic->updateBySession($oldToken, $data);
+        */
 
         return $this->response->withArray(['token' => $token]);
     }
@@ -81,7 +85,8 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $token = JWTAuth::parseToken()->getToken();
-        $this->deviceLogic->delete($token);
+        
+        //$this->deviceLogic->delete($token);
 
         return response()->json('OK');
     }

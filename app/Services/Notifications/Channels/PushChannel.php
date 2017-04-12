@@ -16,11 +16,13 @@ class PushChannel
     {
         foreach ($user->devices as $device) {
             $data = $this->getData($notification, $user, $device);
-            if ($device->isAndroid()) {
-                $this->sendAndroid($device, $data);
-            }
-            if ($device->isIOS()) {
-                $this->sendIOS($device, $data);
+            if ($device->notifications) {
+                if ($device->isAndroid()) {
+                    $this->sendAndroid($device, $data);
+                }
+                if ($device->isIOS()) {
+                    $this->sendIOS($device, $data);
+                }
             }
         }
     }
