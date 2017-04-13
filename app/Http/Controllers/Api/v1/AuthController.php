@@ -90,7 +90,7 @@ class AuthController extends Controller
     {
         $user = $this->userLogic->activeAccount($activation_token);
         if (! $user) {
-            throw new ResourceException('invalid_activation_token', $this->userLogic->getErrors());
+            throw new BadRequestHttpException('user_not_found');
         }
         $token = JWTAuth::fromUser($user);
         if ($request->has('device_id') && $request->has('device_type')) {
