@@ -4,6 +4,7 @@ namespace STS\Services\Logic;
 
 use Validator;
 use STS\Entities\Trip;
+use Illuminate\Database\Eloquent\Model;
 use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
@@ -106,7 +107,8 @@ class TripsManager extends BaseManager implements TripLogic
         }
     }
 
-    public static function exist ( $trip_id ) {
+    public static function exist($trip_id)
+    {
         return true;
     }
 
@@ -141,14 +143,33 @@ class TripsManager extends BaseManager implements TripLogic
         }
     }
 
-    public function index($user, $data)
+    public function index($data)
     {
-        return $this->tripRepo->index($user, $data);
+        return $this->tripRepo->search($user, $data);
+    }
+
+    public function search($user, $data)
+    {
+        return $this->tripRepo->search($user, $data);
+    }
+
+    public function tripOwner($user, $trip)
+    {
+        $trip = $trip instanceof Model ? $trip : $this->tripRepo->show($trip);
+        if ($trip) {
+            return $trip->user_id == $user->id || $user->is_admin;
+        }
+
+        return false;
     }
 
     public function userCanSeeTrip($user, $trip)
     {
         $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
+        if (is_int($trip)) {
+            $trip = $this->tripRepo->show($trip);
+        }
+
         if ($user->id == $trip->user->id) {
             return true;
         }

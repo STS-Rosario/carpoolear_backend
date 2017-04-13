@@ -14,7 +14,7 @@ class TripController extends Controller
 
     public function __construct(Request $r, TripLogic $tripsLogic)
     {
-        $this->middleware('api.auth', ['except' => ['index']]);
+        $this->middleware('api.auth', ['except' => ['search']]);
         $this->tripsLogic = $tripsLogic;
     }
 
@@ -64,11 +64,11 @@ class TripController extends Controller
         return $this->response->withArray(['data' => $trip]);
     }
 
-    public function index(Request $request)
+    public function search(Request $request)
     {
         $this->user = $this->auth->user();
         $data = $request->all();
-        $trips = $this->tripsLogic->index($this->user, $data);
+        $trips = $this->tripsLogic->search($this->user, $data);
 
         return $trips;
     }

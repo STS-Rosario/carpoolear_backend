@@ -114,7 +114,7 @@ class ApiAuthTest extends TestCase
         $this->userLogic = $this->mock('STS\Contracts\Logic\User');
         $this->userLogic->shouldReceive('activeAccount')->once()->andReturn($u1);
 
-        $response = $this->call('POST', 'api/active/1234567890');
+        $response = $this->call('POST', 'api/activate/1234567890');
 
         $this->assertTrue($response->status() == 200);
 

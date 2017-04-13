@@ -16,7 +16,7 @@ class QueriesTest extends TestCase
         $this->assertTrue($answerDecode->total == 50 && $answerDecode->last_page == 3);
     }
 
-    function test_make_pagination_no_page_specify_must_return_all_messages ()
+    public function test_make_pagination_no_page_specify_must_return_all_messages()
     {
         $users = factory(STS\User::class, 53)->create();
 

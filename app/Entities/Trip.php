@@ -74,7 +74,7 @@ class Trip extends Model
 
     public function passengerAccepted()
     {
-        return $this->passenger()->whereRequestState(Passenger::STATE_ACCEPTED);
+        return $this->passenger()->whereRequestState(Passenger::STATE_ACCEPTED)->where('user_id', '<>', $this->user_id);
     }
 
     public function passengerPending()

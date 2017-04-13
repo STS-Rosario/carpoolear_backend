@@ -85,7 +85,7 @@ class TripApiTest extends TestCase
         $trip = factory(STS\Entities\Trip::class)->create();
         $this->actingAsApiUser($u1);
 
-        $this->tripsLogic->shouldReceive('index')->once()->andReturn([]);
+        $this->tripsLogic->shouldReceive('search')->once()->andReturn([]);
 
         $response = $this->call('GET', 'api/trips/');
         $this->assertTrue($response->status() == 200);
@@ -96,7 +96,7 @@ class TripApiTest extends TestCase
         $u1 = factory(STS\User::class)->create();
         $trip = factory(STS\Entities\Trip::class)->create();
         //$this->actingAsApiUser($u1);
-        $this->tripsLogic->shouldReceive('index')->once()->andReturn([]);
+        $this->tripsLogic->shouldReceive('search')->once()->andReturn([]);
 
         $response = $this->call('GET', 'api/trips/');
         $this->assertTrue($response->status() == 200);

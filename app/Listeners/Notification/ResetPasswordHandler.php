@@ -8,8 +8,8 @@ use STS\Contracts\Repository\User as UserRepository;
 
 class ResetPasswordHandler
 {
-
     protected $userRepo;
+
     /**
      * Create the event listener.
      *
@@ -29,7 +29,7 @@ class ResetPasswordHandler
      */
     public function handle(Reset $event)
     {
-        $token = $event->token; 
+        $token = $event->token;
         $user = $this->userRepo->show($event->id);
         if ($user) {
             $notification = new ResetPasswordNotification();

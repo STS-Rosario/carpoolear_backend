@@ -133,7 +133,7 @@ class TripsTest extends TestCase
         $data = [
             'date' => Carbon::now()->toDateString(),
         ];
-        $trips = $tripManager->index($other, $data);
+        $trips = $tripManager->search($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 
@@ -149,7 +149,7 @@ class TripsTest extends TestCase
             'origin_radio' => 10000,
             'date'         => Carbon::now()->toDateString(),
         ];
-        $trips = $tripManager->index($other, $data);
+        $trips = $tripManager->search($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 
@@ -164,7 +164,7 @@ class TripsTest extends TestCase
             'destination_lng'   => -68.834067,
             'destination_radio' => 10000,
         ];
-        $trips = $tripManager->index($other, $data);
+        $trips = $tripManager->search($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 

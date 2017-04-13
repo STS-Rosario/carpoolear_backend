@@ -28,7 +28,7 @@ class UsersManager extends BaseManager implements UserLogic
                 'name'     => 'max:255',
                 'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
-                'gender'   => 'string|in:Masculino,Feminino',
+                'gender'   => 'string|in:Masculino,Femenino',
             ]);
         } else {
             return Validator::make($data, [
@@ -36,6 +36,7 @@ class UsersManager extends BaseManager implements UserLogic
                 'email'    => 'required|email|max:255|unique:users',
                 'password' => 'min:6|confirmed',
                 'gender'   => 'string|in:Masculino,Feminino',
+                'emails_notifications' => 'boolean',
             ]);
         }
     }
@@ -55,6 +56,7 @@ class UsersManager extends BaseManager implements UserLogic
 
             return;
         } else {
+            $data['emails_notifications'] = true;
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
