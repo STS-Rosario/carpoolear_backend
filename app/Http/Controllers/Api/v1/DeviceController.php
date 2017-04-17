@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
-class AuthController extends Controller
+class DeviceController extends Controller
 {
     protected $user;
     protected $userLogic;
@@ -27,9 +27,9 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $this->user = $this->auth->user(); 
+        $user = $this->auth->user(); 
         $data = $request->all();
-        $data['session_id'] = JWTAuth::getToken();
+        $data['session_id'] = JWTAuth::getToken();  
 
         if ($device = $this->deviceLogic->register($user, $data)) {
             return $this->response->withArray(['data' => $device]);
@@ -45,7 +45,7 @@ class AuthController extends Controller
         $data['session_id'] = JWTAuth::getToken();
 
         if ($device = $this->deviceLogic->update($user, $id, $data)) {
-            return $this->response->withArray(['token' => $token]);
+            return $this->response->withArray(['data' => $device]);
         }
 
         throw new BadRequestHttpException('Bad request exceptions', $this->deviceLogic->getErrors()); 
@@ -53,10 +53,16 @@ class AuthController extends Controller
 
     public function delete($id, Request $request)
     {
-        $token = JWTAuth::parseToken()->getToken();
+        //$token = JWTAuth::getToken();
         $user = $this->auth->user();
         $this->deviceLogic->delete($user, $id);
 
         return response()->json('OK');
     } 
+
+    public function index(Request $request)
+    {
+        $user = $this->auth->user();
+        return $this->deviceLogic->getDevices($user);
+    }
 }

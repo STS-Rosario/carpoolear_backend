@@ -64,4 +64,11 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->delete('/{id?}', $v1_path.'CarController@delete');
         $api->get('/{id?}', $v1_path.'CarController@show');
     });
+
+    $api->group(['prefix' => 'devices'], function ($api) use ($v1_path) {
+        $api->get('/', $v1_path.'DeviceController@index');
+        $api->post('/', $v1_path.'DeviceController@register');
+        $api->put('/{id?}', $v1_path.'DeviceController@update');
+        $api->delete('/{id?}', $v1_path.'DeviceController@delete'); 
+    });
 });

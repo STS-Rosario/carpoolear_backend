@@ -6,6 +6,8 @@ use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\Trip as TripLogic;
+use Dingo\Api\Exception\ResourceException;
+use Dingo\Api\Exception\StoreResourceFailedException;
 
 class TripController extends Controller
 {
