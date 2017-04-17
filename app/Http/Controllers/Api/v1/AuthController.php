@@ -45,34 +45,35 @@ class AuthController extends Controller
 
         if (! $user->active) {
             throw new UnauthorizedHttpException('user_not_active');
-        }
-
-        // Registro mi devices
-        if ($request->has('device_id') && $request->has('device_type')) {
-            $data = $request->all();
-            $data['session_id'] = $token;
-            $this->deviceLogic->register($user, $data);
-        }
+        } 
 
         return $this->response->withArray(['token' => $token]);
     }
 
     public function retoken(Request $request)
     {
-        $oldToken = JWTAuth::getToken();
-        if (! $oldToken) {
-            throw new BadRequestHttpException('Token not provided');
-        }
         try {
-            $token = JWTAuth::refresh($oldToken);
-        } catch (TokenInvalidException $e) {
-            throw new AccessDeniedHttpException('The token is invalid');
+            $oldToken = $token = JWTAuth::getToken();
+            $user = JWTAuth::authenticate($token);
+        } catch (TokenExpiredException $e) {
+            try {
+                $oldToken = JWTAuth::getToken();
+                $token = JWTAuth::refresh($oldToken);
+            } catch (JWTException $e) {
+                throw new AccessDeniedHttpException('invalid_token');
+            }
+        } catch (JWTException $e) {
+            throw new AccessDeniedHttpException('invalid_token');
         }
 
         $data = [
             'session_id'  => $token,
-            'app_version' => $request->get('app_version'),
         ];
+
+        if ($request->has('app_version')) {
+            $data['app_version'] = $request->get('app_version');
+        }
+
         $device = $this->deviceLogic->updateBySession($oldToken, $data);
 
         return $this->response->withArray(['token' => $token]);
@@ -80,9 +81,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $token = JWTAuth::parseToken()->getToken();
-        $this->deviceLogic->delete($token);
-
+        JWTAuth::parseToken()->invalidate(); 
         return response()->json('OK');
     }
 
@@ -92,13 +91,8 @@ class AuthController extends Controller
         if (! $user) {
             throw new BadRequestHttpException('user_not_found');
         }
-        $token = JWTAuth::fromUser($user);
-        if ($request->has('device_id') && $request->has('device_type')) {
-            $data = $request->all();
-            $data['session_id'] = $token;
-            $this->deviceLogic->register($user, $data);
-        }
-
+        $token = JWTAuth::fromUser($user); 
+        
         return $this->response->withArray(['token' => $token]);
     }
 
@@ -108,7 +102,7 @@ class AuthController extends Controller
         if ($email) {
             $token = $this->userLogic->resetPassword($email);
             if ($token) {
-                return $this->response->withArray(['status' => 'ok']);
+                return $this->response->withArray(['data' => 'ok']);
             } else {
                 throw new BadRequestHttpException('User not found');
             }
@@ -122,7 +116,7 @@ class AuthController extends Controller
         $data = $request->all();
         $status = $this->userLogic->changePassword($token, $data);
         if ($status) {
-            return $this->response->withArray(['status' => 'ok']);
+            return $this->response->withArray(['data' => 'ok']);
         } else {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }

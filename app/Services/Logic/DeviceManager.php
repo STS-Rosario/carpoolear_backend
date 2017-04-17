@@ -24,17 +24,25 @@ class DeviceManager extends BaseManager implements DeviceLogic
             'device_id'   => 'required|string',
             'device_type' => 'required|string',
             'app_version' => 'required|integer',
+            'notifications' => 'in:1,0,true,false',
         ]);
     }
 
-    public function register(User $user, array $data)
+    public function validateInput(array $data)
     {
         $v = $this->validator($data);
         if ($v->fails()) {
             $this->setErrors($v->errors());
 
             return;
-        } else {
+        }
+
+        return true;
+    }
+
+    public function register(User $user, array $data)
+    {
+        if ($this->validateInput($data)) {
             $device = $this->deviceRepo->getDeviceBy('session_id', $data['session_id']);
             if ($device) {
                 $this->deviceRepo->delete($device);
@@ -46,6 +54,8 @@ class DeviceManager extends BaseManager implements DeviceLogic
             $device->device_type = $data['device_type'];
             $device->app_version = $data['app_version'];
             $device->user_id = $user->id;
+            $device->language = 'es';
+            $device->notifications = true;
             $this->deviceRepo->store($device);
 
             return $device;
@@ -54,30 +64,55 @@ class DeviceManager extends BaseManager implements DeviceLogic
 
     public function updateBySession($session_id, array $data)
     {
-        $v = $this->validator($data);
-        if ($v->fails()) {
-            $this->setErrors($v->errors());
-
-            return;
-        } else {
+        //if ($this->validateInput($data)) {
             $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
-            if ($device) {
-                $device->session_id = $data['session_id'];
-                $device->app_version = $data['app_version'];
-                $device->device_type = $data['device_type'];
-                $device->device_id = $data['device_id'];
-                $this->deviceRepo->update($device);
-            }
+        if ($device) {
+            $device = $this->fillDevice($device, $data);
+            $this->deviceRepo->update($device);
 
             return $device;
         }
+        //}
     }
 
-    public function delete($session_id)
+    public function update($user, $id, array $data)
     {
-        $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
-        if ($device) {
+        if ($this->validateInput($data)) {
+            $device = $this->deviceRepo->getDeviceBy('id', $session_id);
+            if ($device && $device->user_id == $user->id) {
+                $device = $this->fillDevice($device, $data);
+                $this->deviceRepo->update($device);
+
+                return $device;
+            } else {
+                $this->setErrors(['device_not_found']);
+            }
+        }
+    }
+
+    public function fillDevice($device, $data)
+    {
+        $device->session_id = $data['session_id'];
+        $device->app_version = $data['app_version'];
+        $device->device_type = $data['device_type'];
+        $device->device_id = $data['device_id'];
+        $device->notifications = parse_boolean($data['notifications']);
+        // $device->language = 'es';
+
+        return $device;
+    }
+
+    public function delete($session_id, $user)
+    {
+        if (is_int($session_id)) {
+            $device = $this->deviceRepo->getDeviceBy('id', $session_id);
+        } else {
+            $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
+        }
+        if ($device && $user->id != $device->user_id) {
             $this->deviceRepo->delete($device);
+        } else {
+            $this->setErrors(['device_not_found']);
         }
     }
 

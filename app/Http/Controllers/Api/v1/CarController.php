@@ -6,6 +6,8 @@ use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\Car  as CarLogic;
+use Dingo\Api\Exception\ResourceException;
+use Dingo\Api\Exception\StoreResourceFailedException;
 
 class CarController extends Controller
 {

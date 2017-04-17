@@ -130,7 +130,7 @@ class TripRepository implements TripRepo
             $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
         }
 
-        $trips->with(['user', 'points']);
+        $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;

@@ -5,6 +5,7 @@ namespace STS\Services\Logic;
 use STS\User;
 use Validator;
 use STS\Entities\Message;
+use STS\Events\MessageSend;
 use STS\Entities\Conversation;
 use STS\Contracts\Logic\Conversation as ConversationRepo;
 use STS\Contracts\Repository\Messages as MessageRepository;
@@ -154,7 +155,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         }
     }
 
-    public function removeUsertFromConversation(User $user, $conversationId, User $userToDelete)
+    public function removeUserFromConversation(User $user, $conversationId, User $userToDelete)
     {
         //Falta chequear permisos -> User puede agregar
         $conversation = $this->getConversation($user, $conversationId);
@@ -211,9 +212,10 @@ class ConversationsManager extends BaseManager implements ConversationRepo
             if ($conversation) {
                 $newMessage = $this->newMessage($data);
                 $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get();
-                foreach ($otherUsers as $user) {
-                    $this->messageRepository->createMessageReadState($newMessage, $user, false);
-                    $this->conversationRepository->changeConversationReadState($conversation, $user, false);
+                foreach ($otherUsers as $to) {
+                    event(new MessageSend($user, $to, $newMessage));
+                    $this->messageRepository->createMessageReadState($newMessage, $to, false);
+                    $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
 
                 return $newMessage;

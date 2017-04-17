@@ -94,7 +94,7 @@ class ConversationController extends Controller
     public function deleteUser(Request $request, $id, $userId)
     {
         $userToDelete = $this->users->find($userId);
-        $ret = $this->conversationLogic->removeUsertFromConversation($this->user, $id, $userToDelete);
+        $ret = $this->conversationLogic->removeUserFromConversation($this->user, $id, $userToDelete);
         if ($ret) {
             return response()->json('OK');
         } else {

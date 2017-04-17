@@ -83,4 +83,11 @@ class ConversationRepository implements ConversationRepo
     {
         $conversation->users()->updateExistingPivot($user->id, ['read' => $read_state]);
     }
+
+    public function getConversationReadState(Conversation $conversation, User $user)
+    {
+        $u = $conversation->users()->where('id', $user->id)->first();
+
+        return $u->pivot->read;
+    }
 }
