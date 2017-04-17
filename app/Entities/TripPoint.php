@@ -11,7 +11,9 @@ class TripPoint extends Model
         'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id',
     ];
 
-    protected $hidden = [];
+    protected $hidden = [
+        'created_at', 'updated_at', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng',
+    ];
     protected $casts = [
         'json_address' => 'array',
     ];

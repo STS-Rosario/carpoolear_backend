@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use Dingo\Api\Exception\StoreResourceFailedException;
 use STS\Contracts\Logic\INotification as NotificationLogic;
 
 class NotificationController extends Controller

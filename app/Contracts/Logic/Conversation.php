@@ -24,7 +24,7 @@ interface Conversation
 
     public function addUserToConversation(UserModel $user, $conversationId, $users);
 
-    public function removeUsertFromConversation(UserModel $user, $conversationId, UserModel $userToDelete);
+    public function removeUserFromConversation(UserModel $user, $conversationId, UserModel $userToDelete);
 
     public function delete($conversationId);
 

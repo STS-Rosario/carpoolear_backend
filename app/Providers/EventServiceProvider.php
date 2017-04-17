@@ -39,6 +39,7 @@ class EventServiceProvider extends ServiceProvider
 
         'STS\Events\Notification\NotificationSending' => [
             'STS\Listeners\Notification\CanSendEmail',
+            'STS\Listeners\Notification\PreventMessageEmail',
         ],
 
         'STS\Events\Passenger\Request' => [
@@ -56,6 +57,10 @@ class EventServiceProvider extends ServiceProvider
 
         'STS\Events\Rating\PendingRate' => [
             'STS\Listeners\Notification\PendingRate',
+        ],
+
+        'STS\Events\MessageSend' => [
+            'STS\Listeners\Notification\MessageSend',
         ],
     ];
 

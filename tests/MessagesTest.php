@@ -65,7 +65,7 @@ class MessagesTest extends TestCase
         $isUser3 = $conversation->users()->where('id', $user3->id)->count();
         $this->assertTrue($isUser3 == 0);
 
-        $value = $this->conversationManager->removeUsertFromConversation($user2, $conversation->id, $user1);
+        $value = $this->conversationManager->removeUserFromConversation($user2, $conversation->id, $user1);
         $isUser1 = $conversation->users()->where('id', $user1->id)->count();
         $this->assertTrue($isUser1 == 0);
 

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Devices as DeviceLogic;
+use Dingo\Api\Exception\StoreResourceFailedException;
 
 class SocialController extends Controller
 {
