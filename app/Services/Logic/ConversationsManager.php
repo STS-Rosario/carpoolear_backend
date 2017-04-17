@@ -155,7 +155,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         }
     }
 
-    public function removeUsertFromConversation(User $user, $conversationId, User $userToDelete)
+    public function removeUserFromConversation(User $user, $conversationId, User $userToDelete)
     {
         //Falta chequear permisos -> User puede agregar
         $conversation = $this->getConversation($user, $conversationId);
