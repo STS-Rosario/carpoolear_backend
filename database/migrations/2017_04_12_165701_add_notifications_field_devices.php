@@ -13,7 +13,7 @@ class AddNotificationsFieldDevices extends Migration
     public function up()
     {
         Schema::table('users_devices', function (Blueprint $table) {
-            $table->boolean("notifications");
+            $table->boolean('notifications');
             $table->string('language');
         });
     }

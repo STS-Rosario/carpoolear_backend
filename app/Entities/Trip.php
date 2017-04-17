@@ -43,7 +43,7 @@ class Trip extends Model
         'mail_send',
         'return_trip_id',
         'enc_path',
-        'car_id'
+        'car_id',
     ];
 
     protected $hidden = [
@@ -60,7 +60,7 @@ class Trip extends Model
     ];
 
     protected $dates = [
-        'deleted_at', 'trip_date'
+        'deleted_at', 'trip_date',
     ];
 
     public function user()

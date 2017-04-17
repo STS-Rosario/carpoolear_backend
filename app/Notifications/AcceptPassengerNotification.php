@@ -5,7 +5,6 @@ namespace STS\Notifications;
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
 
 class AcceptPassengerNotification extends BaseNotification
 {

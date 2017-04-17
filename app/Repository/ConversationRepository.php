@@ -87,6 +87,7 @@ class ConversationRepository implements ConversationRepo
     public function getConversationReadState(Conversation $conversation, User $user)
     {
         $u = $conversation->users()->where('id', $user->id)->first();
+
         return $u->pivot->read;
     }
 }

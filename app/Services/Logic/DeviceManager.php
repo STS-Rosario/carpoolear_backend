@@ -24,11 +24,11 @@ class DeviceManager extends BaseManager implements DeviceLogic
             'device_id'   => 'required|string',
             'device_type' => 'required|string',
             'app_version' => 'required|integer',
-            'notifications' => 'in:1,0,true,false'
+            'notifications' => 'in:1,0,true,false',
         ]);
     }
 
-    public function validateInput(array $data) 
+    public function validateInput(array $data)
     {
         $v = $this->validator($data);
         if ($v->fails()) {
@@ -36,6 +36,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
 
             return;
         }
+
         return true;
     }
 
@@ -63,29 +64,30 @@ class DeviceManager extends BaseManager implements DeviceLogic
 
     public function updateBySession($session_id, array $data)
     {
-        //if ($this->validateInput($data)) { 
-            $device = $this->deviceRepo->getDeviceBy('session_id', $session_id); 
-            if ($device) {
-                $device = $this->fillDevice($device, $data);
-                $this->deviceRepo->update($device);
+        //if ($this->validateInput($data)) {
+            $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
+        if ($device) {
+            $device = $this->fillDevice($device, $data);
+            $this->deviceRepo->update($device);
 
-                return $device;
-            } 
-        //} 
+            return $device;
+        }
+        //}
     }
 
     public function update($user, $id, array $data)
     {
-        if ($this->validateInput($data)) {  
-            $device = $this->deviceRepo->getDeviceBy('id', $session_id); 
+        if ($this->validateInput($data)) {
+            $device = $this->deviceRepo->getDeviceBy('id', $session_id);
             if ($device && $device->user_id == $user->id) {
                 $device = $this->fillDevice($device, $data);
                 $this->deviceRepo->update($device);
+
                 return $device;
             } else {
-                $this->setErrors(["device_not_found"]);
+                $this->setErrors(['device_not_found']);
             }
-        } 
+        }
     }
 
     public function fillDevice($device, $data)
@@ -110,7 +112,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
         if ($device && $user->id != $device->user_id) {
             $this->deviceRepo->delete($device);
         } else {
-            $this->setErrors(["device_not_found"]);
+            $this->setErrors(['device_not_found']);
         }
     }
 
