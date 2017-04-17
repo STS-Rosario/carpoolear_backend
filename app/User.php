@@ -31,6 +31,7 @@ class User extends Authenticatable
         'image',
         'active',
         'activation_token',
+        'emails_notifications',
     ];
     protected $hidden = ['password', 'remember_token'];
     protected $cast = [
@@ -111,11 +112,11 @@ class User extends Authenticatable
         return $trips;
     }
 
-    public function conversations() 
+    public function conversations()
     {
-        return $this->belongsToMany('STS\Entities\Conversation','conversations_users', 'user_id','conversation_id')->withPivot('read');
+        return $this->belongsToMany('STS\Entities\Conversation', 'conversations_users', 'user_id', 'conversation_id')->withPivot('read');
     }
-    
+
     public function tripsAsPassenger($state = null)
     {
         $user_id = $this->id;

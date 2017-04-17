@@ -2,94 +2,196 @@
 
 namespace STS\Services\Logic;
 
-use STS\User as UserModel;
-use STS\Entities\Passenger;
-use STS\Entities\Trip as TripModel;
-use STS\Repository\PassengerRepository;
+use Validator;
+use STS\Contracts\Logic\IPassengersLogic;
+use STS\Contracts\Logic\Trip as TripLogic;
+use STS\Events\Passenger\Accept as AcceptEvent;
+use STS\Events\Passenger\Cancel as CancelEvent;
+use STS\Events\Passenger\Reject as RejectEvent;
+use STS\Events\Passenger\Request as RequestEvent;
+use STS\Contracts\Repository\IPassengersRepository;
 
-class PassengersManager
+class PassengersManager extends BaseManager implements IPassengersLogic
 {
-    protected $passengerRepo;
+    protected $passengerRepository;
+    protected $tripLogic;
 
-    public function __construct()
+    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic)
     {
-        $this->passengerRepo = new PassengerRepository();
+        $this->passengerRepository = $passengerRepository;
+        $this->tripLogic = $tripLogic;
     }
 
-    public function add($user, $trip)
+    public function getPassengers($tripId, $user, $data)
     {
-        $p = new Passenger();
-        $p->user_id = $user->id;
-        $p->passenger_type = Passenger::TYPE_PASAJERO;
-        $p->request_state = Passenger::STATE_PENDIENTE;
+        if (! $this->tripLogic->tripOwner($user, $tripId) || $this->isUserRequestAccepted($tripId, $user->id)) {
+            $this->setErrors(['error' => 'access_denied']);
 
-        return $trip->passenger()->save($p);
+            return;
+        }
+
+        return $this->passengerRepository->getPassengers($tripId, $user, $data);
     }
 
-    public function remove($user, $trip)
+    public function getPendingRequests($tripId, $user, $data)
     {
-        return $trip->passenger()->whereUserId($user->id)->delete();
-    }
+        if ($tripId) {
+            if (! $this->tripLogic->tripOwner($user, $tripId)) {
+                $this->setErrors(['error' => 'access_denied']);
 
-    public function find($user, $trip)
-    {
-        return $trip->passenger()->whereUserId($user->id)->first();
-    }
-
-    public function rideUp($user, $trip)
-    {
-        if ($trip->disponibles() > 0) {
-            $p = $this->find($user, $trip);
-            if ($p && $p->request_state == Passenger::STATE_RECHAZADO) {
-                $p->request_state = Passenger::STATE_PENDIENTE;
-
-                return $p->save();
-            } elseif (is_null($p)) {
-                return $this->add($user, $trip);
+                return;
             }
         }
+
+        return $this->passengerRepository->getPendingRequests($tripId, $user, $data);
     }
 
-    public function rideDown($user, $trip)
+    private function validateInput($input)
     {
-        $p = $this->find($user, $trip);
-        if ($p && $p->request_state == Passenger::STATE_ACEPTADO) {
-            $p->delete();
+        return Validator::make($input, [
+            'user_id' => 'required|numeric',
+            'trip_id' => 'required|numeric',
+        ]);
+    }
 
-            return true;
+    private function isInputValid($input)
+    {
+        $validation = $this->validateInput($input);
+
+        if ($result = $validation->fails()) {
+            $this->setErrors($validation->errors());
+        }
+
+        return true;
+    }
+
+    public function newRequest($tripId, $user, $data = [])
+    {
+        $userId = $user->id;
+
+        $input = [
+            'trip_id' => $tripId,
+            'user_id' => $userId,
+        ];
+
+        if (! $this->isInputValid($input)) {
+            return;
+        }
+
+        if ($trip = $this->tripLogic->show($user, $tripId)) {
+            if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
+                event(new RequestEvent($tripId, $user->id, $trip->user_id));
+            }
+
+            return $result;
+        } else {
+            $this->setErrors(['error' => 'access_denied']);
+
+            return;
         }
     }
 
-    public function confirm($user, $trip, $who)
+    public function cancelRequest($tripId, $cancelUserId, $user, $data = [])
     {
-        if ($trip->user->id == $user->id) {
-            $p = $this->find($who, $trip);
-            if ($p && $p->request_state == Passenger::STATE_PENDIENTE) {
-                if ($trip->disponibles() > 0) {
-                    $p->request_state = Passenger::STATE_ACEPTADO;
+        $userId = $user->id;
 
-                    return $p->save();
+        $input = [
+            'trip_id' => $tripId,
+            'user_id' => $user->id,
+        ];
+
+        if (! $this->isInputValid($input)) {
+            return;
+        }
+
+        $trip = $this->tripLogic->show($user, $tripId);
+
+        if (($this->isUserRequestPending($tripId, $userId) && $cancelUserId == $user->id)
+            || $this->isUserRequestAccepted($tripId, $userId)) {
+            if ($result = $this->passengerRepository->cancelRequest($tripId, $user, $data)) {
+                if ($trip->user_id == $user->id) {
+                    event(new CancelEvent($tripId, $user->id, $cancelUserId));
                 } else {
-                    return 'No hay más espacio disponible';
+                    event(new CancelEvent($tripId, $cancelUserId, $trip->user_id));
                 }
             }
+
+            return $result;
+        } else {
+            $this->setErrors(['error' => 'not_a_passenger']);
+
+            return;
         }
     }
 
-    public function reject($user, $trip, $who)
+    public function acceptRequest($tripId, $acceptedUserId, $user, $data = [])
     {
-        if ($trip->user->id == $user->id) {
-            $p = $this->find($user, $trip);
-            if ($p && $p->request_state == Passenger::STATE_PENDIENTE) {
-                $p->request_state = Passenger::STATE_RECHAZADO;
+        $input = [
+            'trip_id' => $tripId,
+            'user_id' => $acceptedUserId,
+        ];
 
-                return $p->save();
+        if (! $this->isInputValid($input)) {
+            return;
+        }
+
+        $trip = $this->tripLogic->show($user, $tripId);
+        if ($this->isUserRequestPending($tripId, $acceptedUserId) && $this->tripLogic->tripOwner($user, $trip)) {
+            if ($trip->seats_available == 0) {
+                $this->setErrors(['error' => 'not_seat_available']);
+
+                return;
             }
+
+            if ($result = $this->passengerRepository->acceptRequest($tripId, $acceptedUserId, $user, $data)) {
+                event(new AcceptEvent($tripId, $trip->user_id, $user->id));
+            }
+
+            return $result;
+        } else {
+            $this->setErrors(['error' => 'not_valid_request']);
+
+            return;
         }
     }
 
-    public function userIsOnTrip(TripModel $trip, UserModel $user)
+    public function rejectRequest($tripId, $rejectedUserId, $user, $data = [])
     {
-        return true; //stub function
+        $input = [
+            'trip_id' => $tripId,
+            'user_id' => $rejectedUserId,
+        ];
+
+        if (! $this->isInputValid($input)) {
+            return;
+        }
+
+        $trip = $this->tripLogic->show($user, $tripId);
+        if (! $this->isUserRequestPending($tripId, $rejectedUserId) || ! $this->tripLogic->tripOwner($user, $trip)) {
+            $this->setErrors(['error' => 'not_valid_request']);
+
+            return;
+        }
+
+        if ($result = $this->passengerRepository->rejectRequest($tripId, $rejectedUserId, $user, $data)) {
+            event(new RejectEvent($tripId, $trip->user_id, $user->id));
+        }
+
+        return $result;
+    }
+
+    public function isUserRequestAccepted($tripId, $userId)
+    {
+        return $this->passengerRepository->isUserRequestAccepted($tripId, $userId);
+    }
+
+    public function isUserRequestRejected($tripId, $userId)
+    {
+        return $this->passengerRepository->isUserRequestRejected($tripId, $userId);
+    }
+
+    public function isUserRequestPending($tripId, $userId)
+    {
+        return $this->passengerRepository->isUserRequestPending($tripId, $userId);
     }
 }

@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Friends as FriendsLogic;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class FriendsController extends Controller
 {
@@ -32,7 +31,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function accept(Request $request, $id)
@@ -44,7 +43,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function delete(Request $request, $id)
@@ -56,7 +55,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function reject(Request $request, $id)
@@ -68,7 +67,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function index(Request $request)

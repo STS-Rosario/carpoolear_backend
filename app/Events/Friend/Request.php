@@ -9,8 +9,8 @@ class Request extends Event
 {
     use SerializesModels;
 
-    protected $from;
-    protected $to;
+    public $from;
+    public $to;
 
     /**
      * Create a new event instance.

@@ -3,14 +3,14 @@
 return [
 
     'ios'     => [
-        'environment' => 'development',
-        'certificate' => '/path/to/certificate.pem',
-        'passPhrase'  => 'password',
+        'environment' => env('IOS_ENVIRONMENT', ''),
+        'certificate' => env('IOS_CERTIFICATE', ''),
+        'passPhrase'  => env('IOS_PASSPHRASE', ''),
         'service'     => 'apns',
     ],
     'android' => [
-        'environment' => 'production',
-        'apiKey'      => 'yourAPIKey',
+        'environment' => env('ANDROID_ENVIRONMENT', ''),
+        'apiKey'      => env('ANDROID_KEY', ''),
         'service'     => 'gcm',
     ],
 
