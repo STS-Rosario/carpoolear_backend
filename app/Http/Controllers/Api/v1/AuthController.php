@@ -45,16 +45,7 @@ class AuthController extends Controller
 
         if (! $user->active) {
             throw new UnauthorizedHttpException('user_not_active');
-        }
-
-        // Registro mi devices
-        /*
-        if ($request->has('device_id') && $request->has('device_type')) {
-            $data = $request->all();
-            $data['session_id'] = $token;
-            $this->deviceLogic->register($user, $data);
-        }
-        */
+        } 
 
         return $this->response->withArray(['token' => $token]);
     }
@@ -77,8 +68,11 @@ class AuthController extends Controller
 
         $data = [
             'session_id'  => $token,
-            'app_version' => $request->get('app_version'),
         ];
+
+        if ($request->has('app_version')) {
+            $data['app_version'] = $request->get('app_version');
+        }
 
         $device = $this->deviceLogic->updateBySession($oldToken, $data);
 
@@ -87,8 +81,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        JWTAuth::parseToken()->invalidate();
-        //$this->deviceLogic->delete($token);
+        JWTAuth::parseToken()->invalidate(); 
         return response()->json('OK');
     }
 
@@ -98,14 +91,8 @@ class AuthController extends Controller
         if (! $user) {
             throw new BadRequestHttpException('user_not_found');
         }
-        $token = JWTAuth::fromUser($user);
-        /*
-        if ($request->has('device_id') && $request->has('device_type')) {
-            $data = $request->all();
-            $data['session_id'] = $token;
-            $this->deviceLogic->register($user, $data);
-        }
-        */
+        $token = JWTAuth::fromUser($user); 
+        
         return $this->response->withArray(['token' => $token]);
     }
 
