@@ -62,8 +62,8 @@ class AuthController extends Controller
     public function retoken(Request $request)
     {
         try {
-            $user = JWTAuth::parseToken()->authenticate();
             $oldToken = $token = JWTAuth::getToken();
+            $user = JWTAuth::authenticate($token); 
         } catch (TokenExpiredException $e) {
             try {
                 $oldToken = JWTAuth::getToken();
@@ -80,8 +80,7 @@ class AuthController extends Controller
             'app_version' => $request->get('app_version'),
         ];
 
-        $device = $this->deviceLogic->updateBySession($oldToken, $data);
-        
+        $device = $this->deviceLogic->updateBySession($oldToken, $data); 
         return $this->response->withArray(['token' => $token]);
     }
 

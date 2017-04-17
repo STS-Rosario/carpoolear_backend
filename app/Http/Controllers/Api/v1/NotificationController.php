@@ -8,6 +8,7 @@ use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\INotification as NotificationLogic;
 use Dingo\Api\Exception\ResourceException;
 use Dingo\Api\Exception\StoreResourceFailedException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class NotificationController extends Controller
 {

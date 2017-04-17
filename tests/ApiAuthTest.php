@@ -54,8 +54,10 @@ class ApiAuthTest extends TestCase
         $this->assertTrue($json->token != null);
     }
 
+    
     public function testRetoken()
     {
+
         $user = factory(STS\User::class)->create();
         $data = [
             'email'       => $user->email,
@@ -68,13 +70,22 @@ class ApiAuthTest extends TestCase
         $json = $this->parseJson($response);
         $token = $json->token;
 
-        $response = $this->call('POST', 'api/retoken?token='.$json->token);
+        $deviceLogic = $this->mock('STS\Contracts\Logic\Devices');
+        //$deviceLogic->shouldReceive('updateBySession')->once()->andReturn(true);
+
+        JWTAuth::shouldReceive('getToken')->once()->andReturn("asdfhasd");
+        JWTAuth::shouldReceive('authenticate')->once()->andReturn($user);
+
+        $response = $this->call('POST', 'api/retoken?token='.$json->token); 
         $this->assertTrue($response->status() == 200);
 
         $json = $this->parseJson($response);
         $this->assertTrue($json->token != null);
         //$this->assertTrue($json->token != $token);
+
+        m::close();
     }
+    
 
     public function testUpdateProfile()
     {

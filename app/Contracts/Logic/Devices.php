@@ -12,7 +12,7 @@ interface Devices
 
     public function update($user, $id, array $data);
 
-    public function delete($token);
+    public function delete($user, $token);
 
     public function getDevices(UserModel $user);
 

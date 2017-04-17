@@ -43,6 +43,7 @@ class Trip extends Model
         'mail_send',
         'return_trip_id',
         'enc_path',
+        'car_id'
     ];
 
     protected $hidden = [
@@ -59,12 +60,17 @@ class Trip extends Model
     ];
 
     protected $dates = [
-        'deleted_at',
+        'deleted_at', 'trip_date'
     ];
 
     public function user()
     {
         return $this->belongsTo('STS\User', 'user_id');
+    }
+
+    public function car()
+    {
+        return $this->belongsTo('STS\Entities\Car', 'car_id');
     }
 
     public function passenger()

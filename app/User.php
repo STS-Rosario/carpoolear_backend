@@ -4,6 +4,7 @@ namespace STS;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use STS\Services\Notifications\Models\DatabaseNotification;
+use STS\Entities\Rating as RatingModel; 
 
 class User extends Authenticatable
 {
@@ -33,12 +34,17 @@ class User extends Authenticatable
         'activation_token',
         'emails_notifications',
     ];
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'terms_and_conditions'];
+
     protected $cast = [
         'banned'               => 'boolean',
         'terms_and_conditions' => 'boolean',
         'active'               => 'boolean',
         'is_admin'             => 'boolean',
+    ];
+
+    protected $appends = [
+        'positive_ratings', 'negative_ratings',
     ];
 
     public function accounts()
@@ -131,5 +137,35 @@ class User extends Authenticatable
         }
 
         return $trips;
+    }
+
+    public function ratingGiven()
+    {
+        return $this->hasMany('STS\Entities\Rating', 'user_id_from');
+    }
+
+    public function ratingReceived()
+    {
+        return $this->hasMany('STS\Entities\Rating', 'user_id_to');
+    }
+
+
+    public function ratings($value = null) 
+    {
+        $recived = $this->ratingReceived();
+        if ($value) {
+            $recived->where('rating', $value);
+        }
+        return $recived;
+    }
+
+    public function getPositiveRatingsAttribute()
+    {
+        return $this->ratings(RatingModel::STATE_POSITIVO)->count(); 
+    }
+
+    public function getNegativeRatingsAttribute()
+    {
+        return $this->ratings(RatingModel::STATE_NEGATIVO)->count(); 
     }
 }
