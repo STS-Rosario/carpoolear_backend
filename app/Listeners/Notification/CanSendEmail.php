@@ -3,7 +3,9 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Notification\NotificationSending;
-use  STS\Services\Notifications\Channels\MailChannel;
+use  STS\Services\Notifications\Channels\MailChannel; 
+use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\PushChannel;
 
 class CanSendEmail
 {

@@ -9,6 +9,7 @@ use STS\Entities\Conversation;
 use STS\Contracts\Logic\Conversation as ConversationRepo;
 use STS\Contracts\Repository\Messages as MessageRepository;
 use STS\Contracts\Repository\Conversations as ConversationRepository;
+use STS\Events\MessageSend;
 
 class ConversationsManager extends BaseManager implements ConversationRepo
 {
@@ -206,14 +207,15 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         'conversation_id' => $conversationId,
         ];
         $validator = $this->validator($data);
-        if (! $validator->fails()) {
+        if (! $validator->fails()) { 
             $conversation = $this->getConversation($user, $conversationId);
             if ($conversation) {
                 $newMessage = $this->newMessage($data);
                 $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get();
-                foreach ($otherUsers as $user) {
-                    $this->messageRepository->createMessageReadState($newMessage, $user, false);
-                    $this->conversationRepository->changeConversationReadState($conversation, $user, false);
+                foreach ($otherUsers as $to) {
+                    event(new MessageSend($user, $to, $newMessage));
+                    $this->messageRepository->createMessageReadState($newMessage, $to, false);
+                    $this->conversationRepository->changeConversationReadState($conversation, $to, false); 
                 }
 
                 return $newMessage;
