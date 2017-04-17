@@ -5,10 +5,8 @@ namespace STS\Http\Controllers\Api\v1;
 use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Contracts\Logic\INotification as NotificationLogic;
-use Dingo\Api\Exception\ResourceException;
 use Dingo\Api\Exception\StoreResourceFailedException;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use STS\Contracts\Logic\INotification as NotificationLogic;
 
 class NotificationController extends Controller
 {

@@ -2,9 +2,9 @@
 
 namespace STS;
 
+use STS\Entities\Rating as RatingModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use STS\Services\Notifications\Models\DatabaseNotification;
-use STS\Entities\Rating as RatingModel; 
 
 class User extends Authenticatable
 {
@@ -149,23 +149,23 @@ class User extends Authenticatable
         return $this->hasMany('STS\Entities\Rating', 'user_id_to');
     }
 
-
-    public function ratings($value = null) 
+    public function ratings($value = null)
     {
         $recived = $this->ratingReceived();
         if ($value) {
             $recived->where('rating', $value);
         }
+
         return $recived;
     }
 
     public function getPositiveRatingsAttribute()
     {
-        return $this->ratings(RatingModel::STATE_POSITIVO)->count(); 
+        return $this->ratings(RatingModel::STATE_POSITIVO)->count();
     }
 
     public function getNegativeRatingsAttribute()
     {
-        return $this->ratings(RatingModel::STATE_NEGATIVO)->count(); 
+        return $this->ratings(RatingModel::STATE_NEGATIVO)->count();
     }
 }

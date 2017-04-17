@@ -1,7 +1,7 @@
 <?php
 
 use Mockery as m;
-use Illuminate\Foundation\Testing\DatabaseTransactions; 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class DeviceApiTest extends TestCase
 {
@@ -16,7 +16,7 @@ class DeviceApiTest extends TestCase
     public function setUp()
     {
         parent::setUp();
-        $this->deviceLogic = $this->mock('STS\Contracts\Logic\Devices');  
+        $this->deviceLogic = $this->mock('STS\Contracts\Logic\Devices');
     }
 
     public function tearDown()
@@ -31,49 +31,47 @@ class DeviceApiTest extends TestCase
 
     public function testRegister()
     {
-        $u1 = factory(STS\User::class)->create(); 
+        $u1 = factory(STS\User::class)->create();
         $this->actingAsApiUser($u1);
- 
-        JWTAuth::shouldReceive('getToken')->once()->andReturn("asdfhasd");
+
+        JWTAuth::shouldReceive('getToken')->once()->andReturn('asdfhasd');
         $this->deviceLogic->shouldReceive('register')->once()->andReturn(['id' => 1]);
 
-        $response = $this->call('POST', 'api/devices/'); 
+        $response = $this->call('POST', 'api/devices/');
         $this->assertTrue($response->status() == 200);
     }
 
     public function testUpdate()
     {
-        $u1 = factory(STS\User::class)->create(); 
+        $u1 = factory(STS\User::class)->create();
         $this->actingAsApiUser($u1);
- 
-        JWTAuth::shouldReceive('getToken')->once()->andReturn("asdfhasd");
+
+        JWTAuth::shouldReceive('getToken')->once()->andReturn('asdfhasd');
         $this->deviceLogic->shouldReceive('update')->once()->andReturn(['id' => 1]);
 
-        $response = $this->call('PUT', 'api/devices/1'); 
+        $response = $this->call('PUT', 'api/devices/1');
         $this->assertTrue($response->status() == 200);
     }
 
     public function testDelete()
     {
-        $u1 = factory(STS\User::class)->create(); 
-        $this->actingAsApiUser($u1); 
+        $u1 = factory(STS\User::class)->create();
+        $this->actingAsApiUser($u1);
 
         $this->deviceLogic->shouldReceive('delete')->once()->andReturn(true);
 
-        $response = $this->call('DELETE', 'api/devices/1'); 
+        $response = $this->call('DELETE', 'api/devices/1');
         $this->assertTrue($response->status() == 200);
     }
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create(); 
-        $this->actingAsApiUser($u1); 
+        $u1 = factory(STS\User::class)->create();
+        $this->actingAsApiUser($u1);
 
         $this->deviceLogic->shouldReceive('getDevices')->with($u1)->once()->andReturn([]);
 
-        $response = $this->call('GET', 'api/devices'); 
+        $response = $this->call('GET', 'api/devices');
         $this->assertTrue($response->status() == 200);
     }
-
-     
 }

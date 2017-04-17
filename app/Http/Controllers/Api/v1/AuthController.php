@@ -63,7 +63,7 @@ class AuthController extends Controller
     {
         try {
             $oldToken = $token = JWTAuth::getToken();
-            $user = JWTAuth::authenticate($token); 
+            $user = JWTAuth::authenticate($token);
         } catch (TokenExpiredException $e) {
             try {
                 $oldToken = JWTAuth::getToken();
@@ -74,13 +74,14 @@ class AuthController extends Controller
         } catch (JWTException $e) {
             throw new AccessDeniedHttpException('invalid_token');
         }
-        
+
         $data = [
             'session_id'  => $token,
             'app_version' => $request->get('app_version'),
         ];
 
-        $device = $this->deviceLogic->updateBySession($oldToken, $data); 
+        $device = $this->deviceLogic->updateBySession($oldToken, $data);
+
         return $this->response->withArray(['token' => $token]);
     }
 

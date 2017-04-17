@@ -7,7 +7,7 @@ use STS\Http\Controllers\Controller;
 use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
-use Dingo\Api\Exception\UpdateResourceFailedException; 
+use Dingo\Api\Exception\UpdateResourceFailedException;
 
 class UserController extends Controller
 {

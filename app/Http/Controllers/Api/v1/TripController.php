@@ -5,11 +5,10 @@ namespace STS\Http\Controllers\Api\v1;
 use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Contracts\Logic\Trip as TripLogic;
-use Dingo\Api\Exception\ResourceException;
-use Dingo\Api\Exception\StoreResourceFailedException;
 use STS\Transformers\TripTransformer;
-
+use Dingo\Api\Exception\ResourceException;
+use STS\Contracts\Logic\Trip as TripLogic;
+use Dingo\Api\Exception\StoreResourceFailedException;
 
 class TripController extends Controller
 {
@@ -79,7 +78,7 @@ class TripController extends Controller
             $data['page_size'] = 20;
         }
         $this->user = $this->auth->user();
-        
+
         $trips = $this->tripsLogic->search($this->user, $data);
 
         return $this->response->paginator($trips, new TripTransformer($this->user));

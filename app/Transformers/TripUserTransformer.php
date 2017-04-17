@@ -9,9 +9,9 @@ class TripUserTransformer extends TransformerAbstract
 {
     protected $user;
 
-    public function __construct ($user) 
+    public function __construct($user)
     {
-        $this->user = $user; 
+        $this->user = $user;
     }
 
     /**
@@ -21,14 +21,14 @@ class TripUserTransformer extends TransformerAbstract
      */
     public function transform(User $user)
     {
-        $data =  [
+        $data = [
             'id' => $user->id,
             'name' => $user->name,
             //'email' => $user->email,
-            'descripcion' => $user->descripcion, 
+            'descripcion' => $user->descripcion,
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
-            'negative_ratings' => $user->negative_ratings
+            'negative_ratings' => $user->negative_ratings,
         ];
 
         return $data;

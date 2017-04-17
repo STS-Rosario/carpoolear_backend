@@ -8,18 +8,18 @@ class Device extends Model
 {
     protected $table = 'users_devices';
     protected $fillable = [
-        'device_id', 
-        'device_type', 
-        'session_id', 
-        'user_id', 
+        'device_id',
+        'device_type',
+        'session_id',
+        'user_id',
         'app_version',
-        'notifications'
+        'notifications',
     ];
 
     protected $hidden = [];
 
     protected $cast = [
-        'notifications' => 'boolean'
+        'notifications' => 'boolean',
     ];
 
     public function user()

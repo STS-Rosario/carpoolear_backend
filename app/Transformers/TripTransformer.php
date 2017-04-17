@@ -9,9 +9,9 @@ class TripTransformer extends TransformerAbstract
 {
     protected $user;
 
-    public function __construct ($user) 
+    public function __construct($user)
     {
-        $this->user = $user; 
+        $this->user = $user;
     }
 
     /**
@@ -21,7 +21,7 @@ class TripTransformer extends TransformerAbstract
      */
     public function transform(Trip $trip)
     {
-        $data =  [
+        $data = [
             'id' => $trip->id,
             'from_town' => $trip->from_town,
             'to_town' => $trip->to_town,
@@ -35,18 +35,17 @@ class TripTransformer extends TransformerAbstract
             'passenger_count' => $trip->passenger_count,
             'seats_available' => $trip->seats_available,
             'points' => $trip->points,
-            'updated_at' => $trip->updated_at->toDateTimeString()
+            'updated_at' => $trip->updated_at->toDateTimeString(),
         ];
- 
+
         if ($this->user) {
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
-            if ( $trip->passengerAccepted->where('user_id', $this->user->id) || $trip->user_id == $this->user->id ) {
+            if ($trip->passengerAccepted->where('user_id', $this->user->id) || $trip->user_id == $this->user->id) {
                 $data['passenger'] = [];
-                foreach($trip->passengerAccepted as $passenger) {
+                foreach ($trip->passengerAccepted as $passenger) {
                     $data['passenger'][] = $userTranforms->transform($passenger->user);
                 }
-                
             }
         }
 

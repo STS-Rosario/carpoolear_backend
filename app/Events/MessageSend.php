@@ -2,9 +2,7 @@
 
 namespace STS\Events;
 
-use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class MessageSend extends Event
 {
@@ -23,10 +21,9 @@ class MessageSend extends Event
      */
     public function __construct($from, $to, $message)
     {
-        
-        $this->from    = $from;
-        $this->to      = $to;
-        $this->message = $message; 
+        $this->from = $from;
+        $this->to = $to;
+        $this->message = $message;
     }
 
     /**
