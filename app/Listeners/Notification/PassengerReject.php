@@ -5,8 +5,6 @@ namespace STS\Listeners\Notification;
 use STS\Events\Passenger\Reject;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\RejectPassengerNotification;
-use STS\Contracts\Repository\Trip as TripRepository;
-use STS\Contracts\Repository\User as UserRepository;
 
 class PassengerReject implements ShouldQueue
 {

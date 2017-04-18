@@ -5,8 +5,6 @@ namespace STS\Listeners\Notification;
 use STS\Events\Passenger\Accept;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\AcceptPassengerNotification;
-use STS\Contracts\Repository\Trip as TripRepository;
-use STS\Contracts\Repository\User as UserRepository;
 
 class PassengerAccept implements ShouldQueue
 {
@@ -19,7 +17,7 @@ class PassengerAccept implements ShouldQueue
      * @return void
      */
     public function __construct()
-    { 
+    {
         //
     }
 

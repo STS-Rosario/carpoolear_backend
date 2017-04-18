@@ -3,8 +3,6 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Passenger\Accept;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Repository\Conversations as ConversationRepo;
 
 class addUserConversation
@@ -31,8 +29,7 @@ class addUserConversation
     {
         $converstion = $event->trip->conversation;
         if ($converstion) {
-            $this->conversationRepo->addUser($converstion, $event->to);  
+            $this->conversationRepo->addUser($converstion, $event->to);
         }
-
     }
 }

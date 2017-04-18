@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Devices as DeviceLogic;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
 
@@ -26,9 +25,9 @@ class DeviceController extends Controller
 
     public function register(Request $request)
     {
-        $user = $this->auth->user(); 
-        $data = $request->all();  
-        $data['session_id'] = JWTAuth::getToken()->get(); 
+        $user = $this->auth->user();
+        $data = $request->all();
+        $data['session_id'] = JWTAuth::getToken()->get();
 
         if ($device = $this->deviceLogic->register($user, $data)) {
             return $this->response->withArray(['data' => $device]);

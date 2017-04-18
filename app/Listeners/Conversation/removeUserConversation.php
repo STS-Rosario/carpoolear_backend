@@ -3,8 +3,6 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Passenger\Cancel;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Repository\Conversations as ConversationRepo;
 
 class removeUserConversation
@@ -32,7 +30,7 @@ class removeUserConversation
         $converstion = $event->trip->conversation;
         if ($converstion) {
             $user = $event->trip->user_id == $event->from->id ? $event->to : $event->from;
-            $this->conversationRepo->removeUser($converstion, $user); 
+            $this->conversationRepo->removeUser($converstion, $user);
         }
     }
 }

@@ -3,13 +3,10 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Trip\Create;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Logic\Conversation as ConversationLogic;
 
 class createConversation
 {
-
     protected $conversationLogic;
 
     /**
