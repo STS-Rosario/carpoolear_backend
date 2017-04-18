@@ -10,16 +10,22 @@ use STS\Entities\Conversation;
 use STS\Contracts\Logic\Conversation as ConversationRepo;
 use STS\Contracts\Repository\Messages as MessageRepository;
 use STS\Contracts\Repository\Conversations as ConversationRepository;
+use STS\Contracts\Repository\User as UserRepository;
+use STS\Contracts\Logic\Friends as FriendsLogic;
 
 class ConversationsManager extends BaseManager implements ConversationRepo
 {
     protected $messageRepository;
     protected $conversationRepository;
+    protected $userRepository;
+    protected $friendsLogic;
 
-    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository)
+    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic)
     {
         $this->conversationRepository = $conversationRepository;
         $this->messageRepository = $messageRepository;
+        $this->userRepository = $userRepo;
+        $this->friendsLogic = $friendsLogic;
     }
 
     /* CONVERSATION CREATION */
@@ -27,22 +33,10 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     private function createConversation($type, $tripId = null)
     {
         $conversation = new Conversation();
-        if ($type == Conversation::TYPE_TRIP_CONVERSATION) {
-            if (is_int($tripId) && $tripId >= 0) {
-                if (true) { // TripsManager::exist ( $tripId ) I MUST CHECK THE NAME OF THIS METHOD WITH FERNANDO
-                    $conversation->trip_id = $tripId;
-                } else {
-                    return;
-                    /* I NEED TO CATCH THE ERROR THROW BY TripsManager::is_exist (tripId)
-                    RETURN ERROR */
-                }
-            } else {
-                /*$this->setErrors ( 'ValidationError: tripId must be a possitive integer');*/
-                return;
-                /*  I must throw an error: "tripId must be an possitive integer"
-                RETURN ERROR */
-            }
+        if ($type == Conversation::TYPE_TRIP_CONVERSATION) { 
+            $conversation->trip_id = $tripId;    
         }
+
         $conversation->type = $type;
         $conversation->title = '';
         $this->conversationRepository->store($conversation);
@@ -50,6 +44,9 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $conversation;
     }
 
+    /**
+    *  trip_id always come from system
+    **/
     public function createTripConversation($trip_id)
     {
         return $this->createConversation(Conversation::TYPE_TRIP_CONVERSATION, $trip_id);
@@ -68,20 +65,23 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
                 return $conversation;
             }
-        }
-
-        /* check if conversation exist */
+        } 
     }
 
     private function usersCanChat(User $user1, User $user2)
     {
-        /* I must check if these two people can chat
-        they can chat if:
-        _they have been travelling together.
-        _they are friends
-        _the user it's an admin'
-        */
+        if ($this->friendsLogic->areFriend($user1, $user2)) {
+
+            return true;
+        }
         if ($user1->is_admin || $user2->is_admin) { //anybody can chat with an admin ???
+
+            return true;
+        }
+
+        /* pequeño hack por el momento */
+        if ($user2->trips()->where('friendship_type_id', 2)->count() > 0) {
+
             return true;
         }
 
@@ -123,22 +123,29 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $conversation->users;
     }
 
-    public function addUserToConversation(User $user, $conversationId, $users)
+    private function checkPrivateConversation($user, $id)
     {
-        //Falta chequear permisos -> User puede agregar
-        $conversation = $this->getConversation($user, $conversationId);
+        $conversation = $this->getConversation($user, $id);
         if ($conversation != null) {
             if ($conversation->type == Conversation::TYPE_TRIP_CONVERSATION) {
-                //* CALL: check if user it's in the trip
+                /* This method is used for private conversation only */
+                $this->setErrors(['error' => 'access_denied']);
+
+                return ;
             }
-            if (is_int($users)) {
-                $users = [$users];
-            }
+            return $conversation;
+        }
+    }
+
+    public function addUserToConversation(User $user, $conversationId, $users)
+    {
+        if ($conversation = $this->checkPrivateConversation($user, $conversationId)) {
+            $users = match_array($users);
             $userArray = [];
             foreach ($users as $userId) {
-                $user = User::find($userId);
-                if ($user) {
-                    $usersArray[] = $user;
+                $to = $this->userRepository->show($userId);
+                if ($to && $this->usersCanChat($user, $to)) {
+                    $usersArray[] = $to;
                 } else {
                     $this->setErrors(['user' => 'user_'.$userId.'_does_not_exist']);
 
@@ -156,10 +163,9 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     }
 
     public function removeUserFromConversation(User $user, $conversationId, User $userToDelete)
-    {
-        //Falta chequear permisos -> User puede agregar
-        $conversation = $this->getConversation($user, $conversationId);
-        if ($conversation != null) {
+    { 
+        if ($conversation = $this->checkPrivateConversation($user, $conversationId)) {
+
             $this->conversationRepository->removeUser($conversation, $userToDelete);
 
             return true;
@@ -193,18 +199,18 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     private function validator(array $data)
     {
         return Validator::make($data, [
-        'user_id'               => 'required|integer',
-        'text'                  => 'required|string|max:500',
-        'conversation_id'       => 'required|integer',
+            'user_id'               => 'required|integer',
+            'text'                  => 'required|string|max:500',
+            'conversation_id'       => 'required|integer',
         ]);
     }
 
     public function send(User $user, $conversationId, $message)
     {
         $data = [
-        'user_id' => $user->id,
-        'text' => $message,
-        'conversation_id' => $conversationId,
+            'user_id' => $user->id,
+            'text' => $message,
+            'conversation_id' => $conversationId,
         ];
         $validator = $this->validator($data);
         if (! $validator->fails()) {

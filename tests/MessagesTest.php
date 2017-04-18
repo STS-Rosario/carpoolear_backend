@@ -46,7 +46,7 @@ class MessagesTest extends TestCase
 
     public function test_addUserToConversation_and_removeUserFromConversation_Success()
     {
-        $user = factory(\STS\User::class)->create();
+        $user = factory(\STS\User::class)->create(['is_admin' => 1]);
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create();
         $user3 = factory(\STS\User::class)->create();
@@ -96,16 +96,7 @@ class MessagesTest extends TestCase
         $conversation2 = $this->conversationManager->createTripConversation($trip->id);
         $this->assertFalse($conversation->type == STS\Entities\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id && $conversation2 == null);
     }
-
-    public function test_TripConversationCreate_ValidateTripId_Fail()
-    {
-        /* Creating a conversation validation. If not a positive integer throw error */
-        $user = factory(\STS\User::class)->create();
-
-        $conversation = $this->conversationManager->createTripConversation('asdd') || $this->conversationManager->createTripConversation('-1') || $this->conversationManager->createTripConversation('') || $this->conversationManager->createTripConversation(null) || $this->conversationManager->createTripConversation(false) || $this->conversationManager->createTripConversation(true);
-        $this->assertFalse($conversation);
-    }
-
+ 
     public function test_Match_Success()
     {
         $c = factory(STS\Entities\Conversation::class)->create();
@@ -310,5 +301,53 @@ class MessagesTest extends TestCase
             $this->conversationRepository->addUser($c, $u[$i]);
         }
         $this->assertTrue(count($this->conversationManager->getUsersFromConversation($u[0], $c->id)) == 22);
+    }
+
+    public function test_get_conversation_trip()
+    {
+        $u = factory(\STS\User::class)->create();
+        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
+        $c = factory(STS\Entities\Conversation::class)->create(['trip_id' => $t->id]);
+ 
+        $this->assertTrue($t->conversation->id == $c->id);
+    }
+
+    public function test_create_conversation_listeners()
+    {
+        $u = factory(\STS\User::class)->create();
+        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
+
+        $event = new STS\Events\Trip\Create($t);
+
+        $listener = new STS\Listeners\Conversation\createConversation($this->conversationManager);
+
+        $listener->handle($event);
+
+        $this->assertNotNull($t->conversation);
+    }
+
+    public function test_add_remove_user_conversation_trip()
+    {
+        $u = factory(\STS\User::class)->create();
+        $accepted = factory(\STS\User::class)->create();
+        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
+        $c = factory(STS\Entities\Conversation::class)->create(['trip_id' => $t->id]);
+ 
+        $event = new STS\Events\Passenger\Accept($t, $u, $accepted);
+
+        $listener = new STS\Listeners\Conversation\addUserConversation($this->conversationRepository);
+        
+        $listener->handle($event);
+
+        $this->assertTrue($c->users()->count() == 1);
+
+
+        $event = new STS\Events\Passenger\Cancel($t, $u, $accepted);
+
+        $listener = new STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
+        
+        $listener->handle($event);
+
+        $this->assertTrue($c->users()->count() == 0);
     }
 }

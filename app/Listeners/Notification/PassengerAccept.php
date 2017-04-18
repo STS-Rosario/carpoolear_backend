@@ -18,10 +18,9 @@ class PassengerAccept implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(TripRepository $tripRepository, UserRepository $userRepository)
-    {
-        $this->userRepository = $userRepository;
-        $this->tripRepository = $tripRepository;
+    public function __construct()
+    { 
+        //
     }
 
     /**
@@ -32,9 +31,9 @@ class PassengerAccept implements ShouldQueue
      */
     public function handle(Accept $event)
     {
-        $trip = $this->tripRepository->show($event->trip_id);
-        $from = $this->userRepository->show($event->from_id);
-        $to = $this->userRepository->show($event->to_id);
+        $trip = $event->trip;
+        $from = $event->from;
+        $to = $event->to;
         if ($to) {
             $notification = new AcceptPassengerNotification();
             $notification->setAttribute('trip', $trip);

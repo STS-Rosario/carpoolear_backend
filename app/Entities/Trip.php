@@ -113,10 +113,14 @@ class Trip extends Model
         return $this->belongsTo('STS\Entities\Trip', 'return_trip_id');
     }
 
+    public function conversation() 
+    {
+        return $this->hasOne('STS\Entities\Conversation', 'trip_id');
+    }
+
     public function getPassengerCountAttribute()
     {
-        return $this->passengerAccepted()->count();
-        //return ($viajeActual->total_seats - count($pasajeros));
+        return $this->passengerAccepted()->count(); 
     }
 
     public function getSeatsAvailableAttribute()

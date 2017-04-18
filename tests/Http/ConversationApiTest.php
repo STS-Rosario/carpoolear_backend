@@ -79,7 +79,7 @@ class ConversationApiTest extends TestCase
         $response = $this->call('GET', 'api/conversations/'.$c->id);
         $this->assertTrue($response->status() == 200);
 
-        for ($i = 0; $i < 27; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $m = 'text'.$i;
             $this->conversationManager->send($user1, $c->id, $m);
         }
@@ -87,7 +87,7 @@ class ConversationApiTest extends TestCase
         $response = $this->call('GET', 'api/conversations/'.$c->id);
 
         $this->assertTrue($response->status() == 200);
-        $this->assertTrue(count($response->original) == 27);
+        $this->assertTrue(count($response->original) == 5);
 
         for ($i = 0; $i < 3; $i++) {
             $m = 'text'.$i;
@@ -106,20 +106,20 @@ class ConversationApiTest extends TestCase
 
     public function test_users()
     {
-        $u = factory(\STS\User::class, 10)->create();
+        $u = factory(\STS\User::class, 3)->create();
         $this->actingAsApiUser($u[0]);
         $c = factory(STS\Entities\Conversation::class)->create();
-        for ($i = 0; $i < 10; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $this->conversationRepository->addUser($c, $u[$i]);
         }
         $response = $this->call('GET', 'api/conversations/'.$c->id.'/users');
         $this->assertTrue($response->status() == 200);
-        $this->assertTrue(count($response->original) == 10);
+        $this->assertTrue(count($response->original) == 3);
     }
 
     public function test_add_user_and_delete_user()
     {
-        $u = factory(\STS\User::class, 10)->create();
+        $u = factory(\STS\User::class, 7)->create(['is_admin' => true]);
         $this->actingAsApiUser($u[0]);
         $c = factory(STS\Entities\Conversation::class)->create();
         $this->conversationRepository->addUser($c, $u[0]);

@@ -5,6 +5,8 @@ namespace STS;
 use STS\Entities\Rating as RatingModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use STS\Services\Notifications\Models\DatabaseNotification;
+use STS\Entities\Trip;
+use Carbon\Carbon;
 
 class User extends Authenticatable
 {

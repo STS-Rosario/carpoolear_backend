@@ -71,6 +71,8 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->get('/{id?}/users', $v1_path.'ConversationController@users');
         $api->post('/{id?}/users', $v1_path.'ConversationController@addUser');
         $api->delete('/{id?}/users/{userId?}', $v1_path.'ConversationController@deleteUser');
+
+        $api->post('/{id?}/send', $v1_path.'ConversationController@send');
     });
 
     $api->group(['prefix' => 'cars'], function ($api) use ($v1_path) {
