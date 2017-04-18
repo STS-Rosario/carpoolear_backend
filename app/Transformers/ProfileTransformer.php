@@ -32,7 +32,7 @@ class ProfileTransformer extends TransformerAbstract
             'birthday' => $user->birthday,
             'gender' => $user->gender,
             'mobile_phone' => $user->mobile_phone,
-            'nro_doc' => $user->nro_doc
+            'nro_doc' => $user->nro_doc,
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;

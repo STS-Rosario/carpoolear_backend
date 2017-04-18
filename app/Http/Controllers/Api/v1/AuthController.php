@@ -45,7 +45,7 @@ class AuthController extends Controller
 
         if (! $user->active) {
             throw new UnauthorizedHttpException('user_not_active');
-        } 
+        }
 
         return $this->response->withArray(['token' => $token]);
     }
@@ -81,7 +81,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        JWTAuth::parseToken()->invalidate(); 
+        JWTAuth::parseToken()->invalidate();
+
         return response()->json('OK');
     }
 
@@ -91,8 +92,8 @@ class AuthController extends Controller
         if (! $user) {
             throw new BadRequestHttpException('user_not_found');
         }
-        $token = JWTAuth::fromUser($user); 
-        
+        $token = JWTAuth::fromUser($user);
+
         return $this->response->withArray(['token' => $token]);
     }
 

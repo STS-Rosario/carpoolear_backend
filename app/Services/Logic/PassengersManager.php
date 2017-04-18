@@ -5,12 +5,12 @@ namespace STS\Services\Logic;
 use Validator;
 use STS\Contracts\Logic\IPassengersLogic;
 use STS\Contracts\Logic\Trip as TripLogic;
+use STS\Contracts\Repository\User as UserRepo;
 use STS\Events\Passenger\Accept as AcceptEvent;
 use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
 use STS\Contracts\Repository\IPassengersRepository;
-use STS\Contracts\Repository\User as UserRepo;
 
 class PassengersManager extends BaseManager implements IPassengersLogic
 {
@@ -18,7 +18,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     protected $tripLogic;
     protected $uRepo;
 
-    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic, UserRepo $uRepo )
+    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic, UserRepo $uRepo)
     {
         $this->passengerRepository = $passengerRepository;
         $this->tripLogic = $tripLogic;

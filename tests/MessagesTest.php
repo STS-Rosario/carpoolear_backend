@@ -96,7 +96,7 @@ class MessagesTest extends TestCase
         $conversation2 = $this->conversationManager->createTripConversation($trip->id);
         $this->assertFalse($conversation->type == STS\Entities\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id && $conversation2 == null);
     }
- 
+
     public function test_Match_Success()
     {
         $c = factory(STS\Entities\Conversation::class)->create();
@@ -308,7 +308,7 @@ class MessagesTest extends TestCase
         $u = factory(\STS\User::class)->create();
         $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
         $c = factory(STS\Entities\Conversation::class)->create(['trip_id' => $t->id]);
- 
+
         $this->assertTrue($t->conversation->id == $c->id);
     }
 
@@ -332,20 +332,19 @@ class MessagesTest extends TestCase
         $accepted = factory(\STS\User::class)->create();
         $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
         $c = factory(STS\Entities\Conversation::class)->create(['trip_id' => $t->id]);
- 
+
         $event = new STS\Events\Passenger\Accept($t, $u, $accepted);
 
         $listener = new STS\Listeners\Conversation\addUserConversation($this->conversationRepository);
-        
+
         $listener->handle($event);
 
         $this->assertTrue($c->users()->count() == 1);
 
-
         $event = new STS\Events\Passenger\Cancel($t, $u, $accepted);
 
         $listener = new STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
-        
+
         $listener->handle($event);
 
         $this->assertTrue($c->users()->count() == 0);

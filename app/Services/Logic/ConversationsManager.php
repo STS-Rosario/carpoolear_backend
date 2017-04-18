@@ -7,11 +7,11 @@ use Validator;
 use STS\Entities\Message;
 use STS\Events\MessageSend;
 use STS\Entities\Conversation;
+use STS\Contracts\Logic\Friends as FriendsLogic;
+use STS\Contracts\Repository\User as UserRepository;
 use STS\Contracts\Logic\Conversation as ConversationRepo;
 use STS\Contracts\Repository\Messages as MessageRepository;
 use STS\Contracts\Repository\Conversations as ConversationRepository;
-use STS\Contracts\Repository\User as UserRepository;
-use STS\Contracts\Logic\Friends as FriendsLogic;
 
 class ConversationsManager extends BaseManager implements ConversationRepo
 {
@@ -33,8 +33,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     private function createConversation($type, $tripId = null)
     {
         $conversation = new Conversation();
-        if ($type == Conversation::TYPE_TRIP_CONVERSATION) { 
-            $conversation->trip_id = $tripId;    
+        if ($type == Conversation::TYPE_TRIP_CONVERSATION) {
+            $conversation->trip_id = $tripId;
         }
 
         $conversation->type = $type;
@@ -45,8 +45,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     }
 
     /**
-    *  trip_id always come from system
-    **/
+     *  trip_id always come from system.
+     **/
     public function createTripConversation($trip_id)
     {
         return $this->createConversation(Conversation::TYPE_TRIP_CONVERSATION, $trip_id);
@@ -65,13 +65,12 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
                 return $conversation;
             }
-        } 
+        }
     }
 
     private function usersCanChat(User $user1, User $user2)
     {
         if ($this->friendsLogic->areFriend($user1, $user2)) {
-
             return true;
         }
         if ($user1->is_admin || $user2->is_admin) { //anybody can chat with an admin ???
@@ -81,7 +80,6 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
         /* pequeño hack por el momento */
         if ($user2->trips()->where('friendship_type_id', 2)->count() > 0) {
-
             return true;
         }
 
@@ -131,8 +129,9 @@ class ConversationsManager extends BaseManager implements ConversationRepo
                 /* This method is used for private conversation only */
                 $this->setErrors(['error' => 'access_denied']);
 
-                return ;
+                return;
             }
+
             return $conversation;
         }
     }
@@ -163,9 +162,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     }
 
     public function removeUserFromConversation(User $user, $conversationId, User $userToDelete)
-    { 
+    {
         if ($conversation = $this->checkPrivateConversation($user, $conversationId)) {
-
             $this->conversationRepository->removeUser($conversation, $userToDelete);
 
             return true;

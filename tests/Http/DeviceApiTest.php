@@ -1,8 +1,8 @@
 <?php
 
 use Mockery as m;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tymon\JWTAuth\Token;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class DeviceApiTest extends TestCase
 {

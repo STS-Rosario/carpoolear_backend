@@ -11,7 +11,7 @@ class QueriesTest extends TestCase
         $users = factory(STS\User::class, 5)->create();
 
         $query = \STS\User::orderBy('email');
-        $answer = make_pagination($query, 1, 2); 
+        $answer = make_pagination($query, 1, 2);
         $answerDecode = json_decode(json_encode($answer));
         $this->assertTrue($answerDecode->total == 5 && $answerDecode->last_page == 3);
     }

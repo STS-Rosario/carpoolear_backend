@@ -4,11 +4,11 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\ProfileTransformer;
 use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
-use STS\Transformers\ProfileTransformer;
 
 class UserController extends Controller
 {
@@ -56,7 +56,7 @@ class UserController extends Controller
     public function show($name = null)
     {
         $me = $this->auth->user();
-        if (!$name) {
+        if (! $name) {
             $name = $me->id;
         }
         $profile = $this->userLogic->show($me, $name);

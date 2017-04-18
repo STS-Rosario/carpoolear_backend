@@ -5,8 +5,6 @@ namespace STS\Listeners\Notification;
 use STS\Events\Passenger\Cancel;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\CancelPassengerNotification;
-use STS\Contracts\Repository\Trip as TripRepository;
-use STS\Contracts\Repository\User as UserRepository;
 
 class PassengerCancel implements ShouldQueue
 {
