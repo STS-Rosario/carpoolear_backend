@@ -2,6 +2,7 @@
 
 use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tymon\JWTAuth\Token;
 
 class ApiAuthTest extends TestCase
 {
@@ -71,7 +72,7 @@ class ApiAuthTest extends TestCase
         $deviceLogic = $this->mock('STS\Contracts\Logic\Devices');
         //$deviceLogic->shouldReceive('updateBySession')->once()->andReturn(true);
 
-        JWTAuth::shouldReceive('getToken')->once()->andReturn('asdfhasd');
+        JWTAuth::shouldReceive('getToken')->once()->andReturn( new Token('a.b.c'));
         JWTAuth::shouldReceive('authenticate')->once()->andReturn($user);
 
         $response = $this->call('POST', 'api/retoken?token='.$json->token);
@@ -110,10 +111,9 @@ class ApiAuthTest extends TestCase
 
         $response = $this->call('GET', 'api/users/'.$u2->id);
 
-        $this->assertTrue($response->status() == 200);
-
+        $this->assertTrue($response->status() == 200); 
         $profile = $this->parseJson($response);
-        $this->assertEquals($profile->user->name, $u2->name);
+        $this->assertEquals($profile->data->name, $u2->name);
     }
 
     public function testActive()

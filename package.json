@@ -8,15 +8,15 @@
   "devDependencies": {
     "gulp": "^3.9.1",
     "laravel-elixir": "^5.0.0",
-    "bootstrap-sass": "^3.0.0"
-  },
-  "dependencies": {
-    "gulp": "^3.9.1",
+    "bootstrap-sass": "^3.0.0",
     "gulp-if": "^2.0.2",
     "gulp-prompt": "^0.2.0",
     "gulp-rsync": "0.0.7",
     "gulp-util": "^3.0.8",
-    "minimist": "^1.2.0",
+    "minimist": "^1.2.0"
+  },
+  "dependencies": {
+    "gulp": "^3.9.1",
     "path": "^0.12.7"
   }
 }

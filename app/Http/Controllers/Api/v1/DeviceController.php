@@ -8,6 +8,8 @@ use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Devices as DeviceLogic;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Dingo\Api\Exception\StoreResourceFailedException;
+use Dingo\Api\Exception\UpdateResourceFailedException;
 
 class DeviceController extends Controller
 {
@@ -24,33 +26,32 @@ class DeviceController extends Controller
 
     public function register(Request $request)
     {
-        $user = $this->auth->user();
-        $data = $request->all();
-        $data['session_id'] = JWTAuth::getToken();
+        $user = $this->auth->user(); 
+        $data = $request->all();  
+        $data['session_id'] = JWTAuth::getToken()->get(); 
 
         if ($device = $this->deviceLogic->register($user, $data)) {
             return $this->response->withArray(['data' => $device]);
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->deviceLogic->getErrors());
+        throw new StoreResourceFailedException('Bad request exceptions', $this->deviceLogic->getErrors());
     }
 
     public function update($id, Request $request)
     {
         $user = $this->auth->user();
         $data = $request->all();
-        $data['session_id'] = JWTAuth::getToken();
+        $data['session_id'] = JWTAuth::getToken()->get();
 
         if ($device = $this->deviceLogic->update($user, $id, $data)) {
             return $this->response->withArray(['data' => $device]);
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->deviceLogic->getErrors());
+        throw new UpdateResourceFailedException('Bad request exceptions', $this->deviceLogic->getErrors());
     }
 
     public function delete($id, Request $request)
     {
-        //$token = JWTAuth::getToken();
         $user = $this->auth->user();
         $this->deviceLogic->delete($user, $id);
 
