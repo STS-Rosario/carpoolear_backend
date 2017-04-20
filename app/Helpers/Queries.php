@@ -2,6 +2,11 @@
 
 use Illuminate\Pagination\Paginator;
 
+function match_array($data)
+{
+    return is_array($data) ? $data : [$data];
+}
+
 function make_pagination($query, $pageNumber = null, $pageSize = 20)
 {
     if (! $pageNumber) {

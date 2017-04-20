@@ -7,22 +7,22 @@ use Illuminate\Queue\SerializesModels;
 
 class Accept extends Event
 {
-    //use SerializesModels;
+    use SerializesModels;
 
-    public $trip_id;
-    public $from_id;
-    public $to_id;
+    public $trip;
+    public $from;
+    public $to;
 
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct($trip_id, $from_id, $to_id = null)
+    public function __construct($trip, $from, $to = null)
     {
-        $this->trip_id = $trip_id;
-        $this->from_id = $from_id;
-        $this->to_id = $to_id;
+        $this->trip = $trip;
+        $this->from = $from;
+        $this->to = $to;
     }
 
     /**
