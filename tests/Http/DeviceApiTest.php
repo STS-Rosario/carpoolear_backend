@@ -1,6 +1,7 @@
 <?php
 
 use Mockery as m;
+use Tymon\JWTAuth\Token;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class DeviceApiTest extends TestCase
@@ -34,7 +35,7 @@ class DeviceApiTest extends TestCase
         $u1 = factory(STS\User::class)->create();
         $this->actingAsApiUser($u1);
 
-        JWTAuth::shouldReceive('getToken')->once()->andReturn('asdfhasd');
+        JWTAuth::shouldReceive('getToken')->once()->andReturn(new Token('a.b.c'));
         $this->deviceLogic->shouldReceive('register')->once()->andReturn(['id' => 1]);
 
         $response = $this->call('POST', 'api/devices/');
@@ -46,7 +47,7 @@ class DeviceApiTest extends TestCase
         $u1 = factory(STS\User::class)->create();
         $this->actingAsApiUser($u1);
 
-        JWTAuth::shouldReceive('getToken')->once()->andReturn('asdfhasd');
+        JWTAuth::shouldReceive('getToken')->once()->andReturn(new Token('a.b.c'));
         $this->deviceLogic->shouldReceive('update')->once()->andReturn(['id' => 1]);
 
         $response = $this->call('PUT', 'api/devices/1');

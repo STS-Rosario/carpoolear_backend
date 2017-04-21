@@ -97,6 +97,7 @@ $factory->define(STS\Entities\Conversation::class, function (Faker\Generator $fa
     return [
         'trip_id' => null,
         'title' => $faker->safeEmail,
+        'type' => STS\Entities\Conversation::TYPE_PRIVATE_CONVERSATION,
     ];
 });
 

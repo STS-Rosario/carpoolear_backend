@@ -5,8 +5,6 @@ namespace STS\Listeners\Notification;
 use STS\Events\Passenger\Accept;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\AcceptPassengerNotification;
-use STS\Contracts\Repository\Trip as TripRepository;
-use STS\Contracts\Repository\User as UserRepository;
 
 class PassengerAccept implements ShouldQueue
 {
@@ -18,10 +16,9 @@ class PassengerAccept implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(TripRepository $tripRepository, UserRepository $userRepository)
+    public function __construct()
     {
-        $this->userRepository = $userRepository;
-        $this->tripRepository = $tripRepository;
+        //
     }
 
     /**
@@ -32,9 +29,9 @@ class PassengerAccept implements ShouldQueue
      */
     public function handle(Accept $event)
     {
-        $trip = $this->tripRepository->show($event->trip_id);
-        $from = $this->userRepository->show($event->from_id);
-        $to = $this->userRepository->show($event->to_id);
+        $trip = $event->trip;
+        $from = $event->from;
+        $to = $event->to;
         if ($to) {
             $notification = new AcceptPassengerNotification();
             $notification->setAttribute('trip', $trip);

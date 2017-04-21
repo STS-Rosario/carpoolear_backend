@@ -18,6 +18,7 @@ class ConversationController extends Controller
 
     public function __construct(Request $r, ConversationLogic $conversations, UserLogic $users)
     {
+        $this->middleware('api.auth');
         $this->user = $this->auth->user();
         $this->conversationLogic = $conversations;
         $this->users = $users;
@@ -66,6 +67,15 @@ class ConversationController extends Controller
         }
         if ($messages) {
             return $messages;
+        }
+        throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
+    }
+
+    public function send(Request $request, $id)
+    {
+        $message = $request->get('message');
+        if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
+            return $m;
         }
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
     }

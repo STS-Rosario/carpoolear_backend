@@ -45,7 +45,7 @@ class AuthController extends Controller
 
         if (! $user->active) {
             throw new UnauthorizedHttpException('user_not_active');
-        } 
+        }
 
         return $this->response->withArray(['token' => $token]);
     }
@@ -53,11 +53,11 @@ class AuthController extends Controller
     public function retoken(Request $request)
     {
         try {
-            $oldToken = $token = JWTAuth::getToken();
+            $oldToken = $token = JWTAuth::getToken()->get();
             $user = JWTAuth::authenticate($token);
         } catch (TokenExpiredException $e) {
             try {
-                $oldToken = JWTAuth::getToken();
+                $oldToken = JWTAuth::getToken()->get();
                 $token = JWTAuth::refresh($oldToken);
             } catch (JWTException $e) {
                 throw new AccessDeniedHttpException('invalid_token');
@@ -81,7 +81,8 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        JWTAuth::parseToken()->invalidate(); 
+        JWTAuth::parseToken()->invalidate();
+
         return response()->json('OK');
     }
 
@@ -91,8 +92,8 @@ class AuthController extends Controller
         if (! $user) {
             throw new BadRequestHttpException('user_not_found');
         }
-        $token = JWTAuth::fromUser($user); 
-        
+        $token = JWTAuth::fromUser($user);
+
         return $this->response->withArray(['token' => $token]);
     }
 

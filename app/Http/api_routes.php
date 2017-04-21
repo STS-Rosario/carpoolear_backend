@@ -15,9 +15,9 @@ $api->version('v1', function ($api) use ($v1_path) {
     $api->group(['prefix' => 'users'], function ($api) use ($v1_path) {
         $api->get('/ratings', $v1_path.'RatingController@ratings');
         $api->get('/ratings/pending', $v1_path.'RatingController@pendingRate');
-
         $api->post('/', $v1_path.'UserController@create');
-        $api->get('/{id?}', $v1_path.'UserController@show');
+        $api->get('/me', $v1_path.'UserController@show');
+        $api->get('/{name?}', $v1_path.'UserController@show');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
     });
@@ -71,6 +71,8 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->get('/{id?}/users', $v1_path.'ConversationController@users');
         $api->post('/{id?}/users', $v1_path.'ConversationController@addUser');
         $api->delete('/{id?}/users/{userId?}', $v1_path.'ConversationController@deleteUser');
+
+        $api->post('/{id?}/send', $v1_path.'ConversationController@send');
     });
 
     $api->group(['prefix' => 'cars'], function ($api) use ($v1_path) {

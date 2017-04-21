@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\ProfileTransformer;
 use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
@@ -52,17 +53,18 @@ class UserController extends Controller
         return $this->response->withArray(['user' => $profile]);
     }
 
-    public function show($id = null)
+    public function show($name = null)
     {
         $me = $this->auth->user();
-        if (! $id) {
-            $id = $me->id;
+        if (! $name) {
+            $name = $me->id;
         }
-        $profile = $this->userLogic->show($me, $id);
+        $profile = $this->userLogic->show($me, $name);
         if (! $profile) {
             throw new ResourceException('Users not found.', $this->userLogic->getErrors());
         }
 
-        return $this->response->withArray(['user' => $profile]);
+        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
+        //return $this->response->withArray(['user' => $profile]);
     }
 }
