@@ -32,7 +32,7 @@ class DownloadStaticImage
         $enc_path = $trip->enc_path;
         //$target_dir = public_path("image/paths/" . $id . ".png");
 
-        if ($event->enc_path) {
+        if ($enc_path) {
             $temp_url = 'https://maps.googleapis.com/maps/api/staticmap?size=640x320&path=color:0x0000ff|weight:5';
             $temp_url .= '|enc:'.$enc_path;
 
