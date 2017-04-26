@@ -103,4 +103,16 @@ class TripApiTest extends TestCase
 
         $this->assertTrue($response->status() == 200);
     }
+
+    public function testMyTrips()
+    {
+        $u1 = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create();
+        $this->actingAsApiUser($u1);
+
+        $this->tripsLogic->shouldReceive('myTrips')->once()->andReturn([]);
+
+        $response = $this->call('GET', 'api/users/my-trips/'); 
+        $this->assertTrue($response->status() == 200);
+    }
 }

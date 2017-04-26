@@ -83,4 +83,20 @@ class TripController extends Controller
 
         return $this->response->paginator($trips, new TripTransformer($this->user));
     }
+
+    public function myTrips(Request $request)
+    {
+        
+        $this->user = $this->auth->user();
+
+        if ($request->has('as_driver')) {
+            $asDriver = parse_boolean($request->get('as_driver'));
+        } else {
+            $asDriver = true;
+        }
+
+        $trips = $this->tripsLogic->myTrips($this->user, $asDriver);
+
+        return $this->response->withArray(['data' => $trips]);
+    }
 }
