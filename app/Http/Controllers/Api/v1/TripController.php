@@ -86,7 +86,6 @@ class TripController extends Controller
 
     public function myTrips(Request $request)
     {
-        
         $this->user = $this->auth->user();
 
         if ($request->has('as_driver')) {

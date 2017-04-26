@@ -2,8 +2,8 @@
 
 use Mockery as m;
 use Carbon\Carbon;
-use STS\Entities\TripPoint;
 use STS\Entities\Passenger;
+use STS\Entities\TripPoint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class TripsTest extends TestCase
@@ -197,7 +197,7 @@ class TripsTest extends TestCase
     {
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
         $user = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(); 
+        $trip = factory(STS\Entities\Trip::class)->create();
         factory(Passenger::class, 'aceptado')->create(['user_id' => $user->id, 'trip_id' => $trip->id]);
 
         $trips = $tripManager->myTrips($user, false);
