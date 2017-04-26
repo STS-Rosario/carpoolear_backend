@@ -74,6 +74,7 @@ class TripRepository implements TripRepo
         }
         $trips->orderBy('trip_date');
         $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
+
         return $trips->get();
     }
 
@@ -92,7 +93,7 @@ class TripRepository implements TripRepo
             }
             //$trips->setBindings([$data['date']]);
         } else {
-            if (!isset($data['history'])) {
+            if (! isset($data['history'])) {
                 $trips = Trip::where('trip_date', '>=', Carbon::Now());
                 $trips->orderBy('trip_date');
             }
