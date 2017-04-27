@@ -27,6 +27,8 @@ class TripsPointsTable extends Migration
             $table->double('cos_lng');
 
             $table->timestamps();
+
+            $table->foreign('trip_id')->references('id')->on('trips')->onUpdate('cascade')->onDelete('cascade');
         });
     }
 

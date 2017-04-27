@@ -16,6 +16,8 @@ interface Trip
 
     public function search($user, $data);
 
+    public function myTrips($user, $asDriver);
+
     public function userCanSeeTrip($user, $trip);
 
     public function tripOwner($user, $trip_id);

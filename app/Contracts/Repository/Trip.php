@@ -19,4 +19,6 @@ interface Trip
     public function addPoints($trip, $points);
 
     public function deletePoints($trip, $points);
+
+    public function myTrips($user, $asDriver);
 }
