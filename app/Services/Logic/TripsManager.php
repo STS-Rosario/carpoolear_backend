@@ -153,6 +153,11 @@ class TripsManager extends BaseManager implements TripLogic
         return $this->tripRepo->search($user, $data);
     }
 
+    public function myTrips($user, $asDriver)
+    {
+        return $this->tripRepo->myTrips($user, $asDriver);
+    }
+
     public function tripOwner($user, $trip)
     {
         $trip = $trip instanceof Model ? $trip : $this->tripRepo->show($trip);

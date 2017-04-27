@@ -2,6 +2,7 @@
 
 use Mockery as m;
 use Carbon\Carbon;
+use STS\Entities\Passenger;
 use STS\Entities\TripPoint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
@@ -178,5 +179,29 @@ class TripsTest extends TestCase
 
         $this->assertTrue($in->outbound != null);
         $this->assertTrue($out->inbound != null);
+    }
+
+    public function testMyTripsAsDriver()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $user = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
+        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
+
+        $trips = $tripManager->myTrips($user, true);
+
+        $this->assertTrue($trips->count() > 0);
+    }
+
+    public function testMyTripsAsPassenger()
+    {
+        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $user = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create();
+        factory(Passenger::class, 'aceptado')->create(['user_id' => $user->id, 'trip_id' => $trip->id]);
+
+        $trips = $tripManager->myTrips($user, false);
+
+        $this->assertTrue($trips->count() > 0);
     }
 }

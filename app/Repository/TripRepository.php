@@ -6,6 +6,7 @@ use DB;
 use STS\User;
 use Carbon\Carbon;
 use STS\Entities\Trip;
+use STS\Entities\Passenger;
 use STS\Entities\TripPoint;
 use STS\Contracts\Repository\Trip as TripRepo;
 
@@ -59,6 +60,24 @@ class TripRepository implements TripRepo
         return $trips->get();
     }
 
+    public function myTrips($user, $asDriver)
+    {
+        $trips = Trip::where('trip_date', '>=', Carbon::Now());
+
+        if ($asDriver) {
+            $trips->where('user_id', $user->id);
+        } else {
+            $trips->whereHas('passengerAccepted', function ($q) use ($user) {
+                $q->where('request_state', Passenger::STATE_ACCEPTED);
+                $q->where('user_id', $user->id);
+            });
+        }
+        $trips->orderBy('trip_date');
+        $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
+
+        return $trips->get();
+    }
+
     public function search($user, $data)
     {
         if (isset($data['date'])) {
@@ -74,8 +93,10 @@ class TripRepository implements TripRepo
             }
             //$trips->setBindings([$data['date']]);
         } else {
-            $trips = Trip::where('trip_date', '>=', Carbon::Now());
-            $trips->orderBy('trip_date');
+            if (! isset($data['history'])) {
+                $trips = Trip::where('trip_date', '>=', Carbon::Now());
+                $trips->orderBy('trip_date');
+            }
         }
 
         if (isset($data['is_passenger'])) {
