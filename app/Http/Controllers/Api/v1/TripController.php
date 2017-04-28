@@ -30,7 +30,8 @@ class TripController extends Controller
             throw new StoreResourceFailedException('Could not create new trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => $trip]);
+        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
+        //return $this->response->withArray(['data' => $trip]);
     }
 
     public function update($id, Request $request)
@@ -42,7 +43,8 @@ class TripController extends Controller
             throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => $trip]);
+        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
+        //return $this->response->withArray(['data' => $trip]);
     }
 
     public function delete($id, Request $request)
@@ -64,7 +66,8 @@ class TripController extends Controller
             throw new ResourceException('Could not found trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => $trip]);
+        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
+        //return $this->response->withArray(['data' => $trip]);
     }
 
     public function search(Request $request)
