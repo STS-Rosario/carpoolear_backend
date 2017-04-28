@@ -7,12 +7,12 @@ use STS\User;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\User as UserLogic;
+use Tymon\JWTAuth\Exceptions\JWTException;
 use STS\Contracts\Logic\Devices as DeviceLogic;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
-use Tymon\JWTAuth\Exceptions\JWTException;
-use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 
 class AuthController extends Controller
 {
