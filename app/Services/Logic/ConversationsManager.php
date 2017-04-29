@@ -70,6 +70,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     private function usersCanChat(User $user1, User $user2)
     {
+        /*
         if ($this->friendsLogic->areFriend($user1, $user2)) {
             return true;
         }
@@ -78,12 +79,17 @@ class ConversationsManager extends BaseManager implements ConversationRepo
             return true;
         }
 
-        /* pequeño hack por el momento */
         if ($user2->trips()->where('friendship_type_id', 2)->count() > 0) {
             return true;
         }
+        */
 
-        return false;
+        return $user1->is_admin || $this->conversationRepository->userList($user1, $user2)->count() > 0;
+    }
+
+    public function usersList($user, $searchText)
+    {
+        return $this->conversationRepository->userList($user, null, $searchText);
     }
 
     /* CONVERSATION GETTERS */

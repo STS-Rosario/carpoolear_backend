@@ -25,10 +25,13 @@ class ConversationApiTest extends TestCase
 
     public function test_api_conversations_get()
     {
+        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        
         $user1 = factory(\STS\User::class)->create();
-        $user2 = factory(\STS\User::class)->create();
+        $user2 = factory(\STS\User::class)->create(['is_admin' => true]);
         $user3 = factory(\STS\User::class)->create();
-        $user1->is_admin = true;
+
+        $friends->make($user1, $user3);
 
         $this->actingAsApiUser($user1);
         $response = transform($this->call('GET', 'api/conversations/'));
@@ -143,5 +146,20 @@ class ConversationApiTest extends TestCase
         $response = $this->call('GET', 'api/conversations/'.$c->id.'/users');
         $this->assertTrue($response->status() == 200);
         $this->assertTrue(count($response->original) == 5);
+    }
+
+    public function test_api_conversations_user_list()
+    {
+        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        
+        $user1 = factory(\STS\User::class)->create();
+        $user2 = factory(\STS\User::class)->create(['is_admin' => true]);
+        $user3 = factory(\STS\User::class)->create();
+
+        $friends->make($user1, $user3);
+
+        $this->actingAsApiUser($user1);
+        $response = $this->call('GET', 'api/conversations/user-list');
+        $this->assertTrue($response->status() == 200);
     }
 }

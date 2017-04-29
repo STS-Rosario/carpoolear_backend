@@ -33,11 +33,12 @@ class TripApiTest extends TestCase
     public function testCreate()
     {
         $u1 = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create();
         $this->actingAsApiUser($u1);
 
-        $this->tripsLogic->shouldReceive('create')->once()->andReturn($u1);
+        $this->tripsLogic->shouldReceive('create')->once()->andReturn($trip);
 
-        $response = $this->call('POST', 'api/trips/');
+        $response = $this->call('POST', 'api/trips/'); 
         $this->assertTrue($response->status() == 200);
     }
 

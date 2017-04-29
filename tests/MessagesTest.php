@@ -23,10 +23,9 @@ class MessagesTest extends TestCase
 
     public function test_findOrCreatePrivateConversation()
     {
-        $user1 = factory(\STS\User::class)->create();
+        $user1 = factory(\STS\User::class)->create(['is_admin' => true]);
         $user2 = factory(\STS\User::class)->create();
         $user3 = factory(\STS\User::class)->create();
-        $user1->is_admin = true;
 
         // admin can chat with everybody
         $conversation = $this->conversationManager->findOrCreatePrivateConversation($user1, $user2);
