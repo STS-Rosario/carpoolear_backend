@@ -3,6 +3,7 @@
 namespace STS\Repository;
 
 use STS\User;
+use STS\Entities\Trip;
 use STS\Entities\Conversation;
 use STS\Contracts\Repository\Conversations as ConversationRepo;
 
@@ -89,5 +90,48 @@ class ConversationRepository implements ConversationRepo
         $u = $conversation->users()->where('id', $user->id)->first();
 
         return $u->pivot->read;
+    }
+
+    public function userList($user, $who = null, $search_text = null)
+    {
+        $users = User::where(function ($q) use ($user) {
+            $q->where('is_admin', true);
+            $q->orWhereHas('friends', function ($q) use ($user) {
+                $q->where('id', $user->id);
+            });
+            $q->orWhereHas('trips', function ($q) use ($user) {
+                $q->where('friendship_type_id', Trip::PRIVACY_PUBLIC);
+                $q->orWhere(function ($q) use ($user) {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
+                    $q->orWhere(function ($q) use ($user) {
+                        $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
+                        $q->whereHas('user.friends', function ($q) use ($user) {
+                            $q->whereId($user->id);
+                        });
+                    });
+                    $q->where(function ($q) use ($user) {
+                        $q->whereHas('user.friends', function ($q) use ($user) {
+                            $q->whereId($user->id);
+                        });
+                        $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
+                            $q->whereId($user->id);
+                        });
+                    });
+                });
+            });
+        });
+
+        if ($who) {
+            $users->where('id', $who->id);
+        }
+        if ($search_text) {
+            $users->where(function ($q) use ($search_text) {
+                $q->where('name', 'like', '%'.$search_text.'%');
+                $q->orWhere('email', 'like', '%'.$search_text.'%');
+            });
+        }
+        $users->orderBy('name');
+
+        return $users->get();
     }
 }

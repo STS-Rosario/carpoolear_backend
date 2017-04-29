@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\ProfileTransformer;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Transformers\ConversationsTransformer;
 use STS\Contracts\Logic\Conversation as ConversationLogic;
@@ -110,5 +111,16 @@ class ConversationController extends Controller
         } else {
             throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
         }
+    }
+
+    public function userList(Request $request)
+    {
+        $search_text = null;
+        if ($request->has('value')) {
+            $search_text = $request->get('value');
+        }
+        $users = $this->conversationLogic->usersList($this->user, null, $search_text);
+
+        return $this->collection($users, new ProfileTransformer($this->user));
     }
 }

@@ -28,4 +28,6 @@ interface Conversations
     public function changeConversationReadState(Conversation $conversation, UserModel $user, $read_state);
 
     public function getConversationReadState(Conversation $conversation, UserModel $user);
+
+    public function userList($user, $who = null, $search_text = null);
 }
