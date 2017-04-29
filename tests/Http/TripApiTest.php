@@ -38,7 +38,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('create')->once()->andReturn($trip);
 
-        $response = $this->call('POST', 'api/trips/'); 
+        $response = $this->call('POST', 'api/trips/');
         $this->assertTrue($response->status() == 200);
     }
 

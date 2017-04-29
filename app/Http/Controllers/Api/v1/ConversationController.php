@@ -4,9 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\ProfileTransformer;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Transformers\ConversationsTransformer;
-use STS\Transformers\ProfileTransformer;
 use STS\Contracts\Logic\Conversation as ConversationLogic;
 use Dingo\Api\Exception\StoreResourceFailedException as Exception;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -120,6 +120,7 @@ class ConversationController extends Controller
             $search_text = $request->get('value');
         }
         $users = $this->conversationLogic->usersList($this->user, null, $search_text);
+
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 }

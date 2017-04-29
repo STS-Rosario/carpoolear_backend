@@ -70,15 +70,13 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'ConversationController@index');
         $api->post('/', $v1_path.'ConversationController@create');
         $api->get('/user-list', $v1_path.'ConversationController@userList');
-        
+
         $api->get('/{id?}', $v1_path.'ConversationController@getConversation');
         $api->get('/{id?}/users', $v1_path.'ConversationController@users');
         $api->post('/{id?}/users', $v1_path.'ConversationController@addUser');
         $api->delete('/{id?}/users/{userId?}', $v1_path.'ConversationController@deleteUser');
 
         $api->post('/{id?}/send', $v1_path.'ConversationController@send');
-
-
     });
 
     $api->group(['prefix' => 'cars'], function ($api) use ($v1_path) {

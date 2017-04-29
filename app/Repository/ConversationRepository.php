@@ -96,7 +96,7 @@ class ConversationRepository implements ConversationRepo
     {
         $users = User::where(function ($q) use ($user) {
             $q->where('is_admin', true);
-            $q->orWhereHas('friends', function ($q) use ($user){
+            $q->orWhereHas('friends', function ($q) use ($user) {
                 $q->where('id', $user->id);
             });
             $q->orWhereHas('trips', function ($q) use ($user) {
@@ -120,17 +120,18 @@ class ConversationRepository implements ConversationRepo
                 });
             });
         });
-        
+
         if ($who) {
             $users->where('id', $who->id);
         }
         if ($search_text) {
             $users->where(function ($q) use ($search_text) {
-				$q->where('name', 'like', '%' . $search_text . '%');
-				$q->orWhere('email', 'like', '%' . $search_text . '%'); 
-			});
+                $q->where('name', 'like', '%'.$search_text.'%');
+                $q->orWhere('email', 'like', '%'.$search_text.'%');
+            });
         }
         $users->orderBy('name');
+
         return $users->get();
     }
 }
