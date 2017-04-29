@@ -26,7 +26,7 @@ class ConversationApiTest extends TestCase
     public function test_api_conversations_get()
     {
         $friends = \App::make('\STS\Contracts\Logic\Friends');
-        
+
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create(['is_admin' => true]);
         $user3 = factory(\STS\User::class)->create();
@@ -151,7 +151,7 @@ class ConversationApiTest extends TestCase
     public function test_api_conversations_user_list()
     {
         $friends = \App::make('\STS\Contracts\Logic\Friends');
-        
+
         $user1 = factory(\STS\User::class)->create();
         $user2 = factory(\STS\User::class)->create(['is_admin' => true]);
         $user3 = factory(\STS\User::class)->create();
