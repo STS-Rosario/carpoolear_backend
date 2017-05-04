@@ -99,6 +99,7 @@ class TripController extends Controller
 
         $trips = $this->tripsLogic->myTrips($this->user, $asDriver);
 
-        return $this->response->withArray(['data' => $trips]);
+        return $this->collection($trips, new TripTransformer($this->user));
+        //return $this->response->withArray(['data' => $trips]);
     }
 }
