@@ -58,7 +58,7 @@ class ConversationController extends Controller
     {
         $read = $request->get('read');
         $pageNumber = $request->get('pageNumber');
-        $pageSize = $request->get('pageNumber');
+        $pageSize = $request->get('pageSize');
         $read = $request->get('read');
         $unread = $request->get('unread');
         if ($unread) {
