@@ -15,12 +15,12 @@ class TestingSeeder extends Seeder
     public function run()
     {
         $users = [];
-        for ($i=0; $i < 10; $i++) { 
-            $users[] = factory(User::class)->create(['email' => 'user' . $i . '@g.com']);
+        for ($i = 0; $i < 10; $i++) {
+            $users[] = factory(User::class)->create(['email' => 'user'.$i.'@g.com']);
         }
-        
-        for ($i=0; $i < 5; $i++) {
-            for ($j=0; $j < 5; $j++) {
+
+        for ($i = 0; $i < 5; $i++) {
+            for ($j = 0; $j < 5; $j++) {
                 $collection = collect(['rosario', 'buenos_Aires', 'mendoza', 'cordoba']);
 
                 $p1 = $collection->random();
@@ -30,12 +30,11 @@ class TestingSeeder extends Seeder
                 $t1 = factory(Trip::class)->create(['user_id' => $users[$i]->id, 'trip_date' => $date]);
                 $t1->points()->save(factory(TripPoint::class, $p1)->make());
                 $t1->points()->save(factory(TripPoint::class, $p2)->make());
-
             }
         }
     }
 
-    function randomDate($start_date, $end_date)
+    public function randomDate($start_date, $end_date)
     {
         // Convert to timetamps
         $min = strtotime($start_date);
