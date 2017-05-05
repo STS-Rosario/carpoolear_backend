@@ -53,7 +53,7 @@ $factory->define(STS\Entities\Trip::class, function ($faker) {
 $factory->defineAs(STS\Entities\TripPoint::class, 'rosario', function ($faker) {
     return [
         'address'      => 'Rosario, Santa Fe, ARgentina',
-        'json_address' => ['city' => 'Rosario'],
+        'json_address' => ['ciudad' => 'Rosario', 'provincia' => 'Santa Fe'],
         'lat'          => -32.946525,
         'lng'          => -60.669847,
     ];
@@ -62,7 +62,7 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'rosario', function ($faker) {
 $factory->defineAs(STS\Entities\TripPoint::class, 'buenos_Aires', function ($faker) {
     return [
         'address'      => 'Buenos Aires, Argentina',
-        'json_address' => ['city' => 'Buenos Aires'],
+        'json_address' => ['ciudad' => 'Buenos Aires', 'provincia' => 'Buenos Aires'],
         'lat'          => -34.608903,
         'lng'          => -58.404521,
     ];
@@ -71,7 +71,7 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'buenos_Aires', function ($fak
 $factory->defineAs(STS\Entities\TripPoint::class, 'cordoba', function ($faker) {
     return [
         'address'      => 'Cordoba, Cordoba, Argentina',
-        'json_address' => ['city' => 'Cordoba'],
+        'json_address' => ['ciudad' => 'Cordoba', 'provincia' => 'Cordoba'],
         'lat'          => -31.421045,
         'lng'          => -64.190543,
     ];
@@ -80,7 +80,7 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'cordoba', function ($faker) {
 $factory->defineAs(STS\Entities\TripPoint::class, 'mendoza', function ($faker) {
     return [
         'address'      => 'Mendoza, Mendoza, Argentina',
-        'json_address' => ['city' => 'Mendoza'],
+        'json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
         'lat'          => -32.897273,
         'lng'          => -68.834067,
     ];

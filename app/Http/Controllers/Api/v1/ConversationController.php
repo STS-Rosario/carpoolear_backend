@@ -27,7 +27,15 @@ class ConversationController extends Controller
 
     public function index(Request $request)
     {
-        $conversations = $this->conversationLogic->getUserConversations($this->user);
+        $pageNumber = $pageSize = null;
+        if ($request->has('page_number')) {
+            $pageNumber = $request->get('page_number');
+        }
+        if ($request->has('page_size')) {
+            $pageSize = $request->get('page_size');
+        }
+
+        $conversations = $this->conversationLogic->getUserConversations($this->user, $pageNumber, $pageSize);
         if ($conversations) {
             return $this->response->paginator($conversations, new ConversationsTransformer);
         } else {
@@ -58,7 +66,7 @@ class ConversationController extends Controller
     {
         $read = $request->get('read');
         $pageNumber = $request->get('pageNumber');
-        $pageSize = $request->get('pageNumber');
+        $pageSize = $request->get('pageSize');
         $read = $request->get('read');
         $unread = $request->get('unread');
         if ($unread) {

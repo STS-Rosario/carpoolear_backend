@@ -41,7 +41,7 @@ class TripTransformer extends TransformerAbstract
         if ($this->user) {
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
-            if ($trip->passengerAccepted->where('user_id', $this->user->id) || $trip->user_id == $this->user->id) {
+            if ($trip->passengerAccepted->where('user_id', $this->user->id)->count() > 0 || $trip->user_id == $this->user->id) {
                 $data['passenger'] = [];
                 foreach ($trip->passengerAccepted as $passenger) {
                     $data['passenger'][] = $userTranforms->transform($passenger->user);

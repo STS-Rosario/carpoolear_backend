@@ -16,6 +16,7 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->get('/ratings', $v1_path.'RatingController@ratings');
         $api->get('/ratings/pending', $v1_path.'RatingController@pendingRate');
         $api->get('/my-trips', $v1_path.'TripController@myTrips');
+        $api->get('/requests', $v1_path.'PassengerController@allRequests');
 
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/me', $v1_path.'UserController@show');
