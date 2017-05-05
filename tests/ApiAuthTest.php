@@ -3,6 +3,7 @@
 use Mockery as m;
 use Tymon\JWTAuth\Token;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Database\Eloquent\Collection;
 
 class ApiAuthTest extends TestCase
 {
@@ -151,7 +152,23 @@ class ApiAuthTest extends TestCase
         $this->userLogic->shouldReceive('changePassword')->once()->andReturn(true);
 
         $response = $this->call('POST', 'api/change-password/1234567890');
-        \Log::info($response->getContent());
+        //\Log::info($response->getContent());
+        $this->assertTrue($response->status() == 200);
+
+        m::close();
+    }
+
+    public function testIndex()
+    {
+        $u1 = factory(STS\User::class)->create();
+        $u2 = factory(STS\User::class)->create();
+        $u3 = factory(STS\User::class)->create();
+        $this->actingAsApiUser($u1);
+
+        $this->userLogic = $this->mock('STS\Contracts\Logic\User');
+        $this->userLogic->shouldReceive('index')->once()->andReturn(new Collection([$u2, $u3]));
+
+        $response = $this->call('GET', 'api/users/list'); 
         $this->assertTrue($response->status() == 200);
 
         m::close();

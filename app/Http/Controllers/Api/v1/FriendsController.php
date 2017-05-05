@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\ProfileTransformer;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Friends as FriendsLogic;
 
@@ -72,11 +73,13 @@ class FriendsController extends Controller
 
     public function index(Request $request)
     {
-        return $this->friends->getFriends($this->user);
+        $users = $this->friends->getFriends($this->user);
+        return $this->collection($users, new ProfileTransformer($this->user));
     }
 
     public function pedings(Request $request)
     {
-        return $this->friends->getPendings($this->user);
+        $users = $this->friends->getPendings($this->user);
+        return $this->collection($users, new ProfileTransformer($this->user));
     }
 }

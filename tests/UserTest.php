@@ -124,4 +124,16 @@ class UserTest extends TestCase
         $response = $this->call('POST', 'api/login', $data);
         $this->assertTrue($response->status() == 200);
     }
+
+    public function testIndex()
+    {
+        $userManager = \App::make('\STS\Contracts\Logic\User');
+        $u1 = factory(STS\User::class)->create();
+        $u2 = factory(STS\User::class)->create();
+        $u3 = factory(STS\User::class)->create();
+
+        $users = $userManager->index($u1, null);
+
+        $this->assertTrue($users->count() == 2);
+    }
 }

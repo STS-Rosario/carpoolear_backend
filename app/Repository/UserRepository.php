@@ -52,9 +52,21 @@ class UserRepository implements UserRep
         return User::where($key, $value)->first();
     }
 
-    public function index()
+    public function index($user, $search_text = null)
     {
-        return User::all();
+        $users = User::where('active', true)
+                     ->where('banned', false)
+                     ->where('id', '<>', $user->id);
+
+        if ($search_text) {
+            $users->where(function ($q) use ($search_text) {
+                $q->where('name', 'like', '%'.$search_text.'%');
+                $q->orWhere('email', 'like', '%'.$search_text.'%');
+            });
+        }
+        $users->orderBy('name');
+
+        return $users->get();
     }
 
     public function addFriend($user, $friend, $provider = '')
