@@ -113,7 +113,7 @@ class TripApiTest extends TestCase
 
         $this->tripsLogic->shouldReceive('myTrips')->once()->andReturn(Trip::all());
 
-        $response = $this->call('GET', 'api/users/my-trips/');
+        $response = $this->call('GET', 'api/users/my-trips/'); 
         $this->assertTrue($response->status() == 200);
     }
 }
