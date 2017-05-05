@@ -2,8 +2,8 @@
 
 use Mockery as m;
 use Tymon\JWTAuth\Token;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class ApiAuthTest extends TestCase
 {
@@ -168,7 +168,7 @@ class ApiAuthTest extends TestCase
         $this->userLogic = $this->mock('STS\Contracts\Logic\User');
         $this->userLogic->shouldReceive('index')->once()->andReturn(new Collection([$u2, $u3]));
 
-        $response = $this->call('GET', 'api/users/list'); 
+        $response = $this->call('GET', 'api/users/list');
         $this->assertTrue($response->status() == 200);
 
         m::close();

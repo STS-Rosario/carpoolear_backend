@@ -74,12 +74,14 @@ class FriendsController extends Controller
     public function index(Request $request)
     {
         $users = $this->friends->getFriends($this->user);
+
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 
     public function pedings(Request $request)
     {
         $users = $this->friends->getPendings($this->user);
+
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 }
