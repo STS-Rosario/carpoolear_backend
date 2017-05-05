@@ -103,8 +103,12 @@ class UserRepository implements UserRep
     public function getUserByResetToken($token)
     {
         $pr = DB::table('password_resets')->where('token', $token)->first();
+        if ($pr) {
+            
+            return User::where('email', $pr->email)->first();
+        } 
 
-        return User::where('email', $pr->email)->first();
+        return;
     }
 
     public function getNotifications($user, $unread = false)
