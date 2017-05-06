@@ -89,19 +89,20 @@ class ApiAuthTest extends TestCase
     public function testUpdateProfile()
     {
         $user = factory(STS\User::class)->create();
+        $id = $user->id;
         $this->actingAsApiUser($user);
 
         $data = [
             'name' => 'Mariano Botta',
         ];
         $response = $this->call('PUT', 'api/users', $data);
-
-        $userUpdated = $this->parseJson($response);
+        
+        $userUpdated = $this->parseJson($response); 
         $this->assertTrue($response->status() == 200);
-        $this->assertEquals($userUpdated->user->name, $data['name']);
+        $this->assertEquals($userUpdated->data->name, $data['name']);
 
-        $u2 = STS\User::find($user->id);
-        $this->assertEquals($userUpdated->user->name, $u2->name);
+        $u2 = STS\User::find($id); 
+        $this->assertEquals($userUpdated->data->name, $u2->name);
     }
 
     public function testShowProfile()

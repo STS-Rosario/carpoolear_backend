@@ -25,7 +25,7 @@ class ProfileTransformer extends TransformerAbstract
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'descripcion' => $user->descripcion,
+            'description' => $user->description,
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
             'negative_ratings' => $user->negative_ratings,

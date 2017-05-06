@@ -29,7 +29,7 @@ class User extends Authenticatable
         'gender',
         'banned',
         'nro_doc',
-        'descripcion',
+        'description',
         'mobile_phone',
         'image',
         'active',
