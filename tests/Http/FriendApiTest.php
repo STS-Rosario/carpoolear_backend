@@ -83,13 +83,13 @@ class FriendApiTest extends TestCase
         $u2 = factory(STS\User::class)->create();
         $this->actingAsApiUser($u1);
 
-        $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn([$u2]);
+        $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn(STS\User::all());
 
         $response = $this->call('GET', 'api/friends/');
         $this->assertTrue($response->status() == 200);
         $friends = $this->parseJson($response);
 
-        $this->assertTrue($friends[0]->id == $u2->id);
+        $this->assertTrue($friends->data[0]->id == $u1->id);
     }
 
     public function testPendings()
@@ -98,12 +98,12 @@ class FriendApiTest extends TestCase
         $u2 = factory(STS\User::class)->create();
         $this->actingAsApiUser($u1);
 
-        $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn([]);
+        $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn(STS\User::all());
 
         $response = $this->call('GET', 'api/friends/pedings');
         $this->assertTrue($response->status() == 200);
         $friends = $this->parseJson($response);
 
-        $this->assertTrue(count($friends) == 0);
+        $this->assertTrue(count($friends->data) == 2);
     }
 }

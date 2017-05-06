@@ -14,7 +14,7 @@ interface User
 
     public function updatePhoto($user, $filename);
 
-    public function index();
+    public function index($user, $search_text = null);
 
     public function getUserBy($key, $value);
 

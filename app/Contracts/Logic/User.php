@@ -23,4 +23,6 @@ interface User
     public function setErrors($errs);
 
     public function getErrors();
+
+    public function index($user, $search_text);
 }
