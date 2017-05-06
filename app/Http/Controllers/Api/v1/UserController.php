@@ -44,14 +44,14 @@ class UserController extends Controller
     }
 
     public function updatePhoto(Request $request)
-    {
+    { 
         $me = $this->auth->user();
         $profile = $this->userLogic->updatePhoto($me, $request->all());
         if (! $profile) {
             throw new  UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
 
-        return $this->response->withArray(['user' => $profile]);
+        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']); 
     }
 
     public function show($name = null)
