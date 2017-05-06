@@ -29,6 +29,7 @@ class UserController extends Controller
         }
 
         return $this->response->withArray(['user' => $user]);
+        //return $this->item($user, new ProfileTransformer($me), ['key' => 'user']);
     }
 
     public function update(Request $request)
@@ -39,7 +40,7 @@ class UserController extends Controller
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
 
-        return $this->response->withArray(['user' => $profile]);
+        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']); 
     }
 
     public function updatePhoto(Request $request)
