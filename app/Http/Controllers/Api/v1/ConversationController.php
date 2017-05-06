@@ -27,7 +27,8 @@ class ConversationController extends Controller
 
     public function index(Request $request)
     {
-        $pageNumber = $pageSize = null;
+        $pageNumber = 1;
+        $pageSize = 20;
         if ($request->has('page_number')) {
             $pageNumber = $request->get('page_number');
         }

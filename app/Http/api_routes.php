@@ -18,6 +18,8 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->get('/my-trips', $v1_path.'TripController@myTrips');
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
 
+        $api->get('/list', $v1_path.'UserController@index');
+
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/me', $v1_path.'UserController@show');
         $api->get('/{name?}', $v1_path.'UserController@show');

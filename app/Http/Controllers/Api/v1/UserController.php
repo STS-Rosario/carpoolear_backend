@@ -67,4 +67,15 @@ class UserController extends Controller
         return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
         //return $this->response->withArray(['user' => $profile]);
     }
+
+    public function index(Request $request)
+    {
+        $search_text = null;
+        if ($request->has('value')) {
+            $search_text = $request->get('value');
+        }
+        $users = $this->userLogic->index($this->user, $search_text);
+
+        return $this->collection($users, new ProfileTransformer($this->user));
+    }
 }
