@@ -14,15 +14,15 @@ class CarController extends Controller
     protected $user;
     protected $carsLogic;
 
-    public function __construct(Request $r, CarLogic $carsLogic)
+    public function __construct(CarLogic $carsLogic)
     {
         $this->middleware('api.auth');
         $this->carsLogic = $carsLogic;
-        $this->user = $this->auth->user();
     }
 
     public function create(Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
         $car = $this->carsLogic->create($this->user, $data);
         if (! $car) {
@@ -34,6 +34,7 @@ class CarController extends Controller
 
     public function update($id, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
         $car = $this->carsLogic->update($this->user, $id, $data);
         if (! $car) {
@@ -45,6 +46,7 @@ class CarController extends Controller
 
     public function delete($id, Request $request)
     {
+        $this->user = $this->auth->user();
         $result = $this->carsLogic->delete($this->user, $id);
         if (! $result) {
             throw new StoreResourceFailedException('Could not delete car.', $this->carsLogic->getErrors());
@@ -66,6 +68,7 @@ class CarController extends Controller
 
     public function index(Request $request)
     {
+        $this->user = $this->auth->user();
         $cars = $this->carsLogic->index($this->user);
 
         return $cars;

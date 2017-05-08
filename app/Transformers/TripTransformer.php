@@ -46,6 +46,7 @@ class TripTransformer extends TransformerAbstract
                 foreach ($trip->passengerAccepted as $passenger) {
                     $data['passenger'][] = $userTranforms->transform($passenger->user);
                 }
+                $data['car'] = $trip->car;
             }
         }
 

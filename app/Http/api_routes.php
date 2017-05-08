@@ -87,7 +87,7 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'CarController@create');
         $api->put('/{id?}', $v1_path.'CarController@update');
         $api->delete('/{id?}', $v1_path.'CarController@delete');
-        $api->get('/{id?}', $v1_path.'CarController@show');
+        //$api->get('/{id?}', $v1_path.'CarController@show');
     });
 
     $api->group(['prefix' => 'devices'], function ($api) use ($v1_path) {
