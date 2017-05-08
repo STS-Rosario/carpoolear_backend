@@ -17,14 +17,26 @@ class FriendsRepository implements FriendsRepo
         $user1->allFriends()->detach($user2->id);
     }
 
-    public function get(UserModel $user1, UserModel $user2 = null, $state = null)
+    public function get(UserModel $user1, UserModel $user2 = null, $state = null, $data = [])
     {
+        $pageNumber = isset($data['page']) ? $data['page'] : null;
+        $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
+
         $friends = $user1->allFriends($state);
         if ($user2) {
             $friends->where('id', $user2->id);
         }
 
-        return $friends->get();
+        if (isset($data['value'])) {
+            $search_text = $data['value'];
+            $friends->where(function ($q) use ($search_text) {
+                $q->where('name', 'like', '%'.$search_text.'%');
+                $q->orWhere('email', 'like', '%'.$search_text.'%');
+            });
+        }
+
+        return make_pagination($friends, $pageNumber, $pageSize);
+        // return $friends->get();
     }
 
     public function closestFriend(UserModel $user1, UserModel $user2 = null)

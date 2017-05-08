@@ -18,7 +18,7 @@ interface Friends
 
     public function make(UserModel $Who, UserModel $user);
 
-    public function getFriends(UserModel $Who);
+    public function getFriends(UserModel $Who, $data = []);
 
     public function getPendings(UserModel $Who);
 

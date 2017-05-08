@@ -39,6 +39,24 @@ class ProfileTransformer extends TransformerAbstract
             $data['is_admin'] = $user->is_admin;
         }
 
+        if ($user->allFriends) {
+            if ($user->allFriends->count()) {
+                switch ($user->allFriends[0]->state) {
+                    case User::FRIEND_ACCEPTED:
+                        $data['state'] = "friend";
+                        break;
+                    case User::FRIEND_REQUEST:
+                        $data['state'] = 'pending';
+                        break;
+                    default:
+                        $data['state'] = 'none';
+                        break;
+                }
+            } else {
+                $data['state'] = 'none';
+            }
+        }
+
         return $data;
     }
 }

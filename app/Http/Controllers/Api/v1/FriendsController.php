@@ -18,13 +18,13 @@ class FriendsController extends Controller
     public function __construct(Request $r, FriendsLogic $friends, UserLogic $users)
     {
         $this->middleware('api.auth');
-        $this->user = $this->auth->user();
         $this->friends = $friends;
         $this->users = $users;
     }
 
     public function request(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->request($this->user, $friend);
@@ -37,6 +37,7 @@ class FriendsController extends Controller
 
     public function accept(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->accept($this->user, $friend);
@@ -49,6 +50,7 @@ class FriendsController extends Controller
 
     public function delete(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->delete($this->user, $friend);
@@ -61,6 +63,7 @@ class FriendsController extends Controller
 
     public function reject(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->reject($this->user, $friend);
@@ -73,13 +76,19 @@ class FriendsController extends Controller
 
     public function index(Request $request)
     {
-        $users = $this->friends->getFriends($this->user);
-
-        return $this->collection($users, new ProfileTransformer($this->user));
+        $this->user = $this->auth->user();
+        $data = $request->all();
+        $users = $this->friends->getFriends($this->user, $data);
+        if (isset($data["page_size"])) {
+            return $this->paginator($users, new ProfileTransformer($this->user));
+        } else {
+            return $this->collection($users, new ProfileTransformer($this->user));
+        }
     }
 
     public function pedings(Request $request)
     {
+        $this->user = $this->auth->user();
         $users = $this->friends->getPendings($this->user);
 
         return $this->collection($users, new ProfileTransformer($this->user));

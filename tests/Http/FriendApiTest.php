@@ -85,7 +85,7 @@ class FriendApiTest extends TestCase
 
         $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn(STS\User::all());
 
-        $response = $this->call('GET', 'api/friends/');
+        $response = $this->call('GET', 'api/friends/'); 
         $this->assertTrue($response->status() == 200);
         $friends = $this->parseJson($response);
 

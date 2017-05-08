@@ -64,6 +64,11 @@ class UserRepository implements UserRep
                 $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
         }
+        
+        $users->with(['allFriends' => function ($q) use ($user) {
+            $q->where('id', $user->id);
+        }]);
+
         $users->orderBy('name');
 
         return $users->get();
