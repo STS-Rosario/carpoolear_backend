@@ -96,12 +96,12 @@ class ApiAuthTest extends TestCase
             'name' => 'Mariano Botta',
         ];
         $response = $this->call('PUT', 'api/users', $data);
-        
-        $userUpdated = $this->parseJson($response); 
+
+        $userUpdated = $this->parseJson($response);
         $this->assertTrue($response->status() == 200);
         $this->assertEquals($userUpdated->data->name, $data['name']);
 
-        $u2 = STS\User::find($id); 
+        $u2 = STS\User::find($id);
         $this->assertEquals($userUpdated->data->name, $u2->name);
     }
 

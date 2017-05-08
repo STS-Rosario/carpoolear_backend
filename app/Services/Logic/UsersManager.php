@@ -103,7 +103,7 @@ class UsersManager extends BaseManager implements UserLogic
 
             $data = explode(',', $base64_string);
             $data = base64_decode($data[1]);
-            
+
             $name = $fileManager->createFromData($data, 'jpeg', 'image/profile');
             $this->repo->updatePhoto($user, $name);
             event(new UpdateEvent($user->id));

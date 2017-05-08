@@ -43,7 +43,7 @@ class ProfileTransformer extends TransformerAbstract
             if ($user->allFriends->count()) {
                 switch ($user->allFriends[0]->state) {
                     case User::FRIEND_ACCEPTED:
-                        $data['state'] = "friend";
+                        $data['state'] = 'friend';
                         break;
                     case User::FRIEND_REQUEST:
                         $data['state'] = 'pending';
