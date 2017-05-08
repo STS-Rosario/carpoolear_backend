@@ -79,7 +79,7 @@ class FriendsController extends Controller
         $this->user = $this->auth->user();
         $data = $request->all();
         $users = $this->friends->getFriends($this->user, $data);
-        if (isset($data["page_size"])) {
+        if (isset($data['page_size'])) {
             return $this->paginator($users, new ProfileTransformer($this->user));
         } else {
             return $this->collection($users, new ProfileTransformer($this->user));
