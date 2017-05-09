@@ -45,6 +45,7 @@ class FriendsRepository implements FriendsRepo
             $q->where('id', $user->id);
             $q->where('state', UserModel::FRIEND_REQUEST);
         });
+
         return $users->get();
     }
 

@@ -67,7 +67,7 @@ class UserRepository implements UserRep
                 $q->where('name', 'like', '%'.$search_text.'%');
                 $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
-        } 
+        }
 
         $users->orderBy('name');
         $users = $users->get();
@@ -83,6 +83,7 @@ class UserRepository implements UserRep
             } else {
                 $item->state = 'none';
             }
+
             return $item;
         });
 

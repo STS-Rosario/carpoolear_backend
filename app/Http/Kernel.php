@@ -38,8 +38,8 @@ class Kernel extends HttpKernel
 
         'logged' => [
             'api.auth',
-            'update.connection'
-        ]
+            'update.connection',
+        ],
     ];
 
     /**
@@ -58,6 +58,6 @@ class Kernel extends HttpKernel
         'jwt.auth'    => '\Tymon\JWTAuth\Middleware\GetUserFromToken',
         'jwt.refresh' => '\Tymon\JWTAuth\Middleware\RefreshToken',
         'user.admin'  => 'STS\Http\Middleware\UserAdmin',
-        'update.connection' => \STS\Http\Middleware\UpdateConnection::class
+        'update.connection' => \STS\Http\Middleware\UpdateConnection::class,
     ];
 }

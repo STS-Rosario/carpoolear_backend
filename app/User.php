@@ -35,13 +35,13 @@ class User extends Authenticatable
         'active',
         'activation_token',
         'emails_notifications',
-        'last_connection'
+        'last_connection',
     ];
 
     protected $dates = [
         'last_connection',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
 
     protected $hidden = ['password', 'remember_token', 'terms_and_conditions'];

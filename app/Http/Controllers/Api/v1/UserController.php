@@ -44,7 +44,7 @@ class UserController extends Controller
     }
 
     public function updatePhoto(Request $request)
-    { 
+    {
         $me = $this->auth->user();
         $profile = $this->userLogic->updatePhoto($me, $request->all());
         if (! $profile) {
