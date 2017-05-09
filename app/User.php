@@ -119,12 +119,13 @@ class User extends Authenticatable
     public function trips($state = null)
     {
         $trips = $this->hasMany("STS\Entities\Trip", 'user_id');
-        if ($state == Trip::FINALIZADO) {
-            $trips->where('trip_date', '<', Carbon::Now());
-        } elseif ($state == Trip::ACTIVO) {
-            $trips->where('trip_date', '>=', Carbon::Now());
+        
+        if ($state === Trip::FINALIZADO) {
+            $trips->where('trip_date', '<', Carbon::Now()->toDateTimeString());
+        } elseif ($state === Trip::ACTIVO) {
+            $trips->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
         }
-
+        
         return $trips;
     }
 

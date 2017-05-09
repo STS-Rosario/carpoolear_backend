@@ -20,13 +20,13 @@ class ConversationController extends Controller
     public function __construct(Request $r, ConversationLogic $conversations, UserLogic $users)
     {
         $this->middleware('logged');
-        $this->user = $this->auth->user();
         $this->conversationLogic = $conversations;
         $this->users = $users;
     }
 
     public function index(Request $request)
     {
+        $this->user = $this->auth->user();
         $pageNumber = 1;
         $pageSize = 20;
         if ($request->has('page_number')) {
@@ -46,6 +46,7 @@ class ConversationController extends Controller
 
     public function create(Request $request)
     {
+        $this->user = $this->auth->user();
         $to = $request->get('to');
         if ($to) {
             $destinatary = $this->users->find($to);
@@ -65,6 +66,7 @@ class ConversationController extends Controller
 
     public function getConversation(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $read = $request->get('read');
         $pageNumber = $request->get('pageNumber');
         $pageSize = $request->get('pageSize');
@@ -83,6 +85,7 @@ class ConversationController extends Controller
 
     public function send(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $message = $request->get('message');
         if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
             return $m;
@@ -92,6 +95,7 @@ class ConversationController extends Controller
 
     public function users(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $users = $this->conversationLogic->getUsersFromConversation($this->user, $id);
         if ($users) {
             return $users;
@@ -102,6 +106,7 @@ class ConversationController extends Controller
 
     public function addUser(Request $request, $id)
     {
+        $this->user = $this->auth->user();
         $users = $request->get('users');
         $ret = $this->conversationLogic->addUserToConversation($this->user, $id, $users);
         if ($ret) {
@@ -113,6 +118,7 @@ class ConversationController extends Controller
 
     public function deleteUser(Request $request, $id, $userId)
     {
+        $this->user = $this->auth->user();
         $userToDelete = $this->users->find($userId);
         $ret = $this->conversationLogic->removeUserFromConversation($this->user, $id, $userToDelete);
         if ($ret) {
@@ -124,12 +130,13 @@ class ConversationController extends Controller
 
     public function userList(Request $request)
     {
+        $this->user = $this->auth->user();
         $search_text = null;
         if ($request->has('value')) {
             $search_text = $request->get('value');
         }
-        $users = $this->conversationLogic->usersList($this->user, null, $search_text);
-
+        
+        $users = $this->conversationLogic->usersList($this->user, $search_text); 
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 }

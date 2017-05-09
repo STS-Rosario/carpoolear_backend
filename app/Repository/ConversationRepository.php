@@ -93,7 +93,7 @@ class ConversationRepository implements ConversationRepo
     }
 
     public function userList($user, $who = null, $search_text = null)
-    {
+    { 
         $users = User::where(function ($q) use ($user) {
             $q->where('is_admin', true);
             $q->orWhereHas('friends', function ($q) use ($user) {
@@ -102,13 +102,13 @@ class ConversationRepository implements ConversationRepo
             $q->orWhereHas('trips', function ($q) use ($user) {
                 $q->where('friendship_type_id', Trip::PRIVACY_PUBLIC);
                 $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
-                    $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
-                        $q->whereHas('user.friends', function ($q) use ($user) {
-                            $q->whereId($user->id);
-                        });
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
+                    $q->whereHas('user.friends', function ($q) use ($user) {
+                        $q->whereId($user->id);
                     });
+                });
+                $q->orWhere(function ($q) use ($user) {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
                     $q->where(function ($q) use ($user) {
                         $q->whereHas('user.friends', function ($q) use ($user) {
                             $q->whereId($user->id);
@@ -120,7 +120,7 @@ class ConversationRepository implements ConversationRepo
                 });
             });
         });
-
+        $users->where('id', '<>', $user->id);
         if ($who) {
             $users->where('id', $who->id);
         }
