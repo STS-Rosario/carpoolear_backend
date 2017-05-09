@@ -3,9 +3,9 @@
 namespace STS\Http\Middleware;
 
 use Closure;
+use Carbon\Carbon;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Contracts\Auth\Guard;
-use Carbon\Carbon;
 
 class UpdateConnection
 {
@@ -40,11 +40,11 @@ class UpdateConnection
      */
     public function handle($request, Closure $next)
     {
-        
         if ($this->user) {
             $this->user->last_connection = Carbon::Now();
             $this->user->save();
         }
+
         return $next($request);
     }
 }
