@@ -67,7 +67,7 @@ class UserRepository implements UserRep
                 $q->where('name', 'like', '%'.$search_text.'%');
                 $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
-        }
+        } 
 
         $users->orderBy('name');
         $users = $users->get();
@@ -124,11 +124,8 @@ class UserRepository implements UserRep
     {
         $pr = DB::table('password_resets')->where('token', $token)->first();
         if ($pr) {
-            
             return User::where('email', $pr->email)->first();
-        } 
-
-        return;
+        }
     }
 
     public function getNotifications($user, $unread = false)

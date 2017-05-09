@@ -39,9 +39,9 @@ class ProfileTransformer extends TransformerAbstract
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
         }
-
+ 
         if ($user->state) {
-             $data['state'] = $user->state;
+             $data['state'] = $user->state; 
         }
 
         return $data;
