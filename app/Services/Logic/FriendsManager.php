@@ -111,6 +111,6 @@ class FriendsManager extends BaseManager implements FriendsLogic
 
     public function getPendings(UserModel $who)
     {
-        return $this->friendsRepo->get($who, null, UserModel::FRIEND_REQUEST);
+        return $this->friendsRepo->getPending($who);
     }
 }

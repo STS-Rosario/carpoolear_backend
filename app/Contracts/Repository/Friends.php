@@ -13,4 +13,6 @@ interface Friends
     public function get(UserModel $user1, UserModel $user2 = null, $state = null, $data = []);
 
     public function closestFriend(UserModel $user1, UserModel $user2 = null);
+
+    public function getPending(UserModel $user);
 }

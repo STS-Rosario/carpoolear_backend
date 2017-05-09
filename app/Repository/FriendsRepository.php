@@ -39,6 +39,15 @@ class FriendsRepository implements FriendsRepo
         // return $friends->get();
     }
 
+    public function getPending(UserModel $user)
+    {
+        $users = UserModel::whereHas('allFriends', function ($q) use ($user) {
+            $q->where('id', $user->id);
+            $q->where('state', UserModel::FRIEND_REQUEST);
+        });
+        return $users->get();
+    }
+
     public function closestFriend(UserModel $user1, UserModel $user2 = null)
     {
         $friends = $user1->friends()

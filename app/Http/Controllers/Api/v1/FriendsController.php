@@ -17,7 +17,7 @@ class FriendsController extends Controller
 
     public function __construct(Request $r, FriendsLogic $friends, UserLogic $users)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->friends = $friends;
         $this->users = $users;
     }

@@ -15,7 +15,7 @@ class NotificationController extends Controller
 
     public function __construct(Request $r, NotificationLogic $logic)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->logic = $logic;
         $this->user = $this->auth->user();
     }

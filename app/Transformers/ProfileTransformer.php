@@ -33,28 +33,15 @@ class ProfileTransformer extends TransformerAbstract
             'gender' => $user->gender,
             'mobile_phone' => $user->mobile_phone,
             'nro_doc' => $user->nro_doc,
+            'last_connection' => $user->last_connection->toDateTimeString()
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
         }
 
-        if ($user->allFriends) {
-            if ($user->allFriends->count()) {
-                switch ($user->allFriends[0]->state) {
-                    case User::FRIEND_ACCEPTED:
-                        $data['state'] = "friend";
-                        break;
-                    case User::FRIEND_REQUEST:
-                        $data['state'] = 'pending';
-                        break;
-                    default:
-                        $data['state'] = 'none';
-                        break;
-                }
-            } else {
-                $data['state'] = 'none';
-            }
+        if ($user->state) {
+             $data['state'] = $user->state;
         }
 
         return $data;

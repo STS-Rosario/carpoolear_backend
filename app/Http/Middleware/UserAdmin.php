@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace STS\Http\Middleware;
 
 use Closure;
 use Tymon\JWTAuth\JWTAuth;

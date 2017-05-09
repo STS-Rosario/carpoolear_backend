@@ -16,7 +16,7 @@ class CarController extends Controller
 
     public function __construct(CarLogic $carsLogic)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->carsLogic = $carsLogic;
     }
 

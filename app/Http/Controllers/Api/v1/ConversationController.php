@@ -19,7 +19,7 @@ class ConversationController extends Controller
 
     public function __construct(Request $r, ConversationLogic $conversations, UserLogic $users)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->user = $this->auth->user();
         $this->conversationLogic = $conversations;
         $this->users = $users;

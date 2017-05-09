@@ -14,7 +14,7 @@ class PassengerController extends Controller
 
     public function __construct(Request $r, IPassengersLogic $passengerLogic)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->passengerLogic = $passengerLogic;
         $this->user = $this->auth->user();
     }

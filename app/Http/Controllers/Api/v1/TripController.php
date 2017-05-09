@@ -17,7 +17,7 @@ class TripController extends Controller
 
     public function __construct(Request $r, TripLogic $tripsLogic)
     {
-        $this->middleware('api.auth', ['except' => ['search']]);
+        $this->middleware('logged', ['except' => ['search']]);
         $this->tripsLogic = $tripsLogic;
     }
 

@@ -35,6 +35,11 @@ class Kernel extends HttpKernel
         'api' => [
             'throttle:60,1',
         ],
+
+        'logged' => [
+            'api.auth',
+            'update.connection'
+        ]
     ];
 
     /**
@@ -52,6 +57,7 @@ class Kernel extends HttpKernel
         'throttle'    => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'jwt.auth'    => '\Tymon\JWTAuth\Middleware\GetUserFromToken',
         'jwt.refresh' => '\Tymon\JWTAuth\Middleware\RefreshToken',
-        'user.admin'  => 'App\Http\Middleware\UserAdmin',
+        'user.admin'  => 'STS\Http\Middleware\UserAdmin',
+        'update.connection' => \STS\Http\Middleware\UpdateConnection::class
     ];
 }
