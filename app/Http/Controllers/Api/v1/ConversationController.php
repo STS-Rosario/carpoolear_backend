@@ -7,6 +7,7 @@ use STS\Http\Controllers\Controller;
 use STS\Transformers\ProfileTransformer;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Transformers\ConversationsTransformer;
+use STS\Transformers\MessageTransformer;
 use STS\Contracts\Logic\Conversation as ConversationLogic;
 use Dingo\Api\Exception\StoreResourceFailedException as Exception;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -38,7 +39,7 @@ class ConversationController extends Controller
 
         $conversations = $this->conversationLogic->getUserConversations($this->user, $pageNumber, $pageSize);
         if ($conversations) {
-            return $this->response->paginator($conversations, new ConversationsTransformer);
+            return $this->response->paginator($conversations, new ConversationsTransformer($this->user));
         } else {
             throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
         }
@@ -53,7 +54,8 @@ class ConversationController extends Controller
             if ($destinatary) {
                 $conversation = $this->conversationLogic->findOrCreatePrivateConversation($this->user, $destinatary);
                 if ($conversation) {
-                    return $conversation;
+
+                    return $this->item($conversation, new ConversationsTransformer($this->user), ['key' => 'data']);
                 }
             } else {
                 throw new BadRequestHttpException("Bad request exceptions: Destinatary user doesn't exist.");
@@ -70,12 +72,16 @@ class ConversationController extends Controller
         $read = $request->get('read');
         $pageNumber = $request->get('pageNumber');
         $pageSize = $request->get('pageSize');
-        $read = $request->get('read');
-        $unread = $request->get('unread');
+        $read = parse_boolean($request->get('read'));
+        $unread = parse_boolean($request->get('unread'));
         if ($unread) {
             $messages = $this->conversationLogic->getUnreadMessagesFromConversation($id, $this->user, $read);
+
+            return $this->collection($messages, new MessageTransformer($this->user));
         } else {
             $messages = $this->conversationLogic->getAllMessagesFromConversation($id, $this->user, $read, $pageNumber, $pageSize);
+
+            return $this->paginator($messages, new MessageTransformer($this->user));
         }
         if ($messages) {
             return $messages;

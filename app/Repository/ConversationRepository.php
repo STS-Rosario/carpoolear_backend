@@ -24,7 +24,7 @@ class ConversationRepository implements ConversationRepo
     public function getConversationsFromUser(User $user, $pageNumber, $pageSize)
     {
         $userConversations = $user->conversations()
-            ->orderBy('updated_at', 'desc');
+            ->orderBy('updated_at', 'desc')->with('users');
 
         return make_pagination($userConversations, $pageNumber, $pageSize);
     }

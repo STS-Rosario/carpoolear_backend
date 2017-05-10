@@ -31,7 +31,7 @@ class MessageRepository implements MessageRepo
         return $conversation->messages()->whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
-        })->get();
+        })->orderBy('updated_at', 'desc')->get();
     }
 
     public function changeMessageReadState(Message $message, User $user, $read_state)
