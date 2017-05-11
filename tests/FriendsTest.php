@@ -69,6 +69,22 @@ class FriendsTest extends TestCase
         $this->assertTrue($friends->getFriends($users[1])->count() == 1);
     }
 
+    public function testUserRelationship()
+    {
+        $friends = \App::make('\STS\Contracts\Logic\Friends');
+
+        $users = factory(STS\User::class, 3)->create();
+
+        $ret = $friends->make($users[0], $users[1]);
+        $ret = $friends->request($users[0], $users[2]);
+
+        $this->assertTrue($users[0]->friends->count() == 1);
+
+        $this->assertTrue($users[0]->allFriends->count() == 2);
+
+        $this->assertTrue($friends->getPendings($users[2])->count() == 1);
+    }
+
     public function testFriendsOfFriends()
     {
         $friends = \App::make('\STS\Contracts\Logic\Friends');

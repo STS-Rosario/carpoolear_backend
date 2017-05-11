@@ -2,7 +2,6 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\IPassengersLogic;
@@ -14,7 +13,7 @@ class PassengerController extends Controller
 
     public function __construct(Request $r, IPassengersLogic $passengerLogic)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->passengerLogic = $passengerLogic;
         $this->user = $this->auth->user();
     }

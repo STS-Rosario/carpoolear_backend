@@ -58,15 +58,36 @@ class UserRepository implements UserRep
                      ->where('banned', false)
                      ->where('id', '<>', $user->id);
 
+        $users->whereDoesntHave('friends', function ($q) use ($user) {
+            $q->where('id', $user->id);
+        });
+
         if ($search_text) {
             $users->where(function ($q) use ($search_text) {
                 $q->where('name', 'like', '%'.$search_text.'%');
                 $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
         }
-        $users->orderBy('name');
 
-        return $users->get();
+        $users->orderBy('name');
+        $users = $users->get();
+
+        $users = $users->map(function ($item, $key) use ($user) {
+            $u = $user->allFriends()->withPivot('state')->where('id', $item->id)->first();
+            if ($u) {
+                if ($u->pivot->state == User::FRIEND_REQUEST) {
+                    $item->state = 'request';
+                } else {
+                    $item->state = 'friend';
+                }
+            } else {
+                $item->state = 'none';
+            }
+
+            return $item;
+        });
+
+        return $users;
     }
 
     public function addFriend($user, $friend, $provider = '')
@@ -104,11 +125,8 @@ class UserRepository implements UserRep
     {
         $pr = DB::table('password_resets')->where('token', $token)->first();
         if ($pr) {
-            
             return User::where('email', $pr->email)->first();
-        } 
-
-        return;
+        }
     }
 
     public function getNotifications($user, $unread = false)

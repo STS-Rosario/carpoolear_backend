@@ -26,7 +26,7 @@ class TripTransformer extends TransformerAbstract
             'from_town' => $trip->from_town,
             'to_town' => $trip->to_town,
             'trip_date' => $trip->trip_date->toDateTimeString(),
-            'description' => $trip->description, 
+            'description' => $trip->description,
             'total_seats' => $trip->total_seats,
             'friendship_type_id' => $trip->friendship_type_id,
             'distance' => $trip->distance,
@@ -46,6 +46,7 @@ class TripTransformer extends TransformerAbstract
                 foreach ($trip->passengerAccepted as $passenger) {
                     $data['passenger'][] = $userTranforms->transform($passenger->user);
                 }
+                $data['car'] = $trip->car;
             }
         }
 

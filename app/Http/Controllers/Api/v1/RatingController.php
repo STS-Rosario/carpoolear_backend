@@ -13,7 +13,7 @@ class RatingController extends Controller
 
     public function __construct(IRateLogic $rateLogic)
     {
-        $this->middleware('api.auth', ['except' => ['pendingRate', 'rate']]);
+        $this->middleware('logged', ['except' => ['pendingRate', 'rate']]);
         $this->rateLogic = $rateLogic;
     }
 

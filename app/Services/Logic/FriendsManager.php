@@ -104,13 +104,13 @@ class FriendsManager extends BaseManager implements FriendsLogic
         return true;
     }
 
-    public function getFriends(UserModel $who)
+    public function getFriends(UserModel $who, $data = [])
     {
-        return $this->friendsRepo->get($who, null, UserModel::FRIEND_ACCEPTED);
+        return $this->friendsRepo->get($who, null, UserModel::FRIEND_ACCEPTED, $data);
     }
 
     public function getPendings(UserModel $who)
     {
-        return $this->friendsRepo->get($who, null, UserModel::FRIEND_REQUEST);
+        return $this->friendsRepo->getPending($who);
     }
 }

@@ -18,7 +18,7 @@ class DeviceController extends Controller
 
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
     {
-        $this->middleware('api.auth');
+        $this->middleware('logged');
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
     }

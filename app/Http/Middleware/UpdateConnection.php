@@ -3,10 +3,11 @@
 namespace STS\Http\Middleware;
 
 use Closure;
+use Carbon\Carbon;
 use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Contracts\Auth\Guard;
 
-class UserAdmin
+class UpdateConnection
 {
     /**
      * The Guard implementation.
@@ -39,10 +40,11 @@ class UserAdmin
      */
     public function handle($request, Closure $next)
     {
-        if ($this->user && $this->user->is_admin) {
-            return $next($request);
-        } else {
-            return response()->json('Unauthorized.', 401);
+        if ($this->user) {
+            $this->user->last_connection = Carbon::Now();
+            $this->user->save();
         }
+
+        return $next($request);
     }
 }

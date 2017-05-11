@@ -2,7 +2,6 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Auth;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Transformers\TripTransformer;
@@ -17,7 +16,7 @@ class TripController extends Controller
 
     public function __construct(Request $r, TripLogic $tripsLogic)
     {
-        $this->middleware('api.auth', ['except' => ['search']]);
+        $this->middleware('logged', ['except' => ['search']]);
         $this->tripsLogic = $tripsLogic;
     }
 

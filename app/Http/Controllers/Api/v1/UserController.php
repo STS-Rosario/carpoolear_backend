@@ -16,7 +16,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('api.auth', ['except' => ['create']]);
+        $this->middleware('logged', ['except' => ['create']]);
         $this->userLogic = $userLogic;
     }
 
@@ -40,18 +40,18 @@ class UserController extends Controller
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
 
-        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']); 
+        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
     }
 
     public function updatePhoto(Request $request)
-    { 
+    {
         $me = $this->auth->user();
         $profile = $this->userLogic->updatePhoto($me, $request->all());
         if (! $profile) {
             throw new  UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
 
-        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']); 
+        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
     }
 
     public function show($name = null)

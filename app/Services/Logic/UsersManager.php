@@ -92,15 +92,19 @@ class UsersManager extends BaseManager implements UserLogic
 
     public function updatePhoto($user, $data)
     {
-        $v = Validator::make($data, ['profile' => 'required|image']);
+        $v = Validator::make($data, ['profile' => 'required']);
         if ($v->fails()) {
             $this->setErrors($v->errors());
 
             return;
         } else {
             $fileManager = new FileRepository();
-            $filename = $data['profile']['tmp_name'];
-            $name = $fileManager->createFromFile($filename, 'image/profile');
+            $base64_string = $data['profile'];
+
+            $data = explode(',', $base64_string);
+            $data = base64_decode($data[1]);
+
+            $name = $fileManager->createFromData($data, 'jpeg', 'image/profile');
             $this->repo->updatePhoto($user, $name);
             event(new UpdateEvent($user->id));
 

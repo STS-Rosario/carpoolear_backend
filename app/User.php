@@ -35,7 +35,15 @@ class User extends Authenticatable
         'active',
         'activation_token',
         'emails_notifications',
+        'last_connection',
     ];
+
+    protected $dates = [
+        'last_connection',
+        'created_at',
+        'updated_at',
+    ];
+
     protected $hidden = ['password', 'remember_token', 'terms_and_conditions'];
 
     protected $cast = [
@@ -76,7 +84,7 @@ class User extends Authenticatable
         $friends = $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')
                     ->withTimestamps();
         if ($state) {
-            $friends->where('state', $state);
+            $friends->wherePivot('state', $state);
         }
 
         return $friends;
@@ -86,7 +94,7 @@ class User extends Authenticatable
     {
         return $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')
                     ->withTimestamps()
-                    ->where('state', self::FRIEND_ACCEPTED);
+                    ->wherePivot('state', self::FRIEND_ACCEPTED);
     }
 
     public function relativeFriends()
@@ -111,12 +119,13 @@ class User extends Authenticatable
     public function trips($state = null)
     {
         $trips = $this->hasMany("STS\Entities\Trip", 'user_id');
-        if ($state == Trip::FINALIZADO) {
-            $trips->where('trip_date', '<', Carbon::Now());
-        } elseif ($state == Trip::ACTIVO) {
-            $trips->where('trip_date', '>=', Carbon::Now());
+        
+        if ($state === Trip::FINALIZADO) {
+            $trips->where('trip_date', '<', Carbon::Now()->toDateTimeString());
+        } elseif ($state === Trip::ACTIVO) {
+            $trips->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
         }
-
+        
         return $trips;
     }
 

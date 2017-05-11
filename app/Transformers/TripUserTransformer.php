@@ -29,6 +29,7 @@ class TripUserTransformer extends TransformerAbstract
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
             'negative_ratings' => $user->negative_ratings,
+            'last_connection' => $user->last_connection->toDateTimeString(),
         ];
 
         return $data;
