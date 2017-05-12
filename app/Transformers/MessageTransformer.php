@@ -24,6 +24,9 @@ class MessageTransformer extends TransformerAbstract
     {
         $data = [
             'id' => $message->id, 
+            'text' => $message->text,
+            'created_at' => $message->created_at->toDateTimeString(),
+            'user_id' => $message->user_id
         ];
 
         return $data;

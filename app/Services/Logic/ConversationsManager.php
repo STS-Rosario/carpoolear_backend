@@ -247,7 +247,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $this->getMessagesFromConversation($conversation_id, $user, $read, true, null, null);
     }
 
-    private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $pageNumber = null, $pageSize = null)
+    private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $timestamp = null, $pageSize = null)
     {
         //FALTA CHEQUEAR PERMISOS
         $conversation = $this->getConversation($user, $conversation_id);
@@ -261,7 +261,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
                     }
                 }
             } else {
-                $messages = $this->messageRepository->getMessages($conversation, $pageNumber, $pageSize);
+                $messages = $this->messageRepository->getMessages($conversation, $timestamp, $pageSize);
             }
 
             if ($read) {

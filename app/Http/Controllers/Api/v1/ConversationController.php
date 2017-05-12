@@ -70,7 +70,7 @@ class ConversationController extends Controller
     {
         $this->user = $this->auth->user();
         $read = $request->get('read');
-        $pageNumber = $request->get('pageNumber');
+        $timestamp = $request->get('timestamp');
         $pageSize = $request->get('pageSize');
         $read = parse_boolean($request->get('read'));
         $unread = parse_boolean($request->get('unread'));
@@ -79,9 +79,9 @@ class ConversationController extends Controller
 
             return $this->collection($messages, new MessageTransformer($this->user));
         } else {
-            $messages = $this->conversationLogic->getAllMessagesFromConversation($id, $this->user, $read, $pageNumber, $pageSize);
+            $messages = $this->conversationLogic->getAllMessagesFromConversation($id, $this->user, $read, $timestamp, $pageSize);
 
-            return $this->paginator($messages, new MessageTransformer($this->user));
+            return $this->collection($messages, new MessageTransformer($this->user));
         }
         if ($messages) {
             return $messages;
@@ -94,7 +94,8 @@ class ConversationController extends Controller
         $this->user = $this->auth->user();
         $message = $request->get('message');
         if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
-            return $m;
+
+            return $this->item($m, new MessageTransformer($this->user));
         }
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
     }

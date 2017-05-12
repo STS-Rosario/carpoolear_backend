@@ -19,11 +19,16 @@ class MessageRepository implements MessageRepo
         return $message->delete();
     }
 
-    public function getMessages(Conversation $conversation, $pageNumber, $pageSize)
+    public function getMessages(Conversation $conversation, $timestamp, $pageSize)
     {
         $conversationMessages = $conversation->messages()->orderBy('updated_at', 'desc');
+        if ($timestamp) {
+            $conversationMessages->where('created_at', '<', $timestamp);
+        }
 
-        return make_pagination($conversationMessages, $pageNumber, $pageSize);
+        $conversationMessages->take($pageSize);
+
+        return $conversationMessages->get();
     }
 
     public function getUnreadMessages(Conversation $conversation, User $user)
