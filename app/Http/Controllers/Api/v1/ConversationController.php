@@ -146,4 +146,16 @@ class ConversationController extends Controller
         $users = $this->conversationLogic->usersList($this->user, $search_text); 
         return $this->collection($users, new ProfileTransformer($this->user));
     }
+
+    public function getMessagesUnread(Request $request) 
+    {
+        $this->user = $this->auth->user();
+        $conversation = null;
+        if ($request->has('conversation_id')) {
+            $conversation = $request->get('conversation_id');
+        }
+        $messages = $this->conversationLogic->getMessagesUnread($this->user, $conversation);
+
+        return $this->collection($messages, new MessageTransformer($this->user));
+    }
 }

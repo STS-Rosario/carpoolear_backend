@@ -19,4 +19,6 @@ interface Messages
     public function changeMessageReadState(Message $message, UserModel $user, $read_state);
 
     public function createMessageReadState(Message $message, UserModel $user, $read_state);
+
+    public function getMessagesUnread(UserModel $user);
 }

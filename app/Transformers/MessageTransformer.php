@@ -26,7 +26,8 @@ class MessageTransformer extends TransformerAbstract
             'id' => $message->id, 
             'text' => $message->text,
             'created_at' => $message->created_at->toDateTimeString(),
-            'user_id' => $message->user_id
+            'user_id' => $message->user_id,
+            'conversation_id' => $message->conversation_id
         ];
 
         return $data;

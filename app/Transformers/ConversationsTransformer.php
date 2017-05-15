@@ -42,6 +42,13 @@ class ConversationsTransformer extends TransformerAbstract
         $data['unread'] = ! $conversation->read($this->user);
         $data['update_at'] = $conversation->updated_at->toDateTimeString();
 
+        if ($conversation->messages->count() > 0) {
+            $transformer = new MessageTransformer($this->user);
+            $data['last_message'] = $transformer->transform($conversation->messages[0]);
+        } else {
+            $data['last_message'] = null;
+        }
+
         $data['users'] = [];
         foreach($conversation->users as $u) {
             $data['users'][] = [
