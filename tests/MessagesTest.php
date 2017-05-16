@@ -151,11 +151,13 @@ class MessagesTest extends TestCase
         $this->conversationManager->send($u1, $c->id, $m3);
         $this->conversationManager->send($u3, $c->id, $m3);
 
-        $messages = $this->messageRepository->getMessages($c, 1, 20);
-        $messagesDecode = json_decode(json_encode($messages));
-        $this->assertTrue($messagesDecode->total == 3 && $messagesDecode->data[0]->user_id == $u1->id && $messagesDecode->data[0]->text == $m1 && $messagesDecode->data[0]->conversation_id == $c->id);
-        $this->assertTrue($messagesDecode->data[1]->user_id == $u2->id && $messagesDecode->data[1]->text == $m2 && $messagesDecode->data[1]->conversation_id == $c->id);
-        $this->assertTrue($messagesDecode->data[2]->user_id == $u1->id && $messagesDecode->data[2]->text == $m3 && $messagesDecode->data[2]->conversation_id == $c->id);
+        $messages = $this->messageRepository->getMessages($c, null, 20); 
+        $this->assertTrue(count($messages) == 3);
+        $this->assertTrue($messages[0]->user_id == $u1->id);
+        $this->assertTrue($messages[0]->text == $m1);
+        $this->assertTrue($messages[0]->conversation_id == $c->id);
+        $this->assertTrue($messages[1]->user_id == $u2->id && $messages[1]->text == $m2 && $messages[1]->conversation_id == $c->id);
+        $this->assertTrue($messages[2]->user_id == $u1->id && $messages[2]->text == $m3 && $messages[2]->conversation_id == $c->id);
     }
 
     public function test_Get_User_Conversations()
@@ -239,33 +241,32 @@ class MessagesTest extends TestCase
         $c = factory(STS\Entities\Conversation::class)->create();
         $this->conversationRepository->addUser($c, $u1);
         $this->conversationRepository->addUser($c, $u2);
-        for ($i = 0; $i < 27; $i++) {
+        for ($i = 0; $i < 3; $i++) {
             $m = 'text'.$i;
             $this->conversationManager->send($u1, $c->id, $m);
         }
         $this->conversationManager->send($u2, $c->id, 'new');
 
-        $messages = $this->conversationManager->getAllMessagesFromConversation($c->id, $u2, false);
-        $messages = json_decode(json_encode($messages));
-        $this->assertTrue($messages->total == 28);
+        $messages = $this->conversationManager->getAllMessagesFromConversation($c->id, $u2, false); 
+
+        $this->assertTrue(count($messages) == 4);
 
         $this->conversationManager->send($u1, $c->id, 'new');
 
         $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false);
-        $messages = json_decode(json_encode($messages));
-        $this->assertTrue(count($messages) == 28);
+        
+        $this->assertTrue(count($messages) == 4);
 
         $this->conversationManager->send($u1, $c->id, 'new');
         $this->conversationManager->send($u2, $c->id, 'new');
 
         $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, true);
         $messages = json_decode(json_encode($messages));
-        $this->assertTrue(count($messages) == 29);
+        $this->assertTrue(count($messages) == 5);
 
         $this->conversationManager->send($u1, $c->id, 'new');
 
-        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false);
-        $messages = json_decode(json_encode($messages));
+        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false); 
         $this->assertTrue(count($messages) == 1);
     }
 

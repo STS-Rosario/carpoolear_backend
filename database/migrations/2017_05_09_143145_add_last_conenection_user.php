@@ -25,7 +25,7 @@ class AddLastConenectionUser extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('last connection');
+            $table->dropColumn('last_connection');
         });
     }
 }

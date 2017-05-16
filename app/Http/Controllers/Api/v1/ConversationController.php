@@ -86,15 +86,11 @@ class ConversationController extends Controller
         $unread = parse_boolean($request->get('unread'));
         if ($unread) {
             $messages = $this->conversationLogic->getUnreadMessagesFromConversation($id, $this->user, $read);
-
-            return $this->collection($messages, new MessageTransformer($this->user));
         } else {
             $messages = $this->conversationLogic->getAllMessagesFromConversation($id, $this->user, $read, $timestamp, $pageSize);
-
-            return $this->collection($messages, new MessageTransformer($this->user));
         }
         if ($messages) {
-            return $messages;
+            return $this->collection($messages, new MessageTransformer($this->user));
         }
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
     }
