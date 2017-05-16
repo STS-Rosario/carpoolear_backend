@@ -151,7 +151,7 @@ class MessagesTest extends TestCase
         $this->conversationManager->send($u1, $c->id, $m3);
         $this->conversationManager->send($u3, $c->id, $m3);
 
-        $messages = $this->messageRepository->getMessages($c, null, 20); 
+        $messages = $this->messageRepository->getMessages($c, null, 20);
         $this->assertTrue(count($messages) == 3);
         $this->assertTrue($messages[0]->user_id == $u1->id);
         $this->assertTrue($messages[0]->text == $m1);
@@ -247,14 +247,14 @@ class MessagesTest extends TestCase
         }
         $this->conversationManager->send($u2, $c->id, 'new');
 
-        $messages = $this->conversationManager->getAllMessagesFromConversation($c->id, $u2, false); 
+        $messages = $this->conversationManager->getAllMessagesFromConversation($c->id, $u2, false);
 
         $this->assertTrue(count($messages) == 4);
 
         $this->conversationManager->send($u1, $c->id, 'new');
 
         $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false);
-        
+
         $this->assertTrue(count($messages) == 4);
 
         $this->conversationManager->send($u1, $c->id, 'new');
@@ -266,7 +266,7 @@ class MessagesTest extends TestCase
 
         $this->conversationManager->send($u1, $c->id, 'new');
 
-        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false); 
+        $messages = $this->conversationManager->getUnreadMessagesFromConversation($c->id, $u2, false);
         $this->assertTrue(count($messages) == 1);
     }
 
