@@ -269,12 +269,12 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     public function getMessagesUnread(User $user, $conversation_id = null, $timestamp = null)
     {
         $messages = $this->messageRepository->getMessagesUnread($user, $timestamp);
-        
+
         if ($conversation_id && $conv = $this->conversationRepository->getConversationFromId($conversation_id, $user)) {
             $this->conversationRepository->changeConversationReadState($conv, $user, true);
             $this->messageRepository->markMessages($user, $conv->id);
         }
-        
+
         return $messages;
     }
 }

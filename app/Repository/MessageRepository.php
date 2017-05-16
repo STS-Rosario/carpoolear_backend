@@ -66,10 +66,10 @@ class MessageRepository implements MessageRepo
                     ->get();
     }
 
-    public function markMessages(User $user, $conversation_id) 
+    public function markMessages(User $user, $conversation_id)
     {
         $msgs = Message::where('conversation_id', $conversation_id)
-                    ->whereHas('users', 
+                    ->whereHas('users',
                         function ($q) use ($user) {
                             $q->where('user_id', $user->id)
                                 ->where('read', false);
@@ -80,7 +80,7 @@ class MessageRepository implements MessageRepo
           ->where('user_id', $user->id)
           ->update([
               'read' => true,
-              'updated_at' => Carbon::Now()
+              'updated_at' => Carbon::Now(),
           ]);
     }
 }
