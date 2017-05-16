@@ -74,6 +74,7 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'ConversationController@create');
         $api->get('/user-list', $v1_path.'ConversationController@userList');
         $api->get('/unread', $v1_path.'ConversationController@getMessagesUnread');
+        $api->get('/show/{id?}', $v1_path.'ConversationController@show');
 
         $api->get('/{id?}', $v1_path.'ConversationController@getConversation');
         $api->get('/{id?}/users', $v1_path.'ConversationController@users');

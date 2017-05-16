@@ -36,5 +36,7 @@ interface Conversation
 
     public function usersList($user, $searchText);
 
-    public function getMessagesUnread(UserModel $user, $conversation_id = null);
+    public function getMessagesUnread(UserModel $user, $conversation_id = null, $timestamp = null);
+
+    public function show(UserModel $user, $id);
 }

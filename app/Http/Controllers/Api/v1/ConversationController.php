@@ -45,6 +45,17 @@ class ConversationController extends Controller
         }
     }
 
+    public function show($id) 
+    {
+        $this->user = $this->auth->user();
+        $conversation = $this->conversationLogic->show($this->user, $id);
+        if ($conversation) {
+            return $this->response->item($conversation, new ConversationsTransformer($this->user));
+        } else {
+            throw new BadRequestHttpException("Bad request exceptions");
+        }
+    }
+
     public function create(Request $request)
     {
         $this->user = $this->auth->user();
@@ -151,10 +162,14 @@ class ConversationController extends Controller
     {
         $this->user = $this->auth->user();
         $conversation = null;
+        $timestamp = null;
         if ($request->has('conversation_id')) {
             $conversation = $request->get('conversation_id');
         }
-        $messages = $this->conversationLogic->getMessagesUnread($this->user, $conversation);
+        if ($request->has('timestamp')) {
+            $timestamp = $request->get('timestamp'); 
+        }
+        $messages = $this->conversationLogic->getMessagesUnread($this->user, $conversation, $timestamp);
 
         return $this->collection($messages, new MessageTransformer($this->user));
     }

@@ -42,9 +42,10 @@ class ConversationsTransformer extends TransformerAbstract
         $data['unread'] = ! $conversation->read($this->user);
         $data['update_at'] = $conversation->updated_at->toDateTimeString();
 
-        if ($conversation->messages->count() > 0) {
+        $m = $conversation->messages()->orderBy('created_at', 'desc')->first();
+        if ($m) {
             $transformer = new MessageTransformer($this->user);
-            $data['last_message'] = $transformer->transform($conversation->messages[0]);
+            $data['last_message'] = $transformer->transform($m);
         } else {
             $data['last_message'] = null;
         }

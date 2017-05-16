@@ -2,7 +2,9 @@
 
 namespace STS\Repository;
 
+use DB;
 use STS\User;
+use Carbon\Carbon;
 use STS\Entities\Message;
 use STS\Entities\Conversation;
 use STS\Contracts\Repository\Messages as MessageRepo;
@@ -49,11 +51,36 @@ class MessageRepository implements MessageRepo
         $message->users()->attach($user->id, ['read' => $read_state]);
     }
 
-    public function getMessagesUnread(User $user)
+    public function getMessagesUnread(User $user, $timestamp)
     {
-        return Message::whereHas('users', function ($q) use ($user) {
+        $msgs = Message::whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
-        })->orderBy('conversation_id')->orderBy('updated_at', 'desc')->get();
+        });
+        if ($timestamp) {
+            $msgs->where('created_at', '>', $timestamp);
+        }
+
+        return $msgs->orderBy('conversation_id')
+                    ->orderBy('updated_at', 'desc')
+                    ->get();
+    }
+
+    public function markMessages(User $user, $conversation_id) 
+    {
+        $msgs = Message::where('conversation_id', $conversation_id)
+                    ->whereHas('users', 
+                        function ($q) use ($user) {
+                            $q->where('user_id', $user->id)
+                                ->where('read', false);
+                        })
+                    ->lists('id');
+        DB::table('user_message_read')
+          ->whereIn('message_id', $msgs)
+          ->where('user_id', $user->id)
+          ->update([
+              'read' => true,
+              'updated_at' => Carbon::Now()
+          ]);
     }
 }
