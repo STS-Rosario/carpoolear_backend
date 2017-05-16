@@ -43,7 +43,8 @@ class Message extends Model
         return $this->users()->where('user_id', $user->id)->first()->pivot->read;
     }
 
-    public function numberOfRead() {
+    public function numberOfRead()
+    {
         return $this->users()->where('read', true)->count() + 1;
     }
 }

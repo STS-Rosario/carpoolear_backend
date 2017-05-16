@@ -4,10 +4,10 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\MessageTransformer;
 use STS\Transformers\ProfileTransformer;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Transformers\ConversationsTransformer;
-use STS\Transformers\MessageTransformer;
 use STS\Contracts\Logic\Conversation as ConversationLogic;
 use Dingo\Api\Exception\StoreResourceFailedException as Exception;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
@@ -45,14 +45,14 @@ class ConversationController extends Controller
         }
     }
 
-    public function show($id) 
+    public function show($id)
     {
         $this->user = $this->auth->user();
         $conversation = $this->conversationLogic->show($this->user, $id);
         if ($conversation) {
             return $this->response->item($conversation, new ConversationsTransformer($this->user));
         } else {
-            throw new BadRequestHttpException("Bad request exceptions");
+            throw new BadRequestHttpException('Bad request exceptions');
         }
     }
 
@@ -65,7 +65,6 @@ class ConversationController extends Controller
             if ($destinatary) {
                 $conversation = $this->conversationLogic->findOrCreatePrivateConversation($this->user, $destinatary);
                 if ($conversation) {
-
                     return $this->item($conversation, new ConversationsTransformer($this->user), ['key' => 'data']);
                 }
             } else {
@@ -105,7 +104,6 @@ class ConversationController extends Controller
         $this->user = $this->auth->user();
         $message = $request->get('message');
         if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
-
             return $this->item($m, new MessageTransformer($this->user));
         }
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
@@ -153,12 +151,13 @@ class ConversationController extends Controller
         if ($request->has('value')) {
             $search_text = $request->get('value');
         }
-        
-        $users = $this->conversationLogic->usersList($this->user, $search_text); 
+
+        $users = $this->conversationLogic->usersList($this->user, $search_text);
+
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 
-    public function getMessagesUnread(Request $request) 
+    public function getMessagesUnread(Request $request)
     {
         $this->user = $this->auth->user();
         $conversation = null;
@@ -167,7 +166,7 @@ class ConversationController extends Controller
             $conversation = $request->get('conversation_id');
         }
         if ($request->has('timestamp')) {
-            $timestamp = $request->get('timestamp'); 
+            $timestamp = $request->get('timestamp');
         }
         $messages = $this->conversationLogic->getMessagesUnread($this->user, $conversation, $timestamp);
 
