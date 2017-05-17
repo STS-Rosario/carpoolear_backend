@@ -38,6 +38,7 @@ class ProfileTransformer extends TransformerAbstract
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
+            $data['accounts'] = $user->accounts;
         }
 
         if ($user->state) {
