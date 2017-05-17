@@ -34,7 +34,7 @@ class ConversationApiTest extends TestCase
         $friends->make($user1, $user3);
 
         $this->actingAsApiUser($user1);
-        $response = transform($this->call('GET', 'api/conversations/')); 
+        $response = transform($this->call('GET', 'api/conversations/'));
         $this->assertTrue($response->original->total == 0);
 
         $conversation = $this->conversationManager->findOrCreatePrivateConversation($user1, $user2);
