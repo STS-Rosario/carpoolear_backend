@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\IPassengersLogic;
+use STS\Transformers\PassengerTransformer;
 
 class PassengerController extends Controller
 {
@@ -15,38 +16,41 @@ class PassengerController extends Controller
     {
         $this->middleware('logged');
         $this->passengerLogic = $passengerLogic;
-        $this->user = $this->auth->user();
     }
 
     public function passengers($tripId, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $passengers = $this->passengerLogic->index($tripId, $this->user, $data);
 
-        return $passengers;
+        return $this->response->collection($passengers, new PassengerTransformer($this->user));
     }
 
     public function requests($tripId, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $passengers = $this->passengerLogic->getPendingRequests($tripId, $this->user, $data);
 
-        return $passengers;
+        return $this->response->collection($passengers, new PassengerTransformer($this->user));
     }
 
     public function allRequests(Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $passengers = $this->passengerLogic->getPendingRequests(null, $this->user, $data);
 
-        return $passengers;
+        return $this->response->collection($passengers, new PassengerTransformer($this->user));
     }
 
     public function newRequest($tripId, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $request = $this->passengerLogic->newRequest($tripId, $this->user, $data);
@@ -60,6 +64,7 @@ class PassengerController extends Controller
 
     public function cancelRequest($tripId, $userId, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $request = $this->passengerLogic->cancelRequest($tripId, $userId, $this->user, $data);
@@ -73,6 +78,7 @@ class PassengerController extends Controller
 
     public function acceptRequest($tripId, $userId, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $request = $this->passengerLogic->acceptRequest($tripId, $userId, $this->user, $data);
@@ -86,6 +92,7 @@ class PassengerController extends Controller
 
     public function rejectRequest($tripId, $userId, Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
 
         $request = $this->passengerLogic->rejectRequest($tripId, $userId, $this->user, $data);

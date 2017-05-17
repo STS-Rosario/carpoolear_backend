@@ -123,6 +123,16 @@ class Trip extends Model
         return $this->passengerAccepted()->count();
     }
 
+    public function isPending($user) 
+    {
+        return $this->passengerPending()->where('user_id', $user->id)->count() > 0;
+    }
+
+    public function isPassenger($user) 
+    {
+        return $this->passengerAccepted->where('user_id', $user->id)->count() > 0;
+    }
+
     public function getSeatsAvailableAttribute()
     {
         return $this->total_seats - $this->passengerAccepted()->count();

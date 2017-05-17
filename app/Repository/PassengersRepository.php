@@ -28,12 +28,13 @@ class PassengersRepository implements IPassengersRepository
                 $q->where('user_id', $user->id);
             });
         }
+        $passengers->with('user');
         $passengers->whereIn('request_state', [Passenger::STATE_PENDING]);
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 
-        return make_pagination($passengers, $pageNumber, $pageSize);
+        return $passengers->get(); // make_pagination($passengers, $pageNumber, $pageSize);
     }
 
     public function newRequest($tripId, $user, $data = [])
