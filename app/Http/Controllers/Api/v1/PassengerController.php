@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Contracts\Logic\IPassengersLogic;
 use STS\Transformers\PassengerTransformer;
+use Dingo\Api\Exception\StoreResourceFailedException;
+use Dingo\Api\Exception\UpdateResourceFailedException;
 
 class PassengerController extends Controller
 {

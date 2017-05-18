@@ -51,7 +51,9 @@ class Trip extends Model
     ];
 
     protected $appends = [
-        'passenger_count', 'seats_available', 'is_driver',
+        'passenger_count', 
+        'seats_available', 
+        'is_driver',
     ];
 
     protected $casts = [

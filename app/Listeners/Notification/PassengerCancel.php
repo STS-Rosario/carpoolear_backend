@@ -32,11 +32,12 @@ class PassengerCancel implements ShouldQueue
         $trip = $event->trip;
         $from = $event->from;
         $to = $event->to;
+        $state = $event->canceledState;
         if ($to) {
             $notification = new CancelPassengerNotification();
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
-            //$notification->setAttribute('token', $to);
+            $notification->setAttribute('canceledState', $state);
             $notification->notify($to);
         }
     }

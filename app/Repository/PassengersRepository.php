@@ -2,6 +2,7 @@
 
 namespace STS\Repository;
 
+use Carbon\Carbon;
 use STS\Entities\Passenger;
 use STS\Contracts\Repository\IPassengersRepository;
 
@@ -26,6 +27,7 @@ class PassengersRepository implements IPassengersRepository
         } else {
             $passengers = Passenger::whereHas('trip', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
+                $q->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
             });
         }
         $passengers->with('user');
@@ -51,10 +53,11 @@ class PassengersRepository implements IPassengersRepository
         return $newRequest;
     }
 
-    private function changeRequestState($tripId, $userId, $newState, $criterias)
+    private function changeRequestState($tripId, $userId, $newState, $criterias, $canceledState = null)
     {
         $updateData = [
             'request_state' => $newState,
+            'canceled_state' => $canceledState
         ];
 
         $request = Passenger::where('trip_id', $tripId);
@@ -74,27 +77,41 @@ class PassengersRepository implements IPassengersRepository
         return $request;
     }
 
-    public function cancelRequest($tripId, $user, $data)
+    public function cancelRequest($tripId, $user, $canceledState)
     {
-        $criteria = [
-            'request_state' => Passenger::STATE_PENDING,
-        ];
+        if ($canceledState == Passenger::CANCELED_REQUEST) {
+            $criteria = [
+                'request_state' => Passenger::STATE_PENDING,
+            ];
+        } else {
+            $criteria = [
+                'request_state' => Passenger::STATE_ACCEPTED,
+            ];
+        }
 
-        $cancelRequest = $this->changeRequestState($tripId, $user->id, Passenger::STATE_CANCELED, $criteria);
+        $cancelRequest = $this->changeRequestState($tripId, $user->id, Passenger::STATE_CANCELED, $criteria, $canceledState);
 
         return $cancelRequest;
     }
 
     public function acceptRequest($tripId, $acceptedUserId, $user, $data)
     {
-        $acceptRequest = $this->changeRequestState($tripId, $acceptedUserId, Passenger::STATE_ACCEPTED, null);
+        $criteria = [
+            'request_state' => Passenger::STATE_PENDING,
+        ];
+
+        $acceptRequest = $this->changeRequestState($tripId, $acceptedUserId, Passenger::STATE_ACCEPTED, $criteria);
 
         return $acceptRequest;
     }
 
     public function rejectRequest($tripId, $rejectedUserId, $user, $data)
     {
-        $rejectedRequest = $this->changeRequestState($tripId, $rejectedUserId, Passenger::STATE_REJECTED, null);
+        $criteria = [
+            'request_state' => Passenger::STATE_PENDING,
+        ];
+
+        $rejectedRequest = $this->changeRequestState($tripId, $rejectedUserId, Passenger::STATE_REJECTED, $criteria);
 
         return $rejectedRequest;
     }
