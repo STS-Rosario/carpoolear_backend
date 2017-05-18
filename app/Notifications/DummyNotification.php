@@ -29,4 +29,11 @@ class DummyNotification extends BaseNotification
     {
         return 'Dummy Notification '.$this->getAttribute('dummy');
     }
+
+    public function getExtras()
+    {
+        return [
+        ];
+    }
+
 }
