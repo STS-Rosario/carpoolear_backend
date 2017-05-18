@@ -100,7 +100,7 @@ class ConversationRepository implements ConversationRepo
     }
 
     public function userList($user, $who = null, $search_text = null)
-    {
+    { 
         $users = User::where(function ($q) use ($user) {
             $q->where('is_admin', true);
             $q->orWhereHas('friends', function ($q) use ($user) {

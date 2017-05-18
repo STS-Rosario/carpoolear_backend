@@ -147,7 +147,6 @@ class ConversationController extends Controller
         if ($request->has('value')) {
             $search_text = $request->get('value');
         }
-
         $users = $this->conversationLogic->usersList($this->user, $search_text);
 
         return $this->collection($users, new ProfileTransformer($this->user));
