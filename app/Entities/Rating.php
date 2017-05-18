@@ -27,12 +27,12 @@ class Rating extends Model
     ];
 
     protected $dates = [
-        'created_at', 
-        'updated_at', 
-        'reply_comment_created_at', 
-        'rate_at'
+        'created_at',
+        'updated_at',
+        'reply_comment_created_at',
+        'rate_at',
     ];
-    
+
     protected $hidden = [];
 
     public function from()
