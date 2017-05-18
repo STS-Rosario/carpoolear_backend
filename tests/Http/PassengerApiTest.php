@@ -2,6 +2,7 @@
 
 use Mockery as m;
 use STS\Entities\Trip;
+use STS\Entities\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class PassengerApiTest extends TestCase
@@ -37,7 +38,7 @@ class PassengerApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u1);
 
-        $this->logic->shouldReceive('index')->once()->andReturn([]);
+        $this->logic->shouldReceive('index')->once()->andReturn(Passenger::all());
 
         $response = $this->call('GET', 'api/trips/'.$trip->id.'/passengers');
         $this->assertTrue($response->status() == 200);
@@ -50,7 +51,7 @@ class PassengerApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
         $this->actingAsApiUser($u1);
 
-        $this->logic->shouldReceive('getPendingRequests')->once()->andReturn([]);
+        $this->logic->shouldReceive('getPendingRequests')->once()->andReturn(Passenger::all());
 
         $response = $this->call('GET', 'api/trips/requests');
         $this->assertTrue($response->status() == 200);

@@ -341,7 +341,7 @@ class MessagesTest extends TestCase
 
         $this->assertTrue($c->users()->count() == 1);
 
-        $event = new STS\Events\Passenger\Cancel($t, $u, $accepted);
+        $event = new STS\Events\Passenger\Cancel($t, $u, $accepted, 0);
 
         $listener = new STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
 

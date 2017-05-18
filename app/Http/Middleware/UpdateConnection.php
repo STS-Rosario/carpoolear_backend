@@ -26,15 +26,10 @@ class UpdateConnection
      */
     public function __construct(JWTAuth $auth)
     {
-<<<<<<< HEAD
         if (! \App::environment('testing')) {
             $this->auth = $auth;
             $this->user = $this->auth->parseToken()->authenticate();
         }
-=======
-        $this->auth = $auth;
-        $this->user = $this->auth->parseToken()->authenticate();
->>>>>>> sts/develop
     }
 
     /**
