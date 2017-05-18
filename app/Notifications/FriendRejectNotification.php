@@ -23,4 +23,11 @@ class FriendRejectNotification extends BaseNotification
     {
         return $this->getAttribute('from')->name.' ha rechazado tu solicitud de amistad.';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'friends'
+        ];
+    }
 }

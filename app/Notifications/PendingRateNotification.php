@@ -23,4 +23,11 @@ class PendingRateNotification extends BaseNotification
     {
         return 'Tiene calificaciones pendientes.';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'my-trips'
+        ];
+    }
 }

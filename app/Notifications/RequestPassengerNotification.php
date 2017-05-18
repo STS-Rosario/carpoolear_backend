@@ -23,4 +23,12 @@ class RequestPassengerNotification extends BaseNotification
     {
         return $this->getAttribute('from')->name.' quiere subirse a unos de tus viajes.';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'trip',
+            'trip_id' => $this->getAttribute('trip')->id
+        ];
+    }
 }
