@@ -57,7 +57,7 @@ class PassengersRepository implements IPassengersRepository
     {
         $updateData = [
             'request_state' => $newState,
-            'canceled_state' => $canceledState
+            'canceled_state' => $canceledState,
         ];
 
         $request = Passenger::where('trip_id', $tripId);

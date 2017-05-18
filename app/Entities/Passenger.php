@@ -25,7 +25,7 @@ class Passenger extends Model
         'trip_id',
         'passenger_type',
         'request_state',
-        'canceled_state'
+        'canceled_state',
     ];
     protected $hidden = [];
 

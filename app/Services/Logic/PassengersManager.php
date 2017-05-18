@@ -99,7 +99,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     {
         $input = [
             'trip_id' => $tripId,
-            'user_id' => $cancelUserId
+            'user_id' => $cancelUserId,
         ];
 
         if (! $this->isInputValid($input)) {

@@ -24,7 +24,7 @@ class PassengerTransformer extends TransformerAbstract
         $data = [
             'trip_id' => $passenger->trip_id,
             'created_at' => $passenger->created_at->toDateTimeString(),
-            'state' => $passenger->request_state
+            'state' => $passenger->request_state,
         ];
 
         $userTransform = new TripUserTransformer($this->user);
