@@ -27,7 +27,7 @@ class NewMessageNotification extends BaseNotification
     {
         return [
             'type' => 'conversation',
-            'conversation_id' => $this->getAttribute('messages')->conversation_id
+            'conversation_id' => $this->getAttribute('messages')->conversation_id,
         ];
     }
 }

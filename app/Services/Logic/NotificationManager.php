@@ -40,7 +40,7 @@ class NotificationManager implements NotificationLogic
                 'readed' => $n->read_at != null,
                 'created_at' => $n->created_at->toDateTimeString(),
                 'text' => $texto,
-                'extras' => $extras
+                'extras' => $extras,
             ];
             $response[] = $data; // array_merge($data, $n->attributes());
 

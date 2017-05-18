@@ -27,7 +27,7 @@ class FriendRejectNotification extends BaseNotification
     public function getExtras()
     {
         return [
-            'type' => 'friends'
+            'type' => 'friends',
         ];
     }
 }

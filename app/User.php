@@ -124,7 +124,7 @@ class User extends Authenticatable
         } elseif ($state === Trip::ACTIVO) {
             $trips->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
         }
-        
+
         return $trips;
     }
 
