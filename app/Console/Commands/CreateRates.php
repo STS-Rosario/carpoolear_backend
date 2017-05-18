@@ -20,7 +20,7 @@ class CreateRates extends Command
      *
      * @var string
      */
-    protected $description = 'Create rates from ending rates';
+    protected $description = 'Create rates from ending trips';
 
     protected $rateLogic;
 

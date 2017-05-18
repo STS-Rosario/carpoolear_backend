@@ -2,6 +2,7 @@
 
 use Mockery as m;
 use STS\Entities\Trip;
+use STS\Entities\Rating;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RatingApiTest extends TestCase
@@ -36,7 +37,7 @@ class RatingApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
         $this->actingAsApiUser($driver);
 
-        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn([]);
+        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::all());
 
         $response = $this->call('GET', 'api/users/ratings');
         $this->assertTrue($response->status() == 200);
@@ -48,7 +49,7 @@ class RatingApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
         $this->actingAsApiUser($driver);
 
-        $this->logic->shouldReceive('getPendingRatings')->with($driver)->once()->andReturn([]);
+        $this->logic->shouldReceive('getPendingRatings')->with($driver)->once()->andReturn(Rating::all());
 
         $response = $this->call('GET', 'api/users/ratings/pending');
         $this->assertTrue($response->status() == 200);
@@ -60,7 +61,7 @@ class RatingApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
         //$this->actingAsApiUser($driver);
 
-        $this->logic->shouldReceive('getPendingRatings')->with('123456')->once()->andReturn([]);
+        $this->logic->shouldReceive('getPendingRatings')->with('123456')->once()->andReturn(Rating::all());
 
         $response = $this->call('GET', 'api/users/ratings/pending?hash=123456');
         $this->assertTrue($response->status() == 200);
