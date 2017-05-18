@@ -48,7 +48,7 @@ class TripTransformer extends TransformerAbstract
                     $data['passenger'][] = $userTranforms->transform($passenger->user);
                 }
                 $data['car'] = $trip->car;
-            } else if ($trip->isPending($this->user)) {
+            } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';
             }
         }

@@ -16,7 +16,7 @@ Route::get('/', function () {
 });
 
 Route::get('/app/{name}', function () {
-    return File::get(public_path() . '/app/index.html');
+    return File::get(public_path().'/app/index.html');
 });
 
 Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
