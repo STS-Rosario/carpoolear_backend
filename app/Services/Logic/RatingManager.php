@@ -130,7 +130,6 @@ class RatingManager extends BaseManager implements IRateLogic
             $pasenger_id = null;
             foreach ($passengers as $passenger) {
                 if ($passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED) {
-
                     if ($pasenger_id !== $passenger->user->id) {
                         $passenger_hash = str_random(40);
                         $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
@@ -141,7 +140,6 @@ class RatingManager extends BaseManager implements IRateLogic
 
                         $pasenger_id = $passenger->user->id;
                     }
-                    
                 }
             }
             if ($has_passenger) {

@@ -35,9 +35,9 @@ class RatingTransformer extends TransformerAbstract
             'rate_at' => $rate->rate_at ? $rate->rate_at->toDateTimeString() : null,
             'replay_comment' => $rate->replay_comment,
             'reply_comment_created_at' => $rate->reply_comment_created_at ? $rate->reply_comment_created_at->toDateTimeString() : null,
-            'rating' => $rate->rating
+            'rating' => $rate->rating,
         ];
- 
+
         return $data;
     }
 }
