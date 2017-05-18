@@ -35,5 +35,4 @@ class DummyNotification extends BaseNotification
         return [
         ];
     }
-
 }

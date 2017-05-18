@@ -10,9 +10,9 @@ class NotificationRepository implements INotification
     public function getNotifications($user, $unread = false, $page_size = null, $page = null)
     {
         if (! $unread) {
-            $query = $user->notifications()->orderBy('created_at','desc');
+            $query = $user->notifications()->orderBy('created_at', 'desc');
         } else {
-            $query = $user->unreadNotifications()->orderBy('created_at','desc');
+            $query = $user->unreadNotifications()->orderBy('created_at', 'desc');
         }
         if ($page_size && $page) {
             $query->take($page_size)->skip($page_size * ($page - 1));

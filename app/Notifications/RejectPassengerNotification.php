@@ -28,7 +28,7 @@ class RejectPassengerNotification extends BaseNotification
     {
         return [
             'type' => 'trip',
-            'trip_id' => $this->getAttribute('trip')->id
+            'trip_id' => $this->getAttribute('trip')->id,
         ];
     }
 }

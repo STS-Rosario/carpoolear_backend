@@ -27,7 +27,7 @@ class PendingRateNotification extends BaseNotification
     public function getExtras()
     {
         return [
-            'type' => 'my-trips'
+            'type' => 'my-trips',
         ];
     }
 }
