@@ -79,7 +79,7 @@ class RatingApiTest extends TestCase
         ];
         $this->logic->shouldReceive('rateUser')->with($driver, 5, 10, $data)->once()->andReturn(true);
 
-        $response = $this->call('GET', 'api/trips/10/rate/5', $data);
+        $response = $this->call('POST', 'api/trips/10/rate/5', $data);
         $this->assertTrue($response->status() == 200);
     }
 
@@ -95,7 +95,7 @@ class RatingApiTest extends TestCase
         ];
         $this->logic->shouldReceive('replyRating')->with($driver, 5, 10, 'test comment')->once()->andReturn(true);
 
-        $response = $this->call('GET', 'api/trips/10/reply/5', $data);
+        $response = $this->call('POST', 'api/trips/10/reply/5', $data);
         $this->assertTrue($response->status() == 200);
     }
 }
