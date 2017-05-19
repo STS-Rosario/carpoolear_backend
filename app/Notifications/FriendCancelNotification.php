@@ -23,4 +23,11 @@ class FriendCancelNotification extends BaseNotification
     {
         return $this->getAttribute('from')->name.' ha dejado de ser tu amigo';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'friends',
+        ];
+    }
 }

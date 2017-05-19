@@ -38,15 +38,18 @@ class TripTransformer extends TransformerAbstract
             'updated_at' => $trip->updated_at->toDateTimeString(),
         ];
 
+        $data['request'] = '';
+        $data['passenger'] = [];
         if ($this->user) {
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
-            if ($trip->passengerAccepted->where('user_id', $this->user->id)->count() > 0 || $trip->user_id == $this->user->id) {
-                $data['passenger'] = [];
+            if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id) {
                 foreach ($trip->passengerAccepted as $passenger) {
                     $data['passenger'][] = $userTranforms->transform($passenger->user);
                 }
                 $data['car'] = $trip->car;
+            } elseif ($trip->isPending($this->user)) {
+                $data['request'] = 'send';
             }
         }
 

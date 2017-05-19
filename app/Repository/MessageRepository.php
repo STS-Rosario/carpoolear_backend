@@ -2,7 +2,9 @@
 
 namespace STS\Repository;
 
+use DB;
 use STS\User;
+use Carbon\Carbon;
 use STS\Entities\Message;
 use STS\Entities\Conversation;
 use STS\Contracts\Repository\Messages as MessageRepo;
@@ -19,11 +21,16 @@ class MessageRepository implements MessageRepo
         return $message->delete();
     }
 
-    public function getMessages(Conversation $conversation, $pageNumber, $pageSize)
+    public function getMessages(Conversation $conversation, $timestamp, $pageSize)
     {
         $conversationMessages = $conversation->messages()->orderBy('updated_at', 'desc');
+        if ($timestamp) {
+            $conversationMessages->where('created_at', '<', $timestamp);
+        }
 
-        return make_pagination($conversationMessages, $pageNumber, $pageSize);
+        $conversationMessages->take($pageSize);
+
+        return $conversationMessages->get();
     }
 
     public function getUnreadMessages(Conversation $conversation, User $user)
@@ -31,7 +38,7 @@ class MessageRepository implements MessageRepo
         return $conversation->messages()->whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
-        })->get();
+        })->orderBy('updated_at', 'desc')->get();
     }
 
     public function changeMessageReadState(Message $message, User $user, $read_state)
@@ -42,5 +49,38 @@ class MessageRepository implements MessageRepo
     public function createMessageReadState(Message $message, User $user, $read_state)
     {
         $message->users()->attach($user->id, ['read' => $read_state]);
+    }
+
+    public function getMessagesUnread(User $user, $timestamp)
+    {
+        $msgs = Message::whereHas('users', function ($q) use ($user) {
+            $q->where('user_id', $user->id)
+                ->where('read', false);
+        });
+        if ($timestamp) {
+            $msgs->where('created_at', '>', $timestamp);
+        }
+
+        return $msgs->orderBy('conversation_id')
+                    ->orderBy('updated_at', 'desc')
+                    ->get();
+    }
+
+    public function markMessages(User $user, $conversation_id)
+    {
+        $msgs = Message::where('conversation_id', $conversation_id)
+                    ->whereHas('users',
+                        function ($q) use ($user) {
+                            $q->where('user_id', $user->id)
+                                ->where('read', false);
+                        })
+                    ->lists('id');
+        DB::table('user_message_read')
+          ->whereIn('message_id', $msgs)
+          ->where('user_id', $user->id)
+          ->update([
+              'read' => true,
+              'updated_at' => Carbon::Now(),
+          ]);
     }
 }

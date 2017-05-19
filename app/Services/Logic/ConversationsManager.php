@@ -68,22 +68,13 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         }
     }
 
+    public function show(User $user, $id)
+    {
+        return $this->conversationRepository->getConversationFromId($id, $user);
+    }
+
     private function usersCanChat(User $user1, User $user2)
     {
-        /*
-        if ($this->friendsLogic->areFriend($user1, $user2)) {
-            return true;
-        }
-        if ($user1->is_admin || $user2->is_admin) { //anybody can chat with an admin ???
-
-            return true;
-        }
-
-        if ($user2->trips()->where('friendship_type_id', 2)->count() > 0) {
-            return true;
-        }
-        */
-
         return $user1->is_admin || $this->conversationRepository->userList($user1, $user2)->count() > 0;
     }
 
@@ -247,7 +238,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $this->getMessagesFromConversation($conversation_id, $user, $read, true, null, null);
     }
 
-    private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $pageNumber = null, $pageSize = null)
+    private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $timestamp = null, $pageSize = null)
     {
         //FALTA CHEQUEAR PERMISOS
         $conversation = $this->getConversation($user, $conversation_id);
@@ -261,7 +252,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
                     }
                 }
             } else {
-                $messages = $this->messageRepository->getMessages($conversation, $pageNumber, $pageSize);
+                $messages = $this->messageRepository->getMessages($conversation, $timestamp, $pageSize);
             }
 
             if ($read) {
@@ -270,6 +261,18 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         } else {
             $messages = null;
             $this->setErrors(['conversation_id' => 'user_does_not_have_access_to_conversation']);
+        }
+
+        return $messages;
+    }
+
+    public function getMessagesUnread(User $user, $conversation_id = null, $timestamp = null)
+    {
+        $messages = $this->messageRepository->getMessagesUnread($user, $timestamp);
+
+        if ($conversation_id && $conv = $this->conversationRepository->getConversationFromId($conversation_id, $user)) {
+            $this->conversationRepository->changeConversationReadState($conv, $user, true);
+            $this->messageRepository->markMessages($user, $conv->id);
         }
 
         return $messages;

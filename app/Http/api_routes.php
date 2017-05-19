@@ -65,20 +65,21 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->post('/{tripId}/requests/{userId}/accept', $v1_path.'PassengerController@acceptRequest');
         $api->post('/{tripId}/requests/{userId}/reject', $v1_path.'PassengerController@rejectRequest');
 
-        $api->get('/{tripId}/rate/{userId}', $v1_path.'RatingController@rate');
-        $api->get('/{tripId}/reply/{userId}', $v1_path.'RatingController@replay');
+        $api->post('/{tripId}/rate/{userId}', $v1_path.'RatingController@rate');
+        $api->post('/{tripId}/reply/{userId}', $v1_path.'RatingController@replay');
     });
 
     $api->group(['prefix' => 'conversations'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'ConversationController@index');
         $api->post('/', $v1_path.'ConversationController@create');
         $api->get('/user-list', $v1_path.'ConversationController@userList');
+        $api->get('/unread', $v1_path.'ConversationController@getMessagesUnread');
+        $api->get('/show/{id?}', $v1_path.'ConversationController@show');
 
         $api->get('/{id?}', $v1_path.'ConversationController@getConversation');
         $api->get('/{id?}/users', $v1_path.'ConversationController@users');
         $api->post('/{id?}/users', $v1_path.'ConversationController@addUser');
         $api->delete('/{id?}/users/{userId?}', $v1_path.'ConversationController@deleteUser');
-
         $api->post('/{id?}/send', $v1_path.'ConversationController@send');
     });
 

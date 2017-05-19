@@ -12,11 +12,15 @@ interface Messages
 
     public function delete(Message $message);
 
-    public function getMessages(Conversation $conversation, $pageNumber, $pageSize);
+    public function getMessages(Conversation $conversation, $timestamp, $pageSize);
 
     public function getUnreadMessages(Conversation $conversation, UserModel $user);
 
     public function changeMessageReadState(Message $message, UserModel $user, $read_state);
 
     public function createMessageReadState(Message $message, UserModel $user, $read_state);
+
+    public function getMessagesUnread(UserModel $user, $timestamp);
+
+    public function markMessages(UserModel $user, $conversation_id);
 }

@@ -25,7 +25,7 @@ class Conversation extends Model
 
     public function users()
     {
-        return $this->belongsToMany('STS\User', 'conversations_users', 'conversation_id', 'user_id')->withPivot('read');
+        return $this->belongsToMany('STS\User', 'conversations_users', 'conversation_id', 'user_id')->withPivot('read')->withTimestamps();
     }
 
     public function read(UserModel $user)

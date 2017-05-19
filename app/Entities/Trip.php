@@ -51,7 +51,9 @@ class Trip extends Model
     ];
 
     protected $appends = [
-        'passenger_count', 'seats_available', 'is_driver',
+        'passenger_count',
+        'seats_available',
+        'is_driver',
     ];
 
     protected $casts = [
@@ -121,6 +123,16 @@ class Trip extends Model
     public function getPassengerCountAttribute()
     {
         return $this->passengerAccepted()->count();
+    }
+
+    public function isPending($user)
+    {
+        return $this->passengerPending()->where('user_id', $user->id)->count() > 0;
+    }
+
+    public function isPassenger($user)
+    {
+        return $this->passengerAccepted->where('user_id', $user->id)->count() > 0;
     }
 
     public function getSeatsAvailableAttribute()

@@ -33,11 +33,16 @@ class ProfileTransformer extends TransformerAbstract
             'gender' => $user->gender,
             'mobile_phone' => $user->mobile_phone,
             'nro_doc' => $user->nro_doc,
-            'last_connection' => $user->last_connection->toDateTimeString(),
+            'last_connection' => $user->last_connection ? $user->last_connection->toDateTimeString() : '',
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
+            $data['accounts'] = $user->accounts;
+        }
+
+        if ($user->state) {
+            $data['state'] = $user->state;
         }
 
         if ($user->state) {

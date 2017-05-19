@@ -25,22 +25,28 @@ class NotificationManager implements NotificationLogic
             $notifications = $this->repo->getNotifications($user, false);
         }
 
-        if (isset($data['mark']) && $data['mark']) {
+        if (isset($data['mark']) && parse_boolean($data['mark'])) {
             $mark = true;
         }
 
         $response = [];
         foreach ($notifications as $n) {
-            if ($mark) {
-                $this->repo->markAsRead($n);
-            }
-            $texto = $n->asNotification()->toString();
+            $noti = $n->asNotification();
+            $texto = $noti->toString();
+            $extras = $noti->getExtras();
+
             $data = [
                 'id' => $n->id,
                 'readed' => $n->read_at != null,
                 'created_at' => $n->created_at->toDateTimeString(),
+                'text' => $texto,
+                'extras' => $extras,
             ];
-            $response[] = array_merge($data, $n->attributes());
+            $response[] = $data; // array_merge($data, $n->attributes());
+
+            if ($mark) {
+                $this->repo->markAsRead($n);
+            }
         }
 
         return $response;
