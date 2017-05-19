@@ -16,11 +16,11 @@ class NotificationController extends Controller
     {
         $this->middleware('logged');
         $this->logic = $logic;
-        $this->user = $this->auth->user();
     }
 
     public function index(Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
         $notifications = $this->logic->getNotifications($this->user, $data);
 
@@ -29,6 +29,7 @@ class NotificationController extends Controller
 
     public function count(Request $request)
     {
+        $this->user = $this->auth->user();
         $data = $request->all();
         $count = $this->logic->getUnreadCount($this->user);
 
@@ -37,6 +38,7 @@ class NotificationController extends Controller
 
     public function delete($id, Request $request)
     {
+        $this->user = $this->auth->user();
         $result = $this->logic->delete($this->user, $id);
         if (! $result) {
             throw new StoreResourceFailedException('Could not delete notiication.', []);

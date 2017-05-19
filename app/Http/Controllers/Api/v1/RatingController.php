@@ -5,7 +5,9 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Contracts\Logic\IRateLogic;
 use STS\Http\Controllers\Controller;
+use STS\Transformers\RatingTransformer;
 use Dingo\Api\Exception\UpdateResourceFailedException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class RatingController extends Controller
 {
@@ -25,7 +27,7 @@ class RatingController extends Controller
 
         $data = $this->rateLogic->getRatings($me, $data);
 
-        return $this->response->withArray(['data' => $data]);
+        return $this->response->collection($data, new RatingTransformer());
     }
 
     public function pendingRate(Request $request)
@@ -44,7 +46,7 @@ class RatingController extends Controller
             }
         }
 
-        return $this->response->withArray(['data' => $data]);
+        return $this->response->collection($data, new RatingTransformer());
     }
 
     public function rate($tripId, $userId, Request $request)

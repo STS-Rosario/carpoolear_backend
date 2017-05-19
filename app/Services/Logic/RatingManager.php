@@ -124,14 +124,22 @@ class RatingManager extends BaseManager implements IRateLogic
             $driver = $trip->user;
             $driver_hash = str_random(40);
             $has_passenger = false;
-            foreach ($trip->passenger as $passenger) {
-                if ($passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED) {
-                    $passenger_hash = str_random(40);
-                    $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
 
-                    $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
-                    $has_passenger = true;
-                    event(new PendingEvent($passenger->user, $trip, $passenger_hash));
+            $passengers = $trip->passenger()->orderBy('created_at', 'desc')->get();
+
+            $pasenger_id = null;
+            foreach ($passengers as $passenger) {
+                if ($passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED) {
+                    if ($pasenger_id !== $passenger->user->id) {
+                        $passenger_hash = str_random(40);
+                        $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
+
+                        $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
+                        $has_passenger = true;
+                        event(new PendingEvent($passenger->user, $trip, $passenger_hash));
+
+                        $pasenger_id = $passenger->user->id;
+                    }
                 }
             }
             if ($has_passenger) {

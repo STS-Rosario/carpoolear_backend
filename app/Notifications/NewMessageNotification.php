@@ -22,4 +22,12 @@ class NewMessageNotification extends BaseNotification
     {
         return $this->getAttribute('from')->name.'te ha enviado un mensaje.';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'conversation',
+            'conversation_id' => $this->getAttribute('messages')->conversation_id,
+        ];
+    }
 }
