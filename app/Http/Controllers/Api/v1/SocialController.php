@@ -56,12 +56,13 @@ class SocialController extends Controller
         }
 
         // Registro mi devices
+        /*
         if ($request->has('device_id') && $request->has('device_type')) {
             $data = $request->all();
             $data['session_id'] = $token;
             $this->deviceLogic->register($user, $data);
         }
-
+        */
         return $this->response->withArray(['token' => $token]);
     }
 

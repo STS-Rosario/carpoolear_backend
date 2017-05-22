@@ -23,4 +23,11 @@ class FriendAcceptNotification extends BaseNotification
     {
         return $this->getAttribute('from')->name.' ha aceptado tu solicitud de amistad.';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'friends',
+        ];
+    }
 }

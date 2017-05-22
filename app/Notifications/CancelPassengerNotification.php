@@ -38,4 +38,12 @@ class CancelPassengerNotification extends BaseNotification
 
         return $title;
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'trip',
+            'trip_id' => $this->getAttribute('trip')->id,
+        ];
+    }
 }

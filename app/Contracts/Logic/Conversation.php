@@ -30,9 +30,13 @@ interface Conversation
 
     public function send(UserModel $user, $conversationId, $message);
 
-    public function getAllMessagesFromConversation($conversation_id, UserModel $user, $read, $pageNumber, $pageSize);
+    public function getAllMessagesFromConversation($conversation_id, UserModel $user, $read, $timestamp, $pageSize);
 
     public function getUnreadMessagesFromConversation($conversation_id, UserModel $user, $read);
 
     public function usersList($user, $searchText);
+
+    public function getMessagesUnread(UserModel $user, $conversation_id = null, $timestamp = null);
+
+    public function show(UserModel $user, $id);
 }

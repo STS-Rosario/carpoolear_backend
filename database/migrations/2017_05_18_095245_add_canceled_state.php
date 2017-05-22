@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class AddLastConenectionUser extends Migration
+class AddCanceledState extends Migration
 {
     /**
      * Run the migrations.
@@ -12,8 +12,8 @@ class AddLastConenectionUser extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->datetime('last_connection');
+        Schema::table('trip_passengers', function (Blueprint $table) {
+            $table->integer('canceled_state')->after('request_state')->nullable();
         });
     }
 
@@ -24,8 +24,8 @@ class AddLastConenectionUser extends Migration
      */
     public function down()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('last_connection');
+        Schema::table('trip_passengers', function (Blueprint $table) {
+            $table->dropColumn('canceled_state');
         });
     }
 }

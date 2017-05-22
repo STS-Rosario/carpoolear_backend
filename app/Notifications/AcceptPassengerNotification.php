@@ -23,4 +23,12 @@ class AcceptPassengerNotification extends BaseNotification
     {
         return $this->getAttribute('from')->name.' ha aceptado tu solicitud.';
     }
+
+    public function getExtras()
+    {
+        return [
+            'type' => 'trip',
+            'trip_id' => $this->getAttribute('trip')->id,
+        ];
+    }
 }

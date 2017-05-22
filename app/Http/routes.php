@@ -15,6 +15,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/app/{name}', function () {
+    return File::get(public_path().'/app/index.html');
+});
+
 Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
     //Route::post("/login", 'Api\AuthController@login');
     //Route::post("/registrar", 'Api\AuthController@registrar');
