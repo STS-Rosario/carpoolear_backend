@@ -3,7 +3,7 @@
 namespace STS\Services;
 
 use PushNotification;
-use STS\Entities\Devices;
+use STS\Entities\Device;
 
 class NotificationServices
 {
@@ -58,7 +58,7 @@ class NotificationServices
             $defaultData = array_merge($defaultData, $data);
         }
 
-        $devices = Devices::where('usuario_id', '=', $to)->get();
+        $devices = Device::where('usuario_id', '=', $to)->get();
         foreach ($devices as $device) {
             $pos = strpos($device->device_type, 'Android');
             if ($pos !== false) {
@@ -83,7 +83,7 @@ class NotificationServices
             $response = $push->getAdapter()->getResponse()->getResponse();
             if ($response['canonical_ids'] > 0) {
                 $newID = $response['results'][0]['registration_id'];
-                $d = Devices::where('device_id', '=', $newID)->first();
+                $d = Device::where('device_id', '=', $newID)->first();
                 if ($d) {
                     $device->delete();
                 } else {

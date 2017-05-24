@@ -5,10 +5,11 @@ namespace STS\Notifications;
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\PushChannel;
 
 class PendingRateNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
 
     public function toEmail($user)
     {
@@ -30,4 +31,12 @@ class PendingRateNotification extends BaseNotification
             'type' => 'my-trips',
         ];
     }
+
+    public function toPush($user, $device) {
+        return [
+            'message' => 'Tiene calificaciones pendientes.',
+            'url' => 'rates'
+        ];
+    }
+    
 }
