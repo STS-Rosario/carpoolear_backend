@@ -4,8 +4,8 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
+use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class NewMessageNotification extends BaseNotification
 {
@@ -32,14 +32,16 @@ class NewMessageNotification extends BaseNotification
         ];
     }
 
-    public function toPush($user, $device) {
+    public function toPush($user, $device)
+    {
         $message = $this->getAttribute('messages');
+
         return [
-            'message' => $this->getAttribute('from')->name . '@' . $message->text,
+            'message' => $this->getAttribute('from')->name.'@'.$message->text,
             'url' => 'conversation',
             'extras' => [
-                'id' => $message->conversation_id
-            ]
+                'id' => $message->conversation_id,
+            ],
         ];
     }
 }

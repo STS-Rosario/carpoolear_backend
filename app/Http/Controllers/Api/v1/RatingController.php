@@ -6,8 +6,8 @@ use Illuminate\Http\Request;
 use STS\Contracts\Logic\IRateLogic;
 use STS\Http\Controllers\Controller;
 use STS\Transformers\RatingTransformer;
-use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\ResourceException;
+use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\UpdateResourceFailedException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
@@ -28,7 +28,7 @@ class RatingController extends Controller
         $data = request()->all();
 
         $me = $this->auth->user();
-        $user = null; 
+        $user = null;
         if (is_null($id) || $me->id == $id) {
             $user = $me;
         } else {
