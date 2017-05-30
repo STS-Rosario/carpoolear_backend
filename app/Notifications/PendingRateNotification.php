@@ -4,8 +4,8 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
+use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class PendingRateNotification extends BaseNotification
 {
@@ -32,11 +32,11 @@ class PendingRateNotification extends BaseNotification
         ];
     }
 
-    public function toPush($user, $device) {
+    public function toPush($user, $device)
+    {
         return [
             'message' => 'Tiene calificaciones pendientes.',
-            'url' => 'rates'
+            'url' => 'rates',
         ];
     }
-    
 }

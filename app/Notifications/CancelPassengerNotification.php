@@ -4,8 +4,8 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
+use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class CancelPassengerNotification extends BaseNotification
 {
@@ -48,7 +48,8 @@ class CancelPassengerNotification extends BaseNotification
         ];
     }
 
-    public function toPush($user, $device) {
+    public function toPush($user, $device)
+    {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
         $isDriver = $trip->user_id == $from->id;
@@ -58,8 +59,8 @@ class CancelPassengerNotification extends BaseNotification
             'message' => $title,
             'url' => 'passenger',
             'extras' => [
-                'id' => $trip->id
-            ]
+                'id' => $trip->id,
+            ],
         ];
     }
 }

@@ -65,7 +65,7 @@ class PushChannel
         $collection = \PushNotification::app('android')
                                     ->to($device->device_id)
                                     ->send($message, $defaultData);
-                                        
+
         $this->_inspectGoogleResponse($device, $collection);
     }
 

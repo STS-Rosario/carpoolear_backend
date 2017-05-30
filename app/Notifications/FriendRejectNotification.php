@@ -4,8 +4,8 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
+use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class FriendRejectNotification extends BaseNotification
 {
@@ -32,15 +32,16 @@ class FriendRejectNotification extends BaseNotification
         ];
     }
 
-    public function toPush($user, $device) {
-        $from = $this->getAttribute('from');  
+    public function toPush($user, $device)
+    {
+        $from = $this->getAttribute('from');
 
         return [
             'message' => $from->name.' ha rechazado tu solicitud de amistad.',
             'url' => 'friend',
             'extras' => [
-                'id' => $from->id
-            ]
+                'id' => $from->id,
+            ],
         ];
     }
 }

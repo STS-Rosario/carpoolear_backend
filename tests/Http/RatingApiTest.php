@@ -51,7 +51,7 @@ class RatingApiTest extends TestCase
 
         $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::all());
 
-        $response = $this->call('GET', 'api/users/'. $driver->id . '/ratings');
+        $response = $this->call('GET', 'api/users/'.$driver->id.'/ratings');
         $this->assertTrue($response->status() == 200);
     }
 
