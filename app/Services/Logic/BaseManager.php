@@ -1,15 +1,11 @@
 <?php
 
-namespace STS\Services\Logic; 
-
-use STS\Entities\SocialAccount;
-use STS\User; 
+namespace STS\Services\Logic;
 
 class BaseManager
 {
+    protected $errors;
 
-    protected $errors; 
-    
     public function setErrors($errs)
     {
         $this->errors = $errs;
@@ -19,5 +15,4 @@ class BaseManager
     {
         return $this->errors;
     }
-     
 }

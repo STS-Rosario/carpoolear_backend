@@ -10,12 +10,12 @@ class ValidationException extends \Exception
     protected $errors = null;
 
     /**
-     * @param string  $message
-     * @param int $statusCode
+     * @param string $message
+     * @param int    $statusCode
      */
     public function __construct($errors)
     {
-        parent::__construct("Validation Error");
+        parent::__construct('Validation Error');
 
         if (! is_null($errors)) {
             $this->setErrors($errors);
