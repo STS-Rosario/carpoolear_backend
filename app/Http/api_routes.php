@@ -23,6 +23,7 @@ $api->version('v1', function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/me', $v1_path.'UserController@show');
         $api->get('/{name?}', $v1_path.'UserController@show');
+        $api->get('/{id?}/ratings', $v1_path.'RatingController@ratings');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
     });

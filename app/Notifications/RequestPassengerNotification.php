@@ -4,11 +4,12 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
+use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class RequestPassengerNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
 
     public function toEmail($user)
     {
@@ -29,6 +30,19 @@ class RequestPassengerNotification extends BaseNotification
         return [
             'type' => 'trip',
             'trip_id' => $this->getAttribute('trip')->id,
+        ];
+    }
+
+    public function toPush($user, $device)
+    {
+        $trip = $this->getAttribute('trip');
+
+        return [
+            'message' => $this->getAttribute('from')->name.' quiere subirse a unos de tus viajes.',
+            'url' => 'passenger',
+            'extras' => [
+                'id' => $trip->id,
+            ],
         ];
     }
 }

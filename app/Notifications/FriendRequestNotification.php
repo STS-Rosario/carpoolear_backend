@@ -4,11 +4,12 @@ namespace STS\Notifications;
 
 use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
+use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 
 class FriendRequestNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
 
     public function toEmail($user)
     {
@@ -28,6 +29,19 @@ class FriendRequestNotification extends BaseNotification
     {
         return [
             'type' => 'friends',
+        ];
+    }
+
+    public function toPush($user, $device)
+    {
+        $from = $this->getAttribute('from');
+
+        return [
+            'message' => $from->name.' te ha enviado una solicitud de amistad.',
+            'url' => 'friend',
+            'extras' => [
+                'id' => $from->id,
+            ],
         ];
     }
 }

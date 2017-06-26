@@ -64,7 +64,7 @@ class User extends Authenticatable
 
     public function devices()
     {
-        return $this->hasMany('STS\Entities\Devices', 'user_id');
+        return $this->hasMany('STS\Entities\Device', 'user_id');
     }
 
     public function age()
