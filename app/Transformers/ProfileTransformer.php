@@ -45,10 +45,6 @@ class ProfileTransformer extends TransformerAbstract
             $data['state'] = $user->state;
         }
 
-        if ($user->state) {
-            $data['state'] = $user->state;
-        }
-
         return $data;
     }
 }

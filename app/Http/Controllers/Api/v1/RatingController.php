@@ -6,26 +6,40 @@ use Illuminate\Http\Request;
 use STS\Contracts\Logic\IRateLogic;
 use STS\Http\Controllers\Controller;
 use STS\Transformers\RatingTransformer;
+use Dingo\Api\Exception\ResourceException;
+use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\UpdateResourceFailedException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class RatingController extends Controller
 {
     protected $userLogic;
+    protected $rateLogic;
 
-    public function __construct(IRateLogic $rateLogic)
+    public function __construct(IRateLogic $rateLogic, UserLogic $userLogic)
     {
         $this->middleware('logged', ['except' => ['pendingRate', 'rate']]);
         $this->rateLogic = $rateLogic;
+        $this->userLogic = $userLogic;
     }
 
-    public function ratings(Request $request)
+    public function ratings($id = null)
     {
-        $data = $request->all();
+        $data = request()->all();
 
         $me = $this->auth->user();
+        $user = null;
+        if (is_null($id) || $me->id == $id) {
+            $user = $me;
+        } else {
+            $user = $this->userLogic->show($me, $id);
+        }
 
-        $data = $this->rateLogic->getRatings($me, $data);
+        if (! $user) {
+            throw new ResourceException('Users not found.', $this->userLogic->getErrors());
+        }
+
+        $data = $this->rateLogic->getRatings($user, $data);
 
         return $this->response->collection($data, new RatingTransformer());
     }

@@ -43,6 +43,18 @@ class RatingApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
+    public function testGetRatingsByID()
+    {
+        $driver = factory(STS\User::class)->create();
+        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $this->actingAsApiUser($driver);
+
+        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::all());
+
+        $response = $this->call('GET', 'api/users/'.$driver->id.'/ratings');
+        $this->assertTrue($response->status() == 200);
+    }
+
     public function testPendings()
     {
         $driver = factory(STS\User::class)->create();

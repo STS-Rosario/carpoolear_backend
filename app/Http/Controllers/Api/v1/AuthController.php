@@ -75,9 +75,8 @@ class AuthController extends Controller
 
         if ($request->has('app_version')) {
             $data['app_version'] = $request->get('app_version');
+            $device = $this->deviceLogic->updateBySession($oldToken, $data);
         }
-
-        $device = $this->deviceLogic->updateBySession($oldToken, $data);
 
         return $this->response->withArray(['token' => $token]);
     }

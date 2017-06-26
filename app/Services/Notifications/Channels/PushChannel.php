@@ -62,10 +62,11 @@ class PushChannel
 
         $defaultData['image'] = isset($data['image']) ? $data['image'] : 'www/logo.png';
 
-        $collection = PushNotification::app('android')
+        $collection = \PushNotification::app('android')
                                     ->to($device->device_id)
                                     ->send($message, $defaultData);
-        $this->_inspectGoogleResponse($to, $device, $collection);
+
+        $this->_inspectGoogleResponse($device, $collection);
     }
 
     public function sendIOS($device, $data)
@@ -93,7 +94,7 @@ class PushChannel
             $defaultData['category'] = $data['action'];
         }
 
-        $collection = PushNotification::app('ios')
+        $collection = \PushNotification::app('ios')
                         ->to($device->device_id)
                         ->send($message, $defaultData);
     }
@@ -102,6 +103,7 @@ class PushChannel
     {
         foreach ($collection->pushManager as $push) {
             $response = $push->getAdapter()->getResponse()->getResponse();
+            console_log($response);
             if ($response['canonical_ids'] > 0) {
                 $newID = $response['results'][0]['registration_id'];
                 $d = Device::where('device_id', $newID)->first();
@@ -113,7 +115,7 @@ class PushChannel
                     $device_type = $device->device_type;
                     $device->delete();
 
-                    $device = new Devices();
+                    $device = new Device();
                     $device->device_id = $device_id;
                     $device->session_id = $hash;
                     $device->usuario_id = $usuario;

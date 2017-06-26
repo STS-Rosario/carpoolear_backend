@@ -65,7 +65,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
     public function updateBySession($session_id, array $data)
     {
         //if ($this->validateInput($data)) {
-            $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
+        $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
         if ($device) {
             $device = $this->fillDevice($device, $data);
             $this->deviceRepo->update($device);
@@ -78,7 +78,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
     public function update($user, $id, array $data)
     {
         if ($this->validateInput($data)) {
-            $device = $this->deviceRepo->getDeviceBy('id', $session_id);
+            $device = $this->deviceRepo->getDeviceBy('id', $id);
             if ($device && $device->user_id == $user->id) {
                 $device = $this->fillDevice($device, $data);
                 $this->deviceRepo->update($device);
