@@ -53,7 +53,6 @@ class RatingApiTest extends TestCase
 
         $response = $this->call('GET', 'api/users/'.$driver->id.'/ratings');
         $this->assertTrue($response->status() == 200);
-        
     }
 
     public function testPendings()

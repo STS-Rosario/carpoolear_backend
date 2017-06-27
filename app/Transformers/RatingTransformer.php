@@ -37,9 +37,10 @@ class RatingTransformer extends TransformerAbstract
             'reply_comment_created_at' => $rate->reply_comment_created_at ? $rate->reply_comment_created_at->toDateTimeString() : null,
             'rating' => $rate->rating,
         ];
-        if (!$rate->rating) {
+        if (! $rate->rating) {
             $data['from'] = $userTrans->transform($rate->from);
         }
+
         return $data;
     }
 }
