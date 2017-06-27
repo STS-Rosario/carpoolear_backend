@@ -37,7 +37,7 @@ class RatingApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
         $this->actingAsApiUser($driver);
 
-        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::all());
+        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::paginate(10));
 
         $response = $this->call('GET', 'api/users/ratings');
         $this->assertTrue($response->status() == 200);
@@ -49,10 +49,11 @@ class RatingApiTest extends TestCase
         $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
         $this->actingAsApiUser($driver);
 
-        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::all());
+        $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::paginate(10));
 
         $response = $this->call('GET', 'api/users/'.$driver->id.'/ratings');
         $this->assertTrue($response->status() == 200);
+        
     }
 
     public function testPendings()
