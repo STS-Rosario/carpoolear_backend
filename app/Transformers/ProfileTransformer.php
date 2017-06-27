@@ -24,7 +24,7 @@ class ProfileTransformer extends TransformerAbstract
         $data = [
             'id' => $user->id,
             'name' => $user->name,
-            'email' => $user->email,
+            // 'email' => $user->email,
             'description' => $user->description,
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
@@ -39,6 +39,7 @@ class ProfileTransformer extends TransformerAbstract
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
             $data['accounts'] = $user->accounts;
+            $data['email'] = $user->email;
         }
 
         if ($user->state) {

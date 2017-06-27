@@ -156,7 +156,7 @@ class User extends Authenticatable
 
     public function ratingReceived()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_to');
+        return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('voted', true);
     }
 
     public function ratings($value = null)

@@ -41,7 +41,7 @@ class RatingController extends Controller
 
         $data = $this->rateLogic->getRatings($user, $data);
 
-        return $this->response->collection($data, new RatingTransformer());
+        return $this->response->paginator($data, new RatingTransformer());
     }
 
     public function pendingRate(Request $request)
