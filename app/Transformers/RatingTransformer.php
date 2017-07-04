@@ -33,12 +33,12 @@ class RatingTransformer extends TransformerAbstract
             'user_to_state' => $rate->user_to_state,
             'user_to_type' => $rate->user_to_type,
             'rate_at' => $rate->rate_at ? $rate->rate_at->toDateTimeString() : null,
-            'replay_comment' => $rate->replay_comment,
+            'reply_comment' => $rate->reply_comment,
             'reply_comment_created_at' => $rate->reply_comment_created_at ? $rate->reply_comment_created_at->toDateTimeString() : null,
             'rating' => $rate->rating,
         ];
-        if (! $rate->rating) {
-            $data['from'] = $userTrans->transform($rate->from);
+        if (! $rate->rate_at) {
+            $data['to'] = $userTrans->transform($rate->to);
         }
 
         return $data;
