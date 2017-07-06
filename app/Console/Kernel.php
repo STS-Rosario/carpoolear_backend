@@ -26,6 +26,6 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('rate:create')
-                  ->dailyAt('1:00');
+                  ->dailyAt('1:00')->timezone('America/Argentina/Buenos_Aires');
     }
 }

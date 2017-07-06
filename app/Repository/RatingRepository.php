@@ -2,6 +2,7 @@
 
 namespace STS\Repository;
 
+use Carbon\Carbon;
 use STS\Entities\Rating as RatingModel;
 use STS\Contracts\Repository\IRatingRepository;
 
@@ -38,7 +39,7 @@ class RatingRepository implements IRatingRepository
         $ratings = RatingModel::where('user_id_from', $user->id);
         $ratings->where('voted', false);
         $ratings->with(['from', 'to', 'trip']);
-
+        $ratings->where('created_at', '>=', Carbon::Now()->subDays(15));
         return $ratings->get();
     }
 

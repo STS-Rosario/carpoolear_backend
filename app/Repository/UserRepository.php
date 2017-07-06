@@ -69,6 +69,7 @@ class UserRepository implements UserRep
             });
         }
 
+        $users->with('accounts');
         $users->orderBy('name');
         $users = $users->get();
 
