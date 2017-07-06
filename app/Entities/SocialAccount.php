@@ -9,7 +9,7 @@ class SocialAccount extends Model
 {
     protected $fillable = ['user_id', 'provider_user_id', 'provider'];
     protected $hidden = [
-        'created_at', 'updated_at'
+        'created_at', 'updated_at',
     ];
 
     public function user()

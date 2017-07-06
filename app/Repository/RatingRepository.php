@@ -40,6 +40,7 @@ class RatingRepository implements IRatingRepository
         $ratings->where('voted', false);
         $ratings->with(['from', 'to', 'trip']);
         $ratings->where('created_at', '>=', Carbon::Now()->subDays(15));
+
         return $ratings->get();
     }
 
