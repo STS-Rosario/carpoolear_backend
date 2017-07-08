@@ -147,7 +147,7 @@ class Trip extends Model
 
     public function setDescriptionAttribute($value)
     {
-        $this->attributes['description'] = htmlentities($value);
+        $this->attributes['description'] = $value; //htmlentities($value);
     }
 
     public function checkFriendship($user)

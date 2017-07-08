@@ -124,9 +124,9 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         if ($canceledState !== null) {
             if ($result = $this->passengerRepository->cancelRequest($tripId, $cancelUser, $canceledState)) {
                 if ($trip->user_id == $user->id) {
-                    event(new CancelEvent($trip, $user, $cancelUser, $canceledState));
+                    event(new CancelEvent($trip, $trip->user, $cancelUser, $canceledState));
                 } else {
-                    event(new CancelEvent($trip, $cancelUser, $user, $canceledState));
+                    event(new CancelEvent($trip, $cancelUser, $trip->user, $canceledState));
                 }
             }
 

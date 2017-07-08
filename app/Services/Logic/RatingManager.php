@@ -43,6 +43,7 @@ class RatingManager extends BaseManager implements IRateLogic
             $rate = $this->ratingRepository->findBy('voted_hash', $userOrHash)
                          ->where('user_to_id', $user_to_id)
                          ->where('trip_id', $trip_id)
+                         ->where('created_at', '>=', Carbon::Now()->subDays(15))
                          ->first();
         }
         if (! $rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {

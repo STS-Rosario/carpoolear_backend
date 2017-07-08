@@ -137,6 +137,7 @@ class ConversationRepository implements ConversationRepo
                 $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
         }
+        $users->with('accounts');
         $users->orderBy('name');
 
         return $users->get();

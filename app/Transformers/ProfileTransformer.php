@@ -34,6 +34,7 @@ class ProfileTransformer extends TransformerAbstract
             'mobile_phone' => $user->mobile_phone,
             'nro_doc' => $user->nro_doc,
             'last_connection' => $user->last_connection ? $user->last_connection->toDateTimeString() : '',
+            'accounts' => $user->accounts,
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;
