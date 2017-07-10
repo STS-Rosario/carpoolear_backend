@@ -54,7 +54,8 @@ class User extends Authenticatable
     ];
 
     protected $appends = [
-        'positive_ratings', 'negative_ratings',
+        'positive_ratings', 
+        'negative_ratings',
     ];
 
     public function accounts()
@@ -151,18 +152,18 @@ class User extends Authenticatable
 
     public function ratingGiven()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_from');
+        return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('voted', 1);
     }
 
     public function ratingReceived()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('voted', true);
+        return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('voted', 1);
     }
 
     public function ratings($value = null)
     {
         $recived = $this->ratingReceived();
-        if ($value) {
+        if (!is_null($value)) {
             $recived->where('rating', $value);
         }
 
