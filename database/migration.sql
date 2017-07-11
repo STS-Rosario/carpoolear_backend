@@ -175,7 +175,7 @@ insert into carpoolear5.rating (
     t.user_id <> to_id,
     1,
     puntuacion,
-    substring(comentario,1,100),
+    comentario,
     '',
     null,
     1,
@@ -226,7 +226,7 @@ insert into carpoolear5.messages (
     created_at,
     updated_at
 ) select 
-    substring(mensaje,1,100),
+    mensaje,
     1,
     u.id,
     c.id,
