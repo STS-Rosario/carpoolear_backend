@@ -48,7 +48,7 @@ gulp.task('deploy', function() {
   if (argv.develop) {  
     
     rsyncConf.port = 2200;
-    rsyncConf.hostname = '138.197.64.208'; // hostname
+    rsyncConf.hostname = '104.131.15.228'; // hostname
     rsyncConf.username = argv.user || 'movilizame' ; // ssh username
     rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev/'; // path where uploaded files go
     
@@ -56,7 +56,7 @@ gulp.task('deploy', function() {
   } else if (argv.production) {
 
     rsyncConf.port = 2200;
-    rsyncConf.hostname = '138.197.64.208'; // hostname
+    rsyncConf.hostname = '104.131.15.228'; // hostname
     rsyncConf.username = argv.user || 'movilizame'; // ssh username
     rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev/'; // path where uploaded files go
     

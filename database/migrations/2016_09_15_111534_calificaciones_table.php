@@ -20,7 +20,7 @@ class CalificacionesTable extends Migration
             $table->integer('user_to_type');
             $table->integer('user_to_state');
             $table->integer('rating')->nullable();
-            $table->string('comment');
+            $table->text('comment');
             $table->string('reply_comment');
             $table->datetime('reply_comment_created_at')->nullable();
             $table->boolean('voted');

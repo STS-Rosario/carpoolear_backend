@@ -21,6 +21,7 @@ class ProfileTransformer extends TransformerAbstract
      */
     public function transform(User $user)
     {
+
         $data = [
             'id' => $user->id,
             'name' => $user->name,
