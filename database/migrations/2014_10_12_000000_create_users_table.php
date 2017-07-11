@@ -15,7 +15,7 @@ class CreateUsersTable extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->increments('id');
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable();
             $table->string('password', 60)->nullable();
 
             $table->boolean('terms_and_conditions');
@@ -24,7 +24,7 @@ class CreateUsersTable extends Migration
 
             $table->string('nro_doc', 15);
             //$table->string("patente", 15);
-            $table->string('description', 500);
+            $table->string('description', 1000);
             $table->string('mobile_phone', 50);
             $table->string('image', 255);
 
