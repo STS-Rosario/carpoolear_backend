@@ -42,7 +42,6 @@ class CreateRates extends Command
      */
     public function handle()
     {
-        console_log('Running rating process');
         $date = Carbon::now()->subDay()->toDateString();
         $this->rateLogic->activeRatings($date);
     }
