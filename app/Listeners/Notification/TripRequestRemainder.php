@@ -2,10 +2,10 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Trip\Alert\RequestRemainder;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Trip\Alert\RequestRemainder;
 use STS\Notifications\RequestRemainderNotification;
+
 class TripRequestRemainder implements ShouldQueue
 {
     /**
@@ -26,11 +26,11 @@ class TripRequestRemainder implements ShouldQueue
      */
     public function handle(RequestRemainder $event)
     {
-        $trip = $event->trip; 
+        $trip = $event->trip;
         $to = $trip->user;
         if ($to) {
             $notification = new RequestRemainderNotification();
-            $notification->setAttribute('trip', $trip); 
+            $notification->setAttribute('trip', $trip);
             $notification->notify($to);
         }
     }

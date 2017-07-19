@@ -50,7 +50,7 @@ class TripRepository implements TripRepo
             $first = $item['key'];
             if (strpos($first, '(')) {
                 $first = DB::Raw($first);
-            } 
+            }
             if (isset($item['op'])) {
                 $trips->where($first, $item['op'], $item['value']);
             } else {

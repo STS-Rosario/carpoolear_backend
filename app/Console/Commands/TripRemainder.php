@@ -6,7 +6,8 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Contracts\Repository\Trip as TripRepo;
-use STS\Events\Trip\Alert\HourLeft as  HourLeftEvent; 
+use STS\Events\Trip\Alert\HourLeft as  HourLeftEvent;
+
 class TripRemainder extends Command
 {
     /**
@@ -15,7 +16,6 @@ class TripRemainder extends Command
      * @var string
      */
     protected $signature = 'trip:remainder';
-    
 
     /**
      * The console command description.
@@ -26,7 +26,6 @@ class TripRemainder extends Command
 
     protected $tripLogic;
     protected $tripRepo;
-
 
     /**
      * Create a new command instance.
@@ -46,17 +45,17 @@ class TripRemainder extends Command
      * @return mixed
      */
     public function handle()
-    { 
-        $time = Carbon::now()->minute(0)->second(0)->addHour(); 
+    {
+        $time = Carbon::now()->minute(0)->second(0)->addHour();
         $time2 = $time->copy()->minute(59)->second(59);
 
         $criterias = [
              ['key' => 'trip_date', 'op' => '>=', 'value' => $time->toDateTimeString()],
-             ['key' => 'trip_date', 'op' => '<=', 'value' => $time2->toDateTimeString()]
-        ]; 
+             ['key' => 'trip_date', 'op' => '<=', 'value' => $time2->toDateTimeString()],
+        ];
 
         $trips = $this->tripRepo->index($criterias, ['user', 'passengerAccepted']);
-        foreach ($trips as $trip) { 
+        foreach ($trips as $trip) {
             if ($trip->passengerAccepted->count() > 0) {
                 event(new HourLeftEvent($trip, $trip->user));
                 foreach ($trip->passengerAccepted as $p) {

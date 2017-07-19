@@ -1,10 +1,10 @@
 <?php
 
-use Mockery as m;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\User;
+use Mockery as m;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class HourLeftTest extends TestCase
 {
@@ -25,7 +25,7 @@ class HourLeftTest extends TestCase
     public function tearDown()
     {
         m::close();
-    } 
+    }
 
     protected function parseJson($response)
     {
@@ -33,7 +33,7 @@ class HourLeftTest extends TestCase
     }
 
     public function testSomeMatch()
-    { 
+    {
         $driver = factory(User::class)->create();
         $passengerA = factory(User::class)->create();
         $passengerB = factory(User::class)->create();
@@ -42,11 +42,11 @@ class HourLeftTest extends TestCase
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:remainder'); 
+        $status = $this->artisan('trip:remainder');
     }
 
     public function testNoMatch()
-    { 
+    {
         $driver = factory(User::class)->create();
         $passengerA = factory(User::class)->create();
         $passengerB = factory(User::class)->create();
@@ -55,8 +55,6 @@ class HourLeftTest extends TestCase
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:remainder'); 
+        $status = $this->artisan('trip:remainder');
     }
-
-     
 }

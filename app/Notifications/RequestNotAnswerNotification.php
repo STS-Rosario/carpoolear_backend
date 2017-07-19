@@ -38,7 +38,7 @@ class RequestNotAnswerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => "Te recordamos que una de tus solicitudes aún no fue contestada.",
+            'message' => 'Te recordamos que una de tus solicitudes aún no fue contestada.',
             'url' => 'my-trips',
             'extras' => [
                 'id' => $trip->id,
