@@ -7,27 +7,28 @@ use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 
-class HourLeftNotification extends BaseNotification
+class RequestRemainderNotification extends BaseNotification
 {
     protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
 
     public function toEmail($user)
     {
         return [
-            'title' => 'Recordatorio de viaje hacia'.$this->getAttribute('trip')->to_town,
-            'email_view' => 'hour_left',
+            'title' => 'Tienes solicitudes pendientes de contestar',
+            'email_view' => 'request_remainder',
+            'url' =>  config('app.url').'/app/my-trips',
         ];
     }
 
     public function toString()
     {
-        return 'Falta poco más de una hora para le viaje hacia ' . $this->getAttribute('trip')->to_town;
+        return 'Tienes solicitudes pendientes de contestar.';
     }
 
     public function getExtras()
     {
         return [
-            'type' => 'trip',
+            'type' => 'my-trips',
             'trip_id' => $this->getAttribute('trip')->id,
         ];
     }
@@ -37,8 +38,8 @@ class HourLeftNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => "Recuerada que en poco más de una hora viajas hacia ".$trip->to_town,
-            'url' => 'trip',
+            'message' => "Tienes solicitudes pendientes de contestar.",
+            'url' => 'my-trips',
             'extras' => [
                 'id' => $trip->id,
             ],

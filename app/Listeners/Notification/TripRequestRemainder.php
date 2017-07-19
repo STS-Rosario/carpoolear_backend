@@ -2,12 +2,11 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Trip\Alert\HourLeft;
+use STS\Events\Trip\Alert\RequestRemainder;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Notifications\HourLeftNotification;
-
-class TripHourLeft implements ShouldQueue
+use STS\Notifications\RequestRemainderNotification;
+class TripRequestRemainder implements ShouldQueue
 {
     /**
      * Create the event listener.
@@ -22,15 +21,15 @@ class TripHourLeft implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  HourLeft  $event
+     * @param  RequestRemainder  $event
      * @return void
      */
-    public function handle(HourLeft $event)
+    public function handle(RequestRemainder $event)
     {
         $trip = $event->trip; 
-        $to = $event->to;
+        $to = $trip->user;
         if ($to) {
-            $notification = new HourLeftNotification();
+            $notification = new RequestRemainderNotification();
             $notification->setAttribute('trip', $trip); 
             $notification->notify($to);
         }

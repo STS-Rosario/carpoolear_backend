@@ -14,7 +14,8 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\CreateRates::class,
-        Commands\TripRemainder::class
+        Commands\TripRemainder::class,
+        Commands\RequestRemainder::class
     ];
 
     /**
