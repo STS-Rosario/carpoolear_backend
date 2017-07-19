@@ -3,7 +3,6 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Trip\Alert\HourLeft;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\HourLeftNotification;
 
@@ -27,11 +26,11 @@ class TripHourLeft implements ShouldQueue
      */
     public function handle(HourLeft $event)
     {
-        $trip = $event->trip; 
+        $trip = $event->trip;
         $to = $event->to;
         if ($to) {
             $notification = new HourLeftNotification();
-            $notification->setAttribute('trip', $trip); 
+            $notification->setAttribute('trip', $trip);
             $notification->notify($to);
         }
     }

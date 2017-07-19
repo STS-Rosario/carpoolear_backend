@@ -6,9 +6,7 @@ use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use Illuminate\Console\Command;
-use STS\Contracts\Logic\Trip as TripLogic;
-use STS\Contracts\Repository\Trip as TripRepo;
-use STS\Events\Trip\Alert\RequestNotAnswer as  RequestNotAnswerEvent; 
+use STS\Events\Trip\Alert\RequestNotAnswer as  RequestNotAnswerEvent;
 
 class RequestNotAnswer extends Command
 {
@@ -18,7 +16,6 @@ class RequestNotAnswer extends Command
      * @var string
      */
     protected $signature = 'trip:requestnotanswer';
-    
 
     /**
      * The console command description.
@@ -30,7 +27,6 @@ class RequestNotAnswer extends Command
     protected $tripLogic;
     protected $tripRepo;
 
-
     /**
      * Create a new command instance.
      *
@@ -38,7 +34,7 @@ class RequestNotAnswer extends Command
      */
     public function __construct()
     {
-        parent::__construct(); 
+        parent::__construct();
     }
 
     /**
@@ -47,17 +43,16 @@ class RequestNotAnswer extends Command
      * @return mixed
      */
     public function handle()
-    { 
-        $now = Carbon::now(); 
+    {
+        $now = Carbon::now();
 
         $passengers = Passenger::whereIn('request_state', [Passenger::STATE_PENDING]);
         $passengers->with(['user', 'trip']);
-        $passengers->whereRaw("DATEDIFF(?, DATE(created_at)) = 3", [$now->toDateString()] );
+        $passengers->whereRaw('DATEDIFF(?, DATE(created_at)) = 3', [$now->toDateString()]);
         $passengers = $passengers->get();
 
-        foreach($passengers as $p) {
+        foreach ($passengers as $p) {
             event(new RequestNotAnswerEvent($p->trip, $p->user));
         }
-
     }
 }

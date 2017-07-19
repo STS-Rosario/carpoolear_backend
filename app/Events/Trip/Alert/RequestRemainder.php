@@ -4,13 +4,12 @@ namespace STS\Events\Trip\Alert;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class RequestRemainder extends Event
 {
     use SerializesModels;
     public $trip;
-    
+
     /**
      * Create a new event instance.
      *

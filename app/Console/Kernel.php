@@ -16,7 +16,7 @@ class Kernel extends ConsoleKernel
         Commands\CreateRates::class,
         Commands\TripRemainder::class,
         Commands\RequestRemainder::class,
-        Commands\RequestNotAnswer::class
+        Commands\RequestNotAnswer::class,
     ];
 
     /**
@@ -36,6 +36,5 @@ class Kernel extends ConsoleKernel
         $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
-
     }
 }
