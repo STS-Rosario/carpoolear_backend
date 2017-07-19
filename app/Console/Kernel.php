@@ -32,5 +32,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('trip:remainder')->hourly();
 
+        $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
+
     }
 }
