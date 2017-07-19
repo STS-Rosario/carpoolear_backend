@@ -44,6 +44,10 @@ class EventServiceProvider extends ServiceProvider
         'STS\Events\Trip\Alert\RequestRemainder' => [
             'STS\Listeners\Notification\TripRequestRemainder',
         ],
+        'STS\Events\Trip\Alert\RequestNotAnswer' => [
+            'STS\Listeners\Notification\TripRequestNotAnswer',
+        ],
+        
         'STS\Events\Trip\Update' => [
             'STS\Listeners\DownloadStaticImage',
         ],
