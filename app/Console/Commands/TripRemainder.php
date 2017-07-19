@@ -57,9 +57,11 @@ class TripRemainder extends Command
 
         $trips = $this->tripRepo->index($criterias, ['user', 'passengerAccepted']);
         foreach ($trips as $trip) { 
-            event(new HourLeftEvent($trip, $trip->user));
-            foreach ($trip->passengerAccepted as $p) {
-                event(new HourLeftEvent($trip, $p->user));
+            if ($trip->passengerAccepted->count() > 0) {
+                event(new HourLeftEvent($trip, $trip->user));
+                foreach ($trip->passengerAccepted as $p) {
+                    event(new HourLeftEvent($trip, $p->user));
+                }
             }
         }
     }
