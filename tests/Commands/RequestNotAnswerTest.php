@@ -6,7 +6,7 @@ use STS\User;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 
-class RequestRemainderTest extends TestCase
+class RequestNotAnswerTest extends TestCase
 {
     use DatabaseTransactions;
 
