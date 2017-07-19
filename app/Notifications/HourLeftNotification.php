@@ -21,7 +21,7 @@ class HourLeftNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Falta poco más de una hora para le viaje hacia ' . $this->getAttribute('trip')->to_town;
+        return 'Falta poco más de una hora para le viaje hacia '.$this->getAttribute('trip')->to_town;
     }
 
     public function getExtras()
@@ -37,7 +37,7 @@ class HourLeftNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => "Recuerada que en poco más de una hora viajas hacia ".$trip->to_town,
+            'message' => 'Recuerada que en poco más de una hora viajas hacia '.$trip->to_town,
             'url' => 'trip',
             'extras' => [
                 'id' => $trip->id,

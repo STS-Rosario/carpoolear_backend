@@ -54,7 +54,7 @@ class User extends Authenticatable
     ];
 
     protected $appends = [
-        'positive_ratings', 
+        'positive_ratings',
         'negative_ratings',
     ];
 
@@ -163,7 +163,7 @@ class User extends Authenticatable
     public function ratings($value = null)
     {
         $recived = $this->ratingReceived();
-        if (!is_null($value)) {
+        if (! is_null($value)) {
             $recived->where('rating', $value);
         }
 

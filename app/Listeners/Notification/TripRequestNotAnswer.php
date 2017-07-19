@@ -2,9 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Trip\Alert\RequestNotAnswer;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Trip\Alert\RequestNotAnswer;
 use STS\Notifications\RequestNotAnswerNotification;
 
 class TripRequestNotAnswer implements ShouldQueue
@@ -27,11 +26,11 @@ class TripRequestNotAnswer implements ShouldQueue
      */
     public function handle(RequestNotAnswer $event)
     {
-        $trip = $event->trip; 
+        $trip = $event->trip;
         $to = $event->to;
         if ($to) {
             $notification = new RequestNotAnswerNotification();
-            $notification->setAttribute('trip', $trip); 
+            $notification->setAttribute('trip', $trip);
             $notification->notify($to);
         }
     }

@@ -1,10 +1,10 @@
 <?php
 
-use Mockery as m;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\User;
+use Mockery as m;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RequestRemainderTest extends TestCase
 {
@@ -24,7 +24,7 @@ class RequestRemainderTest extends TestCase
     public function tearDown()
     {
         m::close();
-    } 
+    }
 
     protected function parseJson($response)
     {
@@ -32,50 +32,42 @@ class RequestRemainderTest extends TestCase
     }
 
     public function testLastWeek()
-    { 
+    {
         $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();        
+        $passengerA = factory(User::class)->create();
         $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(4)->toDateTimeString()]);
         factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        
 
-        $status = $this->artisan('trip:request'); 
+        $status = $this->artisan('trip:request');
     }
 
     public function testSeccondWeek()
-    { 
+    {
         $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();        
+        $passengerA = factory(User::class)->create();
         $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(8)->toDateTimeString()]);
         factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        
 
-        $status = $this->artisan('trip:request'); 
+        $status = $this->artisan('trip:request');
     }
 
     public function testSeccondWeekNotSend()
-    { 
+    {
         $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();        
+        $passengerA = factory(User::class)->create();
         $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(9)->toDateTimeString()]);
         factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        
 
-        $status = $this->artisan('trip:request'); 
+        $status = $this->artisan('trip:request');
     }
 
     public function testFarAwayTrip()
-    { 
+    {
         $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();        
+        $passengerA = factory(User::class)->create();
         $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(16)->toDateTimeString()]);
         factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        
 
-        $status = $this->artisan('trip:request'); 
+        $status = $this->artisan('trip:request');
     }
-
-    
-
-     
 }

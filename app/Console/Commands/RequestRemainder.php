@@ -4,11 +4,8 @@ namespace STS\Console\Commands;
 
 use Carbon\Carbon;
 use STS\Entities\Trip;
-use STS\Entities\Passenger;
 use Illuminate\Console\Command;
-use STS\Contracts\Logic\Trip as TripLogic;
-use STS\Contracts\Repository\Trip as TripRepo;
-use STS\Events\Trip\Alert\RequestRemainder as  RequestRemainderEvent; 
+use STS\Events\Trip\Alert\RequestRemainder as  RequestRemainderEvent;
 
 class RequestRemainder extends Command
 {
@@ -18,7 +15,6 @@ class RequestRemainder extends Command
      * @var string
      */
     protected $signature = 'trip:request';
-    
 
     /**
      * The console command description.
@@ -30,7 +26,6 @@ class RequestRemainder extends Command
     protected $tripLogic;
     protected $tripRepo;
 
-
     /**
      * Create a new command instance.
      *
@@ -38,7 +33,7 @@ class RequestRemainder extends Command
      */
     public function __construct()
     {
-        parent::__construct(); 
+        parent::__construct();
     }
 
     /**
@@ -47,24 +42,23 @@ class RequestRemainder extends Command
      * @return mixed
      */
     public function handle()
-    { 
-        $now = Carbon::now(); 
+    {
+        $now = Carbon::now();
 
         $trips = Trip::where('trip_date', '>=', $now->toDateTimeString())->where('is_passenger', 0);
-        $trips->has('passengerPending'); 
+        $trips->has('passengerPending');
         $trips = $trips->get();
 
-        foreach($trips as $trip) {
+        foreach ($trips as $trip) {
             $days = $now->diffInDays($trip->trip_date);
             $weeks = $days / 7;
             if ($weeks < 1) { // Last Week
                 event(new RequestRemainderEvent($trip));
-            } else if ($weeks < 2) { // first Week of notifications
+            } elseif ($weeks < 2) { // first Week of notifications
                 if ($days % 2 == 0) {
                     event(new RequestRemainderEvent($trip));
-                } 
+                }
             }
         }
-
     }
 }

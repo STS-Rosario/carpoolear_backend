@@ -4,14 +4,13 @@ namespace STS\Events\Trip\Alert;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class RequestNotAnswer extends Event
 {
     use SerializesModels;
     public $to;
     public $trip;
-    
+
     /**
      * Create a new event instance.
      *
