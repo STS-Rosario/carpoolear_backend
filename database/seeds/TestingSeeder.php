@@ -19,7 +19,7 @@ class TestingSeeder extends Seeder
             $users[] = factory(User::class)->create(['email' => 'user'.$i.'@g.com']);
         }
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             for ($j = 0; $j < 5; $j++) {
                 $collection = collect(['rosario', 'buenos_Aires', 'mendoza', 'cordoba']);
 
