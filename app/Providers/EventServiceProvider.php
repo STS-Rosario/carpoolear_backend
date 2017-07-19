@@ -38,6 +38,9 @@ class EventServiceProvider extends ServiceProvider
             'STS\Listeners\DownloadStaticImage',
             'STS\Listeners\Conversation\createConversation',
         ],
+        'STS\Events\Trip\Alert\HourLeft' => [
+            'STS\Listeners\Notification\TripHourLeft',
+        ],
         'STS\Events\Trip\Update' => [
             'STS\Listeners\DownloadStaticImage',
         ],

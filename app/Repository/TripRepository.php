@@ -46,11 +46,15 @@ class TripRepository implements TripRepo
     public function index($criterias, $withs = [])
     {
         $trips = Trip::orderBy('trip_date');
-        foreach ($criterias as $key => $value) {
-            if (strpos($key, '(')) {
-                $trips->where(DB::Raw($key), $value);
+        foreach ($criterias as $item) {
+            $first = $item['key'];
+            if (strpos($first, '(')) {
+                $first = DB::Raw($first);
+            } 
+            if (isset($item['op'])) {
+                $trips->where($first, $item['op'], $item['value']);
             } else {
-                $trips->where($key, $value);
+                $trips->where($first, $item['value']);
             }
         }
         if ($withs) {
