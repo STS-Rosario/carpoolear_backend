@@ -1,0 +1,1 @@
+En poco más de una hora arranca tu viaje a {{$trip->to_town}}
