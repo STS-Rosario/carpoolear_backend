@@ -31,7 +31,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'friendship_type_id'    => 'required|integer|in:0,1,2',
                 'estimated_time'        => 'required|string',
                 'distance'              => 'required|numeric',
-                'co2'                   => 'required|integer',
+                'co2'                   => 'required|numeric',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
@@ -51,7 +51,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'friendship_type_id'    => 'integer|in:0,1,2',
                 'estimated_time'        => 'string',
                 'distance'              => 'numeric',
-                'co2'                   => 'integer',
+                'co2'                   => 'numeric',
                 'return_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
 
