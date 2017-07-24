@@ -16,7 +16,7 @@ class ResetPasswordNotification extends BaseNotification
         return [
             'title' => 'Password Reset',
             'email_view' => 'reset_password',
-            'url' => config('app.url').'/app/#Reset/'.$this->getAttribute('token'),
+            'url' => config('app.url').'/app/reset-password/'.$this->getAttribute('token'),
         ];
     }
 }
