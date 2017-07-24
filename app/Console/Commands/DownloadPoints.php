@@ -22,7 +22,6 @@ class DownloadPoints extends Command
      * @var string
      */
     protected $description = 'Download points';
- 
 
     /**
      * Create a new command instance.
@@ -50,6 +49,5 @@ class DownloadPoints extends Command
                 $this->download->download($trip);
             }
         }
-
     }
 }

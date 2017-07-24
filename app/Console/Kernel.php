@@ -17,7 +17,7 @@ class Kernel extends ConsoleKernel
         Commands\TripRemainder::class,
         Commands\RequestRemainder::class,
         Commands\RequestNotAnswer::class,
-        Commands\DownloadPoints::class
+        Commands\DownloadPoints::class,
     ];
 
     /**
