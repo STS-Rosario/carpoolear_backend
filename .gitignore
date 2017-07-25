@@ -1,3 +1,5 @@
 /vendor
 /node_modules
 .env
+/public/app
+/public/image/paths
