@@ -15,9 +15,10 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/app/{name}', function () {
+Route::get('/app/{name?}', function () {
     return File::get(public_path().'/app/index.html');
-});
+})->where('name', '[\/\w\.-]*');;
+
 
 Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
     //Route::post("/login", 'Api\AuthController@login');
