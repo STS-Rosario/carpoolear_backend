@@ -152,6 +152,7 @@ return [
         'Barryvdh\Cors\ServiceProvider',
         'Davibennun\LaravelPushNotification\LaravelPushNotificationServiceProvider',
          Dingo\Api\Provider\LaravelServiceProvider::class,
+         
         /*
          * Application Service Providers...
          */

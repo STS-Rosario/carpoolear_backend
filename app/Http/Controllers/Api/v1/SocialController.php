@@ -44,7 +44,7 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate();
             if (! $user) {
-                throw new StoreResourceFailedException('Could not create new user.', $socialServices->gerErrors());
+                throw new StoreResourceFailedException('Could not create new user.', $socialServices->getErrors());
             }
             $token = JWTAuth::fromUser($user);
         } catch (\ReflectionException $e) {

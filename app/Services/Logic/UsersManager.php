@@ -48,10 +48,10 @@ class UsersManager extends BaseManager implements UserLogic
      *
      * @return User
      */
-    public function create(array $data)
+    public function create(array $data, $validate = true)
     {
         $v = $this->validator($data);
-        if ($v->fails()) {
+        if ($v->fails() && $validate) {
             $this->setErrors($v->errors());
 
             return;

@@ -12,7 +12,8 @@
         "barryvdh/laravel-cors": "0.8.x",
 		"sammyk/laravel-facebook-sdk": "^3.0",
         "guzzlehttp/guzzle": "^6.2",
-        "doctrine/dbal": "^2.5"
+        "doctrine/dbal": "^2.5",
+        "barryvdh/laravel-async-queue": "0.4.x"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
