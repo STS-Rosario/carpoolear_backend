@@ -30,7 +30,7 @@ var path    = require('path');
 gulp.task('deploy', function() {
   
   // Dirs and Files to sync
-  rsyncPaths = [ 'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
+  rsyncPaths = [ 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
   
   // Default options for rsync
   rsyncConf = {
