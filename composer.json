@@ -11,7 +11,8 @@
         "tymon/jwt-auth": "0.5.*",
         "barryvdh/laravel-cors": "0.8.x",
 		"sammyk/laravel-facebook-sdk": "^3.0",
-        "guzzlehttp/guzzle": "^6.2"
+        "guzzlehttp/guzzle": "^6.2",
+        "doctrine/dbal": "^2.5"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",

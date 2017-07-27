@@ -89,11 +89,12 @@ class TripRepository implements TripRepo
                 $trips = Trip::where(DB::Raw('DATE(trip_date)'), $data['date']);
                 $trips->orderBy('trip_date');
             } else {
-                $from = parse_date($data['date'])->subDays(3);
-                $to = parse_date($data['date'])->addDays(3);
+                $date_search = parse_date($data['date']);
+                $from = $date_search->copy()->subDays(3);
+                $to = $date_search->copy()->addDays(3);
 
                 $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)'), [date_to_string($from), date_to_string($to)]);
-                $trips->orderBy(DB::Raw("DATEDIFF(DATE(trip_date), '".$data['date']."' )"));
+                $trips->orderBy(DB::Raw("ABS(DATEDIFF(DATE(trip_date), '". date_to_string($date_search)  ."' ))"));
             }
             //$trips->setBindings([$data['date']]);
         } else {
@@ -161,9 +162,6 @@ class TripRepository implements TripRepo
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 
         return make_pagination($trips, $pageNumber, $pageSize);
-
-        //return $trips->get();
-        // [FALTA] Tema de la localizacion para viajes publicos
     }
 
     private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)

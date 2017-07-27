@@ -26,11 +26,12 @@ var rsync   = require('gulp-rsync');
 var prompt  = require('gulp-prompt'); 
 var gulpif  = require('gulp-if');
 var path    = require('path');
+var isWin = /^win/.test(process.platform);
 
 gulp.task('deploy', function() {
   
   // Dirs and Files to sync
-  rsyncPaths = [ 'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
+  rsyncPaths = [ 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
   
   // Default options for rsync
   rsyncConf = {
@@ -41,9 +42,13 @@ gulp.task('deploy', function() {
     recursive: true,
     clean: false,
     exclude: [],
-    dryrun: argv.testing
+    dryrun: argv.testing,
   };
   
+  if (isWin) {
+    rsyncConf.chmod = "ugo=rwX";
+  }
+
   // develop
   if (argv.develop) {  
     
