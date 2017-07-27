@@ -3,6 +3,5 @@
 .env
 /public/app
 /public/image/paths
-settins.json
-.gitignore
-gitignore
+settings.json
+.vscode/
