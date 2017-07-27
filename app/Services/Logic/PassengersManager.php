@@ -82,7 +82,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             return;
         }
         $trip = $this->tripLogic->show($user, $tripId);
-        if ($trip && !$trip->expired()) {
+        if ($trip && ! $trip->expired()) {
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
                 event(new RequestEvent($trip, $user, $trip->user));
             }

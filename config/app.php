@@ -153,7 +153,7 @@ return [
         'Davibennun\LaravelPushNotification\LaravelPushNotificationServiceProvider',
          Dingo\Api\Provider\LaravelServiceProvider::class,
          Barryvdh\Queue\AsyncServiceProvider::class,
-         
+
         /*
          * Application Service Providers...
          */

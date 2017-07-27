@@ -175,7 +175,7 @@ class TripsManager extends BaseManager implements TripLogic
             $trip = $this->tripRepo->show($trip);
         }
 
-        if (!$trip) {
+        if (! $trip) {
             return false;
         }
 
