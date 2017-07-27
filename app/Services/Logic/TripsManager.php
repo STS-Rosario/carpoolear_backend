@@ -137,7 +137,7 @@ class TripsManager extends BaseManager implements TripLogic
         if ($this->userCanSeeTrip($user, $trip)) {
             return $trip;
         } else {
-            $this->setErrors('trip_not_foound');
+            $this->setErrors(['error' => 'trip_not_foound']);
 
             return;
         }
@@ -173,6 +173,10 @@ class TripsManager extends BaseManager implements TripLogic
         $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
         if (is_int($trip)) {
             $trip = $this->tripRepo->show($trip);
+        }
+
+        if (!$trip) {
+            return false;
         }
 
         if ($user->id == $trip->user->id) {

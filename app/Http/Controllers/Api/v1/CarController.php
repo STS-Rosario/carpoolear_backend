@@ -59,7 +59,7 @@ class CarController extends Controller
         $this->user = $this->auth->user();
         $car = $this->carsLogic->show($this->user, $id);
         if (! $car) {
-            throw new ResourceException('Could not found car.', $this->carsLogic->getErrors());
+            throw new StoreResourceFailedException('Could not found car.', $this->carsLogic->getErrors());
         }
 
         return $this->response->withArray(['data' => $car]);
