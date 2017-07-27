@@ -2,9 +2,9 @@
 
 namespace STS\Listeners\Notification;
 
+use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\PendingRateNotification;
 use STS\Events\Rating\PendingRate as PendingEvent;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class PendingRate implements ShouldQueue
 {

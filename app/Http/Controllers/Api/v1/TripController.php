@@ -4,7 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Transformers\TripTransformer; 
+use STS\Transformers\TripTransformer;
 use STS\Contracts\Logic\Trip as TripLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 

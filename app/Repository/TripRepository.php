@@ -94,7 +94,7 @@ class TripRepository implements TripRepo
                 $to = $date_search->copy()->addDays(3);
 
                 $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)'), [date_to_string($from), date_to_string($to)]);
-                $trips->orderBy(DB::Raw("ABS(DATEDIFF(DATE(trip_date), '". date_to_string($date_search)  ."' ))"));
+                $trips->orderBy(DB::Raw("ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' ))"));
             }
             //$trips->setBindings([$data['date']]);
         } else {
