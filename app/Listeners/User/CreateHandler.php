@@ -31,7 +31,7 @@ class CreateHandler implements ShouldQueue
     public function handle(Create $event)
     {
         $user = $this->userRepo->show($event->id);
-        if ($user) {
+        if ($user && $user->email) {
             $notification = new NewUserNotification();
             $notification->notify($user);
         }

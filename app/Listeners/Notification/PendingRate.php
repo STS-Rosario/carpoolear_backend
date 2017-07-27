@@ -4,8 +4,9 @@ namespace STS\Listeners\Notification;
 
 use STS\Notifications\PendingRateNotification;
 use STS\Events\Rating\PendingRate as PendingEvent;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class PendingRate
+class PendingRate implements ShouldQueue
 {
     /**
      * Create the event listener.

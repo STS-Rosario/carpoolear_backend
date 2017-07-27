@@ -2,6 +2,7 @@
 
 namespace STS\Entities;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -148,6 +149,11 @@ class Trip extends Model
     public function setDescriptionAttribute($value)
     {
         $this->attributes['description'] = $value; //htmlentities($value);
+    }
+
+    public function expired() 
+    {
+        return $this->trip_date->lt(Carbon::now());
     }
 
     public function checkFriendship($user)

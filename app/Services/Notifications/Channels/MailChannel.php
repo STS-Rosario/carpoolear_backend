@@ -10,12 +10,14 @@ class MailChannel
 
     public function send($notification, $user)
     {
-        $data = $this->getData($notification, $user);
-        $data = array_merge($data, $notification->getAttributes());
-        $data['user'] = $user;
-        \Mail::send('email.'.$data['email_view'], $data, function ($message) use ($user, $data) {
-            $message->to($user->email, $user->name)->subject($data['title']);
-        });
+        if ($user->email) {
+            $data = $this->getData($notification, $user);
+            $data = array_merge($data, $notification->getAttributes());
+            $data['user'] = $user;
+            \Mail::send('email.'.$data['email_view'], $data, function ($message) use ($user, $data) {
+                $message->to($user->email, $user->name)->subject($data['title']);
+            });
+        }
     }
 
     public function getData($notification, $user)

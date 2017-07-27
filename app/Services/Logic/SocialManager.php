@@ -127,7 +127,7 @@ class SocialManager extends BaseManager implements SocialLogic
             $img = file_get_contents($data['image']);
             $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
         }
-        $user = $this->userLogic->create($data);
+        $user = $this->userLogic->create($data, true);
         if (! $user) {
             $this->setErrors($this->userLogic->getErrors());
 
@@ -146,7 +146,7 @@ class SocialManager extends BaseManager implements SocialLogic
         foreach ($friends as $friend) {
             $account = $this->socialRepo->find($friend);
             if ($account) {
-                $friend_user = $this->userLogic->show($account->user_id);
+                $friend_user = $this->userLogic->show(null, $account->user_id);
                 $list[] = $account->user;
             }
         }

@@ -5,8 +5,9 @@ namespace STS\Listeners\Notification;
 use STS\Events\User\Reset;
 use STS\Notifications\ResetPasswordNotification;
 use STS\Contracts\Repository\User as UserRepository;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ResetPasswordHandler
+class ResetPasswordHandler implements ShouldQueue
 {
     protected $userRepo;
 
