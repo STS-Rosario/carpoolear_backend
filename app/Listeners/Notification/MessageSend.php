@@ -4,8 +4,9 @@ namespace STS\Listeners\Notification;
 
 use STS\Events\MessageSend as SendEvent;
 use STS\Notifications\NewMessageNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class MessageSend
+class MessageSend implements ShouldQueue
 {
     /**
      * Create the event listener.
