@@ -42,7 +42,7 @@ gulp.task('deploy', function() {
     recursive: true,
     clean: false,
     exclude: [],
-    dryrun: argv.testing,
+    dryrun: argv.testing
   };
   
   if (isWin) {

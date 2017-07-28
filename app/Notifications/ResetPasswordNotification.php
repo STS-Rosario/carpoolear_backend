@@ -14,7 +14,7 @@ class ResetPasswordNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Password Reset',
+            'title' => 'Recuperación de contraseña de Carpoolear',
             'email_view' => 'reset_password',
             'url' => config('app.url').'/app/reset-password/'.$this->getAttribute('token'),
         ];

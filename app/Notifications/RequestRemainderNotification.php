@@ -16,7 +16,7 @@ class RequestRemainderNotification extends BaseNotification
         return [
             'title' => 'Tienes solicitudes pendientes de contestar',
             'email_view' => 'request_remainder',
-            'url' =>  config('app.url').'/app/my-trips',
+            'url' =>  config('app.url').'/app/profile/me#0',
         ];
     }
 
