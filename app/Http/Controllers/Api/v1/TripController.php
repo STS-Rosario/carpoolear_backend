@@ -5,7 +5,6 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Transformers\TripTransformer;
-use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\Trip as TripLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 
@@ -62,7 +61,7 @@ class TripController extends Controller
         $this->user = $this->auth->user();
         $trip = $this->tripsLogic->show($this->user, $id);
         if (! $trip) {
-            throw new ResourceException('Could not found trip.', $this->tripsLogic->getErrors());
+            throw new StoreResourceFailedException('Could not found trip.', $this->tripsLogic->getErrors());
         }
 
         return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);

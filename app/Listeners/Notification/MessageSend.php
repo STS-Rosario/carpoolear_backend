@@ -3,8 +3,8 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\MessageSend as SendEvent;
-use STS\Notifications\NewMessageNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Notifications\NewMessageNotification;
 
 class MessageSend implements ShouldQueue
 {

@@ -17,8 +17,7 @@ Route::get('/', function () {
 
 Route::get('/app/{name?}', function () {
     return File::get(public_path().'/app/index.html');
-})->where('name', '[\/\w\.-]*');;
-
+})->where('name', '[\/\w\.-]*');
 
 Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
     //Route::post("/login", 'Api\AuthController@login');

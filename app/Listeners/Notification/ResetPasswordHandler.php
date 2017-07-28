@@ -3,9 +3,9 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\User\Reset;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\ResetPasswordNotification;
 use STS\Contracts\Repository\User as UserRepository;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ResetPasswordHandler implements ShouldQueue
 {

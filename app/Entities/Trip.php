@@ -151,7 +151,7 @@ class Trip extends Model
         $this->attributes['description'] = $value; //htmlentities($value);
     }
 
-    public function expired() 
+    public function expired()
     {
         return $this->trip_date->lt(Carbon::now());
     }
