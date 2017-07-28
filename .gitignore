@@ -3,3 +3,5 @@
 .env
 /public/app
 /public/image/paths
+settings.json
+.vscode/

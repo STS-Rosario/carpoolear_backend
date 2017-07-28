@@ -1,6 +1,9 @@
-Bienvenido {{$user->name}},
+Hola {{$user->name}}!
 
-{{$from->name}} te ha {{$type}} del viaje {{$trip->to_town}}.
+Te informamos que {{$from->name}} {{reason_message}} tu solicitud en el viaje hacia {{$trip->to_town}}.
 
-Saludos,
+Click <a href={{url}}>aquí</a> si quieres ver más detalles de este viaje.
+
+Saludos!
+
 Carpoolear

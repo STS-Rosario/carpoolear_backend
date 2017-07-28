@@ -1,6 +1,7 @@
-Hola {{$user->name}},
+Hola {{$user->name}}!
 
-Para restablecer tu contraseña haz click <a href="{{$url}}">aqui</a>.
+Para restablecer tu contraseña haz click <a href="{{$url}}">aquí</a>.
 
-Saludos,
+Saludos!
+
 Carpoolear

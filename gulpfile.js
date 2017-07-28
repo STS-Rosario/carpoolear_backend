@@ -26,6 +26,7 @@ var rsync   = require('gulp-rsync');
 var prompt  = require('gulp-prompt'); 
 var gulpif  = require('gulp-if');
 var path    = require('path');
+var isWin = /^win/.test(process.platform);
 
 gulp.task('deploy', function() {
   
@@ -44,6 +45,10 @@ gulp.task('deploy', function() {
     dryrun: argv.testing
   };
   
+  if (isWin) {
+    rsyncConf.chmod = "ugo=rwX";
+  }
+
   // develop
   if (argv.develop) {  
     
