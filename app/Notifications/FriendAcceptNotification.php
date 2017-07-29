@@ -14,9 +14,10 @@ class FriendAcceptNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name.'ha aceptado tu solicitud de amistad.',
+            'title' => $this->getAttribute('from')->name.' ha aceptado tu solicitud de amistad.',
             'email_view' => 'friends_email',
             'type' => 'accept',
+            'message' => 'aceptado'
         ];
     }
 

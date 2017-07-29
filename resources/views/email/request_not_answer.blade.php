@@ -1,5 +1,9 @@
 Hola {{$user->name}},
 
-Te recordamos que solicitud de viaje a {{$trip->to_town}}, aún no fue contestada.
+Te avisamos que tu solicitud para subirte al viaje hacia {{$trip->to_town}}, aún no fue contestada por su chofer.
 
-{{$url}}
+Click <a href={{$url}}>aquí</a> si quieres ver más detalles del viaje.
+
+Saludos!
+
+Carpoolear

@@ -17,6 +17,8 @@ class AcceptPassengerNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha aceptado tu solicitud.',
             'email_view' => 'passenger_email',
             'type' => 'accept',
+            'reason_message' => 'ha aceptado',
+            'url' => config('app.url').'/trips/'.$this->getAttribute('trip')->id
         ];
     }
 

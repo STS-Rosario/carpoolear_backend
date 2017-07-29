@@ -14,15 +14,16 @@ class RequestNotAnswerNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Solicitudes pendientes sin contestar',
+            'title' => 'Una de tus solicitudes aún no fue contestada',
             'email_view' => 'request_not_answer',
             'url' =>  config('app.url').'/profile/me#0',
+            'url' => config('app.url').'/trips/'.$this->getAttribute('trip')->id
         ];
     }
 
     public function toString()
     {
-        return 'Te recordamos que aún tienes solicitudes pendientes por contestar.';
+        return 'Una de tus solicitudes aún no fue contestada';
     }
 
     public function getExtras()
@@ -38,7 +39,7 @@ class RequestNotAnswerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Te recordamos que aún tienes solicitudes pendientes por contestar.',
+            'message' => 'Una de tus solicitudes aún no fue contestada',
             'url' => 'my-trips',
             'extras' => [
                 'id' => $trip->id,

@@ -109,7 +109,7 @@ class TripRepository implements TripRepo
         }
 
         if (isset($data['user_id'])) {
-            $trips->whereUserId('user_id');
+            $trips->whereUserId($data['user_id']);
         }
 
         $trips->where(function ($q) use ($user) {

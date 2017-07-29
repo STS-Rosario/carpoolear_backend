@@ -17,6 +17,7 @@ class RequestPassengerNotification extends BaseNotification
             'title' => 'Nueva solicitud para subirse a uno de tus viajes.',
             'email_view' => 'passenger_email',
             'type' => 'request',
+            'url' =>  config('app.url').'/app/profile/me#0'
         ];
     }
 
