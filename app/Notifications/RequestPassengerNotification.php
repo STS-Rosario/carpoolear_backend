@@ -14,15 +14,17 @@ class RequestPassengerNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Nueva solicitud de viaje',
-            'email_view' => 'passenger_email',
+            'title' => $this->getAttribute('from')->name.' desea subirse a uno de tus viajes.',
+            'from' => $this->getAttribute('from')->name,
+            'email_view' => 'passenger_request',
             'type' => 'request',
+            'url' =>  config('app.url').'/app/profile/me#0'
         ];
     }
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' quiere subirse a unos de tus viajes.';
+        return $this->getAttribute('from')->name.' quiere subirse a uno de tus viajes.';
     }
 
     public function getExtras()
@@ -38,7 +40,7 @@ class RequestPassengerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => $this->getAttribute('from')->name.' quiere subirse a unos de tus viajes.',
+            'message' => $this->getAttribute('from')->name.' quiere subirse a uno de tus viajes.',
             'url' => 'passenger',
             'extras' => [
                 'id' => $trip->id,

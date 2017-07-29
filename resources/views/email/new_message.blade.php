@@ -1,8 +1,9 @@
-Hola {{$user->name}},
+Hola {{$user->name}}!
 
 {{$from->name}} te ha enviado un nuevo mensaje.
 
-{{$messages->id}}
+Haz click <a href="{{$url}}">aquí</a> para leerlo.
 
-Saludos,
+Saludos!
+
 Carpoolear

@@ -1,9 +1,10 @@
-Hola {{$user->name}},
+Hola {{$user->name}}!
 
-Acába de finalizar el viaje a {{$trip->to_town}}. Dejanos una breve reseña sobre tus 
-compañeros de viaje. 
+Acaba de finalizar el viaje hacia {{$trip->to_town}}. Dejanos una breve reseña sobre la experiencia con tus 
+compañeros de viaje.
 
 <a href="{{$url}}">Votar</a>
 
-Saludos,
+Saludos!
+
 Carpoolear

@@ -14,9 +14,10 @@ class FriendRejectNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name.'ha rechazado tu solicitud de amistad.',
+            'title' => $this->getAttribute('from')->name.' ha rechazado tu solicitud de amistad.',
             'email_view' => 'friends_email',
             'type' => 'reject',
+            'message_mail' => 'rechazado'
         ];
     }
 

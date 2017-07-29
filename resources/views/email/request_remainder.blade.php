@@ -1,5 +1,9 @@
-Hola {{$user->name}},
+Hola {{$user->name}}!
 
-Te recordamos que tenés solicitudes pendientes de contestar en el viaje a {{$trip->to_town}}.
+Te recordamos que tenés solicitudes pendientes por contestar en el viaje hacia {{$trip->to_town}}.
 
-{{$url}}
+Haz click <a href="{{$url}}">aquí</a> para ver tus soliciutdes.
+
+Saludos!
+
+Carpoolear

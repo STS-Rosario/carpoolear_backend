@@ -14,7 +14,7 @@ class NewUserNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Bienvenido a Carpoolear',
+            'title' => 'Bienvenido a Carpoolear!',
             'email_view' => 'create_account',
             'url' => config('app.url').'/app/activate/'.$user->activation_token,
         ];

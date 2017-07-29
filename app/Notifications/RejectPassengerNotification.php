@@ -14,9 +14,11 @@ class RejectPassengerNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name.' ha rechazado tu solicitud.',
+            'title' => $this->getAttribute('from')->name.' ha rechazado tu solicitud',
             'email_view' => 'passenger_email',
             'type' => 'reject',
+            'reason_message' => 'ha rechazado',
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
         ];
     }
 

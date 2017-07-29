@@ -1,6 +1,7 @@
-Hola {{$user->name}},
+Hola {{$user->name}}!
 
-{{$from->name}} te ha {{$type}} una solicitud de amistad.
+{{$from->name}} ha {{$message_mail}} tu solicitud de amistad.
 
-Saludos,
+Saludos!
+
 Carpoolear

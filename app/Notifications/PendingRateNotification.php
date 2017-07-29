@@ -14,15 +14,15 @@ class PendingRateNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Cuentanos como te fue al viaje hacia '.$this->getAttribute('trip')->to_town.'?',
+            'title' => 'Contanos como te fue en el viaje hacia '.$this->getAttribute('trip')->to_town.'?',
             'email_view' => 'pending_rate',
-            'url' =>  config('app.url').'/app/#Active/'.$this->getAttribute('hash'),
+            'url' =>  config('app.url').'/app/profile/me#0'
         ];
     }
 
     public function toString()
     {
-        return 'Tiene calificaciones pendientes.';
+        return 'Tienes un viaje por calificar.';
     }
 
     public function getExtras()
@@ -35,7 +35,7 @@ class PendingRateNotification extends BaseNotification
     public function toPush($user, $device)
     {
         return [
-            'message' => 'Tiene calificaciones pendientes.',
+            'message' => 'Tienes un viaje por calificar.',
             'url' => 'rates',
         ];
     }

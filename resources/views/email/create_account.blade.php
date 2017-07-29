@@ -1,6 +1,7 @@
-Bienvenido {{$user->name}},
+Bienvenido {{$user->name}}!
 
-Haz click <a href="{{$url}}">aqui</a> para activar tu cuenta.
+Haz click <a href="{{$url}}">aquí</a> para activar tu cuenta y comenzar a compartir tus viajes.
 
-Saludos,
+Saludos!
+
 Carpoolear

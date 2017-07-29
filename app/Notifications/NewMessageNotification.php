@@ -14,14 +14,15 @@ class NewMessageNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name.'te ha enviado un mensaje.',
+            'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
+            'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id
         ];
     }
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.'te ha enviado un mensaje.';
+        return $this->getAttribute('from')->name.' te ha enviado un mensaje.';
     }
 
     public function getExtras()

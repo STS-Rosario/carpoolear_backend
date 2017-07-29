@@ -19,12 +19,15 @@ class CancelPassengerNotification extends BaseNotification
         $isDriver = $trip->user_id == $from->id;
 
         $title = $isDriver ? $from->name.' te ha bajado del viaje' : $from->name.' se ha bajado del viaje';
+        $reasonMessage = $isDriver ? 'te ha bajado del viaje' : 'se ha bajado del viaje';
 
         return [
             'title' => $title,
-            'email_view' => 'passenger_email',
+            'email_view' => 'passenger_out_email',
             'type' => 'cancel',
             'is_driver' => $isDriver,
+            'reason_message' => $reasonMessage,
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
         ];
     }
 
