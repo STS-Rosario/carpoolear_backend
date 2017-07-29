@@ -27,7 +27,7 @@ class CancelPassengerNotification extends BaseNotification
             'type' => 'cancel',
             'is_driver' => $isDriver,
             'reason_message' => $reasonMessage,
-            'url' => config('app.url').'/app//trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
         ];
     }
 
