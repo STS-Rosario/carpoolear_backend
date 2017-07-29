@@ -1,6 +1,6 @@
 Hola {{$user->name}}!
 
-{{$from->name}} ha {{$message}} tu solicitud de amistad.
+{{$from->name}} ha {{$message_mail}} tu solicitud de amistad.
 
 Saludos!
 

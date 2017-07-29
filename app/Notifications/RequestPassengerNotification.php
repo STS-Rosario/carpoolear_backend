@@ -14,8 +14,9 @@ class RequestPassengerNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Nueva solicitud para subirse a uno de tus viajes.',
-            'email_view' => 'passenger_email',
+            'title' => $this->getAttribute('from')->name.' desea subirse a uno de tus viajes.',
+            'from' => $this->getAttribute('from')->name,
+            'email_view' => 'passenger_request',
             'type' => 'request',
             'url' =>  config('app.url').'/app/profile/me#0'
         ];

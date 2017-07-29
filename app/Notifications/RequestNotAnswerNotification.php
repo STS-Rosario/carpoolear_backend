@@ -16,7 +16,6 @@ class RequestNotAnswerNotification extends BaseNotification
         return [
             'title' => 'Una de tus solicitudes aún no fue contestada',
             'email_view' => 'request_not_answer',
-            'url' =>  config('app.url').'/profile/me#0',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
         ];
     }
