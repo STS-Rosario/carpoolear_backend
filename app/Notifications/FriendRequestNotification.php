@@ -17,7 +17,7 @@ class FriendRequestNotification extends BaseNotification
             'title' => 'Nueva solicitud de amistad',
             'email_view' => 'friends_request',
             'type' => 'request',
-            'url' => 'url' => config('app.url').'/app/setting/friends'
+            'url' => config('app.url').'/app/setting/friends'
         ];
     }
 
