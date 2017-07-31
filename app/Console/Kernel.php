@@ -13,18 +13,29 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        // Commands\Inspire::class,
+        Commands\CreateRates::class,
+        Commands\TripRemainder::class,
+        Commands\RequestRemainder::class,
+        Commands\RequestNotAnswer::class,
+        Commands\DownloadPoints::class,
     ];
 
     /**
      * Define the application's command schedule.
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
+     * @param \Illuminate\Console\Scheduling\Schedule $schedule
+     *
      * @return void
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+        $schedule->command('rate:create')
+                  ->dailyAt('8:00')->timezone('America/Argentina/Buenos_Aires');
+
+        $schedule->command('trip:remainder')->hourly();
+
+        $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
+
+        $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
     }
 }
