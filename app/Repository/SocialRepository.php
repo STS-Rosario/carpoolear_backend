@@ -1,30 +1,23 @@
 <?php
 
-namespace STS\Repository;
+namespace STS\Repository; 
 
+use STS\Entities\Trip;
 use STS\User;
+use Validator;
 use STS\Entities\SocialAccount;
-use STS\Contracts\Repository\Social as SocialRepo;
 
-class SocialRepository implements SocialRepo
+class SocialRepository
 {
     protected $provider;
-
-    public function __construct($provider = null)
-    {
+    public function __construct($provider = null) {
         if ($provider) {
             $this->setDefaultProvider($provider);
         }
     }
 
-    public function setDefaultProvider($provider)
-    {
+    public function setDefaultProvider($provider) {
         $this->provider = $provider;
-    }
-
-    public function getProvider($provider)
-    {
-        return $this->provider;
     }
 
     public function find($provider_user_id, $provider = null)
@@ -35,35 +28,26 @@ class SocialRepository implements SocialRepo
         $account = SocialAccount::whereProvider($provider)
                                     ->whereProviderUserId($provider_user_id)
                                     ->first();
-
-        return $account;
+        return $account;                            
     }
 
-    public function create(User $user, $provider_user_id, $provider = null)
+    public function create($user, $provider_user_id, $provider = null)
     {
         if (is_null($provider)) {
             $provider = $this->provider;
         }
         $account = new SocialAccount([
             'provider_user_id' => $provider_user_id,
-            'provider'         => $provider,
+            'provider' => $provider
         ]);
         $account->user()->associate($user);
         $account->save();
     }
 
-    public function delete(SocialAccount $account)
-    {
+    public function delete($account)
+    { 
         $account->delete();
     }
 
-    public function get(User $user, $provider = null)
-    {
-        $accounts = $user->accounts();
-        if ($provider) {
-            $accounts->where('provider', $provider);
-        }
 
-        return $accounts->get();
-    }
 }

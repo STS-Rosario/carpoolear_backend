@@ -55,7 +55,7 @@ return [
     |
     */
 
-    'from' => ['address' => 'cuandollega@movilizame.com.ar', 'name' => 'Carpoolear'],
+    'from' => ['address' => null, 'name' => null],
 
     /*
     |--------------------------------------------------------------------------
@@ -68,7 +68,7 @@ return [
     |
     */
 
-    'encryption' => env('MAIL_ENCRYPTION', ''),
+    'encryption' => env('MAIL_ENCRYPTION', 'tls'),
 
     /*
     |--------------------------------------------------------------------------

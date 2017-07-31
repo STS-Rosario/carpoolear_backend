@@ -9,17 +9,15 @@
         "laravel/framework": "5.2.*",
         "davibennun/laravel-push-notification": "dev-laravel5",
         "tymon/jwt-auth": "0.5.*",
-        "barryvdh/laravel-cors": "0.8.x",
-		"sammyk/laravel-facebook-sdk": "^3.0",
-        "guzzlehttp/guzzle": "^6.2"
+        "barryvdh/laravel-cors": "0.7.*",
+		"sammyk/laravel-facebook-sdk": "^3.0"
     },
     "require-dev": {
         "fzaninotto/faker": "~1.4",
         "mockery/mockery": "0.9.*",
         "phpunit/phpunit": "~4.0",
         "symfony/css-selector": "2.8.*|3.0.*",
-        "symfony/dom-crawler": "2.8.*|3.0.*",
-        "dingo/api": "1.0.*@dev"
+        "symfony/dom-crawler": "2.8.*|3.0.*"
     },
     "autoload": {
         "classmap": [
@@ -27,11 +25,7 @@
         ],
         "psr-4": {
             "STS\\": "app/"
-        },
-        "files": [
-            "app/Helpers/Queries.php",
-            "app/Helpers/Dates.php"
-        ]
+        }
     },
     "autoload-dev": {
         "classmap": [
