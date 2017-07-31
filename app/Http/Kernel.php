@@ -15,7 +15,6 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
-        \Barryvdh\Cors\HandleCors::class,
     ];
 
     /**
@@ -35,11 +34,6 @@ class Kernel extends HttpKernel
         'api' => [
             'throttle:60,1',
         ],
-
-        'logged' => [
-            'api.auth',
-            'update.connection',
-        ],
     ];
 
     /**
@@ -50,14 +44,10 @@ class Kernel extends HttpKernel
      * @var array
      */
     protected $routeMiddleware = [
-        'auth'        => \STS\Http\Middleware\Authenticate::class,
-        'auth.basic'  => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'can'         => \Illuminate\Foundation\Http\Middleware\Authorize::class,
-        'guest'       => \STS\Http\Middleware\RedirectIfAuthenticated::class,
-        'throttle'    => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'jwt.auth'    => '\Tymon\JWTAuth\Middleware\GetUserFromToken',
-        'jwt.refresh' => '\Tymon\JWTAuth\Middleware\RefreshToken',
-        'user.admin'  => 'STS\Http\Middleware\UserAdmin',
-        'update.connection' => \STS\Http\Middleware\UpdateConnection::class,
+        'auth' => \STS\Http\Middleware\Authenticate::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'can' => \Illuminate\Foundation\Http\Middleware\Authorize::class,
+        'guest' => \STS\Http\Middleware\RedirectIfAuthenticated::class,
+        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
     ];
 }

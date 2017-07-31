@@ -1,7 +1,5 @@
 <?php
 
-use Mockery as m;
-
 class TestCase extends Illuminate\Foundation\Testing\TestCase
 {
     /**
@@ -23,20 +21,5 @@ class TestCase extends Illuminate\Foundation\Testing\TestCase
         $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
         return $app;
-    }
-
-    public function mock($class)
-    {
-        $mock = m::mock($class);
-        $this->app->instance($class, $mock);
-
-        return $mock;
-    }
-
-    protected function actingAsApiUser($user)
-    {
-        $this->app['api.auth']->setUser($user);
-
-        return $this;
     }
 }

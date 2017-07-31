@@ -2,8 +2,8 @@
 
 namespace STS\Entities;
 
-use STS\User;
 use Illuminate\Database\Eloquent\Model;
+use STS\User;
 
 class SocialAccount extends Model
 {
