@@ -8,6 +8,7 @@ use STS\Contracts\SocialProvider;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Social as SocialLogic;
 use STS\Contracts\Repository\Files as FilesRep;
+use STS\Contracts\Logic\Friends as FriendsLogic;
 use STS\Contracts\Repository\Social as SocialRepo;
 use STS\Contracts\Repository\Friends as FriendsRep;
 
@@ -20,13 +21,14 @@ class SocialManager extends BaseManager implements SocialLogic
     protected $provider;
     protected $userData;
 
-    public function __construct(SocialProvider $provider, UserLogic $userRep, FriendsRep $friendsRepo, FilesRep $files, SocialRepo $social)
+    public function __construct(SocialProvider $provider, UserLogic $userRep, FriendsLogic $friendsRepo, FilesRep $files, SocialRepo $social)
     {
         $this->provider = $provider;
         $this->userLogic = $userRep;
         $this->filesRepo = $files;
         $this->socialRepo = $social;
         $this->socialRepo->setDefaultProvider($provider->getProviderName());
+        $this->friendsRepo = $friendsRepo;
     }
 
     public function validator(array $data, $id = null)
