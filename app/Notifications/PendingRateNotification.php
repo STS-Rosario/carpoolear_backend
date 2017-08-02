@@ -17,7 +17,7 @@ class PendingRateNotification extends BaseNotification
         return [
             'title' => 'Contanos como te fue en el viaje hacia '.$this->getAttribute('trip')->to_town.'?',
             'email_view' => 'pending_rate',
-            'url' =>  config('app.url').'/app/profile/me#0'
+            'url' =>  config('app.url').'/app/profile/me#0',
         ];
     }
 

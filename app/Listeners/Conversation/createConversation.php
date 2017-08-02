@@ -10,6 +10,7 @@ class createConversation
 {
     protected $conversationLogic;
     protected $repoConv;
+
     /**
      * Create the event listener.
      *
