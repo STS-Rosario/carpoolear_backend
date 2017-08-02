@@ -51,7 +51,7 @@ class TripsTest extends TestCase
             'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@',
         ];
 
-        $u = $tripManager->create($user, $data); 
+        $u = $tripManager->create($user, $data);
         $this->assertTrue($u != null);
     }
 

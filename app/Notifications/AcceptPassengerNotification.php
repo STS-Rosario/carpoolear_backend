@@ -19,7 +19,7 @@ class AcceptPassengerNotification extends BaseNotification
             'email_view' => 'passenger_email',
             'type' => 'accept',
             'reason_message' => 'ha aceptado',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
     }
 

@@ -18,7 +18,7 @@ class FriendAcceptNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha aceptado tu solicitud de amistad.',
             'email_view' => 'friends_email',
             'type' => 'accept',
-            'message_mail' => 'aceptado'
+            'message_mail' => 'aceptado',
         ];
     }
 

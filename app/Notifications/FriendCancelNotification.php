@@ -17,7 +17,7 @@ class FriendCancelNotification extends BaseNotification
         return [
             'title' => $this->getAttribute('from')->name.' ha dejado de ser tu amigo',
             'email_view' => 'friends_cancel_email',
-            'type' => 'cancel'
+            'type' => 'cancel',
         ];
     }
 

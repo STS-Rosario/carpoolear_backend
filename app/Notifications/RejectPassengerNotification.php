@@ -19,7 +19,7 @@ class RejectPassengerNotification extends BaseNotification
             'email_view' => 'passenger_email',
             'type' => 'reject',
             'reason_message' => 'ha rechazado',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
     }
 
