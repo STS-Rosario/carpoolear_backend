@@ -10,7 +10,6 @@ use STS\Contracts\Logic\Social as SocialLogic;
 use STS\Contracts\Repository\Files as FilesRep;
 use STS\Contracts\Logic\Friends as FriendsLogic;
 use STS\Contracts\Repository\Social as SocialRepo;
-use STS\Contracts\Repository\Friends as FriendsRep;
 
 class SocialManager extends BaseManager implements SocialLogic
 {

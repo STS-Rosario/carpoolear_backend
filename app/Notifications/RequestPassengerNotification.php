@@ -19,7 +19,7 @@ class RequestPassengerNotification extends BaseNotification
             'from' => $this->getAttribute('from')->name,
             'email_view' => 'passenger_request',
             'type' => 'request',
-            'url' =>  config('app.url').'/app/profile/me#0'
+            'url' =>  config('app.url').'/app/profile/me#0',
         ];
     }
 
