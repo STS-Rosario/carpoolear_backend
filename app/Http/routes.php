@@ -11,15 +11,19 @@
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Route::get('/', function () {
+//     return view('welcome');
+// });
 
-Route::get('/app/{name?}', function () {
-    return File::get(public_path().'/app/index.html');
-})->where('name', '[\/\w\.-]*');
+// Route::get('/app/{name?}', function () {
+//     return File::get(public_path().'/app/index.html');
+// })->where('name', '[\/\w\.-]*');
 
-Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
+Route::get('/','HomeController@home');
+Route::get('/app/{name?}','HomeController@handleApp')->where('name', '[\/\w\.-]*');
+
+
+// Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
     //Route::post("/login", 'Api\AuthController@login');
     //Route::post("/registrar", 'Api\AuthController@registrar');
     //Route::post("/retoken", 'Api\AuthController@retoken');
@@ -44,4 +48,4 @@ Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
         Route::post("/reject/{id?}", 'Api\FriendsController@reject');
     });
     */
-});
+// });
