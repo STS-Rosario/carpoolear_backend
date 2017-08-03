@@ -26,9 +26,22 @@ var rsync   = require('gulp-rsync');
 var prompt  = require('gulp-prompt'); 
 var gulpif  = require('gulp-if');
 var path    = require('path');
+var exec = require('gulp-exec');
 var isWin = /^win/.test(process.platform);
 
-gulp.task('deploy', function() {
+var reportOptions = {
+  err: true, // default = true, false means don't write err 
+  stderr: true, // default = true, false means don't write stderr 
+  stdout: true // default = true, false means don't write stdout 
+};
+
+gulp.task('deploy', ['deploy-file'] ,function() {
+  gulp.src(['.env.example'])
+  .pipe(exec("ssh movilizame@104.131.15.228 -p 2200 'cd  /home/movilizame/sites/carpoolear_dev && ./after_deploy.sh'"))
+  .pipe(exec.reporter(reportOptions));
+});
+
+gulp.task('deploy-file', function() {
   
   // Dirs and Files to sync
   rsyncPaths = [ 'after_deploy.sh', 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
@@ -82,7 +95,7 @@ gulp.task('deploy', function() {
       })
   ))
   .pipe(rsync(rsyncConf));
-
+  
 });
 
 
