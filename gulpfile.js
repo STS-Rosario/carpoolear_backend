@@ -31,7 +31,7 @@ var isWin = /^win/.test(process.platform);
 gulp.task('deploy', function() {
   
   // Dirs and Files to sync
-  rsyncPaths = [ 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
+  rsyncPaths = [ 'after_deploy.sh', 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
   
   // Default options for rsync
   rsyncConf = {
