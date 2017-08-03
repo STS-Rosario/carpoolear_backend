@@ -17,7 +17,7 @@ class HourLeftNotification extends BaseNotification
         return [
             'title' => 'Recordatorio de viaje hacia '.$this->getAttribute('trip')->to_town,
             'email_view' => 'hour_left',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
     }
 

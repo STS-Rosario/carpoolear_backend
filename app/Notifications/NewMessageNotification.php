@@ -17,7 +17,7 @@ class NewMessageNotification extends BaseNotification
         return [
             'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
-            'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id
+            'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id,
         ];
     }
 

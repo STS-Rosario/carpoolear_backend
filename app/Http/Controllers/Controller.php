@@ -11,5 +11,6 @@ use Illuminate\Foundation\Auth\Access\AuthorizesResources;
 
 class Controller extends BaseController
 {
-    use AuthorizesRequests, AuthorizesResources, DispatchesJobs, ValidatesRequests, Helpers;
+    // use AuthorizesRequests, AuthorizesResources, DispatchesJobs, ValidatesRequests, Helpers;
+    use Helpers;
 }
