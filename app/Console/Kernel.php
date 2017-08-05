@@ -29,8 +29,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('rate:create')
-                  ->dailyAt('8:00')->timezone('America/Argentina/Buenos_Aires');
+        $schedule->command('rate:create')->hourly();
 
         $schedule->command('trip:remainder')->hourly();
 
