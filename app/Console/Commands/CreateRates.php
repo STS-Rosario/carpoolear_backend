@@ -42,7 +42,7 @@ class CreateRates extends Command
      */
     public function handle()
     {
-        $date = Carbon::now()->subDay()->toDateString();
+        $date = Carbon::now()->toDateString();
         $this->rateLogic->activeRatings($date);
     }
 }
