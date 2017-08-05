@@ -49,7 +49,7 @@ INSERT IGNORE INTO carpoolear5.users (
     created_at,
     updated_at,
     updated_at,
-    tiene_pin,
+    has_pin,
     id
 
 FROM carpool_ear.users; 
