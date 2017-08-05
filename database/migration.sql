@@ -22,13 +22,8 @@ INSERT IGNORE INTO carpoolear5.users (
     created_at,  
     updated_at,  
     last_connection,
-<<<<<<< HEAD
     has_pin,
     old_id 
-=======
-    old_id,
-    tiene_pin
->>>>>>> e740f758d99c8e0a87e2f75053a1442b46370ac5
 ) SELECT
 
     CASE WHEN name IS NOT NULL THEN name ELSE '' END,
