@@ -132,24 +132,24 @@ INSERT IGNORE INTO carpoolear5.trip_passengers (
 from carpoolear_viejo.trip_passengers where passenger_type = 1 ;
 
 #migrtions de friends ---------------------------------
--- insert into carpoolear5.friends (
---     uid1,
---     uid2,
---     origin,
---     state,
---     created_at,
---     updated_at
--- ) select 
---     u1.id,
---     u2.id,
---     'facebook',
---     1,
---     now(),
---     now()
--- from carpoolear_viejo.friends 
--- LEFT JOIN carpoolear5.users as u1 ON uid1 = u1.old_id
--- LEFT JOIN carpoolear5.users as u2 ON uid2 = u2.old_id
--- where u1.id is not null and u2.id is not null;
+insert into carpoolear5.friends (
+    uid1,
+    uid2,
+    origin,
+    state,
+    created_at,
+    updated_at
+) select 
+    u1.id,
+    u2.id,
+    'facebook',
+    1,
+    now(),
+    now()
+ from carpoolear_viejo.friends 
+LEFT JOIN carpoolear5.users as u1 ON uid1 = u1.old_id
+LEFT JOIN carpoolear5.users as u2 ON uid2 = u2.old_id
+where u1.id is not null and u2.id is not null;
 
 
 #migrtions de calificaciones ---------------------------------
@@ -253,6 +253,6 @@ from carpoolear5.messages as m
 left join carpoolear5.conversations_users as cu on m.conversation_id = cu.conversation_id and m.user_id <> cu.user_id;
 
 
-alter table carpoolear5.trips drop old_id;
-alter table carpoolear5.users drop old_id;
-alter table carpoolear5.conversations drop old_id;
+#alter table carpoolear5.trips drop old_id;
+#alter table carpoolear5.users drop old_id;
+#alter table carpoolear5.conversations drop old_id;
