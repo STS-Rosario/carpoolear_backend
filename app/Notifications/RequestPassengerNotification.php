@@ -31,7 +31,8 @@ class RequestPassengerNotification extends BaseNotification
     public function getExtras()
     {
         return [
-            'type' => 'trip',
+            // 'type' => 'trip',
+            'type' => 'my-trips',
             'trip_id' => $this->getAttribute('trip')->id,
         ];
     }
