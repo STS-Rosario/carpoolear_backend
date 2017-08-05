@@ -35,7 +35,7 @@ class ProfileTransformer extends TransformerAbstract
             'nro_doc' => $user->nro_doc,
             'last_connection' => $user->last_connection ? $user->last_connection->toDateTimeString() : '',
             'accounts' => $user->accounts,
-            'has_pin' => $user->tiene_pin,
+            'has_pin' => $user->has_pin,
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;

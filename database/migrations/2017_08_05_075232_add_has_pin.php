@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class TienePin extends Migration
+class AddHasPin extends Migration
 {
     /**
      * Run the migrations.
@@ -13,7 +13,7 @@ class TienePin extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('tiene_pin');
+            $table->boolean('has_pin');
         });
     }
 
@@ -25,7 +25,7 @@ class TienePin extends Migration
     public function down()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('tiene_pin');
+            $table->dropColumn('has_pin');
         });
     }
 }
