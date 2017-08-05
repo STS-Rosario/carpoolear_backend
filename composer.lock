@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "a90909862024c74ea8733c258b3bc81f",
+    "hash": "3d8f8bbd51b0022afd8832c4c44cd49a",
     "content-hash": "6fb69c8cb775389d8f6d76e20dd7fbac",
     "packages": [
         {
@@ -1963,26 +1963,26 @@
         },
         {
             "name": "sly/notification-pusher",
-            "version": "v2.2.13",
+            "version": "v2.2.15",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Ph3nol/NotificationPusher.git",
-                "reference": "3542d8bc8cf622568b85392e83141bfdeee7e6ff"
+                "reference": "23dcdf0b000bb3ff19aafd24006b979ecd124e7b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Ph3nol/NotificationPusher/zipball/3542d8bc8cf622568b85392e83141bfdeee7e6ff",
-                "reference": "3542d8bc8cf622568b85392e83141bfdeee7e6ff",
+                "url": "https://api.github.com/repos/Ph3nol/NotificationPusher/zipball/23dcdf0b000bb3ff19aafd24006b979ecd124e7b",
+                "reference": "23dcdf0b000bb3ff19aafd24006b979ecd124e7b",
                 "shasum": ""
             },
             "require": {
                 "doctrine/inflector": "~1.0",
-                "php": ">=5.5",
+                "php": ">=5.6",
                 "symfony/console": "~2.3|~3.0",
                 "symfony/options-resolver": "~2.3|~3.0",
                 "symfony/process": "~2.3|~3.0",
                 "zendframework/zendservice-apple-apns": "^1.1.0",
-                "zendframework/zendservice-google-gcm": "1.*"
+                "zendframework/zendservice-google-gcm": "2.*"
             },
             "require-dev": {
                 "atoum/atoum": "dev-master"
@@ -2023,7 +2023,7 @@
                 "push",
                 "pusher"
             ],
-            "time": "2016-10-10 07:02:47"
+            "time": "2017-08-04 18:05:33"
         },
         {
             "name": "swiftmailer/swiftmailer",
@@ -2198,7 +2198,7 @@
         },
         {
             "name": "symfony/event-dispatcher",
-            "version": "v3.3.5",
+            "version": "v3.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/event-dispatcher.git",
@@ -2445,7 +2445,7 @@
         },
         {
             "name": "symfony/options-resolver",
-            "version": "v3.3.5",
+            "version": "v3.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/options-resolver.git",
@@ -3429,31 +3429,30 @@
         },
         {
             "name": "zendframework/zendservice-google-gcm",
-            "version": "1.0.3",
+            "version": "2.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zendframework/ZendService_Google_Gcm.git",
-                "reference": "86d16e9dcb4d41677e6f691642856b3eb95a1073"
+                "reference": "617221cb04e75c05080ceec61f31c71566e0b999"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zendframework/ZendService_Google_Gcm/zipball/86d16e9dcb4d41677e6f691642856b3eb95a1073",
-                "reference": "86d16e9dcb4d41677e6f691642856b3eb95a1073",
+                "url": "https://api.github.com/repos/zendframework/ZendService_Google_Gcm/zipball/617221cb04e75c05080ceec61f31c71566e0b999",
+                "reference": "617221cb04e75c05080ceec61f31c71566e0b999",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.3.3",
-                "zendframework/zend-http": ">=2.0.0",
-                "zendframework/zend-json": ">=2.0.0"
+                "php": "^5.5 || ^7.0",
+                "zendframework/zend-http": "^2.0",
+                "zendframework/zend-json": "^2.0"
             },
             "require-dev": {
-                "phpunit/phpunit": "3.7.*"
+                "phpunit/phpunit": "^4.8"
             },
             "type": "library",
             "autoload": {
-                "psr-0": {
-                    "ZendService\\Google\\Gcm\\": "library/",
-                    "ZendService\\Google\\Exception\\": "library/"
+                "psr-4": {
+                    "ZendService\\Google\\": "library/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -3461,7 +3460,7 @@
                 "BSD-3-Clause"
             ],
             "description": "OOP wrapper for Google Cloud Messaging",
-            "homepage": "http://packages.zendframework.com/",
+            "homepage": "https://github.com/zendframework/zendservice-google-gcm",
             "keywords": [
                 "gcm",
                 "google",
@@ -3469,7 +3468,7 @@
                 "push",
                 "zf2"
             ],
-            "time": "2015-10-14 03:18:56"
+            "time": "2017-01-17 13:57:50"
         }
     ],
     "packages-dev": [
@@ -3819,12 +3818,12 @@
             "version": "0.9.9",
             "source": {
                 "type": "git",
-                "url": "https://github.com/mockery/mockery.git",
+                "url": "https://github.com/padraic/mockery.git",
                 "reference": "6fdb61243844dc924071d3404bb23994ea0b6856"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mockery/mockery/zipball/6fdb61243844dc924071d3404bb23994ea0b6856",
+                "url": "https://api.github.com/repos/padraic/mockery/zipball/6fdb61243844dc924071d3404bb23994ea0b6856",
                 "reference": "6fdb61243844dc924071d3404bb23994ea0b6856",
                 "shasum": ""
             },
@@ -3853,7 +3852,7 @@
             ],
             "authors": [
                 {
-                    "name": "Padraic Brady",
+                    "name": "Pádraic Brady",
                     "email": "padraic.brady@gmail.com",
                     "homepage": "http://blog.astrumfutura.com"
                 },
@@ -4947,16 +4946,16 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v3.3.5",
+            "version": "v3.3.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "1f93a8d19b8241617f5074a123e282575b821df8"
+                "reference": "ddc23324e6cfe066f3dd34a37ff494fa80b617ed"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/1f93a8d19b8241617f5074a123e282575b821df8",
-                "reference": "1f93a8d19b8241617f5074a123e282575b821df8",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/ddc23324e6cfe066f3dd34a37ff494fa80b617ed",
+                "reference": "ddc23324e6cfe066f3dd34a37ff494fa80b617ed",
                 "shasum": ""
             },
             "require": {
@@ -4998,7 +4997,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "https://symfony.com",
-            "time": "2017-06-15 12:58:50"
+            "time": "2017-07-23 12:43:26"
         },
         {
             "name": "webmozart/assert",
