@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
         Commands\RequestRemainder::class,
         Commands\RequestNotAnswer::class,
         Commands\DownloadPoints::class,
+        Commands\FacebookImage::class,
     ];
 
     /**
