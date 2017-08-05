@@ -135,24 +135,24 @@ from carpool_ear.trip_passengers where passenger_type = 1 ;
 
 #migrtions de friends ---------------------------------
 
--- insert into carpoolear5.friends (
---     uid1,
---     uid2,
---     origin,
---     state,
---     created_at,
---     updated_at
--- ) select 
---     u1.id,
---     u2.id,
---     'facebook',
---     1,
---     now(),
---     now()
---  from carpool_ear.friends 
--- LEFT JOIN carpoolear5.users as u1 ON uid1 = u1.old_id
--- LEFT JOIN carpoolear5.users as u2 ON uid2 = u2.old_id
--- where u1.id is not null and u2.id is not null;
+ insert into carpoolear5.friends (
+     uid1,
+     uid2,
+     origin,
+     state,
+     created_at,
+     updated_at
+ ) select 
+     u1.id,
+     u2.id,
+     'facebook',
+     1,
+     now(),
+     now()
+  from carpool_ear.friends 
+ LEFT JOIN carpoolear5.users as u1 ON uid1 = u1.old_id
+ LEFT JOIN carpoolear5.users as u2 ON uid2 = u2.old_id
+ where u1.id is not null and u2.id is not null;
 
 
 #migrtions de calificaciones ---------------------------------
