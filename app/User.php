@@ -36,6 +36,7 @@ class User extends Authenticatable
         'activation_token',
         'emails_notifications',
         'last_connection',
+        'tiene_pin',
     ];
 
     protected $dates = [
@@ -51,6 +52,7 @@ class User extends Authenticatable
         'terms_and_conditions' => 'boolean',
         'active'               => 'boolean',
         'is_admin'             => 'boolean',
+        'tiene_pin'            => 'boolean',
     ];
 
     protected $appends = [

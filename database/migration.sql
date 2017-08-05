@@ -22,7 +22,8 @@ INSERT IGNORE INTO carpoolear5.users (
     created_at,  
     updated_at,  
     last_connection,
-    old_id 
+    old_id,
+    tiene_pin
 ) SELECT
 
     CASE WHEN name IS NOT NULL THEN name ELSE '' END,
@@ -48,7 +49,8 @@ INSERT IGNORE INTO carpoolear5.users (
     created_at,
     updated_at,
     updated_at,
-    id
+    id,
+    tiene_pin
 
 FROM carpoolear_viejo.users; 
 
