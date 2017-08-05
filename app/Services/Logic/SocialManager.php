@@ -50,6 +50,7 @@ class SocialManager extends BaseManager implements SocialLogic
         $account = $this->getAccounts();
         if ($account) {
             $this->syncFriends($account->user);
+
             return $account->user;
         } else {
             return $this->create($this->provider_user_id, $this->userData);
