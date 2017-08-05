@@ -5,3 +5,4 @@
 /public/image/paths
 settings.json
 .vscode/
+cert/*.pem
