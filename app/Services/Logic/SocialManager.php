@@ -55,7 +55,7 @@ class SocialManager extends BaseManager implements SocialLogic
                 $user->image = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
                 $user->save();
             }
-            $this->syncFriends($account->user);
+            // $this->syncFriends($account->user);
 
             return $account->user;
         } else {

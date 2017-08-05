@@ -87,8 +87,8 @@ class SocialController extends Controller
     public function friends(Request $request, $provider)
     {
         $user = $this->auth->user();
-        $accessToken = $request->get('access_token', $accessToken);
-        $this->installProvider($provider);
+        $accessToken = $request->get('access_token');
+        $this->installProvider($provider, $accessToken);
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->makeFriends($user);
