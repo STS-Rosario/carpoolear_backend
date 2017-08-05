@@ -47,7 +47,7 @@ class FacebookSocialProvider implements SocialProvider
 
             return [
                 'provider_user_id'      => $body->id,
-                'email'                 => $body->email,
+                'email'                 => isset($body->email) ? $body->email : null,
                 'name'                  => $body->name,
                 'gender'                => isset($body->gender) ? $body->gender : null,
                 'birthday'              => isset($body->birthday) ? $body->birthday : null,
