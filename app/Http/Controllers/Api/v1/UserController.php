@@ -35,7 +35,11 @@ class UserController extends Controller
     public function update(Request $request)
     {
         $me = $this->auth->user();
-        $profile = $this->userLogic->update($me, $request->all());
+        $data = $request->all();
+        if (isset($data['email'])) {
+            unset($data['email']);
+        }
+        $profile = $this->userLogic->update($me, $data);
         if (! $profile) {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }

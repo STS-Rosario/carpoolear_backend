@@ -49,9 +49,9 @@ class SocialManager extends BaseManager implements SocialLogic
     {
         $account = $this->getAccounts();
         if ($account) {
-            if (isset($this->userData['image'])) {
+            $user = $account->user;
+            if (!$user->image && isset($this->userData['image'])) {
                 $img = file_get_contents($this->userData['image']);
-                $user = $account->user;
                 $user->image = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
                 $user->save();
             }
