@@ -319,7 +319,7 @@ class MessagesTest extends TestCase
 
         $event = new STS\Events\Trip\Create($t);
 
-        $listener = new STS\Listeners\Conversation\createConversation($this->conversationManager);
+        $listener = new STS\Listeners\Conversation\createConversation($this->conversationManager, $this->conversationRepository);
 
         $listener->handle($event);
 

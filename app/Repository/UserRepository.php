@@ -65,7 +65,7 @@ class UserRepository implements UserRep
         if ($search_text) {
             $users->where(function ($q) use ($search_text) {
                 $q->where('name', 'like', '%'.$search_text.'%');
-                $q->orWhere('email', 'like', '%'.$search_text.'%');
+                // $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
         }
 

@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "gulp": "^3.9.1",
+    "gulp-exec": "^2.1.3",
     "path": "^0.12.7"
   }
 }

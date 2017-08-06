@@ -6,17 +6,18 @@ use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class NewMessageNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {
         return [
             'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
-            'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id
+            'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id,
         ];
     }
 

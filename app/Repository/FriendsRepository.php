@@ -31,7 +31,7 @@ class FriendsRepository implements FriendsRepo
             $search_text = $data['value'];
             $friends->where(function ($q) use ($search_text) {
                 $q->where('name', 'like', '%'.$search_text.'%');
-                $q->orWhere('email', 'like', '%'.$search_text.'%');
+                // $q->orWhere('email', 'like', '%'.$search_text.'%');
             });
         }
 

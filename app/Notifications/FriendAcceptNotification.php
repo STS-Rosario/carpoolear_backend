@@ -6,10 +6,11 @@ use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class FriendAcceptNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {
@@ -17,7 +18,7 @@ class FriendAcceptNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha aceptado tu solicitud de amistad.',
             'email_view' => 'friends_email',
             'type' => 'accept',
-            'message_mail' => 'aceptado'
+            'message_mail' => 'aceptado',
         ];
     }
 

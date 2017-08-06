@@ -6,17 +6,18 @@ use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class HourLeftNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {
         return [
             'title' => 'Recordatorio de viaje hacia '.$this->getAttribute('trip')->to_town,
             'email_view' => 'hour_left',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
     }
 

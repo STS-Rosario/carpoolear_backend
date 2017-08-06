@@ -31,6 +31,7 @@ class TripUserTransformer extends TransformerAbstract
             'negative_ratings' => $user->negative_ratings,
             'last_connection' => $user->last_connection->toDateTimeString(),
             'accounts' => $user->accounts,
+            'has_pin' => $user->has_pin,
         ];
 
         return $data;

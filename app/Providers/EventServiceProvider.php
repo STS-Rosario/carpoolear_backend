@@ -36,7 +36,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         'STS\Events\Trip\Create' => [
             'STS\Listeners\DownloadStaticImage',
-            'STS\Listeners\Conversation\createConversation',
+            // 'STS\Listeners\Conversation\createConversation',
         ],
         'STS\Events\Trip\Alert\HourLeft' => [
             'STS\Listeners\Notification\TripHourLeft',
@@ -60,11 +60,11 @@ class EventServiceProvider extends ServiceProvider
         ],
         'STS\Events\Passenger\Cancel' => [
             'STS\Listeners\Notification\PassengerCancel',
-            'STS\Listeners\Conversation\removeUserConversation',
+            // 'STS\Listeners\Conversation\removeUserConversation',
         ],
         'STS\Events\Passenger\Accept' => [
             'STS\Listeners\Notification\PassengerAccept',
-            'STS\Listeners\Conversation\addUserConversation',
+            // 'STS\Listeners\Conversation\addUserConversation',
         ],
         'STS\Events\Passenger\Reject' => [
             'STS\Listeners\Notification\PassengerReject',

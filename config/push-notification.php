@@ -4,7 +4,7 @@ return [
 
     'ios'     => [
         'environment' => env('IOS_ENVIRONMENT', ''),
-        'certificate' => env('IOS_CERTIFICATE', ''),
+        'certificate' => base_path('cert').'/'.env('IOS_CERTIFICATE', ''),
         'passPhrase'  => env('IOS_PASSPHRASE', ''),
         'service'     => 'apns',
     ],

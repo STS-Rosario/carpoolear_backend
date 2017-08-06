@@ -6,10 +6,11 @@ use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class RejectPassengerNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {
@@ -18,7 +19,7 @@ class RejectPassengerNotification extends BaseNotification
             'email_view' => 'passenger_email',
             'type' => 'reject',
             'reason_message' => 'ha rechazado',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
     }
 

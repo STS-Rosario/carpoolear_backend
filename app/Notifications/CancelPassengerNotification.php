@@ -6,10 +6,11 @@ use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class CancelPassengerNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {
@@ -27,7 +28,7 @@ class CancelPassengerNotification extends BaseNotification
             'type' => 'cancel',
             'is_driver' => $isDriver,
             'reason_message' => $reasonMessage,
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id
+            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
     }
 

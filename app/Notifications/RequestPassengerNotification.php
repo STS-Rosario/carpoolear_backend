@@ -6,10 +6,11 @@ use  STS\Services\Notifications\BaseNotification;
 use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
+use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class RequestPassengerNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class];
+    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {
@@ -18,7 +19,7 @@ class RequestPassengerNotification extends BaseNotification
             'from' => $this->getAttribute('from')->name,
             'email_view' => 'passenger_request',
             'type' => 'request',
-            'url' =>  config('app.url').'/app/profile/me#0'
+            'url' =>  config('app.url').'/app/profile/me#0',
         ];
     }
 
@@ -30,7 +31,8 @@ class RequestPassengerNotification extends BaseNotification
     public function getExtras()
     {
         return [
-            'type' => 'trip',
+            // 'type' => 'trip',
+            'type' => 'my-trips',
             'trip_id' => $this->getAttribute('trip')->id,
         ];
     }
