@@ -31,7 +31,7 @@ class FacebookSocialProvider implements SocialProvider
             if (isset($body->gender)) {
                 if ($body->gender == 'male') {
                     $body->gender = 'Masculino';
-                } elseif ($usuario->getProperty('gender') == 'female') {
+                } elseif ($body->gender == 'female') {
                     $body->gender = 'Femenino';
                 }
             } else {
