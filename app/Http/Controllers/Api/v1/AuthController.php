@@ -13,6 +13,7 @@ use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Dingo\Api\Exception\UpdateResourceFailedException;
 
 class AuthController extends Controller
 {

@@ -1,6 +1,9 @@
 <?php
 
+use STS\User;
 use Carbon\Carbon;
+use STS\Entities\Trip;
+use STS\Entities\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class MessagesTest extends TestCase
@@ -348,5 +351,25 @@ class MessagesTest extends TestCase
         $listener->handle($event);
 
         $this->assertTrue($c->users()->count() == 0);
+    }
+
+    public function test_user_list() 
+    {
+        $driver = factory(User::class)->create();
+        $passengerA = factory(User::class)->create();
+        $passengerB = factory(User::class)->create();
+
+        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+
+        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+
+        $users = $this->conversationRepository->userList($driver);
+        $this->assertTrue($users->count() == 2);
+
+        $users = $this->conversationRepository->userList($passengerA);
+        $this->assertTrue($users->count() == 1);
+
+
     }
 }
