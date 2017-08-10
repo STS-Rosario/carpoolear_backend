@@ -4,6 +4,7 @@ namespace STS;
 
 use Carbon\Carbon;
 use STS\Entities\Trip;
+use STS\Entities\Passenger;
 use STS\Entities\Rating as RatingModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use STS\Services\Notifications\Models\DatabaseNotification;
@@ -77,6 +78,11 @@ class User extends Authenticatable
         }
     }
 
+    public function passenger()
+    {
+        return $this->hasMany('STS\Entities\Passenger', 'user_id');
+    }
+
     public function cars()
     {
         return $this->hasMany('STS\Entities\Car', 'user_id');
@@ -141,7 +147,7 @@ class User extends Authenticatable
         $user_id = $this->id;
         $trips = Trip::whereHas('passenger', function ($q) use ($user_id) {
             $q->whereUserId($user_id);
-            $q->whereRequestState(Passenger::STATE_ACEPTADO);
+            $q->whereRequestState(Passenger::STATE_ACCEPTED);
         });
         if ($state == Trip::FINALIZADO) {
             $trips->where('trip_date', '<', Carbon::Now());
