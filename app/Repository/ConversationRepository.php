@@ -119,8 +119,8 @@ class ConversationRepository implements ConversationRepo
                         });
                     });
                 });
-                $q->orWhereHas('passengerAccepted', function ($q) use ($user) {  
-                    $q->where('user_id', $user->id); 
+                $q->orWhereHas('passengerAccepted', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
                 });
             });
             $q->orWhereHas('passenger.trip.user', function ($q) use ($user) {

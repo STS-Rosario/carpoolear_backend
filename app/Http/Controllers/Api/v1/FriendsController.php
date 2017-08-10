@@ -5,9 +5,9 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Transformers\ProfileTransformer;
+use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Friends as FriendsLogic;
-use Dingo\Api\Exception\ResourceException;
 
 class FriendsController extends Controller
 {
