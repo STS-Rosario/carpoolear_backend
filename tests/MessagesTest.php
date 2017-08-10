@@ -353,7 +353,7 @@ class MessagesTest extends TestCase
         $this->assertTrue($c->users()->count() == 0);
     }
 
-    public function test_user_list() 
+    public function test_user_list()
     {
         $driver = factory(User::class)->create();
         $passengerA = factory(User::class)->create();
@@ -369,7 +369,5 @@ class MessagesTest extends TestCase
 
         $users = $this->conversationRepository->userList($passengerA);
         $this->assertTrue($users->count() == 1);
-
-
     }
 }
