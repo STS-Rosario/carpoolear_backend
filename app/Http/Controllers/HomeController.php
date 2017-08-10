@@ -3,7 +3,6 @@
 namespace STS\Http\Controllers;
 
 
-
 class HomeController extends Controller
 {
     public function home()
@@ -11,8 +10,22 @@ class HomeController extends Controller
         return view('welcome');
     }
 
-    public function handleApp()
+    function endsWith($haystack, $needle)
     {
-        return \File::get(public_path().'/app/index.html');
+        $length = strlen($needle);
+        if ($length == 0) {
+            return true;
+        }
+
+        return (substr($haystack, -$length) === $needle);
+    }
+
+    public function handleApp($name)
+    {
+        if ($this->endsWith($name, 'cordova.js')) {
+            return \File::get(public_path().'/app/cordova.js');
+        } else {
+            return \File::get(public_path().'/app/index.html');
+        }
     }
 }

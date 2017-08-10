@@ -259,3 +259,33 @@ left join carpoolear5.conversations_users as cu on m.conversation_id = cu.conver
 #alter table carpoolear5.trips drop old_id;
 #alter table carpoolear5.users drop old_id;
 #alter table carpoolear5.conversations drop old_id;
+
+CREATE TEMPORARY TABLE IF NOT EXISTS table2
+(
+select min(id) as id from conversations 
+inner join  (select min(updated_at) as fecha, old_id from conversations where old_id <> 0 group by old_id  order by fecha DESC) as data 
+on conversations.old_id  = data.old_id and data.fecha = conversations.updated_at group by conversations.old_id 
+) ;
+delete from conversations where id in (select * from table2);
+
+
+
+mysql> select * from conversations where old_id <> 0 order by updated_at DESC, old_id DESC  limit 100;
++-------+------+-------+---------+---------------------+---------------------+------------+--------+
+| id    | type | title | trip_id | created_at          | updated_at          | deleted_at | old_id |
++-------+------+-------+---------+---------------------+---------------------+------------+--------+
+| 86260 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-10 04:47:01 | NULL       |  43193 |
+| 83635 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-09 13:36:43 | NULL       |  41880 |
+| 34856 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-09 04:42:44 | NULL       |  17462 |
+| 55710 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-08 20:48:57 | NULL       |  27916 |
+| 86475 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-08 11:11:59 | NULL       |  43300 |
+| 88443 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-07 20:07:20 | NULL       |  44284 |
+| 84539 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-07 17:51:57 | NULL       |  42332 |
+| 88482 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-07 14:03:33 | NULL       |  44304 |
+| 88480 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-07 07:44:33 | NULL       |  44303 |
+| 88371 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-06 17:13:40 | NULL       |  44248 |
+| 61647 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-06 14:08:38 | NULL       |  30884 |
+| 85239 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-06 10:01:21 | NULL       |  42682 |
+| 46100 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-06 09:19:51 | NULL       |  23111 |
+| 88452 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-06 06:31:05 | NULL       |  44289 |
+| 88018 |    0 |       |    NULL | 2017-08-05 10:11:22 | 2017-08-06 06:30:28 | NULL       |  44072 |
