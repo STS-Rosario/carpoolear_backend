@@ -40,7 +40,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         'STS\Events\Trip\Update' => [
             'STS\Listeners\DownloadStaticImage',
-            'STS\Listeners\Notification\UpdateTrip'
+            'STS\Listeners\Notification\UpdateTrip',
         ],
         'STS\Events\Trip\Delete' => [
             'STS\Listeners\Ratings\CreateRatingDeleteTrip',

@@ -5,7 +5,6 @@ use STS\Entities\Trip;
 use STS\Entities\Rating;
 use STS\Entities\Passenger;
 use STS\Transformers\RatingTransformer;
-
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RatingTest extends TestCase
@@ -22,8 +21,6 @@ class RatingTest extends TestCase
         $this->ratingManager = App::make('\STS\Contracts\Logic\IRateLogic');
         $this->ratingRepository = App::make('\STS\Contracts\Repository\IRatingRepository');
     }
-
-    
 
     public function testCreate()
     {
@@ -102,7 +99,7 @@ class RatingTest extends TestCase
         $listener = new STS\Listeners\Ratings\CreateRatingDeleteTrip($this->ratingRepository);
 
         $listener->handle($event);
-                
+
         $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
 
         $trip->delete();
@@ -110,8 +107,7 @@ class RatingTest extends TestCase
         $rate = Rating::first();
 
         $fratal = (new RatingTransformer($rate->from))->transform($rate);
-        
-        $this->assertNotNull($fratal['trip']);
 
+        $this->assertNotNull($fratal['trip']);
     }
 }
