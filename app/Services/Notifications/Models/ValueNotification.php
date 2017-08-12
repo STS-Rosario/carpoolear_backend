@@ -2,7 +2,6 @@
 
 namespace STS\Services\Notifications\Models;
 
-use STS\Entities\Trip;
 use Illuminate\Database\Eloquent\Model;
 
 class ValueNotification extends Model
@@ -17,6 +16,6 @@ class ValueNotification extends Model
             return $this->morphTo()->withTrashed();
         } else {
             return $this->morphTo();
-        }       
+        }
     }
 }
