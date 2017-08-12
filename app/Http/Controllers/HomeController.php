@@ -22,8 +22,10 @@ class HomeController extends Controller
 
     public function handleApp($name)
     {
-        if ($this->endsWith($name, 'cordova.js')) {
-            return \File::get(public_path().'/app/cordova.js');
+        if ($this->endsWith($name, '.js')) {
+            $strings = explode("/", $name);
+            $file = $strings[count($strings) - 1];
+            return \File::get(public_path().'/app/'. $file );
         } else {
             return \File::get(public_path().'/app/index.html');
         }
