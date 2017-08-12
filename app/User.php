@@ -7,6 +7,7 @@ use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\Entities\Rating as RatingModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+// use Illuminate\Database\Eloquent\SoftDeletes;
 use STS\Services\Notifications\Models\DatabaseNotification;
 
 class User extends Authenticatable
