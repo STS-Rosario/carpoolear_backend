@@ -70,6 +70,7 @@ class RatingTest extends TestCase
 
         $this->assertTrue($pending->count() == 3);
 
+        $trip->delete();
         $result = $this->ratingManager->rateUser($driver, $passengers[0]->id, $trip->id, ['comment' => 'Test comment', 'rating' => 1]);
 
         $this->assertTrue($result);
