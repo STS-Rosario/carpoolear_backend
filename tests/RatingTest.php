@@ -21,6 +21,8 @@ class RatingTest extends TestCase
         $this->ratingRepository = App::make('\STS\Contracts\Repository\IRatingRepository');
     }
 
+    
+
     public function testCreate()
     {
         $driver = factory(User::class)->create();
@@ -80,5 +82,31 @@ class RatingTest extends TestCase
         $this->assertNull($result);
 
         $this->assertTrue($this->ratingManager->getRatings($passengers[0])->count() == 1);
+    }
+
+    public function testDeleteListeners()
+    {
+        $driver = factory(STS\User::class)->create();
+        $passengerA = factory(STS\User::class)->create();
+        $passengerB = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $driver->id]);
+
+        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+
+        $event = new STS\Events\Trip\Delete($trip);
+
+        $listener = new STS\Listeners\Ratings\CreateRatingDeleteTrip($this->ratingRepository);
+
+        $listener->handle($event);
+                
+        $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
+
+        $trip->delete();
+
+        $rate = Rating::first();
+
+        console_log($rate->trip);
+
     }
 }

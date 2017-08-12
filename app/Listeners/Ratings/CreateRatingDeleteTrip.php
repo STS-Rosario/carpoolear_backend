@@ -2,9 +2,12 @@
 
 namespace STS\Listeners\Ratings;
 
-use STS\Events\Trip\Delete as DeleteEvent;
+use STS\Entities\Passenger;
 use Illuminate\Queue\InteractsWithQueue;
+use STS\Events\Trip\Delete as DeleteEvent;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Contracts\Repository\IRatingRepository;
+use STS\Notifications\DeleteTripNotification;
 
 class CreateRatingDeleteTrip implements ShouldQueue
 {
@@ -13,9 +16,12 @@ class CreateRatingDeleteTrip implements ShouldQueue
      *
      * @return void
      */
-    public function __construct()
+
+    protected $ratingRepository;
+
+    public function __construct(IRatingRepository $ratingRepository)
     {
-        //
+        $this->ratingRepository = $ratingRepository;
     }
 
     /**
@@ -27,5 +33,22 @@ class CreateRatingDeleteTrip implements ShouldQueue
     public function handle(DeleteEvent $event)
     {
         $trip = $event->trip;
+        
+        $passengers = $trip->passengerAccepted;
+        if ($passengers->count() > 0) {
+            foreach($passengers as $passenger) {
+
+                $passenger_hash = str_random(40);
+
+                $rate = $this->ratingRepository->create($passenger->user_id, $trip->user_id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
+                // event(new PendingEvent($passenger->user, $trip, $passenger_hash));
+                
+                $notification = new DeleteTripNotification();
+                $notification->setAttribute('trip', $trip);
+                $notification->setAttribute('from', $trip->user);
+                $notification->setAttribute('hash', $passenger_hash);
+                $notification->notify($passenger->user);
+            }
+        }
     }
 }

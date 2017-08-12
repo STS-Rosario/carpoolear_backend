@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
+use STS\Events\Trip\Delete  as DeleteEvent;
 use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripsManager extends BaseManager implements TripLogic
@@ -118,6 +119,7 @@ class TripsManager extends BaseManager implements TripLogic
         if ($trip) {
             // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {
+                event(new DeleteEvent($trip));
                 return $this->tripRepo->delete($trip);
             } else {
                 $this->setErrors(trans('errors.tripowner'));
@@ -199,4 +201,5 @@ class TripsManager extends BaseManager implements TripLogic
 
         return false;
     }
+
 }
