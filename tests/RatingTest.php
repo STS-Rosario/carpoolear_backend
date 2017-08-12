@@ -4,6 +4,8 @@ use STS\User;
 use STS\Entities\Trip;
 use STS\Entities\Rating;
 use STS\Entities\Passenger;
+use STS\Transformers\RatingTransformer;
+
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RatingTest extends TestCase
@@ -106,7 +108,9 @@ class RatingTest extends TestCase
 
         $rate = Rating::first();
 
-        console_log($rate->trip);
+        $fratal = (new RatingTransformer($rate->from))->transform($rate);
+        
+        $this->assertNotNull($fratal['trip']);
 
     }
 }
