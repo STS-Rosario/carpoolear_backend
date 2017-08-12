@@ -38,6 +38,10 @@ class TripTransformer extends TransformerAbstract
             'updated_at' => $trip->updated_at->toDateTimeString(),
         ];
 
+        if ($trip->deleted_at) {
+            $data['deleted'] = true;
+        }
+
         $data['request'] = '';
         $data['passenger'] = [];
         if ($this->user) {

@@ -222,8 +222,6 @@ class TripsTest extends TestCase
 
         $listener->handle($event);
 
-        
         $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
     }
-
 }

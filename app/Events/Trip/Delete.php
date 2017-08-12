@@ -4,12 +4,11 @@ namespace STS\Events\Trip;
 
 use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 
 class Delete extends Event
 {
     use SerializesModels;
-    
+
     public $trip;
 
     /**
