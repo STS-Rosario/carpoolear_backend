@@ -38,6 +38,13 @@ class EventServiceProvider extends ServiceProvider
             'STS\Listeners\DownloadStaticImage',
             // 'STS\Listeners\Conversation\createConversation',
         ],
+        'STS\Events\Trip\Update' => [
+            'STS\Listeners\DownloadStaticImage',
+            'STS\Listeners\Notification\UpdateTrip'
+        ],
+        'STS\Events\Trip\Delete' => [
+            'STS\Listeners\Ratings\CreateRatingDeleteTrip',
+        ],
         'STS\Events\Trip\Alert\HourLeft' => [
             'STS\Listeners\Notification\TripHourLeft',
         ],
@@ -48,9 +55,6 @@ class EventServiceProvider extends ServiceProvider
             'STS\Listeners\Notification\TripRequestNotAnswer',
         ],
 
-        'STS\Events\Trip\Update' => [
-            'STS\Listeners\DownloadStaticImage',
-        ],
         'STS\Events\Notification\NotificationSending' => [
             'STS\Listeners\Notification\CanSendEmail',
             'STS\Listeners\Notification\PreventMessageEmail',

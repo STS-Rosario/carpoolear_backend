@@ -73,6 +73,7 @@ class TripsTest extends TestCase
 
     public function testDeleteTrip()
     {
+        $this->expectsEvents(STS\Events\Trip\Delete::class);
         $tripManager = \App::make('\STS\Contracts\Logic\Trip');
         $trip = factory(STS\Entities\Trip::class)->create();
 
@@ -204,4 +205,25 @@ class TripsTest extends TestCase
 
         $this->assertTrue($trips->count() > 0);
     }
+
+    public function testUpdateListeners()
+    {
+        $driver = factory(STS\User::class)->create();
+        $passengerA = factory(STS\User::class)->create();
+        $passengerB = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $driver->id]);
+
+        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+
+        $event = new STS\Events\Trip\Update($trip);
+
+        $listener = new STS\Listeners\Notification\UpdateTrip();
+
+        $listener->handle($event);
+
+        
+        $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
+    }
+
 }
