@@ -26,12 +26,12 @@ class ConversationRepository implements ConversationRepo
         $userConversations = $user->conversations()
             ->orderBy('updated_at', 'desc')
             ->with('users');
-            /*
-            ->with(['messages' => function ($q) {
-                $q->orderBy('created_at', 'DESC');
-                $q->take(1);
-            }]);
-            */
+        /*
+        ->with(['messages' => function ($q) {
+            $q->orderBy('created_at', 'DESC');
+            $q->take(1);
+        }]);
+        */
 
         return make_pagination($userConversations, $pageNumber, $pageSize);
     }

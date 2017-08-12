@@ -2,7 +2,6 @@
 
 namespace STS\Http\Controllers;
 
-
 class HomeController extends Controller
 {
     public function home()
@@ -10,22 +9,23 @@ class HomeController extends Controller
         return view('welcome');
     }
 
-    function endsWith($haystack, $needle)
+    public function endsWith($haystack, $needle)
     {
         $length = strlen($needle);
         if ($length == 0) {
             return true;
         }
 
-        return (substr($haystack, -$length) === $needle);
+        return substr($haystack, -$length) === $needle;
     }
 
     public function handleApp($name)
     {
         if ($this->endsWith($name, '.js')) {
-            $strings = explode("/", $name);
+            $strings = explode('/', $name);
             $file = $strings[count($strings) - 1];
-            return \File::get(public_path().'/app/'. $file );
+
+            return \File::get(public_path().'/app/'.$file);
         } else {
             return \File::get(public_path().'/app/index.html');
         }

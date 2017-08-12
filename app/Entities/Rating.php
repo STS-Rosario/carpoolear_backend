@@ -2,8 +2,8 @@
 
 namespace STS\Entities;
 
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class Rating extends Model
 {
