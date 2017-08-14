@@ -18,6 +18,7 @@ class Delete extends Event
      */
     public function __construct($trip)
     {
+        console_log('Evento');
         $this->trip = $trip;
     }
 

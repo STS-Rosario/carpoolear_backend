@@ -21,7 +21,10 @@ class HomeController extends Controller
 
     public function handleApp($name)
     {
+        console_log("ROUTER");
+        console_log($name);
         if ($this->endsWith($name, '.js')) {
+            
             $strings = explode('/', $name);
             $file = $strings[count($strings) - 1];
 

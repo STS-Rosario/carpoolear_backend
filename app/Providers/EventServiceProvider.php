@@ -2,6 +2,7 @@
 
 namespace STS\Providers;
 
+use STS\Listeners\Ratings\CreateRatingDeleteTrip;
 use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
@@ -43,7 +44,7 @@ class EventServiceProvider extends ServiceProvider
             'STS\Listeners\Notification\UpdateTrip',
         ],
         'STS\Events\Trip\Delete' => [
-            'STS\Listeners\Ratings\CreateRatingDeleteTrip',
+            CreateRatingDeleteTrip::class,
         ],
         'STS\Events\Trip\Alert\HourLeft' => [
             'STS\Listeners\Notification\TripHourLeft',
