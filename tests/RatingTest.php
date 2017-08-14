@@ -32,7 +32,7 @@ class RatingTest extends TestCase
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
 
-        $this->ratingManager->activeRatings('2017-01-01');
+        $this->ratingManager->activeRatings('2017-01-01 10:00:00');
 
         $rates = Rating::all();
 
@@ -55,7 +55,7 @@ class RatingTest extends TestCase
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
 
-        $this->ratingManager->activeRatings('2017-01-01');
+        $this->ratingManager->activeRatings('2017-01-01 10:00:00');
 
         $pending = $this->ratingManager->getPendingRatings($driver);
 
