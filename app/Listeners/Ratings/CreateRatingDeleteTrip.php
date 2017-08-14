@@ -8,7 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\DeleteTripNotification;
 use STS\Contracts\Repository\IRatingRepository;
 
-class CreateRatingDeleteTrip implements ShouldQueue
+class CreateRatingDeleteTrip
 {
     /**
      * Create the event listener.
@@ -36,10 +36,8 @@ class CreateRatingDeleteTrip implements ShouldQueue
         if ($passengers->count() > 0) {
             foreach ($passengers as $passenger) {
                 $passenger_hash = str_random(40);
-
                 $rate = $this->ratingRepository->create($passenger->user_id, $trip->user_id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
-                // event(new PendingEvent($passenger->user, $trip, $passenger_hash));
-
+        
                 $notification = new DeleteTripNotification();
                 $notification->setAttribute('trip', $trip);
                 $notification->setAttribute('from', $trip->user);

@@ -24,13 +24,15 @@ class TripRepository implements TripRepo
 
     public function update($trip, array $data)
     {
+        
         $points = null;
-        if (isset($points)) {
+        if (isset($data['points'])) {
             $points = $data['points'];
             unset($data['points']);
         }
         $trip->update($data);
         if ($points) {
+            
             $this->deletePoints($trip);
             $this->addPoints($trip, $points);
         }
@@ -206,7 +208,7 @@ class TripRepository implements TripRepo
         }
     }
 
-    public function deletePoints($trip, $points)
+    public function deletePoints($trip)
     {
         $trip->points()->delete();
     }
