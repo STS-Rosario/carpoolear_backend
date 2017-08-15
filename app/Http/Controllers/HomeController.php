@@ -22,6 +22,7 @@ class HomeController extends Controller
     public function handleApp($name)
     {
         if ($this->endsWith($name, '.js')) {
+            
             $strings = explode('/', $name);
             $file = $strings[count($strings) - 1];
 

@@ -91,6 +91,13 @@ class TripsManager extends BaseManager implements TripLogic
 
                     return;
                 } else {
+
+                    if ($data['total_seats'] < $trip->passengerAccepted()->count()) {
+                        $this->setErrors(['error' => 'trip_invalid_seats']);
+                        
+                        return;         
+                    } 
+
                     $trip = $this->tripRepo->update($trip, $data);
                     event(new UpdateEvent($trip));
 
