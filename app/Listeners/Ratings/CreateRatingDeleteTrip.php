@@ -4,7 +4,6 @@ namespace STS\Listeners\Ratings;
 
 use STS\Entities\Passenger;
 use STS\Events\Trip\Delete as DeleteEvent;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\DeleteTripNotification;
 use STS\Contracts\Repository\IRatingRepository;
 
@@ -37,7 +36,7 @@ class CreateRatingDeleteTrip
             foreach ($passengers as $passenger) {
                 $passenger_hash = str_random(40);
                 $rate = $this->ratingRepository->create($passenger->user_id, $trip->user_id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
-        
+
                 $notification = new DeleteTripNotification();
                 $notification->setAttribute('trip', $trip);
                 $notification->setAttribute('from', $trip->user);
