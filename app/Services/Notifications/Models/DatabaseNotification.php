@@ -25,7 +25,7 @@ class DatabaseNotification extends Model
 
     public function plain_values()
     {
-        return $this->hasMany(ValueNotification::class, 'notification_id')->with('value');
+        return $this->hasMany(ValueNotification::class, 'notification_id');
     }
 
     public function attributes()

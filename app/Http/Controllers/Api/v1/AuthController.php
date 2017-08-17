@@ -10,6 +10,7 @@ use STS\Contracts\Logic\User as UserLogic;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use STS\Contracts\Logic\Devices as DeviceLogic;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Dingo\Api\Exception\UpdateResourceFailedException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;

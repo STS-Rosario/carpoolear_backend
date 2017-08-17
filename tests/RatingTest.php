@@ -4,6 +4,7 @@ use STS\User;
 use STS\Entities\Trip;
 use STS\Entities\Rating;
 use STS\Entities\Passenger;
+use STS\Transformers\RatingTransformer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RatingTest extends TestCase
@@ -31,7 +32,7 @@ class RatingTest extends TestCase
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
 
-        $this->ratingManager->activeRatings('2017-01-01');
+        $this->ratingManager->activeRatings('2017-01-01 10:00:00');
 
         $rates = Rating::all();
 
@@ -54,7 +55,7 @@ class RatingTest extends TestCase
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
         factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
 
-        $this->ratingManager->activeRatings('2017-01-01');
+        $this->ratingManager->activeRatings('2017-01-01 10:00:00');
 
         $pending = $this->ratingManager->getPendingRatings($driver);
 
@@ -66,6 +67,7 @@ class RatingTest extends TestCase
 
         $this->assertTrue($pending->count() == 3);
 
+        $trip->delete();
         $result = $this->ratingManager->rateUser($driver, $passengers[0]->id, $trip->id, ['comment' => 'Test comment', 'rating' => 1]);
 
         $this->assertTrue($result);
@@ -80,5 +82,32 @@ class RatingTest extends TestCase
         $this->assertNull($result);
 
         $this->assertTrue($this->ratingManager->getRatings($passengers[0])->count() == 1);
+    }
+
+    public function testDeleteListeners()
+    {
+        $driver = factory(STS\User::class)->create();
+        $passengerA = factory(STS\User::class)->create();
+        $passengerB = factory(STS\User::class)->create();
+        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $driver->id]);
+
+        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+
+        $event = new STS\Events\Trip\Delete($trip);
+
+        $listener = new STS\Listeners\Ratings\CreateRatingDeleteTrip($this->ratingRepository);
+
+        $listener->handle($event);
+
+        $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
+
+        $trip->delete();
+
+        $rate = Rating::first();
+
+        $fratal = (new RatingTransformer($rate->from))->transform($rate);
+
+        $this->assertNotNull($fratal['trip']);
     }
 }

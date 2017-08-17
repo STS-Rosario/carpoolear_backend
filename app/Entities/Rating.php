@@ -3,6 +3,7 @@
 namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class Rating extends Model
 {
@@ -47,6 +48,6 @@ class Rating extends Model
 
     public function trip()
     {
-        return $this->belongsTo('STS\Entities\Trip', 'trip_id');
+        return $this->belongsTo('STS\Entities\Trip', 'trip_id')->withoutGlobalScope(SoftDeletingScope::class);
     }
 }

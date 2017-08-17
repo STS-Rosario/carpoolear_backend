@@ -25,7 +25,7 @@ class TripRepository implements TripRepo
     public function update($trip, array $data)
     {
         $points = null;
-        if (isset($points)) {
+        if (isset($data['points'])) {
             $points = $data['points'];
             unset($data['points']);
         }
@@ -94,7 +94,8 @@ class TripRepository implements TripRepo
                 $to = $date_search->copy()->addDays(3);
 
                 $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)'), [date_to_string($from), date_to_string($to)]);
-                $trips->orderBy(DB::Raw("ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' ))"));
+                $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
+                $trips->orderBy('trip_date');
             }
             //$trips->setBindings([$data['date']]);
         } else {
@@ -206,7 +207,7 @@ class TripRepository implements TripRepo
         }
     }
 
-    public function deletePoints($trip, $points)
+    public function deletePoints($trip)
     {
         $trip->points()->delete();
     }

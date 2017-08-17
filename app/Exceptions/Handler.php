@@ -49,7 +49,7 @@ class Handler extends ExceptionHandler
     {
         $response = parent::render($request, $e);
         //if ($request->is('api/*')) {
-            app('Barryvdh\Cors\Stack\CorsService')->addActualRequestHeaders($response, $request);
+        app('Barryvdh\Cors\Stack\CorsService')->addActualRequestHeaders($response, $request);
         //}
         return $response;
     }

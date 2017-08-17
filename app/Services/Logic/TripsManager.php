@@ -7,6 +7,7 @@ use STS\Entities\Trip;
 use Illuminate\Database\Eloquent\Model;
 use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
+use STS\Events\Trip\Delete  as DeleteEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
 use STS\Contracts\Repository\Trip as TripRepo;
 
@@ -90,6 +91,12 @@ class TripsManager extends BaseManager implements TripLogic
 
                     return;
                 } else {
+                    if ($data['total_seats'] < $trip->passengerAccepted()->count()) {
+                        $this->setErrors(['error' => 'trip_invalid_seats']);
+
+                        return;
+                    }
+
                     $trip = $this->tripRepo->update($trip, $data);
                     event(new UpdateEvent($trip));
 
@@ -118,6 +125,8 @@ class TripsManager extends BaseManager implements TripLogic
         if ($trip) {
             // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {
+                event(new DeleteEvent($trip));
+
                 return $this->tripRepo->delete($trip);
             } else {
                 $this->setErrors(trans('errors.tripowner'));

@@ -26,12 +26,12 @@ class ConversationRepository implements ConversationRepo
         $userConversations = $user->conversations()
             ->orderBy('updated_at', 'desc')
             ->with('users');
-            /*
-            ->with(['messages' => function ($q) {
-                $q->orderBy('created_at', 'DESC');
-                $q->take(1);
-            }]);
-            */
+        /*
+        ->with(['messages' => function ($q) {
+            $q->orderBy('created_at', 'DESC');
+            $q->take(1);
+        }]);
+        */
 
         return make_pagination($userConversations, $pageNumber, $pageSize);
     }
@@ -109,12 +109,6 @@ class ConversationRepository implements ConversationRepo
             $q->orWhereHas('trips', function ($q) use ($user) {
                 $q->where('friendship_type_id', Trip::PRIVACY_PUBLIC);
                 $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
-                    $q->whereHas('user.friends', function ($q) use ($user) {
-                        $q->whereId($user->id);
-                    });
-                });
-                $q->orWhere(function ($q) use ($user) {
                     $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
                     $q->where(function ($q) use ($user) {
                         $q->whereHas('user.friends', function ($q) use ($user) {
@@ -125,6 +119,12 @@ class ConversationRepository implements ConversationRepo
                         });
                     });
                 });
+                $q->orWhereHas('passengerAccepted', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            });
+            $q->orWhereHas('passenger.trip.user', function ($q) use ($user) {
+                $q->where('id', $user->id);
             });
         });
         $users->where('id', '<>', $user->id);
