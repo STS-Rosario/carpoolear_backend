@@ -118,6 +118,7 @@ class RatingManager extends BaseManager implements IRateLogic
         $criterias = [
             ['key' => 'trip_date', 'value' => $when, 'op' => '<'],
             ['key' => 'mail_send', 'value' => false],
+            ['key' => 'is_passenger', 'value' => false],
         ];
         $trips = $this->tripRepo->index($criterias, ['user', 'passenger']);
 
