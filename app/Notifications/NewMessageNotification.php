@@ -39,11 +39,12 @@ class NewMessageNotification extends BaseNotification
         $message = $this->getAttribute('messages');
 
         return [
-            'message' => $this->getAttribute('from')->name.'@'.$message->text,
+            'message' => $this->getAttribute('from')->name.' @ '.$message->text,
             'url' => 'conversation',
             'extras' => [
                 'id' => $message->conversation_id,
             ],
+            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
         ];
     }
 }

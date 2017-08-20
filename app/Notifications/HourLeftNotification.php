@@ -44,6 +44,7 @@ class HourLeftNotification extends BaseNotification
             'extras' => [
                 'id' => $trip->id,
             ],
+            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
         ];
     }
 }
