@@ -59,6 +59,9 @@ class PushChannel
         if (isset($data['action'])) {
             $defaultData['actions'] = $android_actions[$data['action']];
         }
+        if (!isset($data['time_to_live'])) {
+            $defaultData['time_to_live'] = 2419200;
+        }
 
         $defaultData['image'] = isset($data['image']) ? $data['image'] : 'www/logo.png';
 

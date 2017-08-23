@@ -21,7 +21,7 @@ class UsersManager extends BaseManager implements UserLogic
         $this->repo = $userRep;
     }
 
-    public function validator(array $data, $id = null)
+    public function validator(array $data, $id = null, $is_social = false)
     {
         if ($id) {
             return Validator::make($data, [
@@ -31,13 +31,23 @@ class UsersManager extends BaseManager implements UserLogic
                 // 'gender'   => 'string|in:Masculino,Femenino,N/A',
             ]);
         } else {
-            return Validator::make($data, [
-                'name'     => 'required|max:255',
-                'email'    => 'required|email|max:255|unique:users',
-                'password' => 'min:6|confirmed',
-                // 'gender'   => 'string|in:Masculino,Feminino,N/A',
-                'emails_notifications' => 'boolean',
-            ]);
+            if(!$is_social) {
+                return Validator::make($data, [
+                    'name'     => 'required|max:255',
+                    'email'    => 'required|email|max:255|unique:users',
+                    'password' => 'min:6|confirmed',
+                    // 'gender'   => 'string|in:Masculino,Feminino,N/A',
+                    'emails_notifications' => 'boolean',
+                ]);
+            } else {
+                return Validator::make($data, [
+                    'name'     => 'required|max:255',
+                    'email'    => 'nullable|email|max:255|unique:users',
+                    'password' => 'min:6|confirmed',
+                    // 'gender'   => 'string|in:Masculino,Feminino,N/A',
+                    'emails_notifications' => 'boolean',
+                ]);
+            }
         }
     }
 
@@ -48,9 +58,9 @@ class UsersManager extends BaseManager implements UserLogic
      *
      * @return User
      */
-    public function create(array $data, $validate = true)
+    public function create(array $data, $validate = true, $is_social = false)
     {
-        $v = $this->validator($data);
+        $v = $this->validator($data, null, $is_social);
         if ($v->fails() && $validate) {
             $this->setErrors($v->errors());
 
