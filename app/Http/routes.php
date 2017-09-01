@@ -16,6 +16,7 @@
 // })->where('name', '[\/\w\.-]*');
 
 Route::get('/', 'HomeController@home');
+Route::get('/acerca-de-equipo', 'HomeController@acercaDeEquipo');
 Route::get('/app/{name?}', 'HomeController@handleApp')->where('name', '[\/\w\.-]*');
 
 // Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {

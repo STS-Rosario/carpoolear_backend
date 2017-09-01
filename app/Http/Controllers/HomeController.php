@@ -9,6 +9,11 @@ class HomeController extends Controller
         return view('home');
     }
 
+    public function acercaDeEquipo()
+    {
+        return view('acerca-de-equipo');
+    }
+
     public function endsWith($haystack, $needle)
     {
         $length = strlen($needle);
