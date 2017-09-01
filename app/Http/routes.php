@@ -11,10 +11,6 @@
 |
 */
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-
 // Route::get('/app/{name?}', function () {
 //     return File::get(public_path().'/app/index.html');
 // })->where('name', '[\/\w\.-]*');
