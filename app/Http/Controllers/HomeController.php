@@ -6,7 +6,12 @@ class HomeController extends Controller
 {
     public function home()
     {
-        return view('welcome');
+        return view('home');
+    }
+
+    public function acercaDeEquipo()
+    {
+        return view('acerca-de-equipo');
     }
 
     public function endsWith($haystack, $needle)
