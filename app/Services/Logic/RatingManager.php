@@ -131,7 +131,17 @@ class RatingManager extends BaseManager implements IRateLogic
 
             $pasenger_id = null;
             foreach ($passengers as $passenger) {
-                if ($passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED) {
+
+                $inRatingState = $passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED;
+
+                $canceledButAccepted = true;
+                if ($passenger->request_state == Passenger::STATE_CANCELED) {
+                    if (isset($passenger->canceled_state) && $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
+                        $canceledButAccepted = false;
+                    }
+                }
+
+                if ($inRatingState && $canceledButAccepted) {
                     if ($pasenger_id !== $passenger->user->id) {
                         $passenger_hash = str_random(40);
                         $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
