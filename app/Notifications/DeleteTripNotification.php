@@ -38,6 +38,7 @@ class DeleteTripNotification extends BaseNotification
         return [
             'message' => $this->getAttribute('from')->name.' ha eliminado su viaje. Puedes calificarlo. ',
             'url' => 'rates',
+            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
         ];
     }
 }

@@ -93,7 +93,13 @@ class TripRepository implements TripRepo
                 $from = $date_search->copy()->subDays(3);
                 $to = $date_search->copy()->addDays(3);
 
-                $trips = Trip::whereBetween(DB::Raw('DATE(trip_date)'), [date_to_string($from), date_to_string($to)]);
+                $now = Carbon::now('America/Argentina/Buenos_Aires'); 
+                if($from->lte($now)){
+                    $from = $now;
+                }
+                $trips = Trip::where('trip_date', '>=', date_to_string($from, "Y-m-d H:i:s"));
+                $trips->where('trip_date', '<=', date_to_string($to, "Y-m-d H:i:s"));
+                
                 $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                 $trips->orderBy('trip_date');
             }

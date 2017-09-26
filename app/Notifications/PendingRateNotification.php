@@ -38,6 +38,7 @@ class PendingRateNotification extends BaseNotification
         return [
             'message' => 'Tienes un viaje por calificar.',
             'url' => 'rates',
+            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
         ];
     }
 }

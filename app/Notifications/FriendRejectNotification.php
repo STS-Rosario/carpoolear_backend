@@ -44,6 +44,7 @@ class FriendRejectNotification extends BaseNotification
             'extras' => [
                 'id' => $from->id,
             ],
+            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
         ];
     }
 }
