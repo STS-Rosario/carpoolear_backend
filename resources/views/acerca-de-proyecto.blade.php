@@ -82,13 +82,3 @@
     </div>
 </section>
 @endsection
-<?php
-$page_title = 'Acerca del Proyecto - Carpoolear';
-$body_class = 'body-acerca acerca-de-proyecto'; 
-include('includes/header.php');
-?>
-        <div class="main-container">
-        	<section>
-        	    
-            </section>
-<?php include('includes/footer.php'); ?>
