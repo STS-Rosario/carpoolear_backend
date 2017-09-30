@@ -13,6 +13,11 @@ class HomeController extends Controller
     {
         return view('acerca-de-equipo');
     }
+    
+    public function acercaDeProyecto()
+    {
+        return view('acerca-de-proyecto');
+    }
 
     public function endsWith($haystack, $needle)
     {
