@@ -104,7 +104,7 @@
                 <p>¿Qué te parece Carpoolear? ¿Pensás que se podría mejorar? ¿Tenés alguna otra idea para fomentar el carpooling? ¿O para minimizar el impacto ambiental que producen los autos?</p>
                 <p>Con todas estas posibilidades, seguro que podés aportar tu granito de arena :D</p>
 
-                <p>Escribinos a <a href="carpoolear@stsrosario.org.ar">carpoolear@stsrosario.org.ar</a> o mandanos un mensaje a nuestro <a href="http://facebook.com/Carpoolear" target="_blank">Facebook</a></p>
+                <p>Escribinos a <a href="mailto:carpoolear@stsrosario.org.ar">carpoolear@stsrosario.org.ar</a> o mandanos un mensaje a nuestro <a href="http://facebook.com/Carpoolear" target="_blank">Facebook</a></p>
 
 
             </div>

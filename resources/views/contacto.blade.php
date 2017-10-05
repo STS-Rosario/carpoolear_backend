@@ -24,7 +24,7 @@
 
                 <h3>Email</h3>
 
-                <p>Si preferís el mail, mandanos uno a <a href="carpoolear@stsrosario.org.ar">carpoolear@stsrosario.org.ar</a></p>
+                <p>Si preferís el mail, mandanos uno a <a href="mailto:carpoolear@stsrosario.org.ar">carpoolear@stsrosario.org.ar</a></p>
 
             </div>
         </div>
