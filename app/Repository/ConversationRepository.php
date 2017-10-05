@@ -118,7 +118,7 @@ class ConversationRepository implements ConversationRepo
             }
         }
 
-        return $users;
+        return collect($users);
     }
 
     public function usersToChat($user, $who = null, $search_text = null)
