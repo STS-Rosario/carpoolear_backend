@@ -40,7 +40,8 @@ class NewMessageNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' @ '.$message->text,
-            'url' => 'conversation',
+            'url' => "conversations/" . $message->conversation_id,
+            'type' => 'conversation',
             'extras' => [
                 'id' => $message->conversation_id,
             ],

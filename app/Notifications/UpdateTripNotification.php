@@ -40,7 +40,7 @@ class UpdateTripNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' ha cambiado las codiciones de su viaje.',
-            'url' => 'passenger',
+            'url' => "trips/" . $trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],

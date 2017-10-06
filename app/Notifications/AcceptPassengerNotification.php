@@ -42,7 +42,7 @@ class AcceptPassengerNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' ha aceptado tu solicitud.',
-            'url' => 'passenger',
+            'url' => "trips/" . $trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],

@@ -19,6 +19,21 @@ class HomeController extends Controller
         return view('acerca-de-proyecto');
     }
 
+    public function autoRojo()
+    {
+        $useragent = $_SERVER ['HTTP_USER_AGENT'];
+        
+        $isIOS = preg_match ('/iPad|iPhone|iPod/', $useragent);
+        
+        if($isIOS) {
+            header("Location: https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8");
+            die();
+        } else {
+            header("Location: https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419");
+            die();
+        }
+    }
+
     public function plataformaPreguntasFrecuentes()
     {
         return view('plataforma-preguntas-frecuentes');

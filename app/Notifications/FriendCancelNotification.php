@@ -39,7 +39,7 @@ class FriendCancelNotification extends BaseNotification
 
         return [
             'message' => $from->name.' ha dejado de ser tu amigo',
-            'url' => 'friend',
+            'url' => 'setting/friends',
             'extras' => [
                 'id' => $from->id,
             ],
