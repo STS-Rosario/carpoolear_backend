@@ -11,15 +11,21 @@
 |
 */
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
-
 // Route::get('/app/{name?}', function () {
 //     return File::get(public_path().'/app/index.html');
 // })->where('name', '[\/\w\.-]*');
 
 Route::get('/', 'HomeController@home');
+Route::get('/home', 'HomeController@home');
+Route::get('/acerca-de-equipo', 'HomeController@acercaDeEquipo');
+Route::get('/acerca-de-proyecto', 'HomeController@acercaDeProyecto');
+Route::get('/plataforma-preguntas-frecuentes', 'HomeController@plataformaPreguntasFrecuentes');
+Route::get('/plataforma-recomendaciones', 'HomeController@plataformaRecomendaciones');
+Route::get('/plataforma-terminos-condiciones', 'HomeController@plataformaTerminosYCondiciones');
+Route::get('/colabora-como-colaborar', 'HomeController@colaboraComoColaborar');
+Route::get('/colabora-ideame-2014', 'HomeController@colaboraIdeame2014');
+Route::get('/difusion', 'HomeController@difusion');
+Route::get('/contacto', 'HomeController@contacto');
 Route::get('/app/{name?}', 'HomeController@handleApp')->where('name', '[\/\w\.-]*');
 
 // Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
