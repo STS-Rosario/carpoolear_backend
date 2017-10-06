@@ -6,7 +6,67 @@ class HomeController extends Controller
 {
     public function home()
     {
-        return view('welcome');
+        return view('home');
+    }
+
+    public function acercaDeEquipo()
+    {
+        return view('acerca-de-equipo');
+    }
+    
+    public function acercaDeProyecto()
+    {
+        return view('acerca-de-proyecto');
+    }
+
+    public function autoRojo()
+    {
+        $useragent = $_SERVER ['HTTP_USER_AGENT'];
+        
+        $isIOS = preg_match ('/iPad|iPhone|iPod/', $useragent);
+        
+        if($isIOS) {
+            header("Location: https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8");
+            die();
+        } else {
+            header("Location: https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419");
+            die();
+        }
+    }
+
+    public function plataformaPreguntasFrecuentes()
+    {
+        return view('plataforma-preguntas-frecuentes');
+    }
+
+    public function plataformaRecomendaciones()
+    {
+        return view('plataforma-recomendaciones');
+    }
+
+    public function plataformaTerminosYCondiciones()
+    {
+        return view('plataforma-terminos-condiciones');
+    }
+
+    public function colaboraComoColaborar()
+    {
+        return view('colabora-como-colaborar');
+    }
+
+    public function colaboraIdeame2014()
+    {
+        return view('colabora-ideame-2014');
+    }
+
+    public function difusion()
+    {
+        return view('difusion');
+    }
+
+    public function contacto()
+    {
+        return view('contacto');
     }
 
     public function endsWith($haystack, $needle)

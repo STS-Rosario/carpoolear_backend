@@ -75,7 +75,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     private function usersCanChat(User $user1, User $user2)
     {
-        return $user1->is_admin || $this->conversationRepository->userList($user1, $user2)->count() > 0;
+        return $user1->is_admin || $this->conversationRepository->usersToChat($user1, $user2)->count() > 0;
     }
 
     public function usersList($user, $searchText)

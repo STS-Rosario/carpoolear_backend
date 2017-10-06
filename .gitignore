@@ -6,3 +6,4 @@
 settings.json
 .vscode/
 cert/*.pem
+.idea/*

@@ -42,7 +42,7 @@ class RejectPassengerNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' ha rechazado tu solicitud.',
-            'url' => 'passenger',
+            'url' => "trips/" . $trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],

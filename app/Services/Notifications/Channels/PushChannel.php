@@ -16,6 +16,7 @@ class PushChannel
     {
         foreach ($user->devices as $device) {
             $data = $this->getData($notification, $user, $device);
+            $data['extras'] = $this->getExtraData($notification);
             if ($device->notifications) {
                 if ($device->isAndroid()) {
                     $this->sendAndroid($device, $data);
@@ -35,6 +36,13 @@ class PushChannel
             throw new \Exception("Method toPush does't exists");
         }
     }
+    
+    public function getExtraData($notification)
+    {
+        if (method_exists($notification, 'getExtras')) {
+            return $notification->getExtras();
+        }
+    }
 
     public function sendAndroid($device, $data)
     {
@@ -50,6 +58,10 @@ class PushChannel
 
         if (isset($data['url'])) {
             $defaultData['url'] = $data['url'];
+        }
+
+        if (isset($data['type'])) {
+            $defaultData['type'] = $data['type'];
         }
 
         if (isset($data['extras'])) {

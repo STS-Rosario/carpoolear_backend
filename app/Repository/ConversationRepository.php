@@ -23,7 +23,7 @@ class ConversationRepository implements ConversationRepo
 
     public function getConversationsFromUser(User $user, $pageNumber, $pageSize)
     {
-        $userConversations = $user->conversations()
+        $userConversations = $user->conversations()->has('messages')
             ->orderBy('updated_at', 'desc')
             ->with('users');
         /*
@@ -100,6 +100,28 @@ class ConversationRepository implements ConversationRepo
     }
 
     public function userList($user, $who = null, $search_text = null)
+    {
+        $userConversations = $user->conversations()->has('messages')
+        ->orderBy('updated_at', 'desc')
+        ->with('users');
+
+        $conversations = $userConversations->get();
+        
+        $users = [];
+        foreach ($conversations as  $conversation) {
+            foreach ($conversation->users as  $userc) {
+                if ($userc->id !== $user->id) {
+                    if (preg_match("/$search_text/i", $userc->name)) {
+                        $users[] = $userc;
+                    }
+                }
+            }
+        }
+
+        return collect($users);
+    }
+
+    public function usersToChat($user, $who = null, $search_text = null)
     {
         $users = User::where(function ($q) use ($user) {
             $q->where('is_admin', true);

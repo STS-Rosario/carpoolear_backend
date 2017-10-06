@@ -40,7 +40,7 @@ class FriendAcceptNotification extends BaseNotification
 
         return [
             'message' => $from->name.' ha aceptado tu solicitud de amistad.',
-            'url' => 'friend',
+            'url' => 'setting/friends',
             'extras' => [
                 'id' => $from->id,
             ],
