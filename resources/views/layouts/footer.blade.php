@@ -10,7 +10,7 @@
         
             <div class="col-sm-4 text-center">
                 <span>
-                    © <?php echo date('Y')?> Carpoolear - Todos los derechos reservados
+                    En ruta desde 2003
                 </span>
             </div>
         
