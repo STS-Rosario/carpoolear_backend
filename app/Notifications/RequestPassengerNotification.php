@@ -25,7 +25,12 @@ class RequestPassengerNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' quiere subirse a uno de tus viajes.';
+        $from = $this->getAttribute('from');
+        if (is_object($from)) {
+            return $from->name.' quiere subirse a uno de tus viajes.';
+        } else {
+            return 'Un pasajero quiere subirse a uno de tus viajes.';
+        }
     }
 
     public function getExtras()

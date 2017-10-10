@@ -35,7 +35,7 @@ class FacebookSocialProvider implements SocialProvider
                     $body->gender = 'Femenino';
                 }
             } else {
-                $user->gender = 'N/A';
+                $body->gender = 'N/A';
             }
 
             if (isset($body->birthday)) {
