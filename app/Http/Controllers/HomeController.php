@@ -19,7 +19,7 @@ class HomeController extends Controller
         return view('acerca-de-proyecto');
     }
 
-    public function autoRojo()
+    public function descarga()
     {
         $useragent = $_SERVER ['HTTP_USER_AGENT'];
         
@@ -32,6 +32,11 @@ class HomeController extends Controller
             header("Location: https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419");
             die();
         }
+    }
+
+    public function autoRojo()
+    {
+        return view('auto-rojo');
     }
 
     public function plataformaPreguntasFrecuentes()

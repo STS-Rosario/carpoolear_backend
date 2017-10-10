@@ -27,6 +27,7 @@ Route::get('/colabora-ideame-2014', 'HomeController@colaboraIdeame2014');
 Route::get('/difusion', 'HomeController@difusion');
 Route::get('/contacto', 'HomeController@contacto');
 Route::get('/autorojo', 'HomeController@autoRojo');
+Route::get('/descarga', 'HomeController@descarga');
 Route::get('/app/{name?}', 'HomeController@handleApp')->where('name', '[\/\w\.-]*');
 
 // Route::group(['middleware' => 'cors', 'prefix' => 'api'], function () {
