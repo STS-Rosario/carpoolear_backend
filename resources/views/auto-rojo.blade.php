@@ -3,7 +3,17 @@
 @section('title', 'Carpoolear')
 
 @section('content')
-
+<style>
+    .social-share-buttons a {
+        font-size: 32px;
+        color: #CCC;
+        margin: 0 .4em;
+        display: inline-block;
+    }
+    .social-share-buttons a:hover {
+        color: #FFF;
+    }
+</style>
 <section style="background: #D12624;">
     <div class="container">
         <div class="row">
@@ -15,7 +25,18 @@
             </div>
 
             <div class="col-md-12 col-sm-12 text-center">
-                <h1 style="margin-top:1em;"><a class="accede-app" href="https://carpoolear.com.ar/app" style="color: white;">Compartí tu viaje</a></h1>
+                <h1 style="margin-top:1em;"><a class="accede-app" href="https://carpoolear.com.ar/app" style="color: white;">Compartí la campaña</a></h1>
+                <div class="social-share-buttons">
+                    <a href="https://www.facebook.com/sharer.php?u=https%3A%2F%2Fcarpoolear.com.ar%2Fautorojo" title="Compartir en Facebook" target="_blank">
+                        <i class="ti-facebook"></i>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fcarpoolear.com.ar%2Fautorojo&text=%C2%BFSab%C3%A9s%20la%20verdad%20sobre%20el%20tema%20Auto%20Rojo%20de%20Vilma%20Palma%3F&via=carpoolear&hashtags=autorojo" title="Compartir en Twitter" target="_blank">
+                        <i class="ti-twitter-alt"></i>
+                    </a>
+                    <a href="https://plus.google.com/share?url=https%3A%2F%2Fcarpoolear.com.ar%2Fautorojo" title="Compartir en Google+" target="_blank">
+                        <i class="ti-google"></i>
+                    </a>
+                </div>
             </div>
         </div>
         <!--end of row-->
