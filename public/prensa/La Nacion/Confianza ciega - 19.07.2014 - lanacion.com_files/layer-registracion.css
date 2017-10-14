@@ -1,0 +1,43 @@
+#LN_overlay {position:fixed;z-index:500;top: 0px;left: 0px;height:100%;width:100%;}
+.LN_overlayMacFFBGHack {background: url(macFFBgHack.png) repeat;}
+.LN_background {background-color:#000;filter:alpha(opacity=50);-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";-moz-opacity: 0.5;opacity: 0.5;}
+.LN_backgroundDark {background-color:#000;filter:alpha(opacity=99)-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=99)";-moz-opacity: 0.99;opacity: 0.99;}
+* html #LN_overlay { /* ie6 hack */position: absolute;height: expression(document.body.scrollHeight > document.body.offsetHeight ? document.body.scrollHeight : document.body.offsetHeight + 'px');}
+#LN_modal {position:fixed;background:#fff;z-index:25000;display:none;top:50%;left:50%;border:1px solid #ccc;font: 12px Arial, Helvetica, sans-serif;color: #333333;}
+#LN_modal .techo {color: #1DA3D6;font-size: 18px;text-transform: uppercase;}
+* html #LN_modal { /* ie6 hack */position: absolute;margin-top: expression(0 - parseInt(this.offsetHeight / 2) + (WindowMargin = document.documentElement && document.documentElement.scrollTop || document.body.scrollTop) + 'px');}
+#LN_closeButton {position:absolute;z-index:100;cursor:pointer;visibility:inherit;top:0;right:0;height:40px;width:40px;background:url('/_ui/desktop/imgs/layout/cerrar-modal.png') 15px 15px no-repeat;}
+#LN_closeButton:hover {background-color:#ddd;text-decoration:none!important;}
+#LN_closeButton a {display:block;width:40px;height:40px;}
+#LN_top {position:relative;}
+#loader {position: fixed;height:50px;width:50px;z-index:503;top: 50%;left: 50%;background:url('/_ui/desktop/imgs/layout/cargando-modal.gif') no-repeat;margin: -6px 0 0 -104px; /* -height/2 0 0 -width/2 */}
+.LN_backgroundDark #loader{background:url('/_ui/desktop/imgs/layout/cargando-fdo-negro.gif') no-repeat;}
+* html #loader { /* ie6 hack */position: absolute;margin-top: expression(0 - parseInt(this.offsetHeight / 2) + (WindowMargin = document.documentElement && document.documentElement.scrollTop || document.body.scrollTop) + 'px');}
+#LN_HideSelect{z-index:498;position:fixed;top: 0;left: 0;background-color:#fff;border:none;filter:alpha(opacity=0);-moz-opacity: 0;opacity: 0;height:100%;width:100%;}
+* html #LN_HideSelect { /* ie6 hack */position: absolute;height: expression(document.body.scrollHeight > document.body.offsetHeight ? document.body.scrollHeight : document.body.offsetHeight + 'px');}
+#LN_iframe {clear:both;border:none;width:100%;}
+#LN_iframe .techo {color: #1DA3D6;font-size: 18px;padding: 5px 0 8px;text-transform: uppercase;}
+#LN_iframe.LN_modalvideo {background-color:#000!important;}
+
+
+/************* DESKTOP *************/
+@media screen and (min-width: 640px) 
+{
+	#LN_iframe {height:450px;}
+
+}
+
+/************* TABLETAS *************/
+@media screen and (min-width: 640px) and (max-width: 1000px) 
+{
+	#LN_modal {height:450px;overflow:scroll!important;-webkit-overflow-scrolling:touch!important;}
+}
+
+
+/************* MOVIL *************/
+@media screen and (min-width: 100px) and (max-width: 639px) 
+{
+	#LN_iframe {height:380px;}
+	#LN_modal {height:380px;overflow:scroll!important;-webkit-overflow-scrolling:touch!important;}
+}
+

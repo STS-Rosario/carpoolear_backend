@@ -1,0 +1,8 @@
+@charset "utf-8";
+/* Social Media Icon Links Extension (S.M.I.L.E.) */
+div.smile a {display:inline-block;width:auto;outline:none;}
+div.smile a img {border:none;}
+div.smilecredits {width:100%}
+div.smilecredits a {font-size:10px;}
+.clr {clear:both;}
+	
