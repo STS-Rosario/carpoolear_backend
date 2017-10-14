@@ -1,0 +1,957 @@
+﻿
+    LN.Desplegable.Secciones.RenderSecciones(
+    [
+      {
+        "id":"7",
+        "descripcion":"El Mundo",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778388",
+        "titulo":"Francia: Nicolas Sarkozy superó a la ultraderecha y cae el socialismo, según el boca de urna",
+        "url":"1778388-francia-nicolas-sarkozy-supero-a-la-ultraderecha-y-cae-el-socialismo-segun-el-boca-de-urna",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019670",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778403",
+        "titulo":"Túnez: un terrorista del atentado contra el Museo del Bardo sigue prófugo",
+        "url":"1778403-tunez-un-terrorista-del-atentado-contra-el-museo-del-bardo-sigue-profugo",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2017986",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019697",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"47020",
+        "descripcion":"Terrorismo"
+      },
+      {
+        "id":"52245",
+        "descripcion":"La amenaza de Estado Islámico"
+      },
+      {
+        "id":"53029",
+        "descripcion":"Ataque terrorista en París"
+      },
+      {
+        "id":"53031",
+        "descripcion":"Charlie Hebdo"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"33",
+        "nombre":"Barack Obama",
+        "imagen": {
+                    "id":"1407074",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"558",
+        "nombre":"Nicolas Sarkozy",
+        "imagen": {
+                    "id":"1408025",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48187",
+        "nombre":"Benjamin Netanyahu",
+        "imagen": {
+                    "id":"1516363",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"49139",
+        "nombre":"Papa Francisco",
+        "imagen": {
+                    "id":"1677940",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"28",
+        "descripcion":"Opinión",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778258",
+        "titulo":"Algo huele mal en el otoño kirchnerista",
+        "url":"1778258-algo-huele-mal-en-el-otono-kirchnerista",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2011670",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778264",
+        "titulo":"Ilustrado",
+        "url":"1778264-ilustrado",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019496",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"48709",
+        "descripcion":"Crisis energética"
+      },
+      {
+        "id":"50348",
+        "descripcion":"Cortes de luz"
+      },
+      {
+        "id":"52155",
+        "descripcion":"Análisis elecciones 2015"
+      },
+      {
+        "id":"53118",
+        "descripcion":"Análisis caso Nisman"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"447",
+        "nombre":"Mauricio Macri",
+        "imagen": {
+                    "id":"1406601",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"988",
+        "nombre":"Cristina Kirchner",
+        "imagen": {
+                    "id":"1334418",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"18168",
+        "nombre":"Ernesto Sanz",
+        "imagen": {
+                    "id":"1420011",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"53075",
+        "nombre":"Alberto Nisman",
+        "imagen": {
+                    "id":"1994518",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"30",
+        "descripcion":"Política",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778387",
+        "titulo":"Ernesto Sanz: \"Quien gane las PASO tendrá derecho a conducir\"",
+        "url":"1778387-ernesto-sanz-quien-gane-las-paso-tendra-derecho-a-conducir",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"1822071",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778406",
+        "titulo":"José Cano: \"Beatriz Rojkés de Alperovich es de una casta de funcionarios que se cree superior\"",
+        "url":"1778406-jose-cano-beatriz-rojkes-de-alperovich-es-de-una-casta-de-funcionarios-que-se-cree-superior",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019703",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"48887",
+        "descripcion":"La pelea con los holdouts"
+      },
+      {
+        "id":"50499",
+        "descripcion":"Elecciones 2015"
+      },
+      {
+        "id":"52365",
+        "descripcion":"A fondo"
+      },
+      {
+        "id":"53089",
+        "descripcion":"La muerte de Alberto Nisman"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"447",
+        "nombre":"Mauricio Macri",
+        "imagen": {
+                    "id":"1406601",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"46827",
+        "nombre":"José Alperovich",
+        "imagen": {
+                    "id":"1516092",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"46828",
+        "nombre":"José Cano",
+        "imagen": {
+                    "id":"1516093",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48104",
+        "nombre":"Beatriz Rojkés de Alperovich",
+        "imagen": {
+                    "id":"1786018",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"272",
+        "descripcion":"Economía",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778098",
+        "titulo":"Economistas a coro: el debate sobre qué hacer en 2016",
+        "url":"1778098-economistas-a-coro-el-debate-sobre-que-hacer-en-2016",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019295",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019550",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778124",
+        "titulo":"Los nuevos currículum, muy lejos de la formalidad",
+        "url":"1778124-los-nuevos-curriculum-muy-lejos-de-la-formalidad",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019556",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"29405",
+        "descripcion":"Campo"
+      },
+      {
+        "id":"48747",
+        "descripcion":"El cepo cambiario"
+      },
+      {
+        "id":"48887",
+        "descripcion":"La pelea con los holdouts"
+      },
+      {
+        "id":"49340",
+        "descripcion":"Blanqueo de capitales"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"988",
+        "nombre":"Cristina Kirchner",
+        "imagen": {
+                    "id":"1334418",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"47542",
+        "nombre":"Axel Kicillof",
+        "imagen": {
+                    "id":"1522612",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48922",
+        "nombre":"Thomas Griesa",
+        "imagen": {
+                    "id":"1786510",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"52322",
+        "nombre":"Alejandro Vanoli",
+        "imagen": {
+                    "id":"1954278",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"432",
+        "descripcion":"Tecnología",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1777801",
+        "titulo":"¿Cuál es el próximo Silicon Valley?",
+        "url":"1777801-cual-es-el-proximo-silicon-valley",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019072",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1777875",
+        "titulo":"Cómo son los sitios que ayudan a vender online",
+        "url":"1777875-como-son-los-sitios-que-ayudan-a-vender-online",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019143",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"46652",
+        "descripcion":"Movilandia"
+      },
+      {
+        "id":"46771",
+        "descripcion":"Smartphones"
+      },
+      {
+        "id":"53042",
+        "descripcion":"Drones"
+      },
+      {
+        "id":"53630",
+        "descripcion":"Lumia 430"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"33",
+        "nombre":"Barack Obama",
+        "imagen": {
+                    "id":"1407074",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"47716",
+        "nombre":"Mark Zuckerberg",
+        "imagen": {
+                    "id":"1786571",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48101",
+        "nombre":"Jorge Capitanich",
+        "imagen": {
+                    "id":"1516089",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"49589",
+        "nombre":"Edward Snowden",
+        "imagen": {
+                    "id":"1779597",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"7204",
+        "descripcion":"Fútbol",
+        "sitio_dominio":"http://canchallena.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778211",
+        "titulo":"Racing se relajó y sufrió el empate sobre la hora de Defensa y Justicia",
+        "url":"1778211-defensa-y-justicia-racing-fecha-6-torneo-primera-division",
+        "dominio":"http://canchallena.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019663",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019691",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019715",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778220",
+        "titulo":"River se sacó la espina y volvió a ganar después de cuatro partidos",
+        "url":"1778220-river-godoy-cruz-fecha-6-torneo-primera-division",
+        "dominio":"http://canchallena.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019695",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019696",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019708",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019709",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019719",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019720",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"46800",
+        "descripcion":"Liga de España"
+      },
+      {
+        "id":"47535",
+        "descripcion":"Copa Libertadores"
+      },
+      {
+        "id":"49735",
+        "descripcion":"Liga de Francia"
+      },
+      {
+        "id":"52867",
+        "descripcion":"Torneo de 30 equipos"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"49417",
+        "nombre":"Eder Alvarez Balanta",
+        "imagen": {
+                    "id":"",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"49644",
+        "nombre":"Teo Gutiérrez",
+        "imagen": {
+                    "id":"1804654",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"50234",
+        "nombre":"Marcelo Barovero",
+        "imagen": {
+                    "id":"1863640",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"50265",
+        "nombre":"Gabriel Mercado",
+        "imagen": {
+                    "id":"1783794",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"7773",
+        "descripcion":"Sociedad",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778347",
+        "titulo":"Estrés de marzo: sobrevivir al comienzo real del año",
+        "url":"1778347-estres-de-marzo-sobrevivir-al-comienzo-real-del-ano",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019545",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778367",
+        "titulo":"15 cambios que nos hicieron humanos",
+        "url":"1778367-15-cambios-que-nos-hicieron-humanos",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019586",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019587",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019588",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019589",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"46844",
+        "descripcion":"Internet"
+      },
+      {
+        "id":"47029",
+        "descripcion":"El tiempo"
+      },
+      {
+        "id":"51039",
+        "descripcion":"Hacer Comunidad"
+      },
+      {
+        "id":"52195",
+        "descripcion":"Innovación social"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"988",
+        "nombre":"Cristina Kirchner",
+        "imagen": {
+                    "id":"1334418",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"46827",
+        "nombre":"José Alperovich",
+        "imagen": {
+                    "id":"1516092",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48371",
+        "nombre":"François Hollande",
+        "imagen": {
+                    "id":"1779623",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"49139",
+        "nombre":"Papa Francisco",
+        "imagen": {
+                    "id":"1677940",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"7774",
+        "descripcion":"Buenos Aires",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778232",
+        "titulo":"¿Y la mugre que deja la política?",
+        "url":"1778232-y-la-mugre-que-deja-la-politica",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019451",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019512",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778369",
+        "titulo":"La esquina de los choques: otro accidente en el cruce de San Juan y Alberti",
+        "url":"1778369-la-esquina-de-los-choques-otro-accidente-en-el-cruce-de-san-juan-y-alberti",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019592",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"46824",
+        "descripcion":"Inseguridad vial"
+      },
+      {
+        "id":"48709",
+        "descripcion":"Crisis energética"
+      },
+      {
+        "id":"49561",
+        "descripcion":"Tránsito y transporte"
+      },
+      {
+        "id":"50348",
+        "descripcion":"Cortes de luz"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"447",
+        "nombre":"Mauricio Macri",
+        "imagen": {
+                    "id":"1406601",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"1562",
+        "nombre":"Daniel Scioli",
+        "imagen": {
+                    "id":"1406607",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"1996",
+        "nombre":"Florencio Randazzo",
+        "imagen": {
+                    "id":"1407079",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"50702",
+        "nombre":"Cristian Ritondo",
+        "imagen": {
+                    "id":"2015450",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"7775",
+        "descripcion":"Seguridad",
+        "sitio_dominio":"http://www.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778299",
+        "titulo":"Sospechan que un presunto jefe narco planeaba matar a una jueza",
+        "url":"1778299-sospechan-que-un-presunto-jefe-narco-planeaba-matar-a-una-jueza",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019504",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019514",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778378",
+        "titulo":"Secuestran miles de carteras y anteojos de marcas de lujo falsificados en Once",
+        "url":"1778378-secuestran-miles-de-carteras-y-anteojos-de-marcas-de-lujo-falsificados-en-once",
+        "dominio":"http://www.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019635",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019636",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"29386",
+        "descripcion":"Narcotráfico"
+      },
+      {
+        "id":"49464",
+        "descripcion":"La muerte de Ángeles Rawson"
+      },
+      {
+        "id":"53089",
+        "descripcion":"La muerte de Alberto Nisman"
+      },
+      {
+        "id":"53627",
+        "descripcion":"Caída de avión en Uruguay"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"46846",
+        "nombre":"Carlos Menem",
+        "imagen": {
+                    "id":"1425865",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48208",
+        "nombre":"Sergio Berni",
+        "imagen": {
+                    "id":"1519184",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"49914",
+        "nombre":"Carlos Nair Menem",
+        "imagen": {
+                    "id":"",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"53075",
+        "nombre":"Alberto Nisman",
+        "imagen": {
+                    "id":"1994518",
+                    "extension":""
+                  }
+      }]
+  
+      },
+      {
+        "id":"7865",
+        "descripcion":"Personajes",
+        "sitio_dominio":"http://personajes.lanacion.com.ar",
+        "notas":
+    [
+      {
+        "id":"1778373",
+        "titulo":"Verónica Ojeda, explosiva: \"Diego le pidió a Pablo que se aleje de mí\"",
+        "url":"1778373-veronica-ojeda-explosiva-diego-le-pidio-a-pablo-que-se-aleje-de-mi",
+        "dominio":"http://personajes.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019620",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019621",
+        "extension":"jpg"
+      }]
+  
+      },
+      {
+        "id":"1778381",
+        "titulo":"La denuncia de Pao Dessaner: su hijo fue golpeado por la policía a la salida de Lollapalooza",
+        "url":"1778381-la-denuncia-de-pao-dessaner-su-hijo-fue-golpeado-por-la-policia-en-el-lollapalooza",
+        "dominio":"http://personajes.lanacion.com.ar",
+        "imagenes":
+    [
+      {
+        "id":"2019637",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019638",
+        "extension":"jpg"
+      },
+      {
+        "id":"2019639",
+        "extension":"jpg"
+      }]
+  
+      }]
+  ,
+        "tags":
+    [
+      {
+        "id":"49607",
+        "descripcion":"Famosos en crisis"
+      },
+      {
+        "id":"49921",
+        "descripcion":"Las perlitas de los famosos"
+      },
+      {
+        "id":"52905",
+        "descripcion":"Famosos en familia"
+      },
+      {
+        "id":"53624",
+        "descripcion":"Lollapalooza 2015"
+      }]
+  ,
+        "personas":
+    [
+      {
+        "id":"16",
+        "nombre":"Diego Maradona",
+        "imagen": {
+                    "id":"1406603",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"46996",
+        "nombre":"Luisana Lopilato",
+        "imagen": {
+                    "id":"1482621",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"47006",
+        "nombre":"Luis Ventura",
+        "imagen": {
+                    "id":"1790153",
+                    "extension":""
+                  }
+      },
+      {
+        "id":"48926",
+        "nombre":"Verónica Ojeda",
+        "imagen": {
+                    "id":"1786566",
+                    "extension":""
+                  }
+      }]
+  
+      }]
+  );
+  

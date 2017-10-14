@@ -62,7 +62,11 @@
                   
                   <li>1º Mención del Premio Schiffrin, 12ª Convocatoria “Innovación por el Ambiente” de la fundación FARN Argentina (2013)</li>
                   
-                  <li>Espacio Santafesino (2016)</li>
+                  <li>Ganador categoría “Aplicación Web o Móvil”, convocatoria Programa Espacio Santafesino 2016</li>
+
+                  <li>Seleccionado por el BID como una de 15 start ups que están "mejorando la calidad de vida en las ciudades de América Latina"</li>
+ 
+                  <li>Según el decreto 42.506 el 20 de Noviembre de 2014, en la ciudad de Rosario se declara de interés municipal a la aplicación  de Carpoolear</li>
 
                 </ul>
 
@@ -75,6 +79,8 @@
                   <li><img src="img/logo_gabinete_joven.png" width="94" height="80" alt="Gabinete Joven"></li>
 
                   <li><img src="img/logo_gobierno_santafe.png" width="200" height="80" alt="Gobierno de Santa Fe"></li>
+
+                  <li><img src="img/logo_espacio_santafesino.png" width="180" height="72" alt="Espacio Santafesino"></li>
 
                 </ul>
             </div>

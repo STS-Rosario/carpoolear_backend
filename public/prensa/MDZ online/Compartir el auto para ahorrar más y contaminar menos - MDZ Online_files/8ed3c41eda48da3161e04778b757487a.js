@@ -1,0 +1,5 @@
+
+function moreComments(contentID,page){var items=vsm.object('comment-items');var link=vsm.object('items-link');link.className+=' busy';var url='/1/comentarios/ajax.vnc?id='+contentID+'&page='+page;vsm.ajaxCall(url,function(response){if(link)items.removeChild(link);items.innerHTML+=response;},function(){if(link)items.removeChild(link);});}
+function commentOK(t){vsm.object('comment-form').className='comment-form-hidden';vsm.object('comment-result').className='comment-result-visible';setTimeout(function(){vsm.object('comment-result').className='comment-result-hidden';vsm.object('comment-form').className='comment-form-visible';vsm.object('comment-form').reset()},3000);}
+function commentError(t){vsm.object('comment-error').innerHTML=t;vsm.object('comment-error').className='bgmaincolor';vsmSubmitButtonEnabled(true);}
+function commentBlurError(t){commentError(t);setTimeout(function(){vsm.object('comment-error').className='noerror'},5000);}
