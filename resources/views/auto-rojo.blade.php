@@ -4,14 +4,18 @@
 
 @section('content')
 
-<section>
+<section style="background: #D12624;">
     <div class="container">
         <div class="row">
             <div class="col-sm-10 col-sm-offset-1 mb-xs-24 text-center pt48">
-                <h2>La verdad sobre el auto rojo</h2>
+                <h2 style="color: white; font-weight: bold;">La verdad sobre el auto rojo</h2>
                 <div class="embed-video-container embed-responsive embed-responsive-16by9">
-                    <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/pB5r8ex8Abk"  allowfullscreen="allowfullscreen"></iframe>
+                    <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/95gwmHUx5MQ"  allowfullscreen="allowfullscreen"></iframe>
                 </div>
+            </div>
+
+            <div class="col-md-12 col-sm-12 text-center">
+                <h1 style="margin-top:1em;"><a class="accede-app" href="https://carpoolear.com.ar/app" style="color: white;">Compartí tu viaje</a></h1>
             </div>
         </div>
         <!--end of row-->
@@ -23,7 +27,7 @@
     <div class="container">
         <div class="row">
             <div class="col-md-12 col-sm-12 text-center">
-                <h1><a class="accede-app" href="https://carpoolear.com.ar/app">Compartí tu viaje</a></h1>
+                <!--<h1><a class="accede-app" href="https://carpoolear.com.ar/app">Compartí tu viaje</a></h1>-->
                 <div class="col-md-12 col-sm-12 text-center pt24">
                     <a class="btn btn-lg btn-filled boton-usa-plataforma" href="https://carpoolear.com.ar/app">Usá la plataforma web</a>
                 </div>
