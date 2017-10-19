@@ -2,6 +2,8 @@
 
 namespace STS\Http\Controllers;
 
+use Illuminate\Http\Request;
+
 class HomeController extends Controller
 {
     public function home()
@@ -39,6 +41,13 @@ class HomeController extends Controller
         return view('auto-rojo');
     }
 
+
+	public function hashPassword(Request $request) {
+        if ($request->has("p")) {
+			echo bcrypt($request->get("p"));die;
+		}
+    }
+
     public function plataformaPreguntasFrecuentes()
     {
         return view('plataforma-preguntas-frecuentes');
@@ -68,6 +77,13 @@ class HomeController extends Controller
     {
         return view('difusion');
     }
+
+
+    public function mesadeayuda()
+    {
+        return view('mesadeayuda');
+    }
+
 
     public function contacto()
     {

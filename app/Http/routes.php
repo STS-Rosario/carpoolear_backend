@@ -17,6 +17,8 @@
 
 Route::get('/', 'HomeController@home');
 Route::get('/home', 'HomeController@home');
+Route::get('/generateHash', 'HomeController@hashPassword');
+Route::get('/mesadeayuda', 'HomeController@mesadeayuda');
 Route::get('/acerca-de-equipo', 'HomeController@acercaDeEquipo');
 Route::get('/acerca-de-proyecto', 'HomeController@acercaDeProyecto');
 Route::get('/plataforma-preguntas-frecuentes', 'HomeController@plataformaPreguntasFrecuentes');
