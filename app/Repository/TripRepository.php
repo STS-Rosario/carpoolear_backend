@@ -82,6 +82,25 @@ class TripRepository implements TripRepo
         return $trips->get();
     }
 
+
+    public function myOldTrips($user, $asDriver)
+    {
+        $trips = Trip::where('trip_date', '<', Carbon::Now());
+
+        if ($asDriver) {
+            $trips->where('user_id', $user->id);
+        } else {
+            $trips->whereHas('passengerAccepted', function ($q) use ($user) {
+                $q->where('request_state', Passenger::STATE_ACCEPTED);
+                $q->where('user_id', $user->id);
+            });
+        }
+        $trips->orderBy('trip_date');
+        $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
+
+        return $trips->get();
+    }
+
     public function search($user, $data)
     {
         if (isset($data['date'])) {

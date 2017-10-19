@@ -42,7 +42,7 @@ class UsersManager extends BaseManager implements UserLogic
             } else {
                 return Validator::make($data, [
                     'name'     => 'required|max:255',
-                    'email'    => 'nullable|email|max:255|unique:users',
+                    'email'    => 'present|email|max:255|unique:users',
                     'password' => 'min:6|confirmed',
                     // 'gender'   => 'string|in:Masculino,Feminino,N/A',
                     'emails_notifications' => 'boolean',
@@ -112,13 +112,20 @@ class UsersManager extends BaseManager implements UserLogic
             $base64_string = $data['profile'];
 
             $data = explode(',', $base64_string);
-            $data = base64_decode($data[1]);
+            if (is_array($data) && count($data) > 1) {
+                $data = base64_decode($data[1]);
+    
+                $name = $fileManager->createFromData($data, 'jpeg', 'image/profile');
+                $this->repo->updatePhoto($user, $name);
+                event(new UpdateEvent($user->id));
+                return $user;
+            } else {
+                $error = new \stdClass();
+                $error->error = 'error_uploading_image';
+                $this->setErrors($error);
+                return;
+            }
 
-            $name = $fileManager->createFromData($data, 'jpeg', 'image/profile');
-            $this->repo->updatePhoto($user, $name);
-            event(new UpdateEvent($user->id));
-
-            return $user;
         }
     }
 

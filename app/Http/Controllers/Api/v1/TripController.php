@@ -100,4 +100,21 @@ class TripController extends Controller
         return $this->collection($trips, new TripTransformer($this->user));
         //return $this->response->withArray(['data' => $trips]);
     }
+
+
+
+    public function myOldTrips(Request $request)
+    {
+        $this->user = $this->auth->user();
+
+        if ($request->has('as_driver')) {
+            $asDriver = parse_boolean($request->get('as_driver'));
+        } else {
+            $asDriver = true;
+        }
+
+        $trips = $this->tripsLogic->myOldTrips($this->user, $asDriver);
+
+        return $this->collection($trips, new TripTransformer($this->user));
+    }
 }
