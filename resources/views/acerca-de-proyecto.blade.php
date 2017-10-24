@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title', 'Acerca del Equipo - Carpoolear')
+@section('title', 'Acerca del Proyecto - Carpoolear')
 @section('body-class', 'body-acerca acerca-de-equipo')
 
 @section('content')

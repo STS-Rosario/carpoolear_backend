@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title', 'Difusión - Carpoolear')
+@section('title', 'Contacto - Carpoolear')
 @section('body-class', 'body-difusion')
 
 @section('content')
