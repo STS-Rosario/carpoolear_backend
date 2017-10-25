@@ -39,7 +39,7 @@
                 <h3>Seguro Automotor y la importancia de calcular el costo del viaje </h3>
                 <p>En caso de acordar compartir gastos, el costo total del viaje se calculará como la suma del <strong>costo del combustible + los peajes</strong>. El conductor podrá pedir una contribución máxima a cada pasajero del costo total del viaje dividido la cantidad de ocupantes del vehículo al momento del viaje (conductor y pasajeros). Esto debe ser respetado pues de no ser así se estaría cometiendo una actividad ilegal.</p>
 
-                <p>Remarcamos que el conductor no debe obtener ganancia económica en sus viajes. Para más información, revisá los Términos y Condiciones Generales de Carpoolear.</p>
+                <p>Remarcamos que el conductor no debe obtener ganancia económica en sus viajes. Para más información, revisá los <a href="https://carpoolear.com.ar/plataforma-terminos-condiciones">Términos y Condiciones Generales de Carpoolear.</a></p>
 
             </div>
         </div>
