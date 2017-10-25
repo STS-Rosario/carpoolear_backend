@@ -15,6 +15,8 @@
                 <p>Estas fueron las notas y entrevistas que tuvieron a Carpoolear como protagonista:</p>
                 <ul class="list-smallmargin lead" data-bullet="ti-angle-right">
 
+                  <li><a href="https://www.youtube.com/watch?v=6irmp3pJ6To" rel="external">19/10/17 - Programa televisivo Rosario Directo de Canal 5, presentación de la nueva plataforma Carpoolear</a></li>
+                  <li><a href="https://radiocut.fm/audiocut/carpoolear-en-radio-universidad/" rel="external">19/10/17 - Radio Universidad Nacional de Rosario - Lanzamiento nueva plataforma y preguntas sobre seguridad, gastos, medio ambiente, moderación y más.</a></li>
                   <li><a href="http://web.fceia.unr.edu.ar/es/noticias-de-la-fceia/653-carpoolear-la-aplicacion-para-compartir-viajes-creada-por-rosarinos.html" rel="external">22/02/15 - FCEIA - Carpoolear, la aplicación para compartir viajes creada por rosarinos</a></li>
                   <li><a href="http://www.lacapital.com.ar/senales/Una-cronica-para-saber-como-funciona-el-servicio-que-ofrece-viajar-con-desconocidos-20150208-0048.html" rel="external">08/02/15- La Capital - Una crónica para saber cómo funciona el servicio que ofrece viajar con desconocidos</a></li>
                   <li><a href="http://www.lacapital.com.ar/senales/Guia-basica-para-conocer-el-carpooling-20150208-0047.html" rel="external">08/02/15 - La Capital - Guía básica para conocer el carpooling</a></li>
@@ -35,6 +37,8 @@
                   <li><a href="https://www.facebook.com/photo.php?fbid=513714145369905&amp;set=a.175994249141898.42768.173780142696642&amp;type=1&amp;theater" rel="external">01/09/13 - Revista Tercer Sector - Conciencia en cuatro ruedas</a></li>
                   <li><a href="https://www.facebook.com/photo.php?v=10151309124346573" rel="external">24/03/13 - Carpoolear en Radio María Argentina</a></li>
                 </ul>
+
+                <hr>
 
                 <h3>¿Te interesa hacernos una nota?</h3>
                 <p>Si querés hacernos una nota, <a href="contacto.php">¡contactanos! =)</a></p>
