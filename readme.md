@@ -11,7 +11,7 @@ Clone repository (remember to make your own fork)
 git clone https://github.com/STS-Rosario/carpoolear_backend.git
 ```
 
-Install dependcies
+Install dependencies
 ```bash
 composer install
 ```
