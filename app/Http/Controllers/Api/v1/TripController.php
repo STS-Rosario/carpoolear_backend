@@ -45,6 +45,18 @@ class TripController extends Controller
         //return $this->response->withArray(['data' => $trip]);
     }
 
+    public function changeTripSeats($id, Request $request)
+    {
+        $this->user = $this->auth->user();
+        $increment = $request->get('increment');
+        $trip = $this->tripsLogic->changeTripSeats($this->user, $id, $increment);
+        if (!$trip) {
+            throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
+        }
+
+        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
+    }
+
     public function delete($id, Request $request)
     {
         $this->user = $this->auth->user();

@@ -59,7 +59,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->put('/{id?}', $v1_path.'TripController@update');
         $api->delete('/{id?}', $v1_path.'TripController@delete');
         $api->get('/{id?}', $v1_path.'TripController@show');
-        $api->post('/changeSeats/{id?}', $v1_path.'TripController@changeTripSeats');
+        $api->post('/{id?}/changeSeats', $v1_path.'TripController@changeTripSeats');
 
         $api->get('/{tripId}/passengers', $v1_path.'PassengerController@passengers');
         $api->get('/{tripId}/requests', $v1_path.'PassengerController@requests');
