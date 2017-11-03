@@ -28,7 +28,7 @@ class RatingManager extends BaseManager implements IRateLogic
     public function validator(array $data)
     {
         return Validator::make($data, [
-            'comment' => 'required|string',
+            'comment' => 'string',
             'rating' => 'required|integer|in:0,1,',
         ]);
     }

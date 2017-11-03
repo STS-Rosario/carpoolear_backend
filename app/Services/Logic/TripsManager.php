@@ -114,6 +114,39 @@ class TripsManager extends BaseManager implements TripLogic
         }
     }
 
+    public function changeTripSeats($user, $trip_id, $increment)
+    {
+        $trip = $this->tripRepo->show($trip_id);
+        if ($trip) {
+            if ($user->id == $trip->user->id || $user->is_admin) {
+                $data = array();
+                $data['total_seats'] = $trip->total_seats + $increment;
+                if ($data['total_seats'] < 1) {
+                    $this->setErrors(['error' => 'trip_seats_greater_than_zero']);
+                    return;
+                }
+                if ($data['total_seats'] > 4) {
+                    $this->setErrors(['error' => 'trip_seats_less_than_four']);
+                    return;
+                }
+                if ($data['total_seats'] < $trip->passengerAccepted()->count()) {
+                    $this->setErrors(['error' => 'trip_invalid_seats']);
+                    return;
+                }
+                $trip = $this->tripRepo->update($trip, $data);
+                return $trip;
+            } else {
+                $this->setErrors(trans('errors.tripowner'));
+
+                return;
+            }
+        } else {
+            $this->setErrors(trans('errors.notrip'));
+
+            return;
+        }
+    }
+
     public static function exist($trip_id)
     {
         return true;
