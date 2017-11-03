@@ -6,25 +6,37 @@ Es una customización ad-hoc para Argentina de la filosofía carpooling, la cual
 
 ## Start coding
 
+Clone repository (remember to make your own fork)
 ```bash
 git clone https://github.com/STS-Rosario/carpoolear_backend.git
 ```
 
+Install dependencies
 ```bash
 composer install
 ```
-
+Generate laravel key
 ```bash
 php artisan key:generate
 ```
 
+
+Configure the database access in the .env file
 ```bash
 cp .env.example .env
 ```
 
+Give read/write access to the storage folder
 ```bash
 chmod -R ugo+rw storage/
 ```
+
+Generate the database
+```bash
+php artisan migrate
+```
+
+You will need to use a local webserver and point it to the public folder
 
 Happy coding!
 
