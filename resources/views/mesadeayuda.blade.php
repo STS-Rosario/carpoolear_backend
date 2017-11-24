@@ -13,6 +13,25 @@
 
               <p><strong>Ante cualquier consulta, puedes contactarte con la mesa de ayuda vía <a href="https://facebook.com/carpoolear" target="_blank">Facebook</a> o e-mail <a href="mailto:carpoolear@stsrosario.org.ar" target="_top">carpoolear@stsrosario.org.ar</a>.</strong></p>
 
+              <h3>Versiones compatibles dispositivos móviles</h3>
+              <p>Para que la aplicación móvil funcione con todas sus características, es necesario que el dispositivo móvil tenga instalada la siguiente versión del sistema operativo:
+                  <ul>
+                      <li><strong>Android</strong> 4.4 o posterior</li>
+                      <li><strong>iOS</strong> 9 o posterior</li>
+                  </ul>
+              </p>
+              <p>
+                @php
+                  function isMobile() {
+                      return preg_match("/(android|avantgo|blackberry|bolt|boost|cricket|docomo|fone|hiptop|mini|mobi|palm|phone|pie|tablet|up\.browser|up\.link|webos|wos)/i", $_SERVER["HTTP_USER_AGENT"]);
+                  }
+
+                  if ( isMobile() ) {
+                    echo "Información de tu dispositivo: " . $_SERVER['HTTP_USER_AGENT'] . "\n\n";
+                  }
+                @endphp
+              </p>
+
               <h3>No puedo iniciar sesión con Facebook - Versión Web</h3>
               <p>Si tenes problemas para iniciar sesión con Facebook, intenta lo siguiente:
 	              <ul>
