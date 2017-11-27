@@ -69,7 +69,7 @@
                         </li-->
                     </ul>
                     
-                    <p><strong>Colaboradores</strong>: Gonzalo González Mora, Carmen García, Barbara Cravero, Andrés Culasso, Gerardo Tjor, Germán Gentile, Luciana Bernard</p>
+                    <p><strong>Colaboradores</strong>: Gonzalo González Mora, Carmen García, Barbara Cravero, Andrés Culasso, Gerardo Tjor, Germán Gentile, Luciana Bernard, Tristana Retamoso.</p>
                     
                     <p>Han formado parte del equipo:</p>
                     <p>Rocío Anselmo, Samuel Burgueño, Martín Bruno, Bárbara Cravero, Pilar Frechou, Mariel Figueroa, Ezequiel Grosso, Gisel Levit, Cintia Pereyra, Ramiro Picó, Galo Pugliese, Mariano Soto, Martin Cesanelli, Sofia Visintini, Pablo Raissiguier, Octavio Danieli, Fernando López Guevara, Ruben Acevedo, Walter Cejas, Ezequiel Catalani, Angel Arancibia, Carmen García, Federico Cadierno Moksha, Ohnos Diseño.</p>
