@@ -30,8 +30,8 @@ class ConversationController extends Controller
         $this->user = $this->auth->user();
         $pageNumber = 1;
         $pageSize = 20;
-        if ($request->has('page_number')) {
-            $pageNumber = $request->get('page_number');
+        if ($request->has('page')) {
+            $pageNumber = $request->get('page');
         }
         if ($request->has('page_size')) {
             $pageSize = $request->get('page_size');
