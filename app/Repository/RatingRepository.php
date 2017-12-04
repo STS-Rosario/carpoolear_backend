@@ -28,6 +28,8 @@ class RatingRepository implements IRatingRepository
             $ratings->where('rating', $value);
         }
 
+        $ratings->orderBy('created_at', 'desc');
+
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 
