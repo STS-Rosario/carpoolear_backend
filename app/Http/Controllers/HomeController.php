@@ -11,6 +11,16 @@ class HomeController extends Controller
         return view('home');
     }
 
+    public function privacidad()
+    {
+        return view('privacidad');
+    }
+
+    public function terminos()
+    {
+        return view('terminos');
+    }
+
     public function acercaDeEquipo()
     {
         return view('acerca-de-equipo');

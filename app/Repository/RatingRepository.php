@@ -28,6 +28,8 @@ class RatingRepository implements IRatingRepository
             $ratings->where('rating', $value);
         }
 
+        $ratings->where('created_at', '<=', Carbon::Now()->subDays(Rating::RATING_INTERVAL));
+
         $ratings->orderBy('created_at', 'desc');
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
@@ -41,7 +43,7 @@ class RatingRepository implements IRatingRepository
         $ratings = RatingModel::where('user_id_from', $user->id);
         $ratings->where('voted', false);
         $ratings->with(['from', 'to', 'trip']);
-        $ratings->where('created_at', '>=', Carbon::Now()->subDays(15));
+        $ratings->where('created_at', '>=', Carbon::Now()->subDays(Rating::RATING_INTERVAL));
 
         return $ratings->get();
     }

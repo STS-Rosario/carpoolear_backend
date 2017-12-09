@@ -27,6 +27,8 @@ Route::get('/plataforma-terminos-condiciones', 'HomeController@plataformaTermino
 Route::get('/colabora-como-colaborar', 'HomeController@colaboraComoColaborar');
 Route::get('/colabora-ideame-2014', 'HomeController@colaboraIdeame2014');
 Route::get('/difusion', 'HomeController@difusion');
+Route::get('/privacidad', 'HomeController@privacidad');
+Route::get('/terminos', 'HomeController@terminos');
 Route::get('/contacto', 'HomeController@contacto');
 Route::get('/autorojo', 'HomeController@autoRojo');
 Route::get('/descarga', 'HomeController@descarga');
