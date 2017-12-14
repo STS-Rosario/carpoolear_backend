@@ -161,12 +161,16 @@ class User extends Authenticatable
 
     public function ratingGiven()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('voted', 1);
+        return $this->hasMany('STS\Entities\Rating', 'user_id_from')
+                    ->where('voted', 1)
+                    ->where('created_at', '<=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
     }
 
     public function ratingReceived()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('voted', 1);
+        return $this->hasMany('STS\Entities\Rating', 'user_id_to')
+                    ->where('voted', 1)->where('created_at', '<=', Carbon::Now()
+                    ->subDays(RatingModel::RATING_INTERVAL));
     }
 
     public function ratings($value = null)
