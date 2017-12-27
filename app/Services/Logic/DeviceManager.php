@@ -43,10 +43,12 @@ class DeviceManager extends BaseManager implements DeviceLogic
     public function register(User $user, array $data)
     {
         if ($this->validateInput($data)) {
-            $device = $this->deviceRepo->getDeviceBy('session_id', $data['session_id']);
-            if ($device) {
-                $this->deviceRepo->delete($device);
-            }
+            // $device = $this->deviceRepo->getDeviceBy('session_id', $data['session_id']);
+            // if ($device) {
+            //     $this->deviceRepo->delete($device);
+            // }
+            $this->deviceRepo->deleteDevices($user);
+
 
             $device = new Device();
             $device->session_id = $data['session_id'];
