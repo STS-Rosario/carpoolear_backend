@@ -15,7 +15,7 @@ class UpdateTripNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => $this->getAttribute('from')->name.' ha cambiado las codiciones de su viaje.',
+            'title' => $this->getAttribute('from')->name.' ha cambiado las condiciones de su viaje.',
             'email_view' => 'update_trip',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
@@ -23,7 +23,7 @@ class UpdateTripNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' ha cambiado las codiciones de su viaje.';
+        return $this->getAttribute('from')->name.' ha cambiado las condiciones de su viaje.';
     }
 
     public function getExtras()
@@ -39,7 +39,7 @@ class UpdateTripNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => $this->getAttribute('from')->name.' ha cambiado las codiciones de su viaje.',
+            'message' => $this->getAttribute('from')->name.' ha cambiado las condiciones de su viaje.',
             'url' => "trips/" . $trip->id,
             'extras' => [
                 'id' => $trip->id,
