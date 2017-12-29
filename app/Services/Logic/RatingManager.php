@@ -129,7 +129,8 @@ class RatingManager extends BaseManager implements IRateLogic
 
             $passengers = $trip->passenger()->orderBy('created_at', 'desc')->get();
 
-            $pasenger_id = null;
+            $passenger_ids_rates_created = [];
+
             foreach ($passengers as $passenger) {
 
                 $inRatingState = $passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED;
@@ -142,7 +143,8 @@ class RatingManager extends BaseManager implements IRateLogic
                 }
 
                 if ($inRatingState && $canceledButAccepted) {
-                    if ($pasenger_id !== $passenger->user->id) {
+                    // the passenger could be make more than one trip request
+                    if (!in_array($passenger->user->id, $passenger_ids_rates_created)) {
                         $passenger_hash = str_random(40);
                         $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
 
@@ -150,7 +152,7 @@ class RatingManager extends BaseManager implements IRateLogic
                         $has_passenger = true;
                         event(new PendingEvent($passenger->user, $trip, $passenger_hash));
 
-                        $pasenger_id = $passenger->user->id;
+                        $passenger_ids_rates_created[] = $passenger->user->id;
                     }
                 }
             }
