@@ -121,7 +121,7 @@ class TripsManager extends BaseManager implements TripLogic
             if ($user->id == $trip->user->id || $user->is_admin) {
                 $data = array();
                 $data['total_seats'] = $trip->total_seats + $increment;
-                if ($data['total_seats'] < 1) {
+                if ($data['total_seats'] < 0) {
                     $this->setErrors(['error' => 'trip_seats_greater_than_zero']);
                     return;
                 }
