@@ -100,6 +100,15 @@ class UsersManager extends BaseManager implements UserLogic
         }
     }
 
+
+    public function mailUnsuscribe($email)
+    {
+        $data['emails_notifications'] = false;
+        $user = $this->repo->getUserBy('email', $email);
+        $this->repo->update($user, $data);
+        return $user;
+    }
+
     public function updatePhoto($user, $data)
     {
         $v = Validator::make($data, ['profile' => 'required']);
