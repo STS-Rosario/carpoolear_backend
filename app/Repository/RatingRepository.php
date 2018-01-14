@@ -19,6 +19,19 @@ class RatingRepository implements IRatingRepository
 
     public function getRatings($user, $data = [])
     {
+        // Calificaciones expiradas que fueron votdas por ambos
+        $ratingsNotDue = RatingModel::where('user_id_to', $user->id);
+        $ratingsNotDue->where('voted', true);
+        $ratingsNotDue->where('created_at', '>', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
+        $ratingsNotDue->join('rating as r', function ($join) use ($user) {
+            $join->on('rating.trip_id', '=', 'r.trip_id');
+            $join->on('r.user_id_from', '=', $user->id);
+            $join->on('rating.user_id_to', '=', 'r.user_id_from');
+            $join->on('r.voted', '=', true);
+        });
+
+
+        // Calificaciones que ya expiraron para votar
         $ratings = RatingModel::where('user_id_to', $user->id);
         $ratings->where('voted', true);
 
@@ -26,11 +39,17 @@ class RatingRepository implements IRatingRepository
             $value = parse_boolean($data['value']);
             $value = $value ? RatingModel::STATE_POSITIVO : RatingModel::STATE_NEGATIVO;
             $ratings->where('rating', $value);
+            $ratingsNotDue->where('rating', $value);
         }
 
         $ratings->where('created_at', '<=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
 
         $ratings->orderBy('created_at', 'desc');
+        
+        // Union de las dos querys
+        $ratings->union($ratingsNotDue);
+
+
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
