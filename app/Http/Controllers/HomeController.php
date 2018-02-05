@@ -3,6 +3,7 @@
 namespace STS\Http\Controllers;
 
 use Illuminate\Http\Request;
+use STS\Contracts\Logic\User as UserLogic;
 
 class HomeController extends Controller
 {
@@ -121,4 +122,15 @@ class HomeController extends Controller
             return \File::get(public_path().'/app/index.html');
         }
     }
+
+
+    public function desuscribirme(Request $request, UserLogic $userLogic)
+    {
+        $email = $request->get("email");
+        if ($email) {
+            $userLogic->mailUnsuscribe($email);
+        }
+        return view('unsuscribe');
+    }
+
 }

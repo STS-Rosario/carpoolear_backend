@@ -2,6 +2,7 @@
 
 namespace STS\Repository;
 
+use DB;
 use Carbon\Carbon;
 use STS\Entities\Rating as RatingModel;
 use STS\Contracts\Repository\IRatingRepository;
@@ -19,16 +20,17 @@ class RatingRepository implements IRatingRepository
 
     public function getRatings($user, $data = [])
     {
+        $inQuery = "id IN (SELECT id FROM availables_ratings WHERE user_id_to = '" . $user->id . "' )";
+
         $ratings = RatingModel::where('user_id_to', $user->id);
-        $ratings->where('voted', true);
+
+        $ratings->whereRaw($inQuery);
 
         if (isset($data['value'])) {
             $value = parse_boolean($data['value']);
             $value = $value ? RatingModel::STATE_POSITIVO : RatingModel::STATE_NEGATIVO;
             $ratings->where('rating', $value);
         }
-
-        $ratings->where('created_at', '<=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
 
         $ratings->orderBy('created_at', 'desc');
 

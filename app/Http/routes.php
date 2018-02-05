@@ -33,4 +33,4 @@ Route::get('/contacto', 'HomeController@contacto');
 Route::get('/autorojo', 'HomeController@autoRojo');
 Route::get('/descarga', 'HomeController@descarga');
 Route::get('/app/{name?}', 'HomeController@handleApp')->where('name', '[\/\w\.-]*');
-
+Route::get('/desuscribirme', 'HomeController@desuscribirme');
