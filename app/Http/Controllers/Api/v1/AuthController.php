@@ -79,7 +79,18 @@ class AuthController extends Controller
             $device = $this->deviceLogic->updateBySession($oldToken, $data);
         }
 
+        // Validar si está baneado
+        $user_to_validate = $this->userLogic->find($user->id);
+        if ($user_to_validate->banned) {
+            return response()->json('banned', 403);
+        } else {
+            return $this->response->withArray(['token' => $token]);
+        }
+
+        
         return $this->response->withArray(['token' => $token]);
+
+
     }
 
     public function logout(Request $request)
