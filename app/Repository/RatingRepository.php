@@ -32,12 +32,29 @@ class RatingRepository implements IRatingRepository
             $ratings->where('rating', $value);
         }
 
+        // $ratings->where('created_at', '<=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
+
         $ratings->orderBy('created_at', 'desc');
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 
         return make_pagination($ratings, $pageNumber, $pageSize);
+    }
+
+   
+
+    public function getRatingsCount ($user, $data) 
+    {
+        $value = parse_boolean($data['value']);
+        $results = DB::select( DB::raw("SELECT count(*) AS 'count' FROM availables_ratings WHERE user_id_to = :user_id AND rating = :rating"), array(
+            'user_id' => $user->id,
+            'rating' => $value
+        ));
+        if (count($results) && isset($results[0]->count)) {
+            return $results[0]->count;
+        }
+        return 0;
     }
 
     public function getPendingRatings($user)

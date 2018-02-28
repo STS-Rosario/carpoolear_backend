@@ -4,6 +4,7 @@ namespace STS\Http\Controllers;
 
 use Illuminate\Http\Request;
 use STS\Contracts\Logic\User as UserLogic;
+use STS\Entities\Rating as RatingModel;
 
 class HomeController extends Controller
 {
@@ -109,6 +110,23 @@ class HomeController extends Controller
         }
 
         return substr($haystack, -$length) === $needle;
+    }
+
+    public function test () {
+        /* $user = new \STS\User();
+        $user->id = 11525;
+        $ratingRepository = new \STS\Repository\RatingRepository();
+        $data = array();
+        $data['value'] = RatingModel::STATE_POSITIVO;
+        $ratings = $ratingRepository->getRatingsCount($user, $data);
+        var_dump($ratings); die; */
+
+
+        $user = \STS\User::where('id', 23124)->first();
+        $messageRepo = new \STS\Repository\MessageRepository();
+        $timestamp = time();
+        $messages = $messageRepo->getMessagesUnread($user, $timestamp);
+        echo $messages->count(); die;
     }
 
     public function handleApp($name)

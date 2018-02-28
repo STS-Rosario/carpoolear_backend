@@ -53,10 +53,24 @@ class MessageRepository implements MessageRepo
 
     public function getMessagesUnread(User $user, $timestamp)
     {
-        $msgs = Message::whereHas('users', function ($q) use ($user) {
+        /* $msgs = Message::whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
+        }); */ 
+
+        $conversations = $user->conversations;
+
+        $conversations_id = array();
+
+        $conversations->each(function ($item, $key) use (&$conversations_id) {
+            if ($item->pivot->read == 0) {
+                $conversations_id[] = $item->id;
+                
+            }
         });
+
+        $msgs = Message::whereIn('conversation_id', $conversations_id);
+
         if ($timestamp) {
             $msgs->where('created_at', '>', $timestamp);
         }

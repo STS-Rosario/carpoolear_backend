@@ -276,5 +276,11 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         }
 
         return $messages;
+        /* if ($conversation_id && $conv = $this->conversationRepository->getConversationFromId($conversation_id, $user)) {
+            $this->conversationRepository->changeConversationReadState($conv, $user, true);
+            $this->messageRepository->markMessages($user, $conv->id);
+        }
+
+        return collect([]);;*/
     }
 }
