@@ -17,7 +17,8 @@ RUN composer install --no-autoloader --no-scripts
 COPY . /app
 RUN composer dumpautoload
 
+ENV SERVER_PORT=8080
 
-CMD php artisan serve --host=0.0.0.0 --port=8080
+CMD php artisan serve --host=0.0.0.0 --port=$SERVER_PORT
 EXPOSE 8080
 
