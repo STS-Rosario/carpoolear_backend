@@ -20,11 +20,13 @@ class RatingRepository implements IRatingRepository
 
     public function getRatings($user, $data = [])
     {
-        $inQuery = "id IN (SELECT id FROM availables_ratings WHERE user_id_to = '" . $user->id . "' )";
+        // $inQuery = "id IN (SELECT id FROM availables_ratings WHERE user_id_to = '" . $user->id . "' )";
 
         $ratings = RatingModel::where('user_id_to', $user->id);
 
-        $ratings->whereRaw($inQuery);
+        $ratings->where('available', 1);
+
+        // $ratings->whereRaw($inQuery);
 
         if (isset($data['value'])) {
             $value = parse_boolean($data['value']);
@@ -102,5 +104,15 @@ class RatingRepository implements IRatingRepository
     public function update($rateModel)
     {
         return $rateModel->save();
+    }
+
+
+    public function update_rating_availability ($rateModel)
+    {
+        // CALL update_rating_availability(NEW.id, NEW.trip_id, NEW.user_id_from, NEW.user_id_to);
+        $params = array($rateModel->id, $rateModel->trip_id, $rateModel->user_id_from, $rateModel->user_id_to);
+        return DB::select('CALL update_rating_availability (?,?,?,?)', $params);
+
+        
     }
 }
