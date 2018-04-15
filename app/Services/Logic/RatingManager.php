@@ -90,7 +90,9 @@ class RatingManager extends BaseManager implements IRateLogic
             $rate->rate_at = Carbon::now();
             $rate->rating = parse_boolean($data['rating']) ? Rating::STATE_POSITIVO : Rating::STATE_NEGATIVO;
 
-            return $this->ratingRepository->update($rate);
+            $result = $this->ratingRepository->update($rate);
+            $this->ratingRepository->update_rating_availability($rate);
+            return $result;
         } else {
             $this->setErrors(['error' => 'user_have_already_voted']);
 
@@ -120,6 +122,8 @@ class RatingManager extends BaseManager implements IRateLogic
             ['key' => 'mail_send', 'value' => false],
             ['key' => 'is_passenger', 'value' => false],
         ];
+
+
         $trips = $this->tripRepo->index($criterias, ['user', 'passenger']);
 
         foreach ($trips as $trip) {

@@ -9,6 +9,7 @@ use STS\Entities\Rating as RatingModel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use STS\Services\Notifications\Models\DatabaseNotification;
+use STS\Contracts\Repository\IRatingRepository;
 
 class User extends Authenticatable
 {
@@ -161,17 +162,21 @@ class User extends Authenticatable
 
     public function ratingGiven()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_from')
-                    ->where('voted', 1)
-                    ->where('created_at', '<=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
+        return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('available', 1);
+                    /* ->where('voted', 1)
+                    ->where('created_at', '<=', Carbon::Now()
+                    ->subDays(RatingModel::RATING_INTERVAL));*/
     }
 
     public function ratingReceived()
     {
-        return $this->hasMany('STS\Entities\Rating', 'user_id_to')
-                    ->where('voted', 1)->where('created_at', '<=', Carbon::Now()
-                    ->subDays(RatingModel::RATING_INTERVAL));
+        return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('available', 1);
+                    /* ->where('voted', 1)
+                    ->where('created_at', '<=', Carbon::Now()
+                    ->subDays(RatingModel::RATING_INTERVAL)); */
     }
+
+    
 
     public function ratings($value = null)
     {
@@ -185,6 +190,14 @@ class User extends Authenticatable
 
     public function getPositiveRatingsAttribute()
     {
+        /* $user = new \STS\User();
+        $user->id = $this->id;
+        $ratingRepository = new \STS\Repository\RatingRepository();
+        $data = array();
+        $data['value'] = RatingModel::STATE_POSITIVO;
+        $ratings = $ratingRepository->getRatingsCount($user, $data);
+        return  $ratings; */
+
         return $this->ratings(RatingModel::STATE_POSITIVO)->count();
     }
 
