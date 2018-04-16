@@ -12,7 +12,7 @@ class SubscriptionTable extends Migration
      */
     public function up()
     {
-        Schema::create('subscription', function (Blueprint $table) {
+        Schema::create('subscriptions', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('user_id')->unsigned();
             $table->datetime('trip_date');
@@ -43,6 +43,6 @@ class SubscriptionTable extends Migration
      */
     public function down()
     {
-        Schema::drop('subscription');
+        Schema::drop('subscriptions');
     }
 }
