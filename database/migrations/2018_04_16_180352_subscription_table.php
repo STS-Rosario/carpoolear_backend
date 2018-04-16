@@ -21,11 +21,13 @@ class SubscriptionTable extends Migration
             $table->string('from_json_address')->nullable();
             $table->double('from_lat')->nullable();
             $table->double('from_lng')->nullable();
+            $table->double('from_radio')->nullable();
 
             $table->string('to_address', 255)->nullable();
             $table->string('to_json_address')->nullable();
             $table->double('to_lat')->nullable();
             $table->double('to_lng')->nullable();
+            $table->double('to_radio')->nullable();
 
             $table->boolean('state');
 

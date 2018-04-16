@@ -89,6 +89,10 @@ class User extends Authenticatable
         return $this->hasMany('STS\Entities\Car', 'user_id');
     }
 
+    public function subscriptions() {
+        return $this->hasMany('STS\Entities\Subscription', 'user_id');
+    }
+
     public function allFriends($state = null)
     {
         $friends = $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')

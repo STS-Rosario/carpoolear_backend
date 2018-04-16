@@ -20,7 +20,6 @@ class Car extends Model
     protected $dates = ['created_at', 'updated_at', 'trip_date'];
 
     
-
     public function user()
     {
         return $this->belongsTo('STS\User', 'user_id');
