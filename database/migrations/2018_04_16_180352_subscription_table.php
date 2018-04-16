@@ -15,17 +15,17 @@ class SubscriptionTable extends Migration
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('user_id')->unsigned();
-            $table->datetime('trip_date');
+            $table->datetime('trip_date')->nullable();
 
-            $table->string('from_address', 255);
-            $table->string('from_json_address');
-            $table->double('from_lat');
-            $table->double('from_lng');
+            $table->string('from_address', 255)->nullable();
+            $table->string('from_json_address')->nullable();
+            $table->double('from_lat')->nullable();
+            $table->double('from_lng')->nullable();
 
-            $table->string('to_address', 255);
-            $table->string('to_json_address');
-            $table->double('to_lat');
-            $table->double('to_lng');
+            $table->string('to_address', 255)->nullable();
+            $table->string('to_json_address')->nullable();
+            $table->double('to_lat')->nullable();
+            $table->double('to_lng')->nullable();
 
             $table->boolean('state');
 
