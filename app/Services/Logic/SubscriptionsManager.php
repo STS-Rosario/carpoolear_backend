@@ -106,9 +106,4 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
     {
         return $this->repo->list($user, true);
     }
-
-    public function crateSearchData($subscription) 
-    {
-        
-    }
 }
