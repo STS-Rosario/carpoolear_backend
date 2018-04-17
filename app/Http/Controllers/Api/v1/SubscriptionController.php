@@ -22,7 +22,7 @@ class SubscriptionController extends Controller
     {
         $this->user = $this->auth->user();
         $data = $request->all();
-        $car = $this->subscriptionsLogic->create($this->user, $data);
+        $car = $this->subscriptionsLogic->create($this->user, $data); 
         if (! $car) {
             throw new StoreResourceFailedException('Could not create new car.', $this->subscriptionsLogic->getErrors());
         }
@@ -67,8 +67,8 @@ class SubscriptionController extends Controller
     public function index(Request $request)
     {
         $this->user = $this->auth->user();
-        $cars = $this->subscriptionsLogic->index($this->user);
+        $models = $this->subscriptionsLogic->index($this->user);
 
-        return $cars;
+        return $models;
     }
 }

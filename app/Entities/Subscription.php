@@ -15,10 +15,7 @@ class Subscription extends Model
     ];
     protected $hidden = ['created_at', 'updated_at'];
 
-    protected $appends = ['trips_count'];
-
     protected $dates = ['created_at', 'updated_at', 'trip_date'];
-
     
     public function user()
     {
