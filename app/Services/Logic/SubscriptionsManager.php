@@ -5,8 +5,8 @@ namespace STS\Services\Logic;
 use Validator;
 use STS\User as UserModel;
 use STS\Entities\Subscription as SubscriptionModel;
-use STS\Contracts\Logic\Car as SubscriptionLogic;
-use STS\Contracts\Repository\Car as SubscriptionRepo;
+use STS\Contracts\Logic\Subscription as SubscriptionLogic;
+use STS\Contracts\Repository\Subscription as SubscriptionRepo;
 
 class SubscriptionsManager extends BaseManager implements SubscriptionLogic
 {
@@ -21,13 +21,13 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
     {
         return Validator::make($data, [
             'trip_date'     => 'date|after:now',
-            'from_address'      => 'required|string',
+            'from_address'      => 'string',
             'from_json_address' => 'required_with:from_address|array',
             'from_lat'          => 'required_with:from_address|numeric',
             'from_lng'          => 'required_with:from_address|numeric',
             'from_radio'        => 'required_with:from_address|numeric',
 
-            'to_address'      => 'required|string',
+            'to_address'      => 'string',
             'to_json_address' => 'required_with:to_address|array',
             'to_lat'          => 'required_with:to_address|numeric',
             'to_lng'          => 'required_with:to_address|numeric',
@@ -45,8 +45,11 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
         } else {
             $model = new SubscriptionModel();
             $model->fill($data);
+            $model->state = true;
+            $model->user_id = $user->id;
             $this->repo->create($model);
-            return $car;
+
+            return $model;
         }
     }
 

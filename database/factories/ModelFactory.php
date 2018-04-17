@@ -86,6 +86,16 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'mendoza', function ($faker) {
     ];
 });
 
+$factory->define(STS\Entities\Subscription::class, function ($faker) {
+    return [ 
+        'state'                 => true,
+        'trip_date'             => Carbon\Carbon::now(),
+        'user_id'               => function () {
+            return factory(STS\User::class)->create()->id;
+        },
+    ];
+});
+
 $factory->define(STS\Entities\Car::class, function ($faker) {
     return [
         'patente'     => 'ASD 123',

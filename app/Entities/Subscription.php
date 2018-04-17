@@ -4,9 +4,9 @@ namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Car extends Model
+class Subscription extends Model
 {
-    protected $table = 'subscription';
+    protected $table = 'subscriptions';
     protected $fillable = [
         'user_id', 'trip_date', 
         'from_address', 'from_json_address', 'from_lat', 'from_lng',
