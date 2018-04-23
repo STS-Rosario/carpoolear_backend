@@ -2,7 +2,9 @@
 
 namespace STS\Repository;
 
+use Carbon\Carbon;
 use STS\User as UserModel;
+use STS\Entities\Trip;
 use STS\Entities\Subscription as SubscriptionModel;
 use STS\Contracts\Repository\Subscription as SubscriptionRepository;
 
@@ -85,7 +87,7 @@ class SubscriptionsRepository implements SubscriptionRepository
 
         $points = $trip->points;
         $this->makeDistance($query, $points[0], 'from');
-        $this->makeDistance($query, $points[len($points) - 1], 'to');
+        $this->makeDistance($query, $points[count($points) - 1], 'to');
 
         return $query->get();
     }
@@ -94,7 +96,11 @@ class SubscriptionsRepository implements SubscriptionRepository
         $query->where(function ($q) use ($point, $name) {
             $q->whereNull($name.'_address');
             $q->orWhere(function ($q) use ($point, $name) {
-                $q->whereRaw($name.'_sin_lat * '.$point->sin_lat.' + ' . $name . '._cos_lat * '. $point->cos_lat . ' *  (' . $name.  '_cos_lng * '.$point->cos_lng.' + ' + $name. + '_sin_lng * '.$point->sin_lng.') > cos( ' . $name. '_radio / 1000.0) / 6371.0'  );
+                $sin_lat = sprintf("%.6f", $point->sin_lat);
+                $sin_lng = sprintf("%.6f", $point->sin_lng);
+                $cos_lat = sprintf("%.6f", $point->cos_lat);
+                $cos_lng = sprintf("%.6f", $point->cos_lng);
+                $q->whereRaw($name.'_sin_lat * '.$sin_lat.' + ' . $name . '_cos_lat * '. $cos_lat . ' *  (' . $name.  '_cos_lng * '.$cos_lng.' + ' . $name . '_sin_lng * '.$sin_lng.') > cos( ' . $name. '_radio / 1000.0 / 6371.0)'  );
             });
         });
 
