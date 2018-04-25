@@ -3,23 +3,23 @@
 namespace STS\Listeners\Subscriptions;
 
 use STS\Events\User\Trip;
-// use STS\Notifications\NewUserNotification;
+use STS\Notifications\SubscriptionMatchNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Repository\User as UserRepository;
-use STS\Contracts\Logic\Subscription as SubscriptionsManager;
+use STS\Contracts\Repository\Subscription as SubscriptionsRepository;
 
 class OnNewTrip implements ShouldQueue
 {
-    protected $userRepo, $sManager;
+    protected $userRepo, $subRepo;
 
     /**
      * Create the event listener.
      *
      * @return void
      */
-    public function __construct(UserRepository $userRepo, SubscriptionsManager $manager)
+    public function __construct(UserRepository $userRepo, SubscriptionsRepository $subRepo)
     {
-        $this->sManager = $manager;
+        $this->subRepo = $subRepo;
         $this->userRepo = $userRepo;
     }
 
@@ -32,10 +32,13 @@ class OnNewTrip implements ShouldQueue
      */
     public function handle(Create $event)
     {
-        // $user = $this->userRepo->show($event->id);
-        // if ($user && $user->email) {
-        //     $notification = new NewUserNotification();
-        //     $notification->notify($user);
-        // }
+        $trip = $event->$trip;
+        $user = $trip->user;
+        $subscriptions =  $this->subRepo->search($user, $trip);
+        foreach ($subscriptions as $s) {
+            $notification = new SubscriptionMatchNotification();
+            $notification->setAttribute('trip', $trip);
+            $notification->notify($s->user);
+        }
     }
 }

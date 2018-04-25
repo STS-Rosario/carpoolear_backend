@@ -56,7 +56,7 @@ class SubscriptionsRepository implements SubscriptionRepository
             if($from->lte($now)){
                 $from = $now;
             }
-            $query = SubscriptionModel::where(function ($q) use ($from, $to) {
+            $query = SubscriptionModel::with('user')->where(function ($q) use ($from, $to) {
                 $q->whereNull('trip_date');
                 $q->orWhere(function ($q) use ($from, $to) {
                     $q->where('trip_date', '>=', date_to_string($from, "Y-m-d H:i:s"));
