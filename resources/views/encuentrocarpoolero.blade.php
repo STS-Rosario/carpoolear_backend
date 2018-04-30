@@ -42,6 +42,7 @@
                             <li>📍 <a href="https://www.couchsurfing.com/events/couchsurfing-carpoolear-simultaneo-nacional-parana">SANTA FE/PARANÁ ---> 14/3 - 21.15hs Sociedad Friulana (Villaguay 539, Paraná)</a> </li>
                             <li>📍 <a href="#">SANTIAGO DEL ESTERO ---> 14/3 -</a> </li>
                             <li>📍 <a href="https://www.couchsurfing.com/events/couchsurfing-carpoolear-simultaneo-nacional">TUCUMÁN ---> 14/3 - 21.30hs Casa Mamarracha (Santiago 109)</a> </li>
+                            <li>📍 <a href="https://www.facebook.com/events/149909785676988/">PERGAMINO ---> 14/3 - 18.00hs - Plaza 9 de Julio</a> </li>
                         </ul>
                     </div>
                     <div class="col-sm-4 col-xs-12">
