@@ -22,24 +22,24 @@ class SubscriptionController extends Controller
     {
         $this->user = $this->auth->user();
         $data = $request->all();
-        $car = $this->subscriptionsLogic->create($this->user, $data); 
-        if (! $car) {
-            throw new StoreResourceFailedException('Could not create new car.', $this->subscriptionsLogic->getErrors());
+        $model = $this->subscriptionsLogic->create($this->user, $data); 
+        if (! $model) {
+            throw new StoreResourceFailedException('Could not create new model.', $this->subscriptionsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => $car]);
+        return $this->response->withArray(['data' => $model]);
     }
 
     public function update($id, Request $request)
     {
         $this->user = $this->auth->user();
         $data = $request->all();
-        $car = $this->subscriptionsLogic->update($this->user, $id, $data);
-        if (! $car) {
-            throw new StoreResourceFailedException('Could not update car.', $this->subscriptionsLogic->getErrors());
+        $model = $this->subscriptionsLogic->update($this->user, $id, $data);
+        if (! $model) {
+            throw new StoreResourceFailedException('Could not update model.', $this->subscriptionsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => $car]);
+        return $this->response->withArray(['data' => $model]);
     }
 
     public function delete($id, Request $request)
@@ -47,7 +47,7 @@ class SubscriptionController extends Controller
         $this->user = $this->auth->user();
         $result = $this->subscriptionsLogic->delete($this->user, $id);
         if (! $result) {
-            throw new StoreResourceFailedException('Could not delete car.', $this->subscriptionsLogic->getErrors());
+            throw new StoreResourceFailedException('Could not delete subscription.', $this->subscriptionsLogic->getErrors());
         }
 
         return $this->response->withArray(['data' => 'ok']);
@@ -56,12 +56,12 @@ class SubscriptionController extends Controller
     public function show($id, Request $request)
     {
         $this->user = $this->auth->user();
-        $car = $this->subscriptionsLogic->show($this->user, $id);
-        if (! $car) {
-            throw new StoreResourceFailedException('Could not found car.', $this->subscriptionsLogic->getErrors());
+        $model = $this->subscriptionsLogic->show($this->user, $id);
+        if (! $model) {
+            throw new StoreResourceFailedException('Could not found model.', $this->subscriptionsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => $car]);
+        return $this->response->withArray(['data' => $model]);
     }
 
     public function index(Request $request)

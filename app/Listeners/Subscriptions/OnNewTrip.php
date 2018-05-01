@@ -30,11 +30,12 @@ class OnNewTrip implements ShouldQueue
      *
      * @return void
      */
-    public function handle(Create $event)
+    public function handle($event)
     {
-        $trip = $event->$trip;
+        $trip = $event->trip;
         $user = $trip->user;
         $subscriptions =  $this->subRepo->search($user, $trip);
+        console_log($subscriptions);
         foreach ($subscriptions as $s) {
             $notification = new SubscriptionMatchNotification();
             $notification->setAttribute('trip', $trip);
