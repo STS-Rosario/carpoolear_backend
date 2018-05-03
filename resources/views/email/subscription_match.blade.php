@@ -1,12 +1,12 @@
-Hola {{$user->name}}!
+Hola, {{$user->name}}!
 <br>
-Hemos encontrado un viaje que coincide con tus busquedas.
+Hemos encontrado un viaje que coincide con tu búsqueda.
 <br>
-Haz click <a href="{{$url}}">aquí</a> para ver los detalles.
+<a href="{{$url}}">Puedes ver el detalle de las coincidencias entrando en este link.</a>
 <br>
 Saludos!
 <br>
 Carpoolear
 <br>
 <br>
-<small>Si no deseás recibir más este tipo de correo, <a href="https://carpoolear.com.ar/desuscribirme?email={{ $user->email }}">hacé click aquí</a>.</small>
+<small style="color: red;">Si no deseás recibir más este tipo de correo, <a href="https://carpoolear.com.ar/desuscribirme?email={{ $user->email }}">hacé click aquí</a>.</small>
