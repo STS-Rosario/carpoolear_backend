@@ -29,6 +29,7 @@ class SubscriptionMatchNotification extends BaseNotification
     public function getExtras()
     {
         return [
+            'type' => 'subscription',
         ];
     }
 
