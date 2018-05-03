@@ -23,7 +23,7 @@ class SubscriptionMatchNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Hemos encontrado un viaje que coincide con tus busquedas';
+        return 'Hemos encontrado un viaje que coincide con tu búsqueda.';
     }
 
     public function getExtras()
