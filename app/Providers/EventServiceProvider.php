@@ -37,11 +37,13 @@ class EventServiceProvider extends ServiceProvider
         ],
         'STS\Events\Trip\Create' => [
             'STS\Listeners\DownloadStaticImage',
+            'STS\Listeners\Subscriptions\OnNewTrip',
             // 'STS\Listeners\Conversation\createConversation',
         ],
         'STS\Events\Trip\Update' => [
             'STS\Listeners\DownloadStaticImage',
             'STS\Listeners\Notification\UpdateTrip',
+            'STS\Listeners\Subscriptions\OnNewTrip',
         ],
         'STS\Events\Trip\Delete' => [
             CreateRatingDeleteTrip::class,

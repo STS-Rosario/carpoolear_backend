@@ -95,6 +95,14 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{id?}', $v1_path.'CarController@show');
     });
 
+    $api->group(['prefix' => 'subscriptions'], function ($api) use ($v1_path) {
+        $api->get('/', $v1_path.'SubscriptionController@index');
+        $api->post('/', $v1_path.'SubscriptionController@create');
+        $api->put('/{id?}', $v1_path.'SubscriptionController@update');
+        $api->delete('/{id?}', $v1_path.'SubscriptionController@delete');
+        $api->get('/{id?}', $v1_path.'SubscriptionController@show');
+    });
+
     $api->group(['prefix' => 'devices'], function ($api) use ($v1_path) {
         $api->get('/', $v1_path.'DeviceController@index');
         $api->post('/', $v1_path.'DeviceController@register');
