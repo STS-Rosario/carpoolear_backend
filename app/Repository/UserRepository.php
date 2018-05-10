@@ -28,7 +28,7 @@ class UserRepository implements UserRep
 
     public function show($id)
     {
-        return User::with('accounts')->where('id', $id)->first();
+        return User::with(['accounts', 'donations'])->where('id', $id)->first();
     }
 
     public function acceptTerms($user)

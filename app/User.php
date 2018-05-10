@@ -122,6 +122,11 @@ class User extends Authenticatable
         return $this->hasMany(DatabaseNotification::class, 'user_id')->whereNull('deleted_at');
     }
 
+    public function donations()
+    {
+        return $this->hasMany("STS\Entities\Donation", 'user_id')->whereNull('deleted_at');
+    }
+
     public function unreadNotifications()
     {
         return $this->notifications()->whereNull('read_at');

@@ -70,7 +70,6 @@ class UserController extends Controller
         }
 
         return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
-        //return $this->response->withArray(['user' => $profile]);
     }
 
     public function index(Request $request)
