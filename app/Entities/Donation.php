@@ -4,7 +4,7 @@ namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Device extends Model
+class Donation extends Model
 {
     protected $table = 'donations';
     protected $fillable = [
