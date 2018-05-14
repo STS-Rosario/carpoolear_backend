@@ -12,7 +12,7 @@ interface Conversation
 
     public function createTripConversation($trip_id);
 
-    public function findOrCreatePrivateConversation(UserModel $user1, UserModel $user2);
+    public function findOrCreatePrivateConversation($user1, $user2);
 
     public function getUserConversations(UserModel $user, $pageNumber, $pageSize);
 
@@ -39,4 +39,6 @@ interface Conversation
     public function getMessagesUnread(UserModel $user, $conversation_id = null, $timestamp = null);
 
     public function show(UserModel $user, $id);
+
+    public function sendToAll(UserModel $user, $destinations, $message);
 }
