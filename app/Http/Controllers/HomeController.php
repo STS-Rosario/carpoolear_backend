@@ -102,6 +102,11 @@ class HomeController extends Controller
         return view('contacto');
     }
 
+    public function encuentrocarpoolero()
+    {
+        return view('encuentrocarpoolero');
+    }
+
     public function endsWith($haystack, $needle)
     {
         $length = strlen($needle);
@@ -122,11 +127,29 @@ class HomeController extends Controller
         var_dump($ratings); die; */
 
 
-        $user = \STS\User::where('id', 23124)->first();
+        /* $user = \STS\User::where('id', 23124)->first();
         $messageRepo = new \STS\Repository\MessageRepository();
         $timestamp = time();
         $messages = $messageRepo->getMessagesUnread($user, $timestamp);
-        echo $messages->count(); die;
+        echo $messages->count(); die;*/
+        $criterias = [
+            ['key' => 'trip_date', 'value' => '2018-03-08 13:29:00', 'op' => '<'],
+            ['key' => 'mail_send', 'value' => false],
+            ['key' => 'is_passenger', 'value' => false],
+        ];
+
+        $withs = ['user', 'passenger'];
+
+        $trips = \STS\Entities\Trip::orderBy('trip_date');
+
+        /* if ($withs) {
+            $trips->with($withs);
+        } */
+
+        $trips->where('mail_send', false);
+        $trips->where('is_passenger', false);
+
+        var_dump($trips->get());die;
     }
 
     public function handleApp($name)

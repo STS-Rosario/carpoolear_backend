@@ -15,7 +15,7 @@ class SubscriptionMatchNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Hemos encontrado un viaje que coincide con tus busquedas',
+            'title' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
             'email_view' => 'subscription_match',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
         ];
@@ -23,12 +23,13 @@ class SubscriptionMatchNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Hemos encontrado un viaje que coincide con tus busquedas';
+        return 'Hemos encontrado un viaje que coincide con tu búsqueda.';
     }
 
     public function getExtras()
     {
         return [
+            'type' => 'subscription',
         ];
     }
 
@@ -37,7 +38,7 @@ class SubscriptionMatchNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Hemos encontrado un viaje que coincide con tus busquedas',
+            'message' => 'Hemos encontrado un viaje que coincide con tus búsqueda',
             'url' => "trips/" . $trip->id,
             'extras' => [
                 'id' => $trip->id,

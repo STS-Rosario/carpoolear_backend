@@ -22,11 +22,15 @@
 
 
                 <h3>✓ Colaborá con el código de la plataforma</h3>
+                
                 <p>Carpoolear es Open Source, podés ayudarnos revisando y <a href="https://github.com/STS-Rosario" target="_blank">aportando al código</a>.</p>
+                
+                <p>Para los que no lo recuerdan el entorno del Backend es Apache + MySQL + PHP 7 y programado sobre Laravel 5.3. Mientras que el Frontend es una aplicación híbrida (web y móvil) donde el entorno es Node.js + Cordova y está programada en JavaScript utilizando la librería Vue.js.</p>
+
 
                 <h3>✓ Difundí Carpoolear</h3>
 
-                <ul class="list-smallmargin lead" data-bullet="ti-angle-right">
+                <ul class="list-bigmargin lead" data-bullet="ti-angle-right">
 
                   <li>Contale de Carpoolear a tu familia, amigos, compañeros de trabajo o de la facultad y al verdulero que se las sabe todas, también.</li>
 
@@ -48,7 +52,7 @@
 
                 <h3>✓ Si estás vinculado a alguna ONG...</h3>
 
-                <ul class="list-smallmargin">
+                <ul class="list-bigmargin">
 
                   <li>Formá una alianza con nosotros para potenciar las actividades de ambos.</li>
 
@@ -64,7 +68,7 @@
 
                 <h3>✓ Si estás vinculado a alguna empresa... </h3>
 
-                <ul class="list-smallmargin">
+                <ul class="list-bigmargin">
 
                   <li>Dale una mirada a <a href="http://carpoolearmas.com.ar" target="_blank">Carpoolear+</a> , la versión cerrada de carpoolear para compartir viajes entre grupos de personas. Funciona para hacer viajes frecuentes u ocasionales dentro de una ciudad o entre ciudades.</li>
 
@@ -74,7 +78,7 @@
 
                 <h3>✓ Si estás vinculado a algún medio de comunicación…</h3>
 
-                <ul class="list-smallmargin">
+                <ul class="list-bigmargin">
 
                   <li>No busques más con qué ocupar ese rinconcito o esa nota en tu medio e invitanos a participar :D.</li>
 
@@ -84,7 +88,7 @@
 
                 <h3>✓ Formá parte del equipo de trabajo</h3>
 
-                <ul class="list-smallmargin">
+                <ul class="list-bigmargin">
 
                   <li>Para concretar todas estas actividades, siempre serán bien recibidas personas comprometidas que quieran llevar adelante la misión que nos propusimos con Carpoolear.</li>
 
