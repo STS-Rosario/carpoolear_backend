@@ -143,8 +143,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
             $users = match_array($users);
             $userArray = [];
             foreach ($users as $userId) {
-                // $to = $this->userRepository->show($userId);
-                if ($this->usersCanChat($user, $userId)) {
+                $to = $this->userRepository->show($userId);
+                if ($to && $this->usersCanChat($user, $userId)) {
                     $usersArray[] = $userId;
                 } else {
                     $this->setErrors(['user' => 'user_'.$userId.'_does_not_exist']);
