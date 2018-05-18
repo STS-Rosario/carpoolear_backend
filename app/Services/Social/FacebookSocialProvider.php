@@ -24,9 +24,11 @@ class FacebookSocialProvider implements SocialProvider
 
     public function getUserData()
     {
-        $response = $this->request('/me?fields=email,name,gender,picture.width(300),birthday');
+        $response = $this->request('/me?fields=email,name,gender,picture.width(300),birthday,link');
         if ($response->getStatusCode() == 200) {
             $body = json_decode($response->getBody());
+
+            \Log::info("FACEBOOK BODY: ". $response->getBody());
 
             if (isset($body->gender)) {
                 if ($body->gender == 'male') {
@@ -54,6 +56,7 @@ class FacebookSocialProvider implements SocialProvider
                 'banned'                => false,
                 'terms_and_conditions'  => false,
                 'image'                 => $body->picture->data->url,
+                // 'link'                  => isset($body->link) ? $body->link : null,
             ];
         } else {
             $this->error = ['error' => 'Error obteniendo el perfil'];

@@ -128,7 +128,12 @@ class User extends Authenticatable
 
     public function donations()
     {
-        return $this->hasMany("STS\Entities\Donation", 'user_id')->whereNull('deleted_at');
+        $donations = $this->hasMany("STS\Entities\Donation", 'user_id');
+        $first = new Carbon('first day of this month');
+        $last = new Carbon('last day of this month');
+        $donations->where('month', '<', $first->toDateTimeString());
+        $donations->where('month', '>=', $last->toDateTimeString());
+        return $donations;
     }
 
     public function unreadNotifications()
