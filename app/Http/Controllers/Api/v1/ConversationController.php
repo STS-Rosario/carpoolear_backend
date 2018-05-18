@@ -170,4 +170,15 @@ class ConversationController extends Controller
 
         return $this->collection($messages, new MessageTransformer($this->user));
     }
+
+
+    public function multiSend(Request $request) {
+        $this->user = $this->auth->user();
+        $message = $request->get('message');
+        $users = $request->get('users');
+        if ($m = $this->conversationLogic->sendToAll($this->user, $users, $message)) {
+            return ['message' => true];
+        }
+        throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
+    }
 }
