@@ -38,7 +38,7 @@ class SubscriptionMatchNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Hemos encontrado un viaje que coincide con tus búsqueda',
+            'message' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
             'url' => "trips/" . $trip->id,
             'extras' => [
                 'id' => $trip->id,
