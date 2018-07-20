@@ -46,6 +46,11 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
             $model = new SubscriptionModel();
             $model->fill($data);
             $model->state = true;
+            if ($data['is_passenger'] === 'false') {
+                $model->is_passenger = false;
+            } else {
+                $model->is_passenger = boolval($data['is_passenger']) ? true : false;
+            }
             $model->user_id = $user->id;
             $this->repo->create($model);
 
