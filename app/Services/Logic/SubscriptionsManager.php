@@ -52,7 +52,54 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
                 $model->is_passenger = boolval($data['is_passenger']) ? true : false;
             }
             $model->user_id = $user->id;
-            $this->repo->create($model);
+
+            $ok = true;
+            $userSuscriptions = $this->repo->list($user, true);
+            if (count($userSuscriptions) > 0) {
+                // trip_date
+                // from_lat y from_lng
+                // to_lat y to_lng
+                // is_passenger
+                foreach ($userSuscriptions as $s) {
+                    $coincideFecha = false;
+                    if (!empty($s->trip_date) && !empty($model->trip_date)) {
+                        $coincideFecha = ($s->trip_date == $model->trip_date);
+                    } else {
+                        if (empty($s->trip_date) && empty($model->trip_date)) {
+                            $coincideFecha = true;
+                        }
+                    }
+                    $coincideFrom = false;
+                    if (!empty($s->from_lat) && !empty($model->from_lat)) {
+                        $coincideFrom = (strval($s->from_lat) == strval($model->from_lat) && strval($s->from_lng) == strval($model->from_lng));
+                    } else {
+                        if (empty($s->from_lat) && empty($model->from_lat)) {
+                            $coincideFrom = true;
+                        }
+                    }
+                    $coincideTo = false;
+                    if (!empty($s->to_lat) && !empty($model->to_lat)) {
+                        $coincideTo = (strval($s->to_lat) == strval($model->to_lat) && strval($s->to_lng) == strval($model->to_lng));
+                    } else {
+                        if (empty($s->to_lat) && empty($model->to_lat)) {
+                            $coincideTo = true;
+                        }
+                    }
+                    $coincidePasajero = (boolval($s->is_passenger) == $model->is_passenger);
+
+                    if ($coincideFecha && $coincideFrom && $coincideTo && $coincidePasajero) {
+                        $ok = false;
+                        break;
+                    }
+                }
+            }
+            if ($ok) {
+                $this->repo->create($model);
+            } else {
+                $this->setErrors(['error' => 'subscription_exist']);
+                return;
+            }
+
 
             return $model;
         }
