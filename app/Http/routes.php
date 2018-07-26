@@ -36,3 +36,4 @@ Route::get('/app/{name?}', 'HomeController@handleApp')->where('name', '[\/\w\.-]
 Route::get('/desuscribirme', 'HomeController@desuscribirme');
 Route::get('/test', 'HomeController@test');
 Route::get('/encuentrocarpoolero', 'HomeController@encuentrocarpoolero');
+Route::get('/data', 'DataController@data');
