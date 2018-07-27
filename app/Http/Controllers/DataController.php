@@ -16,7 +16,7 @@ class DataController extends Controller
                     DATE_FORMAT(trip_date, '%Y') AS 'año', 
                     DATE_FORMAT(trip_date, '%m') AS 'mes',
                     count(*) AS 'cantidad',
-                    avg(total_seats) AS 'asientos_ofrecidos_promedio'
+                    sum(total_seats) AS 'asientos_ofrecidos_total'
                 FROM trips
             WHERE is_passenger = 0
             GROUP BY DATE_FORMAT(trip_date, '%Y-%m')
