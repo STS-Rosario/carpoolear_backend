@@ -108,6 +108,11 @@ class HomeController extends Controller
         return view('encuentrocarpoolero');
     }
 
+    public function donar()
+    {
+        return view('donar');
+    }
+
     public function endsWith($haystack, $needle)
     {
         $length = strlen($needle);
