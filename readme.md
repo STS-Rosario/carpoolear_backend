@@ -40,6 +40,81 @@ You will need to use a local webserver and point it to the public folder
 
 Happy coding!
 
+## Carpoolear on Docker
+
+1) Complete your environment file.
+
+2) Building docker images: 
+```
+docker build -t carpoolear_backend .
+```
+
+3) Run image in a container: 
+```
+docker run --rm --name carpoolear_backend  -p 8080:8080 -d carpoolear_backend 
+```
+
+4) Seed database:
+
+```
+docker exec -it carpoolear_backend php artisan migrate
+docker exec -it carpoolear_backend php artisan db:seed --class=TestingSeeder
+```
+
+5) Now start your frontend and enjoy carpoolear!
+
+___Docker compose file:___
+You can start a develp environment with just one command with docker-compose:
+
+```
+docker-compose up -d
+```
+
+docker-compose.yml:
+
+```
+version: '2'
+
+services:
+  carpoolear_db:
+    image: mysql
+    container_name: carpoolear_db
+    environment:
+      MYSQL_DATABASE: carpoolear
+      MYSQL_USER: carpoolear
+      MYSQL_PASSWORD: carpoolear
+      MYSQL_ROOT_PASSWORD: carpoolear
+    volumes:
+      - ./.db:/var/lib/mysql
+    networks:
+      - esnet 
+
+  carpoolear_backend:
+    build: ./backend
+    container_name: carpoolear_backend
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      SERVER_PORT: 8080
+      DB_HOST: carpoolear_db
+      DB_DATABASE: carpoolear
+      DB_USERNAME: carpoolear
+      DB_PASSWORD: carpoolear
+      APP_KEY: qwertyuiopasdfghjklzxcvbnm123456
+      JWT_KEY: qwertyuiopasdfghjklzxcvbnm123456
+      API_PREFIX: api
+      API_VERSION: v1
+      MAIL_DRIVER: log
+    ports:
+      - 8080:8080
+    volumes:
+      - ./backend:/app
+    networks:
+      - esnet 
+networks:
+  esnet:  
+```
+
 ## Contributing
 
 
