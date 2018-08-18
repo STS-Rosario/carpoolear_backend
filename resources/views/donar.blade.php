@@ -81,7 +81,7 @@
         500: "http://mpago.la/QEiN"
     };
     var linksMensual = {
-        50: "http://mpago.la/nqgV",
+        50: "http://mpago.la/1w3aci",
         100: "http://mpago.la/BfZ",
         200: "http://mpago.la/P02H",
         500: "http://mpago.la/k8Xp"

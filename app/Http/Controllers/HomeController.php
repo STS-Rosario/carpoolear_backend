@@ -113,6 +113,12 @@ class HomeController extends Controller
         return view('donar');
     }
 
+
+    public function datos()
+    {
+        return view('datos');
+    }
+
     public function endsWith($haystack, $needle)
     {
         $length = strlen($needle);
@@ -168,6 +174,18 @@ class HomeController extends Controller
             return \File::get(public_path().'/app/'.$file);
         } else {
             return \File::get(public_path().'/app/index.html');
+        }
+    }
+
+    public function handleDev($name)
+    {
+        if ($this->endsWith($name, '.js')) {
+            $strings = explode('/', $name);
+            $file = $strings[count($strings) - 1];
+
+            return \File::get(public_path().'/dev/'.$file);
+        } else {
+            return \File::get(public_path().'/dev/index.html');
         }
     }
 

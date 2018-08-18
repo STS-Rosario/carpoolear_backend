@@ -24,7 +24,7 @@ class FacebookSocialProvider implements SocialProvider
 
     public function getUserData()
     {
-        $response = $this->request('/me?fields=email,name,gender,picture.width(300),birthday,link');
+        $response = $this->request('/me?fields=email,name,gender,picture.width(300),link'); // ,birthday
         if ($response->getStatusCode() == 200) {
             $body = json_decode($response->getBody());
 
