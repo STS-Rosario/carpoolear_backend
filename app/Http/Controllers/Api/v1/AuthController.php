@@ -56,8 +56,6 @@ class AuthController extends Controller
 
     public function retoken(Request $request)
     {
-
-
         $config = new \stdClass();
         $config->donation = new \stdClass();
         $config->donation->month_days = config('carpoolear.donation_month_days');
@@ -65,6 +63,9 @@ class AuthController extends Controller
         $config->donation->trips_offset = config('carpoolear.donation_trips_offset');
         $config->donation->trips_rated = config('carpoolear.donation_trips_rated');
         $config->donation->ammount_needed = config('carpoolear.donation_ammount_needed');
+        $config->banner = new \stdClass();
+        $config->banner->url = config('carpoolear.banner_url');
+        $config->banner->image = config('carpoolear.banner_image');
 
         try {
             $oldToken = $token = JWTAuth::getToken()->get();

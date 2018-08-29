@@ -44,10 +44,16 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-12 pt48 body-donar">
+                <p>¡Hola Carpooler@s!</p>
 
-                <h2>Donar</h2>
+                <p>En el 2013 pusimos en marcha a Carpoolear y desde ese momento estamos en ruta llevando adelante la plataforma bajo USO GRATUITO tanto en su versión web como app. Somos un proyecto SIN FINES DE LUCRO, COLABORATIVO y de CÓDIGO LIBRE. Queremos seguir siéndolo y para eso NECESITAMOS tu APOYO.</p>
 
-                <p>¿Donar o no donar? ¡Esa es la cuestión! STS Rosario, la organización que creó y desarrolla Carpoolear, se financia a través del aporte de sus socios, concursos, prestación de servicios, merchandising y donaciones. Es importante destacar que ninguna de estas formas de financiamiento limita nuestra autonomía institucional ni condiciona el cumplimiento de nuestros objetivos. Tu donación nos ayuda a sostenernos de manera independiente como asociación civil, permitiendo también solventar los gastos de nuestro espacio físico y virtual. ¡Sumá tu aporte!</p>
+                <p>Quienes nos acompañan desde el comienzo saben que avanzamos un montón con muy pocos recursos esporádicos, pero esto es cada vez más difícil. Hoy en día la plataforma tiene más de 100 mil personas registradas, requiere mucho trabajo y coordinación, que son llevados adelante mediante esfuerzo de un EQUIPO VOLUNTARIO pero también tenemos gastos de servidores, legales y administrativos como cualquier proyecto.</p>
+
+                <p>Por eso necesitamos tu DONACIÓN para poder avanzar con el desarrollo de la plataforma más rápido manteniendo nuestra filosofía de trabajo. Si Carpoolear es útil para vos, te gusta lo que hacemos, querés cuidar el medio ambiente, tomate 1 MINUTO y COLABORÁ :D
+                Podés donar $50, 100$ y más allá también. O sea, que nos podés invitar un café con leche, una pinta o por qué no, salir a comer.</p>
+
+                <p>Carpoolear es un proyecto de STS Rosario, una ONG sin fines de lucro, constituida como asociación civil desde el 2014. A través de proyectos concretos, divulga las problemáticas socioambientales actuales y genera herramientas, para provocar un cambio cultural hacia una sociedad sustentable, resiliente y equitativa. Del total de la donación realizada a nosotros, un 10% será destinada al sostenimiento de nuestra organización, para que pueda haber más proyectos como Carpoolear. Podés enterarte más acerca de STS en www.stsrosario.org.ar</p>
 
                 <div class="donation">
                     <div class="radio">

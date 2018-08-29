@@ -28,6 +28,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{id?}/ratings', $v1_path.'RatingController@ratings');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
+        $api->post('/donation', $v1_path.'UserController@registerDonation');
     });
 
     $api->group(['prefix' => 'notifications'], function ($api) use ($v1_path) {

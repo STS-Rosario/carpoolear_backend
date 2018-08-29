@@ -194,6 +194,7 @@ class UsersManager extends BaseManager implements UserLogic
     {
         $profile = $this->repo->show($profile_id);
         if ($profile) {
+            // $profile->donations = $profile->donations->get();
             return $profile;
         }
         $this->setErrors(['error' => 'profile not found']);
@@ -228,5 +229,12 @@ class UsersManager extends BaseManager implements UserLogic
         }
 
         return $distancia;
+    }
+
+    public function registerDonation($user, $donation)
+    {
+        $donation->user_id = $user->id;
+        $donation->month = date('Y-m-01 00:00:00');
+        $donation->save();
     }
 }

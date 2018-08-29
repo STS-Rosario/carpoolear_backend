@@ -129,10 +129,8 @@ class User extends Authenticatable
     public function donations()
     {
         $donations = $this->hasMany("STS\Entities\Donation", 'user_id');
-        $first = new Carbon('first day of this month');
-        $last = new Carbon('last day of this month');
-        $donations->where('month', '<', $first->toDateTimeString());
-        $donations->where('month', '>=', $last->toDateTimeString());
+        $donations->where('month', '<=', date('Y-m-t 23:59:59'));
+        $donations->where('month', '>=', date('Y-m-01 00:00:00'));
         return $donations;
     }
 

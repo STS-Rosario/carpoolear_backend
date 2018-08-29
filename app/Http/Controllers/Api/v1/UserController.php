@@ -9,6 +9,7 @@ use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
+use STS\Entities\Donation;
 
 class UserController extends Controller
 {
@@ -81,5 +82,20 @@ class UserController extends Controller
         $users = $this->userLogic->index($this->user, $search_text);
 
         return $this->collection($users, new ProfileTransformer($this->user));
+    }
+
+    public function registerDonation (Request $request) 
+    {
+        $donation = new Donation();
+        if ($request->has('has_donated')) {
+            $donation->has_donated = $request->get('has_donated');
+        }
+        if ($request->has('has_denied')) {
+            $donation->has_denied = $request->get('has_denied');
+        }
+        if ($request->has('ammount')) {
+            $donation->ammount = $request->get('ammount');
+        }
+        $this->userLogic->registerDonation($this->user, $donation);
     }
 }
