@@ -37,6 +37,7 @@ class ProfileTransformer extends TransformerAbstract
             'accounts' => $user->accounts,
             'donations' => $user->donations,
             'has_pin' => $user->has_pin,
+            'is_member' => $user->is_member,
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;

@@ -40,6 +40,7 @@ class User extends Authenticatable
         'emails_notifications',
         'last_connection',
         'has_pin',
+        'is_member',
     ];
 
     protected $dates = [
@@ -56,6 +57,7 @@ class User extends Authenticatable
         'active'               => 'boolean',
         'is_admin'             => 'boolean',
         'has_pin'            => 'boolean',
+        'is_member'            => 'boolean',
     ];
 
     protected $appends = [

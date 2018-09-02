@@ -32,6 +32,7 @@ class TripUserTransformer extends TransformerAbstract
             'last_connection' => $user->last_connection->toDateTimeString(),
             'accounts' => $user->accounts,
             'has_pin' => $user->has_pin,
+            'is_member' => $user->is_member,
         ];
 
         return $data;

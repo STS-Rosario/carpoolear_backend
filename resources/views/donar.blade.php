@@ -44,6 +44,7 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-12 pt48 body-donar">
+                <img src="/img/economia-colaborativa.jpg" style="float: right; width: 100%; max-width: 450px;" />
                 <p>¡Hola Carpooler@s!</p>
 
                 <p>En el 2013 pusimos en marcha a Carpoolear y desde ese momento estamos en ruta llevando adelante la plataforma bajo USO GRATUITO tanto en su versión web como app. Somos un proyecto SIN FINES DE LUCRO, COLABORATIVO y de CÓDIGO LIBRE. Queremos seguir siéndolo y para eso NECESITAMOS tu APOYO.</p>
@@ -58,16 +59,16 @@
                 <div class="donation">
                     <div class="radio">
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation50" value="50" v-model="donateValue"><span>50</span>
+                            <input type="radio" name="donationValor" id="donation50" value="50" v-model="donateValue"><span>$ 50</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation100" value="100" v-model="donateValue"><span>100</span>
+                            <input type="radio" name="donationValor" id="donation100" value="100" v-model="donateValue"><span>$ 100</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation200" value="200" v-model="donateValue"><span>200</span>
+                            <input type="radio" name="donationValor" id="donation200" value="200" v-model="donateValue"><span>$ 200</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation500" value="500" v-model="donateValue"><span>500</span>
+                            <input type="radio" name="donationValor" id="donation500" value="500" v-model="donateValue"><span>$ 500</span>
                         </label>
                     </div>
                     <div>
@@ -75,6 +76,7 @@
                         <button class="btn-mensualmente btn-donar" id="btn-mensual">MENSUALMENTE <br />(cancelá cuando quieras)</button>
                     </div>
                 </div>
+                <p>Cualquier duda, escribinos a nuestras redes sociales o a <a href="mailto:carpoolear@stsrosario.org.ar">carpoolear@stsrosario.org.ar</a></p>
             </div>
         </div>
     </div>
