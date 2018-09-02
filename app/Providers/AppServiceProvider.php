@@ -54,5 +54,8 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind('\STS\Contracts\Repository\IRatingRepository', 'STS\Repository\RatingRepository');
         $this->app->bind('\STS\Contracts\Logic\IRateLogic', '\STS\Services\Logic\RatingManager');
+
+        $this->app->bind('\STS\Contracts\Repository\Subscription', 'STS\Repository\SubscriptionsRepository');
+        $this->app->bind('\STS\Contracts\Logic\Subscription', '\STS\Services\Logic\SubscriptionsManager');
     }
 }

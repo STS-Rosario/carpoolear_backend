@@ -28,6 +28,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{id?}/ratings', $v1_path.'RatingController@ratings');
         $api->put('/', $v1_path.'UserController@update');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
+        $api->post('/donation', $v1_path.'UserController@registerDonation');
     });
 
     $api->group(['prefix' => 'notifications'], function ($api) use ($v1_path) {
@@ -85,6 +86,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->post('/{id?}/users', $v1_path.'ConversationController@addUser');
         $api->delete('/{id?}/users/{userId?}', $v1_path.'ConversationController@deleteUser');
         $api->post('/{id?}/send', $v1_path.'ConversationController@send');
+        $api->post('/multi-send', $v1_path.'ConversationController@multiSend');
     });
 
     $api->group(['prefix' => 'cars'], function ($api) use ($v1_path) {
@@ -93,6 +95,14 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->put('/{id?}', $v1_path.'CarController@update');
         $api->delete('/{id?}', $v1_path.'CarController@delete');
         $api->get('/{id?}', $v1_path.'CarController@show');
+    });
+
+    $api->group(['prefix' => 'subscriptions'], function ($api) use ($v1_path) {
+        $api->get('/', $v1_path.'SubscriptionController@index');
+        $api->post('/', $v1_path.'SubscriptionController@create');
+        $api->put('/{id?}', $v1_path.'SubscriptionController@update');
+        $api->delete('/{id?}', $v1_path.'SubscriptionController@delete');
+        $api->get('/{id?}', $v1_path.'SubscriptionController@show');
     });
 
     $api->group(['prefix' => 'devices'], function ($api) use ($v1_path) {

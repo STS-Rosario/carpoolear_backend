@@ -25,4 +25,6 @@ interface User
     public function getErrors();
 
     public function index($user, $search_text);
+
+    public function registerDonation($user, $donation);
 }

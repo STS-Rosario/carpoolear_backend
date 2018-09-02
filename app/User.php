@@ -40,6 +40,7 @@ class User extends Authenticatable
         'emails_notifications',
         'last_connection',
         'has_pin',
+        'is_member',
     ];
 
     protected $dates = [
@@ -56,6 +57,7 @@ class User extends Authenticatable
         'active'               => 'boolean',
         'is_admin'             => 'boolean',
         'has_pin'            => 'boolean',
+        'is_member'            => 'boolean',
     ];
 
     protected $appends = [
@@ -90,6 +92,10 @@ class User extends Authenticatable
         return $this->hasMany('STS\Entities\Car', 'user_id');
     }
 
+    public function subscriptions() {
+        return $this->hasMany('STS\Entities\Subscription', 'user_id');
+    }
+
     public function allFriends($state = null)
     {
         $friends = $this->belongsToMany('STS\User', 'friends', 'uid1', 'uid2')
@@ -120,6 +126,14 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(DatabaseNotification::class, 'user_id')->whereNull('deleted_at');
+    }
+
+    public function donations()
+    {
+        $donations = $this->hasMany("STS\Entities\Donation", 'user_id');
+        $donations->where('month', '<=', date('Y-m-t 23:59:59'));
+        $donations->where('month', '>=', date('Y-m-01 00:00:00'));
+        return $donations;
     }
 
     public function unreadNotifications()
