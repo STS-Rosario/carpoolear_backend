@@ -52,16 +52,18 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $this->createConversation(Conversation::TYPE_TRIP_CONVERSATION, $trip_id);
     }
 
-    public function findOrCreatePrivateConversation(User $user1, User $user2)
+    public function findOrCreatePrivateConversation($user1, $user2)
     {
-        $conversation = $this->conversationRepository->matchUser($user1, $user2);
+        $user1ID = is_integer($user1) ? $user1 : $user1->id;
+        $user2ID = is_integer($user2) ? $user2 : $user2->id;
+        $conversation = $this->conversationRepository->matchUser($user1ID, $user2ID);
         if ($conversation) {
             return $conversation;
         } else {
-            if ($this->usersCanChat($user1, $user2)) {
+            if ($this->usersCanChat($user1, $user2ID)) {
                 $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION);
-                $this->conversationRepository->addUser($conversation, $user1);
-                $this->conversationRepository->addUser($conversation, $user2);
+                $this->conversationRepository->addUser($conversation, $user1ID);
+                $this->conversationRepository->addUser($conversation, $user2ID);
 
                 return $conversation;
             }
@@ -73,9 +75,11 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $this->conversationRepository->getConversationFromId($id, $user);
     }
 
-    private function usersCanChat(User $user1, User $user2)
+    private function usersCanChat($user1, $user2)
     {
-        return $user1->is_admin || $this->conversationRepository->usersToChat($user1, $user2)->count() > 0;
+        $user1ID = is_integer($user1) ? $user1 : $user1->id;
+        $user2ID = is_integer($user2) ? $user2 : $user2->id;
+        return $user1->is_admin || $this->conversationRepository->usersToChat($user1ID, $user2ID)->count() > 0;
     }
 
     public function usersList($user, $searchText)
@@ -140,8 +144,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
             $userArray = [];
             foreach ($users as $userId) {
                 $to = $this->userRepository->show($userId);
-                if ($to && $this->usersCanChat($user, $to)) {
-                    $usersArray[] = $to;
+                if ($to && $this->usersCanChat($user, $userId)) {
+                    $usersArray[] = $userId;
                 } else {
                     $this->setErrors(['user' => 'user_'.$userId.'_does_not_exist']);
 
@@ -282,5 +286,15 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         }
 
         return collect([]);;*/
+    }
+
+    public function sendToAll(User $user, $destinations, $message) {
+        foreach($destinations as $to) {
+            $conver = $this->findOrCreatePrivateConversation($user, $to);
+            if ($conver) {
+                $m = $this->send($user, $conver->id, $message);
+            }
+        }
+        return true;
     }
 }

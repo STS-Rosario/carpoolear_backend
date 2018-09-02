@@ -68,9 +68,9 @@ class ConversationRepository implements ConversationRepo
         return $conversation->users;
     }
 
-    public function addUser(Conversation $conversation, User $user)
+    public function addUser(Conversation $conversation, $userID)
     {
-        $conversation->users()->attach($user->id, ['read' => true]);
+        $conversation->users()->attach($userID, ['read' => true]);
     }
 
     public function removeUser(Conversation $conversation, User $user)
@@ -78,12 +78,12 @@ class ConversationRepository implements ConversationRepo
         $conversation->users()->detach($user->id);
     }
 
-    public function matchUser(User $user1, User $user2)
+    public function matchUser($user1ID, $user2ID)
     {
-        return Conversation::whereHas('users', function ($query) use ($user1) {
-            $query->where('id', $user1->id);
-        })->whereHas('users', function ($query) use ($user2) {
-            $query->where('id', $user2->id);
+        return Conversation::whereHas('users', function ($query) use ($user1ID) {
+            $query->where('id', $user1ID);
+        })->whereHas('users', function ($query) use ($user2ID) {
+            $query->where('id', $user2ID);
         })->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)->first();
     }
 
@@ -121,37 +121,37 @@ class ConversationRepository implements ConversationRepo
         return collect($users);
     }
 
-    public function usersToChat($user, $who = null, $search_text = null)
+    public function usersToChat($userID, $whoID = null, $search_text = null)
     {
-        $users = User::where(function ($q) use ($user) {
+        $users = User::where(function ($q) use ($userID) {
             $q->where('is_admin', true);
-            $q->orWhereHas('friends', function ($q) use ($user) {
-                $q->where('id', $user->id);
+            $q->orWhereHas('friends', function ($q) use ($userID) {
+                $q->where('id', $userID);
             });
-            $q->orWhereHas('trips', function ($q) use ($user) {
+            $q->orWhereHas('trips', function ($q) use ($userID) {
                 $q->where('friendship_type_id', Trip::PRIVACY_PUBLIC);
-                $q->orWhere(function ($q) use ($user) {
+                $q->orWhere(function ($q) use ($userID) {
                     $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
-                    $q->where(function ($q) use ($user) {
-                        $q->whereHas('user.friends', function ($q) use ($user) {
-                            $q->whereId($user->id);
+                    $q->where(function ($q) use ($userID) {
+                        $q->whereHas('user.friends', function ($q) use ($userID) {
+                            $q->whereId($userID);
                         });
-                        $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
-                            $q->whereId($user->id);
+                        $q->orWhereHas('user.friends.friends', function ($q) use ($userID) {
+                            $q->whereId($userID);
                         });
                     });
                 });
-                $q->orWhereHas('passengerAccepted', function ($q) use ($user) {
-                    $q->where('user_id', $user->id);
+                $q->orWhereHas('passengerAccepted', function ($q) use ($userID) {
+                    $q->where('user_id', $userID);
                 });
             });
-            $q->orWhereHas('passenger.trip.user', function ($q) use ($user) {
-                $q->where('id', $user->id);
+            $q->orWhereHas('passenger.trip.user', function ($q) use ($userID) {
+                $q->where('id', $userID);
             });
         });
-        $users->where('id', '<>', $user->id);
-        if ($who) {
-            $users->where('id', $who->id);
+        $users->where('id', '<>', $userID);
+        if ($whoID) {
+            $users->where('id', $whoID);
         }
         if ($search_text) {
             $users->where(function ($q) use ($search_text) {

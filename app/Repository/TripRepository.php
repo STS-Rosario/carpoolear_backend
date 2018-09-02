@@ -224,7 +224,20 @@ class TripRepository implements TripRepo
     {
         foreach ($points as $point) {
             $p = new TripPoint();
-            $p->address = $point['address'];
+            if (isset($point['address'])) {
+                $p->address = $point['address'];
+            } else {
+                try {
+                    if (is_array($point['json_address'])) {
+                        $p->address = $point['json_address']['ciudad'];
+                    } else {
+                        $json = json_decode($point['json_address']);
+                        $p->address = $json->ciudad;
+                    }
+                } catch (Exception $ex) {
+                    $p->address = '';
+                }
+            }
             $p->json_address = $point['json_address'];
             $p->lat = $point['lat'];
             $p->lng = $point['lng'];

@@ -19,11 +19,11 @@ interface Conversations
 
     public function users(Conversation $conversation);
 
-    public function addUser(Conversation $conversation, UserModel $user);
+    public function addUser(Conversation $conversation, $user);
 
     public function removeUser(Conversation $conversation, UserModel $user);
 
-    public function matchUser(UserModel $user1, UserModel $user2);
+    public function matchUser($user1, $user2);
 
     public function changeConversationReadState(Conversation $conversation, UserModel $user, $read_state);
 

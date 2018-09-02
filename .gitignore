@@ -3,6 +3,7 @@
 .env
 /public/app
 /public/image/paths
+/public/image/profile
 settings.json
 .vscode/
 cert/*.pem

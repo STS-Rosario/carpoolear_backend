@@ -39,9 +39,11 @@ class ConversationApiTest extends TestCase
 
         $conversation = $this->conversationManager->findOrCreatePrivateConversation($user1, $user2);
         $this->assertTrue($conversation != null);
+        $this->conversationManager->send($user1, $conversation->id, 'Hola');
 
         $conversation = $this->conversationManager->findOrCreatePrivateConversation($user3, $user1);
         $this->assertTrue($conversation != null);
+        $this->conversationManager->send($user1, $conversation->id, 'Hola');
 
         $response = transform($this->call('GET', 'api/conversations/'));
 

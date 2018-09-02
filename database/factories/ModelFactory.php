@@ -56,6 +56,10 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'rosario', function ($faker) {
         'json_address' => ['ciudad' => 'Rosario', 'provincia' => 'Santa Fe'],
         'lat'          => -32.946525,
         'lng'          => -60.669847,
+        'sin_lat'          => sin(deg2rad(-32.946525)),
+        'sin_lng'          => sin(deg2rad(-60.669847)),
+        'cos_lat'          => cos(deg2rad(-32.946525)),
+        'cos_lng'          => cos(deg2rad(-60.669847)),
     ];
 });
 
@@ -65,6 +69,10 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'buenos_Aires', function ($fak
         'json_address' => ['ciudad' => 'Buenos Aires', 'provincia' => 'Buenos Aires'],
         'lat'          => -34.608903,
         'lng'          => -58.404521,
+        'sin_lat'          => sin(deg2rad(-34.608903)),
+        'sin_lng'          => sin(deg2rad( -58.404521)),
+        'cos_lat'          => cos(deg2rad(-34.608903)),
+        'cos_lng'          => cos(deg2rad( -58.404521)),
     ];
 });
 
@@ -74,6 +82,10 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'cordoba', function ($faker) {
         'json_address' => ['ciudad' => 'Cordoba', 'provincia' => 'Cordoba'],
         'lat'          => -31.421045,
         'lng'          => -64.190543,
+        'sin_lat'          => sin(deg2rad(-31.421045)),
+        'sin_lng'          => sin(deg2rad(-64.190543)),
+        'cos_lat'          => cos(deg2rad(-31.421045)),
+        'cos_lng'          => cos(deg2rad(-64.190543)),
     ];
 });
 
@@ -83,6 +95,20 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'mendoza', function ($faker) {
         'json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
         'lat'          => -32.897273,
         'lng'          => -68.834067,
+        'sin_lat'          => sin(deg2rad( -32.897273)),
+        'sin_lng'          => sin(deg2rad(-68.834067)),
+        'cos_lat'          => cos(deg2rad( -32.897273)),
+        'cos_lng'          => cos(deg2rad(-68.834067)),
+    ];
+});
+
+$factory->define(STS\Entities\Subscription::class, function ($faker) {
+    return [ 
+        'state'                 => true,
+        'trip_date'             => Carbon\Carbon::now(),
+        'user_id'               => function () {
+            return factory(STS\User::class)->create()->id;
+        },
     ];
 });
 
