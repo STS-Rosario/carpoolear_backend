@@ -64,7 +64,7 @@
                                     <li>
                                         <ul>
                                             <li>
-                                                <a href="colabora-como-colaborar">DONAR</a>
+                                                <a href="donar">DONAR</a>
                                             </li>
                                             <li>
                                                 <a href="colabora-como-colaborar">¿Cómo colaborar?</a>

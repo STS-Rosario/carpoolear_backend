@@ -97,12 +97,16 @@
     var btns = document.querySelectorAll(".btn-donar");
     btns.forEach(function (btn) {
         btn.addEventListener("click", function (event) {
-            console.log(event.target.id);
-            var value = document.querySelector('input[name="donationValor"]:checked').value;
-            if (event.target.id === "btn-unica") {
-                window.open(linksUnicaVez[value], '_blank');
+            var rdb = document.querySelector('input[name="donationValor"]:checked');
+            if (rdb) {
+                var value = rdb.value;
+                if (event.target.id === "btn-unica") {
+                    window.open(linksUnicaVez[value], '_blank');
+                } else {
+                    window.open(linksMensual[value], '_blank');
+                }
             } else {
-                window.open(linksMensual[value], '_blank');
+                alert("Debes seleccionar un monto de donación. Gracias!");
             }
         });
     });
