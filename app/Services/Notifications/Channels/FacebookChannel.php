@@ -20,7 +20,7 @@ class FacebookChannel
 
     public function createUrl($account, $template)
     {
-        $url = 'https://graph.facebook.com/v2.7/'.$account->provider_user_id.'/notifications?access_token=';
+        $url = 'https://graph.facebook.com/v2.9/'.$account->provider_user_id.'/notifications?access_token=';
         $url .= $this->getFacebookSecret();
         $url .= '&template='.$template;
 

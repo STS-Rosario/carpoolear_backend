@@ -90,7 +90,7 @@ class FacebookSocialProvider implements SocialProvider
 
     private function request($url)
     {
-        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.7'.$url.'&access_token='.$this->token);
+        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.9'.$url.'&access_token='.$this->token);
 
         return $res;
     }
