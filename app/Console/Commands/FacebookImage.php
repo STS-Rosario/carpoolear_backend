@@ -85,7 +85,7 @@ class FacebookImage extends Command
 
     private function request($id)
     {
-        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.7/'.$id.'/picture?redirect=0&height=200&width=200&type=normal');
+        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.9/'.$id.'/picture?redirect=0&height=200&width=200&type=normal');
 
         return $res;
     }
