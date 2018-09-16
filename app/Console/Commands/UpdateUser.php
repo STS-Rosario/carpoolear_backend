@@ -22,7 +22,7 @@ class UpdateUser extends Command
      *
      * @var string
      */
-    protected $description = 'Update trips, ratings and messages for duplicated users';
+    protected $description = 'Update trips, ratings and passenger for duplicated users';
 
     /**
      * Create a new command instance.
@@ -50,10 +50,16 @@ class UpdateUser extends Command
             $rating->save();
         }
         
-        $messages = Passenger::where('user_id', '=', $originalId)->get();
-        foreach ($messages as $message) {
-            $message->user_id = $newId;
-            $message->save();
+        $ratings = Rating::where('user_id_to', '=', $originalId)->get();
+        foreach ($ratings as $rating) {
+            $rating->user_id_to = $newId;
+            $rating->save();
+        }
+        
+        $as_passenger = Passenger::where('user_id', '=', $originalId)->get();
+        foreach ($as_passenger as $passenger) {
+            $passenger->user_id = $newId;
+            $passenger->save();
         }
         
         $trips = Trip::where('user_id', '=', $originalId)->get();
@@ -64,11 +70,12 @@ class UpdateUser extends Command
 
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);
-            $user->delete();
+            $user->active = 0;
+            $trip->save();
             $this->info('User has been removed.');
         }
         
-        $this->info('Trips, ratings and messages have been updated.');
+        $this->info('Trips, ratings and passenger have been updated.');
 
     }
 }
