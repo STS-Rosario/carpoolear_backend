@@ -48,8 +48,8 @@ class ConversationCreate extends Command
         $userFrom = User::find($this->argument('from'));
 
         //Create new conversation
-        $conversation = $this->conversation->findOrCreatePrivateConversation($userFrom, $userTo);
-        if ($conversation) {
+        $newConversation = $this->conversation->findOrCreatePrivateConversation($userFrom, $userTo);
+        if ($newConversation) {
             $this->info("Conversation has been created.");
         } else {
             $this->error("Conversation could not be created, maybe none of the users are admin?");
