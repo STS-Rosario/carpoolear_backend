@@ -20,6 +20,8 @@ class Kernel extends ConsoleKernel
         Commands\DownloadPoints::class,
         Commands\FacebookImage::class,
         Commands\UpdateUser::class,
+        Commands\ConversationCreate::class,
+
     ];
 
     /**
