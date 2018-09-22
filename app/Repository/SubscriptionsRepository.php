@@ -53,7 +53,7 @@ class SubscriptionsRepository implements SubscriptionRepository
             $to = $date_search->copy()->addDays(3);
 
             $now = Carbon::now('America/Argentina/Buenos_Aires'); 
-            if($from->lte($now)){
+            if($from->lte($now)) {
                 $from = $now;
             }
             $query = SubscriptionModel::with('user')->where(function ($q) use ($from, $to) {
@@ -88,6 +88,9 @@ class SubscriptionsRepository implements SubscriptionRepository
         $points = $trip->points;
         $this->makeDistance($query, $points[0], 'from');
         $this->makeDistance($query, $points[count($points) - 1], 'to');
+
+        $query->where('is_passenger', $trip->is_passenger);
+        
 
         return $query->get();
     }

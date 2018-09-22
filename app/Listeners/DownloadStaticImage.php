@@ -36,8 +36,8 @@ class DownloadStaticImage
             $temp_url = 'https://maps.googleapis.com/maps/api/staticmap?size=640x320&path=color:0x0000ff|weight:5';
             $temp_url .= '|enc:'.$enc_path;
 
-            $data = file_get_contents($temp_url);
-            $this->filesRepo->createFromData($data, 'png', 'image/paths/', $trip->id);
+            // $data = file_get_contents($temp_url);
+            // $this->filesRepo->createFromData($data, 'png', 'image/paths/', $trip->id);
         }
     }
 }
