@@ -49,8 +49,8 @@ class SubscriptionsRepository implements SubscriptionRepository
             // $trips->orderBy('trip_date');
         } else {
             $date_search = $trip->trip_date;
-            $from = $date_search->copy()->subDays(3);
-            $to = $date_search->copy()->addDays(3);
+            $from = $date_search->copy()->startOfDay();
+            $to = $date_search->copy()->endOfDay();
 
             $now = Carbon::now('America/Argentina/Buenos_Aires'); 
             if($from->lte($now)) {
