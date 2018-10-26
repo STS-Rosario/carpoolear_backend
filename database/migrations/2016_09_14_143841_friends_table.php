@@ -13,6 +13,7 @@ class FriendsTable extends Migration
     public function up()
     {
         Schema::create('friends', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->integer('uid1')->unsigned();
             $table->integer('uid2')->unsigned();
             $table->string('origin');

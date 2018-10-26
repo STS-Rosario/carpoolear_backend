@@ -13,6 +13,7 @@ class AddCanceledState extends Migration
     public function up()
     {
         Schema::table('trip_passengers', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->integer('canceled_state')->after('request_state')->nullable();
         });
     }

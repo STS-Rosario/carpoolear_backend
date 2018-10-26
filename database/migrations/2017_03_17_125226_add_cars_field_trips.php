@@ -13,6 +13,7 @@ class AddCarsFieldTrips extends Migration
     public function up()
     {
         Schema::table('trips', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->integer('car_id')->unsigned()->nullable();
             $table->foreign('car_id')->references('id')->on('cars')->onUpdate('cascade')->onDelete('set null');
         });

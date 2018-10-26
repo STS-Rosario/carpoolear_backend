@@ -13,6 +13,7 @@ class ChangeCo2Type extends Migration
     public function up()
     {
         Schema::table('trips', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->float('co2')->change();
         });
     }

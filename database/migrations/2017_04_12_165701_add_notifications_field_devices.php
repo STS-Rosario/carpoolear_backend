@@ -13,6 +13,7 @@ class AddNotificationsFieldDevices extends Migration
     public function up()
     {
         Schema::table('users_devices', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->boolean('notifications');
             $table->string('language');
         });

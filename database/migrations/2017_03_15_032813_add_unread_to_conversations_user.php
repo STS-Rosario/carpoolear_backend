@@ -13,6 +13,7 @@ class AddUnreadToConversationsUser extends Migration
     public function up()
     {
         Schema::table('conversations_users', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->boolean('read');
         });
     }

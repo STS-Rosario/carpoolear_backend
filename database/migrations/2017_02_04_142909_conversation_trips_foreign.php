@@ -13,6 +13,7 @@ class ConversationTripsForeign extends Migration
     public function up()
     {
         Schema::table('conversations', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->foreign('trip_id')->references('id')->on('trips')
                                                         ->onDelete('cascade')
                                                         ->onUpdate('cascade');
