@@ -10,10 +10,11 @@
 | and give it the controller to call when that URI is requested.
 |
 */
-
-// Route::get('/app/{name?}', function () {
-//     return File::get(public_path().'/app/index.html');
-// })->where('name', '[\/\w\.-]*');
+/*
+Route::get('/app/{name?}', function () {
+	return File::get(public_path().'/app/index.html');
+})->where('name', '[\/\w\.-]*');
+*/
 
 Route::get('/', 'HomeController@home');
 Route::get('/home', 'HomeController@home');

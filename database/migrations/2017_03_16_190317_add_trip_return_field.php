@@ -13,7 +13,6 @@ class AddTripReturnField extends Migration
     public function up()
     {
         Schema::table('trips', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
             $table->integer('return_trip_id')->unsigned()->nullable();
             $table->foreign('return_trip_id')->references('id')->on('trips')->onUpdate('cascade')->onDelete('cascade');
         });

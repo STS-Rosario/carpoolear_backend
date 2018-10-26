@@ -13,7 +13,6 @@ class RatingIsAvailable extends Migration
     public function up()
     {
         Schema::table('rating', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
             $table->boolean('available');
         });
     }

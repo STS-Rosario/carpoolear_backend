@@ -13,7 +13,6 @@ class AddIsMember extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
             $table->boolean('is_member');
         });
     }

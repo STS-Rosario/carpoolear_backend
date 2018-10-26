@@ -13,7 +13,7 @@ class SubscriptionTable extends Migration
     public function up()
     {
         Schema::create('subscriptions', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
+			      $table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('user_id')->unsigned();
             $table->datetime('trip_date')->nullable();

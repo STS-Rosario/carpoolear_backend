@@ -13,7 +13,6 @@ class SuscriptionIsPassenger extends Migration
     public function up()
     {
         Schema::table('subscriptions', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
             $table->boolean('is_passenger');
         });
     }
