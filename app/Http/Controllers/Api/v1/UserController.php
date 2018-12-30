@@ -96,6 +96,9 @@ class UserController extends Controller
         if ($request->has('ammount')) {
             $donation->ammount = $request->get('ammount');
         }
+        if ($request->has('trip_id')) {
+            $donation->trip_id = $request->get('trip_id');
+        }
         $user = null;
         if ($request->has('user')) {
             $user = new \stdClass();
@@ -106,6 +109,7 @@ class UserController extends Controller
         } else {
             $user = $this->user;
         }
-        $this->userLogic->registerDonation($user, $donation);
+        $donation = $this->userLogic->registerDonation($user, $donation);
+        return $donation;
     }
 }

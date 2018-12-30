@@ -236,5 +236,6 @@ class UsersManager extends BaseManager implements UserLogic
         $donation->user_id = $user->id;
         $donation->month = date('Y-m-01 00:00:00');
         $donation->save();
+        return $donation;
     }
 }
