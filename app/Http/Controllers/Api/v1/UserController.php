@@ -17,7 +17,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('logged', ['except' => ['create']]);
+        $this->middleware('logged', ['except' => ['create', 'registerDonation']]);
         $this->userLogic = $userLogic;
     }
 
@@ -96,6 +96,20 @@ class UserController extends Controller
         if ($request->has('ammount')) {
             $donation->ammount = $request->get('ammount');
         }
-        $this->userLogic->registerDonation($this->user, $donation);
+        if ($request->has('trip_id')) {
+            $donation->trip_id = $request->get('trip_id');
+        }
+        $user = null;
+        if ($request->has('user')) {
+            $user = new \stdClass();
+            $user->id = intval($request->get('user'));
+            if (!$user->id > 0) {
+                $user->id = 164619; //donador anonimo
+            }
+        } else {
+            $user = $this->user;
+        }
+        $donation = $this->userLogic->registerDonation($user, $donation);
+        return $donation;
     }
 }

@@ -18,6 +18,8 @@
                 <ul class="list-inline social-list">
                     <li><a href="https://twitter.com/Carpoolear"><i class="ti-twitter-alt"></i></a></li>
                     <li><a href="https://facebook.com/Carpoolear"><i class="ti-facebook"></i></a></li>
+                    <li><a href="https://www.instagram.com/carpoolear/"><i class="ti-instagram"></i></a></li>
+                    <li><a href="https://github.com/STS-Rosario"><i class="ti-github"></i></a></li>
                 </ul>
             </div>
         </div><!--end of row-->

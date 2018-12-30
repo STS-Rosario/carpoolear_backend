@@ -112,6 +112,10 @@ class HomeController extends Controller
     {
         return view('donar');
     }
+    public function donarcompartir()
+    {
+        return view('donar-compartir');
+    }
 
 
     public function datos()
