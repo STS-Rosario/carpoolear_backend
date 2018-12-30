@@ -11,6 +11,17 @@ use Carbon\Carbon;
 class DataController extends Controller
 {
     public function data () {
+        $queryUsuarios = "
+            SELECT DATE_FORMAT(created_at, '%Y-%m') AS 'key', 
+                DATE_FORMAT(created_at, '%Y') AS 'año', 
+                DATE_FORMAT(created_at, '%m') AS 'mes',
+                count(*) AS 'cantidad'
+            FROM users
+            WHERE created_at IS NOT NULL
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+        ";
+        $usuarios = DB::select(DB::raw($queryUsuarios), array());
+
         $queryViajes = "
             SELECT DATE_FORMAT(trip_date, '%Y-%m') AS 'key', 
                     DATE_FORMAT(trip_date, '%Y') AS 'año', 
@@ -77,6 +88,7 @@ class DataController extends Controller
         $frecuencia_origenes_destinos_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesDestinosFrecuencia), array());
 
         return $this->response->withArray([
+            'usuarios' => $usuarios,
             'viajes' => $viajes,
             'solicitudes' => $solicitudes,
             'frecuencia_origenes_posterior_ago_2017' => $frecuencia_origenes_posterior_ago_2017,

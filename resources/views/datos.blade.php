@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title', 'Donar - Carpoolear')
+@section('title', 'Datos - Carpoolear')
 @section('body-class', 'body-difusion')
 
 @section('content')
@@ -23,6 +23,9 @@
                 <canvas id="grafico-viajes"></canvas>
                 <h3>Asientos disponibles</h3>
                 <canvas id="grafico-solicitudes"></canvas>
+                <h3>Usuarios registrados</h3>
+                <canvas id="grafico-usuarios"></canvas>
+                <canvas id="grafico-usuarios-totales"></canvas>
                 <h3>Viajes más frecuentes (acumulados desde Agosto 2017)</h3>
                 <div id="ranking-origen-destino"></div>
                 <h3>Origen más frecuentes (acumulados desde Agosto 2017)</h3>
@@ -35,6 +38,111 @@
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
 <script>
+    function crearGraficoUsuarios (labels, data, data2) {
+        console.log(labels, data);
+        var ctx = document.getElementById('grafico-usuarios');
+        var chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                labels: labels,
+                datasets: [{
+                        label: 'Usuarios',
+                        backgroundColor: "#F00",
+                        borderColor: "#F00",
+                        data: data,
+                        fill: false,
+                }]
+            },
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Usuarios registrados por mes'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Mes'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Cantidad'
+                        }
+                    }]
+                }
+            }
+        });
+        ctx = document.getElementById('grafico-usuarios-totales');
+        chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                labels: labels,
+                datasets: [
+                {
+                        label: 'Usuarios',
+                        backgroundColor: "#0F0",
+                        borderColor: "#0F0",
+                        data: data2,
+                        fill: false,
+                },
+                ]
+            },
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Usuarios totales registrados'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Mes'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Cantidad'
+                        }
+                    }]
+                }
+            }
+        });
+    }
     function crearGraficoViajes (labels, data) {
         var ctx = document.getElementById('grafico-viajes');
         var chart = new Chart(ctx, {
@@ -205,7 +313,6 @@
                 var stop = date.getFullYear() + '-' + month;
                 for (var index = 0; index < arr.length; index++) {
                     var element = data.viajes[index];
-                    console.log(element);
                     if (element.key <= stop) {
                         for (var i = 0; i < data.solicitudes.length; i++) {
                             var solicitud = data.solicitudes[i];
@@ -251,6 +358,20 @@
                     label: 'Cantidad'
                 }];
                 tableCreate('ranking-destino', columns, data.frecuencia_destinos_posterior_ago_2017, 19);
+            }
+            if (data && data.usuarios) {
+                console.log(data.usuarios);
+                var labels = [];
+                var dataset = [];
+                var datasetTotales = [];
+                var total = 0;
+                data.usuarios.forEach(function (el) {
+                    labels.push(el.key);
+                    dataset.push(el.cantidad);
+                    total += el.cantidad;
+                    datasetTotales.push(total);
+                });
+                crearGraficoUsuarios(labels, dataset, datasetTotales);
             }
         });
     };
