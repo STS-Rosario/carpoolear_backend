@@ -33,6 +33,7 @@ class TripUserTransformer extends TransformerAbstract
             'accounts' => $user->accounts,
             'has_pin' => $user->has_pin,
             'is_member' => $user->is_member,
+            'monthly_donate' => $user->monthly_donate,
         ];
 
         return $data;

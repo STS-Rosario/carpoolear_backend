@@ -41,6 +41,7 @@ class User extends Authenticatable
         'last_connection',
         'has_pin',
         'is_member',
+        'monthly_donate',
     ];
 
     protected $dates = [
@@ -56,8 +57,9 @@ class User extends Authenticatable
         'terms_and_conditions' => 'boolean',
         'active'               => 'boolean',
         'is_admin'             => 'boolean',
-        'has_pin'            => 'boolean',
+        'has_pin'              => 'boolean',
         'is_member'            => 'boolean',
+        'monthly_donate'       => 'boolean'
     ];
 
     protected $appends = [
