@@ -41,3 +41,4 @@ Route::get('/data', 'DataController@data');
 Route::get('/donar', 'HomeController@donar');
 Route::get('/donar-compartir', 'HomeController@donarcompartir');
 Route::get('/datos', 'HomeController@datos');
+Route::get('/colabora-programando', 'HomeController@programar');

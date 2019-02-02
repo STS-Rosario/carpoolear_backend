@@ -122,6 +122,10 @@ class HomeController extends Controller
     {
         return view('datos');
     }
+    public function programar()
+    {
+        return view('programar');
+    }
 
     public function endsWith($haystack, $needle)
     {
