@@ -15,15 +15,13 @@ Install dependencies
 ```bash
 composer install
 ```
-Generate laravel key
-```bash
-php artisan key:generate
-```
-
-
 Configure the database access in the .env file
 ```bash
 cp .env.example .env
+```
+Generate laravel key
+```bash
+php artisan key:generate
 ```
 
 Give read/write access to the storage folder
