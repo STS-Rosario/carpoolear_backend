@@ -116,6 +116,27 @@ networks:
 ## Contributing
 
 
+## Troubleshooting
+
+```
+[PDOException] - SQLSTATE[HY000] [2002] No such file or directory
+```
+ * check if the mysql server is running
+ * change your .env file to DB_HOST=**127.0.0.1** instead of **localhost**
+
+```
+[PDOException]                                                                          
+PDO::__construct(): The server requested authentication method unknown to the client [caching_sha2_password]
+```
+* create or alter your mysql user to use mysql_native_password
+
+```sql
+create user username@localhost identified with mysql_native_password by 'password';
+```
+
+```sql
+alter user 'username'@'localhost' identified with mysql_native_password by 'password';
+```
 
 ## License
 
