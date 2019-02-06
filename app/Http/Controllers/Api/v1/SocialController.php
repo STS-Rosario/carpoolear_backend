@@ -52,7 +52,7 @@ class SocialController extends Controller
         }
 
         if ($user->banned) {
-            throw new UnauthorizedHttpException('User kick');
+            throw new UnauthorizedHttpException(null, 'user_banned');
         }
 
         // Registro mi devices
