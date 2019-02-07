@@ -15,7 +15,7 @@ return [
     |            "ses", "sparkpost", "log"
     |
     */
-
+    'enabled' => filter_var(env('MAIL_ENABLED', 'true'), FILTER_VALIDATE_BOOLEAN),
     'driver' => env('MAIL_DRIVER', 'smtp'),
 
     /*

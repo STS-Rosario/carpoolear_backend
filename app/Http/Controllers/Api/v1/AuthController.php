@@ -44,11 +44,11 @@ class AuthController extends Controller
         $user = JWTAuth::authenticate($token);
 
         if ($user->banned) {
-            throw new UnauthorizedHttpException('user_banned');
+            throw new UnauthorizedHttpException(null, 'user_banned');
         }
 
         if (! $user->active) {
-            throw new UnauthorizedHttpException('user_not_active');
+            throw new UnauthorizedHttpException(null, 'user_not_active');
         }
 
         return $this->response->withArray(['token' => $token]);
