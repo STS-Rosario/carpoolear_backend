@@ -35,6 +35,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'co2'                   => 'required|numeric',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
+                'parent_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
 
                 'points.*.address'      => 'required|string',
@@ -54,6 +55,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'distance'              => 'numeric',
                 'co2'                   => 'numeric',
                 'return_trip_id'        => 'exists:trips,id',
+                'parent_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
 
                 'points.*.address'      => 'string',
@@ -74,6 +76,19 @@ class TripsManager extends BaseManager implements TripLogic
         } else {
             $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
+
+            if (isset($data['parent_trip_id'])) {
+                $parentTripId = $data['parent_trip_id'];
+                $parentTrip = $this->tripRepo->show($parentTripId);
+                
+                if ($parentTrip) {
+                    $parentData = array();
+                    $parentData['return_trip_id'] = $trip->id;
+
+                    $parentTrip = $this->tripRepo->update($parentTrip, $parentData);
+                }
+            }
+
             event(new CreateEvent($trip));
 
             return $trip;

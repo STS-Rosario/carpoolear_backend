@@ -45,6 +45,7 @@ class Trip extends Model
         'return_trip_id',
         'enc_path',
         'car_id',
+        'parent_trip_id'
     ];
 
     protected $hidden = [
@@ -65,6 +66,11 @@ class Trip extends Model
     protected $dates = [
         'deleted_at', 'trip_date',
     ];
+
+    public function parentTrip()
+    {
+        return $this->hasOne('STS\Entities\Trip', 'parent_trip_id');
+    }
 
     public function user()
     {
