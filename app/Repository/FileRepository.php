@@ -51,18 +51,35 @@ class FileRepository implements FilesRepo
             $newfilename = date('mdYHis').$mil.'.'.$extension;
         }
 
-        // Create Imagick object
-        $im = new \Imagick();
+        $imgPath = $folder_path . $newfilename;
+
+        try {
+            if( class_exists('Imagick') ) {
+                // Create Imagick object
+                $im = new \Imagick();
+            
+                // Convert image into Imagick
+                $im->readimageblob($data);
+
+                $im->thumbnailImage(400, 400, true);
+
+                $output = $im->getimageblob();
+
+                File::put($imgPath, $output);
+            } else {
+                $im = imagecreatefromstring($data);
+                    
+                $width  = imagesx($im);
+                $height = imagesy($im);
+                $thumb = imagecreatetruecolor(400, 400);
+                imagecopyresized($thumb, $im, 0, 0, 0, 0, 400, 400, $width, $height);
+
+                imagejpeg($thumb, $imgPath, 100);
+            }
+        } catch (Exception $e) {
+            \Log::error($e);
+        }
         
-        // Convert image into Imagick
-        $im->readimageblob($data);
-
-        $im->thumbnailImage(400, 400, true);
-
-        $output = $im->getimageblob();
-
-        File::put($folder_path.$newfilename, $output);
-
         return $newfilename;
     }
 
