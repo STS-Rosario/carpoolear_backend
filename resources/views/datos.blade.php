@@ -26,6 +26,12 @@
                 <h3>Usuarios registrados</h3>
                 <canvas id="grafico-usuarios"></canvas>
                 <canvas id="grafico-usuarios-totales"></canvas>
+                <h3>Conductores con más viajes cargados</h3>
+                <div id="ranking-conductores"></div>
+                <h3>Pasajeros que más han carpooleado</h3>
+                <div id="ranking-pasajeros"></div>
+                <h3>Usuarios más calificados</h3>
+                <div id="ranking-calificaciones"></div>
                 <h3>Viajes más frecuentes (acumulados desde Agosto 2017)</h3>
                 <div id="ranking-origen-destino"></div>
                 <h3>Origen más frecuentes (acumulados desde Agosto 2017)</h3>
@@ -373,7 +379,39 @@
                 });
                 crearGraficoUsuarios(labels, dataset, datasetTotales);
             }
+
         });
     };
+
+    setTimeout(function () {
+        fetch('/more-data')
+        .then((resp) => resp.json()) // Transform the data into json
+        .then(function(data) {
+            var columns = [{
+                key: 'name',
+                label: 'Nombre'
+            },{
+                key: 'drives',
+                label: 'Cantidad'
+            }];
+            tableCreate('ranking-conductores', columns, data.ranking_conductores, 50);
+            columns = [{
+                key: 'name',
+                label: 'Nombre'
+            },{
+                key: 'drives',
+                label: 'Cantidad'
+            }];
+            tableCreate('ranking-pasajeros', columns, data.ranking_pasajeros, 50);
+            columns = [{
+                key: 'name',
+                label: 'Nombre'
+            },{
+                key: 'rating',
+                label: 'Cantidad'
+            }];
+            tableCreate('ranking-calificaciones', columns, data.ranking_calificaciones, 50);
+        });
+    }, 4000);
 </script>
 @endsection

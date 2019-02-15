@@ -38,6 +38,7 @@ Route::get('/desuscribirme', 'HomeController@desuscribirme');
 Route::get('/test', 'HomeController@test');
 Route::get('/encuentrocarpoolero', 'HomeController@encuentrocarpoolero');
 Route::get('/data', 'DataController@data');
+Route::get('/more-data', 'DataController@moreData');
 Route::get('/donar', 'HomeController@donar');
 Route::get('/donar-compartir', 'HomeController@donarcompartir');
 Route::get('/datos', 'HomeController@datos');
