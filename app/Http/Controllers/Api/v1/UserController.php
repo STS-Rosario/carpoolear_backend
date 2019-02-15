@@ -112,4 +112,12 @@ class UserController extends Controller
         $donation = $this->userLogic->registerDonation($user, $donation);
         return $donation;
     }
+    public function changeBooleanProperty ($property, $value, Request $request) 
+    {
+        $user = $this->user;
+        $user->$property = $value > 0;
+        $user->save();
+        $profile = $this->userLogic->show($user, $user->id);
+        return $profile;
+    }
 }
