@@ -26,12 +26,12 @@
                 <h3>Usuarios registrados</h3>
                 <canvas id="grafico-usuarios"></canvas>
                 <canvas id="grafico-usuarios-totales"></canvas>
-                <h3>Conductores con más viajes cargados</h3>
+                <!--<h3>Conductores con más viajes cargados</h3>
                 <div id="ranking-conductores"></div>
                 <h3>Pasajeros que más han carpooleado</h3>
                 <div id="ranking-pasajeros"></div>
                 <h3>Usuarios más calificados</h3>
-                <div id="ranking-calificaciones"></div>
+                <div id="ranking-calificaciones"></div>-->
                 <h3>Viajes más frecuentes (acumulados desde Agosto 2017)</h3>
                 <div id="ranking-origen-destino"></div>
                 <h3>Origen más frecuentes (acumulados desde Agosto 2017)</h3>
@@ -383,7 +383,7 @@
         });
     };
 
-    setTimeout(function () {
+    /* setTimeout(function () {
         fetch('/more-data')
         .then((resp) => resp.json()) // Transform the data into json
         .then(function(data) {
@@ -411,7 +411,7 @@
                 label: 'Cantidad'
             }];
             tableCreate('ranking-calificaciones', columns, data.ranking_calificaciones, 50);
-        });
+        }); */
     }, 4000);
 </script>
 @endsection
