@@ -42,6 +42,9 @@ class User extends Authenticatable
         'has_pin',
         'is_member',
         'monthly_donate',
+        'do_not_alert_request_seat',
+        'do_not_alert_accept_passenger',
+        'do_not_alert_pending_rates',
     ];
 
     protected $dates = [
@@ -59,7 +62,10 @@ class User extends Authenticatable
         'is_admin'             => 'boolean',
         'has_pin'              => 'boolean',
         'is_member'            => 'boolean',
-        'monthly_donate'       => 'boolean'
+        'monthly_donate'       => 'boolean',
+        'do_not_alert_request_seat'       => 'boolean',
+        'do_not_alert_accept_passenger'   => 'boolean',
+        'do_not_alert_pending_rates'      => 'boolean'
     ];
 
     protected $appends = [
