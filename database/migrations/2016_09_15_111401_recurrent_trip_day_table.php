@@ -13,6 +13,7 @@ class RecurrentTripDayTable extends Migration
     public function up()
     {
         Schema::create('recurrent_trip_day', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('trip_id')->unsigned();
             $table->string('day', 45);

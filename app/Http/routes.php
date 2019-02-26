@@ -10,10 +10,11 @@
 | and give it the controller to call when that URI is requested.
 |
 */
-
-// Route::get('/app/{name?}', function () {
-//     return File::get(public_path().'/app/index.html');
-// })->where('name', '[\/\w\.-]*');
+/*
+Route::get('/app/{name?}', function () {
+	return File::get(public_path().'/app/index.html');
+})->where('name', '[\/\w\.-]*');
+*/
 
 Route::get('/', 'HomeController@home');
 Route::get('/home', 'HomeController@home');
@@ -38,5 +39,8 @@ Route::get('/desuscribirme', 'HomeController@desuscribirme');
 Route::get('/test', 'HomeController@test');
 Route::get('/encuentrocarpoolero', 'HomeController@encuentrocarpoolero');
 Route::get('/data', 'DataController@data');
+// Route::get('/more-data', 'DataController@moreData');
 Route::get('/donar', 'HomeController@donar');
+Route::get('/donar-compartir', 'HomeController@donarcompartir');
 Route::get('/datos', 'HomeController@datos');
+Route::get('/colabora-programando', 'HomeController@programar');

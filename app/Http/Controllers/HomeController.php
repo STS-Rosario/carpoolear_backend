@@ -112,11 +112,19 @@ class HomeController extends Controller
     {
         return view('donar');
     }
+    public function donarcompartir()
+    {
+        return view('donar-compartir');
+    }
 
 
     public function datos()
     {
         return view('datos');
+    }
+    public function programar()
+    {
+        return view('programar');
     }
 
     public function endsWith($haystack, $needle)

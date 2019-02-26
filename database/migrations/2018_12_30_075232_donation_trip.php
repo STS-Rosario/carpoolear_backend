@@ -3,7 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class ConversationsTable extends Migration
+class DonationTrip extends Migration
 {
     /**
      * Run the migrations.
@@ -12,15 +12,8 @@ class ConversationsTable extends Migration
      */
     public function up()
     {
-        Schema::create('conversations', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
-            $table->increments('id');
-            $table->integer('type');
-            $table->string('title', 255);
+        Schema::table('donations', function (Blueprint $table) {
             $table->integer('trip_id')->unsigned()->nullable();
-
-            $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -31,6 +24,8 @@ class ConversationsTable extends Migration
      */
     public function down()
     {
-        Schema::drop('conversations');
+        Schema::table('donations', function (Blueprint $table) {
+            $table->dropColumn('trip_id');
+        });
     }
 }

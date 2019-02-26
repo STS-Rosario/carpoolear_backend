@@ -13,6 +13,7 @@ class CreateCarsTable extends Migration
     public function up()
     {
         Schema::create('cars', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->increments('id');
             $table->string('patente', 10);
             $table->string('description', 255);
