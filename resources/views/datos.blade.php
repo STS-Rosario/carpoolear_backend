@@ -411,7 +411,7 @@
                 label: 'Cantidad'
             }];
             tableCreate('ranking-calificaciones', columns, data.ranking_calificaciones, 50);
-        }); */
-    }, 4000);
+        }); 
+    }, 4000);*/
 </script>
 @endsection
