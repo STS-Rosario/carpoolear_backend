@@ -24,14 +24,14 @@
                         <li><img src="img/foto_andrea.jpg" width="100" height="100" alt="Foto de Andrea C">
                         <p><strong>Andrea Camorino:</strong> Soy periodista, organizadora de eventos. Voluntaria en varias organizaciones. Ecologista, amo los animales y el cine. En STS colaboro actualmente en Carpoolear, en la parte de prensa y difusión.</p>
                         </li>
-                        <li><img src="img/foto_santiago.jpg" width="100" height="100" alt="Foto de Santiago Cantarutti">
+                        <!--<li><img src="img/foto_santiago.jpg" width="100" height="100" alt="Foto de Santiago Cantarutti">
                         <p><strong>Santiago Cantarutti:</strong> Soy de Buenos Aires, aunque de corazón rosarino, incorporado a STS y al proyecto de Carpoolear como diseñador gráfico para realizar difusión por redes sociales, comunicación institucional, diseño de interfaz y/o de lo que surja. Fotografía, música, cine y aire libre como hobbies clichés, sumando a la cocina que al combinarla con alguno de los anteriores genera mis lindos momentos. Carpoolear es mi forma de aportar a una causa más grande que mis propios intereses, cuestiones comerciales o a mi mismo, apostando y deseando a mejorar nuestro día a día, sociedad y entorno.</p>
-                        </li>
-                        <li><img src="img/foto_marina.jpg" width="100" height="100" alt="Foto de Marina Cebollada">
+                        </li>-->
+                        <!--<li><img src="img/foto_marina.jpg" width="100" height="100" alt="Foto de Marina Cebollada">
                         <p><strong>Marina Cebollada:</strong> Soy Marina, licenciada en Comunicación Social, Diseñadora Gáfica y diplomada en Responsabilidad Social y Desarrollo Sostenible. Y bailarina (sobre todo, bailarina). Conocí a STS en el Foro Latinoamericano de Desarrollo Sostenible, y finalmente en 2015 me incorporo al equipo de Carpoolear para dar una mano con difusión y diseño, y con todo lo que se necesite.</p>
-                        </li>
-                        <li><img src="img/foto_anita.jpg" width="100" height="100" alt="Foto de Anita">
-                        <p><strong>Ana Laura Garrote:</strong> Aquí Anita. Ana Laura, si nos ponemos serios. Estudié Publicidad. Desde los comienzos de la carrera siempre me dediqué a la creatividad y el diseño, mayormente digital. Trabajando rodeada de programadores, finalmente me convencieron de que me aventurara en el mundo del código, así que hace unos 5 años que también maqueto sitios web, aplicaciones y software. Me sumé a Carpoolear hacia fines del 2014. No sé si vamos a salvar al mundo (aunque quién sabe), pero me gusta ser parte de una fuerza que empuja para mejorarlo un poquito todos los días.</p></li>
+                        </li>-->
+                        <!--<li><img src="img/foto_anita.jpg" width="100" height="100" alt="Foto de Anita">
+                        <p><strong>Ana Laura Garrote:</strong> Aquí Anita. Ana Laura, si nos ponemos serios. Estudié Publicidad. Desde los comienzos de la carrera siempre me dediqué a la creatividad y el diseño, mayormente digital. Trabajando rodeada de programadores, finalmente me convencieron de que me aventurara en el mundo del código, así que hace unos 5 años que también maqueto sitios web, aplicaciones y software. Me sumé a Carpoolear hacia fines del 2014. No sé si vamos a salvar al mundo (aunque quién sabe), pero me gusta ser parte de una fuerza que empuja para mejorarlo un poquito todos los días.</p></li>-->
                         <li><img src="img/foto_marshan.jpg" width="100" height="100" alt="Foto de Anita">
                         <p><strong>Marina Giannone:</strong>Médica, aunque no parezca. Y otras cosas más de las que no tengo título habilitante. 
                         Rosarina, muy. Creo que la música y la bicicleta son ingredientes fundamentales de la felicidad.
@@ -54,25 +54,33 @@
                         <li><img src="img/foto_martin_acosta.jpg" width="100" height="100" alt="Foto de Martín Acosta">
                         <p><strong>Martín Acosta:</strong> Soy de Pergamino, Buenos Aires. Me encanta todo lo que sea colaborativo y que ayude a la gente. En Carpoolear encontré ambas por lo que me sumé para aportar mi granito de arena en programación y comunicación.</p>
                         </li>
-                        <li><img src="img/foto_camila.jpg" width="100" height="100" alt="Foto de Camila Grimi">
+                        <!--<li><img src="img/foto_camila.jpg" width="100" height="100" alt="Foto de Camila Grimi">
                         <p><strong>Camila Grimi:</strong> Diseñadora gráfica de Rosario, amante del rock, el cine y el Tetris. Me incorporé en el área de comunicación de Carpoolear en 2017 para promover y ser parte de este gran proyecto sustentable.</p>
-                        </li>
+                        </li>-->
                         <li><img src="img/foto_misslemon.jpg" width="100" height="100" alt="Foto de María Sánchez Villalba">
                         <p><strong>María Sánchez Villalba:</strong> Tucumana. Un gusto musical variado, matemáticas, psicología, hornear galletas y contarle a viajeros sobre mi ciudad, hacen mis días. Andar en bici para transportarme y conocer nuevos lugares, me fascina. Combino hobbies y principios varios con Carpoolear, colaboro desde 2016.</p>
                         </li>
                         </li>
-                        <li><img src="img/foto_sole.jpg" width="100" height="100" alt="Foto de Soledad Larroucau">
+                        <!--<li><img src="img/foto_sole.jpg" width="100" height="100" alt="Foto de Soledad Larroucau">
                         <p><strong>Soledad Larroucau:</strong> Rosarina por adopción. Estudié comunicación social, sin peros, trabajo en Innovación Pública del Gobierno de Santa Fe. Juego a las Ciencias Sociales en el Centro de Investigaciones en Mediatizaciones y contagio ideas desde TEDxRosario. Fan con vincha de STS Rosario.</p>
-                        </li>
+                        </li>-->
                         <!--li><img src="img/foto_seba.jpg" width="100" height="100" alt="Foto de Sebastián La Spina">
                         <p><strong>Sebastián La Spina:</strong> Descripción</p>
                         </li-->
+                        <li>
+                            <img src="img/foto_yeye.jpg" width="100" height="100" alt="Foto de Soledad Larroucau">
+                            <p><strong>Yeye Rueda:</strong> Colombiana viviendo en Buenos Aires, Diseñadora gráfica y Multimedia. Formo parte de la comunidad carpoolera desde hace un par de años y desde el año pasado empecé a colaborar en la parte de comunicación del proyecto.</p>
+                        </li>
+                        <li>
+                            <img src="img/foto_rios.png" width="100" height="100" alt="Foto de Soledad Larroucau">
+                            <p><strong>Pablo Ríos:</strong> Soy correntino, vivo en Santa Fe Capital, y estudio Comunicación Social en Paraná, Entre Ríos. Padezco de la grave tendencia a sumarme a un montón de proyectos colaborativos, sobretodo cuando hay interdisciplina y cuestiones relacionadas al cine, periodismo científico y tecnología sustentable. Formo parte del equipo Carpoolear desde el 2018, dando una mano con el diseño gráfico. </p>
+                        </li>
                     </ul>
                     
-                    <p><strong>Colaboradores</strong>: Gonzalo González Mora, Carmen García, Barbara Cravero, Andrés Culasso, Gerardo Tjor, Germán Gentile, Luciana Bernard, Tristana Retamoso.</p>
+                    <p><strong>Colaboradores</strong>: Gonzalo González Mora, Carmen García, Barbara Cravero, Andrés Culasso, Gerardo Tjor, Germán Gentile, Luciana Bernard, Tristana Retamoso, Santiago Cantarutti, Marina Cebollada, Ana Garrote, Camila Grimi, Soledad Larroucau y Gala DK.</p>
                     
                     <p>Han formado parte del equipo:</p>
-                    <p>Rocío Anselmo, Samuel Burgueño, Martín Bruno, Bárbara Cravero, Pilar Frechou, Mariel Figueroa, Ezequiel Grosso, Gisel Levit, Cintia Pereyra, Ramiro Picó, Galo Pugliese, Mariano Soto, Martin Cesanelli, Sofia Visintini, Pablo Raissiguier, Octavio Danieli, Fernando López Guevara, Ruben Acevedo, Walter Cejas, Ezequiel Catalani, Angel Arancibia, Carmen García, Federico Cadierno Moksha, Ohnos Diseño.</p>
+                    <p>Santiago Cantarutti, Marina Cebollada, Ana Garrote, Camila Grimi, Soledad Larroucau, Rocío Anselmo, Samuel Burgueño, Martín Bruno, Bárbara Cravero, Pilar Frechou, Mariel Figueroa, Ezequiel Grosso, Gisel Levit, Cintia Pereyra, Ramiro Picó, Galo Pugliese, Mariano Soto, Martin Cesanelli, Sofia Visintini, Pablo Raissiguier, Octavio Danieli, Fernando López Guevara, Ruben Acevedo, Walter Cejas, Ezequiel Catalani, Angel Arancibia, Carmen García, Federico Cadierno Moksha, Ohnos Diseño.</p>
                     </div>
                 </div>
                 
