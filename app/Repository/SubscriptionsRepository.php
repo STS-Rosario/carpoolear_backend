@@ -70,13 +70,13 @@ class SubscriptionsRepository implements SubscriptionRepository
                 // Nothings;
                 break;
             case Trip::PRIVACY_FRIENDS:
-                $users = $user->friends()->lists('id');
+                $users = $user->friends()->pluck('id');
                 $query->whereIn('user_id', $users);
 
                 break;
             case Trip::PRIVACY_FOF:
-                $users2 = $user->relativeFriends()->lists('id');
-                $users = $user->friends()->lists('id');
+                $users2 = $user->relativeFriends()->pluck('id');
+                $users = $user->friends()->pluck('id');
                 $query->where(function ($q) use ($users, $users2) {
                     $q->whereIn('user_id', $users);
                     $q->orWhereIn('user_id', $users2);

@@ -87,7 +87,7 @@ class MessageRepository implements MessageRepo
                             $q->where('user_id', $user->id)
                                 ->where('read', false);
                         })
-                    ->lists('id');
+                    ->pluck('id');
         DB::table('user_message_read')
           ->whereIn('message_id', $msgs)
           ->where('user_id', $user->id)
