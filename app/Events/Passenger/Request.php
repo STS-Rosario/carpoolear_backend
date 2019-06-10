@@ -10,7 +10,9 @@ class Request extends Event
     use SerializesModels;
 
     public $trip;
+
     public $from;
+
     public $to;
 
     /**

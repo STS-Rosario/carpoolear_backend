@@ -12,6 +12,7 @@ class RatingTest extends TestCase
     use DatabaseTransactions;
 
     protected $ratingManager;
+
     protected $ratingRepository;
 
     public function setUp()

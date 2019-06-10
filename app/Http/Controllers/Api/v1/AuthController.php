@@ -18,7 +18,9 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 class AuthController extends Controller
 {
     protected $user;
+
     protected $userLogic;
+
     protected $deviceLogic;
 
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
@@ -98,17 +100,15 @@ class AuthController extends Controller
             } else {
                 return $this->response->withArray([
                     'token' => $token,
-                    'config' => $config
+                    'config' => $config,
                 ]);
             }
         }
-        
+
         return $this->response->withArray([
             'token' => $token,
-            'config' => $config
+            'config' => $config,
         ]);
-
-
     }
 
     public function logout(Request $request)

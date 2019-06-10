@@ -2,11 +2,11 @@
 
 namespace STS\Console\Commands;
 
-use Illuminate\Console\Command;
 use STS\User;
 use STS\Entities\Trip;
-use STS\Entities\Passenger;
 use STS\Entities\Rating;
+use STS\Entities\Passenger;
+use Illuminate\Console\Command;
 
 class UpdateUser extends Command
 {
@@ -43,25 +43,25 @@ class UpdateUser extends Command
     {
         $originalId = $this->argument('original');
         $newId = $this->argument('new');
-        
+
         $ratings = Rating::where('user_id_from', '=', $originalId)->get();
         foreach ($ratings as $rating) {
             $rating->user_id_from = $newId;
             $rating->save();
         }
-        
+
         $ratings = Rating::where('user_id_to', '=', $originalId)->get();
         foreach ($ratings as $rating) {
             $rating->user_id_to = $newId;
             $rating->save();
         }
-        
+
         $as_passenger = Passenger::where('user_id', '=', $originalId)->get();
         foreach ($as_passenger as $passenger) {
             $passenger->user_id = $newId;
             $passenger->save();
         }
-        
+
         $trips = Trip::where('user_id', '=', $originalId)->get();
         foreach ($trips as $trip) {
             $trip->user_id = $newId;
@@ -74,8 +74,7 @@ class UpdateUser extends Command
             $trip->save();
             $this->info('User has been removed.');
         }
-        
-        $this->info('Trips, ratings and passenger have been updated.');
 
+        $this->info('Trips, ratings and passenger have been updated.');
     }
 }

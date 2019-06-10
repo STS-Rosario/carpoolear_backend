@@ -24,6 +24,7 @@ class RequestRemainder extends Command
     protected $description = 'Notify pending requests';
 
     protected $tripLogic;
+
     protected $tripRepo;
 
     /**

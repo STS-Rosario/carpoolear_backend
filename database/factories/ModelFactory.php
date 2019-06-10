@@ -70,9 +70,9 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'buenos_Aires', function ($fak
         'lat'          => -34.608903,
         'lng'          => -58.404521,
         'sin_lat'          => sin(deg2rad(-34.608903)),
-        'sin_lng'          => sin(deg2rad( -58.404521)),
+        'sin_lng'          => sin(deg2rad(-58.404521)),
         'cos_lat'          => cos(deg2rad(-34.608903)),
-        'cos_lng'          => cos(deg2rad( -58.404521)),
+        'cos_lng'          => cos(deg2rad(-58.404521)),
     ];
 });
 
@@ -95,15 +95,15 @@ $factory->defineAs(STS\Entities\TripPoint::class, 'mendoza', function ($faker) {
         'json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
         'lat'          => -32.897273,
         'lng'          => -68.834067,
-        'sin_lat'          => sin(deg2rad( -32.897273)),
+        'sin_lat'          => sin(deg2rad(-32.897273)),
         'sin_lng'          => sin(deg2rad(-68.834067)),
-        'cos_lat'          => cos(deg2rad( -32.897273)),
+        'cos_lat'          => cos(deg2rad(-32.897273)),
         'cos_lng'          => cos(deg2rad(-68.834067)),
     ];
 });
 
 $factory->define(STS\Entities\Subscription::class, function ($faker) {
-    return [ 
+    return [
         'state'                 => true,
         'trip_date'             => Carbon\Carbon::now(),
         'user_id'               => function () {

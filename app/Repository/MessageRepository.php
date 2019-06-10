@@ -56,16 +56,15 @@ class MessageRepository implements MessageRepo
         /* $msgs = Message::whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
-        }); */ 
+        }); */
 
         $conversations = $user->conversations;
 
-        $conversations_id = array();
+        $conversations_id = [];
 
         $conversations->each(function ($item, $key) use (&$conversations_id) {
             if ($item->pivot->read == 0) {
                 $conversations_id[] = $item->id;
-                
             }
         });
 

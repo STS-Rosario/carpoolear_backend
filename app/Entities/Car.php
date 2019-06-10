@@ -7,8 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Car extends Model
 {
     protected $table = 'cars';
+
     protected $fillable = ['patente', 'description', 'user_id'];
+
     protected $hidden = ['created_at', 'updated_at'];
+
     protected $appends = ['trips_count'];
 
     public function user()

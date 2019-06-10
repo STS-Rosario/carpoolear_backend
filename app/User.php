@@ -6,20 +6,23 @@ use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\Entities\Rating as RatingModel;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-// use Illuminate\Database\Eloquent\SoftDeletes;
-use STS\Services\Notifications\Models\DatabaseNotification;
 use STS\Contracts\Repository\IRatingRepository;
+// use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use STS\Services\Notifications\Models\DatabaseNotification;
 
 class User extends Authenticatable
 {
     protected $table = 'users';
 
     const FRIEND_REQUEST = 0;
+
     const FRIEND_ACCEPTED = 1;
+
     const FRIEND_REJECT = 2;
 
     const FRIENDSHIP_SYSTEM = 0;
+
     const FRIENDSHIP_FACEBOOK = 1;
 
     protected $fillable = [
@@ -65,7 +68,7 @@ class User extends Authenticatable
         'monthly_donate'       => 'boolean',
         'do_not_alert_request_seat'       => 'boolean',
         'do_not_alert_accept_passenger'   => 'boolean',
-        'do_not_alert_pending_rates'      => 'boolean'
+        'do_not_alert_pending_rates'      => 'boolean',
     ];
 
     protected $appends = [
@@ -100,7 +103,8 @@ class User extends Authenticatable
         return $this->hasMany('STS\Entities\Car', 'user_id');
     }
 
-    public function subscriptions() {
+    public function subscriptions()
+    {
         return $this->hasMany('STS\Entities\Subscription', 'user_id');
     }
 
@@ -141,6 +145,7 @@ class User extends Authenticatable
         $donations = $this->hasMany("STS\Entities\Donation", 'user_id');
         $donations->where('month', '<=', date('Y-m-t 23:59:59'));
         $donations->where('month', '>=', date('Y-m-01 00:00:00'));
+
         return $donations;
     }
 
@@ -185,20 +190,18 @@ class User extends Authenticatable
     public function ratingGiven()
     {
         return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('available', 1);
-                    /* ->where('voted', 1)
-                    ->where('created_at', '<=', Carbon::Now()
-                    ->subDays(RatingModel::RATING_INTERVAL));*/
+        /* ->where('voted', 1)
+        ->where('created_at', '<=', Carbon::Now()
+        ->subDays(RatingModel::RATING_INTERVAL));*/
     }
 
     public function ratingReceived()
     {
         return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('available', 1);
-                    /* ->where('voted', 1)
-                    ->where('created_at', '<=', Carbon::Now()
-                    ->subDays(RatingModel::RATING_INTERVAL)); */
+        /* ->where('voted', 1)
+        ->where('created_at', '<=', Carbon::Now()
+        ->subDays(RatingModel::RATING_INTERVAL)); */
     }
-
-    
 
     public function ratings($value = null)
     {

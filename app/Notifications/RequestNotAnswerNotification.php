@@ -40,11 +40,11 @@ class RequestNotAnswerNotification extends BaseNotification
 
         return [
             'message' => 'Una de tus solicitudes aún no fue contestada',
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

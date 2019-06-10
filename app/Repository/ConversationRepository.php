@@ -106,7 +106,7 @@ class ConversationRepository implements ConversationRepo
         ->with('users');
 
         $conversations = $userConversations->get();
-        
+
         $users = [];
         foreach ($conversations as  $conversation) {
             foreach ($conversation->users as  $userc) {

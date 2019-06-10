@@ -31,7 +31,7 @@ class UsersManager extends BaseManager implements UserLogic
                 // 'gender'   => 'string|in:Masculino,Femenino,N/A',
             ]);
         } else {
-            if(!$is_social) {
+            if (! $is_social) {
                 return Validator::make($data, [
                     'name'     => 'required|max:255',
                     'email'    => 'required|email|max:255|unique:users',
@@ -100,12 +100,12 @@ class UsersManager extends BaseManager implements UserLogic
         }
     }
 
-
     public function mailUnsuscribe($email)
     {
         $data['emails_notifications'] = false;
         $user = $this->repo->getUserBy('email', $email);
         $this->repo->update($user, $data);
+
         return $user;
     }
 
@@ -123,20 +123,21 @@ class UsersManager extends BaseManager implements UserLogic
             $data = explode(',', $base64_string);
             if (is_array($data) && count($data) > 1) {
                 $data = base64_decode($data[1]);
-    
+
                 $name = $fileManager->createFromData($data, 'jpeg', 'image/profile');
 
                 $this->repo->updatePhoto($user, $name);
-                
+
                 event(new UpdateEvent($user->id));
+
                 return $user;
             } else {
                 $error = new \stdClass();
                 $error->error = 'error_uploading_image';
                 $this->setErrors($error);
+
                 return;
             }
-
         }
     }
 
@@ -236,6 +237,7 @@ class UsersManager extends BaseManager implements UserLogic
         $donation->user_id = $user->id;
         $donation->month = date('Y-m-01 00:00:00');
         $donation->save();
+
         return $donation;
     }
 }

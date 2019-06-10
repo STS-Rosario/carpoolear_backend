@@ -14,7 +14,7 @@ interface Subscription
 
     public function delete(UserModel $user, $id);
 
-    public function index(UserModel $user); 
+    public function index(UserModel $user);
 
     public function setErrors($errs);
 

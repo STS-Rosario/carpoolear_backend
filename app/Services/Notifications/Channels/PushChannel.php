@@ -36,7 +36,7 @@ class PushChannel
             throw new \Exception("Method toPush does't exists");
         }
     }
-    
+
     public function getExtraData($notification)
     {
         if (method_exists($notification, 'getExtras')) {
@@ -71,7 +71,7 @@ class PushChannel
         if (isset($data['action'])) {
             $defaultData['actions'] = $android_actions[$data['action']];
         }
-        if (!isset($data['time_to_live'])) {
+        if (! isset($data['time_to_live'])) {
             $defaultData['time_to_live'] = 2419200;
         }
 

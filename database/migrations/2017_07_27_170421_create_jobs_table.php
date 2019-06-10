@@ -13,7 +13,7 @@ class CreateJobsTable extends Migration
     public function up()
     {
         Schema::create('jobs', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
+            $table->engine = 'InnoDB';
             $table->bigIncrements('id');
             $table->string('queue');
             $table->longText('payload');

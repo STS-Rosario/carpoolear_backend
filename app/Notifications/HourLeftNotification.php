@@ -40,11 +40,11 @@ class HourLeftNotification extends BaseNotification
 
         return [
             'message' => 'Recuerda que en poco más de una hora viajas hacia '.$trip->to_town,
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

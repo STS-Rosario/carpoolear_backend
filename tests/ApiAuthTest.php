@@ -10,6 +10,7 @@ class ApiAuthTest extends TestCase
     use DatabaseTransactions;
 
     protected $userManager;
+
     protected $userLogic;
 
     public function __construct()

@@ -4,12 +4,13 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Contracts\Logic\Subscription  as SubscriptionLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
+use STS\Contracts\Logic\Subscription  as SubscriptionLogic;
 
 class SubscriptionController extends Controller
 {
     protected $user;
+
     protected $subscriptionsLogic;
 
     public function __construct(SubscriptionLogic $subscriptionsLogic)
@@ -22,7 +23,7 @@ class SubscriptionController extends Controller
     {
         $this->user = $this->auth->user();
         $data = $request->all();
-        $model = $this->subscriptionsLogic->create($this->user, $data); 
+        $model = $this->subscriptionsLogic->create($this->user, $data);
         if (! $model) {
             throw new StoreResourceFailedException('Could not create new model.', $this->subscriptionsLogic->getErrors());
         }

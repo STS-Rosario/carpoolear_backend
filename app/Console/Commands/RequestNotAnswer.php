@@ -25,6 +25,7 @@ class RequestNotAnswer extends Command
     protected $description = 'Notify not answer request';
 
     protected $tripLogic;
+
     protected $tripRepo;
 
     /**
