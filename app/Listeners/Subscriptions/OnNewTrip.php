@@ -11,6 +11,7 @@ use STS\Contracts\Repository\Subscription as SubscriptionsRepository;
 class OnNewTrip implements ShouldQueue
 {
     protected $userRepo;
+
     protected $subRepo;
 
     /**

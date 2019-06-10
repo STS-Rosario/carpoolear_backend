@@ -2,11 +2,11 @@
 
 namespace STS;
 
-use Illuminate\Notifications\Notifiable;
 use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\Entities\Rating as RatingModel;
+use Illuminate\Notifications\Notifiable;
 use STS\Contracts\Repository\IRatingRepository;
 // use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -15,6 +15,7 @@ use STS\Services\Notifications\Models\DatabaseNotification;
 class User extends Authenticatable
 {
     use Notifiable;
+
     protected $table = 'users';
 
     const FRIEND_REQUEST = 0;

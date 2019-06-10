@@ -40,6 +40,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
     }
+
     /**
      * Register the Closure based commands for the application.
      *
