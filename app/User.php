@@ -2,6 +2,7 @@
 
 namespace STS;
 
+use Illuminate\Notifications\Notifiable;
 use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
@@ -13,6 +14,7 @@ use STS\Services\Notifications\Models\DatabaseNotification;
 
 class User extends Authenticatable
 {
+    use Notifiable;
     protected $table = 'users';
 
     const FRIEND_REQUEST = 0;
