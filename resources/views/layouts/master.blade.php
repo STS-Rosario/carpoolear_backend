@@ -11,8 +11,8 @@
         <link href="css/ytplayer.css" rel="stylesheet" type="text/css" media="all" />
         <link href="css/theme-startup.css" rel="stylesheet" type="text/css" media="all" />
         <link href="css/custom.css" rel="stylesheet" type="text/css" media="all" />
-        <link href='http://fonts.googleapis.com/css?family=Lato:300,400%7CRaleway:100,400,300,500,600,700%7COpen+Sans:400,500,600' rel='stylesheet' type='text/css'>
-        <link href="http://fonts.googleapis.com/css?family=Roboto:100,300,400,600,700" rel="stylesheet" type="text/css">
+        <link href='https://fonts.googleapis.com/css?family=Lato:300,400%7CRaleway:100,400,300,500,600,700%7COpen+Sans:400,500,600' rel='stylesheet' type='text/css'>
+       {{--  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,600,700" rel="stylesheet" type="text/css"> --}}
         <link href="css/font-roboto.css" rel="stylesheet" type="text/css">
     </head>
     <body class="btn-rounded @yield('body-class')">
