@@ -13,7 +13,9 @@ class MessagesTest extends TestCase
     protected $userManager;
 
     protected $conversationManager;
+
     protected $messageRepository;
+
     protected $conversationRepository;
 
     public function setUp()
@@ -229,7 +231,7 @@ class MessagesTest extends TestCase
         $this->conversationManager->send($u, $c2->id, 'test1');
         $this->conversationManager->send($u, $c3->id, 'test1');
 
-        $userConversations = $this->conversationManager->getUserConversations($u); 
+        $userConversations = $this->conversationManager->getUserConversations($u);
         $userConversations = json_decode(json_encode($userConversations));
 
         $this->assertTrue($userConversations->total === 3);

@@ -9,6 +9,7 @@ use STS\Contracts\Repository\Conversations as ConversationsRepo;
 class createConversation
 {
     protected $conversationLogic;
+
     protected $repoConv;
 
     /**

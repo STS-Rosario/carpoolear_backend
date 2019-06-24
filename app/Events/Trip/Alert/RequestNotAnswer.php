@@ -8,7 +8,9 @@ use Illuminate\Queue\SerializesModels;
 class RequestNotAnswer extends Event
 {
     use SerializesModels;
+
     public $to;
+
     public $trip;
 
     /**

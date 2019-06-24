@@ -16,8 +16,11 @@ use STS\Contracts\Repository\Conversations as ConversationRepository;
 class ConversationsManager extends BaseManager implements ConversationRepo
 {
     protected $messageRepository;
+
     protected $conversationRepository;
+
     protected $userRepository;
+
     protected $friendsLogic;
 
     public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic)
@@ -54,8 +57,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     public function findOrCreatePrivateConversation($user1, $user2)
     {
-        $user1ID = is_integer($user1) ? $user1 : $user1->id;
-        $user2ID = is_integer($user2) ? $user2 : $user2->id;
+        $user1ID = is_int($user1) ? $user1 : $user1->id;
+        $user2ID = is_int($user2) ? $user2 : $user2->id;
         $conversation = $this->conversationRepository->matchUser($user1ID, $user2ID);
         if ($conversation) {
             return $conversation;
@@ -77,8 +80,9 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     private function usersCanChat($user1, $user2)
     {
-        $user1ID = is_integer($user1) ? $user1 : $user1->id;
-        $user2ID = is_integer($user2) ? $user2 : $user2->id;
+        $user1ID = is_int($user1) ? $user1 : $user1->id;
+        $user2ID = is_int($user2) ? $user2 : $user2->id;
+
         return $user1->is_admin || $this->conversationRepository->usersToChat($user1ID, $user2ID)->count() > 0;
     }
 
@@ -288,13 +292,15 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return collect([]);;*/
     }
 
-    public function sendToAll(User $user, $destinations, $message) {
-        foreach($destinations as $to) {
+    public function sendToAll(User $user, $destinations, $message)
+    {
+        foreach ($destinations as $to) {
             $conver = $this->findOrCreatePrivateConversation($user, $to);
             if ($conver) {
                 $m = $this->send($user, $conver->id, $message);
             }
         }
+
         return true;
     }
 }

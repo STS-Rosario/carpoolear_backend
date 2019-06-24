@@ -33,7 +33,6 @@ class DeviceRepository implements DeviceRepo
         return Device::where($key, $value)->first();
     }
 
-
     public function deleteDevices(User $user)
     {
         return Device::where('user_id', $user->id)->delete();

@@ -13,7 +13,9 @@ use Dingo\Api\Exception\StoreResourceFailedException;
 class SocialController extends Controller
 {
     protected $user;
+
     protected $userLogic;
+
     protected $deviceLogic;
 
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
@@ -71,6 +73,7 @@ class SocialController extends Controller
         $user = $this->auth->user();
         $accessToken = $request->get('access_token');
         $this->installProvider($provider, $accessToken);
+
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->updateProfile($user);
@@ -89,6 +92,7 @@ class SocialController extends Controller
         $user = $this->auth->user();
         $accessToken = $request->get('access_token');
         $this->installProvider($provider, $accessToken);
+
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->makeFriends($user);

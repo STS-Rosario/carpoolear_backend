@@ -10,6 +10,7 @@ use Dingo\Api\Exception\StoreResourceFailedException;
 class CarController extends Controller
 {
     protected $user;
+
     protected $carsLogic;
 
     public function __construct(CarLogic $carsLogic)

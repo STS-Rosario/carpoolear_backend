@@ -15,6 +15,7 @@ class UpdateConnection
      * @var Guard
      */
     protected $auth;
+
     protected $user;
 
     /**

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class TripPoint extends Model
 {
     protected $table = 'trips_points';
+
     protected $fillable = [
         'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id',
     ];
@@ -14,6 +15,7 @@ class TripPoint extends Model
     protected $hidden = [
         'created_at', 'updated_at', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng',
     ];
+
     protected $casts = [
         'json_address' => 'array',
     ];

@@ -2,10 +2,10 @@
 
 namespace STS\Console\Commands;
 
-use Illuminate\Console\Command;
-use STS\Entities\Conversation;
-use Carbon\Carbon;
 use STS\User;
+use Carbon\Carbon;
+use STS\Entities\Conversation;
+use Illuminate\Console\Command;
 use STS\Services\Logic\ConversationsManager as ConversationManager;
 
 class ConversationCreate extends Command
@@ -15,7 +15,6 @@ class ConversationCreate extends Command
      *
      * @var string
      */
-
     protected $signature = 'conversation:create {from} {to}';
 
     /**
@@ -24,7 +23,9 @@ class ConversationCreate extends Command
      * @var string
      */
     protected $description = 'Initiate a conversarion between users';
+
     protected $conversation;
+
     /**
      * Create a new command instance.
      *
@@ -33,8 +34,7 @@ class ConversationCreate extends Command
     public function __construct(ConversationManager $conversation)
     {
         parent::__construct();
-        $this->conversation = $conversation;   
-
+        $this->conversation = $conversation;
     }
 
     /**
@@ -50,9 +50,9 @@ class ConversationCreate extends Command
         //Create new conversation
         $newConversation = $this->conversation->findOrCreatePrivateConversation($userFrom, $userTo);
         if ($newConversation) {
-            $this->info("Conversation has been created.");
+            $this->info('Conversation has been created.');
         } else {
-            $this->error("Conversation could not be created, maybe none of the users are admin?");
+            $this->error('Conversation could not be created, maybe none of the users are admin?');
         }
     }
 }

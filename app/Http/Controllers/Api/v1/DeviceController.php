@@ -13,7 +13,9 @@ use Dingo\Api\Exception\UpdateResourceFailedException;
 class DeviceController extends Controller
 {
     protected $user;
+
     protected $userLogic;
+
     protected $deviceLogic;
 
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)

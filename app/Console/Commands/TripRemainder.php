@@ -25,6 +25,7 @@ class TripRemainder extends Command
     protected $description = 'Create rates from ending trips';
 
     protected $tripLogic;
+
     protected $tripRepo;
 
     /**

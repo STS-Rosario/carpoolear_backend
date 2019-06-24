@@ -11,6 +11,7 @@ use Dingo\Api\Exception\StoreResourceFailedException;
 class PassengerController extends Controller
 {
     protected $user;
+
     protected $passengerLogic;
 
     public function __construct(Request $r, IPassengersLogic $passengerLogic)

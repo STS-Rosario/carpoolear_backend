@@ -12,7 +12,9 @@ use STS\Contracts\Logic\Friends as FriendsLogic;
 class FriendsController extends Controller
 {
     protected $user;
+
     protected $friends;
+
     protected $users;
 
     public function __construct(Request $r, FriendsLogic $friends, UserLogic $users)
@@ -32,6 +34,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
+
         throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
@@ -45,6 +48,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
+
         throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
@@ -58,6 +62,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
+
         throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
@@ -71,6 +76,7 @@ class FriendsController extends Controller
                 return response()->json('OK');
             }
         }
+
         throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
     }
 
