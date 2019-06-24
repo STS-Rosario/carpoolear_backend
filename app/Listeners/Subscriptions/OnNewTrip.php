@@ -10,9 +10,7 @@ use STS\Contracts\Repository\Subscription as SubscriptionsRepository;
 
 class OnNewTrip implements ShouldQueue
 {
-    protected $userRepo;
-
-    protected $subRepo;
+    protected $userRepo, $subRepo;
 
     /**
      * Create the event listener.
@@ -36,12 +34,17 @@ class OnNewTrip implements ShouldQueue
     {
         $trip = $event->trip;
         $user = $trip->user;
-        $subscriptions = $this->subRepo->search($user, $trip);
-        console_log($subscriptions);
+        $subscriptions =  $this->subRepo->search($user, $trip);
+        // console_log($subscriptions);
         foreach ($subscriptions as $s) {
+            // \Log::info($trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
             $notification = new SubscriptionMatchNotification();
             $notification->setAttribute('trip', $trip);
-            $notification->notify($s->user);
+            try {
+                $notification->notify($s->user);
+            } catch (\Exception $e) {
+                \Log::info('Ex: ' . $trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
+            }
         }
     }
 }
