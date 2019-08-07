@@ -110,6 +110,7 @@ class AuthController extends Controller
         $data = [
             'session_id'  => $token,
         ];
+        $config = $this->_getConfig();
 
         if ($request->has('app_version')) {
             $data['app_version'] = $request->get('app_version');
@@ -129,7 +130,6 @@ class AuthController extends Controller
             }
         }
         
-        $config = $this->_getConfig();
         return $this->response->withArray([
             'token' => $token,
             'config' => $config,
