@@ -34,7 +34,7 @@ class AuthController extends Controller
     private function _getConfig () {
 
         $config = new \stdClass();
-        $config->donation = new \stdClass()
+        $config->donation = new \stdClass();
         $config->donation->month_days = config('carpoolear.donation_month_days');
         $config->donation->trips_count = config('carpoolear.donation_trips_count');
         $config->donation->trips_offset = config('carpoolear.donation_trips_offset');
