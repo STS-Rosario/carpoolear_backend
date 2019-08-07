@@ -10,15 +10,15 @@ class MailChannel
 
     public function send($notification, $user)
     {
-
         if ($user->email) {
             $data = $this->getData($notification, $user);
             $data = array_merge($data, $notification->getAttributes());
             $data['user'] = $user;
 
-            if(! config('mail.enabled')) {
+            if (! config('mail.enabled')) {
                 \Log::info('notification info:');
                 \Log::info($data);
+
                 return;
             }
 

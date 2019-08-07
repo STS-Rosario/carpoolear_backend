@@ -143,5 +143,4 @@ class UserRepository implements UserRep
     {
         $notification->readed();
     }
-
 }

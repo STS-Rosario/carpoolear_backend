@@ -10,8 +10,11 @@ class Cancel extends Event
     use SerializesModels;
 
     public $trip;
+
     public $from;
+
     public $to;
+
     public $canceledState;
 
     /**

@@ -5,8 +5,8 @@ use Illuminate\Database\Migrations\Migration;
 
 class UpdateRatingsAvailable extends Migration
 {
-    public function up() 
-    {            
+    public function up()
+    {
         DB::unprepared('CREATE PROCEDURE update_rating_availability(
             IN _id INT,
             IN _trip_id INT,
@@ -37,10 +37,8 @@ class UpdateRatingsAvailable extends Migration
           END;;');
     }
 
-    public function down() 
+    public function down()
     {
         DB::unprepared('DROP PROCEDURE IF EXISTS update_rating_availability');
     }
 }
-
-

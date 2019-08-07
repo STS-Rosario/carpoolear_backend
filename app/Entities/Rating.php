@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class Rating extends Model
 {
     const STATE_NEGATIVO = 0;
+
     const STATE_POSITIVO = 1;
+
     const RATING_INTERVAL = 15;
 
     protected $table = 'rating';
+
     protected $fillable = [
         'trip_id',
         'user_id_from',

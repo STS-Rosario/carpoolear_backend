@@ -10,6 +10,7 @@ class Accept extends Event
     use SerializesModels;
 
     public $from;
+
     public $to;
 
     /**

@@ -10,6 +10,7 @@ class Reject extends Event
     use SerializesModels;
 
     public $from;
+
     public $to;
 
     /**

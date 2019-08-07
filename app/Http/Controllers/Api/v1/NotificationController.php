@@ -10,6 +10,7 @@ use STS\Contracts\Logic\INotification as NotificationLogic;
 class NotificationController extends Controller
 {
     protected $user;
+
     protected $logic;
 
     public function __construct(Request $r, NotificationLogic $logic)

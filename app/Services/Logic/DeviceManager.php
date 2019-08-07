@@ -49,7 +49,6 @@ class DeviceManager extends BaseManager implements DeviceLogic
             // }
             $this->deviceRepo->deleteDevices($user);
 
-
             $device = new Device();
             $device->session_id = $data['session_id'];
             $device->device_id = $data['device_id'];

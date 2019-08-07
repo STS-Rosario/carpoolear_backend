@@ -2,10 +2,10 @@
 
 namespace STS\Http\Controllers;
 
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Entities\Rating as RatingModel;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use STS\Entities\Rating as RatingModel;
+use STS\Contracts\Logic\User as UserLogic;
 
 class HomeController extends Controller
 {
@@ -28,7 +28,7 @@ class HomeController extends Controller
     {
         return view('acerca-de-equipo');
     }
-    
+
     public function acercaDeProyecto()
     {
         return view('acerca-de-proyecto');
@@ -36,15 +36,15 @@ class HomeController extends Controller
 
     public function descarga()
     {
-        $useragent = $_SERVER ['HTTP_USER_AGENT'];
-        
-        $isIOS = preg_match ('/iPad|iPhone|iPod/', $useragent);
-        
-        if($isIOS) {
-            header("Location: https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8");
+        $useragent = $_SERVER['HTTP_USER_AGENT'];
+
+        $isIOS = preg_match('/iPad|iPhone|iPod/', $useragent);
+
+        if ($isIOS) {
+            header('Location: https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8');
             die();
         } else {
-            header("Location: https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419");
+            header('Location: https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419');
             die();
         }
     }
@@ -54,11 +54,12 @@ class HomeController extends Controller
         return view('auto-rojo');
     }
 
-
-	public function hashPassword(Request $request) {
-        if ($request->has("p")) {
-			echo bcrypt($request->get("p"));die;
-		}
+    public function hashPassword(Request $request)
+    {
+        if ($request->has('p')) {
+            echo bcrypt($request->get('p'));
+            die;
+        }
     }
 
     public function plataformaPreguntasFrecuentes()
@@ -91,12 +92,10 @@ class HomeController extends Controller
         return view('difusion');
     }
 
-
     public function mesadeayuda()
     {
         return view('mesadeayuda');
     }
-
 
     public function contacto()
     {
@@ -112,16 +111,17 @@ class HomeController extends Controller
     {
         return view('donar');
     }
+
     public function donarcompartir()
     {
         return view('donar-compartir');
     }
 
-
     public function datos()
     {
         return view('datos');
     }
+
     public function programar()
     {
         return view('programar');
@@ -137,7 +137,8 @@ class HomeController extends Controller
         return substr($haystack, -$length) === $needle;
     }
 
-    public function test () {
+    public function test()
+    {
         /* $user = new \STS\User();
         $user->id = 11525;
         $ratingRepository = new \STS\Repository\RatingRepository();
@@ -145,7 +146,6 @@ class HomeController extends Controller
         $data['value'] = RatingModel::STATE_POSITIVO;
         $ratings = $ratingRepository->getRatingsCount($user, $data);
         var_dump($ratings); die; */
-
 
         /* $user = \STS\User::where('id', 23124)->first();
         $messageRepo = new \STS\Repository\MessageRepository();
@@ -170,7 +170,8 @@ class HomeController extends Controller
         $first = new Carbon('first day of this month');
         $last = new Carbon('last day of this month');
         var_dump($first);
-        var_dump($last);die;
+        var_dump($last);
+        die;
     }
 
     public function handleApp($name)
@@ -197,14 +198,13 @@ class HomeController extends Controller
         }
     }
 
-
     public function desuscribirme(Request $request, UserLogic $userLogic)
     {
-        $email = $request->get("email");
+        $email = $request->get('email');
         if ($email) {
             $userLogic->mailUnsuscribe($email);
         }
+
         return view('unsuscribe');
     }
-
 }

@@ -42,11 +42,11 @@ class AcceptPassengerNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' ha aceptado tu solicitud.',
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

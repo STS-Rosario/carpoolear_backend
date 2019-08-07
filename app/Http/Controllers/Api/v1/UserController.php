@@ -2,6 +2,7 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
+use STS\Entities\Donation;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Transformers\ProfileTransformer;
@@ -9,7 +10,6 @@ use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
-use STS\Entities\Donation;
 
 class UserController extends Controller
 {
@@ -84,7 +84,7 @@ class UserController extends Controller
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 
-    public function registerDonation (Request $request) 
+    public function registerDonation(Request $request)
     {
         $donation = new Donation();
         if ($request->has('has_donated')) {
@@ -103,21 +103,24 @@ class UserController extends Controller
         if ($request->has('user')) {
             $user = new \stdClass();
             $user->id = intval($request->get('user'));
-            if (!$user->id > 0) {
+            if (! $user->id > 0) {
                 $user->id = 164619; //donador anonimo
             }
         } else {
             $user = $this->user;
         }
         $donation = $this->userLogic->registerDonation($user, $donation);
+
         return $donation;
     }
-    public function changeBooleanProperty ($property, $value, Request $request) 
+
+    public function changeBooleanProperty($property, $value, Request $request)
     {
         $user = $this->user;
         $user->$property = $value > 0;
         $user->save();
         $profile = $this->userLogic->show($user, $user->id);
+
         return $profile;
     }
 }

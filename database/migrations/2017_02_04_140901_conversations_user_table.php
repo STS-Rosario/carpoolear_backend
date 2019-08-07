@@ -13,6 +13,7 @@ class ConversationsUserTable extends Migration
     public function up()
     {
         Schema::create('conversations_users', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->integer('conversation_id')->unsigned();
             $table->foreign('conversation_id')->references('id')->on('conversations')
                                                                 ->onDelete('cascade')

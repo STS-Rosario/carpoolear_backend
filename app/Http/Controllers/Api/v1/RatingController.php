@@ -14,6 +14,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 class RatingController extends Controller
 {
     protected $userLogic;
+
     protected $rateLogic;
 
     public function __construct(IRateLogic $rateLogic, UserLogic $userLogic)

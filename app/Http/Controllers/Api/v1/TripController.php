@@ -11,6 +11,7 @@ use Dingo\Api\Exception\StoreResourceFailedException;
 class TripController extends Controller
 {
     protected $user;
+
     protected $tripsLogic;
 
     public function __construct(Request $r, TripLogic $tripsLogic)
@@ -50,7 +51,7 @@ class TripController extends Controller
         $this->user = $this->auth->user();
         $increment = $request->get('increment');
         $trip = $this->tripsLogic->changeTripSeats($this->user, $id, $increment);
-        if (!$trip) {
+        if (! $trip) {
             throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
@@ -112,8 +113,6 @@ class TripController extends Controller
         return $this->collection($trips, new TripTransformer($this->user));
         //return $this->response->withArray(['data' => $trips]);
     }
-
-
 
     public function myOldTrips(Request $request)
     {

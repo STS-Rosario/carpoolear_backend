@@ -10,7 +10,9 @@ class PendingRate extends Event
     use SerializesModels;
 
     public $to;
+
     public $trip;
+
     public $hash;
 
     /**

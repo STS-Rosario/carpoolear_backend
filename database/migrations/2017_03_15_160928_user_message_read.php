@@ -13,6 +13,7 @@ class UserMessageRead extends Migration
     public function up()
     {
         Schema::create('user_message_read', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->timestamps();
 
             $table->integer('user_id')->unsigned();

@@ -80,9 +80,9 @@ class TripsManager extends BaseManager implements TripLogic
             if (isset($data['parent_trip_id'])) {
                 $parentTripId = $data['parent_trip_id'];
                 $parentTrip = $this->tripRepo->show($parentTripId);
-                
+
                 if ($parentTrip) {
-                    $parentData = array();
+                    $parentData = [];
                     $parentData['return_trip_id'] = $trip->id;
 
                     $parentTrip = $this->tripRepo->update($parentTrip, $parentData);
@@ -134,21 +134,25 @@ class TripsManager extends BaseManager implements TripLogic
         $trip = $this->tripRepo->show($trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
-                $data = array();
+                $data = [];
                 $data['total_seats'] = $trip->total_seats + $increment;
                 if ($data['total_seats'] < 0) {
                     $this->setErrors(['error' => 'trip_seats_greater_than_zero']);
+
                     return;
                 }
                 if ($data['total_seats'] > 4) {
                     $this->setErrors(['error' => 'trip_seats_less_than_four']);
+
                     return;
                 }
                 if ($data['total_seats'] < $trip->passengerAccepted()->count()) {
                     $this->setErrors(['error' => 'trip_invalid_seats']);
+
                     return;
                 }
                 $trip = $this->tripRepo->update($trip, $data);
+
                 return $trip;
             } else {
                 $this->setErrors(trans('errors.tripowner'));
@@ -214,7 +218,6 @@ class TripsManager extends BaseManager implements TripLogic
     {
         return $this->tripRepo->myTrips($user, $asDriver);
     }
-
 
     public function myOldTrips($user, $asDriver)
     {

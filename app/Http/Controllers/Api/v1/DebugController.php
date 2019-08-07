@@ -14,20 +14,17 @@ use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 
 class DebugController extends Controller
 {
-
     public function __construct()
     {
     }
 
-    public function log (Request $request)
+    public function log(Request $request)
     {
         try {
-            if ($request->has("log")) {
-                \Log::info("ERROR IN APP: ". $request->get("log"));
+            if ($request->has('log')) {
+                \Log::info('ERROR IN APP: '.$request->get('log'));
             }
         } catch (Exception $ex) {
-
         }
     }
-
 }

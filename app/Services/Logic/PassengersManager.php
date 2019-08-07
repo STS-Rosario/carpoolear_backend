@@ -16,7 +16,9 @@ use STS\Contracts\Repository\IPassengersRepository;
 class PassengersManager extends BaseManager implements IPassengersLogic
 {
     protected $passengerRepository;
+
     protected $tripLogic;
+
     protected $uRepo;
 
     public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic, UserRepo $uRepo)

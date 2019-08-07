@@ -7,7 +7,9 @@ class ConversationApiTest extends TestCase
     use DatabaseTransactions;
 
     protected $conversationManager;
+
     protected $messageRepository;
+
     protected $conversationRepository;
 
     public function setUp()

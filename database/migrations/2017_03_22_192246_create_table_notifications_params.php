@@ -13,6 +13,7 @@ class CreateTableNotificationsParams extends Migration
     public function up()
     {
         Schema::create('notifications_params', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('notification_id')->unsigned();
             $table->string('key', 50);

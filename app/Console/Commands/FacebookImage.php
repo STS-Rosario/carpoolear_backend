@@ -25,6 +25,7 @@ class FacebookImage extends Command
     protected $description = 'Download profile images facebook from users';
 
     protected $files;
+
     protected $client;
 
     /**

@@ -20,6 +20,7 @@ class Kernel extends ConsoleKernel
         Commands\DownloadPoints::class,
         Commands\FacebookImage::class,
         Commands\UpdateUser::class,
+        Commands\ConversationCreate::class,
     ];
 
     /**
@@ -38,5 +39,15 @@ class Kernel extends ConsoleKernel
         $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
+    }
+
+    /**
+     * Register the Closure based commands for the application.
+     *
+     * @return void
+     */
+    protected function commands()
+    {
+        require base_path('routes/console.php');
     }
 }

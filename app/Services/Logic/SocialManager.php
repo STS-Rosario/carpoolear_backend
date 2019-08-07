@@ -14,10 +14,15 @@ use STS\Contracts\Repository\Social as SocialRepo;
 class SocialManager extends BaseManager implements SocialLogic
 {
     protected $friendsRepo;
+
     protected $userLogic;
+
     protected $filesRepo;
+
     protected $socialRepo;
+
     protected $provider;
+
     protected $userData;
 
     public function __construct(SocialProvider $provider, UserLogic $userRep, FriendsLogic $friendsRepo, FilesRep $files, SocialRepo $social)

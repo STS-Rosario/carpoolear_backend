@@ -11,14 +11,17 @@ class Conversation extends Model
     use SoftDeletes;
 
     const TYPE_PRIVATE_CONVERSATION = 0;
+
     const TYPE_TRIP_CONVERSATION = 1;
 
     protected $table = 'conversations';
+
     protected $fillable = [
         'type',
         'title',
         'trip_id',
     ];
+
     protected $dates = ['created_at', 'updated_at', 'deleted_at'];
 
     protected $hidden = [];

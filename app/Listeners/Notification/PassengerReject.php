@@ -9,6 +9,7 @@ use STS\Notifications\RejectPassengerNotification;
 class PassengerReject implements ShouldQueue
 {
     protected $userRepository;
+
     protected $tripRepository;
 
     /**

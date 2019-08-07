@@ -31,10 +31,12 @@ class ConversationsTransformer extends TransformerAbstract
                 $width = $conversation->users()->where('id', '<>', $this->user->id)->first();
                 $data['title'] = $width->name;
                 $data['image'] = $width->image ? '/image/profile/'.$width->image : '';
+
                 break;
             default:
                 $data['title'] = $conversation->title;
                 $data['image'] = '';
+
                 break;
         }
 

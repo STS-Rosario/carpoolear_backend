@@ -3,14 +3,15 @@
 namespace STS\Http\Controllers;
 
 use DB;
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Entities\Rating as RatingModel;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use STS\Entities\Rating as RatingModel;
+use STS\Contracts\Logic\User as UserLogic;
 
 class DataController extends Controller
 {
-    public function data () {
+    public function data()
+    {
         $queryUsuarios = "
             SELECT DATE_FORMAT(created_at, '%Y-%m') AS 'key', 
                 DATE_FORMAT(created_at, '%Y') AS 'año', 
@@ -20,7 +21,7 @@ class DataController extends Controller
             WHERE created_at IS NOT NULL
             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
         ";
-        $usuarios = DB::select(DB::raw($queryUsuarios), array());
+        $usuarios = DB::select(DB::raw($queryUsuarios), []);
 
         $queryViajes = "
             SELECT DATE_FORMAT(trip_date, '%Y-%m') AS 'key', 
@@ -32,7 +33,7 @@ class DataController extends Controller
             WHERE is_passenger = 0
             GROUP BY DATE_FORMAT(trip_date, '%Y-%m')
         ";
-        $viajes = DB::select(DB::raw($queryViajes), array());
+        $viajes = DB::select(DB::raw($queryViajes), []);
 
         $querySolicitudes = "
             SELECT DATE_FORMAT(trip_date, '%Y-%m') as 'key', 
@@ -51,8 +52,7 @@ class DataController extends Controller
                 WHERE t.is_passenger = 0
                 GROUP BY DATE_FORMAT(trip_date, '%Y-%m'), tp.request_state
         ";
-        $solicitudes = DB::select(DB::raw($querySolicitudes), array());
-
+        $solicitudes = DB::select(DB::raw($querySolicitudes), []);
 
         $queryOrigenesFrecuencia = "
             SELECT MIN(tp.address) 'origen', tp.lat, tp.lng, count(*) AS 'cantidad'
@@ -62,8 +62,8 @@ class DataController extends Controller
             GROUP BY tp.lat, tp.lng
             ORDER BY count(*) DESC
         ";
-        
-        $frecuencia_origenes_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesFrecuencia), array());
+
+        $frecuencia_origenes_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesFrecuencia), []);
 
         $frecuencia_origenes_posterior_ago_2017 = array_slice($frecuencia_origenes_posterior_ago_2017, 0, 25);
 
@@ -75,7 +75,7 @@ class DataController extends Controller
             GROUP BY tp.lat, tp.lng
             ORDER BY count(*) DESC
         ";
-        $frecuencia_destinos_posterior_ago_2017 = DB::select(DB::raw($queryDestinosFrecuencia), array());
+        $frecuencia_destinos_posterior_ago_2017 = DB::select(DB::raw($queryDestinosFrecuencia), []);
 
         $frecuencia_destinos_posterior_ago_2017 = array_slice($frecuencia_destinos_posterior_ago_2017, 0, 25);
 
@@ -89,10 +89,9 @@ class DataController extends Controller
             GROUP BY tpo.lat, tpo.lng, tpd.lat, tpo.lng
             ORDER BY count(*) DESC
         ";
-        $frecuencia_origenes_destinos_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesDestinosFrecuencia), array());
+        $frecuencia_origenes_destinos_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesDestinosFrecuencia), []);
 
         $frecuencia_origenes_destinos_posterior_ago_2017 = array_slice($frecuencia_origenes_destinos_posterior_ago_2017, 0, 25);
-
 
         return $this->response->withArray([
             'usuarios' => $usuarios,
@@ -100,12 +99,13 @@ class DataController extends Controller
             'solicitudes' => $solicitudes,
             'frecuencia_origenes_posterior_ago_2017' => $frecuencia_origenes_posterior_ago_2017,
             'frecuencia_destinos_posterior_ago_2017' => $frecuencia_destinos_posterior_ago_2017,
-            'frecuencia_origenes_destinos_posterior_ago_2017' => $frecuencia_origenes_destinos_posterior_ago_2017
+            'frecuencia_origenes_destinos_posterior_ago_2017' => $frecuencia_origenes_destinos_posterior_ago_2017,
         ]);
     }
 
-    public function moreData () {
-        $queryCalificaciones = "
+    public function moreData()
+    {
+        $queryCalificaciones = '
             SELECT r.user_id_to, u.name, COUNT(*) as rating
                 FROM rating r
                     INNER JOIN users u ON r.user_id_to = u.id
@@ -113,11 +113,10 @@ class DataController extends Controller
                 GROUP BY r.user_id_to, u.name
                 ORDER BY COUNT(*) DESC
             LIMIT 50;
-        ";
-        $calificaciones = DB::select(DB::raw($queryCalificaciones), array());
+        ';
+        $calificaciones = DB::select(DB::raw($queryCalificaciones), []);
 
-
-        $queryViajesConductores = "
+        $queryViajesConductores = '
             SELECT t.user_id, u.name, COUNT(*) as drives
                 FROM trips t
                     INNER JOIN users u ON t.user_id = u.id
@@ -125,12 +124,10 @@ class DataController extends Controller
                 GROUP BY t.user_id, u.name
                 ORDER BY COUNT(*) DESC
             LIMIT 50;
-        ";
-        $conductores = DB::select(DB::raw($queryViajesConductores), array());
+        ';
+        $conductores = DB::select(DB::raw($queryViajesConductores), []);
 
-
-
-        $queryViajesPasajeros = "
+        $queryViajesPasajeros = '
             SELECT tp.user_id, u.name, count(*) as drives
             FROM trip_passengers tp
             INNER JOIN users u ON tp.user_id = u.id
@@ -139,15 +136,13 @@ class DataController extends Controller
             ORDER BY COUNT(*) DESC
             LIMIT 50;
 
-        ";
-        $pasajeros = DB::select(DB::raw($queryViajesPasajeros), array());
+        ';
+        $pasajeros = DB::select(DB::raw($queryViajesPasajeros), []);
 
         return $this->response->withArray([
             'ranking_calificaciones' => $calificaciones,
             'ranking_conductores' => $conductores,
-            'ranking_pasajeros' => $pasajeros
+            'ranking_pasajeros' => $pasajeros,
         ]);
     }
-
-
 }

@@ -46,7 +46,7 @@ class RatingManager extends BaseManager implements IRateLogic
                          ->where('created_at', '>=', Carbon::Now()->subDays(Rating::RATING_INTERVAL))
                          ->first();
         }
-        if (!$rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
+        if (! $rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
             return $rate;
         }
     }
@@ -92,6 +92,7 @@ class RatingManager extends BaseManager implements IRateLogic
 
             $result = $this->ratingRepository->update($rate);
             $this->ratingRepository->update_rating_availability($rate);
+
             return $result;
         } else {
             $this->setErrors(['error' => 'user_have_already_voted']);
@@ -123,7 +124,6 @@ class RatingManager extends BaseManager implements IRateLogic
             ['key' => 'is_passenger', 'value' => false],
         ];
 
-
         $trips = $this->tripRepo->index($criterias, ['user', 'passenger']);
 
         foreach ($trips as $trip) {
@@ -136,7 +136,6 @@ class RatingManager extends BaseManager implements IRateLogic
             $passenger_ids_rates_created = [];
 
             foreach ($passengers as $passenger) {
-
                 $inRatingState = $passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED;
 
                 $canceledButAccepted = true;
@@ -148,7 +147,7 @@ class RatingManager extends BaseManager implements IRateLogic
 
                 if ($inRatingState && $canceledButAccepted) {
                     // the passenger could be make more than one trip request
-                    if (!in_array($passenger->user->id, $passenger_ids_rates_created)) {
+                    if (! in_array($passenger->user->id, $passenger_ids_rates_created)) {
                         $passenger_hash = str_random(40);
                         $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
 

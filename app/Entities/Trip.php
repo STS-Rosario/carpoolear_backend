@@ -20,10 +20,13 @@ class Trip extends Model
     use SoftDeletes;
 
     const FINALIZADO = 0;
+
     const ACTIVO = 1;
 
     const PRIVACY_PUBLIC = 2;
+
     const PRIVACY_FRIENDS = 0;
+
     const PRIVACY_FOF = 1;
 
     protected $table = 'trips';
@@ -45,7 +48,7 @@ class Trip extends Model
         'return_trip_id',
         'enc_path',
         'car_id',
-        'parent_trip_id'
+        'parent_trip_id',
     ];
 
     protected $hidden = [

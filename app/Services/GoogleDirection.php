@@ -30,18 +30,23 @@ class GoogleDirection
                 switch ($item['types'][0]) {
                 case 'country':
                     $address_json['pais'] = $nombre;
+
                     break;
                 case 'administrative_area_level_1':
                     $address_json['provincia'] = $nombre;
+
                     break;
                 case 'locality':
                     $address_json['ciudad'] = $nombre;
+
                     break;
                 case 'route':
                     $address_json['calle'] = $nombre;
+
                     break;
                 case 'street_number':
                     $address_json['numero'] = $nombre;
+
                     break;
                 }
             }
