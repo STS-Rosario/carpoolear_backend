@@ -24,6 +24,20 @@ class UserController extends Controller
     public function create(Request $request)
     {
         $data = $request->all();
+        if (config('carpoolear.module_validated_drivers', false))  {
+            $files = $request->file('driver_data_docs');
+            if (!empty($files)) {
+                $docs = array();
+                foreach($files as $file) {
+                    $tempDoc = $this->userLogic->uploadDoc($file);
+                    if (!$tempDoc) {
+                        // return response()->json('La imagen' . $file->getClientOriginalName() . $file->getClientOriginalExtension() . ' supera los 4MB.', 422);
+                    }
+                    $docs[] = $tempDoc;
+                }
+                $data['driver_data_docs'] = implode(',', $docs);
+            }
+        }
         $user = $this->userLogic->create($data);
         if (! $user) {
             throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());

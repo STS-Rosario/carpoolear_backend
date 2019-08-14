@@ -4,6 +4,7 @@ namespace STS\Services\Logic;
 
 use STS\User;
 use Validator;
+use Illuminate\Validation\Rule;
 use STS\Entities\Trip;
 use STS\Repository\FileRepository;
 use STS\Events\User\Reset  as ResetEvent;
@@ -21,34 +22,39 @@ class UsersManager extends BaseManager implements UserLogic
         $this->repo = $userRep;
     }
 
-    public function validator(array $data, $id = null, $is_social = false)
+    public function validator(array $data, $id = null, $is_social = false, $is_driver = false)
     {
         if ($id) {
-            return Validator::make($data, [
+            $rules = [
                 'name'     => 'max:255',
                 'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
                 // 'gender'   => 'string|in:Masculino,Femenino,N/A',
-            ]);
+            ];
         } else {
-            if (! $is_social) {
-                return Validator::make($data, [
+            if (!$is_social) {
+                $rules = [
                     'name'     => 'required|max:255',
                     'email'    => 'required|email|max:255|unique:users',
                     'password' => 'min:6|confirmed',
                     // 'gender'   => 'string|in:Masculino,Feminino,N/A',
                     'emails_notifications' => 'boolean',
-                ]);
+                ];
             } else {
-                return Validator::make($data, [
+                $rules = [
                     'name'     => 'required|max:255',
                     'email'    => 'present|email|max:255|unique:users',
                     'password' => 'min:6|confirmed',
                     // 'gender'   => 'string|in:Masculino,Feminino,N/A',
                     'emails_notifications' => 'boolean',
-                ]);
+                ];
             }
         }
+        if (config('carpoolear.module_validated_drivers', false) && $is_driver)  {
+            $rules['driver_data_docs'] = 'required|array|min:1';
+        }
+        $validator = Validator::make($data, $rules);
+        return $validator;
     }
 
     /**
@@ -58,12 +64,11 @@ class UsersManager extends BaseManager implements UserLogic
      *
      * @return User
      */
-    public function create(array $data, $validate = true, $is_social = false)
+    public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
-        $v = $this->validator($data, null, $is_social);
+        $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
             $this->setErrors($v->errors());
-
             return;
         } else {
             $data['emails_notifications'] = true;
@@ -81,9 +86,9 @@ class UsersManager extends BaseManager implements UserLogic
         }
     }
 
-    public function update($user, array $data)
+    public function update($user, array $data, $is_driver = false)
     {
-        $v = $this->validator($data, $user->id);
+        $v = $this->validator($data, $user->id, null, $is_driver);
         if ($v->fails()) {
             $this->setErrors($v->errors());
 
@@ -107,6 +112,21 @@ class UsersManager extends BaseManager implements UserLogic
         $this->repo->update($user, $data);
 
         return $user;
+    }
+
+    public function uploadDoc ($file) {
+        $mil = str_replace(".", "", microtime());
+        $mil = str_replace(" ", "", $mil);
+        $newfilename = date('mdYHis') . $mil;
+        $imageName = $newfilename . "." . $file->getClientOriginalExtension();
+
+        if ($file->getClientSize() > 4096 * 1024 ) {
+            return false;
+        }
+        $file->move(
+            base_path() . '/public/image/docs/', $imageName
+        );
+        return $imageName;
     }
 
     public function updatePhoto($user, $data)

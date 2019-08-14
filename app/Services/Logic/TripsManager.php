@@ -5,6 +5,7 @@ namespace STS\Services\Logic;
 use Validator;
 use STS\Entities\Trip;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\MessageBag;
 use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Delete  as DeleteEvent;
@@ -71,9 +72,14 @@ class TripsManager extends BaseManager implements TripLogic
         $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-
             return;
         } else {
+            if (config('carpoolear.module_validated_drivers', false) && !$user->driver_is_verified && $data['is_passenger'] == 0) {
+                $messageBag = new MessageBag;
+                $messageBag->add('driver_is_verified', 'The driver must be verified.');
+                $this->setErrors($messageBag);
+                return;
+            }
             $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
 
