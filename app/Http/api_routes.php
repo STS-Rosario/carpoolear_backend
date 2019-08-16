@@ -21,12 +21,14 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
 
         $api->get('/list', $v1_path.'UserController@index');
+        $api->get('/search', $v1_path.'UserController@searchUsers');
 
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/me', $v1_path.'UserController@show');
         $api->get('/{name?}', $v1_path.'UserController@show');
         $api->get('/{id?}/ratings', $v1_path.'RatingController@ratings');
         $api->put('/', $v1_path.'UserController@update');
+        $api->put('/modify', $v1_path.'UserController@adminUpdate');
         $api->put('/photo', $v1_path.'UserController@updatePhoto');
         $api->post('/donation', $v1_path.'UserController@registerDonation');
         $api->any('/change/{property?}/{value?}', $v1_path.'UserController@changeBooleanProperty');

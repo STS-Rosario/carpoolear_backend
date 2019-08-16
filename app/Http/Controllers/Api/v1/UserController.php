@@ -44,8 +44,23 @@ class UserController extends Controller
         if (! $profile) {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
-
         return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
+    }
+    
+    public function adminUpdate(Request $request) {
+        $me = $this->auth->user();
+        $data = $request->all();
+        if (isset($data['user'])) {
+            $user = $data['user'];
+            $user = $this->userLogic->show($me, $user['id']);
+            unset($data['user']);
+        }
+        if ($me->is_admin) {
+            $profile = $this->userLogic->update($user, $data);
+        } else {
+            throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
+        }
+        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
     }
 
     public function updatePhoto(Request $request)
@@ -81,6 +96,14 @@ class UserController extends Controller
         }
         $users = $this->userLogic->index($this->user, $search_text);
 
+        return $this->collection($users, new ProfileTransformer($this->user));
+    }
+    public function searchUsers (Request $request) {
+        $search_text = null;
+        if ($request->has('name')) {
+            $search_text = $request->get('name');
+        }
+        $users = $this->userLogic->searchUsers($search_text);
         return $this->collection($users, new ProfileTransformer($this->user));
     }
 
