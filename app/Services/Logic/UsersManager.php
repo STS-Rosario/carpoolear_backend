@@ -97,8 +97,30 @@ class UsersManager extends BaseManager implements UserLogic
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
-
+            $img_names = [];
+            if ($is_driver && count($data['driver_data_docs'])) {
+                foreach ($data['driver_data_docs'] as $file) {
+                    if ($file) {
+                        $img_names[] = $this->uploadDoc($file);
+                    }
+                }
+                $data['driver_data_docs'] = json_encode($img_names);
+            }
             $this->repo->update($user, $data);
+
+            if ($is_driver && count($data['driver_data_docs']) && !$user->driver_is_verified) {
+                // send email to admin
+                $email_admin = config('carpoolear.admin_email', '');
+                if (!empty($email_admin)) {
+                    $data = [
+                        'title' => 'Usuario quiere ser conductor',
+                        'user' => $user
+                    ];
+                    \Mail::send('email.user_be_driver', $data, function ($message) use ($email_admin, $data) {
+                        $message->to($email_admin, 'Admin')->subject($data['title']);
+                    });
+                }
+            }
             event(new UpdateEvent($user->id));
 
             return $user;

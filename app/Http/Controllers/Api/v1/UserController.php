@@ -54,7 +54,9 @@ class UserController extends Controller
         if (isset($data['email'])) {
             unset($data['email']);
         }
-        $profile = $this->userLogic->update($me, $data);
+        $is_driver = config('carpoolear.module_validated_drivers', false) && (isset($data['user_be_driver']) || $me->driver_is_verified);
+        // var_dump($is_driver);die;
+        $profile = $this->userLogic->update($me, $data, $is_driver);
         if (! $profile) {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }

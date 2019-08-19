@@ -42,6 +42,9 @@ class ProfileTransformer extends TransformerAbstract
             'do_not_alert_request_seat'       => $user->do_not_alert_request_seat,
             'do_not_alert_accept_passenger'   => $user->do_not_alert_accept_passenger,
             'do_not_alert_pending_rates'      => $user->do_not_alert_pending_rates,
+            'monthly_donate' => $user->monthly_donate,
+            'driver_is_verified'    => $user->driver_is_verified,
+            'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
         ];
         if ($user->id = $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;

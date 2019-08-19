@@ -51,6 +51,8 @@ class User extends Authenticatable
         'do_not_alert_request_seat',
         'do_not_alert_accept_passenger',
         'do_not_alert_pending_rates',
+        'driver_is_verified',
+        'driver_data_docs',
     ];
 
     protected $dates = [
@@ -59,7 +61,11 @@ class User extends Authenticatable
         'updated_at',
     ];
 
-    protected $hidden = ['password', 'remember_token', 'terms_and_conditions'];
+    protected $hidden = [
+        'password', 
+        'remember_token', 
+        'terms_and_conditions'
+    ];
 
     protected $cast = [
         'banned'               => 'boolean',
@@ -72,6 +78,8 @@ class User extends Authenticatable
         'do_not_alert_request_seat'       => 'boolean',
         'do_not_alert_accept_passenger'   => 'boolean',
         'do_not_alert_pending_rates'      => 'boolean',
+        'driver_is_verified'      => 'boolean',
+        'driver_data_docs'      => 'array',
     ];
 
     protected $appends = [
