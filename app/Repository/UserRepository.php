@@ -51,6 +51,20 @@ class UserRepository implements UserRep
     {
         return User::where($key, $value)->first();
     }
+    public function searchUsers($name)
+    {
+
+        if ($name) {
+            $users = User::where('name', 'like', '%'.$name.'%');
+            $users->orWhere('email', 'like', '%'.$name.'%');
+        }
+        $users->with('accounts');
+        $users->orderBy('name');
+        $users->limit(9);
+        $users = $users->get();
+
+        return $users;
+    }
 
     public function index($user, $search_text = null)
     {

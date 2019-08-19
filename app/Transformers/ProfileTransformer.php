@@ -38,6 +38,8 @@ class ProfileTransformer extends TransformerAbstract
             'donations' => $user->donations,
             'has_pin' => $user->has_pin,
             'is_member' => $user->is_member,
+            'banned' => $user->banned,
+            'active' => $user->active,
             'monthly_donate' => $user->monthly_donate,
             'do_not_alert_request_seat'       => $user->do_not_alert_request_seat,
             'do_not_alert_accept_passenger'   => $user->do_not_alert_accept_passenger,

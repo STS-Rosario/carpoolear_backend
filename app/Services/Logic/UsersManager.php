@@ -274,6 +274,10 @@ class UsersManager extends BaseManager implements UserLogic
         return $distancia;
     }
 
+    public function searchUsers ($name) {
+        return $this->repo->searchUsers($name);
+    }
+
     public function registerDonation($user, $donation)
     {
         $donation->user_id = $user->id;
