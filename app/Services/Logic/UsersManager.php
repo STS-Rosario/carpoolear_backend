@@ -91,7 +91,6 @@ class UsersManager extends BaseManager implements UserLogic
         $v = $this->validator($data, $user->id, null, $is_driver);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-
             return;
         } else {
             if (isset($data['password'])) {
@@ -105,6 +104,10 @@ class UsersManager extends BaseManager implements UserLogic
                     }
                 }
                 $data['driver_data_docs'] = json_encode($img_names);
+            } else {
+                if (count($data['driver_data_docs'])) {
+                    $data['driver_data_docs'] = json_encode($data['driver_data_docs']);
+                }
             }
             $this->repo->update($user, $data);
 
