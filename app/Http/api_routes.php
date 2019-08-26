@@ -114,4 +114,10 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->put('/{id?}', $v1_path.'DeviceController@update');
         $api->delete('/{id?}', $v1_path.'DeviceController@delete');
     });
+    $api->group(['prefix' => 'data'], function ($api) use ($v1_path) {
+        $api->get('/trips', $v1_path.'DataController@trips');
+        $api->get('/seats', $v1_path.'DataController@seats');
+        $api->get('/users', $v1_path.'DataController@users');
+        $api->get('/monthlyusers', $v1_path.'DataController@monthlyUsers');
+    });
 });
