@@ -25,7 +25,7 @@ class AuthController extends Controller
 
     public function __construct(UserLogic $userLogic, DeviceLogic $devices)
     {
-        $this->middleware('logged', ['only' => ['logout, retoken']]);
+        $this->middleware('logged', ['only' => ['logout, retoken, getConfig']]);
 
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
@@ -60,6 +60,10 @@ class AuthController extends Controller
             $config->$key = $value;
         }
         return $config;
+    }
+
+    public function getConfig () {
+        return response()->json($this->_getConfig());
     }
 
     public function login(Request $request)

@@ -35,7 +35,7 @@ class UserController extends Controller
                     }
                     $docs[] = $tempDoc;
                 }
-                $data['driver_data_docs'] = implode(',', $docs);
+                $data['driver_data_docs'] = json_encode($docs);
             }
         }
         $user = $this->userLogic->create($data);
