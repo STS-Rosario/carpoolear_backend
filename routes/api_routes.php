@@ -7,6 +7,7 @@ $api = app('Dingo\Api\Routing\Router');
 $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->post('login', $v1_path.'AuthController@login');
     $api->post('retoken', $v1_path.'AuthController@retoken');
+    $api->get('config', $v1_path.'AuthController@getConfig');
     $api->post('logout', $v1_path.'AuthController@logout');
     $api->post('activate/{activation_token?}', $v1_path.'AuthController@active');
     $api->post('reset-password', $v1_path.'AuthController@reset');
