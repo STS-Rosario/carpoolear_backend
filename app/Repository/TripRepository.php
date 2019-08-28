@@ -101,14 +101,34 @@ class TripRepository implements TripRepo
     }
 
     public function search($user, $data)
-    {
-        if (isset($data['date'])) {
-            if (isset($data['strict'])) {
-                $trips = Trip::where(DB::Raw('DATE(trip_date)'), $data['date']);
+    {        
+        \Log::info($data);
+        if (isset($data['from_date']) || isset($data['to_date'])) {
+            if (isset($data['from_date'])) {
+                $date_from = parse_date($data['from_date']);
+                
+                $trips = Trip::where('trip_date', '>=', date_to_string($date_from, 'Y-m-d H:i:s'));
                 $trips->orderBy('trip_date');
-            } else {
-                $date_search = parse_date($data['date']);
-                $from = $date_search->copy()->subDays(3);
+            }
+            if (isset($data['to_date'])) {
+                $date_to = parse_date($data['to_date']);
+                
+                if (isset($trips)) {
+                    \Log::info("3");
+                    $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));
+                } else {
+                    $trips = Trip::where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));
+                }
+                $trips->orderBy('trip_date');
+            }
+        } else {
+            if (isset($data['date'])) {
+                if (isset($data['strict'])) {
+                    $trips = Trip::where(DB::Raw('DATE(trip_date)'), $data['date']);
+                    $trips->orderBy('trip_date');
+                } else {
+                    $date_search = parse_date($data['date']);
+                    $from = $date_search->copy()->subDays(3);
                 $to = $date_search->copy()->addDays(3);
 
                 $now = Carbon::now('America/Argentina/Buenos_Aires');
@@ -117,15 +137,15 @@ class TripRepository implements TripRepo
                 }
                 $trips = Trip::where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
                 $trips->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
-
                 $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                 $trips->orderBy('trip_date');
             }
             //$trips->setBindings([$data['date']]);
-        } else {
-            if (! isset($data['history'])) {
-                $trips = Trip::where('trip_date', '>=', Carbon::Now());
-                $trips->orderBy('trip_date');
+            } else {
+                if (! isset($data['history'])) {
+                    $trips = Trip::where('trip_date', '>=', Carbon::Now());
+                    $trips->orderBy('trip_date');
+                }
             }
         }
 
@@ -136,34 +156,35 @@ class TripRepository implements TripRepo
         if (isset($data['user_id'])) {
             $trips->whereUserId($data['user_id']);
         }
-
-        $trips->where(function ($q) use ($user) {
-            if ($user) {
-                $q->whereUserId($user->id);
-                $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+        if (!$user->is_admin) {
+            $trips->where(function ($q) use ($user) {
+                if ($user) {
+                    $q->whereUserId($user->id);
                     $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
-                        $q->whereHas('user.friends', function ($q) use ($user) {
-                            $q->whereId($user->id);
-                        });
-                    });
-                    $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
-                        $q->where(function ($q) use ($user) {
+                        $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                        $q->orWhere(function ($q) use ($user) {
+                            $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
                             $q->whereHas('user.friends', function ($q) use ($user) {
                                 $q->whereId($user->id);
                             });
-                            $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
-                                $q->whereId($user->id);
+                        });
+                        $q->orWhere(function ($q) use ($user) {
+                            $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
+                            $q->where(function ($q) use ($user) {
+                                $q->whereHas('user.friends', function ($q) use ($user) {
+                                    $q->whereId($user->id);
+                                });
+                                $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
+                                    $q->whereId($user->id);
+                                });
                             });
                         });
                     });
-                });
-            } else {
-                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
-            }
-        });
+                } else {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                }
+            });
+        }
 
         if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
             $distance = 1000.0;
