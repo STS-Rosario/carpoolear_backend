@@ -94,7 +94,7 @@ class TripController extends Controller
         $this->user = $this->auth->user();
 
         $trips = $this->tripsLogic->search($this->user, $data);
-
+        \Log::info($trips);
         return $this->response->paginator($trips, new TripTransformer($this->user));
     }
 
