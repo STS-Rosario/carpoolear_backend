@@ -84,15 +84,11 @@ class TripController extends Controller
     public function search(Request $request)
     {
         $data = $request->all();
-
-        if (! isset($data['page'])) {
-            $data['page'] = 1;
-        }
-        if (! isset($data['page_size'])) {
+        
+        if (!isset($data['page_size'])) {
             $data['page_size'] = 20;
         }
         $this->user = $this->auth->user();
-
         $trips = $this->tripsLogic->search($this->user, $data);
 
         return $this->response->paginator($trips, new TripTransformer($this->user));

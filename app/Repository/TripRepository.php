@@ -101,30 +101,29 @@ class TripRepository implements TripRepo
     }
 
     public function search($user, $data)
-    {        
-        \Log::info($data);
+    {       
+        $trips = Trip::query();
+        if (isset($data['is_passenger'])) {
+            $trips->where('is_passenger', parse_boolean($data['is_passenger']));
+        }
+
         if (isset($data['from_date']) || isset($data['to_date'])) {
             if (isset($data['from_date'])) {
                 $date_from = parse_date($data['from_date']);
                 
-                $trips = Trip::where('trip_date', '>=', date_to_string($date_from, 'Y-m-d H:i:s'));
+                $trips = $trips->where('trip_date', '>=', date_to_string($date_from, 'Y-m-d H:i:s'));
                 $trips->orderBy('trip_date');
             }
             if (isset($data['to_date'])) {
                 $date_to = parse_date($data['to_date']);
                 
-                if (isset($trips)) {
-                    \Log::info("3");
-                    $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));
-                } else {
-                    $trips = Trip::where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));
-                }
+                $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));             
                 $trips->orderBy('trip_date');
             }
         } else {
             if (isset($data['date'])) {
                 if (isset($data['strict'])) {
-                    $trips = Trip::where(DB::Raw('DATE(trip_date)'), $data['date']);
+                    $trips = $trips->where(DB::Raw('DATE(trip_date)'), $data['date']);
                     $trips->orderBy('trip_date');
                 } else {
                     $date_search = parse_date($data['date']);
@@ -140,19 +139,14 @@ class TripRepository implements TripRepo
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                     $trips->orderBy('trip_date');
                 }
-            //$trips->setBindings([$data['date']]);
+                //$trips->setBindings([$data['date']]);
             } else {
-                if (! isset($data['history'])) {
-                    $trips = Trip::where('trip_date', '>=', Carbon::Now());
+                if (!isset($data['history'])) {
+                    $trips = $trips->where('trip_date', '>=', Carbon::Now());
                     $trips->orderBy('trip_date');
                 }
             }
         }
-
-        if (isset($data['is_passenger'])) {
-            $trips->where('is_passenger', parse_boolean($data['is_passenger']));
-        }
-
         if (isset($data['user_id'])) {
             $trips->whereUserId($data['user_id']);
         }
@@ -202,8 +196,9 @@ class TripRepository implements TripRepo
             $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
         }
 
-        $trips->with(['user', 'user.accounts', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
+        $trips->with(['user', 'user.accounts', 'points', 'passenger','passengerAccepted', 'car']);
 
+        
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 

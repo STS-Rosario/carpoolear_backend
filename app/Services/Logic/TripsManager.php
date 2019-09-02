@@ -217,7 +217,8 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function search($user, $data)
     {
-        return $this->tripRepo->search($user, $data);
+        $trip = $this->tripRepo->search($user, $data);
+        return $trip;
     }
 
     public function myTrips($user, $asDriver)
