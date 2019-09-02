@@ -47,11 +47,12 @@ class TripTransformer extends TransformerAbstract
         if ($this->user) {
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
-            if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id) {
+            if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id || $this->user->is_admin) {
                 foreach ($trip->passengerAccepted as $passenger) {
                     $data['passenger'][] = $userTranforms->transform($passenger->user);
                 }
                 $data['car'] = $trip->car;
+                $data['request_count'] = count($trip->passenger);
             } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';
             }

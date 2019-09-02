@@ -218,7 +218,6 @@ class TripsManager extends BaseManager implements TripLogic
     public function search($user, $data)
     {
         $trip = $this->tripRepo->search($user, $data);
-        \Log::info($trip);
         return $trip;
     }
 
