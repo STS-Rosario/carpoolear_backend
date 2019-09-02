@@ -129,17 +129,17 @@ class TripRepository implements TripRepo
                 } else {
                     $date_search = parse_date($data['date']);
                     $from = $date_search->copy()->subDays(3);
-                $to = $date_search->copy()->addDays(3);
+                    $to = $date_search->copy()->addDays(3);
 
-                $now = Carbon::now('America/Argentina/Buenos_Aires');
-                if ($from->lte($now)) {
-                    $from = $now;
+                    $now = Carbon::now('America/Argentina/Buenos_Aires');
+                    if ($from->lte($now)) {
+                        $from = $now;
+                    }
+                    $trips = Trip::where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
+                    $trips->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
+                    $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
+                    $trips->orderBy('trip_date');
                 }
-                $trips = Trip::where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
-                $trips->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
-                $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
-                $trips->orderBy('trip_date');
-            }
             //$trips->setBindings([$data['date']]);
             } else {
                 if (! isset($data['history'])) {
