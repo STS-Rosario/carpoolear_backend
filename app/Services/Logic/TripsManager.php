@@ -200,12 +200,11 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function show($user, $trip_id)
     {
-        $trip = $this->tripRepo->show($trip_id);
+        $trip = $this->tripRepo->show($user, $trip_id);
         if ($this->userCanSeeTrip($user, $trip)) {
             return $trip;
         } else {
             $this->setErrors(['error' => 'trip_not_foound']);
-
             return;
         }
     }
@@ -217,8 +216,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function search($user, $data)
     {
-        $trip = $this->tripRepo->search($user, $data);
-        return $trip;
+        return $this->tripRepo->search($user, $data);
     }
 
     public function myTrips($user, $asDriver)

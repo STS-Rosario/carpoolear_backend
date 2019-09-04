@@ -35,6 +35,7 @@ class TripTransformer extends TransformerAbstract
             'passenger_count' => $trip->passenger_count,
             'seats_available' => $trip->seats_available,
             'points' => $trip->points,
+            'ratings' => $trip->ratings,
             'updated_at' => $trip->updated_at->toDateTimeString(),
         ];
 
@@ -43,16 +44,14 @@ class TripTransformer extends TransformerAbstract
         }
 
         $data['request'] = '';
-        $data['passenger'] = [];
         if ($this->user) {
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
             if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id || $this->user->is_admin) {
-                foreach ($trip->passengerAccepted as $passenger) {
-                    $data['passenger'][] = $userTranforms->transform($passenger->user);
-                }
+                $data['passenger'] = $trip->passenger;
                 $data['car'] = $trip->car;
                 $data['request_count'] = count($trip->passenger);
+                $data['passengerAccepted_count'] = count($trip->passengerAccepted);
             } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';
             }

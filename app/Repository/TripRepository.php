@@ -38,9 +38,15 @@ class TripRepository implements TripRepo
         return $trip;
     }
 
-    public function show($id)
+    public function show($user, $id)
     {
-        return Trip::with(['user', 'points'])->whereId($id)->first();
+        if ($user->is_admin) {
+            $trip = Trip::with(['user', 'points', 'car', 'passenger', 'ratings'])->whereId($id)->first();
+            \Log::info($trip);
+            return $trip;
+        } else {
+            return Trip::with(['user', 'points'])->whereId($id)->first();
+        }
     }
 
     public function index($criterias, $withs = [])
@@ -196,8 +202,7 @@ class TripRepository implements TripRepo
             $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
         }
 
-        $trips->with(['user', 'user.accounts', 'points', 'passenger','passengerAccepted', 'car']);
-
+        $trips->with(['user', 'user.accounts', 'points', 'passenger','passengerAccepted', 'car', 'ratings']);
         
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;

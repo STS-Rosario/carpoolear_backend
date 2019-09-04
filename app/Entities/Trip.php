@@ -110,9 +110,9 @@ class Trip extends Model
         return $this->hasMany('STS\Entities\TripPoint', 'trip_id');
     }
 
-    public function califications()
+    public function ratings()
     {
-        return $this->hasMany('STS\Entities\Calification', 'viajes_id');
+        return $this->hasMany('STS\Entities\Rating', 'trip_id')->with(['from','to']);
     }
 
     public function outbound()
