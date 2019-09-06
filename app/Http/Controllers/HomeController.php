@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 use STS\Entities\Rating as RatingModel;
 use STS\Contracts\Logic\User as UserLogic;
 
+use Transbank\Webpay\Configuration;
+use Transbank\Webpay\Webpay;
+use Illuminate\Support\Facades\Redirect;
+
 class HomeController extends Controller
 {
     public function home()
@@ -125,6 +129,39 @@ class HomeController extends Controller
     public function programar()
     {
         return view('programar');
+    }
+
+    public function transbank()
+    {
+        $transaction = (new Webpay(Configuration::forTestingWebpayPlusNormal()))->getNormalTransaction();
+        $amount = 1000;
+        // Identificador que será retornado en el callback de resultado:
+        $sessionId = "mi-id-de-sesion";
+        // Identificador único de orden de compra:
+        $buyOrder = strval(rand(100000, 999999999));
+        $returnUrl = "http://carpoolear.192.168.0.3.nip.io/transbank-respuesta";
+        $finalUrl = "http://carpoolear.192.168.0.3.nip.io/transbank-respuesta";
+        $initResult = $transaction->initTransaction($amount, $buyOrder, $sessionId, $returnUrl, $finalUrl);
+
+        $formAction = $initResult->url;
+        $tokenWs = $initResult->token;
+        // var_dump($initResult);die;
+        return view('transbank', [
+            'formAction' => $formAction,
+            'tokenWs' => $tokenWs
+        ]);
+    }
+
+    public function transbankResponse (Request $request) {
+        $transaction = (new Webpay(Configuration::forTestingWebpayPlusNormal()))->getNormalTransaction();
+        $result = $transaction->getTransactionResult($request->input("token_ws"));
+        /* object(Transbank\Webpay\transactionResultOutput)#419 (8) { ["accountingDate"]=> string(4) "0904" ["buyOrder"]=> string(9) "119027553" ["cardDetail"]=> object(Transbank\Webpay\cardDetail)#425 (2) { ["cardNumber"]=> string(4) "6623" ["cardExpirationDate"]=> NULL } ["detailOutput"]=> object(Transbank\Webpay\wsTransactionDetailOutput)#421 (7) { ["authorizationCode"]=> string(4) "1213" ["paymentTypeCode"]=> string(2) "VN" ["responseCode"]=> int(0) ["sharesNumber"]=> int(0) ["amount"]=> string(4) "1000" ["commerceCode"]=> string(12) "597020000540" ["buyOrder"]=> string(9) "119027553" } ["sessionId"]=> string(15) "mi-id-de-sesion" ["transactionDate"]=> string(29) "2019-09-04T12:04:35.719-04:00" ["urlRedirection"]=> string(57) "https://webpay3gint.transbank.cl/webpayserver/voucher.cgi" ["VCI"]=> string(3) "TSY" }  */
+        $output = $result->detailOutput;
+        if ($output->responseCode == 0) {
+            // Transaccion exitosa, puedes procesar el resultado con el contenido de
+            // las variables result y output.
+            return view('transbank-respuesta', []);
+        }
     }
 
     public function endsWith($haystack, $needle)
