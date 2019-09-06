@@ -7,6 +7,7 @@ use STS\Http\Controllers\Controller;
 use STS\Transformers\TripTransformer;
 use STS\Contracts\Logic\Trip as TripLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
+use Carbon\Carbon;
 
 class TripController extends Controller
 {
@@ -88,9 +89,16 @@ class TripController extends Controller
         if (!isset($data['page_size'])) {
             $data['page_size'] = 20;
         }
+
+        if (isset($data['old'])) {
+            $data['to_date'] = Carbon::now()->toDateString();
+        }
+        if (isset($data['new'])) {
+            $data['from_date'] = Carbon::now()->toDateString();
+        }
+
         $this->user = $this->auth->user();
         $trips = $this->tripsLogic->search($this->user, $data);
-
         return $this->response->paginator($trips, new TripTransformer($this->user));
     }
 
