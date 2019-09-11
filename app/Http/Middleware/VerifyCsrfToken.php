@@ -12,6 +12,7 @@ class VerifyCsrfToken extends BaseVerifier
      * @var array
      */
     protected $except = [
-        'transbank-respuesta'
+        'transbank-respuesta',
+        'transbank-final'
     ];
 }

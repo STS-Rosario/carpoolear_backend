@@ -44,5 +44,6 @@ Route::get('/donar-compartir', 'HomeController@donarcompartir');
 Route::get('/datos', 'HomeController@datos');
 Route::get('/colabora-programando', 'HomeController@programar');
 
-Route::get('/transbank', 'HomeController@transbank');
-Route::any('/transbank-respuesta', 'HomeController@transbankResponse');
+Route::get('/transbank', 'PaymentController@transbank');
+Route::any('/transbank-respuesta', 'PaymentController@transbankResponse');
+Route::any('/transbank-final', 'PaymentController@transbankFinal');

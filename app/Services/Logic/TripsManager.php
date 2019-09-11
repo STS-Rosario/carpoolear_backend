@@ -272,4 +272,9 @@ class TripsManager extends BaseManager implements TripLogic
 
         return false;
     }
+
+    public function getTripByTripPassenger ($transaction_id) 
+    {
+        return $this->tripRepo->getTripByTripPassenger($transaction_id);
+    }
 }

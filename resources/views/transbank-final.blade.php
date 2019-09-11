@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('layouts.payment')
 
 @section('title', 'Cómo colaborar - Colaborar - Carpoolear')
 @section('body-class', 'body-colaborar body-como-colaborar')
@@ -15,7 +15,7 @@
                 };
                 var stringifiedMessage = JSON.stringify(message);
                 webkit.messageHandlers.cordova_iab.postMessage(stringifiedMessage);
-            }, 500);
+            }, 2000);
         });
     </script>
 </section>
