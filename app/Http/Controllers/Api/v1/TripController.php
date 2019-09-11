@@ -85,16 +85,9 @@ class TripController extends Controller
     public function search(Request $request)
     {
         $data = $request->all();
-        
+
         if (!isset($data['page_size'])) {
             $data['page_size'] = 20;
-        }
-
-        if (isset($data['old'])) {
-            $data['to_date'] = Carbon::now()->toDateString();
-        }
-        if (isset($data['new'])) {
-            $data['from_date'] = Carbon::now()->toDateString();
         }
 
         $this->user = $this->auth->user();
@@ -102,7 +95,7 @@ class TripController extends Controller
         return $this->response->paginator($trips, new TripTransformer($this->user));
     }
 
-    public function myTrips(Request $request)
+    public function getTrips(Request $request)
     {
         $this->user = $this->auth->user();
 
@@ -111,24 +104,32 @@ class TripController extends Controller
         } else {
             $asDriver = true;
         }
-
-        $trips = $this->tripsLogic->myTrips($this->user, $asDriver);
+        if ($request->has('user_id')  && $this->user->is_admin) {
+            $trips = $this->tripsLogic->getTrips($this->user,$request->get('user_id'), $asDriver);
+        } else {
+            $trips = $this->tripsLogic->getTrips($this->user,$this->user->id, $asDriver);
+        }
 
         return $this->collection($trips, new TripTransformer($this->user));
         //return $this->response->withArray(['data' => $trips]);
     }
 
-    public function myOldTrips(Request $request)
+    public function getOldTrips(Request $request)
     {
         $this->user = $this->auth->user();
 
+        
         if ($request->has('as_driver')) {
             $asDriver = parse_boolean($request->get('as_driver'));
         } else {
             $asDriver = true;
         }
-
-        $trips = $this->tripsLogic->myOldTrips($this->user, $asDriver);
+        
+        if ($request->has('user_id')) {
+            $trips = $this->tripsLogic->getOldTrips($this->user,$request->get('user_id'), $asDriver);
+        } else {
+            $trips = $this->tripsLogic->getOldTrips($this->user,$this->user->id, $asDriver);
+        }
 
         return $this->collection($trips, new TripTransformer($this->user));
     }

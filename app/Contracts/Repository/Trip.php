@@ -20,5 +20,5 @@ interface Trip
 
     public function deletePoints($trip);
 
-    public function myTrips($user, $asDriver);
+    public function getTrips($user, $userId, $asDriver);
 }

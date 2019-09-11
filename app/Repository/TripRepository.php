@@ -70,16 +70,16 @@ class TripRepository implements TripRepo
         return $trips->get();
     }
 
-    public function myTrips($user, $asDriver)
+    public function getTrips($user, $userId, $asDriver)
     {
         $trips = Trip::where('trip_date', '>=', Carbon::Now());
 
         if ($asDriver) {
-            $trips->where('user_id', $user->id);
+            $trips->where('user_id', $userId);
         } else {
-            $trips->whereHas('passengerAccepted', function ($q) use ($user) {
+            $trips->whereHas('passengerAccepted', function ($q) use ($user, $userId) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
-                $q->where('user_id', $user->id);
+                $q->where('user_id', $userId);
             });
         }
         $trips->orderBy('trip_date');
@@ -88,16 +88,16 @@ class TripRepository implements TripRepo
         return $trips->get();
     }
 
-    public function myOldTrips($user, $asDriver)
+    public function getOldTrips($user, $userId, $asDriver)
     {
         $trips = Trip::where('trip_date', '<', Carbon::Now());
 
         if ($asDriver) {
-            $trips->where('user_id', $user->id);
+            $trips->where('user_id', $userId);
         } else {
-            $trips->whereHas('passengerAccepted', function ($q) use ($user) {
+            $trips->whereHas('passengerAccepted', function ($q) use ($user, $userId) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
-                $q->where('user_id', $user->id);
+                $q->where('user_id', $userId);
             });
         }
         $trips->orderBy('trip_date');
@@ -112,7 +112,7 @@ class TripRepository implements TripRepo
         if (isset($data['is_passenger'])) {
             $trips->where('is_passenger', parse_boolean($data['is_passenger']));
         }
-
+        
         if (isset($data['from_date']) || isset($data['to_date'])) {
             if (isset($data['from_date'])) {
                 $date_from = parse_date($data['from_date']);
