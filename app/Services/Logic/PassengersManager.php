@@ -11,6 +11,7 @@ use STS\Events\Passenger\Accept as AcceptEvent;
 use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
+use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
 use STS\Contracts\Repository\IPassengersRepository;
 
 class PassengersManager extends BaseManager implements IPassengersLogic
@@ -86,13 +87,20 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         $trip = $this->tripLogic->show($user, $tripId);
         if ($trip && ! $trip->expired()) {
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
-                event(new RequestEvent($trip, $user, $trip->user));
+                if ($trip->user->autoaccept_requests) {
+                    $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);
+                    event(new AutoRequestEvent($trip, $user, $trip->user));
+                    \Log::info("llegoaca");
+                    event(new AcceptEvent($trip, $trip->user, $user));
+                } else {
+                    event(new RequestEvent($trip, $user, $trip->user));
+                }
             }
+
 
             return $result;
         } else {
             $this->setErrors(['error' => 'access_denied']);
-
             return;
         }
     }

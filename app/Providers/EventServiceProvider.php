@@ -65,6 +65,9 @@ class EventServiceProvider extends ServiceProvider
         'STS\Events\Passenger\Request' => [
             'STS\Listeners\Notification\PassengerRequest',
         ],
+        'STS\Events\Passenger\AutoRequest' => [
+            'STS\Listeners\Notification\PassengerAutoRequest',
+        ],
         'STS\Events\Passenger\Cancel' => [
             'STS\Listeners\Notification\PassengerCancel',
             // 'STS\Listeners\Conversation\removeUserConversation',
