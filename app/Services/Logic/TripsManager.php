@@ -85,7 +85,7 @@ class TripsManager extends BaseManager implements TripLogic
 
             if (isset($data['parent_trip_id'])) {
                 $parentTripId = $data['parent_trip_id'];
-                $parentTrip = $this->tripRepo->show($parentTripId);
+                $parentTrip = $this->tripRepo->show($user, $parentTripId);
 
                 if ($parentTrip) {
                     $parentData = [];

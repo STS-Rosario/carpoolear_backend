@@ -37,6 +37,9 @@ class TripTransformer extends TransformerAbstract
             'points' => $trip->points,
             'ratings' => $trip->ratings,
             'updated_at' => $trip->updated_at->toDateTimeString(),
+            'allow_kids' => $trip->allow_kids,
+            'allow_animals' => $trip->allow_animals,
+            'allow_smoking' => $trip->allow_smoking
         ];
 
         if ($trip->deleted_at) {

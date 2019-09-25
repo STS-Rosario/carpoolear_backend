@@ -49,6 +49,9 @@ class Trip extends Model
         'enc_path',
         'car_id',
         'parent_trip_id',
+        'allow_smoking',
+        'allow_kids',
+        'allow_animals'
     ];
 
     protected $hidden = [
