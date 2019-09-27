@@ -4,6 +4,8 @@ namespace STS\Transformers;
 
 use STS\User;
 use League\Fractal\TransformerAbstract;
+use STS\Services\Logic\TripsManager as TripLogic;
+use STS\Repository\TripRepository as TripRepo;
 
 class ProfileTransformer extends TransformerAbstract
 {
@@ -12,6 +14,7 @@ class ProfileTransformer extends TransformerAbstract
     public function __construct($user)
     {
         $this->user = $user;
+        $this->tripLogic = new TripLogic(new tripRepo);
     }
 
     /**
@@ -31,8 +34,8 @@ class ProfileTransformer extends TransformerAbstract
             'negative_ratings' => $user->negative_ratings,
             'birthday' => $user->birthday,
             'gender' => $user->gender,
-            'mobile_phone' => $user->mobile_phone,
-            'nro_doc' => $user->nro_doc,
+            // 'mobile_phone' => $user->mobile_phone,
+            // 'nro_doc' => $user->nro_doc,
             'last_connection' => $user->last_connection ? $user->last_connection->toDateTimeString() : '',
             'accounts' => $user->accounts,
             'donations' => $user->donations,
@@ -48,12 +51,34 @@ class ProfileTransformer extends TransformerAbstract
             'driver_is_verified'    => $user->driver_is_verified,
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
         ];
-        if ($user->id = $this->user->id || $this->user->is_admin) {
+
+        if ($user->id == $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
             $data['accounts'] = $user->accounts;
             $data['donations'] = $user->donations;
             $data['email'] = $user->email;
+            $data['mobile_phone'] = $user->mobile_phone;
+        }
+        
+        switch ($user->data_visibility) {
+            case '1':
+                # viaja conmigo
+                if ($this->tripLogic->shareTrip($this->user, $user)) {
+                    $data['nro_doc'] = $user->nro_doc;
+                    $data['email'] = $user->email;
+                    $data['mobile_phone'] = $user->mobile_phone;
+                }
+                break;
+            case '2':
+                # publico
+                $data['nro_doc'] = $user->nro_doc;
+                $data['email'] = $user->email;
+                $data['mobile_phone'] = $user->mobile_phone;
+                break;
+            default:
+                # privado
+                break;
         }
 
         if ($user->state) {

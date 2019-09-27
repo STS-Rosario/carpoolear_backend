@@ -270,4 +270,8 @@ class TripsManager extends BaseManager implements TripLogic
 
         return false;
     }
+
+    public function shareTrip ($me, $user) {
+        return ($this->tripRepo->shareTrip($me, $user) || $this->tripRepo->shareTrip($user, $me));
+    }
 }

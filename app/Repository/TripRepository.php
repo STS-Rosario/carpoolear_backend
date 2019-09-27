@@ -265,6 +265,20 @@ class TripRepository implements TripRepo
         }
     }
 
+    public function shareTrip($user, $other) {
+        $trip = Trip::with(['user']);
+        $trip = $trip->where('user_id', '=', $user->id);
+        $trip = $trip->where('trip_date', '>=', Carbon::Now());
+        $trip = $trip->whereHas('passengerAccepted', function ($query) use ($other) {
+            $query->where('user_id', '=', $other->id);
+        });
+
+        if ($trip->first()) {
+            return true;
+        }
+        return false;
+    }
+
     public function deletePoints($trip)
     {
         $trip->points()->delete();

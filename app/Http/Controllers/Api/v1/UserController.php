@@ -90,13 +90,13 @@ class UserController extends Controller
         return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
     }
 
-    public function show($name = null)
+    public function show($id = null)
     {
         $me = $this->auth->user();
-        if (! $name) {
-            $name = $me->id;
+        if (! $id) {
+            $id = $me->id;
         }
-        $profile = $this->userLogic->show($me, $name);
+        $profile = $this->userLogic->show($me, $id);
         if (! $profile) {
             throw new ResourceException('Users not found.', $this->userLogic->getErrors());
         }
