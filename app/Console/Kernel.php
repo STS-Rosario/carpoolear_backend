@@ -21,6 +21,7 @@ class Kernel extends ConsoleKernel
         Commands\FacebookImage::class,
         Commands\UpdateUser::class,
         Commands\ConversationCreate::class,
+        Commands\BuildNodes::class,
     ];
 
     /**
