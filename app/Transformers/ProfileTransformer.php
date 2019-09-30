@@ -59,6 +59,7 @@ class ProfileTransformer extends TransformerAbstract
             $data['donations'] = $user->donations;
             $data['email'] = $user->email;
             $data['mobile_phone'] = $user->mobile_phone;
+            $data['nro_doc'] = $user->nro_doc;
         }
         
         switch ($user->data_visibility) {
