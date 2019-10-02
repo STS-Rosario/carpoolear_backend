@@ -33,9 +33,10 @@ class BuildNodes extends Command
     public function __construct()
     {
         parent::__construct();
-        $path = storage_path() . "/export.geojson";
-        $this->json = json_decode(file_get_contents($path), true); 
-        $this->nodes = $this->json['features'];
+        $this->dir = storage_path() . "/geojson/";
+        $this->files = scandir($this->dir);
+        unset($this->files[0]);
+        unset($this->files[1]);
     }
 
     /**
@@ -45,18 +46,25 @@ class BuildNodes extends Command
      */
     public function handle()
     {
-        foreach ($this->nodes as $feature) {
-         
-            $props = $feature['properties'];
-            $geo = $feature['geometry'];
-            if (isset($props['name'])){
-                $node = new NodeGeo;
-                $node->name = $props['name'];
-                $node->type = $props['place'];
-                $node->lat = $geo['coordinates'][0];
-                $node->lng = $geo['coordinates'][1];
-                $node->save();
-            }
+        foreach ($this->files as $file) {
+            $parts = pathinfo($file);
+            $country = $parts['filename'];
+            $this->info($country);
+            $json = json_decode(file_get_contents($this->dir . $file), true); 
+            $nodes = $json['features'];
+            foreach ($nodes as $feature) {
+                $props = $feature['properties'];
+                $geo = $feature['geometry'];
+                if (isset($props['name'])){
+                    $node = new NodeGeo;
+                    $node->name = $props['name'];
+                    $node->type = $props['place'];
+                    $node->lng = $geo['coordinates'][0];
+                    $node->lat = $geo['coordinates'][1];
+                    $node->country = $country;
+                    $node->save();
+                }
+            }    
         }
     }
 }
