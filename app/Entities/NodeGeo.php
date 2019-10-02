@@ -4,7 +4,7 @@ namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 
-class NodesGeo extends Model
+class NodeGeo extends Model
 {
     protected $table = 'nodes_geo';
 

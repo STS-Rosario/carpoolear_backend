@@ -4,7 +4,7 @@ namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Routes extends Model
+class Route extends Model
 {
     protected $table = 'routes';
 

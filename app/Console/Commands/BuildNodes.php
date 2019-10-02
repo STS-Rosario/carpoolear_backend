@@ -4,7 +4,7 @@ namespace STS\Console\Commands;
 
 use STS\User;
 use Carbon\Carbon;
-use STS\Entities\NodesGeo;
+use STS\Entities\NodeGeo;
 use Illuminate\Console\Command;
 use Storage;
 
@@ -50,7 +50,7 @@ class BuildNodes extends Command
             $props = $feature['properties'];
             $geo = $feature['geometry'];
             if (isset($props['name'])){
-                $node = new NodesGeo;
+                $node = new NodeGeo;
                 $node->name = $props['name'];
                 $node->type = $props['place'];
                 $node->lat = $geo['coordinates'][0];
