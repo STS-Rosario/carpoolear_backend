@@ -4,11 +4,9 @@ namespace STS\Http\Controllers;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use STS\Entities\Rating as RatingModel;
+use STS\Entities\Trip as TripModel;
 use STS\Contracts\Logic\User as UserLogic;
 
-use Transbank\Webpay\Configuration;
-use Transbank\Webpay\Webpay;
 use Illuminate\Support\Facades\Redirect;
 
 class HomeController extends Controller
@@ -143,39 +141,7 @@ class HomeController extends Controller
 
     public function test()
     {
-        /* $user = new \STS\User();
-        $user->id = 11525;
-        $ratingRepository = new \STS\Repository\RatingRepository();
-        $data = array();
-        $data['value'] = RatingModel::STATE_POSITIVO;
-        $ratings = $ratingRepository->getRatingsCount($user, $data);
-        var_dump($ratings); die; */
-
-        /* $user = \STS\User::where('id', 23124)->first();
-        $messageRepo = new \STS\Repository\MessageRepository();
-        $timestamp = time();
-        $messages = $messageRepo->getMessagesUnread($user, $timestamp);
-        echo $messages->count(); die;*/
-        /*$criterias = [
-            ['key' => 'trip_date', 'value' => '2018-03-08 13:29:00', 'op' => '<'],
-            ['key' => 'mail_send', 'value' => false],
-            ['key' => 'is_passenger', 'value' => false],
-        ];
-
-        $withs = ['user', 'passenger'];
-
-        $trips = \STS\Entities\Trip::orderBy('trip_date');
-
-
-        $trips->where('mail_send', false);
-        $trips->where('is_passenger', false);
-
-        var_dump($trips->get());die;*/
-        $first = new Carbon('first day of this month');
-        $last = new Carbon('last day of this month');
-        var_dump($first);
-        var_dump($last);
-        die;
+        $trip = TripModel::where('id', 15636)->first();
     }
 
     public function handleApp($name)
