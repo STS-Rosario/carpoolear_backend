@@ -60,6 +60,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
 
         $api->get('/', $v1_path.'TripController@search');
+        $api->get('/autocomplete', $v1_path.'RoutesController@autocomplete');
         $api->post('/', $v1_path.'TripController@create');
         $api->put('/{id?}', $v1_path.'TripController@update');
         $api->delete('/{id?}', $v1_path.'TripController@delete');
