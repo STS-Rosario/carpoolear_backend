@@ -17,9 +17,7 @@ class RoutesRepository implements RoutesRep
         $query->where(function ($q) use ($name) {
             $q->where('name', 'like', '%'.$name.'%');
         });
-        \Log::info(var_export($multicountry, true));
         if(!$multicountry) {
-            \Log::info("aaaaa");
             $query->where('country',$country);
         }
         $query->orderBy('importance', 'DESC');
