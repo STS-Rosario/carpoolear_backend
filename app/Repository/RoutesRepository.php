@@ -3,7 +3,6 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
-use STS\Entities\Trip;
 use STS\Entities\Route;
 use STS\Entities\NodeGeo;
 
@@ -41,6 +40,18 @@ class RoutesRepository implements RoutesRep
         // FIXME
         $lngDiff = 2;
         $query->whereBetween('lng', [$minLng - $lngDiff, $maxLng + $lngDiff]);
+    }
+    public function autocomplete($name, $country, $multicountry) 
+    {
+        $query = NodeGeo::query();
+        $query->where(function ($q) use ($name) {
+            $q->where('name', 'like', '%'.$name.'%');
+        });
+        if(!$multicountry) {
+            $query->where('country',$country);
+        }
+        $query->orderBy('importance', 'DESC');
+        $query->limit(5);
         return $query->get();
     }
 }

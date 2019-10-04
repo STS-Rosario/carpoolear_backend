@@ -1,6 +1,7 @@
 <?php
 
 namespace STS\Services\Logic;
+
 use STS\Repository\RoutesRepository as RoutesRep;
 use STS\Contracts\Logic\Routes as RoutesLogic;
 
@@ -13,11 +14,16 @@ use STS\Entities\NodeGeo;
 
 class RoutesManager implements RoutesLogic
 {
+    protected $routesRepo;
+
     public function __construct(RoutesRep $routesRepo){
         $this->routesRepo = $routesRepo;
     }
+    
+    public function autocomplete($name, $country, $multicountry) {
+        return $this->routesRepo->autocomplete($name, $country, $multicountry);
+    }
 
-    private function distance ($lat1, $lon1, $lat2, $lon2) {
         if (($lat1 == $lat2) && ($lon1 == $lon2)) {
             return 0;
         }

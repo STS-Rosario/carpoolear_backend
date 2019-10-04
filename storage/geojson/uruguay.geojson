@@ -1,0 +1,6315 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-ide",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2019-10-02T13:26:02Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/296140043",
+        "admin_level": "2",
+        "capital": "yes",
+        "ele": "43",
+        "is_in:country": "Uruguay",
+        "name": "Montevideo",
+        "name:ab": "Монтевидео",
+        "name:am": "ሞንቴቪዴዎ",
+        "name:ar": "مونتيفيديو",
+        "name:ay": "Muntividëw",
+        "name:bat-smg": "Montevidiejos",
+        "name:be": "Мантэвідэа",
+        "name:be-tarask": "Мантэвідэо",
+        "name:bg": "Монтевидео",
+        "name:bn": "মোন্তেবিদেও",
+        "name:bo": "མཱོན་ཊི་ཝི་ཌོ།",
+        "name:cbk-zam": "Montevideo ciudad",
+        "name:ckb": "مۆنتێڤیدیۆ",
+        "name:de": "Montevideo",
+        "name:el": "Μοντεβιδέο",
+        "name:en": "Montevideo",
+        "name:fa": "مونته‌ویدئو",
+        "name:fr": "Montevideo",
+        "name:he": "מונטווידאו",
+        "name:hi": "मोण्टेवीडियो",
+        "name:hu": "Montevideo",
+        "name:hy": "Մոնտեվիդեո",
+        "name:is": "Montevídeó",
+        "name:ja": "モンテビデオ",
+        "name:ka": "მონტევიდეო",
+        "name:ko": "몬테비데오",
+        "name:ku": "Montevideo",
+        "name:la": "Monsvideus",
+        "name:lt": "Montevidėjas",
+        "name:mk": "Монтевидео",
+        "name:ml": "മൊണ്ടേവീഡിയോ",
+        "name:mr": "मोन्तेविदेओ",
+        "name:my": "မွန်တီဗစ်ဒီအိုမြို့",
+        "name:nl": "Montevideo",
+        "name:oc": "Montevideo",
+        "name:os": "Монтевидео",
+        "name:pa": "ਮੋਂਤੇਵੀਦਿਓ",
+        "name:pap": "Montevidéu",
+        "name:pl": "Montevideo",
+        "name:pt": "Montevidéu",
+        "name:ru": "Монтевидео",
+        "name:scn": "Muntividèu",
+        "name:sk": "Montevideo",
+        "name:sr": "Монтевидео",
+        "name:sv": "Montevideo",
+        "name:ta": "மொண்டிவிடியோ",
+        "name:tet": "Montevideu",
+        "name:th": "มอนเตวิเดโอ",
+        "name:ug": "مونتېۋىدېئو",
+        "name:uk": "Монтевідео",
+        "name:ur": "مونٹیویڈیو",
+        "name:xmf": "მონტევიდეო",
+        "name:yi": "מאנטעווידעא",
+        "name:zh": "蒙得維的亞",
+        "official_name": "San Felipe y Santiago de Montevideo",
+        "old_name": "San Felipe y Santiago de Montevideo",
+        "place": "city",
+        "population": "1319108",
+        "ref:LOCODE": "UYMVD",
+        "sccn": "UY-MO-MVD",
+        "source:name:oc": "Lo Congrès",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/montevideo.html",
+        "website": "http://www.montevideo.gub.uy/",
+        "wikidata": "Q1335",
+        "wikipedia": "es:Montevideo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.1913569,
+          -34.9059039
+        ]
+      },
+      "id": "node/296140043"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302608039",
+        "name": "Paysandú",
+        "name:en": "Paysandú",
+        "name:ru": "Пайсанду",
+        "name:uk": "Пайсанду",
+        "note": "bing offset: -12.04;1.50",
+        "place": "city",
+        "population": "76429",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html",
+        "wikidata": "Q309442"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0892136,
+          -32.3217257
+        ]
+      },
+      "id": "node/302608039"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302608467",
+        "name": "Young",
+        "place": "city",
+        "population": "16756",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html",
+        "wikidata": "Q1005607"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6341992,
+          -32.6995318
+        ]
+      },
+      "id": "node/302608467"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302608615",
+        "name": "Trinidad",
+        "place": "city",
+        "population": "21429",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/flores.html",
+        "wikidata": "Q862508"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.8979718,
+          -33.5173479
+        ]
+      },
+      "id": "node/302608615"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302608868",
+        "name": "San José",
+        "name:ru": "Сан-Хосе-де-Майо",
+        "official_name": "San José de Mayo",
+        "place": "city",
+        "population": "36747",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html",
+        "wikidata": "Q983435"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.7138662,
+          -34.3396765
+        ]
+      },
+      "id": "node/302608868"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302610183",
+        "name": "Santa Lucía",
+        "name:es": "Santa Lucía",
+        "name:lt": "Santa Lusija",
+        "name:ru": "Санта-Лусия",
+        "place": "city",
+        "population": "16742",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1014315",
+        "wikipedia": "es:Santa Lucía (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3887664,
+          -34.4550229
+        ]
+      },
+      "id": "node/302610183"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302610933",
+        "name": "Canelones",
+        "place": "city",
+        "population": "19865",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q841342"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2817519,
+          -34.5242373
+        ]
+      },
+      "id": "node/302610933"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302611004",
+        "name": "Maldonado",
+        "place": "city",
+        "population": "62592",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q16258"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9582718,
+          -34.9087162
+        ]
+      },
+      "id": "node/302611004"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302611023",
+        "name": "Punta del Este",
+        "place": "town",
+        "population": "9277",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q56069"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9439981,
+          -34.9632342
+        ]
+      },
+      "id": "node/302611023"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/302666274",
+        "name": "Tacuarembó",
+        "place": "city",
+        "population": "54757",
+        "postal_code": "45000",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "website": "http://www.imtacuarembo.com/",
+        "wikidata": "Q833016",
+        "wikipedia": "es:Tacuarembó"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9788762,
+          -31.7110183
+        ]
+      },
+      "id": "node/302666274"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/313943603",
+        "name": "Fray Bentos",
+        "old_name": "Independencia",
+        "place": "city",
+        "population": "24406",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html",
+        "wikidata": "Q849835"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.3130977,
+          -33.1165167
+        ]
+      },
+      "id": "node/313943603"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/321555078",
+        "name": "Rocha",
+        "name:en": "Rocha",
+        "name:ru": "Роча",
+        "name:uk": "Роча",
+        "place": "city",
+        "population": "25422",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q1017387"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.3365608,
+          -34.4810095
+        ]
+      },
+      "id": "node/321555078"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/321555240",
+        "name": "San Carlos",
+        "place": "city",
+        "population": "27471",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q374670"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9203948,
+          -34.7920337
+        ]
+      },
+      "id": "node/321555240"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332268980",
+        "name": "Salto",
+        "name:en": "Salto",
+        "name:ru": "Салту",
+        "place": "city",
+        "population": "104028",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html",
+        "website": "https://www.salto.gub.uy/",
+        "wikidata": "Q335506",
+        "wikipedia": "en:Salto, Uruguay"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9608876,
+          -31.38889
+        ]
+      },
+      "id": "node/332268980"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332286942",
+        "name": "La Paloma",
+        "name:ru": "Ла-Палома",
+        "place": "town",
+        "population": "3495",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q893173"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1558671,
+          -34.6641946
+        ]
+      },
+      "id": "node/332286942"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332595126",
+        "name": "Nuevo Berlín",
+        "place": "town",
+        "population": "2450",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0569456,
+          -32.9803448
+        ]
+      },
+      "id": "node/332595126"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332598161",
+        "name": "Mercedes",
+        "place": "city",
+        "population": "41975",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html",
+        "wikidata": "Q844914"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0301816,
+          -33.2481355
+        ]
+      },
+      "id": "node/332598161"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332601915",
+        "name": "Dolores",
+        "place": "city",
+        "population": "17174",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html",
+        "wikidata": "Q546964"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.2170674,
+          -33.5300696
+        ]
+      },
+      "id": "node/332601915"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332605307",
+        "name": "Nueva Palmira",
+        "place": "town",
+        "population": "9857",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q1023521",
+        "wikipedia": "es:Nueva Palmira"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.4068884,
+          -33.8710911
+        ]
+      },
+      "id": "node/332605307"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/332605466",
+        "name": "Carmelo",
+        "name:ru": "Кармело",
+        "place": "city",
+        "population": "18041",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q1043575",
+        "wikipedia": "es:Carmelo (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.2840522,
+          -33.9969239
+        ]
+      },
+      "id": "node/332605466"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/347693883",
+        "name": "Minas",
+        "name:ru": "Минас",
+        "place": "city",
+        "population": "38446",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html",
+        "website": "http://www.lavalleja.gub.uy",
+        "wikidata": "Q868205"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.2382144,
+          -34.3773987
+        ]
+      },
+      "id": "node/347693883"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/353721371",
+        "name": "Ansina",
+        "place": "town",
+        "population": "2712",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q569882",
+        "wikipedia": "es:Villa Ansina"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4625905,
+          -31.878069
+        ]
+      },
+      "id": "node/353721371"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415635916",
+        "name": "Progreso",
+        "name:lt": "Progresas",
+        "name:ru": "Прогресо",
+        "place": "city",
+        "population": "16244",
+        "postal_code": "90300",
+        "source:population": "www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q2000138",
+        "wikipedia": "es:Progreso (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2154727,
+          -34.6798644
+        ]
+      },
+      "id": "node/415635916"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415689707",
+        "name": "Bella Unión",
+        "place": "city",
+        "population": "12200",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html",
+        "wikidata": "Q815782"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6059002,
+          -30.2612301
+        ]
+      },
+      "id": "node/415689707"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415719961",
+        "ele": "18",
+        "name": "Rosario",
+        "place": "city",
+        "population": "10085",
+        "sccn": "UY-CO-ROS",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "source:sccn": "http://www.ejercito.mil.uy/cal/sgm/poblados.html",
+        "wikidata": "Q1023540",
+        "wikipedia": "en:Rosario, Uruguay"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3512918,
+          -34.3115588
+        ]
+      },
+      "id": "node/415719961"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415725702",
+        "name": "Santa Catalina",
+        "note": "Se mantiene como town a pesar de haber bajado la poblacion a menos de 1000",
+        "place": "town",
+        "population": "998",
+        "source:name": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.4857037,
+          -33.7924138
+        ]
+      },
+      "id": "node/415725702"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415725946",
+        "name": "José Enrique Rodó",
+        "place": "town",
+        "population": "2120",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5320234,
+          -33.6980493
+        ]
+      },
+      "id": "node/415725946"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415726287",
+        "name": "Risso",
+        "place": "village",
+        "population": "557",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5717318,
+          -33.6233122
+        ]
+      },
+      "id": "node/415726287"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/415726431",
+        "name": "Egaña",
+        "place": "village",
+        "population": "783",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6292329,
+          -33.601464
+        ]
+      },
+      "id": "node/415726431"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/416470120",
+        "name": "Artigas",
+        "name:lt": "Artigasas",
+        "name:pt": "Artigas",
+        "name:ru": "Артигас",
+        "name:uk": "Артиґас",
+        "place": "city",
+        "population": "40658",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html",
+        "wikidata": "Q712567",
+        "wikipedia": "es:Artigas (ciudad)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4638078,
+          -30.3984136
+        ]
+      },
+      "id": "node/416470120"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/416475285",
+        "name": "Tranqueras",
+        "place": "town",
+        "population": "7235",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html",
+        "wikidata": "Q1784710"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7671946,
+          -31.1904295
+        ]
+      },
+      "id": "node/416475285"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/416492912",
+        "name": "Durazno",
+        "place": "city",
+        "population": "34372",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html",
+        "wikidata": "Q855645"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.5224396,
+          -33.3804517
+        ]
+      },
+      "id": "node/416492912"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/422918346",
+        "name": "Las Piedras",
+        "name:lt": "Las Piedrasas",
+        "name:ru": "Лас-Пьедрас",
+        "place": "city",
+        "population": "71268",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q615470",
+        "wikipedia": "es:Las Piedras (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2164982,
+          -34.7274904
+        ]
+      },
+      "id": "node/422918346"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/427239178",
+        "name": "La Paz",
+        "place": "city",
+        "population": "20526",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q997833",
+        "wikipedia": "es:La Paz (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.22327,
+          -34.7632835
+        ]
+      },
+      "id": "node/427239178"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/427855531",
+        "name": "Punta del Diablo",
+        "place": "village",
+        "population": "823",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.5398091,
+          -34.0449102
+        ]
+      },
+      "id": "node/427855531"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/428444552",
+        "name": "Sauce",
+        "name:ru": "Саусе",
+        "place": "town",
+        "population": "6132",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q429855",
+        "wikipedia": "es:Sauce (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0649654,
+          -34.6496661
+        ]
+      },
+      "id": "node/428444552"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/428656259",
+        "name": "Villa Paz S.A.",
+        "place": "village",
+        "population": "542",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2344468,
+          -34.7493114
+        ]
+      },
+      "id": "node/428656259"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/428954613",
+        "name": "Barrio Cópola",
+        "place": "village",
+        "population": "826",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q4863727",
+        "wikipedia": "en:Barrio Cópola"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2428849,
+          -34.7529446
+        ]
+      },
+      "id": "node/428954613"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/428959443",
+        "name": "Costa y Guillamón",
+        "place": "village",
+        "population": "550",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1136423",
+        "wikipedia": "en:Costa y Guillamón"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2379754,
+          -34.7602361
+        ]
+      },
+      "id": "node/428959443"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/428960954",
+        "name": "Barrio La Lucha",
+        "place": "village",
+        "population": "492",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q808948",
+        "wikipedia": "en:Barrio La Lucha"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2423699,
+          -34.7479375
+        ]
+      },
+      "id": "node/428960954"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429019679",
+        "name": "Colonia Valdense",
+        "place": "town",
+        "population": "3235",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.2628055,
+          -34.3400221
+        ]
+      },
+      "id": "node/429019679"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429019682",
+        "name": "Nueva Helvecia",
+        "place": "city",
+        "population": "10630",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q999572"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.2332491,
+          -34.2849101
+        ]
+      },
+      "id": "node/429019682"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429019688",
+        "alt_name": "Colonia Piamontesa",
+        "name": "La Paz",
+        "place": "village",
+        "population": "603",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.309232,
+          -34.3471569
+        ]
+      },
+      "id": "node/429019688"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429019695",
+        "name": "Juan Lacaze",
+        "place": "city",
+        "population": "12816",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q657514"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.4380432,
+          -34.434266
+        ]
+      },
+      "id": "node/429019695"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429433844",
+        "is_in": "Uruguay",
+        "name": "Chuy",
+        "place": "town",
+        "population": "9675",
+        "postal_code": "27100",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q1026307",
+        "wikipedia": "es:Chuy"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.4561114,
+          -33.6937948
+        ]
+      },
+      "id": "node/429433844"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429627866",
+        "alt_name": "Paso de Carrasco",
+        "name": "Paso Carrasco",
+        "name:ru": "Пасо-Карраско",
+        "place": "city",
+        "population": "15908",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q2055651",
+        "wikipedia": "es:Paso Carrasco"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0537853,
+          -34.8639983
+        ]
+      },
+      "id": "node/429627866"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/429655452",
+        "name": "Toledo",
+        "place": "town",
+        "population": "4379",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q2096039",
+        "wikipedia": "es:Toledo (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0892924,
+          -34.7398043
+        ]
+      },
+      "id": "node/429655452"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/432513934",
+        "name": "Fraccionamiento Camino del Andaluz y Ruta 84",
+        "place": "town",
+        "population": "9295",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0720945,
+          -34.7572781
+        ]
+      },
+      "id": "node/432513934"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/433995987",
+        "name": "Tala",
+        "place": "town",
+        "population": "5089",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q2096693",
+        "wikipedia": "es:Tala (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7617585,
+          -34.3442958
+        ]
+      },
+      "id": "node/433995987"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/433995989",
+        "name": "Fray Marcos",
+        "place": "town",
+        "population": "2398",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7395224,
+          -34.1960802
+        ]
+      },
+      "id": "node/433995989"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/433995990",
+        "name": "Casupá",
+        "place": "town",
+        "population": "2402",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.6514175,
+          -34.1005881
+        ]
+      },
+      "id": "node/433995990"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/433995991",
+        "name": "Reboledo",
+        "place": "village",
+        "population": "342",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.6488831,
+          -33.9939813
+        ]
+      },
+      "id": "node/433995991"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/433999769",
+        "alt_name": "Batlle y Ordóñez",
+        "name": "José Batlle y Ordóñez",
+        "place": "town",
+        "population": "2203",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html",
+        "wikidata": "Q1668942"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.1469361,
+          -33.4733345
+        ]
+      },
+      "id": "node/433999769"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/440187993",
+        "name": "La Barra",
+        "place": "village",
+        "population": "339",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.8614131,
+          -34.914587
+        ]
+      },
+      "id": "node/440187993"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/440189149",
+        "name": "José Ignacio",
+        "place": "village",
+        "population": "292",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.6376934,
+          -34.8448208
+        ]
+      },
+      "id": "node/440189149"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/440376476",
+        "name": "Barra de Valizas",
+        "place": "village",
+        "population": "330"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.7928131,
+          -34.3369825
+        ]
+      },
+      "id": "node/440376476"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/440377108",
+        "name": "La Pedrera",
+        "place": "village",
+        "population": "225",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.126862,
+          -34.5914951
+        ]
+      },
+      "id": "node/440377108"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/441915958",
+        "name": "La Montañesa",
+        "place": "village",
+        "population": "396",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8803066,
+          -34.7200261
+        ]
+      },
+      "id": "node/441915958"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445005063",
+        "name": "Piedra del Toro",
+        "place": "village",
+        "population": "332",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q29378"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8871391,
+          -34.7023048
+        ]
+      },
+      "id": "node/445005063"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445006416",
+        "name": "Empalme Olmos",
+        "place": "town",
+        "population": "4199",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8948676,
+          -34.6954579
+        ]
+      },
+      "id": "node/445006416"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445148964",
+        "name": "Estación Atlántida",
+        "place": "town",
+        "population": "2274",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984842",
+        "wikipedia": "es:Estación Atlántida"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7629782,
+          -34.7416189
+        ]
+      },
+      "id": "node/445148964"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445965368",
+        "name": "Soca",
+        "official_name": "Doctor Francisco Soca",
+        "place": "town",
+        "population": "1797",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984836",
+        "wikipedia": "es:Soca (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.704475,
+          -34.6834361
+        ]
+      },
+      "id": "node/445965368"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445968232",
+        "name": "Pando",
+        "place": "city",
+        "population": "25949",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q639340",
+        "wikipedia": "es:Pando (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.959447,
+          -34.721323
+        ]
+      },
+      "id": "node/445968232"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445968233",
+        "name": "Olmos",
+        "place": "village",
+        "population": "662",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q29382"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9291216,
+          -34.6983133
+        ]
+      },
+      "id": "node/445968233"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970574",
+        "name": "Aguas Corrientes",
+        "place": "town",
+        "population": "1047",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3941179,
+          -34.5227043
+        ]
+      },
+      "id": "node/445970574"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970575",
+        "name": "Los Cerrillos",
+        "place": "town",
+        "population": "2508",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1007603",
+        "wikipedia": "es:Los Cerrillos (Canelones)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3590339,
+          -34.6071478
+        ]
+      },
+      "id": "node/445970575"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970576",
+        "name": "Campo militar",
+        "place": "village",
+        "population": "299",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3932635,
+          -34.577923
+        ]
+      },
+      "id": "node/445970576"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970577",
+        "name": "Paso Espinosa",
+        "place": "village",
+        "population": "305"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2820364,
+          -34.4949924
+        ]
+      },
+      "id": "node/445970577"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970578",
+        "name": "Paso Palomeque",
+        "place": "village",
+        "population": "132"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2595274,
+          -34.5165643
+        ]
+      },
+      "id": "node/445970578"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970624",
+        "name": "Santa Rosa",
+        "place": "town",
+        "population": "3727",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1020820",
+        "wikipedia": "es:Santa Rosa (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.040947,
+          -34.4982333
+        ]
+      },
+      "id": "node/445970624"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970625",
+        "name": "San Bautista",
+        "place": "town",
+        "population": "1973",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1005725",
+        "wikipedia": "es:San Bautista"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9595114,
+          -34.4410211
+        ]
+      },
+      "id": "node/445970625"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445970626",
+        "name": "San Antonio",
+        "place": "town",
+        "population": "1489",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1005259",
+        "wikipedia": "es:San Antonio (Canelones)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0802552,
+          -34.4513014
+        ]
+      },
+      "id": "node/445970626"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971725",
+        "name": "Castellanos",
+        "place": "village",
+        "population": "520",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q181267",
+        "wikipedia": "es:Castellanos (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9521892,
+          -34.3804259
+        ]
+      },
+      "id": "node/445971725"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971726",
+        "alt_name": "Tapia",
+        "name": "Estación Tapia",
+        "place": "village",
+        "population": "213",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q121961",
+        "wikipedia": "es:Tapia (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7505504,
+          -34.5657364
+        ]
+      },
+      "id": "node/445971726"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971728",
+        "name": "Migues",
+        "place": "town",
+        "population": "2109",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q29585",
+        "wikipedia": "es:Migues"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.630224,
+          -34.4885052
+        ]
+      },
+      "id": "node/445971728"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971729",
+        "name": "Montes",
+        "place": "town",
+        "population": "1760",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.561799,
+          -34.4927322
+        ]
+      },
+      "id": "node/445971729"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971731",
+        "name": "Jardines de Pando",
+        "place": "village",
+        "population": "756",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9654387,
+          -34.6860606
+        ]
+      },
+      "id": "node/445971731"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971732",
+        "name": "Estanque de Pando",
+        "place": "village",
+        "population": "770",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9704656,
+          -34.6941922
+        ]
+      },
+      "id": "node/445971732"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971733",
+        "alt_name": "San Bernardo",
+        "name": "Viejo Molino San Bernardo",
+        "place": "village",
+        "population": "456",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9656646,
+          -34.7010304
+        ]
+      },
+      "id": "node/445971733"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971734",
+        "name": "Totoral del Sauce",
+        "place": "village",
+        "population": "746",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9932366,
+          -34.6607107
+        ]
+      },
+      "id": "node/445971734"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971735",
+        "name": "Cruz de los caminos",
+        "place": "village",
+        "population": "279",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9629427,
+          -34.6337111
+        ]
+      },
+      "id": "node/445971735"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/445971736",
+        "name": "Villa Felicidad",
+        "place": "town",
+        "population": "1344",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2407745,
+          -34.6417881
+        ]
+      },
+      "id": "node/445971736"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/447148850",
+        "name": "Juanicó",
+        "place": "town",
+        "population": "1305",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2537148,
+          -34.5951621
+        ]
+      },
+      "id": "node/447148850"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/447149962",
+        "name": "Parque del Plata",
+        "name:es": "Parque del Plata",
+        "place": "town",
+        "population": "7896",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q952273",
+        "wikipedia": "es:Parque del Plata"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7179432,
+          -34.765726
+        ]
+      },
+      "id": "node/447149962"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/450192190",
+        "name": "Villa El Tato",
+        "place": "town",
+        "population": "615",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9732166,
+          -34.7745865
+        ]
+      },
+      "id": "node/450192190"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/470781776",
+        "name": "Puntas de Valdéz",
+        "place": "town",
+        "population": "1491",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.7003391,
+          -34.5851955
+        ]
+      },
+      "id": "node/470781776"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/470781777",
+        "name": "Radial Ruta 3",
+        "place": "village",
+        "population": "250",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.758189,
+          -34.5514117
+        ]
+      },
+      "id": "node/470781777"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/470781778",
+        "name": "Rafael Peraza",
+        "place": "town",
+        "population": "1277",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.7969845,
+          -34.5238374
+        ]
+      },
+      "id": "node/470781778"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/470781779",
+        "name": "Villa María",
+        "place": "village",
+        "population": "620",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.7605922,
+          -34.5142196
+        ]
+      },
+      "id": "node/470781779"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/470781780",
+        "name": "Libertad",
+        "place": "city",
+        "population": "10166",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html",
+        "wikidata": "Q946150"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.6164899,
+          -34.6310156
+        ]
+      },
+      "id": "node/470781780"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471550935",
+        "name": "Ecilda Paullier",
+        "place": "town",
+        "population": "2585",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.0501049,
+          -34.3606955
+        ]
+      },
+      "id": "node/471550935"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471550937",
+        "name": "Kiyú - Ordeig",
+        "place": "village",
+        "population": "423",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.7359646,
+          -34.6989711
+        ]
+      },
+      "id": "node/471550937"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471558446",
+        "name": "Juan Soler",
+        "place": "village",
+        "population": "343",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.8054874,
+          -34.3225677
+        ]
+      },
+      "id": "node/471558446"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471558447",
+        "name": "Mal Abrigo",
+        "place": "village",
+        "population": "344",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.9528729,
+          -34.1463991
+        ]
+      },
+      "id": "node/471558447"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471558448",
+        "name": "González",
+        "place": "village",
+        "population": "222",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.8758686,
+          -34.2300821
+        ]
+      },
+      "id": "node/471558448"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471558449",
+        "name": "Raigón",
+        "place": "village",
+        "population": "738",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.6642101,
+          -34.3405707
+        ]
+      },
+      "id": "node/471558449"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471561334",
+        "name": "Rodríguez",
+        "place": "town",
+        "population": "2604",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.539069,
+          -34.3806737
+        ]
+      },
+      "id": "node/471561334"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471564637",
+        "name": "18 de Julio",
+        "place": "village",
+        "population": "469",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4433688,
+          -34.4415725
+        ]
+      },
+      "id": "node/471564637"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471564638",
+        "name": "Ituzaingó",
+        "place": "village",
+        "population": "771",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4236658,
+          -34.420459
+        ]
+      },
+      "id": "node/471564638"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471564639",
+        "name": "25 de Agosto",
+        "place": "town",
+        "population": "1849",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4001637,
+          -34.4123302
+        ]
+      },
+      "id": "node/471564639"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/471564640",
+        "name": "Capurro",
+        "place": "village",
+        "population": "517",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4647157,
+          -34.4340415
+        ]
+      },
+      "id": "node/471564640"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/617428620",
+        "name": "Melo",
+        "place": "city",
+        "population": "51830",
+        "postal_code": "37000",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q738250",
+        "wikipedia": "es:Melo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1701271,
+          -32.3681117
+        ]
+      },
+      "id": "node/617428620"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/617894020",
+        "name": "Tupambaé",
+        "place": "town",
+        "population": "1122",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q1020969",
+        "wikipedia": "es:Tupambaé"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.7627906,
+          -32.837022
+        ]
+      },
+      "id": "node/617894020"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/617894021",
+        "name": "Fraile Muerto",
+        "place": "town",
+        "population": "3168",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q1440500",
+        "wikipedia": "es:Fraile Muerto (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.5234426,
+          -32.5132703
+        ]
+      },
+      "id": "node/617894021"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/618975428",
+        "name": "José Pedro Varela",
+        "place": "town",
+        "population": "5118",
+        "wikidata": "Q1709570",
+        "wikipedia": "es:José Pedro Varela (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.5355452,
+          -33.4562826
+        ]
+      },
+      "id": "node/618975428"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/671778599",
+        "name": "Paso de los Toros",
+        "place": "city",
+        "population": "12985",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q664156",
+        "wikipedia": "es:Paso de los Toros"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.5174948,
+          -32.8108095
+        ]
+      },
+      "id": "node/671778599"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/697315225",
+        "name": "Tarariras",
+        "place": "town",
+        "population": "6632",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6143416,
+          -34.2648285
+        ]
+      },
+      "id": "node/697315225"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/697315226",
+        "is_in:country": "Uruguay",
+        "is_in:country_code": "UY",
+        "is_in:state": "Colonia",
+        "is_in:state_code": "UYCO",
+        "name": "Ombúes de Lavalle",
+        "place": "town",
+        "population": "3390",
+        "sccn": "UY-CO-ODL",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "source:sccn": "http://www.ejercito.mil.uy/cal/sgm/poblados.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8083627,
+          -33.940575
+        ]
+      },
+      "id": "node/697315226"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/698340727",
+        "name": "Conchillas",
+        "place": "village",
+        "population": "401",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0332804,
+          -34.1643275
+        ]
+      },
+      "id": "node/698340727"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/698360778",
+        "is_in:country": "Uruguay",
+        "is_in:country_code": "UY",
+        "is_in:state": "Colonia",
+        "is_in:state_code": "UYCO",
+        "name": "Miguelete",
+        "place": "village",
+        "population": "999",
+        "sccn": "UY-CO-MTE",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "source:sccn": "http://www.ejercito.mil.uy/cal/sgm/poblados.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6472815,
+          -34.0068496
+        ]
+      },
+      "id": "node/698360778"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/698376430",
+        "name": "Radial Hernández",
+        "place": "village",
+        "population": "294",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0076093,
+          -34.121105
+        ]
+      },
+      "id": "node/698376430"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/698409448",
+        "name": "Minas de Narancio",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9690299,
+          -34.1394706
+        ]
+      },
+      "id": "node/698409448"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/698623074",
+        "name": "Cañada Nieto",
+        "place": "village",
+        "population": "430",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.1094373,
+          -33.6985655
+        ]
+      },
+      "id": "node/698623074"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/703548126",
+        "name": "Aiguá",
+        "place": "town",
+        "population": "2465",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q404803"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.7676207,
+          -34.2019959
+        ]
+      },
+      "id": "node/703548126"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/718466201",
+        "name": "Villa Soriano",
+        "place": "town",
+        "population": "1124",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.3197607,
+          -33.3939059
+        ]
+      },
+      "id": "node/718466201"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/730574254",
+        "name": "Piriápolis",
+        "name:lt": "Piriapolis",
+        "name:ru": "Пириаполис",
+        "name:zh": "皮里亞波利斯",
+        "place": "town",
+        "population": "8830",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q1006155",
+        "wikipedia": "es:Piriápolis"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.2724472,
+          -34.8689037
+        ]
+      },
+      "id": "node/730574254"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/750508811",
+        "name": "Palmitas",
+        "place": "town",
+        "population": "2123",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8006663,
+          -33.5091893
+        ]
+      },
+      "id": "node/750508811"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/850125032",
+        "name": "Aguas Dulces",
+        "place": "village",
+        "population": "417",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q397984",
+        "wikipedia": "es:Aguas Dulces (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.7814956,
+          -34.2766358
+        ]
+      },
+      "id": "node/850125032"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/881202307",
+        "name": "Santa Ana",
+        "place": "village",
+        "population": "273",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984838",
+        "wikipedia": "es:Santa Ana (Canelones)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4722385,
+          -34.7914925
+        ]
+      },
+      "id": "node/881202307"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/884640150",
+        "name": "Jaureguiberry",
+        "place": "village",
+        "population": "458",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1684143",
+        "wikipedia": "es:Jaureguiberry"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4058644,
+          -34.7864629
+        ]
+      },
+      "id": "node/884640150"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/884668291",
+        "name": "Santa Lucía Del Este",
+        "place": "village",
+        "population": "286",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q2223003",
+        "wikipedia": "es:Santa Lucía del Este"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5377062,
+          -34.7881795
+        ]
+      },
+      "id": "node/884668291"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/884668294",
+        "name": "San Luis",
+        "place": "town",
+        "population": "1878",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q260096",
+        "wikipedia": "es:San Luis (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5903314,
+          -34.7677166
+        ]
+      },
+      "id": "node/884668294"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/884668311",
+        "name": "La Tuna",
+        "place": "village",
+        "population": "204",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1799208",
+        "wikipedia": "es:La Tuna (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5605186,
+          -34.7828965
+        ]
+      },
+      "id": "node/884668311"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/886601234",
+        "is_in:country": "UY",
+        "is_in:state": "Rivera",
+        "name": "Rivera",
+        "place": "city",
+        "population": "64485",
+        "sccn": "UY-RV-RIV",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html",
+        "wikidata": "Q646498"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5408151,
+          -30.900058
+        ]
+      },
+      "id": "node/886601234"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/927500310",
+        "name": "Cuchilla Alta",
+        "place": "village",
+        "population": "527",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984941",
+        "wikipedia": "es:Cuchilla Alta"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4943788,
+          -34.7935444
+        ]
+      },
+      "id": "node/927500310"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1156306843",
+        "name": "Cardona",
+        "place": "town",
+        "population": "4600",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html",
+        "wikidata": "Q247843",
+        "wikipedia": "es:Cardona (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3671369,
+          -33.8707543
+        ]
+      },
+      "id": "node/1156306843"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1156306882",
+        "name": "Florencio Sánchez",
+        "place": "town",
+        "population": "3716",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q972190",
+        "wikipedia": "es:Florencio Sánchez (ciudad)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3703478,
+          -33.8763719
+        ]
+      },
+      "id": "node/1156306882"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1160516484",
+        "name": "Ismael Cortinas",
+        "place": "village",
+        "population": "918",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/flores.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.0903714,
+          -33.9602504
+        ]
+      },
+      "id": "node/1160516484"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1183091469",
+        "is_in:country": "Uruguay",
+        "is_in:country_code": "UY",
+        "name": "Mones Quintela",
+        "official_name": "Ingeniero Alfredo Mones Quintela",
+        "place": "village",
+        "population": "531",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6637734,
+          -30.3735682
+        ]
+      },
+      "id": "node/1183091469"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1195770129",
+        "alt_name": "Villa del Carmen",
+        "name": "Carmen",
+        "place": "town",
+        "population": "2692",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0131446,
+          -33.2410373
+        ]
+      },
+      "id": "node/1195770129"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1280617709",
+        "name": "Parada Cabrera",
+        "place": "village",
+        "population": "409",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q29376"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2563107,
+          -34.6249414
+        ]
+      },
+      "id": "node/1280617709"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1289585735",
+        "name": "Fortín de Santa Rosa",
+        "place": "village",
+        "population": "296",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1411480",
+        "wikipedia": "es:Fortin de Santa Rosa"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8056021,
+          -34.771943
+        ]
+      },
+      "id": "node/1289585735"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1290373404",
+        "name": "Seis Hermanos",
+        "place": "village",
+        "population": "622",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.06907,
+          -34.7128661
+        ]
+      },
+      "id": "node/1290373404"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1291733306",
+        "name": "Villa San Felipe",
+        "place": "village",
+        "population": "242",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0570727,
+          -34.7099192
+        ]
+      },
+      "id": "node/1291733306"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1291755677",
+        "name": "Villa San José",
+        "place": "town",
+        "population": "1419",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0741733,
+          -34.7164287
+        ]
+      },
+      "id": "node/1291755677"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1291840060",
+        "name": "Villa Hadita",
+        "place": "village",
+        "population": "235",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0503811,
+          -34.7093027
+        ]
+      },
+      "id": "node/1291840060"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1291863239",
+        "name": "Villa Porvenir",
+        "place": "village",
+        "population": "507",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0851822,
+          -34.7247172
+        ]
+      },
+      "id": "node/1291863239"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1293353292",
+        "name": "Fraccionamiento Ruta 74",
+        "place": "town",
+        "population": "1513",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0489875,
+          -34.7159331
+        ]
+      },
+      "id": "node/1293353292"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1296548565",
+        "name": "Barros Blancos",
+        "old_name": "Juan Antonio Artigas",
+        "place": "city",
+        "population": "31650",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q808981",
+        "wikipedia": "es:Barros Blancos"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9921611,
+          -34.7548725
+        ]
+      },
+      "id": "node/1296548565"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1300064179",
+        "name": "Gregorio Aznarez",
+        "place": "village",
+        "population": "944",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3993241,
+          -34.7474726
+        ]
+      },
+      "id": "node/1300064179"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1300087387",
+        "name": "Cerros Azules",
+        "place": "village",
+        "population": "293",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3649103,
+          -34.7658034
+        ]
+      },
+      "id": "node/1300087387"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1300087393",
+        "name": "Estación Las Flores",
+        "place": "village",
+        "population": "397",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3276597,
+          -34.7893148
+        ]
+      },
+      "id": "node/1300087393"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1300087395",
+        "name": "Gerona",
+        "place": "village",
+        "population": "679",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q1022302",
+        "wikipedia": "es:Gerona (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.2548138,
+          -34.7675622
+        ]
+      },
+      "id": "node/1300087395"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1300100178",
+        "name": "Pan de Azúcar",
+        "name:ru": "Пан-де-Асукар",
+        "name:zh": "潘德阿蘇卡爾",
+        "place": "town",
+        "population": "6597",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q1532147",
+        "wikipedia": "es:Pan de Azúcar (ciudad)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.224032,
+          -34.7755603
+        ]
+      },
+      "id": "node/1300100178"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1301120645",
+        "name": "Las Flores",
+        "place": "village",
+        "population": "241",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html",
+        "wikidata": "Q582146",
+        "wikipedia": "es:Las Flores (Maldonado)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3319227,
+          -34.8105373
+        ]
+      },
+      "id": "node/1301120645"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1301120794",
+        "name": "Solís",
+        "place": "village",
+        "population": "288",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3837161,
+          -34.7923733
+        ]
+      },
+      "id": "node/1301120794"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1301132813",
+        "name": "Playa Hermosa",
+        "place": "village",
+        "population": "611",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3027305,
+          -34.8332505
+        ]
+      },
+      "id": "node/1301132813"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1301132814",
+        "name": "Playa Verde",
+        "place": "village",
+        "population": "269",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.3139722,
+          -34.8233163
+        ]
+      },
+      "id": "node/1301132814"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306015173",
+        "name": "Sequeira",
+        "place": "town",
+        "population": "1149",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.8771169,
+          -31.0013384
+        ]
+      },
+      "id": "node/1306015173"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306015226",
+        "name": "Pueblo Lavalleja",
+        "note": "Poblacion: Suma de Migliaro y Lluveras",
+        "place": "village",
+        "population": "956"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.0249751,
+          -31.0958324
+        ]
+      },
+      "id": "node/1306015226"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306015311",
+        "name": "Paso Campamento",
+        "place": "village",
+        "population": "264",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.782232,
+          -30.788001
+        ]
+      },
+      "id": "node/1306015311"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306015362",
+        "name": "Belén",
+        "place": "town",
+        "population": "1926",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.7790732,
+          -30.789358
+        ]
+      },
+      "id": "node/1306015362"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306016716",
+        "name": "Biassini",
+        "place": "village",
+        "population": "345",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.1262997,
+          -31.2776239
+        ]
+      },
+      "id": "node/1306016716"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306016844",
+        "name": "Rincón de Valentín",
+        "place": "village",
+        "population": "481",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.1992258,
+          -31.2821677
+        ]
+      },
+      "id": "node/1306016844"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306395706",
+        "name": "Barrio Hipódromo",
+        "place": "town",
+        "population": "1973",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9448254,
+          -34.8615198
+        ]
+      },
+      "id": "node/1306395706"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306395707",
+        "name": "Parque Medina",
+        "place": "village",
+        "population": "204",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.8977263,
+          -34.7966569
+        ]
+      },
+      "id": "node/1306395707"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306395708",
+        "name": "Canteras de Marelli",
+        "place": "village",
+        "population": "200",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9432246,
+          -34.8436291
+        ]
+      },
+      "id": "node/1306395708"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1306993743",
+        "name": "Playa Grande",
+        "place": "town",
+        "population": "1031",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.2959105,
+          -34.845655
+        ]
+      },
+      "id": "node/1306993743"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307170596",
+        "name": "La Capuera",
+        "place": "town",
+        "population": "2838",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.1276144,
+          -34.8525158
+        ]
+      },
+      "id": "node/1307170596"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307255337",
+        "name": "Ocean Park",
+        "place": "village",
+        "population": "234",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.1202576,
+          -34.8707552
+        ]
+      },
+      "id": "node/1307255337"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307795202",
+        "name": "Punta Ballena",
+        "place": "village",
+        "population": "750",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.0401144,
+          -34.8901438
+        ]
+      },
+      "id": "node/1307795202"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307973233",
+        "name": "Cerro Pelado",
+        "place": "town",
+        "population": "8177",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9761183,
+          -34.8815503
+        ]
+      },
+      "id": "node/1307973233"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307974056",
+        "name": "San Rafael - El Placer",
+        "place": "town",
+        "population": "3146",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.8871007,
+          -34.920136
+        ]
+      },
+      "id": "node/1307974056"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307994905",
+        "name": "El Tesoro",
+        "place": "town",
+        "population": "1396",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.8683906,
+          -34.9010525
+        ]
+      },
+      "id": "node/1307994905"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307994987",
+        "name": "Buenos Aires",
+        "place": "town",
+        "population": "1551",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.7943708,
+          -34.890092
+        ]
+      },
+      "id": "node/1307994987"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1307994999",
+        "name": "El Chorro",
+        "place": "village",
+        "population": "392",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.8127397,
+          -34.9004074
+        ]
+      },
+      "id": "node/1307994999"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1308016889",
+        "name": "Barrio Los Aromos",
+        "place": "village",
+        "population": "956",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/maldonado.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9839779,
+          -34.8824298
+        ]
+      },
+      "id": "node/1308016889"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1309460900",
+        "name": "Pirarajá",
+        "place": "village",
+        "population": "713",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.7573012,
+          -33.740851
+        ]
+      },
+      "id": "node/1309460900"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1309547683",
+        "name": "Barrio La Coronilla - ANCAP",
+        "place": "village",
+        "population": "301",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.299279,
+          -34.3969078
+        ]
+      },
+      "id": "node/1309547683"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1309563669",
+        "name": "Solís de Mataojo",
+        "place": "town",
+        "population": "2825",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html",
+        "wikidata": "Q2096045",
+        "wikipedia": "es:Solís de Mataojo"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4669458,
+          -34.5991409
+        ]
+      },
+      "id": "node/1309563669"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1309587789",
+        "name": "Mariscala",
+        "place": "town",
+        "population": "1626",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.7770375,
+          -34.0418823
+        ]
+      },
+      "id": "node/1309587789"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1309596706",
+        "name": "Zapicán",
+        "place": "village",
+        "population": "553",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/lavalleja.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9389546,
+          -33.527751
+        ]
+      },
+      "id": "node/1309596706"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1316796507",
+        "is_in:country": "Uruguay",
+        "is_in:country_code": "UY",
+        "name": "Masoller",
+        "place": "village",
+        "population": "240",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.00273,
+          -31.0839524
+        ]
+      },
+      "id": "node/1316796507"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1321056502",
+        "name": "18 de Julio",
+        "place": "village",
+        "population": "977",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q204526",
+        "wikipedia": "es:18 de Julio (Rocha)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.5547074,
+          -33.6844727
+        ]
+      },
+      "id": "node/1321056502"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1321263338",
+        "alt_name": "San Luis",
+        "name": "San Luis al Medio",
+        "place": "village",
+        "population": "598",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q984719",
+        "wikipedia": "es:San Luis al Medio"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.7171477,
+          -33.6043198
+        ]
+      },
+      "id": "node/1321263338"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323105786",
+        "name": "Lascano",
+        "place": "town",
+        "population": "7645",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q1013691"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.2078542,
+          -33.6738454
+        ]
+      },
+      "id": "node/1323105786"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323105790",
+        "name": "Velázquez",
+        "place": "town",
+        "population": "1022",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.2821383,
+          -34.0376975
+        ]
+      },
+      "id": "node/1323105790"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323120066",
+        "name": "Cebollatí",
+        "place": "town",
+        "population": "1606",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.7960583,
+          -33.2682531
+        ]
+      },
+      "id": "node/1323120066"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323136291",
+        "name": "Barra del Chuy",
+        "place": "village",
+        "population": "370",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.3890022,
+          -33.7551351
+        ]
+      },
+      "id": "node/1323136291"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323136297",
+        "name": "Puimayen",
+        "place": "village",
+        "population": "505",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.4011368,
+          -33.7641348
+        ]
+      },
+      "id": "node/1323136297"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323144154",
+        "name": "La Coronilla",
+        "place": "village",
+        "population": "510",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.5154737,
+          -33.8961359
+        ]
+      },
+      "id": "node/1323144154"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1323144157",
+        "name": "Capacho",
+        "place": "village",
+        "population": "457",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.5288203,
+          -33.8949283
+        ]
+      },
+      "id": "node/1323144157"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324050051",
+        "name": "La Aguada - Costa Azul",
+        "place": "town",
+        "population": "1190",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1577958,
+          -34.6326408
+        ]
+      },
+      "id": "node/1324050051"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324050202",
+        "name": "Arachania",
+        "place": "village",
+        "population": "335",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1523434,
+          -34.6157638
+        ]
+      },
+      "id": "node/1324050202"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324182773",
+        "name": "19 de Abril",
+        "name:de": "19. April",
+        "place": "village",
+        "population": "205",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.0667644,
+          -34.3630623
+        ]
+      },
+      "id": "node/1324182773"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324273302",
+        "name": "Lagos del Norte",
+        "place": "village",
+        "population": "291",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4989326,
+          -30.9833933
+        ]
+      },
+      "id": "node/1324273302"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324391641",
+        "name": "Mendoza",
+        "place": "village",
+        "population": "730",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2144898,
+          -34.2823049
+        ]
+      },
+      "id": "node/1324391641"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324391647",
+        "name": "Chamizo",
+        "place": "village",
+        "population": "540",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9170096,
+          -34.2436011
+        ]
+      },
+      "id": "node/1324391647"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324391734",
+        "name": "Florida",
+        "place": "city",
+        "population": "33640",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html",
+        "wikidata": "Q842472"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2147854,
+          -34.1008544
+        ]
+      },
+      "id": "node/1324391734"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324391748",
+        "name": "Capilla del Sauce",
+        "place": "village",
+        "population": "835",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.630689,
+          -33.4694385
+        ]
+      },
+      "id": "node/1324391748"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1324391880",
+        "name": "Mendoza Chico",
+        "place": "village",
+        "population": "810",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2144813,
+          -34.2406272
+        ]
+      },
+      "id": "node/1324391880"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326653762",
+        "name": "Lagunón",
+        "place": "town",
+        "population": "2376",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5794834,
+          -30.88006
+        ]
+      },
+      "id": "node/1326653762"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326653810",
+        "name": "Santa Teresa",
+        "place": "town",
+        "population": "2567",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5745052,
+          -30.9190091
+        ]
+      },
+      "id": "node/1326653810"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326653859",
+        "name": "Mandubí",
+        "place": "town",
+        "population": "6109",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5545109,
+          -30.9268544
+        ]
+      },
+      "id": "node/1326653859"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326655074",
+        "name": "La Pedrera",
+        "place": "town",
+        "population": "3363",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5453979,
+          -30.9338328
+        ]
+      },
+      "id": "node/1326655074"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326660491",
+        "name": "Minas de Corrales",
+        "place": "town",
+        "population": "3788",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html",
+        "wikidata": "Q1020376",
+        "wikipedia": "en:Minas de Corrales"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.4744395,
+          -31.5709981
+        ]
+      },
+      "id": "node/1326660491"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326769284",
+        "name": "Moirones",
+        "place": "village",
+        "population": "211",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9839544,
+          -31.6041336
+        ]
+      },
+      "id": "node/1326769284"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326819128",
+        "name": "Vichadero",
+        "place": "town",
+        "population": "3698",
+        "source:population": "INE 2011"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.6923583,
+          -31.7789553
+        ]
+      },
+      "id": "node/1326819128"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326819148",
+        "name": "Lapuente",
+        "place": "village",
+        "population": "321",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9631455,
+          -31.4687955
+        ]
+      },
+      "id": "node/1326819148"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1326819161",
+        "name": "Paso Hospital",
+        "place": "village",
+        "population": "295",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.6202605,
+          -31.654542
+        ]
+      },
+      "id": "node/1326819161"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1327853937",
+        "name": "Las Flores",
+        "place": "village",
+        "population": "359",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rivera.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.1982306,
+          -31.7822838
+        ]
+      },
+      "id": "node/1327853937"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1328820921",
+        "alt_name": "Villa Darwin",
+        "name": "Sacachispas",
+        "place": "village",
+        "population": "456",
+        "source:name": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6331157,
+          -33.1174279
+        ]
+      },
+      "id": "node/1328820921"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1328820928",
+        "name": "Palmar",
+        "place": "village",
+        "population": "381",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.460298,
+          -33.0626225
+        ]
+      },
+      "id": "node/1328820928"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1328856205",
+        "name": "Chacras de Dolores",
+        "place": "town",
+        "population": "1961",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.2152848,
+          -33.5509052
+        ]
+      },
+      "id": "node/1328856205"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1331515361",
+        "name": "Pinamar",
+        "place": "town",
+        "population": "4724",
+        "postal_code": "15102",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984779",
+        "wikipedia": "es:Pinamar (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8515179,
+          -34.7819527
+        ]
+      },
+      "id": "node/1331515361"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1334817768",
+        "name": "Santa Bernardina",
+        "place": "town",
+        "population": "1094",
+        "source:population": "www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.5154091,
+          -33.3581201
+        ]
+      },
+      "id": "node/1334817768"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335836152",
+        "name": "Centenario",
+        "place": "town",
+        "population": "1136",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4986474,
+          -32.8283195
+        ]
+      },
+      "id": "node/1335836152"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335836184",
+        "name": "Carlos Reyles",
+        "place": "village",
+        "population": "976",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4766763,
+          -33.0571295
+        ]
+      },
+      "id": "node/1335836184"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335909480",
+        "name": "San Gregorio de Polanco",
+        "place": "town",
+        "population": "3415",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q2093549",
+        "wikipedia": "es:San Gregorio de Polanco"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8345547,
+          -32.6180516
+        ]
+      },
+      "id": "node/1335909480"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335909482",
+        "name": "Blanquillo",
+        "place": "town",
+        "population": "1084",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.6153834,
+          -32.8868081
+        ]
+      },
+      "id": "node/1335909482"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335909499",
+        "name": "La Paloma",
+        "place": "town",
+        "population": "1443",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5796648,
+          -32.727674
+        ]
+      },
+      "id": "node/1335909499"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335909712",
+        "name": "Sarandí del Yí",
+        "place": "town",
+        "population": "7176",
+        "source:population": "www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.6313253,
+          -33.3442144
+        ]
+      },
+      "id": "node/1335909712"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1335963058",
+        "name": "San Jorge",
+        "place": "village",
+        "population": "502",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/durazno.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8963803,
+          -32.8446509
+        ]
+      },
+      "id": "node/1335963058"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1337500065",
+        "name": "Independencia",
+        "place": "village",
+        "population": "396",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3984947,
+          -34.3541414
+        ]
+      },
+      "id": "node/1337500065"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1337556535",
+        "name": "La Cruz",
+        "place": "village",
+        "population": "747",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2367996,
+          -33.9302121
+        ]
+      },
+      "id": "node/1337556535"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1337575966",
+        "name": "Sarandí Grande",
+        "place": "town",
+        "population": "6130",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3273963,
+          -33.7228206
+        ]
+      },
+      "id": "node/1337575966"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1337576036",
+        "name": "Goñi",
+        "place": "village",
+        "population": "246",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4116879,
+          -33.5202277
+        ]
+      },
+      "id": "node/1337576036"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1338520866",
+        "name": "San Javier",
+        "place": "town",
+        "population": "1781",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.1336064,
+          -32.666454
+        ]
+      },
+      "id": "node/1338520866"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1341368850",
+        "name": "Alejandro Gallinal",
+        "old_name": "Cerro Colorado",
+        "place": "town",
+        "population": "1357",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5439733,
+          -33.8617347
+        ]
+      },
+      "id": "node/1341368850"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1341652585",
+        "name": "Nico Pérez",
+        "place": "town",
+        "population": "1030",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.1542503,
+          -33.4815291
+        ]
+      },
+      "id": "node/1341652585"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1342458595",
+        "name": "Cerro Chato",
+        "note": "Un nodo \"place\" en el limite de los tres departamentos",
+        "place": "village",
+        "population": "3227",
+        "source:population": "INE 2011 TT+FD+DU"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.134567,
+          -33.1044501
+        ]
+      },
+      "id": "node/1342458595"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1345247250",
+        "name": "Cardal",
+        "place": "town",
+        "population": "1202",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3916077,
+          -34.2914025
+        ]
+      },
+      "id": "node/1345247250"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1345247254",
+        "name": "25 de Mayo",
+        "place": "town",
+        "population": "1852",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/florida.html",
+        "wikidata": "Q218472",
+        "wikipedia": "es:25 de Mayo (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3426875,
+          -34.1990928
+        ]
+      },
+      "id": "node/1345247254"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1345262413",
+        "name": "Andresito",
+        "place": "village",
+        "population": "261",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/flores.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.1302181,
+          -33.1677169
+        ]
+      },
+      "id": "node/1345262413"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1354019486",
+        "alt_name": "Estación Rincón",
+        "name": "Rincón",
+        "place": "village",
+        "population": "674",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html",
+        "wikidata": "Q579754",
+        "wikipedia": "es:Rincón (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.8324905,
+          -32.8335242
+        ]
+      },
+      "id": "node/1354019486"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1354055747",
+        "name": "Santa Clara de Olimar",
+        "place": "town",
+        "population": "2341",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9445116,
+          -32.9236955
+        ]
+      },
+      "id": "node/1354055747"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1361732096",
+        "name": "Algorta",
+        "place": "village",
+        "population": "779",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3924836,
+          -32.4230984
+        ]
+      },
+      "id": "node/1361732096"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364940277",
+        "name": "Franquia",
+        "place": "village",
+        "population": "935",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5967646,
+          -30.2214012
+        ]
+      },
+      "id": "node/1364940277"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364940282",
+        "name": "Coronado",
+        "place": "village",
+        "population": "438",
+        "source:population": "http://www.ine.gub.uy/censos2011/index.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6028684,
+          -30.276196
+        ]
+      },
+      "id": "node/1364940282"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364940295",
+        "name": "Portones de Hierro y Campodónico",
+        "place": "village",
+        "population": "323",
+        "source:population": "http://www.ine.gub.uy/censos2011/index.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5703373,
+          -30.2732994
+        ]
+      },
+      "id": "node/1364940295"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364983774",
+        "name": "Cerro Ejido",
+        "place": "village",
+        "population": "790",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html",
+        "wikidata": "Q984716",
+        "wikipedia": "es:Cerro Ejido"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4657212,
+          -30.4269107
+        ]
+      },
+      "id": "node/1364983774"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364983775",
+        "name": "Cerro San Eugenio",
+        "place": "village",
+        "population": "425",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4711015,
+          -30.4274335
+        ]
+      },
+      "id": "node/1364983775"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364992658",
+        "name": "Las Piedras",
+        "place": "town",
+        "population": "2771",
+        "source:population": "http://www.ine.gub.uy/censos2011/index.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5827753,
+          -30.2452046
+        ]
+      },
+      "id": "node/1364992658"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1364992661",
+        "name": "Cuareim",
+        "place": "village",
+        "population": "710",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5684916,
+          -30.2262817
+        ]
+      },
+      "id": "node/1364992661"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1365629990",
+        "name": "Tomás Gomensoro",
+        "place": "town",
+        "population": "2659",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.435025,
+          -30.4304107
+        ]
+      },
+      "id": "node/1365629990"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1365630006",
+        "name": "Colonia Palma",
+        "place": "village",
+        "population": "440",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6789928,
+          -30.5841709
+        ]
+      },
+      "id": "node/1365630006"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1365630009",
+        "name": "Cainsa",
+        "place": "village",
+        "population": "355",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6124354,
+          -30.3893297
+        ]
+      },
+      "id": "node/1365630009"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1365717080",
+        "alt_name": "Yacaré",
+        "name": "Bernabé Rivera",
+        "place": "village",
+        "population": "380",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html",
+        "wikidata": "Q822131",
+        "wikipedia": "es:Bernabé Rivera (localidad)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.9701236,
+          -30.2991698
+        ]
+      },
+      "id": "node/1365717080"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1365723914",
+        "name": "Baltasar Brum",
+        "place": "town",
+        "population": "2531",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html",
+        "wikidata": "Q805555"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3307941,
+          -30.7201503
+        ]
+      },
+      "id": "node/1365723914"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366056518",
+        "name": "San Antonio",
+        "place": "village",
+        "population": "877",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.7669147,
+          -31.3574021
+        ]
+      },
+      "id": "node/1366056518"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366056572",
+        "name": "Albisu",
+        "place": "village",
+        "population": "544",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8146463,
+          -31.3842312
+        ]
+      },
+      "id": "node/1366056572"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366070394",
+        "alt_name": "Colonia Garibaldi",
+        "name": "Garibaldi",
+        "place": "village",
+        "population": "354"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8289095,
+          -31.3394184
+        ]
+      },
+      "id": "node/1366070394"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366070401",
+        "name": "Colonia 18 de Julio",
+        "place": "village",
+        "population": "750",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8739866,
+          -31.3563317
+        ]
+      },
+      "id": "node/1366070401"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366168561",
+        "name": "Saucedo",
+        "place": "village",
+        "population": "270",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5291445,
+          -31.1072062
+        ]
+      },
+      "id": "node/1366168561"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366168572",
+        "name": "Constitución",
+        "place": "town",
+        "population": "2762",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8493627,
+          -31.0671956
+        ]
+      },
+      "id": "node/1366168572"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366168574",
+        "name": "Colonia Itapebí",
+        "place": "village",
+        "population": "460",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.4079571,
+          -31.3369602
+        ]
+      },
+      "id": "node/1366168574"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366168599",
+        "name": "Termas del Daymán",
+        "place": "village",
+        "population": "356"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9078419,
+          -31.4526287
+        ]
+      },
+      "id": "node/1366168599"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366777933",
+        "name": "Sarandí del Arapey",
+        "place": "village",
+        "population": "210",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2161721,
+          -30.9888028
+        ]
+      },
+      "id": "node/1366777933"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366782017",
+        "alt_name": "Fernández",
+        "name": "Pueblo Fernández",
+        "place": "village",
+        "population": "305",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3668545,
+          -31.1782989
+        ]
+      },
+      "id": "node/1366782017"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366820613",
+        "name": "Cuchilla de Peralta",
+        "place": "village",
+        "population": "218",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3555793,
+          -32.4939149
+        ]
+      },
+      "id": "node/1366820613"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366919634",
+        "addr:postcode": "45002",
+        "name": "Curtina",
+        "place": "town",
+        "population": "1037",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q1020386",
+        "wikipedia": "es:Curtina"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.1161203,
+          -32.147579
+        ]
+      },
+      "id": "node/1366919634"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366919779",
+        "name": "Paso Bonilla",
+        "place": "village",
+        "population": "510",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q681212",
+        "wikipedia": "es:Paso Bonilla"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9771604,
+          -31.8085152
+        ]
+      },
+      "id": "node/1366919779"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1366920073",
+        "addr:postcode": "45001",
+        "name": "Achar",
+        "place": "village",
+        "population": "687",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q984944",
+        "wikipedia": "es:Achar (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.1823412,
+          -32.4074011
+        ]
+      },
+      "id": "node/1366920073"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1367063968",
+        "name": "La Pedrera",
+        "place": "village",
+        "population": "240",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q1799010",
+        "wikipedia": "es:La Pedrera (Tacuarembó)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0280005,
+          -31.7401552
+        ]
+      },
+      "id": "node/1367063968"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1367166577",
+        "name": "Las Toscas",
+        "place": "town",
+        "population": "1142",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q1022313",
+        "wikipedia": "es:Las Toscas (Tacuarembó)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.0089047,
+          -32.1850464
+        ]
+      },
+      "id": "node/1367166577"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1369151062",
+        "name": "Paso del Cerro",
+        "place": "village",
+        "population": "235",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html",
+        "wikidata": "Q986657",
+        "wikipedia": "es:Paso del Cerro"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8322403,
+          -31.4790509
+        ]
+      },
+      "id": "node/1369151062"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370494498",
+        "name": "Bellaco",
+        "place": "village",
+        "population": "283",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8808394,
+          -32.7636132
+        ]
+      },
+      "id": "node/1370494498"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370506421",
+        "name": "Los Arrayanes",
+        "place": "village",
+        "population": "248",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0382365,
+          -33.2361747
+        ]
+      },
+      "id": "node/1370506421"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370538354",
+        "name": "Grecco",
+        "place": "village",
+        "population": "598",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html",
+        "wikidata": "Q984433",
+        "wikipedia": "es:Grecco"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.0430812,
+          -32.815622
+        ]
+      },
+      "id": "node/1370538354"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370538363",
+        "name": "Sarandí de Navarro",
+        "place": "village",
+        "population": "239",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.8681351,
+          -32.5443662
+        ]
+      },
+      "id": "node/1370538363"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370545820",
+        "name": "Guichón",
+        "place": "town",
+        "population": "5039",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.2002983,
+          -32.3603815
+        ]
+      },
+      "id": "node/1370545820"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370545830",
+        "name": "Orgoroso",
+        "place": "village",
+        "population": "583",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5177595,
+          -32.3802859
+        ]
+      },
+      "id": "node/1370545830"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370545835",
+        "name": "Piedras Coloradas",
+        "place": "town",
+        "population": "1094",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6087097,
+          -32.3730042
+        ]
+      },
+      "id": "node/1370545835"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370549899",
+        "name": "Villa General Borges",
+        "place": "village",
+        "population": "362",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.3883021,
+          -32.55823
+        ]
+      },
+      "id": "node/1370549899"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370559708",
+        "name": "Paso de los Mellizos",
+        "place": "village",
+        "population": "312",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.1611283,
+          -32.5207428
+        ]
+      },
+      "id": "node/1370559708"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1370564872",
+        "name": "Barrio Anglo",
+        "place": "village",
+        "population": "785",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rionegro.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.327015,
+          -33.1192767
+        ]
+      },
+      "id": "node/1370564872"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1374267802",
+        "name": "Treinta y Tres",
+        "name:lt": "Treinta i Tresas",
+        "name:ru": "Трейнта-и-Трес",
+        "name:uk": "Трейнта-і-Трес",
+        "name:zh": "三十三人城",
+        "place": "city",
+        "population": "32259",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html",
+        "website": "http://treintaytres.gub.uy",
+        "wikidata": "Q830390",
+        "wikipedia": "es:Treinta y Tres (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.3862595,
+          -33.2315713
+        ]
+      },
+      "id": "node/1374267802"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1374865146",
+        "name": "La Charqueada",
+        "official_name": "General Enrique Martínez",
+        "place": "town",
+        "population": "1430",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.8059356,
+          -33.2053846
+        ]
+      },
+      "id": "node/1374865146"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1374937529",
+        "name": "Vergara",
+        "place": "town",
+        "population": "3810",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html",
+        "wikidata": "Q2298580",
+        "wikipedia": "es:Vergara (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.9377544,
+          -32.9376731
+        ]
+      },
+      "id": "node/1374937529"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1374975038",
+        "name": "Villa Sara",
+        "place": "town",
+        "population": "1199",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html",
+        "wikidata": "Q1022308",
+        "wikipedia": "es:Villa Sara"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.4140731,
+          -33.2539778
+        ]
+      },
+      "id": "node/1374975038"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1374975084",
+        "alt_name": "María Isabel",
+        "name": "Isla Patrulla",
+        "place": "village",
+        "population": "230",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.5613617,
+          -32.9926893
+        ]
+      },
+      "id": "node/1374975084"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1374995806",
+        "name": "Arrozal Treinta y Tres",
+        "place": "village",
+        "population": "344",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/treintaytres.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.695811,
+          -33.0429948
+        ]
+      },
+      "id": "node/1374995806"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376293967",
+        "name": "San Félix",
+        "place": "town",
+        "population": "1718",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.1016822,
+          -32.3511177
+        ]
+      },
+      "id": "node/1376293967"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376316062",
+        "name": "Esperanza",
+        "place": "village",
+        "population": "340"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9525632,
+          -32.3524425
+        ]
+      },
+      "id": "node/1376316062"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376316066",
+        "name": "Porvenir",
+        "place": "town",
+        "population": "1159",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9678882,
+          -32.3932041
+        ]
+      },
+      "id": "node/1376316066"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376316068",
+        "name": "Casablanca",
+        "place": "village",
+        "population": "343",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.1565864,
+          -32.3971639
+        ]
+      },
+      "id": "node/1376316068"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376316097",
+        "name": "Chacras de Paysandú",
+        "place": "town",
+        "population": "3965",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0086687,
+          -32.3438623
+        ]
+      },
+      "id": "node/1376316097"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376333995",
+        "name": "Beisso",
+        "place": "village",
+        "population": "399",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.0525491,
+          -32.3185545
+        ]
+      },
+      "id": "node/1376333995"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376334001",
+        "name": "Nuevo Paysandú",
+        "place": "town",
+        "population": "8578",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0837759,
+          -32.2702086
+        ]
+      },
+      "id": "node/1376334001"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376339286",
+        "name": "Morató",
+        "place": "village",
+        "population": "218",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.7030466,
+          -32.3786079
+        ]
+      },
+      "id": "node/1376339286"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376859169",
+        "name": "Quebracho",
+        "place": "town",
+        "population": "2853",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9005404,
+          -31.9355644
+        ]
+      },
+      "id": "node/1376859169"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376859174",
+        "name": "Chapicuy",
+        "place": "village",
+        "population": "735",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8886871,
+          -31.6606188
+        ]
+      },
+      "id": "node/1376859174"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376859184",
+        "name": "Gallinal",
+        "place": "village",
+        "population": "700",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.4782534,
+          -31.8836806
+        ]
+      },
+      "id": "node/1376859184"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376859236",
+        "name": "Cerro Chato",
+        "place": "village",
+        "population": "333",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5370872,
+          -31.8712846
+        ]
+      },
+      "id": "node/1376859236"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376859300",
+        "name": "Lorenzo Geyres",
+        "place": "village",
+        "population": "774",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9183282,
+          -32.0791528
+        ]
+      },
+      "id": "node/1376859300"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1376859331",
+        "name": "Constancia",
+        "place": "village",
+        "population": "331",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/paysandu.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.0058847,
+          -32.2039074
+        ]
+      },
+      "id": "node/1376859331"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377148463",
+        "name": "Isidoro Noblía",
+        "place": "town",
+        "population": "2331",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1228939,
+          -31.9606382
+        ]
+      },
+      "id": "node/1377148463"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377191828",
+        "name": "San Ramón",
+        "place": "town",
+        "population": "7133",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1784539",
+        "wikipedia": "es:San Ramón (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.9574463,
+          -34.2900689
+        ]
+      },
+      "id": "node/1377191828"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377810752",
+        "name": "Barrio La Vinchuca",
+        "place": "village",
+        "population": "388",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1562528,
+          -32.3499534
+        ]
+      },
+      "id": "node/1377810752"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377810801",
+        "alt_name": "Barrio Hipódromo",
+        "name": "Hipódromo",
+        "place": "village",
+        "population": "505",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1943509,
+          -32.3702102
+        ]
+      },
+      "id": "node/1377810801"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377810804",
+        "name": "Barrio López Benítez",
+        "place": "village",
+        "population": "522",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.2102767,
+          -32.3634786
+        ]
+      },
+      "id": "node/1377810804"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377810824",
+        "name": "Bañado de Medina",
+        "place": "village",
+        "population": "207",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q812707",
+        "wikipedia": "es:Bañado de Medina (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.3503804,
+          -32.403435
+        ]
+      },
+      "id": "node/1377810824"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377820060",
+        "name": "Cerro de las Cuentas",
+        "place": "village",
+        "population": "263",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q1056030",
+        "wikipedia": "es:Cerro de las Cuentas"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.5938134,
+          -32.6201495
+        ]
+      },
+      "id": "node/1377820060"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377855695",
+        "name": "Plácido Rosas",
+        "place": "village",
+        "population": "415",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.7189243,
+          -32.7570191
+        ]
+      },
+      "id": "node/1377855695"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377855696",
+        "name": "Lago Merín",
+        "place": "village",
+        "population": "439",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.2612057,
+          -32.7416723
+        ]
+      },
+      "id": "node/1377855696"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377855698",
+        "name": "Río Branco",
+        "place": "city",
+        "population": "14604",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q1006165"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.3780831,
+          -32.588689
+        ]
+      },
+      "id": "node/1377855698"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1377925283",
+        "name": "Arévalo",
+        "place": "village",
+        "population": "272",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.0783849,
+          -32.6390006
+        ]
+      },
+      "id": "node/1377925283"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1382067498",
+        "name": "Santa Ana",
+        "place": "village",
+        "population": "222",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.5934499,
+          -34.4214131
+        ]
+      },
+      "id": "node/1382067498"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1382089438",
+        "name": "Colonia del Sacramento",
+        "name:abbreviation": "Colonia",
+        "name:pt": "Colônia do Sacramento",
+        "place": "city",
+        "population": "26231",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q56064"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.8433679,
+          -34.4698592
+        ]
+      },
+      "id": "node/1382089438"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1382098113",
+        "name": "Campana",
+        "place": "village",
+        "population": "298",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.9029104,
+          -34.032615
+        ]
+      },
+      "id": "node/1382098113"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1382112603",
+        "name": "El Semillero",
+        "place": "village",
+        "population": "600",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6891144,
+          -34.3377674
+        ]
+      },
+      "id": "node/1382112603"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1382112639",
+        "name": "Estanzuela",
+        "place": "village",
+        "population": "249",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.72548,
+          -34.3286343
+        ]
+      },
+      "id": "node/1382112639"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1382138699",
+        "name": "Cufré",
+        "place": "village",
+        "population": "353",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html",
+        "wikidata": "Q1143273",
+        "wikipedia": "es:Cufré (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.1058641,
+          -34.19644
+        ]
+      },
+      "id": "node/1382138699"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1585175688",
+        "name": "Salinas",
+        "name:ru": "Салинас",
+        "place": "town",
+        "population": "8626",
+        "postal_code": "15100",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1970117",
+        "wikipedia": "es:Salinas (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8370115,
+          -34.7818023
+        ]
+      },
+      "id": "node/1585175688"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1585185996",
+        "name": "Marindia",
+        "place": "town",
+        "population": "3543",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984184",
+        "wikipedia": "es:Marindia"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8266887,
+          -34.7742852
+        ]
+      },
+      "id": "node/1585185996"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1901108317",
+        "name": "La Floresta",
+        "place": "town",
+        "population": "1595",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q475116",
+        "wikipedia": "es:La Floresta (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.675739,
+          -34.7537689
+        ]
+      },
+      "id": "node/1901108317"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1902763918",
+        "name": "City Golf",
+        "place": "town",
+        "population": "1104",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q366924",
+        "wikipedia": "es:City Golf"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7735002,
+          -34.7588209
+        ]
+      },
+      "id": "node/1902763918"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1904628432",
+        "name": "Las Toscas",
+        "place": "town",
+        "population": "3146",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984723",
+        "wikipedia": "es:Las Toscas (Canelones)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7387989,
+          -34.7730052
+        ]
+      },
+      "id": "node/1904628432"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1983316578",
+        "name": "Atlántida",
+        "place": "town",
+        "population": "5562",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1549798",
+        "wikipedia": "es:Atlántida (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.7605883,
+          -34.7743888
+        ]
+      },
+      "id": "node/1983316578"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1983452170",
+        "name": "Estación La Floresta",
+        "place": "town",
+        "population": "1313",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1368993",
+        "wikipedia": "es:Estación La Floresta"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.6838637,
+          -34.7346878
+        ]
+      },
+      "id": "node/1983452170"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/1987919961",
+        "name": "Ciudad de la Costa",
+        "place": "city",
+        "population": "112449",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q869403"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.958956,
+          -34.8255833
+        ]
+      },
+      "id": "node/1987919961"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2022358004",
+        "name": "Joaquín Suárez",
+        "place": "town",
+        "population": "6570",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1005809",
+        "wikipedia": "es:Joaquín Suárez (ciudad)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.0350642,
+          -34.7355165
+        ]
+      },
+      "id": "node/2022358004"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2028668919",
+        "name": "San Jacinto",
+        "place": "town",
+        "population": "4510",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q525163",
+        "wikipedia": "es:San Jacinto (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8710537,
+          -34.5435523
+        ]
+      },
+      "id": "node/2028668919"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2029243794",
+        "name": "Neptunia",
+        "place": "town",
+        "population": "4774",
+        "postal_code": "15101",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q984189",
+        "wikipedia": "es:Neptunia (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.8718706,
+          -34.788026
+        ]
+      },
+      "id": "node/2029243794"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2102107935",
+        "name": "Ciudad del Plata",
+        "place": "city",
+        "population": "31146",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/sanjose.html",
+        "wikidata": "Q370254"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.4240513,
+          -34.7492036
+        ]
+      },
+      "id": "node/2102107935"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2145516829",
+        "name": "Agraciada",
+        "place": "village",
+        "population": "394",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/soriano.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.2671913,
+          -33.8086462
+        ]
+      },
+      "id": "node/2145516829"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2250893029",
+        "name": "Cerro Carmelo",
+        "place": "village",
+        "population": "222",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/colonia.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.2298371,
+          -33.981533
+        ]
+      },
+      "id": "node/2250893029"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2343621395",
+        "name": "Tambores",
+        "place": "town",
+        "population": "1561",
+        "source:population": "INE 2011 (Tacuarembo + Paysandu)",
+        "wikidata": "Q1274595",
+        "wikipedia": "es:Tambores (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.2432745,
+          -31.8747113
+        ]
+      },
+      "id": "node/2343621395"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2396838728",
+        "is_in:country": "Uruguay",
+        "is_in:country_code": "UY",
+        "is_in:state": "Cerro Largo",
+        "is_in:state_code": "CL",
+        "name": "Aceguá",
+        "place": "town",
+        "population": "1511",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/cerrolargo.html",
+        "wikidata": "Q2093378",
+        "wikipedia": "es:Aceguá (Uruguay)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.1627778,
+          -31.8718318
+        ]
+      },
+      "id": "node/2396838728"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2405521209",
+        "alt_name": "Caraguatá",
+        "name": "Cruz de los Caminos",
+        "place": "village",
+        "population": "463",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/tacuarembo.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.9660212,
+          -32.2323893
+        ]
+      },
+      "id": "node/2405521209"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2410179146",
+        "name": "Piedra Sola",
+        "place": "village",
+        "population": "210",
+        "source:population": "INE 2011 (Tacuarembo + Paysandu)",
+        "wikidata": "Q985070",
+        "wikipedia": "es:Piedra Sola"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.3082926,
+          -32.0801955
+        ]
+      },
+      "id": "node/2410179146"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2412142715",
+        "name": "Merinos",
+        "place": "village",
+        "population": "532",
+        "source:population": "INE 2011 (Rio Negro + Paysandu)"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.9073441,
+          -32.3875487
+        ]
+      },
+      "id": "node/2412142715"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2550696128",
+        "name": "Castillos",
+        "place": "town",
+        "population": "7451",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/rocha.html",
+        "wikidata": "Q953667"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -53.8608364,
+          -34.2003023
+        ]
+      },
+      "id": "node/2550696128"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2612364486",
+        "name": "Villa Crespo y San Andrés",
+        "place": "town",
+        "population": "9813",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/canelones.html",
+        "wikidata": "Q1791090",
+        "wikipedia": "es:Villa Crespo y San Andrés"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.1087333,
+          -34.7413732
+        ]
+      },
+      "id": "node/2612364486"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2613811247",
+        "name": "Campo de Todos",
+        "place": "village",
+        "population": "212",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/salto.html"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -57.6145818,
+          -31.5592942
+        ]
+      },
+      "id": "node/2613811247"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/2632544951",
+        "name": "Pintadito",
+        "place": "town",
+        "population": "1642",
+        "source:population": "http://www.ine.gub.uy/censos2011/resultadosfinales/artigas.html",
+        "wikidata": "Q1003589",
+        "wikipedia": "es:Pintadito"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.457934,
+          -30.4337339
+        ]
+      },
+      "id": "node/2632544951"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3159322558",
+        "name": "Arroyo Sauzal",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.5884089,
+          -30.9083839
+        ]
+      },
+      "id": "node/3159322558"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3792854607",
+        "is_in:country": "Uruguay",
+        "is_in:country_code": "UY",
+        "name": "Guaviyú",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -54.8387978,
+          -31.4419531
+        ]
+      },
+      "id": "node/3792854607"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/3916526588",
+        "name": "El Pejerrey",
+        "place": "village"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -55.1186073,
+          -34.8550273
+        ]
+      },
+      "id": "node/3916526588"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/5356903787",
+        "name": "General Liber Seregni",
+        "place": "city",
+        "wikidata": "Q911248"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -56.007987,
+          -34.8198677
+        ]
+      },
+      "id": "node/5356903787"
+    }
+  ]
+}
