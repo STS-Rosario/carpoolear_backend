@@ -22,6 +22,7 @@ class RoutesRepository implements RoutesRep
             \Log::info("aaaaa");
             $query->where('country',$country);
         }
+        $query->orderBy('importance', 'DESC');
         return $query->get();
     }
 }
