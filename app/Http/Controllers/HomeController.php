@@ -144,7 +144,7 @@ class HomeController extends Controller
     {
         $repo = new RoutesRepository();
         $manager = new \STS\Services\Logic\RoutesManager($repo);
-        $ros = NodeGeo::where('id', 872)->first();
+        $ros = NodeGeo::where('id', 911)->first();
         $bsAs = NodeGeo::where('id', 1)->first();
         $manager->createRoute($ros, $bsAs);
     }

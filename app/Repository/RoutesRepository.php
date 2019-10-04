@@ -36,10 +36,11 @@ class RoutesRepository implements RoutesRep
             $minLng = $n1->lng;
         }
         $latDiff = 0.5;
-        $query = NodeGeo::whereBetween('lat', [$maxLat + 0,5, $minLat - 0.5]);
+        $query = NodeGeo::whereBetween('lat', [$minLat - $latDiff, $maxLat + $latDiff]);
         // 1 / (cos(lat) * 110)
         // FIXME
-        $query->whereBetween('lng', [$maxLng + 1, $minLng - 1]);
+        $lngDiff = 2;
+        $query->whereBetween('lng', [$minLng - $lngDiff, $maxLng + $lngDiff]);
         return $query->get();
     }
 }
