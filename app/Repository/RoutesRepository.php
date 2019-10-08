@@ -40,6 +40,7 @@ class RoutesRepository implements RoutesRep
         // FIXME
         $lngDiff = 2;
         $query->whereBetween('lng', [$minLng - $lngDiff, $maxLng + $lngDiff]);
+        return $query->get();
     }
     public function autocomplete($name, $country, $multicountry) 
     {
@@ -53,6 +54,21 @@ class RoutesRepository implements RoutesRep
         $query->orderBy('importance', 'DESC');
         $query->limit(5);
         return $query->get();
+    }
+
+    public function saveRoute ($source, $destiny, $points, $trip) {
+        $route = new Route();
+        $route->from_id = $source->id;
+        $route->to_id = $destiny->id;
+        $nodeIds = [];
+        foreach ($points as $node) {   
+            $nodeIds[] = $node->id;
+        }
+        // var_dump($nodeIds);die;
+        $route->save();
+        $route->nodes()->sync($nodeIds);
+        $trip->route_id = $route->id;
+        $trip->save();
     }
 }
 

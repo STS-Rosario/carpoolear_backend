@@ -8,6 +8,8 @@ use STS\Entities\Rating as RatingModel;
 use STS\Contracts\Logic\User as UserLogic;
 use STS\Contracts\Logic\Routes as RoutesLogic;
 use STS\Entities\NodeGeo;
+use STS\Entities\Trip;
+use STS\Entities\Route;
 use STS\Repository\RoutesRepository;
 
 class HomeController extends Controller
@@ -146,7 +148,8 @@ class HomeController extends Controller
         $manager = new \STS\Services\Logic\RoutesManager($repo);
         $ros = NodeGeo::where('id', 911)->first();
         $bsAs = NodeGeo::where('id', 1)->first();
-        $manager->createRoute($ros, $bsAs);
+        $trip = Trip::where('id', 1)->first();
+        $manager->createRoute($ros, $bsAs, $trip);
     }
 
     public function handleApp($name)
