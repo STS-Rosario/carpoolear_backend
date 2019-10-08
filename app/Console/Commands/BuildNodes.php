@@ -7,7 +7,7 @@ use Carbon\Carbon;
 use STS\Entities\NodeGeo;
 use Illuminate\Console\Command;
 use Storage;
-
+use GuzzleHttp\Client;
 
 class BuildNodes extends Command
 {
@@ -25,6 +25,75 @@ class BuildNodes extends Command
      */
     protected $description = 'Populate nodes table from json file';
 
+    protected $shorts_arg = [
+        'Cba.' => 'CABA',
+        'PBA' => 'Buenos Aires',
+        'Bs. As.' => 'Buenos Aires',
+        'CA'  => 'Catamarca',
+        'CTM'  => 'Catamarca',
+        'CH' => 'Chaco',
+        'CCO' => 'Chaco',
+        'CT' => 'Chubut',	
+        'CHB' => 'Chubut',	
+        'CB' => 'Córdoba',
+        'CR' => 'Corrientes', 
+        'Ctes.' => 'Corrientes', 
+        'ER' => 'Entre Ríos',
+        'ER.' => 'Entre Ríos',
+        'FO' => 'Formosa',
+        'FSA' => 'Formosa',
+        'JY' => 'Jujuy',	
+        'JJY' => 'Jujuy',	
+        'LP' => 'La Pampa',
+        'LR' => 'La Rioja',
+        'MZ' => 'Mendoza',
+        'Mza.' => 'Mendoza',
+        'MI' => 'Misiones',
+        'Mnes.' => 'Misiones',
+        'NQ' => 'Neuquén',
+        'NQN' => 'Neuquén',
+        'RN' => 'Río Negro',
+        'SA' => 'Salta',
+        'SJ' => 'San Juan',
+        'SL' => 'San Luis',
+        'SC' => 'Santa Cruz',
+        'SF' => 'Santa Fe',
+        'Sta. Fe' => 'Santa Fe',
+        'SE' => 'Santiago del Estero',
+        'SDE' => 'Santiago del Estero',
+        'TF' => 'Tierra del Fuego',
+        'TU' => 'Tucumán'
+    ];
+    protected $shorts_br = [
+        'AC' => 'Acre',
+        'AL' => 'Alagoas',
+        'AP' => 'Amapá',
+        'AM' => 'Amazonas',
+        'BA' => 'Bahía',
+        'CE' => 'Ceará',
+        'DF' => 'Distrito Federal',
+        'ES' => 'Espírito Santo',
+        'GO' => 'Goiás',
+        'MA' => 'Maranhão',
+        'MT' => 'Mato Grosso',
+        'MS' => 'Mato Grosso del Sur',
+        'MG' => 'Minas Gerais',
+        'PA' => 'Pará',
+        'PB' => 'Paraíba',
+        'PR' => 'Paraná',
+        'PE' => 'Pernambuco',
+        'PI' => 'Piauí',
+        'RJ' => 'Río de Janeiro',
+        'RN' => 'Río Grande del Norte',
+        'RS' => 'Río Grande del Sur	',
+        'RO' => 'Rondonia',
+        'RR' => 'Roraima',
+        'SC' => 'Santa Catarina',
+        'SP' => 'São Paulo',
+        'SE' => 'Sergipe',
+        'TO' => 'Tocantins'
+    ];
+
     /**
      * Create a new command instance.
      *
@@ -37,6 +106,7 @@ class BuildNodes extends Command
         $this->files = scandir($this->dir);
         unset($this->files[0]);
         unset($this->files[1]);
+        $this->client = new Client();
     }
 
     /**
@@ -62,9 +132,50 @@ class BuildNodes extends Command
                     $node->lng = $geo['coordinates'][0];
                     $node->lat = $geo['coordinates'][1];
                     $node->country = $country;
+
+                    sleep(1);
+                    $node->state = $this->geocodeState($node->lat, $node->lng);
+                    
+                    if (array_key_exists($node->state, $this->shorts_arg) && $country == 'ARG') {
+                        \Log::info("prev");
+                        \Log::info($node->state);
+                        $node->state = $this->shorts_arg[$node->state];
+                        \Log::info("pos");
+                        \Log::info($node->state);
+                    }
+                    if (array_key_exists($node->state, $this->shorts_br) && $country == 'BRA') {
+                        \Log::info("prev");
+                        \Log::info($node->state);
+                        $node->state = $this->shorts_br[$node->state];
+                        \Log::info("pos");
+                        \Log::info($node->state);
+                    }
+
                     $node->save();
                 }
             }    
         }
+    }
+
+    public function geocodeState($lat, $long) {
+        $data = array('lat' => $lat, 'lon' => $long, 'format' => 'json', 'zoom' => 16);
+    
+        $response = $this->client->get("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$long&zoom=8", [
+            // un array con la data de los headers como tipo de peticion, etc.
+            'headers' => ['user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36']
+        ]);
+        
+        $response = $response->getBody();
+        $response = json_decode($response);
+        if (isset($response->address->state)) {
+            return $response->address->state;
+        }
+        if (isset($response->address->county)) {
+            \Log::info("county");
+            \Log::info('lat' . $lat . ' lng' . $long);
+            return $response->address->county;
+        }
+        return '';
+        // $json = json_decode(file_get_contents("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$long&zoom=8"), true);
     }
 }
