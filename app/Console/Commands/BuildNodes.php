@@ -116,13 +116,33 @@ class BuildNodes extends Command
      */
     public function handle()
     {
+        $startNode = 0;
+        $startCountry = 0;
+        $countryIndex = 0;
+        $nodeIndex = 0;
         foreach ($this->files as $file) {
+            $countryIndex += 1;
+
+            if ($countryIndex < $startCountry) {
+                $this->info($countryIndex);
+                continue;
+            }
+
             $parts = pathinfo($file);
             $country = $parts['filename'];
             $this->info($country);
             $json = json_decode(file_get_contents($this->dir . $file), true); 
             $nodes = $json['features'];
+            
+            if ($countryIndex == $startCountry) {
+                $nodeIndex = 0;
+            }
             foreach ($nodes as $feature) {
+                $nodeIndex += 1;
+                if ($nodeIndex < $startNode) {
+                    continue;
+                }
+
                 $props = $feature['properties'];
                 $geo = $feature['geometry'];
                 if (isset($props['name'])){
@@ -134,23 +154,24 @@ class BuildNodes extends Command
                     $node->country = $country;
 
                     sleep(1);
-                    $node->state = $this->geocodeState($node->lat, $node->lng);
-                    
-                    if (array_key_exists($node->state, $this->shorts_arg) && $country == 'ARG') {
-                        \Log::info("prev");
-                        \Log::info($node->state);
-                        $node->state = $this->shorts_arg[$node->state];
-                        \Log::info("pos");
-                        \Log::info($node->state);
+                    $state = $this->geocodeState($node->lat, $node->lng);
+                    if ($state) {
+                        $node->state = $state;
+                        if (array_key_exists($node->state, $this->shorts_arg) && $country == 'ARG') {
+                            \Log::info("prev");
+                            \Log::info($node->state);
+                            $node->state = $this->shorts_arg[$node->state];
+                            \Log::info("pos");
+                            \Log::info($node->state);
+                        }
+                        if (array_key_exists($node->state, $this->shorts_br) && $country == 'BRA') {
+                            \Log::info("prev");
+                            \Log::info($node->state);
+                            $node->state = $this->shorts_br[$node->state];
+                            \Log::info("pos");
+                            \Log::info($node->state);
+                        }
                     }
-                    if (array_key_exists($node->state, $this->shorts_br) && $country == 'BRA') {
-                        \Log::info("prev");
-                        \Log::info($node->state);
-                        $node->state = $this->shorts_br[$node->state];
-                        \Log::info("pos");
-                        \Log::info($node->state);
-                    }
-
                     $node->save();
                 }
             }    
@@ -160,10 +181,16 @@ class BuildNodes extends Command
     public function geocodeState($lat, $long) {
         $data = array('lat' => $lat, 'lon' => $long, 'format' => 'json', 'zoom' => 16);
     
-        $response = $this->client->get("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$long&zoom=8", [
-            // un array con la data de los headers como tipo de peticion, etc.
-            'headers' => ['user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36']
-        ]);
+        try {
+            $response = $this->client->get("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$long&zoom=8", [
+                // un array con la data de los headers como tipo de peticion, etc.
+                'headers' => ['user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36']
+            ]);
+        } catch (\Exception $ex) {
+            \Log::info('Error on query');
+            \Log::info('lat: ' . $lat . ' lng: ' . $long);
+            return 0;
+        }
         
         $response = $response->getBody();
         $response = json_decode($response);
