@@ -5,6 +5,7 @@ namespace STS\Repository;
 use Carbon\Carbon;
 use STS\Entities\Route;
 use STS\Entities\NodeGeo;
+use DB;
 
 use STS\Contracts\Repository\Routes as RoutesRep;
 
@@ -44,15 +45,17 @@ class RoutesRepository implements RoutesRep
     }
     public function autocomplete($name, $country, $multicountry) 
     {
+        //sometime someone will implement full text search
         $query = NodeGeo::query();
-        $query->where(function ($q) use ($name) {
-            $q->where('name', 'like', '%'.$name.'%');
-        });
+        $query->whereRaw("CONCAT(name, ' ', state) like ?", '%'.$name.'%');
+
         if(!$multicountry) {
             $query->where('country',$country);
         }
+
         $query->orderBy('importance', 'DESC');
         $query->limit(5);
+
         return $query->get();
     }
 
