@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\Entities\Route;
+use STS\Entities\NodeGeo;
 use STS\Entities\TripPoint;
 use STS\Contracts\Repository\Trip as TripRepo;
 
@@ -129,7 +130,7 @@ class TripRepository implements TripRepo
 
     public function search($user, $data)
     {       
-        $trips = Trip::query();
+        $trips = Trip::query()->with(['routes', 'routes.nodes']);
         if (isset($data['is_passenger'])) {
             $trips->where('is_passenger', parse_boolean($data['is_passenger']));
         }
@@ -206,21 +207,31 @@ class TripRepository implements TripRepo
                 }
             });
         }
-
-        if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
-            $distance = 1000.0;
-            if (isset($data['origin_radio'])) {
-                $distance = floatval($data['origin_radio']);
+        if (isset($data['origin_id'])) {
+            $trips->whereHas('routes.nodes', function ($q) use ($data) {
+                $q->where('nodes_geo.id', $data['origin_id']);
+            });
+        } else {
+            if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
+                $distance = 1000.0;
+                if (isset($data['origin_radio'])) {
+                    $distance = floatval($data['origin_radio']);
+                }
+                $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
             }
-            $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
         }
-
-        if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
-            $distance = 1000.0;
-            if (isset($data['destination_radio'])) {
-                $distance = floatval($data['destination_radio']);
+        if (isset($data['destination_id'])) {
+            $trips->whereHas('routes.nodes', function ($q) use ($data) {
+                $q->where('nodes_geo.id', $data['destination_id']);
+            });
+        } else {
+            if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
+                $distance = 1000.0;
+                if (isset($data['destination_radio'])) {
+                    $distance = floatval($data['destination_radio']);
+                }
+                $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
             }
-            $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
         }
 
         $trips->with(['user', 'user.accounts', 'points', 'passenger','passengerAccepted', 'car', 'ratings']);
