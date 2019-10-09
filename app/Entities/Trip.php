@@ -93,6 +93,10 @@ class Trip extends Model
         return $this->hasMany('STS\Entities\Passenger', 'trip_id')->with('user');
     }
 
+    public function routes () {
+        return $this->belongsToMany('STS\Entities\Route', 'trip_routes', 'trip_id', 'route_id');
+    }
+
     public function passengerAccepted()
     {
         return $this->passenger()->whereRequestState(Passenger::STATE_ACCEPTED)->where('user_id', '<>', $this->user_id);

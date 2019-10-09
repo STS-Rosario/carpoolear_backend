@@ -7,6 +7,7 @@ use STS\User;
 use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
+use STS\Entities\Route;
 use STS\Entities\TripPoint;
 use STS\Contracts\Repository\Trip as TripRepo;
 
@@ -18,6 +19,26 @@ class TripRepository implements TripRepo
         unset($data['points']);
         $trip = Trip::create($data);
         $this->addPoints($trip, $points);
+        // obtener ruta o crear
+        $routeIds = [];
+        for ($i = 1; $i < count($points); $i++) {
+            $origin = is_array($points[$i - 1]['json_address']) ? (object)$points[$i - 1]['json_address'] : json_decode($points[$i - 1]['json_address']);
+            $destiny = is_array($points[$i]['json_address']) ? (object)$points[$i]['json_address'] : json_decode($points[$i]['json_address']);
+            if ($origin->id > 0 && $destiny->id > 0) {
+                $route = Route::where('from_id', $origin->id)->where('to_id', $destiny->id)->first();
+                if (!$route) {
+                    $route = new Route();
+                    $route->from_id = $origin->id;
+                    $route->to_id = $destiny->id;
+                    $route->processed = false;
+                    $route->save();
+                }
+                $routeIds[] = $route->id;
+            }
+        }
+        if (count($routeIds)) {
+            $trip->routes()->sync($routeIds);
+        }
 
         return $trip;
     }

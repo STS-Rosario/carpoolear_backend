@@ -56,19 +56,14 @@ class RoutesRepository implements RoutesRep
         return $query->get();
     }
 
-    public function saveRoute ($source, $destiny, $points, $trip) {
-        $route = new Route();
-        $route->from_id = $source->id;
-        $route->to_id = $destiny->id;
+    public function saveRoute ($route, $points) {
         $nodeIds = [];
         foreach ($points as $node) {   
             $nodeIds[] = $node->id;
         }
-        // var_dump($nodeIds);die;
-        $route->save();
         $route->nodes()->sync($nodeIds);
-        $trip->route_id = $route->id;
-        $trip->save();
+        $route->processed = true;
+        $route->save();
     }
 }
 

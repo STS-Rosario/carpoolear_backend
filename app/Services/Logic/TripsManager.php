@@ -82,7 +82,6 @@ class TripsManager extends BaseManager implements TripLogic
             }
             $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
-
             if (isset($data['parent_trip_id'])) {
                 $parentTripId = $data['parent_trip_id'];
                 $parentTrip = $this->tripRepo->show($user, $parentTripId);
@@ -94,8 +93,8 @@ class TripsManager extends BaseManager implements TripLogic
                     $parentTrip = $this->tripRepo->update($parentTrip, $parentData);
                 }
             }
-
-            event(new CreateEvent($trip));
+            // FIXME uncomented me
+            // event(new CreateEvent($trip));
 
             return $trip;
         }

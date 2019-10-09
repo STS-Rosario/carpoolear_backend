@@ -24,7 +24,10 @@ class RoutesManager implements RoutesLogic
         return $this->routesRepo->autocomplete($name, $country, $multicountry);
     }
 
-    public function createRoute ($sourceNode, $destinyNode, $trip) {
+    public function createRoute ($route) {
+        // $sourceNode, $destinyNode
+        $sourceNode = $route->origin;
+        $destinyNode = $route->destiny;
         // 1- Obenter todos los nodos geo dentro de la circunferencia
         $nodes = $this->routesRepo->getPotentialsNodes($sourceNode, $destinyNode);
         // var_dump($nodes);die;
@@ -78,7 +81,7 @@ class RoutesManager implements RoutesLogic
             }
         }
         // 4- Grabar
-        $this->routesRepo->saveRoute($sourceNode, $destinyNode, $nearPoints, $trip);
+        $this->routesRepo->saveRoute($route, $nearPoints);
 
     }
 }

@@ -22,6 +22,8 @@ class Kernel extends ConsoleKernel
         Commands\UpdateUser::class,
         Commands\ConversationCreate::class,
         Commands\BuildNodes::class,
+        Commands\BuildRoutes::class,
+        Commands\BuildNodesWeights::class
     ];
 
     /**
@@ -40,6 +42,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
+
+        $schedule->command('georoute:build')->everyMinute();
     }
 
     /**

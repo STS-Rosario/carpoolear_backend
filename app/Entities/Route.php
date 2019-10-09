@@ -18,6 +18,13 @@ class Route extends Model
 
     public $timestamps = false;
 
+    public function origin () {
+        return $this->belongsTo('STS\Entities\NodeGeo', 'from_id');
+    }
+
+    public function destiny () {
+        return $this->belongsTo('STS\Entities\NodeGeo', 'to_id');
+    }
 
     public function nodes () {
         return $this->belongsToMany('STS\Entities\NodeGeo', 'route_nodes', 'route_id', 'node_id');
