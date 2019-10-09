@@ -15,7 +15,9 @@ class NodeGeo extends Model
         'name',
         'lat',
         'lng',
-        'type'
+        'type',
+        'state',
+        'country'
     ];
 
     protected $hidden = [];
