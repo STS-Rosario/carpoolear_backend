@@ -6,7 +6,9 @@ use Carbon\Carbon;
 use Illuminate\Console\Command;
 use STS\Services\Logic\RoutesManager as RoutesManager;
 use STS\Contracts\Repository\Routes as RoutesRepo;
+use STS\Events\Trip\Create  as CreateEvent;
 use STS\Entities\Route;
+use STS\Entities\Trip;
 
 class BuildRoutes extends Command
 {
@@ -48,6 +50,15 @@ class BuildRoutes extends Command
         $route = Route::where('processed', 0)->with(['origin', 'destiny'])->first();
         if ($route) {
             $this->routeLogic->createRoute($route);
+            $tripsQuery = Trip::where('trip_date', '>=', Carbon::Now());
+            $tripsQuery->whereHas('routes', function ($q) use ($route) {
+                $q->where('routes.id', $route->id);
+            });
+            $trips = $tripsQuery->get();
+            foreach ($trips as $trip) {
+                // FIXME untested
+                event(new CreateEvent($trip));
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ use STS\Entities\Passenger;
 use STS\Entities\Route;
 use STS\Entities\NodeGeo;
 use STS\Entities\TripPoint;
+use STS\Events\Trip\Create  as CreateEvent;
 use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripRepository implements TripRepo
@@ -33,6 +34,11 @@ class TripRepository implements TripRepo
                     $route->to_id = $destiny->id;
                     $route->processed = false;
                     $route->save();
+                } else {
+                    if ($route->processed) {
+                        // FIXME uncomented me
+                        // event(new CreateEvent($trip));
+                    }
                 }
                 $routeIds[] = $route->id;
             }
@@ -210,6 +216,7 @@ class TripRepository implements TripRepo
         if (isset($data['origin_id'])) {
             $trips->whereHas('routes.nodes', function ($q) use ($data) {
                 $q->where('nodes_geo.id', $data['origin_id']);
+                // TODO considerar origen
             });
         } else {
             if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
@@ -223,6 +230,8 @@ class TripRepository implements TripRepo
         if (isset($data['destination_id'])) {
             $trips->whereHas('routes.nodes', function ($q) use ($data) {
                 $q->where('nodes_geo.id', $data['destination_id']);
+                // TODO considerar sentido
+                
             });
         } else {
             if (isset($data['destination_lat']) && isset($data['destination_lng'])) {

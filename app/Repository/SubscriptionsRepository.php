@@ -39,7 +39,7 @@ class SubscriptionsRepository implements SubscriptionRepository
         }
     }
 
-    public function search($user, $trip)
+    public function search ($user, $trip)
     {
         if (isset($data['strict'])) {
             // Por las dudas
@@ -84,10 +84,35 @@ class SubscriptionsRepository implements SubscriptionRepository
 
                 break;
         }
+        // $points = $trip->points;
+        // $this->makeDistance($query, $points[0], 'from');
+        // $this->makeDistance($query, $points[count($points) - 1], 'to');
 
-        $points = $trip->points;
-        $this->makeDistance($query, $points[0], 'from');
-        $this->makeDistance($query, $points[count($points) - 1], 'to');
+        // TODO take in account route nodes
+        $countOrder = 0;
+        $nodes = [];
+        foreach ($trip->routes->nodes as $node) {
+            $nodes[$countOrder] = $node->id;
+            $countOrder++;
+        }
+        $query->where(function ($q) {
+            $q->where(function ($q) {
+                $q->whereNull('to_id');
+                $q->whereIn('from_id', $nodes);
+            });
+            $q->orWhere(function ($q) {
+                $q->whereNull('from_id');
+                $q->whereIn('to_id', $nodes);
+            });
+            $q->orWhere(function ($q) {
+                $q->whereNull('from_id');
+                $q->whereNull('to_id');
+            });
+            // FIXME join with routes_node para una route y verificar que origin es menor que destiny
+            /* $q->orWhere(function ($q) {
+
+            }); */
+        });
 
         $query->where('is_passenger', $trip->is_passenger);
 

@@ -93,7 +93,7 @@ class TripsManager extends BaseManager implements TripLogic
                     $parentTrip = $this->tripRepo->update($parentTrip, $parentData);
                 }
             }
-            // FIXME uncomented me
+            // REVIEW uncomented me
             // event(new CreateEvent($trip));
 
             return $trip;

@@ -25,13 +25,13 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
             // 'from_json_address' => 'required_with:from_address|array',
             'from_lat'          => 'required_with:from_address|numeric',
             'from_lng'          => 'required_with:from_address|numeric',
-            'from_radio'        => 'required_with:from_address|numeric',
+            // 'from_radio'        => 'required_with:from_address|numeric',
 
             'to_address'      => 'string',
             // 'to_json_address' => 'required_with:to_address|array',
             'to_lat'          => 'required_with:to_address|numeric',
             'to_lng'          => 'required_with:to_address|numeric',
-            'to_radio'        => 'required_with:to_address|numeric',
+            // 'to_radio'        => 'required_with:to_address|numeric',
         ]);
     }
 

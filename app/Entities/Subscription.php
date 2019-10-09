@@ -12,7 +12,7 @@ class Subscription extends Model
         'user_id', 'trip_date',
         'from_address', 'from_json_address', 'from_lat', 'from_lng', 'from_radio',
         'to_address', 'to_json_address', 'to_lat', 'to_lng', 'to_radio',
-        'state',
+        'state', 'from_id', 'to_id'
     ];
 
     protected $hidden = ['created_at', 'updated_at'];
