@@ -26,7 +26,6 @@ class BuildNodes extends Command
     protected $description = 'Populate nodes table from json file';
 
     protected $shorts_arg = [
-        'Cba.' => 'CABA',
         'PBA' => 'Buenos Aires',
         'Bs. As.' => 'Buenos Aires',
         'CA'  => 'Catamarca',
@@ -36,6 +35,7 @@ class BuildNodes extends Command
         'CT' => 'Chubut',	
         'CHB' => 'Chubut',	
         'CB' => 'Córdoba',
+        'Cba.' => 'Córdoba',
         'CR' => 'Corrientes', 
         'Ctes.' => 'Corrientes', 
         'ER' => 'Entre Ríos',
@@ -116,7 +116,7 @@ class BuildNodes extends Command
      */
     public function handle()
     {
-        $startNode = 0;
+        $startNode = 1570;
         $startCountry = 0;
         $countryIndex = 0;
         $nodeIndex = 0;
