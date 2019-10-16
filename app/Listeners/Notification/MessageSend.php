@@ -32,6 +32,11 @@ class MessageSend implements ShouldQueue
         $notification = new NewMessageNotification();
         $notification->setAttribute('from', $from);
         $notification->setAttribute('messages', $message);
-        $notification->notify($to);
+        try {
+            $notification->notify($to);
+        } catch (\Exception $e) {
+            \Log::info('Error on sending notification');
+            \Log::info($e);
+        }
     }
 }
