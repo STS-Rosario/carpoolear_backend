@@ -56,6 +56,7 @@ class updateTrips extends Command
             
             if (count($trip->points) == 0) {
                 $this->info("No point" . $trip->id);
+                \Log::info("No point" . $trip->id);
                 continue;
             }
 
@@ -94,13 +95,15 @@ class updateTrips extends Command
                     $trip->routes()->sync([$route->id]);
                 }
             } else {
-                
                 $this->info("ERROR NO SE ENCONTRO NODO " . $trip->id);
+                \Log::info("ERROR NO SE ENCONTRO NODO " . $trip->id);
                 if (!$fromNode) {
                     $this->info("name " . $from->address);
+                    \Log::info("name " . $from->address);
                 }
                 if (!$toNode) {
                     $this->info("name " . $to->address);
+                    \Log::info("name " . $to->address);
                 }
             }            
         }

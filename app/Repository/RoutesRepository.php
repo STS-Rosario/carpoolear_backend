@@ -47,7 +47,7 @@ class RoutesRepository implements RoutesRep
     {
         //sometime someone will implement full text search
         $query = NodeGeo::query();
-        $query->whereRaw("CONCAT(name, ' ', state) like ?", '%'.$name.'%');
+        $query->whereRaw("CONCAT(name, ' ', state, ' ', country) like ?", '%'.$name.'%');
 
         if(!$multicountry) {
             $query->where('country',$country);

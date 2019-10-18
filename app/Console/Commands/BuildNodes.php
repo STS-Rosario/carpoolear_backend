@@ -116,8 +116,8 @@ class BuildNodes extends Command
      */
     public function handle()
     {
-        $startNode = 1570;
-        $startCountry = 0;
+        $startNode = 0;
+        $startCountry = 7;
         $countryIndex = 0;
         $nodeIndex = 0;
         foreach ($this->files as $file) {
