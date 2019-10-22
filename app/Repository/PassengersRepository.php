@@ -29,7 +29,7 @@ class PassengersRepository implements IPassengersRepository
                 $q->where('user_id', $user->id);
                 $q->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
             }); */
-            $passengers = Passenger::query()
+            $passengers = Passenger::query();
             $passengers->join('trips', 'trips.id', '=', 'trip_passengers.trip_id');
             $passengers->whereNull('trips.deleted_at');
             $passengers->where('trips.user_id', $user->id);
@@ -37,6 +37,7 @@ class PassengersRepository implements IPassengersRepository
         }
         $passengers->with('user');
         $passengers->where('request_state', Passenger::STATE_PENDING);
+        $passengers->select('trip_passengers.*');
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
