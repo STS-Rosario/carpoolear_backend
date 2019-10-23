@@ -105,11 +105,17 @@ class TripRepository implements TripRepo
         if ($asDriver) {
             $trips->where('user_id', $userId);
         } else {
-            $trips->whereHas('passengerAccepted', function ($q) use ($user, $userId) {
+            /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
-                $q->where('user_id', $userId);
-            });
+                $q->where('user_id', $user->id);
+            }); */
+            $trips->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
+            $trips->whereNull('trips.deleted_at');
+            $trips->where('trip_passengers.user_id', $user->id);
+            $trips->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
         }
+
+        $trips->select('trips.*');
         $trips->orderBy('trip_date');
         $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
 
@@ -123,11 +129,17 @@ class TripRepository implements TripRepo
         if ($asDriver) {
             $trips->where('user_id', $userId);
         } else {
-            $trips->whereHas('passengerAccepted', function ($q) use ($user, $userId) {
+            /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
-                $q->where('user_id', $userId);
-            });
+                $q->where('user_id', $user->id);
+            }); */
+            $trips->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
+            $trips->whereNull('trips.deleted_at');
+            $trips->where('trip_passengers.user_id', $user->id);
+            $trips->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
         }
+
+        $trips->select('trips.*');
         $trips->orderBy('trip_date');
         $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
 
