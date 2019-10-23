@@ -45,6 +45,11 @@ class RoutesManager implements RoutesLogic
                 $points[] = $i['location'];
             }
         }
+        foreach($nodes as $node) {
+            if ($node->id == 2) {
+                \Log::info("esta");
+            }
+        }
         // 3- Buscar los puntos obtenidos en 1 cercanos a los segumentos
         $nearPoints = [];
         for ($i = 1; $i < count($points); $i++) { 
@@ -59,7 +64,7 @@ class RoutesManager implements RoutesLogic
             // y = mx + b;
             $nodesArr = $nodes->toArray();
             // var_dump($nodesArr);die;
-            for ($j = count($nodesArr) - 1; $j > 0; $j--) { 
+            for ($j = count($nodesArr) - 1; $j >= 0; $j--) { 
             // foreach ($nodes as $node) {
                 $node = (object)$nodesArr[$j];
                 // | m * x1 - y1 + b | / sqr(pow(m, 2) + 1)
@@ -67,7 +72,7 @@ class RoutesManager implements RoutesLogic
                 if ($d < 0.009) {
                     $d1 = sqrt(pow($p1[0] - $node->lng, 2) + pow ($p1[1] - $node->lat, 2));
                     $d2 = sqrt(pow($p2[0] - $node->lng, 02) + pow ($p2[1] - $node->lat, 2));
-                    $md = $d1 > $d2 ? $d2 : $d1;
+                    $md = $d1 > $d2 ? $d2 : $d1;    
                     if ($md < 0.75) {
                         if (!isset($nearPoints[$node->id])) {
                             $node->d = $d;
@@ -75,9 +80,9 @@ class RoutesManager implements RoutesLogic
                             // unset($nodes[$j]);
                             // array_splice($nodesArr, $j, 1);
                             break;
-                        }
-                    }
-                }
+                        } 
+                    } 
+                } 
             }
         }
         // 4- Grabar

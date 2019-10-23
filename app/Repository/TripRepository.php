@@ -225,35 +225,50 @@ class TripRepository implements TripRepo
                 }
             });
         }
-        if (isset($data['origin_id'])) {
-            $trips->whereHas('routes.nodes', function ($q) use ($data) {
-                $q->where('nodes_geo.id', $data['origin_id']);
-                // TODO considerar origen
+        if (isset($data['origin_id']) && isset($data['destination_id'])) {
+            $trips->whereHas('routes', function ($q) use ($data) {
+                $q->join('route_nodes as o', function($join) use ($data) {
+                    $join->on('routes.id', '=', 'o.route_id');
+                    $join->on('o.node_id', DB::raw($data['origin_id']));
+                });
+                $q->join('route_nodes as d', function($join) use ($data) {
+                    $join->on('routes.id', '=', 'd.route_id');
+                    $join->on('d.node_id', DB::raw($data['destination_id']));
+                    $join->on('o.id', '<', 'd.id');
+                });
             });
         } else {
-            if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
-                $distance = 1000.0;
-                if (isset($data['origin_radio'])) {
-                    $distance = floatval($data['origin_radio']);
+            if (isset($data['origin_id'])) {
+                $trips->whereHas('routes.nodes', function ($q) use ($data) {
+                    $q->where('nodes_geo.id', $data['origin_id']);  
+                    // TODO considerar origen
+                });
+            } else {
+                if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
+                    $distance = 1000.0;
+                    if (isset($data['origin_radio'])) {
+                        $distance = floatval($data['origin_radio']);
+                    }
+                    $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
                 }
-                $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
+            }
+            if (isset($data['destination_id'])) {
+                $trips->whereHas('routes.nodes', function ($q) use ($data) {
+                    $q->where('nodes_geo.id', $data['destination_id']);
+                    // TODO considerar sentido
+                    
+                });
+            } else {
+                if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
+                    $distance = 1000.0;
+                    if (isset($data['destination_radio'])) {
+                        $distance = floatval($data['destination_radio']);
+                    }
+                    $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
+                }
             }
         }
-        if (isset($data['destination_id'])) {
-            $trips->whereHas('routes.nodes', function ($q) use ($data) {
-                $q->where('nodes_geo.id', $data['destination_id']);
-                // TODO considerar sentido
-                
-            });
-        } else {
-            if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
-                $distance = 1000.0;
-                if (isset($data['destination_radio'])) {
-                    $distance = floatval($data['destination_radio']);
-                }
-                $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
-            }
-        }
+
 
         $trips->with(['user', 'user.accounts', 'points', 'passenger','passengerAccepted', 'car', 'ratings']);
         

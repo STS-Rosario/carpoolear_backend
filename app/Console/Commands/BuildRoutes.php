@@ -57,7 +57,7 @@ class BuildRoutes extends Command
             $trips = $tripsQuery->get();
             foreach ($trips as $trip) {
                 // FIXME untested
-                event(new CreateEvent($trip));
+                // event(new CreateEvent($trip));
             }
         }
     }
