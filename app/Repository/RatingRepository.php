@@ -112,4 +112,9 @@ class RatingRepository implements IRatingRepository
 
         return DB::select('CALL update_rating_availability (?,?,?,?)', $params);
     }
+
+    public function simplePrice($distance)
+    {
+        return $distance * config('carpoolear.fuelPrice');
+    }
 }

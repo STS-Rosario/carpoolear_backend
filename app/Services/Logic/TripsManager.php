@@ -238,6 +238,16 @@ class TripsManager extends BaseManager implements TripLogic
         return false;
     }
 
+    public function price($from, $to, $distance) 
+    {
+        if ($from && $to && config('carpoolear.api_price'))
+        {
+            // TODO: calcular usando api
+        } else {
+            return $this->tripRepo->simplePrice($distance);
+        }
+    }
+
     public function userCanSeeTrip($user, $trip)
     {
         $friendsManager = \App::make('\STS\Contracts\Logic\Friends');

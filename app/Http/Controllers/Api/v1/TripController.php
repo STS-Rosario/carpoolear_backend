@@ -133,4 +133,15 @@ class TripController extends Controller
 
         return $this->collection($trips, new TripTransformer($this->user));
     }
+
+    public function price(Request $request) 
+    {
+        $data = $request->all();
+
+        $from = isset($data['from']) ? $data['from'] : null;
+        $to = isset($data['to']) ? $data['to'] : null;
+        $distance = isset($data['distance']) ? $data['ditance'] : null;
+
+        return $this->tripsLogic->price($from, $to, $distance);       
+    }
 }
