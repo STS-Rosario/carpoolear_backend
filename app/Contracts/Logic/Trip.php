@@ -21,4 +21,6 @@ interface Trip
     public function userCanSeeTrip($user, $trip);
 
     public function tripOwner($user, $trip_id);
+
+    public function getTripByTripPassenger($transaction_id);
 }

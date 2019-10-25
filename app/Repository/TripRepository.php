@@ -351,4 +351,9 @@ class TripRepository implements TripRepo
     {
         $trip->points()->delete();
     }
+
+    public function getTripByTripPassenger ($transaction_id)
+    {
+        return Passenger::where('id', $transaction_id)->first();
+    }
 }
