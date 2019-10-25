@@ -40,6 +40,7 @@ class Trip extends Model
         'total_seats',
         'friendship_type_id',
         'distance',
+        'seat_price',
         'estimated_time',
         'co2',
         'es_recurrente',

@@ -20,6 +20,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/get-trips', $v1_path.'TripController@getTrips');
         $api->get('/get-old-trips', $v1_path.'TripController@getOldTrips');
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
+        $api->get('/payment-pending', $v1_path.'PassengerController@paymentPendingRequest');
 
         $api->get('/list', $v1_path.'UserController@index');
         $api->get('/search', $v1_path.'UserController@searchUsers');
@@ -75,6 +76,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->post('/{tripId}/requests/{userId}/cancel', $v1_path.'PassengerController@cancelRequest');
         $api->post('/{tripId}/requests/{userId}/accept', $v1_path.'PassengerController@acceptRequest');
         $api->post('/{tripId}/requests/{userId}/reject', $v1_path.'PassengerController@rejectRequest');
+        $api->post('/{tripId}/requests/{userId}/pay', $v1_path.'PassengerController@payRequest');
 
         $api->post('/{tripId}/rate/{userId}', $v1_path.'RatingController@rate');
         $api->post('/{tripId}/reply/{userId}', $v1_path.'RatingController@replay');

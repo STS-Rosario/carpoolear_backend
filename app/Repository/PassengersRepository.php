@@ -25,13 +25,37 @@ class PassengersRepository implements IPassengersRepository
         if ($tripId) {
             $passengers = Passenger::where('trip_id', $tripId);
         } else {
-            $passengers = Passenger::whereHas('trip', function ($q) use ($user) {
+            /* $passengers = Passenger::whereHas('trip', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
                 $q->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
-            });
+            }); */
+            $passengers = Passenger::query();
+            $passengers->join('trips', 'trips.id', '=', 'trip_passengers.trip_id');
+            $passengers->whereNull('trips.deleted_at');
+            $passengers->where('trips.user_id', $user->id);
+            $passengers->where('trips.trip_date', '>=', Carbon::Now()->toDateTimeString());
         }
         $passengers->with('user');
-        $passengers->whereIn('request_state', [Passenger::STATE_PENDING]);
+        $passengers->where('request_state', Passenger::STATE_PENDING);
+        $passengers->select('trip_passengers.*');
+
+        $pageNumber = isset($data['page']) ? $data['page'] : null;
+        $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
+
+        return $passengers->get(); // make_pagination($passengers, $pageNumber, $pageSize);
+    }
+
+
+    public function getPendingPaymentRequests($tripId, $user, $data)
+    {
+        $passengers = Passenger::query();
+        $passengers->join('trips', 'trips.id', '=', 'trip_passengers.trip_id');
+        $passengers->whereNull('trips.deleted_at');
+        $passengers->where('trip_passengers.user_id', $user->id);
+        $passengers->where('trips.trip_date', '>=', Carbon::Now()->toDateTimeString());
+        $passengers->with('user');
+        $passengers->where('request_state', Passenger::STATE_WAITING_PAYMENT);
+        $passengers->select('trip_passengers.*');
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
@@ -84,14 +108,42 @@ class PassengersRepository implements IPassengersRepository
                 'request_state' => Passenger::STATE_PENDING,
             ];
         } else {
-            $criteria = [
-                'request_state' => Passenger::STATE_ACCEPTED,
-            ];
+            if ($canceledState == Passenger::CANCELED_PASSENGER_WHILE_PAYING) {
+                $criteria = [
+                    'request_state' => Passenger::STATE_WAITING_PAYMENT,
+                ];
+            } else {
+                $criteria = [
+                    'request_state' => Passenger::STATE_ACCEPTED,
+                ];
+            }
         }
 
         $cancelRequest = $this->changeRequestState($tripId, $user->id, Passenger::STATE_CANCELED, $criteria, $canceledState);
 
         return $cancelRequest;
+    }
+
+    public function aproveForPaymentRequest($tripId, $aprovalUserId, $user, $data)
+    {
+        $criteria = [
+            'request_state' => Passenger::STATE_PENDING,
+        ];
+
+        $request = $this->changeRequestState($tripId, $aprovalUserId, Passenger::STATE_WAITING_PAYMENT, $criteria);
+
+        return $request;
+    }
+
+    public function payRequest($tripId, $aprovalUserId, $user, $data)
+    {
+        $criteria = [
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ];
+
+        $request = $this->changeRequestState($tripId, $aprovalUserId, Passenger::STATE_ACCEPTED, $criteria);
+
+        return $request;
     }
 
     public function acceptRequest($tripId, $acceptedUserId, $user, $data)
@@ -125,6 +177,11 @@ class PassengersRepository implements IPassengersRepository
         $query->where('request_state', $requestType);
 
         return $query->get()->count() > 0;
+    }
+
+    public function isUserRequestWaitingPayment($tripId, $userId)
+    {
+        return $this->isUserInRequestType($tripId, $userId, Passenger::STATE_WAITING_PAYMENT);
     }
 
     public function isUserRequestAccepted($tripId, $userId)

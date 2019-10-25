@@ -14,11 +14,19 @@ class Passenger extends Model
 
     const STATE_CANCELED = 3;
 
+    const STATE_WAITING_PAYMENT = 4;
+
+    // CANCELED STATES
+
     const CANCELED_REQUEST = 0;
 
     const CANCELED_DRIVER = 1;
 
     const CANCELED_PASSENGER = 2;
+
+    const CANCELED_PASSENGER_WHILE_PAYING = 2;
+
+    // PASSENGER TYPE
 
     const TYPE_CONDUCTOR = 0;
 
