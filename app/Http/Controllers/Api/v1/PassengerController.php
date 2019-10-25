@@ -50,6 +50,16 @@ class PassengerController extends Controller
         return $this->response->collection($passengers, new PassengerTransformer($this->user));
     }
 
+    public function paymentPendingRequest(Request $request)
+    {
+        $this->user = $this->auth->user();
+        $data = $request->all();
+
+        $toPay = $this->passengerLogic->getPendingPaymentRequests(null, $this->user, $data);
+
+        return $this->response->collection($toPay, new PassengerTransformer($this->user));
+    }
+
     public function newRequest($tripId, Request $request)
     {
         $this->user = $this->auth->user();
@@ -84,6 +94,21 @@ class PassengerController extends Controller
         $data = $request->all();
 
         $request = $this->passengerLogic->acceptRequest($tripId, $userId, $this->user, $data);
+
+        if (! $request) {
+            throw new StoreResourceFailedException('Could not accept request.', $this->passengerLogic->getErrors());
+        }
+
+        return $this->response->withArray(['data' => $request]);
+    }
+
+
+    public function payRequest($tripId, $userId, Request $request)
+    {
+        $this->user = $this->auth->user();
+        $data = $request->all();
+
+        $request = $this->passengerLogic->payRequest($tripId, $userId, $this->user, $data);
 
         if (! $request) {
             throw new StoreResourceFailedException('Could not accept request.', $this->passengerLogic->getErrors());
