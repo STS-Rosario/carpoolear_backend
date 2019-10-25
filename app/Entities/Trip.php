@@ -52,7 +52,8 @@ class Trip extends Model
         'parent_trip_id',
         'allow_smoking',
         'allow_kids',
-        'allow_animals'
+        'allow_animals',
+        'seat_price'
     ];
 
     protected $hidden = [

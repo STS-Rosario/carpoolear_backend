@@ -25,6 +25,7 @@ class TripController extends Controller
     {
         $this->user = $this->auth->user();
         $data = $request->all();
+        \Log::info($data);
         $trip = $this->tripsLogic->create($this->user, $data);
         if (! $trip) {
             throw new StoreResourceFailedException('Could not create new trip.', $this->tripsLogic->getErrors());
@@ -140,8 +141,9 @@ class TripController extends Controller
 
         $from = isset($data['from']) ? $data['from'] : null;
         $to = isset($data['to']) ? $data['to'] : null;
-        $distance = isset($data['distance']) ? $data['ditance'] : null;
+        $distance = isset($data['distance']) ? $data['distance'] : null;
 
+        
         return $this->tripsLogic->price($from, $to, $distance);       
     }
 }

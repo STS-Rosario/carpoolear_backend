@@ -87,8 +87,8 @@ class updateTrips extends Command
                     $trip->routes()->sync([$route->id]);
                 } else {
                     $route = new Route();
-                    $route->from_id = $from->id;
-                    $route->to_id = $to->id;
+                    $route->from_id = $fromNode->id;
+                    $route->to_id = $toNode->id;
                     $route->processed = false;
                     $route->save();
 

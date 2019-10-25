@@ -158,18 +158,10 @@ class BuildNodes extends Command
                     if ($state) {
                         $node->state = $state;
                         if (array_key_exists($node->state, $this->shorts_arg) && $country == 'ARG') {
-                            \Log::info("prev");
-                            \Log::info($node->state);
                             $node->state = $this->shorts_arg[$node->state];
-                            \Log::info("pos");
-                            \Log::info($node->state);
                         }
                         if (array_key_exists($node->state, $this->shorts_br) && $country == 'BRA') {
-                            \Log::info("prev");
-                            \Log::info($node->state);
                             $node->state = $this->shorts_br[$node->state];
-                            \Log::info("pos");
-                            \Log::info($node->state);
                         }
                     }
                     $node->save();

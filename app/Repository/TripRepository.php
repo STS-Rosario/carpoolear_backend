@@ -352,6 +352,11 @@ class TripRepository implements TripRepo
         $trip->points()->delete();
     }
 
+    public function simplePrice($distance)
+    {
+        return $distance * config('carpoolear.fuelPrice');
+    }
+    
     public function getTripByTripPassenger ($transaction_id)
     {
         return Passenger::where('id', $transaction_id)->first();
