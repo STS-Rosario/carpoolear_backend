@@ -10,6 +10,8 @@ use Transbank\Webpay\Configuration;
 use Transbank\Webpay\Webpay;
 use Illuminate\Support\Facades\Redirect;
 
+use STS\Entities\Passenger;
+
 class PaymentController extends Controller
 {
     public function transbank (Request $request, TripLogic $tripLogic)
@@ -66,12 +68,18 @@ class PaymentController extends Controller
             ["urlRedirection"]=> string(57) "https://webpay3gint.transbank.cl/webpayserver/voucher.cgi" 
             ["VCI"]=> string(3) "TSY" 
         }  */
+        if (!is_object($transactionResultOutput)) {
+            return view('transbank-final', [
+                'message' => 'Transbank ouput empty.'
+            ]);
+        }
         $output = $transactionResultOutput->detailOutput;
         $passengerRequest = $tripLogic->getTripByTripPassenger($transactionResultOutput->buyOrder);
         if ($passengerRequest) {
             if ($output->responseCode == 0) {
                 // Transaccion exitosa, puedes procesar el resultado con el contenido de
                 // las variables result y output.
+                $passengerRequest->request_state = Passenger::STATE_ACCEPTED;
                 $passengerRequest->payment_status = 'ok';
                 $passengerRequest->payment_info = json_encode($transactionResultOutput);
                 $passengerRequest->save();

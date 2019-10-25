@@ -22,6 +22,7 @@ class PassengerTransformer extends TransformerAbstract
     public function transform(Passenger $passenger)
     {
         $data = [
+            'id' => $passenger->id,
             'trip_id' => $passenger->trip_id,
             'created_at' => $passenger->created_at->toDateTimeString(),
             'state' => $passenger->request_state,

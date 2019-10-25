@@ -9,13 +9,19 @@
         window.addEventListener('DOMContentLoaded', (event) => {
             console.log('DOM fully loaded and parsed');
             setTimeout(function () {
-                window.close();
                 var message = {
                     mi: 'asdasd'
                 };
                 var stringifiedMessage = JSON.stringify(message);
-                webkit.messageHandlers.cordova_iab.postMessage(stringifiedMessage);
-            }, 2000);
+                if (window.webkit && window.webkit.messageHandlers && webkit.messageHandlers.cordova_iab) {
+                    webkit.messageHandlers.cordova_iab.postMessage(stringifiedMessage);
+                    window.close();
+                } else {
+                    // alert('post messaggin');
+                    // window.postMessage(stringifiedMessage);
+                    window.location.href = '/app/index.html#/profile/me';
+                }
+            }, 1500);
         });
     </script>
 </section>
