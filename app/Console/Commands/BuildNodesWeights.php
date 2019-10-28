@@ -50,13 +50,18 @@ class BuildNodesWeights extends Command
 
         $query = "
             SELECT id, SUM(importance) as importance FROM (
-                (SELECT id, 500 as importance FROM nodes_geo WHERE type = 'city' or type = 'town')
+                (SELECT id, 1000 as importance FROM nodes_geo WHERE type = 'city')
                 UNION
-                (SELECT from_id AS 'id', 1000 as importance FROM routes)
+                (SELECT id, 500 as importance FROM nodes_geo WHERE type = 'town')
                 UNION
-                (SELECT to_id AS 'id', 1000 as importance FROM routes)
+                (SELECT id, 200 as importance FROM nodes_geo WHERE type = 'village')
                 UNION
-                (SELECT node_id AS 'id', count(*) * 10 as importance FROM route_nodes GROUP BY node_id)) as calc
+                (SELECT from_id AS 'id', count(*) * 1000 as importance FROM routes GROUP BY from_id)
+                UNION
+                (SELECT to_id AS 'id', count(*) * 1000 as importance FROM routes GROUP BY to_id)
+                UNION
+                (SELECT node_id AS 'id', count(*) * 10 as importance FROM route_nodes GROUP BY node_id)
+                ) as calc
             GROUP BY id;
         ";
         $nodes = DB::select(DB::raw($query), array());
