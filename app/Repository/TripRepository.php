@@ -196,7 +196,7 @@ class TripRepository implements TripRepo
         if (isset($data['user_id'])) {
             $trips->whereUserId($data['user_id']);
         }
-        if (!$user->is_admin) {
+        if ($user && !$user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 if ($user) {
                     $q->whereUserId($user->id);

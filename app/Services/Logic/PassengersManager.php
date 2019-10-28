@@ -97,19 +97,32 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         if (! $this->isInputValid($input)) {
             return;
         }
+        if ($this->passengerRepository->userHasActiveRequest($tripId, $userId)) {
+            return;
+        }
+
         $trip = $this->tripLogic->show($user, $tripId);
         if ($trip && ! $trip->expired()) {
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
                 if ($trip->user->autoaccept_requests) {
-                    $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);
-                    event(new AutoRequestEvent($trip, $user, $trip->user));
-                    event(new AcceptEvent($trip, $trip->user, $user));
+                    // $result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);
+                    if (!config('carpoolear.module_trip_seats_payment', false))  {
+                        if ($result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data)) {
+                            // FIXME uncomented me
+                            // event(new AutoRequestEvent($trip, $user, $trip->user));
+                            // event(new AcceptEvent($trip, $trip->user, $user));
+                        }
+                    } else {
+                        if ($result = $this->passengerRepository->aproveForPaymentRequest($tripId, $user->id, $trip->user, $data)) {
+                            // FIXME uncomented me
+                            // event(new AutoRequestEvent($trip, $user, $trip->user));
+                            // event(new AcceptEvent($trip, $trip->user, $user));
+                        }
+                    }
                 } else {
                     event(new RequestEvent($trip, $user, $trip->user));
                 }
             }
-
-
             return $result;
         } else {
             $this->setErrors(['error' => 'access_denied']);
@@ -177,7 +190,6 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
         $acceptedUser = $this->uRepo->show($acceptedUserId);
         $trip = $this->tripLogic->show($user, $tripId);
-        \Log::info('acceptRequest: ' . $tripId . ' - ' . $acceptedUserId . ' / ' . $user->id . ' :: ' . (config('carpoolear.module_trip_seats_payment', false) ? 'true' : 'false'));
         if ($this->isUserRequestPending($tripId, $acceptedUserId) && $this->tripLogic->tripOwner($user, $trip)) {
             if ($trip->seats_available == 0) {
                 $this->setErrors(['error' => 'not_seat_available']);

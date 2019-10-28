@@ -96,9 +96,17 @@ class PassengersRepository implements IPassengersRepository
 
         $request->where('passenger_type', Passenger::TYPE_PASAJERO);
 
-        $request->update($updateData);
-
-        return $request;
+        $passenger = $request->first();
+        if ($passenger) {
+            // $request->update($updateData);
+            foreach ($updateData as $key => $value) {
+                $passenger->{$key} = $value;
+            }
+            $passenger->save();
+            return $passenger;
+        } else {
+            return null;
+        }
     }
 
     public function cancelRequest($tripId, $user, $canceledState)
@@ -166,6 +174,22 @@ class PassengersRepository implements IPassengersRepository
         $rejectedRequest = $this->changeRequestState($tripId, $rejectedUserId, Passenger::STATE_REJECTED, $criteria);
 
         return $rejectedRequest;
+    }
+
+
+    public function userHasActiveRequest($tripId, $userId)
+    {
+        $query = Passenger::where('trip_id', $tripId);
+
+        $query->where('user_id', $userId);
+
+        $query->whereIn('request_state', [
+            Passenger::STATE_WAITING_PAYMENT,
+            Passenger::STATE_ACCEPTED,
+            Passenger::STATE_PENDING
+        ]);
+
+        return $query->get()->count() > 0;
     }
 
     private function isUserInRequestType($tripId, $userId, $requestType)

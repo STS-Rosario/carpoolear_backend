@@ -106,7 +106,10 @@ class Trip extends Model
 
     public function passengerPending()
     {
-        return $this->passenger()->whereRequestState(Passenger::STATE_PENDING);
+        return $this->passenger()->whereIn('request_state', [
+            Passenger::STATE_PENDING, 
+            Passenger::STATE_WAITING_PAYMENT
+        ]);
     }
 
     public function days()

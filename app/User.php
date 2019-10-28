@@ -51,6 +51,7 @@ class User extends Authenticatable
         'do_not_alert_request_seat',
         'do_not_alert_accept_passenger',
         'do_not_alert_pending_rates',
+        'autoaccept_requests',
         'driver_is_verified',
         'driver_data_docs',
     ];
