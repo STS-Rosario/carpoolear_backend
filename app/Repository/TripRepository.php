@@ -224,6 +224,8 @@ class TripRepository implements TripRepo
                     $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
+        } else {
+            $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
             $trips->whereHas('routes', function ($q) use ($data) {
@@ -255,8 +257,6 @@ class TripRepository implements TripRepo
             if (isset($data['destination_id'])) {
                 $trips->whereHas('routes.nodes', function ($q) use ($data) {
                     $q->where('nodes_geo.id', $data['destination_id']);
-                    // TODO considerar sentido
-                    
                 });
             } else {
                 if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
@@ -270,12 +270,23 @@ class TripRepository implements TripRepo
         }
 
 
-        $trips->with(['user', 'user.accounts', 'points', 'passenger','passengerAccepted', 'car', 'ratings']);
+        $trips->with([
+            'user', 
+            'user.accounts', 
+            'points', 
+            'passenger',
+            'passengerAccepted', 
+            'car', 
+            'ratings'
+        ]);
         
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 
-        return make_pagination($trips, $pageNumber, $pageSize);
+        // DB::enableQueryLog();
+        $pagination = make_pagination($trips, $pageNumber, $pageSize);
+        // var_dump(DB::getQueryLog());die;
+        return $pagination;
     }
 
     private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)
