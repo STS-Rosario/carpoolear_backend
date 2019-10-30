@@ -39,15 +39,11 @@ class RoutesManager implements RoutesLogic
         curl_setopt($ch, CURLOPT_URL, $url);
         $result = curl_exec($ch);
         curl_close($ch);
+        \Log::info("router result: " . $result);
         $result = json_decode($result, true);
         foreach ($result['routes'][0]['legs'][0]['steps'] as $step) {
             foreach ($step['intersections'] as $i) {
                 $points[] = $i['location'];
-            }
-        }
-        foreach($nodes as $node) {
-            if ($node->id == 2) {
-                \Log::info("esta");
             }
         }
         // 3- Buscar los puntos obtenidos en 1 cercanos a los segumentos
@@ -58,7 +54,10 @@ class RoutesManager implements RoutesLogic
             // [1] -> lat -> x
             // [0] -> lng -> y
             // m = (y2 - y1) / (x2 - x1)
-            $m = ($p2[0] - $p1[0]) / ($p2[1] - $p1[1]);
+            $m = 0;
+            if (($p2[1] - $p1[1]) != 0) {
+                $m = ($p2[0] - $p1[0]) / ($p2[1] - $p1[1]);
+            }
             // b = y - mx
             $b = $p2[0] - ($m * $p2[1]);
             // y = mx + b;
