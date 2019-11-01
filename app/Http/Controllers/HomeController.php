@@ -146,18 +146,17 @@ class HomeController extends Controller
 
     public function test()
     {
-        /* $repo = new RoutesRepository();
+        $repo = new RoutesRepository();
         $manager = new \STS\Services\Logic\RoutesManager($repo);
-        $ros = NodeGeo::where('id', 911)->first();
+        $laplata = NodeGeo::where('id', 3535)->first();
         $bsAs = NodeGeo::where('id', 1)->first();
         $trip = Trip::where('id', 1)->first();
-        $manager->createRoute($ros, $bsAs, $trip);
-        $trip = TripModel::where('id', 15636)->first(); */
+        $route = (object)[
+            'origin' => $bsAs,
+            'destiny' => $laplata
+        ];
+        $manager->createRoute($route);
 
-        $query = NodeGeo::where('id', 5);
-        $query->update([ 'importance' => 200 ]);
-        $entity = $query->first();
-        var_dump($entity);die;
     }
 
     public function handleApp($name)

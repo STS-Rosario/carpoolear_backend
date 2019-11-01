@@ -30,7 +30,6 @@ class RoutesManager implements RoutesLogic
         $destinyNode = $route->destiny;
         // 1- Obenter todos los nodos geo dentro de la circunferencia
         $nodes = $this->routesRepo->getPotentialsNodes($sourceNode, $destinyNode);
-        // var_dump($nodes);die;
         // 2- Calcular con OSM la ruta
         // https://router.project-osrm.org/route/v1/driving/-60.6615415,-32.9595004;-58.437076,-34.6075616?overview=false&alternatives=true&steps=true&hints=;
         $url = "https://router.project-osrm.org/route/v1/driving/$sourceNode->lng,$sourceNode->lat;$destinyNode->lng,$destinyNode->lat?overview=false&alternatives=true&steps=true&hints=";
@@ -39,8 +38,8 @@ class RoutesManager implements RoutesLogic
         curl_setopt($ch, CURLOPT_URL, $url);
         $result = curl_exec($ch);
         curl_close($ch);
-        \Log::info("router result: " . $result);
         $result = json_decode($result, true);
+        // var_dump($result);die;
         foreach ($result['routes'][0]['legs'][0]['steps'] as $step) {
             foreach ($step['intersections'] as $i) {
                 $points[] = $i['location'];
@@ -68,20 +67,20 @@ class RoutesManager implements RoutesLogic
                 $node = (object)$nodesArr[$j];
                 // | m * x1 - y1 + b | / sqr(pow(m, 2) + 1)
                 $d = abs($m * $node->lat - $node->lng + $b) / sqrt(pow($m, 2) + 1);
-                if ($d < 0.009) {
+                if ($d < 0.125) {
                     $d1 = sqrt(pow($p1[0] - $node->lng, 2) + pow ($p1[1] - $node->lat, 2));
                     $d2 = sqrt(pow($p2[0] - $node->lng, 02) + pow ($p2[1] - $node->lat, 2));
+                    $dd = sqrt(pow($p2[0] - $p1[0], 02) + pow ($p2[1] - $p1[1], 2)) * 30;
                     $md = $d1 > $d2 ? $d2 : $d1;    
-                    if ($md < 0.75) {
+                    if (($md < 0.75 && $md < $dd)) {
                         if (!isset($nearPoints[$node->id])) {
                             $node->d = $d;
                             $nearPoints[$node->id] = $node;
-                            // unset($nodes[$j]);
-                            // array_splice($nodesArr, $j, 1);
                             break;
-                        } 
-                    } 
-                } 
+                        }
+                    }
+                }
+
             }
         }
         // 4- Grabar
