@@ -148,6 +148,7 @@ class TripRepository implements TripRepo
 
     public function search($user, $data)
     {       
+
         $trips = Trip::query()->with(['routes', 'routes.nodes']);
         if (isset($data['is_passenger'])) {
             $trips->where('is_passenger', parse_boolean($data['is_passenger']));
@@ -180,7 +181,7 @@ class TripRepository implements TripRepo
                     if ($from->lte($now)) {
                         $from = $now;
                     }
-                    $trips = Trip::where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
+                    $trips->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
                     $trips->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                     $trips->orderBy('trip_date');
@@ -224,8 +225,6 @@ class TripRepository implements TripRepo
                     $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
-        } else {
-            $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
             /* $trips->whereHas('routes', function ($q) use ($data) {
@@ -282,7 +281,6 @@ class TripRepository implements TripRepo
                 }
             }
         }
-
 
         $trips->with([
             'user', 
