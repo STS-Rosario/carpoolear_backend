@@ -70,7 +70,6 @@ class TripRepository implements TripRepo
     {
         if ($user->is_admin) {
             $trip = Trip::with(['user', 'points', 'car', 'passenger', 'ratings'])->whereId($id)->first();
-            \Log::info($trip);
             return $trip;
         } else {
             return Trip::with(['user', 'points'])->whereId($id)->first();

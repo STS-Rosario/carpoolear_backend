@@ -74,6 +74,11 @@ class PassengerController extends Controller
         return $this->response->withArray(['data' => $request]);
     }
 
+    public function transactions(Request $request) {
+        $user = $this->auth->user();
+        return $this->passengerLogic->transactions($user);
+
+    }
     public function cancelRequest($tripId, $userId, Request $request)
     {
         $this->user = $this->auth->user();

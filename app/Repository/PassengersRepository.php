@@ -5,6 +5,7 @@ namespace STS\Repository;
 use Carbon\Carbon;
 use STS\Entities\Passenger;
 use STS\Contracts\Repository\IPassengersRepository;
+use STS\Entities\Trip;
 
 class PassengersRepository implements IPassengersRepository
 {
@@ -177,6 +178,20 @@ class PassengersRepository implements IPassengersRepository
     }
 
 
+    public function transactions($user) {
+        $query = Trip::where(function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+            $q->orWhereHas('passenger', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        });
+
+        $query->with([
+            'passenger.trip.user'
+        ]);
+        return $query->get();
+    }
+    
     public function userHasActiveRequest($tripId, $userId)
     {
         $query = Passenger::where('trip_id', $tripId);

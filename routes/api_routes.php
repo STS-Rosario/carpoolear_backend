@@ -60,6 +60,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
     $api->group(['prefix' => 'trips'], function ($api) use ($v1_path) {
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
 
+        $api->get('/transactions', $v1_path.'PassengerController@transactions');
         $api->get('/', $v1_path.'TripController@search');
         $api->get('/autocomplete', $v1_path.'RoutesController@autocomplete');
         $api->post('/', $v1_path.'TripController@create');
@@ -68,7 +69,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/{id?}', $v1_path.'TripController@show');
         $api->post('/{id?}/changeSeats', $v1_path.'TripController@changeTripSeats');
         $api->post('/price', $v1_path.'TripController@price');
-
+        
         $api->get('/{tripId}/passengers', $v1_path.'PassengerController@passengers');
         $api->get('/{tripId}/requests', $v1_path.'PassengerController@requests');
 

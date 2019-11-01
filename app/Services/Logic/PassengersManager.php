@@ -215,6 +215,19 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
     }
 
+    public function transactions($user) {
+        $trips = $this->passengerRepository->transactions($user);
+        $passengers = [];
+
+        foreach ($trips as $trip) {
+            foreach ($trip->passenger as $pas) {
+                array_push($passengers, $pas);
+            }
+        }
+
+
+        return $passengers; 
+    }
 
 
     public function payRequest($tripId, $payedUserId, $user, $data = [])

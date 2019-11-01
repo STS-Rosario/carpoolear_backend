@@ -46,6 +46,10 @@ class Passenger extends Model
 
     protected $hidden = [];
 
+    protected $casts = [
+        'payment_info' => 'array',
+    ];
+
     public function user()
     {
         return $this->belongsTo('STS\User', 'user_id');
