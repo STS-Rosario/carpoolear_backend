@@ -226,7 +226,7 @@ class TripRepository implements TripRepo
             });
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
-            $trips->whereHas('routes', function ($q) use ($data) {
+            /* $trips->whereHas('routes', function ($q) use ($data) {
                 $q->join('route_nodes as o', function($join) use ($data) {
                     $join->on('routes.id', '=', 'o.route_id');
                     $join->on('o.node_id', DB::raw($data['origin_id']));
@@ -236,7 +236,21 @@ class TripRepository implements TripRepo
                     $join->on('d.node_id', DB::raw($data['destination_id']));
                     $join->on('o.id', '<', 'd.id');
                 });
-            });
+            }); */
+            // $data['origin_id']
+            // $data['destination_id']
+            $origin_raw = '(SELECT tro.id
+                                FROM trip_routes tro 
+                                INNER JOIN route_nodes rno ON tro.route_id = rno.route_id AND rno.node_id = ' . $data['origin_id'] . '
+                                WHERE tro.trip_id = trips.id LIMIT 1)';
+            $destination_raw = '(SELECT trd.id 
+                                FROM trip_routes trd
+                                INNER JOIN route_nodes rnd ON trd.route_id = rnd.route_id AND rnd.node_id = ' . $data['destination_id'] . '
+                                WHERE trd.trip_id = trips.id LIMIT 1)';
+            $trips->whereNotNull(DB::raw($origin_raw));
+            $trips->whereNotNull(DB::raw($destination_raw));
+            $trips->where(DB::raw($origin_raw), '<=', DB::raw($destination_raw));
+
         } else {
             if (isset($data['origin_id'])) {
                 $trips->whereHas('routes.nodes', function ($q) use ($data) {
@@ -282,6 +296,7 @@ class TripRepository implements TripRepo
 
         // DB::enableQueryLog();
         $pagination = make_pagination($trips, $pageNumber, $pageSize);
+        // echo '<pre>';
         // var_dump(DB::getQueryLog());die;
         return $pagination;
     }
