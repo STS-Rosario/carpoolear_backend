@@ -61,6 +61,10 @@ class ProfileTransformer extends TransformerAbstract
             $data['email'] = $user->email;
             $data['mobile_phone'] = $user->mobile_phone;
             $data['nro_doc'] = $user->nro_doc;
+            // bank data
+            $data['account_number'] = $user->account_number;
+            $data['account_type'] = $user->account_type;
+            $data['account_bank'] = $user->account_bank;
         }
         
         switch ($user->data_visibility) {

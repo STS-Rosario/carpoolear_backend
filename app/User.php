@@ -54,6 +54,9 @@ class User extends Authenticatable
         'autoaccept_requests',
         'driver_is_verified',
         'driver_data_docs',
+        'account_number',
+        'account_type',
+        'account_bank',
     ];
 
     protected $dates = [

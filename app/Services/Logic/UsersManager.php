@@ -300,7 +300,7 @@ class UsersManager extends BaseManager implements UserLogic
 
         return (object)[
             'cc' => $cc,
-            'bank' => $banks
+            'banks' => $banks
         ];
     }
 }

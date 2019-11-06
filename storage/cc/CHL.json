@@ -1,10 +1,10 @@
 [
     {
         "id": "corrriente",
-        "nombre": "Corriente"
+        "name": "Corriente"
     },
     {
         "id": "vista",
-        "nombre": "A la vista"
+        "name": "A la vista"
     }
 ]

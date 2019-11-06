@@ -1,11 +1,11 @@
 [
     {
         "id": "chile",
-        "nombre": "Banco de Chile"
+        "name": "Banco de Chile"
     },
     {
         "id": "internacional",
-        "nombre": "Banco Internacional"
+        "name": "Banco Internacional"
     },
     {
         "id": "scotiabank",
