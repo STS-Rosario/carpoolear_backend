@@ -102,7 +102,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function update($user, $trip_id, array $data)
     {
-        $trip = $this->tripRepo->show($trip_id);
+        $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
                 $v = $this->validator($data, $user->id, $trip_id);
