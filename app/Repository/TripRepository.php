@@ -381,7 +381,7 @@ class TripRepository implements TripRepo
 
     public function simplePrice($distance)
     {
-        return $distance * config('carpoolear.fuelPrice');
+        return $distance * config('carpoolear.fuel_price');
     }
     
     public function getTripByTripPassenger ($transaction_id)
