@@ -11,7 +11,7 @@ class RoutesController extends Controller
 {
     public function __construct(RoutesLogic $routesLogic)
     {
-        $this->middleware('logged');
+        $this->middleware('logged', ['except' => ['autocomplete']]);
         $this->routesLogic = $routesLogic;
     }
 

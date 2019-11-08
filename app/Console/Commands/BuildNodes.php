@@ -117,7 +117,8 @@ class BuildNodes extends Command
     public function handle()
     {
         $startNode = 0;
-        $startCountry = 7;
+        $startCountry = 0;
+        $endCountry = 1;
         $countryIndex = 0;
         $nodeIndex = 0;
         foreach ($this->files as $file) {
@@ -128,11 +129,17 @@ class BuildNodes extends Command
                 continue;
             }
 
+            if ($countryIndex > $endCountry) {
+                break;
+            }
+
             $parts = pathinfo($file);
             $country = $parts['filename'];
             $this->info($country);
             $json = json_decode(file_get_contents($this->dir . $file), true); 
             $nodes = $json['features'];
+            // \Log::info("Creating: " . file_get_contents($this->dir . $file));
+            // \Log::info("Creating: " . count($json['features']));break;die;
             
             if ($countryIndex == $startCountry) {
                 $nodeIndex = 0;
@@ -164,6 +171,7 @@ class BuildNodes extends Command
                             $node->state = $this->shorts_br[$node->state];
                         }
                     }
+                    // \Log::info("Creating $node->type: $node->name - $node->state");
                     $node->save();
                 }
             }    

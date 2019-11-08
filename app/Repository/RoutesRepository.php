@@ -64,6 +64,7 @@ class RoutesRepository implements RoutesRep
         foreach ($points as $node) {   
             $nodeIds[] = $node->id;
         }
+        // sync remueve los nodos iniciales
         $route->nodes()->sync($nodeIds);
         $route->processed = true;
         $route->save();
