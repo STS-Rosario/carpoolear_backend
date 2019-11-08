@@ -289,4 +289,18 @@ class UsersManager extends BaseManager implements UserLogic
 
         return $donation;
     }
+
+    public function bankData()
+    {
+        $bankPath = storage_path() . '/banks/';
+        $ccPath = storage_path() . '/cc/';
+        $country = config('carpoolear.osm_country');
+        $banks = json_decode(file_get_contents($bankPath . $country . '.json'), true);
+        $cc = json_decode(file_get_contents($ccPath . $country . '.json'), true);
+
+        return (object)[
+            'cc' => $cc,
+            'banks' => $banks
+        ];
+    }
 }

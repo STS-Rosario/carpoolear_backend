@@ -1,0 +1,78 @@
+[
+    {
+        "id": "chile",
+        "name": "Banco de Chile"
+    },
+    {
+        "id": "internacional",
+        "name": "Banco Internacional"
+    },
+    {
+        "id": "scotiabank",
+        "name": "Scotiabank Chile"
+    },
+    {
+        "id": "credito",
+        "name": "Banco de Crédito e Inversiones"
+    },
+    {
+        "id": "corpbanca",
+        "name": "Corpbanca"
+    },
+    {
+        "id": "bice",
+        "name": "Banco Bice"
+    },
+    {
+        "id": "hsbc",
+        "name": "HSBC Bank (Chile)"
+    },
+    {
+        "id": "santander",
+        "name": "Banco Santander"
+    },
+    {
+        "id": "itau",
+        "name": "Banco Itaú Chile"
+    },
+    {
+        "id": "security",
+        "name": "Banco Security"
+    },
+    {
+        "id": "falabella",
+        "name": "Banco Falabella"
+    },
+    {
+        "id": "deutsche",
+        "name": "Deutsche Bank"
+    },
+    {
+        "id": "ripley",
+        "name": "Banco Ripley"
+    },
+    {
+        "id": "rabobank",
+        "name": "Rabobank Chile"
+    },
+    {
+        "id": "consorcio",
+        "name": "Banco Consorcio"
+    },
+    {
+        "id": "penta",
+        "name": "Banco Penta"
+    },
+    {
+        "id": "paris",
+        "name": "Banco Paris"
+    },
+    {
+        "id": "bbva",
+        "name": "Banco Bilbao Vizcaya Argentaria (BBVA)"
+    },
+    {
+        "id": "btg",
+        "name": "Banco BTG Pactual Chile"
+    }
+]

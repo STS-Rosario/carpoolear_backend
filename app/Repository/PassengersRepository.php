@@ -178,17 +178,32 @@ class PassengersRepository implements IPassengersRepository
     }
 
 
-    public function transactions($user) {
-        $query = Trip::where(function ($q) use ($user) {
+    public function tripsWithTransactions ($user) {
+        /* $query = Trip::where(function ($q) use ($user) {
             $q->where('user_id', $user->id);
             $q->orWhereHas('passenger', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
+        }); */
+
+        $query = Trip::query();
+        $query->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
+        $query->where(function ($q) use ($user) {
+            $q->where('trips.user_id', $user->id);
+            $q->orWhere('trip_passengers.user_id', $user->id);
         });
+        $query->whereNotNull('trip_passengers.payment_status');
+        $query->whereNull('trips.deleted_at');
+        $query->where('trips.trip_date', '<=', Carbon::Now()->toDateTimeString());
+
+        $query->select('trips.*')->distinct();
 
         $query->with([
+            'user',
             'passenger.trip.user'
         ]);
+        // $r = $query->toSql();
+        // var_dump($r);die;
         return $query->get();
     }
     

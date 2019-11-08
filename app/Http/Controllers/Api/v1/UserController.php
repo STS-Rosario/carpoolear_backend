@@ -17,7 +17,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('logged', ['except' => ['create', 'registerDonation']]);
+        $this->middleware('logged', ['except' => ['create', 'registerDonation', 'bankData']]);
         $this->userLogic = $userLogic;
     }
 
@@ -151,6 +151,12 @@ class UserController extends Controller
         $donation = $this->userLogic->registerDonation($user, $donation);
 
         return $donation;
+    }
+    public function bankData(Request $request)
+    {
+        $data = $this->userLogic->bankData();
+
+        return json_encode($data);
     }
 
     public function changeBooleanProperty($property, $value, Request $request)

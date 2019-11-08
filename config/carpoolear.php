@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'donation_month_days' => env('DONATION_MONTH_DAYS', '10'),
+    'donation_month_days' => env('DONATION_MONTH_DAYS', '0'),
     'donation_trips_count' => env('DONATION_TRIPS_COUNT', '20'),
     'donation_trips_offset' => env('DONATION_TRIPS_OFFSET', '0'),
     'donation_trips_rated' => env('DONATION_TRIPS_RATED', '2'),
