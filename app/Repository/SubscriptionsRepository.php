@@ -91,32 +91,40 @@ class SubscriptionsRepository implements SubscriptionRepository
         // TODO take in account route nodes
         $countOrder = 0;
         $nodes = [];
-        foreach ($trip->routes->nodes as $node) {
-            $nodes[$countOrder] = $node->id;
-            $countOrder++;
+        $processed = 1;
+        foreach ($trip->routes as $r) {
+            if ($r->processed == 0) {
+                $processed = 0;
+            }
         }
-        $query->where(function ($q) {
-            $q->where(function ($q) {
-                $q->whereNull('to_id');
-                $q->whereIn('from_id', $nodes);
+        if ($processed) {
+            foreach ($trip->routes->nodes as $node) {
+                $nodes[$countOrder] = $node->id;
+                $countOrder++;
+            }
+            $query->where(function ($q) {
+                $q->where(function ($q) {
+                    $q->whereNull('to_id');
+                    $q->whereIn('from_id', $nodes);
+                });
+                $q->orWhere(function ($q) {
+                    $q->whereNull('from_id');
+                    $q->whereIn('to_id', $nodes);
+                });
+                $q->orWhere(function ($q) {
+                    $q->whereNull('from_id');
+                    $q->whereNull('to_id');
+                });
+                // FIXME join with routes_node para una route y verificar que origin es menor que destiny
+                /* $q->orWhere(function ($q) {
+    
+                }); */
             });
-            $q->orWhere(function ($q) {
-                $q->whereNull('from_id');
-                $q->whereIn('to_id', $nodes);
-            });
-            $q->orWhere(function ($q) {
-                $q->whereNull('from_id');
-                $q->whereNull('to_id');
-            });
-            // FIXME join with routes_node para una route y verificar que origin es menor que destiny
-            /* $q->orWhere(function ($q) {
-
-            }); */
-        });
-
-        $query->where('is_passenger', $trip->is_passenger);
-
-        return $query->get();
+            $query->where('is_passenger', $trip->is_passenger);
+            return $query->get();
+        } 
+        return [];
+        
     }
 
     private function makeDistance($query, $point, $name)

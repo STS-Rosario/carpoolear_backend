@@ -25,7 +25,6 @@ class TripController extends Controller
     {
         $this->user = $this->auth->user();
         $data = $request->all();
-        \Log::info($data);
         $trip = $this->tripsLogic->create($this->user, $data);
         if (! $trip) {
             throw new StoreResourceFailedException('Could not create new trip.', $this->tripsLogic->getErrors());

@@ -34,6 +34,10 @@ class TripRepository implements TripRepo
                     $route->to_id = $destiny->id;
                     $route->processed = false;
                     $route->save();
+                    
+                    $nodes = [$origin->id, $destiny->id];
+                    $route->nodes()->sync($nodes);
+                    
                 } else {
                     if ($route->processed) {
                         // FIXME uncomented me
@@ -377,7 +381,7 @@ class TripRepository implements TripRepo
 
     public function simplePrice($distance)
     {
-        return $distance * config('carpoolear.fuelPrice');
+        return $distance * config('carpoolear.fuel_price');
     }
     
     public function getTripByTripPassenger ($transaction_id)
