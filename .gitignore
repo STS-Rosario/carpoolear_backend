@@ -9,3 +9,4 @@ settings.json
 cert/*.pem
 .idea/*
 public/image/docs
+app.sql
