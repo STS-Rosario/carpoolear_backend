@@ -44,7 +44,7 @@ class UserController extends Controller
         }
 
         // return $this->response->withArray(['user' => $user]);
-        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
+        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
 
     }
 
