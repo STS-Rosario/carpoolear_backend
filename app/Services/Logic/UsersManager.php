@@ -303,4 +303,18 @@ class UsersManager extends BaseManager implements UserLogic
             'banks' => $banks
         ];
     }
+    public function termsText($lang)
+    {
+        $path = storage_path() . '/terms/';
+        $app_name = config('carpoolear.target_app');
+        if (!empty($lang)) {
+            $path = $path . $app_name . '_' . $request->get('lang') . '.html';
+        } else {
+            $path = $path . $app_name . '.html';
+        }
+        $html = file_get_contents($path);
+        $response = new \stdClass();
+        $response->content = $html;
+        return $response;
+    }
 }

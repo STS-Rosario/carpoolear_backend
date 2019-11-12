@@ -28,6 +28,7 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/me', $v1_path.'UserController@show');
         $api->get('/bank-data', $v1_path.'UserController@bankData');
+        $api->get('/terms', $v1_path.'UserController@terms');
         $api->get('/{name?}', $v1_path.'UserController@show');
         $api->get('/{id?}/ratings', $v1_path.'RatingController@ratings');
         $api->put('/', $v1_path.'UserController@update');

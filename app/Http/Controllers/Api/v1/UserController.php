@@ -10,6 +10,7 @@ use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -17,7 +18,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('logged', ['except' => ['create', 'registerDonation', 'bankData']]);
+        $this->middleware('logged', ['except' => ['create', 'registerDonation', 'bankData', 'terms']]);
         $this->userLogic = $userLogic;
     }
 
@@ -155,6 +156,15 @@ class UserController extends Controller
     public function bankData(Request $request)
     {
         $data = $this->userLogic->bankData();
+
+        return json_encode($data);
+    }
+
+
+    public function terms (Request $request)
+    {
+        $lang = $request->has('lang') ? $request->get('lang') : '';
+        $data = $this->userLogic->termsText($lang);
 
         return json_encode($data);
     }
