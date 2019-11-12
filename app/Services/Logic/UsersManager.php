@@ -212,9 +212,7 @@ class UsersManager extends BaseManager implements UserLogic
             $token = str_random(40);
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
-            $this->repo->update($user, ['active' => false]);
             event(new ResetEvent($user->id, $token));
-
             return $token;
         } else {
             $this->setErrors(['error' => 'user_not_found']);
