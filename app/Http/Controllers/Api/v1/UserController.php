@@ -167,6 +167,7 @@ class UserController extends Controller
         $user->save();
         $profile = $this->userLogic->show($user, $user->id);
 
-        return $profile;
+        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
+
     }
 }
