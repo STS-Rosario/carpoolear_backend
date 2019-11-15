@@ -97,7 +97,7 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['password'] = bcrypt($data['password']);
             }
             $img_names = [];
-            if ($is_driver && count($data['driver_data_docs'])) {
+            if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
                 foreach ($data['driver_data_docs'] as $file) {
                     if ($file) {
                         $img_names[] = $this->uploadDoc($file);
@@ -105,13 +105,13 @@ class UsersManager extends BaseManager implements UserLogic
                 }
                 $data['driver_data_docs'] = json_encode($img_names);
             } else {
-                if (count($data['driver_data_docs'])) {
+                if (is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
                     $data['driver_data_docs'] = json_encode($data['driver_data_docs']);
                 }
             }
             $this->repo->update($user, $data);
 
-            if ($is_driver && count($data['driver_data_docs']) && !$user->driver_is_verified) {
+            if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs']) && !$user->driver_is_verified) {
                 // send email to admin
                 $email_admin = config('carpoolear.admin_email', '');
                 if (!empty($email_admin)) {
