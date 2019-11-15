@@ -43,8 +43,9 @@ class UserController extends Controller
             throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());
         }
 
-        return $this->response->withArray(['user' => $user]);
-        //return $this->item($user, new ProfileTransformer($me), ['key' => 'user']);
+        // return $this->response->withArray(['user' => $user]);
+        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
+
     }
 
     public function update(Request $request)
@@ -166,6 +167,7 @@ class UserController extends Controller
         $user->save();
         $profile = $this->userLogic->show($user, $user->id);
 
-        return $profile;
+        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
+
     }
 }
