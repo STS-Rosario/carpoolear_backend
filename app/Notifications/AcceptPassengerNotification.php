@@ -7,6 +7,7 @@ use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Entities\Passenger;
 
 class AcceptPassengerNotification extends BaseNotification
 {
@@ -30,6 +31,17 @@ class AcceptPassengerNotification extends BaseNotification
 
     public function getExtras()
     {
+        // FIXME untested 
+        $to =  $this->getAttribute('token');
+        \Log::info($to);
+        $request = $this->getAttribute('trip')->passenger()->where('id',$to->id);
+        \Log::info($request);
+        if ($request[0]->request_state == 4) {
+            return [
+                'type' => 'mytrip',
+                'trip_id' => $this->getAttribute('trip')->id,
+            ];
+        }
         return [
             'type' => 'trip',
             'trip_id' => $this->getAttribute('trip')->id,
