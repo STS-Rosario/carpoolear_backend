@@ -309,29 +309,34 @@ class TripsManager extends BaseManager implements TripLogic
                     break;
                 }
             }
-    
-            $url = 'https://ww2.copec.cl/chiletur/planner_route.json?start_destination=' . $slug_origin . '&end_destination=' . $slug_destiny;
-    
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            $output = curl_exec($ch);
-            curl_close($ch);
-    
-            $calc = json_decode($output);
-    
-            $price_pretol = $calc->combustible->default_gasoline_value * ($calc->distance / 1000) / 14; // 14 lts por km en ruta
-            $price_tolls = 0;
-            foreach ($calc->tolls as $toll) {
-                $price_tolls += $toll->car_valley;
+
+            if (!empty($slug_destiny) && !empty($slug_origin)) {
+                $url = 'https://ww2.copec.cl/chiletur/planner_route.json?start_destination=' . $slug_origin . '&end_destination=' . $slug_destiny;
+        
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                $output = curl_exec($ch);
+                curl_close($ch);
+        
+                $calc = json_decode($output);
+                if (!isset($calc->error)) {
+                    $price_pretol = $calc->combustible->default_gasoline_value * ($calc->distance / 1000) / 14; // 14 lts por km en ruta
+                    $price_tolls = 0;
+                    foreach ($calc->tolls as $toll) {
+                        $price_tolls += $toll->car_valley;
+                    }
+                    // $response = new \stdClass();
+                    // $response->total = $price_pretol + $price_tolls;
+                    // $response->price_pretol = $price_pretol;
+                    // $response->price_tolls = $price_tolls;
+                    // $response->tolls = $calc->tolls;
+                    $response = $price_pretol + $price_tolls;
+                    return $response;
+                }
             }
-            // $response = new \stdClass();
-            // $response->total = $price_pretol + $price_tolls;
-            // $response->price_pretol = $price_pretol;
-            // $response->price_tolls = $price_tolls;
-            // $response->tolls = $calc->tolls;
-            $response = $price_pretol + $price_tolls;
-            return $response;
+            // Llegue acá sin precio, voy con simplePrice
+            return $this->tripRepo->simplePrice($distance);
         }
     }
 }
