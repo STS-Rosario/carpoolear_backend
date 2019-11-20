@@ -100,7 +100,11 @@ class UsersManager extends BaseManager implements UserLogic
             if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
                 foreach ($data['driver_data_docs'] as $file) {
                     if ($file) {
-                        $img_names[] = $this->uploadDoc($file);
+                        if (is_string($file)) {
+                            $img_names[] = $file;
+                        } else {
+                            $img_names[] = $this->uploadDoc($file);
+                        }
                     }
                 }
                 $data['driver_data_docs'] = json_encode($img_names);

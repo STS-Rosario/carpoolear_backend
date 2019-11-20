@@ -30,7 +30,8 @@ class PaymentController extends Controller
                 $finalUrl = $baseUrl . '/transbank-final';
                 // Transbank work
                 $transaction = (new Webpay(Configuration::forTestingWebpayPlusNormal()))->getNormalTransaction();
-                $initResult = $transaction->initTransaction($amount, $buyOrder, $sessionId, $returnUrl, $finalUrl);
+                $initResult = $transaction->initTransaction(intval($amount), $buyOrder, $sessionId, $returnUrl, $finalUrl);
+                // var_dump($initResult);die;
                 $formAction = $initResult->url;
                 $tokenWs = $initResult->token;
                 // var_dump($initResult);die;
@@ -47,6 +48,7 @@ class PaymentController extends Controller
     public function transbankResponse (Request $request, TripLogic $tripLogic) {
         $transaction = (new Webpay(Configuration::forTestingWebpayPlusNormal()))->getNormalTransaction();
         $transactionResultOutput = $transaction->getTransactionResult($request->input("token_ws"));
+        // var_dump($transactionResultOutput);die;
         /* object(Transbank\Webpay\transactionResultOutput)#419 (8) { 
             ["accountingDate"]=> string(4) "0904" 
             ["buyOrder"]=> string(9) "119027553" 
