@@ -68,7 +68,7 @@ class Trip extends Model
 
     protected $casts = [
         'is_passenger'  => 'boolean',
-        'es_recurrente' => 'boolean',
+        'es_recurrente' => 'boolean'
     ];
 
     protected $dates = [

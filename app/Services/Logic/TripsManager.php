@@ -215,7 +215,21 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function search($user, $data)
     {
-        return $this->tripRepo->search($user, $data);
+        $trips = $this->tripRepo->search($user, $data);
+        foreach ($trips as $trip) {
+            if (count($trip->points)) {
+                foreach ($trip->points as $point) {
+                    if (is_array($point->json_address) && empty($point->json_address['ciudad'])) {
+                        $temp = $point->json_address;
+                        $temp['ciudad'] = $temp['name'];
+                        $temp['provincia'] = $temp['state'];
+                        $point->json_address = $temp;
+                        // var_dump($point->json_address);die;
+                    }
+                }
+            }
+        }
+        return $trips;
     }
 
     public function getTrips($user, $userId, $asDriver)
