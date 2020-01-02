@@ -19,6 +19,8 @@ $api->version('v1', ['middleware'=>'cors'], function ($api) use ($v1_path) {
         $api->get('/ratings/pending', $v1_path.'RatingController@pendingRate');
         $api->get('/get-trips', $v1_path.'TripController@getTrips');
         $api->get('/get-old-trips', $v1_path.'TripController@getOldTrips');
+        $api->get('/my-trips', $v1_path.'TripController@getTrips');
+        $api->get('/my-old-trips', $v1_path.'TripController@getOldTrips');
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
         $api->get('/payment-pending', $v1_path.'PassengerController@paymentPendingRequest');
 

@@ -95,7 +95,7 @@ class UserController extends Controller
     public function show($id = null)
     {
         $me = $this->auth->user();
-        if (! $id) {
+        if (!($id > 0)) {
             $id = $me->id;
         }
         $profile = $this->userLogic->show($me, $id);

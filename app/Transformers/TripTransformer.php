@@ -57,6 +57,14 @@ class TripTransformer extends TransformerAbstract
                 $data['car'] = $trip->car;
                 $data['request_count'] = count($trip->passenger);
                 $data['passengerAccepted_count'] = count($trip->passengerAccepted);
+                if (count($trip->passenger) > 0) {
+                    foreach ($trip->passenger as $prequest) {
+                        $prequest->request_id = $prequest->id;
+                        $prequest->id = $prequest->user->id;
+                        $prequest->name = $prequest->user->name;
+                        $prequest->email = $prequest->user->email;
+                    }
+                }
             } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';
             }

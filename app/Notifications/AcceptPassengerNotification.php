@@ -33,14 +33,14 @@ class AcceptPassengerNotification extends BaseNotification
     {
         // FIXME untested 
         $to =  $this->getAttribute('token');
-        \Log::info($to);
-        $request = $this->getAttribute('trip')->passenger()->where('id',$to->id);
-        \Log::info($request);
-        if ($request[0]->request_state == 4) {
-            return [
-                'type' => 'mytrip',
-                'trip_id' => $this->getAttribute('trip')->id,
-            ];
+        if (is_object($to) && isset($to->id)) {
+            $request = $this->getAttribute('trip')->passenger()->where('id', $to->id);
+            if ($request[0]->request_state == 4) {
+                return [
+                    'type' => 'mytrip',
+                    'trip_id' => $this->getAttribute('trip')->id,
+                ];
+            }
         }
         return [
             'type' => 'trip',

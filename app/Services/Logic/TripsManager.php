@@ -213,9 +213,7 @@ class TripsManager extends BaseManager implements TripLogic
         return $this->tripRepo->search($user, $data);
     }
 
-    public function search($user, $data)
-    {
-        $trips = $this->tripRepo->search($user, $data);
+    private function proccessTrips ($trips) {
         foreach ($trips as $trip) {
             if (count($trip->points)) {
                 foreach ($trip->points as $point) {
@@ -232,14 +230,25 @@ class TripsManager extends BaseManager implements TripLogic
         return $trips;
     }
 
+    public function search($user, $data)
+    {
+        $trips = $this->tripRepo->search($user, $data);
+        $trips = $this->proccessTrips($trips);
+        return $trips;
+    }
+
     public function getTrips($user, $userId, $asDriver)
     {
-        return $this->tripRepo->getTrips($user, $userId, $asDriver);
+        $trips = $this->tripRepo->getTrips($user, $userId, $asDriver);
+        $trips = $this->proccessTrips($trips);
+        return $trips;
     }
 
     public function getOldTrips($user, $userId, $asDriver)
     {
-        return $this->tripRepo->getOldTrips($user, $userId, $asDriver);
+        $trips = $this->tripRepo->getOldTrips($user, $userId, $asDriver);
+        $trips = $this->proccessTrips($trips);
+        return $trips;
     }
 
     public function tripOwner($user, $trip)

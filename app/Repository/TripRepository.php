@@ -15,6 +15,36 @@ use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripRepository implements TripRepo
 {
+    private function getPotentialNode ($point) {
+        $n1 = new NodeGeo;
+        $n1->lat = $point['lat'] - 0.05;
+        $n1->lng = $point['lng'] - 0.1;
+        $n2 = new NodeGeo;
+        $n2->lat = $point['lat'] + 0.05;
+        $n2->lng = $point['lng'] + 0.1;
+        $maxLat = 0;
+        $minLat = 0;
+        $minLng = 0;
+        $maxLng = 0;
+        if ($n1->lat > $n2->lat) {
+            $maxLat = $n1->lat;
+            $minLat = $n2->lat;
+        } else {
+            $maxLat = $n2->lat;
+            $minLat = $n1->lat;
+        }
+        if ($n1->lng > $n2->lng) {
+            $maxLng = $n1->lng;
+            $minLng = $n2->lng;
+        } else {
+            $maxLng = $n2->lng;
+            $minLng = $n1->lng;
+        }
+        $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
+        $query->whereBetween('lng', [$minLng, $maxLng]);
+        return $query->first();
+    }
+
     public function create(array $data)
     {
         $points = $data['points'];
@@ -26,7 +56,11 @@ class TripRepository implements TripRepo
         for ($i = 1; $i < count($points); $i++) {
             $origin = is_array($points[$i - 1]['json_address']) ? (object)$points[$i - 1]['json_address'] : json_decode($points[$i - 1]['json_address']);
             $destiny = is_array($points[$i]['json_address']) ? (object)$points[$i]['json_address'] : json_decode($points[$i]['json_address']);
-            if ($origin->id > 0 && $destiny->id > 0) {
+            if (!isset($origin->id) || !isset($destiny->id)) {
+                $origin = $this->getPotentialNode($points[$i - 1]);
+                $destiny = $this->getPotentialNode($points[$i]);
+            }
+            if (isset($origin->id) && $origin->id > 0 && isset($destiny->id) && $destiny->id > 0) {
                 $route = Route::where('from_id', $origin->id)->where('to_id', $destiny->id)->first();
                 if (!$route) {
                     $route = new Route();
