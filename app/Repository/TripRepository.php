@@ -8,17 +8,53 @@ use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\Entities\TripPoint;
+use STS\Entities\TripVisibility;
 use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripRepository implements TripRepo
 {
+    public function generateTripFriendVisibility ($trip) {
+        if ($trip->friendship_type_id < 2) {
+            if ($trip->friendship_type_id == 1) {
+                // friend of friends
+                $query = 'INSERT INTO user_visibility_trip
+                            (SELECT f.uid2, t.id
+                                FROM trips t
+                                INNER JOIN friends f ON t.user_id = f.uid1 AND f.state = 1
+                                WHERE t.friendship_type_id = 1
+                                    AND t.id = ?
+                            )
+                            UNION
+                            (SELECT f2.uid2, t.id
+                                FROM trips t
+                                INNER JOIN friends f ON t.user_id = f.uid1 AND f.state = 1
+                                INNER JOIN friends f2 ON f.uid2 = f2.uid1 AND f2.state = 1
+                                WHERE t.friendship_type_id = 1
+                                    AND t.id = ?
+                            )
+                ';
+                DB::insert($query, [$trip->id, $trip->id]);
+            } else {
+                // only friends
+                $query = 'INSERT INTO user_visibility_trip
+                                SELECT f.uid2, t.id
+                                    FROM trips t
+                                    INNER JOIN friends f ON t.user_id = f.uid1 AND f.state = 1
+                                    WHERE t.friendship_type_id = 0
+                                        AND t.id = ?
+                ';
+                DB::insert($query, [$trip->id]);
+            }
+        }
+    }
+
     public function create(array $data)
     {
         $points = $data['points'];
         unset($data['points']);
         $trip = Trip::create($data);
         $this->addPoints($trip, $points);
-
+        $this->generateTripFriendVisibility($trip);
         return $trip;
     }
 
@@ -156,6 +192,12 @@ class TripRepository implements TripRepo
                 $q->orWhere(function ($q) use ($user) {
                     $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                     $q->orWhere(function ($q) use ($user) {
+                        $q->where('friendship_type_id', '<' , Trip::PRIVACY_PUBLIC);
+                        $q->whereHas('userVisibility', function ($q) use ($user) {
+                            $q->where('user_id', $user->id);
+                        });
+                    });
+                    /* $q->orWhere(function ($q) use ($user) {
                         $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
                         $q->whereHas('user.friends', function ($q) use ($user) {
                             $q->whereId($user->id);
@@ -171,7 +213,7 @@ class TripRepository implements TripRepo
                                 $q->whereId($user->id);
                             });
                         });
-                    });
+                    }); */
                 });
             } else {
                 $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
@@ -199,7 +241,12 @@ class TripRepository implements TripRepo
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
 
+        // DB::enableQueryLog(); // Enable query log
+
+        
         return make_pagination($trips, $pageNumber, $pageSize);
+        
+        // var_dump(DB::getQueryLog()); // Show results of log
     }
 
     private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)

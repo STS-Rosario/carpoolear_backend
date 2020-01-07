@@ -55,7 +55,7 @@ class FriendsManager extends BaseManager implements FriendsLogic
             $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED);
             $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED);
             event(new AcceptEvent($who, $user));
-
+            // tengo que 
             return true;
         } else {
             $this->setErrors(['error' => 'Operación inválida']);

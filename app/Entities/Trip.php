@@ -77,6 +77,11 @@ class Trip extends Model
         return $this->belongsTo('STS\User', 'user_id');
     }
 
+    public function userVisibility ()
+    {
+        return $this->hasMany('STS\Entities\TripVisibility', 'trip_id');
+    }
+
     public function car()
     {
         return $this->belongsTo('STS\Entities\Car', 'car_id');
