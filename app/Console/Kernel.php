@@ -25,7 +25,7 @@ class Kernel extends ConsoleKernel
         Commands\BuildRoutes::class,
         Commands\BuildNodesWeights::class,
         Commands\updateTrips::class,
-        Commands\RatesAvailability::class
+        Commands\RatesAvailability::class,
         Commands\GenerateTripVisibility::class,
         Commands\CleanTripVisibility::class,
     ];
