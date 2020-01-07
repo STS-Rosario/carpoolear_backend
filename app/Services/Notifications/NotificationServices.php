@@ -23,7 +23,11 @@ class NotificationServices
         $driver = $this->driver($channel);
         foreach ($users as $user) {
             if ($this->shouldSendNotification($notification, $user, $driver)) {
-                $driver->send($notification, $user);
+                try {
+                    $driver->send($notification, $user);
+                } catch (\Exception $ex) {
+                    
+                }
             }
         }
     }

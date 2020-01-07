@@ -94,6 +94,7 @@ class TripsManager extends BaseManager implements TripLogic
                 }
             }
             // REVIEW uncomented me
+            // FIXME uncomennt
             // event(new CreateEvent($trip));
 
             return $trip;

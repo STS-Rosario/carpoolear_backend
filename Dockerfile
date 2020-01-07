@@ -1,24 +1,30 @@
-FROM php:7.1-cli-alpine 
-RUN apk upgrade --update && apk add --update libmcrypt-dev openssl git zip unzip
+# setup OS and timezone
+FROM ubuntu:18.04
+LABEL Name=carpoolear_backend Version=0.0.1
+ENV TZ=America/Argentina/Buenos_Aires
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone4
+#install php git apache etc
+RUN apt-get update -y &&\
+    apt-get install -y php7.2 \
+    curl \
+    php-curl \
+    php7.2-mysql \
+    php-gd \
+    php-cli \
+    php-zip \
+    php-mbstring \
+    php-xml \
+    unzip \
+    git \
+    apache2
+
+#install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-RUN docker-php-ext-install pdo pdo_mysql mbstring mcrypt mysqli 
- 
-RUN apk add --update --no-cache autoconf g++ imagemagick-dev libtool make pcre-dev \
-    && pecl install imagick \
-    && docker-php-ext-enable imagick \
-    && apk del autoconf g++ libtool make pcre-dev
-
-WORKDIR /app
-
-COPY composer.json composer.lock /app/
-RUN composer install --no-autoloader --no-scripts
-
-COPY . /app
-RUN composer dumpautoload
-
-ENV SERVER_PORT=8080
-
-CMD php artisan serve --host=0.0.0.0 --port=$SERVER_PORT
-EXPOSE 8080
-
+#setup apache
+COPY ./000-default.conf /etc/apache2/sites-available/
+RUN a2enmod rewrite && a2enmod headers
+# COPY . /var/www/carpoolear/
+# RUN chmod -R ugo+rw /var/www/carpoolear/storage/*
+WORKDIR /var/www/carpoolear/
+EXPOSE 80
+CMD apachectl -D FOREGROUND
