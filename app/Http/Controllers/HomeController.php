@@ -18,7 +18,12 @@ class HomeController extends Controller
 {
     public function home()
     {
-        return view('home');
+        $url = config('carpoolear.home_redirection', '');
+        if (!empty($url)) {
+            return redirect()->away($url);
+        } else {
+            return view('home');
+        }
     }
 
     public function privacidad()
