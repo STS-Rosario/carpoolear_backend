@@ -13,6 +13,7 @@ class ConversationsTable extends Migration
     public function up()
     {
         Schema::create('conversations', function (Blueprint $table) {
+			$table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('type');
             $table->string('title', 255);

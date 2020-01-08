@@ -22,6 +22,7 @@ class Kernel extends ConsoleKernel
         Commands\UpdateUser::class,
         Commands\GenerateTripVisibility::class,
         Commands\CleanTripVisibility::class,
+        Commands\ConversationCreate::class,
     ];
 
     /**
