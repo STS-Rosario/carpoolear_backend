@@ -20,6 +20,8 @@ class Kernel extends ConsoleKernel
         Commands\DownloadPoints::class,
         Commands\FacebookImage::class,
         Commands\UpdateUser::class,
+        Commands\GenerateTripVisibility::class,
+        Commands\CleanTripVisibility::class,
         Commands\ConversationCreate::class,
     ];
 
@@ -39,5 +41,7 @@ class Kernel extends ConsoleKernel
         $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
+
+        $schedule->command('trip:visibilityclean')->dailyAt('03:00')->timezone('America/Argentina/Buenos_Aires');
     }
 }

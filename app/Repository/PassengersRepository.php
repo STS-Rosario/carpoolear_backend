@@ -25,13 +25,19 @@ class PassengersRepository implements IPassengersRepository
         if ($tripId) {
             $passengers = Passenger::where('trip_id', $tripId);
         } else {
-            $passengers = Passenger::whereHas('trip', function ($q) use ($user) {
+            /* $passengers = Passenger::whereHas('trip', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
                 $q->where('trip_date', '>=', Carbon::Now()->toDateTimeString());
-            });
+            }); */
+            $passengers = Passenger::query();
+            $passengers->join('trips', 'trips.id', '=', 'trip_passengers.trip_id');
+            $passengers->whereNull('trips.deleted_at');
+            $passengers->where('trips.user_id', $user->id);
+            $passengers->where('trips.trip_date', '>=', Carbon::Now()->toDateTimeString());
         }
         $passengers->with('user');
-        $passengers->whereIn('request_state', [Passenger::STATE_PENDING]);
+        $passengers->where('request_state', Passenger::STATE_PENDING);
+        $passengers->select('trip_passengers.*');
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
