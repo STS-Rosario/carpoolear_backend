@@ -47,6 +47,8 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
 
+        $schedule->command('trip:visibilityclean')->dailyAt('03:00')->timezone('America/Argentina/Buenos_Aires');
+
         $schedule->command('georoute:build')->everyMinute();
 
         $schedule->command('node:buildweights')->hourly();
