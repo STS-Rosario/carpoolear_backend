@@ -20,6 +20,8 @@ class RejectPassengerNotification extends BaseNotification
             'type' => 'reject',
             'reason_message' => 'ha rechazado',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

@@ -18,6 +18,8 @@ class NewMessageNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
             'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

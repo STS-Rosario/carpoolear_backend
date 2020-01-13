@@ -20,6 +20,8 @@ class AutoRequestPassengerNotification extends BaseNotification
             'email_view' => 'passenger_autorequest',
             'type' => 'request',
             'url' =>  config('app.url').'/app/profile/me#0',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

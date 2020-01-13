@@ -18,6 +18,8 @@ class SubscriptionMatchNotification extends BaseNotification
             'title' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
             'email_view' => 'subscription_match',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

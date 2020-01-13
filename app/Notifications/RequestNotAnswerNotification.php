@@ -18,6 +18,8 @@ class RequestNotAnswerNotification extends BaseNotification
             'title' => 'Una de tus solicitudes aún no fue contestada',
             'email_view' => 'request_not_answer',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

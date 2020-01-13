@@ -18,6 +18,8 @@ class UpdateTripNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha cambiado las condiciones de su viaje.',
             'email_view' => 'update_trip',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

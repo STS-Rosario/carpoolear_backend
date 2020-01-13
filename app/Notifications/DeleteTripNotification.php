@@ -18,6 +18,8 @@ class DeleteTripNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha eliminado su viaje. ',
             'email_view' => 'pending_rate_delete',
             'url' =>  config('app.url').'/app/profile/me#0',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

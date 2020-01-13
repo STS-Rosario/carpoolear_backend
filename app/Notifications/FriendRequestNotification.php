@@ -19,6 +19,8 @@ class FriendRequestNotification extends BaseNotification
             'email_view' => 'friends_request',
             'type' => 'request',
             'url' => config('app.url').'/app/setting/friends',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

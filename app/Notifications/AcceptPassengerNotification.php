@@ -21,6 +21,8 @@ class AcceptPassengerNotification extends BaseNotification
             'type' => 'accept',
             'reason_message' => 'ha aceptado',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -31,13 +33,12 @@ class AcceptPassengerNotification extends BaseNotification
 
     public function getExtras()
     {
-        // FIXME untested 
         $to =  $this->getAttribute('token');
         if (is_object($to) && isset($to->id)) {
-            $request = $this->getAttribute('trip')->passenger()->where('id', $to->id);
-            if ($request[0]->request_state == 4) {
+            $request = $this->getAttribute('trip')->passenger()->where('user_id', $to->id)->first();
+            if (is_object($request) && $request->request_state == 4) {
                 return [
-                    'type' => 'mytrip',
+                    'type' => 'my-trips',
                     'trip_id' => $this->getAttribute('trip')->id,
                 ];
             }
