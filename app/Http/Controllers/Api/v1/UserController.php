@@ -10,6 +10,7 @@ use Dingo\Api\Exception\ResourceException;
 use STS\Contracts\Logic\User as UserLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
 use Dingo\Api\Exception\UpdateResourceFailedException;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -17,7 +18,7 @@ class UserController extends Controller
 
     public function __construct(UserLogic $userLogic)
     {
-        $this->middleware('logged', ['except' => ['create', 'registerDonation', 'bankData']]);
+        $this->middleware('logged', ['except' => ['create', 'registerDonation', 'bankData', 'terms']]);
         $this->userLogic = $userLogic;
     }
 
@@ -44,7 +45,7 @@ class UserController extends Controller
         }
 
         // return $this->response->withArray(['user' => $user]);
-        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
+        return $this->item($user, new ProfileTransformer($user), ['key' => 'user']);
 
     }
 
@@ -94,7 +95,7 @@ class UserController extends Controller
     public function show($id = null)
     {
         $me = $this->auth->user();
-        if (! $id) {
+        if (!($id > 0)) {
             $id = $me->id;
         }
         $profile = $this->userLogic->show($me, $id);
@@ -156,6 +157,15 @@ class UserController extends Controller
     public function bankData(Request $request)
     {
         $data = $this->userLogic->bankData();
+
+        return json_encode($data);
+    }
+
+
+    public function terms (Request $request)
+    {
+        $lang = $request->has('lang') ? $request->get('lang') : '';
+        $data = $this->userLogic->termsText($lang);
 
         return json_encode($data);
     }

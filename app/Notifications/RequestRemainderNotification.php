@@ -18,6 +18,8 @@ class RequestRemainderNotification extends BaseNotification
             'title' => 'Tienes solicitudes pendientes de contestar',
             'email_view' => 'request_remainder',
             'url' =>  config('app.url').'/app/profile/me#0',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

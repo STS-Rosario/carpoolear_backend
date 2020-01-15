@@ -9,7 +9,7 @@
         <div class="row">
             <div class="col-sm-12 pt48">
                 <h2>Desuscripción exitosa.</h2>
-                <p>Hemos desactivado las notificaciones por email. Para volver a activarlas puedes hacerlo desde tu perfil de Carpoolear.</p>
+                <p>Hemos desactivado las notificaciones por email. Para volver a activarlas puedes hacerlo desde tu perfil.</p>
             </div>
         </div>
     </div>

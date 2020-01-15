@@ -18,6 +18,8 @@ class PendingRateNotification extends BaseNotification
             'title' => 'Contanos como te fue en el viaje hacia '.$this->getAttribute('trip')->to_town.'?',
             'email_view' => 'pending_rate',
             'url' =>  config('app.url').'/app/profile/me#0',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

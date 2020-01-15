@@ -30,14 +30,15 @@ class RoutesManager implements RoutesLogic
         $destinyNode = $route->destiny;
         // 1- Obenter todos los nodos geo dentro de la circunferencia
         $nodes = $this->routesRepo->getPotentialsNodes($sourceNode, $destinyNode);
+        // var_dump($nodes);die;
         // 2- Calcular con OSM la ruta
-        // https://router.project-osrm.org/route/v1/driving/-60.6615415,-32.9595004;-58.437076,-34.6075616?overview=false&alternatives=true&steps=true&hints=;
         $url = "https://router.project-osrm.org/route/v1/driving/$sourceNode->lng,$sourceNode->lat;$destinyNode->lng,$destinyNode->lat?overview=false&alternatives=true&steps=true&hints=";
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, $url);
         $result = curl_exec($ch);
         curl_close($ch);
+        
         $result = json_decode($result, true);
         // var_dump($result);die;
         foreach ($result['routes'][0]['legs'][0]['steps'] as $step) {
@@ -61,9 +62,7 @@ class RoutesManager implements RoutesLogic
             $b = $p2[0] - ($m * $p2[1]);
             // y = mx + b;
             $nodesArr = $nodes->toArray();
-            // var_dump($nodesArr);die;
-            for ($j = count($nodesArr) - 1; $j >= 0; $j--) { 
-            // foreach ($nodes as $node) {
+            for ($j = count($nodesArr) - 1; $j >= 0; $j--) {
                 $node = (object)$nodesArr[$j];
                 // | m * x1 - y1 + b | / sqr(pow(m, 2) + 1)
                 $d = abs($m * $node->lat - $node->lng + $b) / sqrt(pow($m, 2) + 1);
@@ -78,7 +77,16 @@ class RoutesManager implements RoutesLogic
                             $nearPoints[$node->id] = $node;
                             break;
                         }
+                    } else {
+                        if ($md < 0.15 && $d < 0.0125) {
+                            if (!isset($nearPoints[$node->id])) {
+                                $node->d = $d;
+                                $nearPoints[$node->id] = $node;
+                            }
+                        }
                     }
+                } else {
+                    // 
                 }
 
             }

@@ -18,6 +18,8 @@ class HourLeftNotification extends BaseNotification
             'title' => 'Recordatorio de viaje hacia '.$this->getAttribute('trip')->to_town,
             'email_view' => 'hour_left',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

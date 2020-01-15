@@ -29,6 +29,8 @@ class CancelPassengerNotification extends BaseNotification
             'is_driver' => $isDriver,
             'reason_message' => $reasonMessage,
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

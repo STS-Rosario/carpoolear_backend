@@ -19,6 +19,8 @@ class FriendRejectNotification extends BaseNotification
             'email_view' => 'friends_email',
             'type' => 'reject',
             'message_mail' => 'rechazado',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 

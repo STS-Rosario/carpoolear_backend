@@ -100,7 +100,11 @@ class UsersManager extends BaseManager implements UserLogic
             if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
                 foreach ($data['driver_data_docs'] as $file) {
                     if ($file) {
-                        $img_names[] = $this->uploadDoc($file);
+                        if (is_string($file)) {
+                            $img_names[] = $file;
+                        } else {
+                            $img_names[] = $this->uploadDoc($file);
+                        }
                     }
                 }
                 $data['driver_data_docs'] = json_encode($img_names);
@@ -300,5 +304,19 @@ class UsersManager extends BaseManager implements UserLogic
             'cc' => $cc,
             'banks' => $banks
         ];
+    }
+    public function termsText($lang)
+    {
+        $path = storage_path() . '/terms/';
+        $app_name = config('carpoolear.target_app');
+        if (!empty($lang)) {
+            $path = $path . $app_name . '_' . $request->get('lang') . '.html';
+        } else {
+            $path = $path . $app_name . '.html';
+        }
+        $html = file_get_contents($path);
+        $response = new \stdClass();
+        $response->content = $html;
+        return $response;
     }
 }

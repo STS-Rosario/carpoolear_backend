@@ -19,6 +19,8 @@ $api->version('v1', [], function ($api) use ($v1_path) {
         $api->get('/ratings/pending', $v1_path.'RatingController@pendingRate');
         $api->get('/get-trips', $v1_path.'TripController@getTrips');
         $api->get('/get-old-trips', $v1_path.'TripController@getOldTrips');
+        $api->get('/my-trips', $v1_path.'TripController@getTrips');
+        $api->get('/my-old-trips', $v1_path.'TripController@getOldTrips');
         $api->get('/requests', $v1_path.'PassengerController@allRequests');
         $api->get('/payment-pending', $v1_path.'PassengerController@paymentPendingRequest');
 
@@ -28,6 +30,7 @@ $api->version('v1', [], function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'UserController@create');
         $api->get('/me', $v1_path.'UserController@show');
         $api->get('/bank-data', $v1_path.'UserController@bankData');
+        $api->get('/terms', $v1_path.'UserController@terms');
         $api->get('/{name?}', $v1_path.'UserController@show');
         $api->get('/{id?}/ratings', $v1_path.'RatingController@ratings');
         $api->put('/', $v1_path.'UserController@update');

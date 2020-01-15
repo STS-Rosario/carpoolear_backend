@@ -18,7 +18,12 @@ class HomeController extends Controller
 {
     public function home()
     {
-        return view('home');
+        $url = config('carpoolear.home_redirection', '');
+        if (!empty($url)) {
+            return redirect()->away($url);
+        } else {
+            return view('home');
+        }
     }
 
     public function privacidad()
@@ -148,8 +153,8 @@ class HomeController extends Controller
     {
         $repo = new RoutesRepository();
         $manager = new \STS\Services\Logic\RoutesManager($repo);
-        $laplata = NodeGeo::where('id', 3535)->first();
-        $bsAs = NodeGeo::where('id', 1)->first();
+        $bsAs = NodeGeo::where('id', 39428)->first();
+        $laplata = NodeGeo::where('id', 29198)->first();
         $trip = Trip::where('id', 1)->first();
         $route = (object)[
             'origin' => $bsAs,

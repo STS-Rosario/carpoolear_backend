@@ -11,10 +11,75 @@ use STS\Entities\Route;
 use STS\Entities\NodeGeo;
 use STS\Entities\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
+use STS\Entities\TripVisibility;
 use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripRepository implements TripRepo
 {
+    private function getPotentialNode ($point) {
+        $n1 = new NodeGeo;
+        $n1->lat = $point['lat'] - 0.05;
+        $n1->lng = $point['lng'] - 0.1;
+        $n2 = new NodeGeo;
+        $n2->lat = $point['lat'] + 0.05;
+        $n2->lng = $point['lng'] + 0.1;
+        $maxLat = 0;
+        $minLat = 0;
+        $minLng = 0;
+        $maxLng = 0;
+        if ($n1->lat > $n2->lat) {
+            $maxLat = $n1->lat;
+            $minLat = $n2->lat;
+        } else {
+            $maxLat = $n2->lat;
+            $minLat = $n1->lat;
+        }
+        if ($n1->lng > $n2->lng) {
+            $maxLng = $n1->lng;
+            $minLng = $n2->lng;
+        } else {
+            $maxLng = $n2->lng;
+            $minLng = $n1->lng;
+        }
+        $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
+        $query->whereBetween('lng', [$minLng, $maxLng]);
+        return $query->first();
+    }
+    public function generateTripFriendVisibility ($trip) {
+        if ($trip->friendship_type_id < 2) {
+            if ($trip->friendship_type_id == 1) {
+                // friend of friends
+                $query = 'INSERT INTO user_visibility_trip
+                            (SELECT f.uid2, t.id
+                                FROM trips t
+                                INNER JOIN friends f ON t.user_id = f.uid1 AND f.state = 1
+                                WHERE t.friendship_type_id = 1
+                                    AND t.id = ?
+                            )
+                            UNION
+                            (SELECT f2.uid2, t.id
+                                FROM trips t
+                                INNER JOIN friends f ON t.user_id = f.uid1 AND f.state = 1
+                                INNER JOIN friends f2 ON f.uid2 = f2.uid1 AND f2.state = 1
+                                WHERE t.friendship_type_id = 1
+                                    AND t.id = ?
+                            )
+                ';
+                DB::insert($query, [$trip->id, $trip->id]);
+            } else {
+                // only friends
+                $query = 'INSERT INTO user_visibility_trip
+                                SELECT f.uid2, t.id
+                                    FROM trips t
+                                    INNER JOIN friends f ON t.user_id = f.uid1 AND f.state = 1
+                                    WHERE t.friendship_type_id = 0
+                                        AND t.id = ?
+                ';
+                DB::insert($query, [$trip->id]);
+            }
+        }
+    }
+
     public function create(array $data)
     {
         $points = $data['points'];
@@ -26,7 +91,11 @@ class TripRepository implements TripRepo
         for ($i = 1; $i < count($points); $i++) {
             $origin = is_array($points[$i - 1]['json_address']) ? (object)$points[$i - 1]['json_address'] : json_decode($points[$i - 1]['json_address']);
             $destiny = is_array($points[$i]['json_address']) ? (object)$points[$i]['json_address'] : json_decode($points[$i]['json_address']);
-            if ($origin->id > 0 && $destiny->id > 0) {
+            if (!isset($origin->id) || !isset($destiny->id)) {
+                $origin = $this->getPotentialNode($points[$i - 1]);
+                $destiny = $this->getPotentialNode($points[$i]);
+            }
+            if (isset($origin->id) && $origin->id > 0 && isset($destiny->id) && $destiny->id > 0) {
                 $route = Route::where('from_id', $origin->id)->where('to_id', $destiny->id)->first();
                 if (!$route) {
                     $route = new Route();
@@ -51,6 +120,7 @@ class TripRepository implements TripRepo
             $trip->routes()->sync($routeIds);
         }
 
+        $this->generateTripFriendVisibility($trip);
         return $trip;
     }
 
@@ -207,6 +277,12 @@ class TripRepository implements TripRepo
                     $q->orWhere(function ($q) use ($user) {
                         $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                         $q->orWhere(function ($q) use ($user) {
+                            $q->where('friendship_type_id', '<' , Trip::PRIVACY_PUBLIC);
+                            $q->whereHas('userVisibility', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            });
+                        });
+                        /* $q->orWhere(function ($q) use ($user) {
                             $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
                             $q->whereHas('user.friends', function ($q) use ($user) {
                                 $q->whereId($user->id);
@@ -222,7 +298,7 @@ class TripRepository implements TripRepo
                                     $q->whereId($user->id);
                                 });
                             });
-                        });
+                        }); */
                     });
                 } else {
                     $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);

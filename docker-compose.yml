@@ -1,0 +1,15 @@
+version: '3'
+services:
+  backend:
+    build: .
+    image: carpoolear_backend
+    ports:
+      - "8080:80"
+    volumes:
+      - '.:/var/www/carpoolear/'
+networks:
+    default:
+        ipam:
+            driver: default
+            config:
+                - subnet: 192.169.0.0/24

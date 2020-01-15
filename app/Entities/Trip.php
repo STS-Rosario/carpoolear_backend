@@ -68,7 +68,7 @@ class Trip extends Model
 
     protected $casts = [
         'is_passenger'  => 'boolean',
-        'es_recurrente' => 'boolean',
+        'es_recurrente' => 'boolean'
     ];
 
     protected $dates = [
@@ -83,6 +83,11 @@ class Trip extends Model
     public function user()
     {
         return $this->belongsTo('STS\User', 'user_id');
+    }
+
+    public function userVisibility ()
+    {
+        return $this->hasMany('STS\Entities\TripVisibility', 'trip_id');
     }
 
     public function car()
