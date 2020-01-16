@@ -179,7 +179,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function delete($user, $trip_id)
     {
-        $trip = $this->tripRepo->show($trip_id);
+        $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
             // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {

@@ -86,7 +86,7 @@ class PassengerController extends Controller
 
         $request = $this->passengerLogic->cancelRequest($tripId, $userId, $this->user, $data);
 
-        if (! $request) {
+        if (!$request) {
             throw new StoreResourceFailedException('Could not cancel request.', $this->passengerLogic->getErrors());
         }
 

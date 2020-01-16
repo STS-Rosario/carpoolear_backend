@@ -24,7 +24,7 @@ class Passenger extends Model
 
     const CANCELED_PASSENGER = 2;
 
-    const CANCELED_PASSENGER_WHILE_PAYING = 2;
+    const CANCELED_PASSENGER_WHILE_PAYING = 3;
 
     // PASSENGER TYPE
 

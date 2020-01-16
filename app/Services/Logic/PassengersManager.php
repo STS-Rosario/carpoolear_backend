@@ -149,6 +149,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         if ($this->isUserRequestPending($tripId, $cancelUserId) && $cancelUserId == $user->id) {
             $canceledState = Passenger::CANCELED_REQUEST;
         }
+        
         if ($this->isUserRequestAccepted($tripId, $cancelUserId) || $this->isUserRequestWaitingPayment($tripId, $cancelUserId)) {
             if ($cancelUserId == $user->id) {
                 if ($this->isUserRequestWaitingPayment($tripId, $cancelUserId)) {
@@ -160,6 +161,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
                 $canceledState = Passenger::CANCELED_DRIVER;
             }
         }
+        
         if ($canceledState !== null) {
             if ($result = $this->passengerRepository->cancelRequest($tripId, $cancelUser, $canceledState)) {
                 if ($trip->user_id == $user->id) {
@@ -193,7 +195,6 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         if ($this->isUserRequestPending($tripId, $acceptedUserId) && $this->tripLogic->tripOwner($user, $trip)) {
             if ($trip->seats_available == 0) {
                 $this->setErrors(['error' => 'not_seat_available']);
-
                 return;
             }
 

@@ -97,32 +97,34 @@ class SubscriptionsRepository implements SubscriptionRepository
                 $processed = 0;
             }
         }
-        if ($processed) {
+        if ($processed && isset($trip->routes->nodes)) {
             foreach ($trip->routes->nodes as $node) {
                 $nodes[$countOrder] = $node->id;
                 $countOrder++;
             }
-            $query->where(function ($q) {
-                $q->where(function ($q) {
+        }
+        $query->where(function ($q) use ($nodes, $processed) {
+            $q->where(function ($q) {
+                $q->whereNull('from_id');
+                $q->whereNull('to_id');
+            });
+            if ($processed) {
+                $q->orWhere(function ($q) use ($nodes) {
                     $q->whereNull('to_id');
                     $q->whereIn('from_id', $nodes);
                 });
-                $q->orWhere(function ($q) {
+                $q->orWhere(function ($q) use ($nodes) {
                     $q->whereNull('from_id');
                     $q->whereIn('to_id', $nodes);
                 });
-                $q->orWhere(function ($q) {
-                    $q->whereNull('from_id');
-                    $q->whereNull('to_id');
-                });
-                // FIXME join with routes_node para una route y verificar que origin es menor que destiny
-                /* $q->orWhere(function ($q) {
-    
-                }); */
-            });
-            $query->where('is_passenger', $trip->is_passenger);
-            return $query->get();
-        } 
+            }
+            // FIXME join with routes_node para una route y verificar que origin es menor que destiny
+            /* $q->orWhere(function ($q) {
+
+            }); */
+        });
+        $query->where('is_passenger', $trip->is_passenger);
+        return $query->get();
         return [];
         
     }
