@@ -74,10 +74,14 @@ class EventServiceProvider extends ServiceProvider
         ],
         'STS\Events\Passenger\Accept' => [
             'STS\Listeners\Notification\PassengerAccept',
+            'STS\Listeners\Request\AcceptedRequest'
             // 'STS\Listeners\Conversation\addUserConversation',
         ],
         'STS\Events\Passenger\Reject' => [
             'STS\Listeners\Notification\PassengerReject',
+        ],
+        'STS\Events\Passenger\AutoCancel' => [
+            'STS\Listeners\Notification\PassengerAutoCancel',
         ],
         'STS\Events\Rating\PendingRate' => [
             'STS\Listeners\Notification\PendingRate',

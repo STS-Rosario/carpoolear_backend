@@ -202,6 +202,38 @@ class User extends Authenticatable
         return $trips;
     }
 
+    public function pendingRequests ($hours_range = null, $date = null) {
+        $user_id = $this->id;
+        $trip_ids = $this->tripsRequested($hours_range, $date)->pluck('id')->toArray();
+        $pendingRequests = Passenger::whereIn('trip_id', $trip_ids);
+        $pendingRequests->where('user_id', $user_id);
+        $pendingRequests->where(function($q) {
+            $q->where('request_state', Passenger::STATE_PENDING);
+            $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);         
+        });
+        return $pendingRequests;
+    }
+
+    public function tripsRequested ($hours_range = null, $date = null)
+    {
+        $user_id = $this->id;
+        $trips_requested = Trip::whereHas('passenger', function ($q) use ($user_id) {
+            $q->whereUserId($user_id);
+            $q->where(function($q) {
+                $q->where('request_state', Passenger::STATE_PENDING);
+                $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);         
+            });
+        });
+        if ($hours_range) {
+            $date = !$date ? Carbon::Now() : new Carbon($date);
+            $start_date = $date->copy()->subHours($hours_range)->toDateTimeString();
+            $end_date = $date->copy()->addHours($hours_range)->toDateTimeString();
+            $trips_requested->where('trip_date', '>=', $start_date);
+            $trips_requested->where('trip_date', '<=', $end_date);
+        }
+        return $trips_requested;
+    }
+
     public function ratingGiven()
     {
         return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('available', 1);

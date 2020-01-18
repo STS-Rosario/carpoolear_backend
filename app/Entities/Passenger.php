@@ -26,6 +26,8 @@ class Passenger extends Model
 
     const CANCELED_PASSENGER_WHILE_PAYING = 3;
 
+    const CANCELED_SYSTEM = 4;
+
     // PASSENGER TYPE
 
     const TYPE_CONDUCTOR = 0;
