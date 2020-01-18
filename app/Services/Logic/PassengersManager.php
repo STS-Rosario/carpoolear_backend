@@ -103,6 +103,18 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
         $trip = $this->tripLogic->show($user, $tripId);
         if ($trip && ! $trip->expired()) {
+
+            // User Request Limited Module
+            $module_user_request_limited = config('carpoolear.module_user_request_limited', false);
+            if ($module_user_request_limited && $module_user_request_limited->enabled) {
+                $hours_range = $module_user_request_limited->hours_range;
+                $userHasRequests = $user->tripsAsPassenger(null, $hours_range, $trip->trip_date)->count() > 0;
+                if ($userHasRequests) {
+                    $this->setErrors(['error' => 'user_has_another_similar_trip']);
+                    return;
+                }
+            }
+
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
                 if ($trip->user->autoaccept_requests) {
                     // $result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);

@@ -74,7 +74,7 @@ class EventServiceProvider extends ServiceProvider
         ],
         'STS\Events\Passenger\Accept' => [
             'STS\Listeners\Notification\PassengerAccept',
-            'STS\Listeners\Request\AcceptedRequest'
+            'STS\Listeners\Request\ModuleLimitedRequest'
             // 'STS\Listeners\Conversation\addUserConversation',
         ],
         'STS\Events\Passenger\Reject' => [
