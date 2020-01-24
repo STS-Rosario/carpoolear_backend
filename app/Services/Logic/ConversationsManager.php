@@ -203,7 +203,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     {
         return Validator::make($data, [
             'user_id'               => 'required|integer',
-            'text'                  => 'required|string|max:500',
+            'text'                  => 'required|string|max:800',
             'conversation_id'       => 'required|integer',
         ]);
     }
