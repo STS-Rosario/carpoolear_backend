@@ -62,10 +62,11 @@ class ConversationController extends Controller
     {
         $this->user = $this->auth->user();
         $to = $request->get('to');
+        $tripId = $request->get('tripId');
         if ($to) {
             $destinatary = $this->users->find($to);
             if ($destinatary) {
-                $conversation = $this->conversationLogic->findOrCreatePrivateConversation($this->user, $destinatary);
+                $conversation = $this->conversationLogic->findOrCreatePrivateConversation($this->user, $destinatary, $tripId);
                 if ($conversation) {
                     return $this->item($conversation, new ConversationsTransformer($this->user), ['key' => 'data']);
                 } else {
