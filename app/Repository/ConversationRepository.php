@@ -123,6 +123,13 @@ class ConversationRepository implements ConversationRepo
         return $u->pivot->read;
     }
 
+    public function updateTripId (Conversation $conversation, $tripId)
+    {
+        $conversation->trip_id = $tripId;
+        $conversation->save();
+        return $conversation;
+    }
+
     public function userList($user, $who = null, $search_text = null)
     {
         $userConversations = $user->conversations()->has('messages')

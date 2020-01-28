@@ -65,6 +65,7 @@ class ProfileTransformer extends TransformerAbstract
             $data['account_number'] = $user->account_number;
             $data['account_type'] = $user->account_type;
             $data['account_bank'] = $user->account_bank;
+            $data['on_boarding_view'] = $user->on_boarding_view;
         }
         
         switch ($user->data_visibility) {

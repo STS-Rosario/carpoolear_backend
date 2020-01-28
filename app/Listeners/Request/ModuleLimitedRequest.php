@@ -8,7 +8,7 @@ use STS\Entities\Trip;
 use STS\User;
 use STS\Events\Passenger\AutoCancel as AutoCancelEvent;
 
-class AcceptedRequest
+class ModuleLimitedRequest
 {
     /**
      * Create the event listener.

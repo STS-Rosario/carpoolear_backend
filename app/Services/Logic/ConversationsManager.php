@@ -8,6 +8,7 @@ use Validator;
 use STS\Entities\Message;
 use STS\Events\MessageSend;
 use STS\Entities\Conversation;
+use STS\Entities\Trip;
 use STS\Contracts\Logic\Friends as FriendsLogic;
 use STS\Contracts\Repository\User as UserRepository;
 use STS\Contracts\Logic\Conversation as ConversationRepo;
@@ -37,7 +38,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     private function createConversation($type, $tripId = null)
     {
         $conversation = new Conversation();
-        if ($type == Conversation::TYPE_TRIP_CONVERSATION) {
+        if ($tripId) {
             $conversation->trip_id = $tripId;
         }
 
@@ -56,22 +57,33 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         return $this->createConversation(Conversation::TYPE_TRIP_CONVERSATION, $trip_id);
     }
 
-    public function findOrCreatePrivateConversation($user1, $user2)
+    public function findOrCreatePrivateConversation($user1, $user2, $tripId = null)
     {
         $user1ID = is_int($user1) ? $user1 : $user1->id;
         $user2ID = is_int($user2) ? $user2 : $user2->id;
         $conversation = $this->conversationRepository->matchUser($user1ID, $user2ID);
-        if ($conversation) {
-            return $conversation;
-        } else {
+        $trip = TRIP::find($tripId); // Chequeo que el tripId pertenezca a un viaje
+        if (!$trip) {
+            $tripId = null;
+        }
+        if (!$conversation) {
             if ($this->usersCanChat($user1, $user2ID)) {
-                $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION);
+                $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION, $tripdId);
                 $this->conversationRepository->addUser($conversation, $user1ID);
                 $this->conversationRepository->addUser($conversation, $user2ID);
 
                 return $conversation;
             }
+        } else {
+            if ($tripId) {
+                $conversation = $this->updateTripId($conversation, $tripId);
+            }
         }
+        return $conversation;
+    }
+
+    private function updateTripId ($conversation, $tripId) {
+        return $this->conversationRepository->updateTripId($conversation, $tripId);
     }
 
     public function show(User $user, $id)
@@ -204,7 +216,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     {
         return Validator::make($data, [
             'user_id'               => 'required|integer',
-            'text'                  => 'required|string|max:500',
+            'text'                  => 'required|string|max:800',
             'conversation_id'       => 'required|integer',
         ]);
     }

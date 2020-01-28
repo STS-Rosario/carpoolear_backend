@@ -186,17 +186,24 @@ class User extends Authenticatable
         return $this->belongsToMany('STS\Entities\Conversation', 'conversations_users', 'user_id', 'conversation_id')->withPivot('read');
     }
 
-    public function tripsAsPassenger($state = null)
+    public function tripsAsPassenger($state = null, $hours_range = null, $date = null)
     {
         $user_id = $this->id;
         $trips = Trip::whereHas('passenger', function ($q) use ($user_id) {
             $q->whereUserId($user_id);
             $q->whereRequestState(Passenger::STATE_ACCEPTED);
         });
-        if ($state == Trip::FINALIZADO) {
+        if ($state === Trip::FINALIZADO) {
             $trips->where('trip_date', '<', Carbon::Now());
-        } elseif ($state == Trip::ACTIVO) {
+        } elseif ($state === Trip::ACTIVO) {
             $trips->where('trip_date', '>=', Carbon::Now());
+        }
+        if ($hours_range) {
+            $date = !$date ? Carbon::Now() : new Carbon($date);
+            $start_date = $date->copy()->subHours($hours_range)->toDateTimeString();
+            $end_date = $date->copy()->addHours($hours_range)->toDateTimeString();
+            $trips->where('trip_date', '>=', $start_date);
+            $trips->where('trip_date', '<=', $end_date);
         }
 
         return $trips;
