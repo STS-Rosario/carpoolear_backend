@@ -277,6 +277,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
 
         if ($result = $this->passengerRepository->payRequest($tripId, $payedUserId, $user, $data)) {
+            $this->sendFullTripMessage($trip);
             event(new RejectEvent($trip, $user, $payedUser));
         }
 

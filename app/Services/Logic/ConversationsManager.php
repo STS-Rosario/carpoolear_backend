@@ -308,7 +308,17 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     public function sendFullTripMessage (Trip $trip) {
         // obtener todas las personas que consultaron
+        $conversations = $this->conversationRepository->getConversationsByTrip($trip);
         $destinations = [];
+        foreach ($conversations as $conversation) {
+            foreach ($conversation->users as $user) {
+                if ($user->id != $trip->user->id) {
+                    if (!in_array($user->id, $destinations)) {
+                        $destinations[] = $user->id;
+                    }
+                }
+            }
+        }
         $message = 'Mensaje automático: El viaje con destino a ';
         $message .= $trip->to_town . ' de fecha ' . $trip->trip_date . ' se ha completado.';
         $this->sendToAll($trip->user, $destinations, $message); // $user, $destinations, $message
