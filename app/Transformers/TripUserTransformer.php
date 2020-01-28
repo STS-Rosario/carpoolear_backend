@@ -40,6 +40,8 @@ class TripUserTransformer extends TransformerAbstract
             'autoaccept_requests'    => $user->autoaccept_requests,
             'driver_is_verified'    => $user->driver_is_verified,
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
+            'conversation_opened_count'      => $user->conversation_opened_count,
+            'answer_delay_sum'      => $user->answer_delay_sum
         ];
 
         return $data;

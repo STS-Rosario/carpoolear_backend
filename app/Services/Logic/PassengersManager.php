@@ -191,6 +191,17 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
     }
 
+    public function sendFullTripMessage ($trip) {
+        if (config('carpoolear.module_send_full_trip_message', false) && $trip->user->send_full_trip_message > 0)  {
+            if (count($trip->passengerAccepted) >= $trip->seats_available) {
+                // tengo mas aceptados que asientos 
+                // llamar al manager para que lo haga
+                $manager = new \STS\Contracts\Logic\ConversationsManager();
+                $manager->sendFullTripMessage($trip);
+            }
+        }
+    }
+
     public function acceptRequest($tripId, $acceptedUserId, $user, $data = [])
     {
         $input = [
@@ -212,6 +223,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
             if (!config('carpoolear.module_trip_seats_payment', false))  {
                 if ($result = $this->passengerRepository->acceptRequest($tripId, $acceptedUserId, $user, $data)) {
+                    $this->sendFullTripMessage($trip);
                     event(new AcceptEvent($trip, $user, $acceptedUser));
                 }
             } else {
@@ -265,6 +277,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
 
         if ($result = $this->passengerRepository->payRequest($tripId, $payedUserId, $user, $data)) {
+            $this->sendFullTripMessage($trip);
             event(new RejectEvent($trip, $user, $payedUser));
         }
 

@@ -61,6 +61,13 @@ class ConversationRepository implements ConversationRepo
         return $conversation->first();
     }
 
+    public function getConversationsByTrip($trip)
+    {
+        $conversations = Conversation::where('trip_id', $tripId)->get();
+
+        return $conversations;
+    }
+
     /* USERS CONTROLS */
 
     public function users(Conversation $conversation)
