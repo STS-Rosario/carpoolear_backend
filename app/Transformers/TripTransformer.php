@@ -68,6 +68,9 @@ class TripTransformer extends TransformerAbstract
             } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';
             }
+            // passengerPending
+            $data['passengerPending_count'] = count($trip->passengerPending);
+
         }
 
         return $data;

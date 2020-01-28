@@ -3,6 +3,7 @@
 namespace STS\Services\Logic;
 
 use STS\User;
+use Carbon\Carbon;
 use Validator;
 use STS\Entities\Message;
 use STS\Events\MessageSend;
@@ -226,7 +227,26 @@ class ConversationsManager extends BaseManager implements ConversationRepo
                     $this->messageRepository->createMessageReadState($newMessage, $to, false);
                     $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
-
+                if (!$conversation->processed_for_average_response) {
+                    if (countt($conversation->messages) > 2) {
+                        $initiator = $conversation->messages[0];
+                        for ($i = 1; $i < count($conversation->messages); $i++) { 
+                            $m = $conversation->messages[i];
+                            if ($m->user->id != $initiator->user->id) {
+                                // TODO que hacemos cuando nunca se contesta?
+                                // tarea programada
+                                $date = Carbon::parse($initiator->created_at);
+                                $dateLate = Carbon::now($m->created_at);
+                                $diff = $date->diffInSeconds($now);
+                                $initiator->user->conversation_opened_count = $initiator->user->conversation_opened_count + 1;
+                                $initiator->user->answer_delay_sum = $initiator->user->answer_delay_sum + $diff;
+                                break;
+                            }
+                        }
+                        $conversation->processed_for_average_response = true;
+                        $conversation->save();
+                    }
+                }
                 return $newMessage;
             } else {
                 $this->setErrors(['conversation_id' => 'conversation_does_not_exist']);
@@ -272,6 +292,14 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         }
 
         return $messages;
+    }
+
+    public function sendFullTripMessage (Trip $trip) {
+        // obtener todas las personas que consultaron
+        $destinations = [];
+        $message = 'Mensaje automático: El viaje con destino a ';
+        $message .= $trip->to_town . ' de fecha ' . $trip->trip_date . ' se ha completado.';
+        $this->sendToAll($trip->user, $destinations, $message); // $user, $destinations, $message
     }
 
     public function getMessagesUnread(User $user, $conversation_id = null, $timestamp = null)
