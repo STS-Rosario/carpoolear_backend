@@ -51,6 +51,7 @@ class ProfileTransformer extends TransformerAbstract
             'autoaccept_requests'    => intval($user->autoaccept_requests),
             'driver_is_verified'    => intval($user->driver_is_verified),
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
+            'references' => $user->references
         ];
 
         if ($user->id == $this->user->id || $this->user->is_admin) {

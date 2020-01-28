@@ -89,6 +89,7 @@ class User extends Authenticatable
     protected $appends = [
         'positive_ratings',
         'negative_ratings',
+        'references'
     ];
 
     public function accounts()
@@ -241,6 +242,11 @@ class User extends Authenticatable
         return $trips_requested;
     }
 
+    public function referencesReceived()
+    {
+        return $this->hasMany('STS\Entities\Referencias', 'user_id_to');
+    }
+
     public function ratingGiven()
     {
         return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('available', 1);
@@ -283,5 +289,10 @@ class User extends Authenticatable
     public function getNegativeRatingsAttribute()
     {
         return $this->ratings(RatingModel::STATE_NEGATIVO)->count();
+    }
+
+    public function getReferencesAttribute()
+    {
+        return $this->referencesReceived()->get();
     }
 }
