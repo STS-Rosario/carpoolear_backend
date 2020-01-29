@@ -244,7 +244,7 @@ class User extends Authenticatable
 
     public function referencesReceived()
     {
-        return $this->hasMany('STS\Entities\Referencias', 'user_id_to');
+        return $this->hasMany('STS\Entities\References', 'user_id_to');
     }
 
     public function ratingGiven()

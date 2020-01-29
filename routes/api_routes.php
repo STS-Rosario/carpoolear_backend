@@ -130,4 +130,7 @@ $api->version('v1', [], function ($api) use ($v1_path) {
         $api->get('/users', $v1_path.'DataController@users');
         $api->get('/monthlyusers', $v1_path.'DataController@monthlyUsers');
     });
+    $api->group(['prefix' => 'references'], function ($api) use ($v1_path) {
+        $api->post('/', $v1_path.'ReferencesController@create');
+    });
 });
