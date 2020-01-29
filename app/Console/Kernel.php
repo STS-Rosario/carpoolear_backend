@@ -23,6 +23,7 @@ class Kernel extends ConsoleKernel
         Commands\ConversationCreate::class,
         Commands\BuildNodes::class,
         Commands\BuildRoutes::class,
+        Commands\BuildNodesSuburb::class,
         Commands\BuildNodesWeights::class,
         Commands\updateTrips::class,
         Commands\RatesAvailability::class,
