@@ -13,6 +13,8 @@ use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
 use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
 use STS\Contracts\Repository\IPassengersRepository;
+use STS\Services\Logic\ConversationsManager;
+use STS\Services\Logic\UsersManager;
 
 class PassengersManager extends BaseManager implements IPassengersLogic
 {
@@ -22,11 +24,17 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
     protected $uRepo;
 
-    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic, UserRepo $uRepo)
+    protected $conversationManager;
+
+    protected $userManager;
+
+    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic, UserRepo $uRepo, ConversationsManager $conversationManager, UsersManager $userManager)
     {
         $this->passengerRepository = $passengerRepository;
         $this->tripLogic = $tripLogic;
         $this->uRepo = $uRepo;
+        $this->conversationManager = $conversationManager;
+        $this->userManager = $userManager;
     }
 
     public function getPassengers($tripId, $user, $data)
@@ -103,7 +111,14 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
         $trip = $this->tripLogic->show($user, $tripId);
         if ($trip && ! $trip->expired()) {
-
+            $module_unaswered_message_limit = config('carpoolear.module_unaswered_message_limit', false);
+            if ($module_unaswered_message_limit) {
+                $allow = $this->userManager->unansweredConversationOrRequestsByTrip($trip);
+                if (!$allow) {
+                    $this->setErrors(['error' => 'user_has_reach_request_limit']);
+                    return;
+                }
+            }
             // User Request Limited Module
             $module_user_request_limited = config('carpoolear.module_user_request_limited', false);
             if ($module_user_request_limited && $module_user_request_limited->enabled) {
@@ -193,11 +208,11 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
     public function sendFullTripMessage ($trip) {
         if (config('carpoolear.module_send_full_trip_message', false) && $trip->user->send_full_trip_message > 0)  {
+            \Log::info('$sendFullTripMessage: ' . count($trip->passengerAccepted) . ' / ' . $trip->seats_available);
             if (count($trip->passengerAccepted) >= $trip->seats_available) {
                 // tengo mas aceptados que asientos 
                 // llamar al manager para que lo haga
-                $manager = new \STS\Contracts\Logic\ConversationsManager();
-                $manager->sendFullTripMessage($trip);
+                $this->conversationManager->sendFullTripMessage($trip);
             }
         }
     }

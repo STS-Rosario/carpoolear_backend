@@ -63,6 +63,7 @@ class ConversationRepository implements ConversationRepo
 
     public function getConversationsByTrip($trip)
     {
+        $tripId = is_int($trip) ? $trip : $trip->id;
         $conversations = Conversation::where('trip_id', $tripId)->get();
 
         return $conversations;

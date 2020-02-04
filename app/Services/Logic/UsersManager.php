@@ -279,6 +279,11 @@ class UsersManager extends BaseManager implements UserLogic
         return $distancia;
     }
 
+    public function unansweredConversationOrRequestsByTrip ($trip) {
+        $count = $this->repo->unansweredConversationOrRequestsByTrip($trip->user_id, $trip->id);
+        return $count < $trip->user->unaswered_messages_limit;
+    }
+
     public function searchUsers ($name) {
         return $this->repo->searchUsers($name);
     }

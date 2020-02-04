@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Validator;
 use STS\Entities\Message;
 use STS\Events\MessageSend;
+use STS\Entities\Passenger;
 use STS\Entities\Conversation;
 use STS\Entities\Trip;
 use STS\Contracts\Logic\Friends as FriendsLogic;
@@ -14,6 +15,7 @@ use STS\Contracts\Repository\User as UserRepository;
 use STS\Contracts\Logic\Conversation as ConversationRepo;
 use STS\Contracts\Repository\Messages as MessageRepository;
 use STS\Contracts\Repository\Conversations as ConversationRepository;
+use STS\Services\Logic\UsersManager;
 
 class ConversationsManager extends BaseManager implements ConversationRepo
 {
@@ -25,12 +27,15 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     protected $friendsLogic;
 
-    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic)
+    protected $userManager;
+
+    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic, UserManager $userManager)
     {
         $this->conversationRepository = $conversationRepository;
         $this->messageRepository = $messageRepository;
         $this->userRepository = $userRepo;
         $this->friendsLogic = $friendsLogic;
+        $this->userManager = $userManager;
     }
 
     /* CONVERSATION CREATION */
@@ -62,13 +67,24 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         $user1ID = is_int($user1) ? $user1 : $user1->id;
         $user2ID = is_int($user2) ? $user2 : $user2->id;
         $conversation = $this->conversationRepository->matchUser($user1ID, $user2ID);
-        $trip = TRIP::find($tripId); // Chequeo que el tripId pertenezca a un viaje
+        // \Log::info('$tripId: ' . $tripId);
+        $trip = Trip::find($tripId); // Chequeo que el tripId pertenezca a un viaje
+
         if (!$trip) {
             $tripId = null;
+        } else {
+            $module_unaswered_message_limit = config('carpoolear.module_unaswered_message_limit', false);
+            if ($module_unaswered_message_limit) {
+                $allow = $this->userManager->unansweredConversationOrRequestsByTrip($trip);
+                if (!$allow) {
+                    $this->setErrors(['error' => 'user_has_reach_request_limit']);
+                    return;
+                }
+            }
         }
         if (!$conversation) {
             if ($this->usersCanChat($user1, $user2ID)) {
-                $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION, $tripdId);
+                $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION, $tripId);
                 $this->conversationRepository->addUser($conversation, $user1ID);
                 $this->conversationRepository->addUser($conversation, $user2ID);
 
@@ -240,18 +256,30 @@ class ConversationsManager extends BaseManager implements ConversationRepo
                     $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
                 if (!$conversation->processed_for_average_response) {
-                    if (countt($conversation->messages) > 2) {
-                        $initiator = $conversation->messages[0];
-                        for ($i = 1; $i < count($conversation->messages); $i++) { 
-                            $m = $conversation->messages[i];
-                            if ($m->user->id != $initiator->user->id) {
+                    if (count($conversation->messages) > 2) {
+                        \Log::info('count: ' . count($conversation->messages));
+                        $arr = $conversation->messages->toArray();
+                        $initiator = $arr[0];
+                        for ($i = 1; $i < count($arr); $i++) { 
+                            $m = $arr[$i];
+                            \Log::info($m['user_id'] . ' = ' . $initiator['user_id']);
+                            if ($m['user_id'] != $initiator['user_id']) {
+                                \Log::info('condittion met');
                                 // TODO que hacemos cuando nunca se contesta?
                                 // tarea programada
-                                $date = Carbon::parse($initiator->created_at);
-                                $dateLate = Carbon::now($m->created_at);
-                                $diff = $date->diffInSeconds($now);
-                                $initiator->user->conversation_opened_count = $initiator->user->conversation_opened_count + 1;
-                                $initiator->user->answer_delay_sum = $initiator->user->answer_delay_sum + $diff;
+                                $date = Carbon::parse($initiator['created_at']);
+                                $dateLate = Carbon::parse($m['created_at']);
+                                $diff = $date->diffInSeconds($dateLate);
+                                $initiatorUser = User::where('id', $initiator['user_id'])->first();
+                                if (!isset($initiatorUser->conversation_opened_count) || is_null($initiatorUser->conversation_opened_count)) {
+                                    $initiatorUser->conversation_opened_count = 0;
+                                }
+                                if (!isset($initiatorUser->answer_delay_sum) || is_null($initiatorUser->answer_delay_sum)) {
+                                    $initiatorUser->answer_delay_sum = 0;
+                                }
+                                $initiatorUser->conversation_opened_count = $initiatorUser->conversation_opened_count + 1;
+                                $initiatorUser->answer_delay_sum = $initiatorUser->answer_delay_sum + $diff;
+                                $initiatorUser->save();
                                 break;
                             }
                         }
@@ -313,15 +341,27 @@ class ConversationsManager extends BaseManager implements ConversationRepo
         foreach ($conversations as $conversation) {
             foreach ($conversation->users as $user) {
                 if ($user->id != $trip->user->id) {
-                    if (!in_array($user->id, $destinations)) {
+                    // tengo que validar que no esté aceptado tambien
+                    $esperandoRespuestaSolicitud = false;
+                    foreach ($trip->passenger as $request) {
+                        if ($request->request_state == Passenger::STATE_PENDING && $request->user_id == $user->id) { 
+                            $esperandoRespuestaSolicitud = true;
+                            break;
+                        }
+                    }
+                    \Log::info('$esperandoRespuestaSolicitud: ' . $user->id . ' / ' . $esperandoRespuestaSolicitud ? 'true' : 'false');
+                    if (!in_array($user->id, $destinations) && $esperandoRespuestaSolicitud) {
                         $destinations[] = $user->id;
                     }
                 }
             }
         }
-        $message = 'Mensaje automático: El viaje con destino a ';
-        $message .= $trip->to_town . ' de fecha ' . $trip->trip_date . ' se ha completado.';
-        $this->sendToAll($trip->user, $destinations, $message); // $user, $destinations, $message
+
+        if (count($destinations)) {
+            $message = 'Mensaje automático: El viaje con destino a ';
+            $message .= $trip->to_town . ' de fecha ' . $trip->trip_date . ' se ha completado.';
+            $this->sendToAll($trip->user, $destinations, $message); // $user, $destinations, $message
+        }
     }
 
     public function getMessagesUnread(User $user, $conversation_id = null, $timestamp = null)

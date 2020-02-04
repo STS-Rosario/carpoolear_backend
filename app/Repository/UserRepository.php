@@ -6,6 +6,9 @@ use DB;
 use STS\User;
 use Carbon\Carbon;
 use STS\Contracts\Repository\User as UserRep;
+use STS\Entities\Trip;
+use STS\Entities\Passenger;
+use STS\Entities\Conversation;
 
 class UserRepository implements UserRep
 {
@@ -158,5 +161,24 @@ class UserRepository implements UserRep
     public function markNotification($notification)
     {
         $notification->readed();
+    }
+
+
+    public function unansweredConversationOrRequestsByTrip ($userId, $tripId) {
+        // todas las request que pertenezcan a un viaje mio y que esten pendientes
+        $pendingRequests = Passenger::with('trip')
+            ->where('trip_id', $tripId)
+            ->where('trip.user_id', $userId)
+            ->where('request_state', Passenger::STATE_PENDING)
+            ->count();
+
+        // conversaciones que no tegan mensajes mios (respuestas)
+        $unasweredConversations = Conversation::where('trip_id', $tripId)
+            ->whereDoesntHave('messages', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->count();
+        
+        return $pendingRequests + $unasweredConversations;
     }
 }
