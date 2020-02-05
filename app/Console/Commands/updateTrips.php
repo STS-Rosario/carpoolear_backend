@@ -49,10 +49,14 @@ class updateTrips extends Command
     {
         // iterar x viajes creados, asignar ruta / crearla
         $query = Trip::query()->with(['routes', 'routes.nodes', 'points']);
-        $query->where('trip_date', '>=', '2017-9-1 00:00:00'); 
+        $query->where('trip_date', '>=', '2017-09-01 00:00:00'); 
+        $query->whereNull('route_id');
+        $query->take(5000);
         $trips = $query->get();
+        \Log::info("Trips: " . count($trips));
         foreach($trips as $trip) {
-            
+            $this->info("Trip Id: " . $trip->id);
+            \Log::info("Trip Id: " . $trip->id);
             
             if (count($trip->points) == 0) {
                 $this->info("No point" . $trip->id);
@@ -105,7 +109,10 @@ class updateTrips extends Command
                     $this->info("name " . $to->address);
                     \Log::info("name " . $to->address);
                 }
-            }            
+            }      
+            
+            $trip->route_id = 1;
+            $trip->save();      
         }
 
     }

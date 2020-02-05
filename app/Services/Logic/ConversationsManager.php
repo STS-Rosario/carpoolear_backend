@@ -29,7 +29,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     protected $userManager;
 
-    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic, UserManager $userManager)
+    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic, UsersManager $userManager)
     {
         $this->conversationRepository = $conversationRepository;
         $this->messageRepository = $messageRepository;
