@@ -221,6 +221,8 @@ class TripRepository implements TripRepo
 
     public function search($user, $data)
     {       
+        \Log::info('search data');
+        \Log::info($data);
 
         $trips = Trip::query()->with(['routes', 'routes.nodes']);
         if (isset($data['is_passenger'])) {
@@ -373,11 +375,11 @@ class TripRepository implements TripRepo
         
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
-
+        
         // DB::enableQueryLog();
         $pagination = make_pagination($trips, $pageNumber, $pageSize);
         // echo '<pre>';
-        // var_dump(DB::getQueryLog());die;
+        // \Log::info(DB::getQueryLog());
         return $pagination;
     }
 

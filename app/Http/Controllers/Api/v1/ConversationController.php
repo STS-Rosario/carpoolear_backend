@@ -70,7 +70,8 @@ class ConversationController extends Controller
                 if ($conversation) {
                     return $this->item($conversation, new ConversationsTransformer($this->user), ['key' => 'data']);
                 } else {
-                    throw new Exception('ConversationController: Unabled to create conversation');
+                    throw new Exception('ConversationController: Unabled to create conversation', $this->conversationLogic->getErrors());
+                    
                 }
             } else {
                 throw new BadRequestHttpException("Bad request exceptions: Destinatary user doesn't exist.");

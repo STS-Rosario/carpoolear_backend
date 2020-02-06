@@ -49,15 +49,19 @@ class BuildRoutes extends Command
         \Log::info('Route builder ');
         $route = Route::where('processed', 0)->with(['origin', 'destiny'])->first();
         if ($route) {
-            $this->routeLogic->createRoute($route);
-            $tripsQuery = Trip::where('trip_date', '>=', Carbon::Now());
-            $tripsQuery->whereHas('routes', function ($q) use ($route) {
-                $q->where('routes.id', $route->id);
-            });
-            $trips = $tripsQuery->get();
-            foreach ($trips as $trip) {
-                // FIXME untested
-                // event(new CreateEvent($trip));
+            try {
+                $this->routeLogic->createRoute($route);
+                $tripsQuery = Trip::where('trip_date', '>=', Carbon::Now());
+                $tripsQuery->whereHas('routes', function ($q) use ($route) {
+                    $q->where('routes.id', $route->id);
+                });
+                $trips = $tripsQuery->get();
+                foreach ($trips as $trip) {
+                    // FIXME untested
+                    // event(new CreateEvent($trip));
+                }
+            } catch (\Exception $ex) {
+                \Log::info('Route builder ex');
             }
         }
     }

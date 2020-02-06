@@ -234,6 +234,7 @@ class TripsManager extends BaseManager implements TripLogic
     public function search($user, $data)
     {
         $trips = $this->tripRepo->search($user, $data);
+        \Log::info('search before process');
         $trips = $this->proccessTrips($trips);
         return $trips;
     }

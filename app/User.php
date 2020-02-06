@@ -48,6 +48,7 @@ class User extends Authenticatable
         'has_pin',
         'is_member',
         'monthly_donate',
+        'unaswered_messages_limit',
         'do_not_alert_request_seat',
         'do_not_alert_accept_passenger',
         'do_not_alert_pending_rates',

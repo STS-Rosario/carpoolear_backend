@@ -13,9 +13,9 @@ class UsersBankData extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('account_number', 127);
-            $table->string('account_bank', 31);
-            $table->string('account_type', 31);
+            $table->string('account_number', 127)->nullable();
+            $table->string('account_bank', 31)->nullable();
+            $table->string('account_type', 31)->nullable();
         });
     }
 

@@ -168,7 +168,9 @@ class UserRepository implements UserRep
         // todas las request que pertenezcan a un viaje mio y que esten pendientes
         $pendingRequests = Passenger::with('trip')
             ->where('trip_id', $tripId)
-            ->where('trip.user_id', $userId)
+            ->whereHas('trip', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
             ->where('request_state', Passenger::STATE_PENDING)
             ->count();
 

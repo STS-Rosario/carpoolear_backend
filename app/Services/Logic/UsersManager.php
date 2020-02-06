@@ -97,35 +97,40 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['password'] = bcrypt($data['password']);
             }
             $img_names = [];
-            if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
-                foreach ($data['driver_data_docs'] as $file) {
-                    if ($file) {
-                        if (is_string($file)) {
-                            $img_names[] = $file;
-                        } else {
-                            $img_names[] = $this->uploadDoc($file);
+            if (isset($data['driver_data_docs'])) {
+                if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
+                    foreach ($data['driver_data_docs'] as $file) {
+                        if ($file) {
+                            if (is_string($file)) {
+                                $img_names[] = $file;
+                            } else {
+                                $img_names[] = $this->uploadDoc($file);
+                            }
                         }
                     }
-                }
-                $data['driver_data_docs'] = json_encode($img_names);
-            } else {
-                if (is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
-                    $data['driver_data_docs'] = json_encode($data['driver_data_docs']);
+                    $data['driver_data_docs'] = json_encode($img_names);
+                } else {
+                    if (is_array($data['driver_data_docs']) && count($data['driver_data_docs'])) {
+                        $data['driver_data_docs'] = json_encode($data['driver_data_docs']);
+                    }
                 }
             }
+            \Log::info($data);
             $this->repo->update($user, $data);
 
-            if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs']) && !$user->driver_is_verified) {
-                // send email to admin
-                $email_admin = config('carpoolear.admin_email', '');
-                if (!empty($email_admin)) {
-                    $data = [
-                        'title' => 'Usuario quiere ser conductor',
-                        'user' => $user
-                    ];
-                    \Mail::send('email.user_be_driver', $data, function ($message) use ($email_admin, $data) {
-                        $message->to($email_admin, 'Admin')->subject($data['title']);
-                    });
+            if (isset($data['driver_data_docs'])) {
+                if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs']) && !$user->driver_is_verified) {
+                    // send email to admin
+                    $email_admin = config('carpoolear.admin_email', '');
+                    if (!empty($email_admin)) {
+                        $data = [
+                            'title' => 'Usuario quiere ser conductor',
+                            'user' => $user
+                        ];
+                        \Mail::send('email.user_be_driver', $data, function ($message) use ($email_admin, $data) {
+                            $message->to($email_admin, 'Admin')->subject($data['title']);
+                        });
+                    }
                 }
             }
             event(new UpdateEvent($user->id));
@@ -281,6 +286,7 @@ class UsersManager extends BaseManager implements UserLogic
 
     public function unansweredConversationOrRequestsByTrip ($trip) {
         $count = $this->repo->unansweredConversationOrRequestsByTrip($trip->user_id, $trip->id);
+        \Log::info('unansweredConversationOrRequestsByTrip: ' . $count . ' < ' . $trip->user->unaswered_messages_limit);
         return $count < $trip->user->unaswered_messages_limit;
     }
 

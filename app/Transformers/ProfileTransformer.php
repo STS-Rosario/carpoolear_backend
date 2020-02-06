@@ -48,6 +48,7 @@ class ProfileTransformer extends TransformerAbstract
             'do_not_alert_accept_passenger'   => intval($user->do_not_alert_accept_passenger),
             'do_not_alert_pending_rates'      => intval($user->do_not_alert_pending_rates),
             'monthly_donate' => intval($user->monthly_donate),
+            'unaswered_messages_limit'    => intval($user->unaswered_messages_limit),
             'autoaccept_requests'    => intval($user->autoaccept_requests),
             'driver_is_verified'    => intval($user->driver_is_verified),
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
