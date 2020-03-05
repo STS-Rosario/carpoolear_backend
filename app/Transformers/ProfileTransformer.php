@@ -52,7 +52,8 @@ class ProfileTransformer extends TransformerAbstract
             'autoaccept_requests'    => intval($user->autoaccept_requests),
             'driver_is_verified'    => intval($user->driver_is_verified),
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
-            'references' => $user->references
+            'references' => $user->references,
+            'data_visibility' => $user->data_visibility
         ];
 
         if ($user->id == $this->user->id || $this->user->is_admin) {
@@ -71,7 +72,7 @@ class ProfileTransformer extends TransformerAbstract
         }
         
         switch ($user->data_visibility) {
-            case '1':
+            case '0':
                 # viaja conmigo
                 if ($this->tripLogic->shareTrip($this->user, $user)) {
                     $data['nro_doc'] = $user->nro_doc;
@@ -79,7 +80,7 @@ class ProfileTransformer extends TransformerAbstract
                     $data['mobile_phone'] = $user->mobile_phone;
                 }
                 break;
-            case '2':
+            case '1':
                 # publico
                 $data['nro_doc'] = $user->nro_doc;
                 $data['email'] = $user->email;

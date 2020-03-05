@@ -255,37 +255,52 @@ class ConversationsManager extends BaseManager implements ConversationRepo
                     $this->messageRepository->createMessageReadState($newMessage, $to, false);
                     $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
-                if (!$conversation->processed_for_average_response) {
-                    if (count($conversation->messages) > 2) {
-                        \Log::info('count: ' . count($conversation->messages));
-                        $arr = $conversation->messages->toArray();
-                        $initiator = $arr[0];
-                        for ($i = 1; $i < count($arr); $i++) { 
-                            $m = $arr[$i];
-                            \Log::info($m['user_id'] . ' = ' . $initiator['user_id']);
-                            if ($m['user_id'] != $initiator['user_id']) {
-                                \Log::info('condittion met');
-                                // TODO que hacemos cuando nunca se contesta?
-                                // tarea programada
-                                $date = Carbon::parse($initiator['created_at']);
-                                $dateLate = Carbon::parse($m['created_at']);
-                                $diff = $date->diffInSeconds($dateLate);
-                                $initiatorUser = User::where('id', $initiator['user_id'])->first();
-                                if (!isset($initiatorUser->conversation_opened_count) || is_null($initiatorUser->conversation_opened_count)) {
-                                    $initiatorUser->conversation_opened_count = 0;
+                if (count($conversation->messages) > 0) {
+                    \Log::info('count mensajes: ' . count($conversation->messages));
+                    $arr = $conversation->messages->toArray();
+                    $initiator = $arr[0];
+                    // $initiatorUser = User::where('id', $initiator['user_id'])->first();
+                    if (!$conversation->processed_for_average_response) {
+                        if (count($conversation->messages) > 1) {
+                            for ($i = 1; $i < count($arr); $i++) { 
+                                $m = $arr[$i];
+                                \Log::info($m['user_id'] . ' = ' . $initiator['user_id']);
+                                if ($m['user_id'] != $initiator['user_id']) {
+                                    $date = Carbon::parse($initiator['created_at']);
+                                    $dateLate = Carbon::parse($m['created_at']);
+                                    $diff = $date->diffInSeconds($dateLate);
+                                    $to = $user;
+                                    if (!isset($to->answer_delay_sum) || is_null($to->answer_delay_sum)) {
+                                        $to->answer_delay_sum = 0;
+                                    }
+                                    if (!isset($to->conversation_answered_count) || is_null($to->conversation_answered_count)) {
+                                        $to->conversation_answered_count = 0;
+                                    }
+                                    $to->conversation_answered_count = $to->conversation_answered_count + 1;
+                                    $to->answer_delay_sum = $to->answer_delay_sum + $diff;
+                                    $to->save();
+                                    
+                                    $conversation->processed_for_average_response = true;
+                                    $conversation->save();
+                                    break;
                                 }
-                                if (!isset($initiatorUser->answer_delay_sum) || is_null($initiatorUser->answer_delay_sum)) {
-                                    $initiatorUser->answer_delay_sum = 0;
-                                }
-                                $initiatorUser->conversation_opened_count = $initiatorUser->conversation_opened_count + 1;
-                                $initiatorUser->answer_delay_sum = $initiatorUser->answer_delay_sum + $diff;
-                                $initiatorUser->save();
-                                break;
                             }
                         }
-                        $conversation->processed_for_average_response = true;
-                        $conversation->save();
                     }
+                }
+                if (!$conversation->processed_for_sum_response) {
+                    foreach ($otherUsers as $to) {
+                        if (!isset($to->conversation_opened_count) || is_null($to->conversation_opened_count)) {
+                            $to->conversation_opened_count = 0;
+                        }
+                        if (!isset($to->conversation_answered_count) || is_null($to->conversation_answered_count)) {
+                            $to->conversation_answered_count = 0;
+                        }
+                        $to->conversation_opened_count = $to->conversation_opened_count + 1;
+                        $to->save();
+                    }
+                    $conversation->processed_for_sum_response = true;
+                    $conversation->save();
                 }
                 return $newMessage;
             } else {

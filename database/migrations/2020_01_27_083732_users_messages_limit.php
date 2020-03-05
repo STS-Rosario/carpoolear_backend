@@ -15,6 +15,7 @@ class UsersMessagesLimit extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->integer('unaswered_messages_limit')->nullable();
             $table->integer('conversation_opened_count')->nullable();
+            $table->integer('conversation_answered_count')->nullable();
             $table->double('answer_delay_sum')->nullable();
             $table->boolean('send_full_trip_message')->default(1)->nullable();
         });
@@ -30,6 +31,7 @@ class UsersMessagesLimit extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('unaswered_messages_limit');
             $table->dropColumn('conversation_opened_count');
+            $table->dropColumn('conversation_answered_count');
             $table->dropColumn('answer_delay_sum');
             $table->dropColumn('send_full_trip_message');
         });

@@ -14,6 +14,7 @@ class ConversationProcessedForAverageResponse extends Migration
     {
         Schema::table('conversations', function (Blueprint $table) {
             $table->boolean('processed_for_average_response')->nullable();
+            $table->boolean('processed_for_sum_response')->nullable();
         });
     }
 
@@ -26,6 +27,7 @@ class ConversationProcessedForAverageResponse extends Migration
     {
         Schema::table('conversations', function (Blueprint $table) {
             $table->dropColumn('processed_for_average_response');
+            $table->dropColumn('processed_for_sum_response');
         });
     }
 }

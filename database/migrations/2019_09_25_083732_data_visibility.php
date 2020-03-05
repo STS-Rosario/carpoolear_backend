@@ -13,7 +13,7 @@ class DataVisibility extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->integer('data_visibility');
+            $table->integer('data_visibility')->default(0);
         });
     }
 

@@ -43,6 +43,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('rate:create')->hourly();
 
         $schedule->command('trip:remainder')->hourly();
+        
+        $schedule->command('rating:availables')->everyMinute();
 
         $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
@@ -54,7 +56,6 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('node:buildweights')->hourly();
 
-        $schedule->command('rating:availables')->hourly();
     }
 
     /**

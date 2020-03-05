@@ -41,6 +41,7 @@ class RatesAvailability extends Command
      */
     public function handle()
     {
+        \Log::info('Rates Availability');
         Rating::where('created_at', '<', Carbon::Now()->subDays(Rating::RATING_INTERVAL))->update(['available' => 1]);
 
         

@@ -58,6 +58,7 @@ class User extends Authenticatable
         'account_number',
         'account_type',
         'account_bank',
+        'data_visibility'
     ];
 
     protected $dates = [

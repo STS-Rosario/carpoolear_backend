@@ -31,14 +31,17 @@ class ConversationsTransformer extends TransformerAbstract
         $module_module_coordinate_by_message = config('carpoolear.module_coordinate_by_message', false);
         if ($module_module_coordinate_by_message) {
             $trip = Trip::find($conversation->trip_id);
-            $tripTransformer = new TripTransformer($this->user);
-            if ($trip->return_trip_id) {
-                $returnTrip = Trip::find($trip->return_trip_id);
-                if ($returnTrip) {
-                    $data['return_trip'] = $tripTransformer->transform($returnTrip);
+            // old client, maybe null
+            if ($trip) {
+                $tripTransformer = new TripTransformer($this->user);
+                if ($trip->return_trip_id) {
+                    $returnTrip = Trip::find($trip->return_trip_id);
+                    if ($returnTrip) {
+                        $data['return_trip'] = $tripTransformer->transform($returnTrip);
+                    }
                 }
+                $data['trip'] = $tripTransformer->transform($trip);
             }
-            $data['trip'] = $tripTransformer->transform($trip);
         }
 
         switch ($conversation->type) {

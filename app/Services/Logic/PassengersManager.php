@@ -135,15 +135,13 @@ class PassengersManager extends BaseManager implements IPassengersLogic
                     // $result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);
                     if (!config('carpoolear.module_trip_seats_payment', false))  {
                         if ($result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data)) {
-                            // FIXME uncomented me
-                            // event(new AutoRequestEvent($trip, $user, $trip->user));
-                            // event(new AcceptEvent($trip, $trip->user, $user));
+                            event(new AutoRequestEvent($trip, $user, $trip->user));
+                            event(new AcceptEvent($trip, $trip->user, $user));
                         }
                     } else {
                         if ($result = $this->passengerRepository->aproveForPaymentRequest($tripId, $user->id, $trip->user, $data)) {
-                            // FIXME uncomented me
-                            // event(new AutoRequestEvent($trip, $user, $trip->user));
-                            // event(new AcceptEvent($trip, $trip->user, $user));
+                            event(new AutoRequestEvent($trip, $user, $trip->user));
+                            event(new AcceptEvent($trip, $trip->user, $user));
                         }
                     }
                 } else {
