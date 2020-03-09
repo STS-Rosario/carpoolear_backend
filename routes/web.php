@@ -38,9 +38,10 @@ Route::get('/dev/{name?}', 'HomeController@handleDev')->where('name', '[\/\w\.-]
 Route::get('/desuscribirme', 'HomeController@desuscribirme');
 Route::get('/test', 'HomeController@test');
 Route::get('/encuentrocarpoolero', 'HomeController@encuentrocarpoolero');
-// Route::get('/more-data', 'DataController@moreData');
+Route::get('/data-web', 'DataController@data');
 Route::get('/donar', 'HomeController@donar');
 Route::get('/donar-compartir', 'HomeController@donarcompartir');
+Route::get('/datos', 'HomeController@datos');
 Route::get('/datos', 'HomeController@datos');
 Route::get('/colabora-programando', 'HomeController@programar');
 

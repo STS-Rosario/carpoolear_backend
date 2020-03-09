@@ -297,7 +297,7 @@
     }
 
     window.onload = function () {
-        fetch('/data')
+        fetch('/data-web')
         .then((resp) => resp.json()) // Transform the data into json
         .then(function(data) {
             var etiquetas = [];
