@@ -19,6 +19,8 @@ class FriendAcceptNotification extends BaseNotification
             'email_view' => 'friends_email',
             'type' => 'accept',
             'message_mail' => 'aceptado',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -44,7 +46,7 @@ class FriendAcceptNotification extends BaseNotification
             'extras' => [
                 'id' => $from->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

@@ -18,6 +18,8 @@ class FriendCancelNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha dejado de ser tu amigo',
             'email_view' => 'friends_cancel_email',
             'type' => 'cancel',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -43,7 +45,7 @@ class FriendCancelNotification extends BaseNotification
             'extras' => [
                 'id' => $from->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

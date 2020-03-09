@@ -18,6 +18,8 @@ class HourLeftNotification extends BaseNotification
             'title' => 'Recordatorio de viaje hacia '.$this->getAttribute('trip')->to_town,
             'email_view' => 'hour_left',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -40,11 +42,11 @@ class HourLeftNotification extends BaseNotification
 
         return [
             'message' => 'Recuerda que en poco más de una hora viajas hacia '.$trip->to_town,
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

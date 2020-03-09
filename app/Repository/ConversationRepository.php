@@ -61,6 +61,14 @@ class ConversationRepository implements ConversationRepo
         return $conversation->first();
     }
 
+    public function getConversationsByTrip($trip)
+    {
+        $tripId = is_int($trip) ? $trip : $trip->id;
+        $conversations = Conversation::where('trip_id', $tripId)->get();
+
+        return $conversations;
+    }
+
     /* USERS CONTROLS */
 
     public function users(Conversation $conversation)
@@ -80,11 +88,35 @@ class ConversationRepository implements ConversationRepo
 
     public function matchUser($user1ID, $user2ID)
     {
-        return Conversation::whereHas('users', function ($query) use ($user1ID) {
+        /* return Conversation::whereHas('users', function ($query) use ($user1ID) {
             $query->where('id', $user1ID);
         })->whereHas('users', function ($query) use ($user2ID) {
             $query->where('id', $user2ID);
-        })->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)->first();
+        })->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)->first(); */
+
+        \Log::info('estamos aca');
+        /*
+        
+        select * from `conversations` where exists (
+            select * from `users` inner join `conversations_users` on `users`.`id` = `conversations_users`.`user_id` where `conversations_users`.`conversation_id` = `conversations`.`id` and `id` = '228229') 
+            
+            and exists (select * from `users` inner join `conversations_users` on `users`.`id` = `conversations_users`.`user_id` where `conversations_users`.`conversation_id` = `conversations`.`id` and `id` = '215497')
+
+        and `type` = '0' and `conversations`.`deleted_at` is null limit 1
+        */
+        
+        $query = Conversation::query();
+        // leftJoin('t1 as staff_table', 'staff_table.id','=','t2.s_id')
+        $query->join('conversations_users as c1', 'conversations.id', '=', 'c1.conversation_id');
+        $query->join('conversations_users as c2', 'conversations.id', '=', 'c2.conversation_id');
+    
+        $query->where('c1.user_id', $user1ID);
+        $query->where('c2.user_id', $user2ID);
+    
+        $query->where('conversations.type', Conversation::TYPE_PRIVATE_CONVERSATION);
+        $query->whereNull('conversations.deleted_at');
+        $query->select('conversations.*');
+        return $query->first();
     }
 
     public function changeConversationReadState(Conversation $conversation, User $user, $read_state)
@@ -99,6 +131,13 @@ class ConversationRepository implements ConversationRepo
         return $u->pivot->read;
     }
 
+    public function updateTripId (Conversation $conversation, $tripId)
+    {
+        $conversation->trip_id = $tripId;
+        $conversation->save();
+        return $conversation;
+    }
+
     public function userList($user, $who = null, $search_text = null)
     {
         $userConversations = $user->conversations()->has('messages')
@@ -106,7 +145,7 @@ class ConversationRepository implements ConversationRepo
         ->with('users');
 
         $conversations = $userConversations->get();
-        
+
         $users = [];
         foreach ($conversations as  $conversation) {
             foreach ($conversation->users as  $userc) {

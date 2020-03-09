@@ -1,0 +1,2563 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.55.1011 6c2efc30",
+  "osm3s": {
+    "timestamp_osm_base": "2020-01-27T17:04:01Z",
+    "timestamp_areas_base": "2020-01-27T05:08:02Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 84467754,
+  "lat": -41.1255081,
+  "lon": -73.0584006,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Frutillar",
+    "is_in:province": "Llanquihue",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "Frutillar Alto",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 157458639,
+  "lat": -33.5922825,
+  "lon": -70.7045289,
+  "tags": {
+    "capital": "6",
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Santiago",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "San Bernardo",
+    "is_in:province": "Maipo",
+    "is_in:region": "Metropolitana",
+    "name": "San Bernardo",
+    "place": "suburb",
+    "population": "291630",
+    "population:date": "2017",
+    "source:population": "INE",
+    "wikidata": "Q56136",
+    "wikipedia": "en:San Bernardo, Chile"
+  }
+},
+{
+  "type": "node",
+  "id": 214180227,
+  "lat": -41.8776912,
+  "lon": -73.7987087,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Ancud",
+    "is_in:province": "Chiloe",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "Pudeto Bajo",
+    "place": "suburb",
+    "source": "GNS"
+  }
+},
+{
+  "type": "node",
+  "id": 214181091,
+  "lat": -27.4147265,
+  "lon": -70.2749806,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Copiapó",
+    "name": "Paipote",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214182373,
+  "lat": -37.0166902,
+  "lon": -73.1789044,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "Schwager",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214182383,
+  "lat": -32.1533596,
+  "lon": -71.5115224,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Pichidangui",
+    "name": "Santa Inés",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214183708,
+  "lat": -32.8081975,
+  "lon": -70.5864090,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "San Esteban",
+    "name": "Los Olmos",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214184356,
+  "lat": -37.6145963,
+  "lon": -73.4136537,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Los Álamos",
+    "name": "Cerro Alto",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214184762,
+  "lat": -33.6348808,
+  "lon": -70.5729961,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Santiago",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Pirque",
+    "is_in:province": "Cordillera",
+    "is_in:region": "Metropolitana",
+    "name": "Pirque",
+    "place": "suburb",
+    "population": "2993",
+    "population:date": "2017",
+    "source:population": "INE",
+    "wikidata": "Q51113",
+    "wikipedia": "es:Pirque"
+  }
+},
+{
+  "type": "node",
+  "id": 214186883,
+  "lat": -33.4422820,
+  "lon": -70.5432729,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "La Reina",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "La Reina",
+    "place": "suburb",
+    "population": "92787",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214187352,
+  "lat": -34.9388293,
+  "lon": -71.2001993,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Curicó",
+    "name": "Sarmiento",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214190769,
+  "lat": -29.9860532,
+  "lon": -71.3630319,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Coquimbo",
+    "name": "La Herradura",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214191985,
+  "lat": -37.6273098,
+  "lon": -73.4111783,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Los Álamos",
+    "name": "Tres Pinos",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214192619,
+  "lat": -34.2683530,
+  "lon": -71.0569857,
+  "tags": {
+    "is_in:city": "Coltauco",
+    "name": "El Parral",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214192858,
+  "lat": -33.4020744,
+  "lon": -70.6428912,
+  "tags": {
+    "addr:postcode": "7690000",
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Recoleta",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Recoleta",
+    "place": "suburb",
+    "population": "157851",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214193809,
+  "lat": -41.7585203,
+  "lon": -73.1456187,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Calbuco",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Calbuco",
+    "is_in:province": "Llanquihue",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "San Rafael",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214194542,
+  "lat": -33.4859746,
+  "lon": -70.6495465,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "San Miguel",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "San Miguel",
+    "place": "suburb",
+    "population": "107954",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214195262,
+  "lat": -33.5673051,
+  "lon": -70.8020467,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Padre Hurtado",
+    "is_in:province": "Melipilla",
+    "is_in:region": "Metropolitana",
+    "name": "Padre Hurtado",
+    "name:ru": "Падре-Уртадо",
+    "place": "suburb",
+    "population": "34257",
+    "wikidata": "Q51062",
+    "wikipedia": "es:Padre Hurtado (comuna)"
+  }
+},
+{
+  "type": "node",
+  "id": 214196191,
+  "lat": -33.4368017,
+  "lon": -70.7517915,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Pudahuel",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Pudahuel",
+    "place": "suburb",
+    "source": "GNS"
+  }
+},
+{
+  "type": "node",
+  "id": 214196951,
+  "lat": -33.0290018,
+  "lon": -71.6388447,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "Playa Ancha",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214198580,
+  "lat": -33.7626228,
+  "lon": -70.7360362,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Buin",
+    "name": "Linderos",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214198630,
+  "lat": -35.9506907,
+  "lon": -72.3472924,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Cauquenes",
+    "name": "Retulemu",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214201337,
+  "lat": -35.7984807,
+  "lon": -72.5654718,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Pelluhue",
+    "is_in:country": "Chile",
+    "name": "Mariscadero",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214202600,
+  "lat": -33.6984581,
+  "lon": -70.3344710,
+  "tags": {
+    "is_in:city": "San Alfonso",
+    "name": "El Melocotón",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214203635,
+  "lat": -33.7733997,
+  "lon": -70.9025484,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Isla de Maipo",
+    "name": "La Villita",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214204234,
+  "lat": -36.6851811,
+  "lon": -73.1154123,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "Las Canchas",
+    "place": "suburb",
+    "source": "GNS"
+  }
+},
+{
+  "type": "node",
+  "id": 214205479,
+  "lat": -33.5430822,
+  "lon": -70.6330011,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "La Granja",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "La Granja",
+    "place": "suburb",
+    "population": "116571",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214205581,
+  "lat": -33.4821635,
+  "lon": -70.5991929,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "Macul",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Macul",
+    "place": "suburb",
+    "population": "116534",
+    "population:date": "2017",
+    "postal_code": "7810000",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214206392,
+  "lat": -38.2403910,
+  "lon": -72.3279910,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "Villa Alegre",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214206699,
+  "lat": -33.0302834,
+  "lon": -71.5756776,
+  "tags": {
+    "name": "Recreo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214207224,
+  "lat": -33.4225631,
+  "lon": -70.6944892,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Quinta Normal",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Quinta Normal",
+    "place": "suburb",
+    "population": "110026",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214207696,
+  "lat": -41.5231081,
+  "lon": -73.0457644,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Puerto Montt",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Puerto Montt",
+    "is_in:province": "Llanquihue",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "Chinquihue",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214208299,
+  "lat": -33.4536375,
+  "lon": -70.6898654,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Estación Central",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Estación Central",
+    "place": "suburb",
+    "population": "147041",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214208326,
+  "lat": -32.7508755,
+  "lon": -70.6969581,
+  "tags": {
+    "name": "Almendral",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214208420,
+  "lat": -32.7726541,
+  "lon": -71.1924921,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "La Calera",
+    "name": "Artificio",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214209240,
+  "lat": -33.7328646,
+  "lon": -70.7812358,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Buin",
+    "name": "Maipo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214209581,
+  "lat": -30.0079517,
+  "lon": -71.3347970,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Coquimbo",
+    "name": "Rinconada",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214210535,
+  "lat": -34.2813650,
+  "lon": -71.0620321,
+  "tags": {
+    "is_in:city": "Coltauco",
+    "name": "El Almendro",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214210672,
+  "lat": -33.3677670,
+  "lon": -70.7315490,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Quilicura",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Quilicura",
+    "place": "suburb",
+    "population": "209858",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214211375,
+  "lat": -32.9715335,
+  "lon": -71.5437133,
+  "tags": {
+    "name": "Reñaca",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214211423,
+  "lat": -34.3828146,
+  "lon": -70.8476719,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "El Convento",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214213945,
+  "lat": -26.3587249,
+  "lon": -70.6444562,
+  "tags": {
+    "is_in:city": "Chañaral",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Chañaral",
+    "is_in:province": "Chañaral",
+    "is_in:region": "Region de Atacama",
+    "name": "Barquito",
+    "place": "suburb",
+    "source": "GNS"
+  }
+},
+{
+  "type": "node",
+  "id": 214215261,
+  "lat": -35.6020383,
+  "lon": -71.7027772,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "San Javier",
+    "name": "Estación San Javier",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214216877,
+  "lat": -33.4879868,
+  "lon": -70.7030815,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Cerrillos",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Cerrillos",
+    "place": "suburb",
+    "population": "80832",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214217235,
+  "lat": -33.6095279,
+  "lon": -70.5754736,
+  "tags": {
+    "capital": "6",
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Santiago",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Puente Alto",
+    "is_in:province": "Cordillera",
+    "is_in:region": "Metropolitana",
+    "name": "Puente Alto",
+    "name:en": "Puente Alto",
+    "place": "suburb",
+    "population": "568106",
+    "population:date": "2017",
+    "postal_code": "8150000",
+    "source:population": "INE",
+    "wikidata": "Q51594",
+    "wikipedia": "en:Puente Alto"
+  }
+},
+{
+  "type": "node",
+  "id": 214218691,
+  "lat": -33.4042423,
+  "lon": -70.7049708,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Renca",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Renca",
+    "place": "suburb",
+    "population": "147151",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214220045,
+  "lat": -32.6959980,
+  "lon": -71.4061202,
+  "tags": {
+    "is_in": "Region de Valparaiso, Chile",
+    "is_in:city": "Puchuncaví",
+    "name": "Rungue",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214220780,
+  "lat": -33.4543164,
+  "lon": -70.5936358,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Ñuñoa",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Ñuñoa",
+    "place": "suburb",
+    "population": "208237",
+    "population:date": "2017",
+    "postal_code": "7750000",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214224803,
+  "lat": -36.7126985,
+  "lon": -72.9766787,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Penco",
+    "is_in:country": "Chile",
+    "name": "Lirquén",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214225897,
+  "lat": -33.1812793,
+  "lon": -70.6546727,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Colina",
+    "name": "Esmeralda",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214226093,
+  "lat": -33.3744615,
+  "lon": -70.6362988,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Huechuraba",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Huechuraba",
+    "place": "suburb",
+    "population": "98572",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214226402,
+  "lat": -33.3871062,
+  "lon": -70.5764516,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Vitacura",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Vitacura",
+    "place": "suburb",
+    "population": "85384",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214227286,
+  "lat": -32.8688134,
+  "lon": -70.6223660,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Calle Larga",
+    "name": "Pocuro",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214227386,
+  "lat": -33.0453491,
+  "lon": -71.3581105,
+  "tags": {
+    "name": "Peñablanca",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214227456,
+  "lat": -33.5560272,
+  "lon": -70.6657194,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "El Bosque",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "El Bosque",
+    "place": "suburb",
+    "population": "162505",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214229253,
+  "lat": -33.4321835,
+  "lon": -70.6095284,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Providencia",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Providencia",
+    "place": "suburb",
+    "population": "142079",
+    "population:date": "2017",
+    "postal_code": "7500000",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214229549,
+  "lat": -35.4030113,
+  "lon": -71.6376543,
+  "tags": {
+    "name": "Lircay",
+    "place": "suburb",
+    "source": "GNS"
+  }
+},
+{
+  "type": "node",
+  "id": 214230068,
+  "lat": -29.8764032,
+  "lon": -71.2380030,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "La Serena",
+    "name": "La Compañía",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214230398,
+  "lat": -32.9878733,
+  "lon": -71.1421977,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Olmué",
+    "name": "Granizo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 214230721,
+  "lat": -33.5253092,
+  "lon": -70.6946602,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:region": "Metropolitana",
+    "name": "Lo Espejo",
+    "place": "suburb",
+    "population": "98804",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214232792,
+  "lat": -33.4084548,
+  "lon": -70.5671489,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "Las Condes",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Las Condes",
+    "place": "suburb",
+    "population": "294838",
+    "population:date": "2017",
+    "postal_code": "7550000",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 214234069,
+  "lat": -32.8608588,
+  "lon": -70.6241794,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Calle Larga",
+    "name": "El Chacai",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 243631350,
+  "lat": -33.4394334,
+  "lon": -71.6797863,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "El Quisco",
+    "is_in:country": "Chile",
+    "name": "Isla Negra",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 270111451,
+  "lat": -41.4855523,
+  "lon": -72.9632455,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "Puerto Montt",
+    "is_in:province": "Llanquihue",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "Angelmó",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 274472023,
+  "lat": -32.9921268,
+  "lon": -71.5224352,
+  "tags": {
+    "name": "Gómez Carreño",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 287206084,
+  "lat": -33.0380954,
+  "lon": -71.5432216,
+  "tags": {
+    "name": "Forestal",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 294980933,
+  "lat": -33.0057742,
+  "lon": -71.5006640,
+  "tags": {
+    "name": "Santa Julia",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 299785947,
+  "lat": -33.0478580,
+  "lon": -71.4080186,
+  "tags": {
+    "name": "El Belloto",
+    "place": "suburb",
+    "wikidata": "Q5820999",
+    "wikipedia": "es:El Belloto"
+  }
+},
+{
+  "type": "node",
+  "id": 316884136,
+  "lat": -33.1278952,
+  "lon": -71.5698000,
+  "tags": {
+    "name": "Curauma",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 320263469,
+  "lat": -33.6125502,
+  "lon": -71.6103119,
+  "tags": {
+    "is_in": "Region de Valparaiso, Chile, Latin America",
+    "is_in:city": "San Antonio",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "San Antonio",
+    "is_in:province": "San Antonio",
+    "is_in:region": "Region de Valparaiso",
+    "is_in:state": "Region de Valparaiso",
+    "name": "Llo Lleo",
+    "place": "suburb",
+    "source": "local_knowledge",
+    "wikidata": "Q6662195",
+    "wikipedia": "es:Llolleo"
+  }
+},
+{
+  "type": "node",
+  "id": 332050137,
+  "lat": -33.5833464,
+  "lon": -70.6297925,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "La Pintana",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "La Pintana",
+    "place": "suburb",
+    "population": "177335",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 332050739,
+  "lat": -33.5204181,
+  "lon": -70.6006178,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "La Florida",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "La Florida",
+    "place": "suburb",
+    "population": "366916",
+    "population:date": "2017",
+    "postal_code": "8240000",
+    "source": "GNS",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 332051173,
+  "lat": -33.5428175,
+  "lon": -70.6438120,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "San Ramon",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "San Ramón",
+    "place": "suburb",
+    "population": "82900",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 333790810,
+  "lat": -33.4938300,
+  "lon": -70.6760755,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Pedro Aguirre Cerda",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Pedro Aguirre Cerda",
+    "place": "suburb",
+    "population": "101174",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 359312455,
+  "lat": -29.9204007,
+  "lon": -71.2115617,
+  "tags": {
+    "name": "La Florida",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 370137636,
+  "lat": -33.4289362,
+  "lon": -70.7306748,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Cerro Navia",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Cerro Navia",
+    "place": "suburb",
+    "population": "132622",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 370140662,
+  "lat": -33.3960309,
+  "lon": -70.6708385,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Conchali",
+    "is_in:region": "Metropolitana",
+    "name": "Conchalí",
+    "place": "suburb",
+    "population": "126955",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 378364717,
+  "lat": -33.5971592,
+  "lon": -71.6127855,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "San Antonio",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "San Antonio",
+    "is_in:province": "San Antonio",
+    "is_in:region": "Region de Valparaiso",
+    "name": "Barrancas",
+    "place": "suburb",
+    "source": "local_knowledge"
+  }
+},
+{
+  "type": "node",
+  "id": 551136446,
+  "lat": -33.4426273,
+  "lon": -70.7178219,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Lo Prado",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Lo Prado",
+    "place": "suburb",
+    "population": "96249",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 702326208,
+  "lat": -29.9832780,
+  "lon": -71.3429065,
+  "tags": {
+    "name": "Sindempart",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 712828331,
+  "lat": -38.7104875,
+  "lon": -72.6567579,
+  "tags": {
+    "is_in:city": "Temuco",
+    "name": "Fundo El Carmen",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 841420844,
+  "lat": -33.3616012,
+  "lon": -70.5051957,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Lo Barnechea",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "Lo Barnechea",
+    "old_name": "Pueblo Lo Barnechea",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 842276258,
+  "lat": -33.3696589,
+  "lon": -71.6825564,
+  "tags": {
+    "is_in": "Algarrobo, Chile, América del Sur",
+    "is_in:city": "Algarrobo",
+    "name": "El Canelo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 931968561,
+  "lat": -37.1113782,
+  "lon": -73.1484232,
+  "tags": {
+    "is_in:city": "Lota",
+    "name": "Colcura",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 946786239,
+  "lat": -33.5135653,
+  "lon": -71.6044012,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Las Cruces",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "Cartagena",
+    "is_in:province": "San Antonio",
+    "is_in:region": "Region de Valparaiso",
+    "name": "San Carlos",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1072759005,
+  "lat": -32.7861696,
+  "lon": -71.5080585,
+  "tags": {
+    "is_in:city": "Quintero",
+    "name": "Loncura",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1234343610,
+  "lat": -33.6252424,
+  "lon": -70.6125547,
+  "tags": {
+    "is_in:city": "Santiago",
+    "is_in:suburb": "Puente Alto",
+    "name": "Bajos de Mena",
+    "place": "suburb",
+    "population": "140000",
+    "wikipedia": "es:Bajos de Mena"
+  }
+},
+{
+  "type": "node",
+  "id": 1234858192,
+  "lat": -33.5574920,
+  "lon": -70.7908966,
+  "tags": {
+    "name": "Ciudad Satélite",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1235425981,
+  "lat": -36.7263566,
+  "lon": -73.1284177,
+  "tags": {
+    "name": "San Vicente",
+    "place": "suburb",
+    "ref:LOCODE": "CLSVE"
+  }
+},
+{
+  "type": "node",
+  "id": 1235426711,
+  "lat": -36.6367950,
+  "lon": -72.9510508,
+  "tags": {
+    "is_in:city": "Tomé",
+    "name": "Bellavista",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1235427085,
+  "lat": -36.5954812,
+  "lon": -72.9763986,
+  "tags": {
+    "is_in:city": "Tomé",
+    "name": "Cocholgüe",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1275872369,
+  "lat": -33.8548541,
+  "lon": -70.7623595,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Hospital",
+    "name": "Champa",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1313627027,
+  "lat": -36.7482121,
+  "lon": -72.9950306,
+  "tags": {
+    "is_in:city": "Penco",
+    "name": "Penco Chico",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1357153983,
+  "lat": -36.8079044,
+  "lon": -73.0731198,
+  "tags": {
+    "name": "Lorenzo Arenas",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1357315892,
+  "lat": -36.8805874,
+  "lon": -73.0360862,
+  "tags": {
+    "name": "Villuco",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1357315895,
+  "lat": -36.8085280,
+  "lon": -73.0322997,
+  "tags": {
+    "name": "Chillancito",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1357315898,
+  "lat": -36.8054300,
+  "lon": -73.0429880,
+  "tags": {
+    "name": "Barrio Norte",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1357315903,
+  "lat": -36.8466461,
+  "lon": -73.0516110,
+  "tags": {
+    "name": "Pedro de Valdivia",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1357315913,
+  "lat": -36.8671462,
+  "lon": -73.0395731,
+  "tags": {
+    "name": "Lonco",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1366286529,
+  "lat": -40.5837637,
+  "lon": -73.1693532,
+  "tags": {
+    "is_in:country": "Chile",
+    "is_in:region": "Los Lagos",
+    "name": "Rahue Alto",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1366286530,
+  "lat": -40.5758682,
+  "lon": -73.1516550,
+  "tags": {
+    "is_in:country": "Chile",
+    "is_in:region": "Los Lagos",
+    "name": "Rahue Bajo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1474523589,
+  "lat": -30.0231843,
+  "lon": -70.6921467,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Vicuña",
+    "name": "Calingasta",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1478662368,
+  "lat": -53.0344497,
+  "lon": -70.8614485,
+  "tags": {
+    "alt_name": "Calafate",
+    "name": "Los Calafates",
+    "place": "suburb",
+    "population": "79",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 1517363925,
+  "lat": -23.0991226,
+  "lon": -70.4793293,
+  "tags": {
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Mejillones",
+    "is_in:province": "Antofagasta",
+    "is_in:region": "Antofagasta",
+    "name": "Rinconada de Mejillones",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1559429499,
+  "lat": -36.8840072,
+  "lon": -73.1348300,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "San Pedro de la Paz",
+    "name": "Lomas Coloradas",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1562506659,
+  "lat": -41.9032350,
+  "lon": -73.8164211,
+  "tags": {
+    "name": "Caracoles",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1605762704,
+  "lat": -34.1731346,
+  "lon": -70.6847361,
+  "tags": {
+    "name": "Camino a Machalí",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1605777779,
+  "lat": -34.2086142,
+  "lon": -70.6578940,
+  "tags": {
+    "is_in:city": "Machalí",
+    "name": "Nogales",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1617752075,
+  "lat": -33.6042468,
+  "lon": -70.8526137,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Peñaflor",
+    "is_in:country": "Chile",
+    "name": "Malloco",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1677928362,
+  "lat": -33.5270136,
+  "lon": -71.5973512,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Cartagena",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "Cartagena",
+    "is_in:province": "San Antonio",
+    "is_in:region": "Region de Valparaiso",
+    "is_in:state": "Region de Valparaiso",
+    "name": "San Sebastián",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1717404693,
+  "lat": -37.4870600,
+  "lon": -72.3393435,
+  "tags": {
+    "name": "Paillihue",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1819071175,
+  "lat": -35.9575857,
+  "lon": -72.3036536,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Cauquenes",
+    "is_in:country": "Chile",
+    "is_in:province": "Cauquenes",
+    "is_in:region": "Región del Maule",
+    "is_in:region_code": "72",
+    "name": "Población Fernández",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1819086076,
+  "lat": -35.9833380,
+  "lon": -72.3138651,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Cauquenes",
+    "is_in:country": "Chile",
+    "is_in:province": "Cauquenes",
+    "is_in:region": "Región del Maule",
+    "is_in:region_code": "72",
+    "name": "Estación Cauquenes",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1832651818,
+  "lat": -33.0577113,
+  "lon": -71.5763674,
+  "tags": {
+    "name": "Rodelillo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1837079096,
+  "lat": -33.3245874,
+  "lon": -71.6473609,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Mirasol - El Yeco",
+    "is_in:country": "Chile",
+    "name": "Mirasol",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 1920466578,
+  "lat": -37.1352805,
+  "lon": -72.0113376,
+  "tags": {
+    "is_in:city": "Yungay",
+    "name": "Tres Esquinas",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2320163410,
+  "lat": -39.8128442,
+  "lon": -73.2216890,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:region": "Los Ríos",
+    "name": "Las Ánimas",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2334907599,
+  "lat": -29.9732958,
+  "lon": -71.3257840,
+  "tags": {
+    "name": "San Juan",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2341146569,
+  "lat": -29.9934607,
+  "lon": -71.3276594,
+  "tags": {
+    "name": "Punta Mira",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2395864601,
+  "lat": -33.4765918,
+  "lon": -70.5418308,
+  "tags": {
+    "capital": "8",
+    "name": "Peñalolén",
+    "place": "suburb",
+    "population": "241599",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 2401714451,
+  "lat": -40.6936066,
+  "lon": -72.6068641,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Entre Lagos",
+    "name": "Porvenir",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2407516009,
+  "lat": -29.9488547,
+  "lon": -71.3458339,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "Parte Alta",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2463430865,
+  "lat": -33.5094409,
+  "lon": -70.7561820,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:city": "Santiago",
+    "is_in:country": "Chile",
+    "is_in:region": "Metropolitana",
+    "name": "Maipú",
+    "place": "suburb",
+    "population": "525229",
+    "wikidata": "Q16918"
+  }
+},
+{
+  "type": "node",
+  "id": 2515812941,
+  "lat": -36.9600685,
+  "lon": -73.1503415,
+  "tags": {
+    "name": "La Posada",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2521384392,
+  "lat": -35.0733527,
+  "lon": -71.2568494,
+  "tags": {
+    "name": "Casa Blanca",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2528781330,
+  "lat": -41.4874323,
+  "lon": -72.8992518,
+  "tags": {
+    "is_in:city": "Puerto Montt",
+    "name": "Pelluco",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2618140993,
+  "lat": -33.0072561,
+  "lon": -71.2600067,
+  "tags": {
+    "is_in:city": "Limache",
+    "name": "Limache Viejo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2626556338,
+  "lat": -33.3081770,
+  "lon": -71.6445231,
+  "tags": {
+    "is_in:city": "Mirasol - El Yeco",
+    "name": "El Yeco",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 2974470208,
+  "lat": -29.9459716,
+  "lon": -71.2457669,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "name": "El Milagro",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3235369543,
+  "lat": -35.3440583,
+  "lon": -72.4188690,
+  "tags": {
+    "name": "Los Molinos",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3303430318,
+  "lat": -41.4633023,
+  "lon": -72.9618407,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "Puerto Montt",
+    "is_in:province": "Llanquihue",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "Padre José Fernández Pérez",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3303430320,
+  "lat": -41.4824604,
+  "lon": -72.9711215,
+  "tags": {
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:country_code": "CL",
+    "is_in:municipality": "Puerto Montt",
+    "is_in:province": "Llanquihue",
+    "is_in:region": "Los Lagos",
+    "is_in:state": "Los Lagos",
+    "name": "Terrazas de Angelmó",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3375911488,
+  "lat": -34.4251882,
+  "lon": -71.0969778,
+  "tags": {
+    "name": "El Cristo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3401354576,
+  "lat": -37.8175938,
+  "lon": -72.6733439,
+  "tags": {
+    "name": "Huequén",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3458928391,
+  "lat": -42.9255923,
+  "lon": -72.7110262,
+  "tags": {
+    "name": "Chaitén Sur",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3460020961,
+  "lat": -34.1584614,
+  "lon": -71.3955362,
+  "tags": {
+    "name": "Santa Margarita",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3507940984,
+  "lat": -37.4468952,
+  "lon": -72.3354114,
+  "tags": {
+    "name": "El Avellano",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3614027083,
+  "lat": -34.1543206,
+  "lon": -71.4788680,
+  "tags": {
+    "name": "Ruca Rapel",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3614027090,
+  "lat": -34.1612199,
+  "lon": -71.4823734,
+  "tags": {
+    "name": "Náutico",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3681347960,
+  "lat": -34.0464279,
+  "lon": -70.6692432,
+  "tags": {
+    "is_in:city": "Codegua",
+    "name": "Los Silva",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3684254248,
+  "lat": -34.0804259,
+  "lon": -70.7362919,
+  "tags": {
+    "name": "Graneros Sur",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 3789402903,
+  "lat": -37.4650098,
+  "lon": -72.4008589,
+  "tags": {
+    "is_in:city": "Los Ángeles",
+    "name": "Villa Génesis",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4001507516,
+  "lat": -33.5346265,
+  "lon": -70.6644024,
+  "tags": {
+    "capital": "8",
+    "name": "La Cisterna",
+    "place": "suburb",
+    "population": "90119",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 4001515947,
+  "lat": -33.4222950,
+  "lon": -70.6554648,
+  "tags": {
+    "capital": "8",
+    "name": "Independencia",
+    "place": "suburb",
+    "population": "100281",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 4100122902,
+  "lat": -34.4373355,
+  "lon": -71.0558801,
+  "tags": {
+    "name": "La Puntilla",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4163388294,
+  "lat": -36.8318481,
+  "lon": -73.0023271,
+  "tags": {
+    "name": "Valle Nonguén",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4396969599,
+  "lat": -33.0630884,
+  "lon": -71.5861336,
+  "tags": {
+    "name": "San Roque",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4514686256,
+  "lat": -36.7956056,
+  "lon": -73.0482638,
+  "tags": {
+    "name": "Santa Sabina",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4597219322,
+  "lat": -36.9534186,
+  "lon": -73.0169668,
+  "tags": {
+    "alt_name": "Leonera",
+    "name": "La Leonera",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4664721311,
+  "lat": -35.4530346,
+  "lon": -71.6861080,
+  "tags": {
+    "is_in:city": "Talca",
+    "name": "Culenar",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4664739754,
+  "lat": -35.4373101,
+  "lon": -71.6811641,
+  "tags": {
+    "name": "La Florida",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4664739758,
+  "lat": -35.4036206,
+  "lon": -71.6531769,
+  "tags": {
+    "name": "Barrio Norte",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4664766089,
+  "lat": -35.3122843,
+  "lon": -71.5268764,
+  "tags": {
+    "name": "Santa Amalia",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4664816373,
+  "lat": -35.5219511,
+  "lon": -71.5129438,
+  "tags": {
+    "is_in:city": "San Clemente",
+    "name": "Chile Nuevo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4677506150,
+  "lat": -34.1826365,
+  "lon": -70.7408090,
+  "tags": {
+    "name": "Rancagua Sur",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4693119516,
+  "lat": -34.1842520,
+  "lon": -70.7345003,
+  "tags": {
+    "name": "La Granja",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4693119517,
+  "lat": -34.1797077,
+  "lon": -70.7232136,
+  "tags": {
+    "name": "Manzanal",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4797397577,
+  "lat": -27.1623481,
+  "lon": -109.4364566,
+  "tags": {
+    "name": "Mataveri",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4914841380,
+  "lat": -33.5060248,
+  "lon": -71.6116059,
+  "tags": {
+    "is_in:city": "Las Cruces",
+    "name": "Playas Blancas",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 4978240670,
+  "lat": -33.4965843,
+  "lon": -70.6290637,
+  "tags": {
+    "capital": "8",
+    "is_in": "Chile, Latin America",
+    "is_in:continent": "South America",
+    "is_in:country": "Chile",
+    "is_in:municipality": "San Joaquin",
+    "is_in:province": "Santiago",
+    "is_in:region": "Metropolitana",
+    "name": "San Joaquín",
+    "place": "suburb",
+    "population": "94492",
+    "population:date": "2017",
+    "postal_code": "8940000",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 5138942580,
+  "lat": -34.5753748,
+  "lon": -70.9760892,
+  "tags": {
+    "is_in:city": "San Fernando",
+    "name": "El Trapiche",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5138961303,
+  "lat": -34.3392193,
+  "lon": -70.8681250,
+  "tags": {
+    "is_in:city": "Esmeralda",
+    "name": "Apalta",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5281244780,
+  "lat": -39.8358438,
+  "lon": -73.3999372,
+  "tags": {
+    "is_in:city": "Niebla",
+    "name": "San Ignacio",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5281244782,
+  "lat": -39.8460258,
+  "lon": -73.3920515,
+  "tags": {
+    "is_in:city": "Niebla",
+    "name": "Los Molinos",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5317256197,
+  "lat": -32.9861703,
+  "lon": -71.2738078,
+  "tags": {
+    "is_in:city": "Limache",
+    "name": "San Francisco de Limache",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5414467736,
+  "lat": -29.9752078,
+  "lon": -71.2997211,
+  "tags": {
+    "name": "La Cantera",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5458373874,
+  "lat": -38.2433877,
+  "lon": -72.6821459,
+  "tags": {
+    "name": "Santa Inés",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5458373879,
+  "lat": -38.2612464,
+  "lon": -72.6683030,
+  "tags": {
+    "name": "El Retiro",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5561328171,
+  "lat": -29.9658782,
+  "lon": -71.2558692,
+  "tags": {
+    "is_in:city": "Coquimbo",
+    "name": "Tierras Blancas",
+    "place": "suburb",
+    "wikipedia": "es:Tierras Blancas"
+  }
+},
+{
+  "type": "node",
+  "id": 5684047130,
+  "lat": -36.9740539,
+  "lon": -73.1418418,
+  "tags": {
+    "name": "Pocuro",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5684047131,
+  "lat": -36.9819481,
+  "lon": -73.1587183,
+  "tags": {
+    "name": "Lagunillas",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5695847558,
+  "lat": -33.3242621,
+  "lon": -70.7421253,
+  "tags": {
+    "is_in:city": "Santiago",
+    "name": "Valle Grande",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5701124541,
+  "lat": -33.7324417,
+  "lon": -70.9115124,
+  "tags": {
+    "is_in:city": "Isla de Maipo",
+    "name": "Gacitúa",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5710077912,
+  "lat": -40.5738724,
+  "lon": -73.1656847,
+  "tags": {
+    "name": "Rahue",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5716219007,
+  "lat": -35.8654230,
+  "lon": -71.5966832,
+  "tags": {
+    "name": "Huapi",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5716421296,
+  "lat": -34.6449038,
+  "lon": -70.9936417,
+  "tags": {
+    "is_in:city": "Tinguiririca",
+    "name": "Estación Tinguiririca",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5719382641,
+  "lat": -29.9322970,
+  "lon": -71.2569809,
+  "tags": {
+    "name": "La Pampa",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5719382644,
+  "lat": -29.9656054,
+  "lon": -71.2964201,
+  "tags": {
+    "name": "Peñuelas Bajo",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5719382648,
+  "lat": -29.9348539,
+  "lon": -71.2429047,
+  "tags": {
+    "name": "San Joaquín",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5724814166,
+  "lat": -27.3833494,
+  "lon": -70.3318479,
+  "tags": {
+    "is_in:city": "Copiapó",
+    "name": "El Palomar",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5724814167,
+  "lat": -27.3931882,
+  "lon": -70.2989656,
+  "tags": {
+    "is_in:city": "Copiapó",
+    "name": "San Fernando",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5726930651,
+  "lat": -35.4425262,
+  "lon": -71.6305161,
+  "tags": {
+    "name": "San Miguel",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5726930652,
+  "lat": -35.4409178,
+  "lon": -71.6033078,
+  "tags": {
+    "name": "Esmeralda",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5727473178,
+  "lat": -35.0177136,
+  "lon": -71.2469388,
+  "tags": {
+    "is_in:city": "Curicó",
+    "name": "Maquehua",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5729635736,
+  "lat": -33.5871673,
+  "lon": -70.4663945,
+  "tags": {
+    "is_in:city": "Santiago",
+    "name": "La Obra - Las Vertientes",
+    "place": "suburb",
+    "population": "3141",
+    "population:date": "2017",
+    "source:population": "INE"
+  }
+},
+{
+  "type": "node",
+  "id": 5732752631,
+  "lat": -36.5031338,
+  "lon": -72.7167249,
+  "tags": {
+    "is_in:city": "Coelemu",
+    "name": "El Rosal",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 5984053174,
+  "lat": -29.9806625,
+  "lon": -71.3347884,
+  "tags": {
+    "name": "Las Torres",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6240946711,
+  "lat": -39.8106067,
+  "lon": -73.2582411,
+  "tags": {
+    "name": "Isla Teja",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6240946712,
+  "lat": -39.8058875,
+  "lon": -73.2079122,
+  "tags": {
+    "name": "Collico",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6269077591,
+  "lat": -33.0263320,
+  "lon": -71.5199018,
+  "tags": {
+    "name": "Miraflores",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6269077592,
+  "lat": -32.9975964,
+  "lon": -71.4867497,
+  "tags": {
+    "name": "Reñaca Alto",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6346135709,
+  "lat": -33.0457642,
+  "lon": -71.5643353,
+  "tags": {
+    "name": "Nueva Aurora",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6346188986,
+  "lat": -33.0468741,
+  "lon": -71.6129442,
+  "tags": {
+    "name": "Almendral",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6346493001,
+  "lat": -33.0471600,
+  "lon": -71.5784124,
+  "tags": {
+    "name": "Placeres",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6377454387,
+  "lat": -33.8421719,
+  "lon": -70.6377770,
+  "tags": {
+    "is_in:city": "Huelquén",
+    "name": "Liquai",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 6377458649,
+  "lat": -33.8043091,
+  "lon": -70.7182433,
+  "tags": {
+    "is_in:city": "Paine",
+    "name": "Villa Alegre de Paine",
+    "place": "suburb"
+  }
+},
+{
+  "type": "node",
+  "id": 7150061078,
+  "lat": -36.8260550,
+  "lon": -72.9932532,
+  "tags": {
+    "name": "Palomares",
+    "place": "suburb"
+  }
+}
+
+  ]
+}

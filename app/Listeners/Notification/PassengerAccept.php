@@ -9,6 +9,7 @@ use STS\Notifications\AcceptPassengerNotification;
 class PassengerAccept implements ShouldQueue
 {
     protected $userRepository;
+
     protected $tripRepository;
 
     /**
@@ -36,7 +37,7 @@ class PassengerAccept implements ShouldQueue
             $notification = new AcceptPassengerNotification();
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
-            //$notification->setAttribute('token', $to);
+            $notification->setAttribute('token', $to);
             $notification->notify($to);
         }
     }

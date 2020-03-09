@@ -8,3 +8,5 @@ settings.json
 .vscode/
 cert/*.pem
 .idea/*
+public/image/docs
+app.sql

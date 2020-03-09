@@ -13,7 +13,7 @@ class TripsPointsTable extends Migration
     public function up()
     {
         Schema::create('trips_points', function (Blueprint $table) {
-			$table->engine = 'InnoDB';
+            $table->engine = 'InnoDB';
             $table->increments('id');
             $table->integer('trip_id')->unsigned();
             $table->string('address', 255);

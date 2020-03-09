@@ -15,7 +15,9 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 class ConversationController extends Controller
 {
     protected $user;
+
     protected $conversations;
+
     protected $users;
 
     public function __construct(Request $r, ConversationLogic $conversations, UserLogic $users)
@@ -60,22 +62,24 @@ class ConversationController extends Controller
     {
         $this->user = $this->auth->user();
         $to = $request->get('to');
+        $tripId = $request->get('tripId');
         if ($to) {
             $destinatary = $this->users->find($to);
             if ($destinatary) {
-                $conversation = $this->conversationLogic->findOrCreatePrivateConversation($this->user, $destinatary);
+                $conversation = $this->conversationLogic->findOrCreatePrivateConversation($this->user, $destinatary, $tripId);
                 if ($conversation) {
                     return $this->item($conversation, new ConversationsTransformer($this->user), ['key' => 'data']);
                 } else {
-                    throw new Exception('ConversationController: Unabled to create conversation');
+                    throw new Exception('ConversationController: Unabled to create conversation', $this->conversationLogic->getErrors());
+                    
                 }
-                
             } else {
                 throw new BadRequestHttpException("Bad request exceptions: Destinatary user doesn't exist.");
             }
         } else {
             throw new BadRequestHttpException('Bad request exceptions: Destinatary user not provided.');
         }
+
         throw new Exception('ConversationController: Bad request exceptions');
     }
 
@@ -95,6 +99,7 @@ class ConversationController extends Controller
         if ($messages) {
             return $this->collection($messages, new MessageTransformer($this->user));
         }
+
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 
@@ -105,6 +110,7 @@ class ConversationController extends Controller
         if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
             return $this->item($m, new MessageTransformer($this->user));
         }
+
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 
@@ -171,14 +177,15 @@ class ConversationController extends Controller
         return $this->collection($messages, new MessageTransformer($this->user));
     }
 
-
-    public function multiSend(Request $request) {
+    public function multiSend(Request $request)
+    {
         $this->user = $this->auth->user();
         $message = $request->get('message');
         $users = $request->get('users');
         if ($m = $this->conversationLogic->sendToAll($this->user, $users, $message)) {
             return ['message' => true];
         }
+
         throw new Exception('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 }

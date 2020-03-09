@@ -57,5 +57,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->bind('\STS\Contracts\Repository\Subscription', 'STS\Repository\SubscriptionsRepository');
         $this->app->bind('\STS\Contracts\Logic\Subscription', '\STS\Services\Logic\SubscriptionsManager');
+
+        $this->app->bind('\STS\Contracts\Repository\Routes', 'STS\Repository\RoutesRepository');
+        $this->app->bind('\STS\Contracts\Logic\Routes', '\STS\Services\Logic\RoutesManager');
+
+        $this->app->bind('\STS\Contracts\Repository\IReferencesRepository', 'STS\Repository\ReferencesRepository');
+        $this->app->bind('\STS\Contracts\Logic\IReferencesLogic', '\STS\Services\Logic\ReferencesManager');
     }
 }

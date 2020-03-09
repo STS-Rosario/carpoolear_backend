@@ -15,7 +15,8 @@ class Kernel extends HttpKernel
      */
     protected $middleware = [
         \Illuminate\Foundation\Http\Middleware\CheckForMaintenanceMode::class,
-        // \Barryvdh\Cors\HandleCors::class,
+        \STS\Http\Middleware\LoadConfig::class,
+        \Barryvdh\Cors\HandleCors::class
     ];
 
     /**
@@ -29,11 +30,13 @@ class Kernel extends HttpKernel
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \STS\Http\Middleware\VerifyCsrfToken::class,
         ],
 
         'api' => [
             'throttle:60,1',
+            'bindings',
         ],
 
         'logged' => [

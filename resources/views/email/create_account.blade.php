@@ -4,4 +4,4 @@ Haz click <a href="{{$url}}">aquí</a> para activar tu cuenta y comenzar a compa
 
 Saludos!
 
-Carpoolear
+{{$name_app}}

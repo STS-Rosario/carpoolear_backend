@@ -29,6 +29,8 @@ class CancelPassengerNotification extends BaseNotification
             'is_driver' => $isDriver,
             'reason_message' => $reasonMessage,
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -61,11 +63,11 @@ class CancelPassengerNotification extends BaseNotification
 
         return [
             'message' => $title,
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

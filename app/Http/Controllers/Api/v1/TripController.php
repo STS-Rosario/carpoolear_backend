@@ -7,10 +7,12 @@ use STS\Http\Controllers\Controller;
 use STS\Transformers\TripTransformer;
 use STS\Contracts\Logic\Trip as TripLogic;
 use Dingo\Api\Exception\StoreResourceFailedException;
+use Carbon\Carbon;
 
 class TripController extends Controller
 {
     protected $user;
+
     protected $tripsLogic;
 
     public function __construct(Request $r, TripLogic $tripsLogic)
@@ -50,7 +52,7 @@ class TripController extends Controller
         $this->user = $this->auth->user();
         $increment = $request->get('increment');
         $trip = $this->tripsLogic->changeTripSeats($this->user, $id, $increment);
-        if (!$trip) {
+        if (! $trip) {
             throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
@@ -84,20 +86,16 @@ class TripController extends Controller
     {
         $data = $request->all();
 
-        if (! isset($data['page'])) {
-            $data['page'] = 1;
-        }
-        if (! isset($data['page_size'])) {
+        if (!isset($data['page_size'])) {
             $data['page_size'] = 20;
         }
+
         $this->user = $this->auth->user();
-
         $trips = $this->tripsLogic->search($this->user, $data);
-
         return $this->response->paginator($trips, new TripTransformer($this->user));
     }
 
-    public function myTrips(Request $request)
+    public function getTrips(Request $request)
     {
         $this->user = $this->auth->user();
 
@@ -106,27 +104,45 @@ class TripController extends Controller
         } else {
             $asDriver = true;
         }
-
-        $trips = $this->tripsLogic->myTrips($this->user, $asDriver);
+        if ($request->has('user_id')  && $this->user->is_admin) {
+            $trips = $this->tripsLogic->getTrips($this->user,$request->get('user_id'), $asDriver);
+        } else {
+            $trips = $this->tripsLogic->getTrips($this->user,$this->user->id, $asDriver);
+        }
 
         return $this->collection($trips, new TripTransformer($this->user));
         //return $this->response->withArray(['data' => $trips]);
     }
 
-
-
-    public function myOldTrips(Request $request)
+    public function getOldTrips(Request $request)
     {
         $this->user = $this->auth->user();
 
+        
         if ($request->has('as_driver')) {
             $asDriver = parse_boolean($request->get('as_driver'));
         } else {
             $asDriver = true;
         }
-
-        $trips = $this->tripsLogic->myOldTrips($this->user, $asDriver);
+        
+        if ($request->has('user_id')) {
+            $trips = $this->tripsLogic->getOldTrips($this->user,$request->get('user_id'), $asDriver);
+        } else {
+            $trips = $this->tripsLogic->getOldTrips($this->user,$this->user->id, $asDriver);
+        }
 
         return $this->collection($trips, new TripTransformer($this->user));
+    }
+
+    public function price(Request $request) 
+    {
+        $data = $request->all();
+
+        $from = isset($data['from']) ? $data['from'] : null;
+        $to = isset($data['to']) ? $data['to'] : null;
+        $distance = isset($data['distance']) ? $data['distance'] : null;
+
+        
+        return $this->tripsLogic->price($from, $to, $distance);       
     }
 }

@@ -44,18 +44,17 @@ class RatingRepository implements IRatingRepository
         return make_pagination($ratings, $pageNumber, $pageSize);
     }
 
-   
-
-    public function getRatingsCount ($user, $data) 
+    public function getRatingsCount($user, $data)
     {
         $value = parse_boolean($data['value']);
-        $results = DB::select( DB::raw("SELECT count(*) AS 'count' FROM availables_ratings WHERE user_id_to = :user_id AND rating = :rating"), array(
+        $results = DB::select(DB::raw("SELECT count(*) AS 'count' FROM availables_ratings WHERE user_id_to = :user_id AND rating = :rating"), [
             'user_id' => $user->id,
-            'rating' => $value
-        ));
+            'rating' => $value,
+        ]);
         if (count($results) && isset($results[0]->count)) {
             return $results[0]->count;
         }
+
         return 0;
     }
 
@@ -106,13 +105,12 @@ class RatingRepository implements IRatingRepository
         return $rateModel->save();
     }
 
-
-    public function update_rating_availability ($rateModel)
+    public function update_rating_availability($rateModel)
     {
         // CALL update_rating_availability(NEW.id, NEW.trip_id, NEW.user_id_from, NEW.user_id_to);
-        $params = array($rateModel->id, $rateModel->trip_id, $rateModel->user_id_from, $rateModel->user_id_to);
-        return DB::select('CALL update_rating_availability (?,?,?,?)', $params);
+        $params = [$rateModel->id, $rateModel->trip_id, $rateModel->user_id_from, $rateModel->user_id_to];
 
-        
+        return DB::select('CALL update_rating_availability (?,?,?,?)', $params);
     }
+
 }

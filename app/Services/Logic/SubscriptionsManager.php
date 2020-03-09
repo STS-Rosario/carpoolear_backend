@@ -25,13 +25,13 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
             // 'from_json_address' => 'required_with:from_address|array',
             'from_lat'          => 'required_with:from_address|numeric',
             'from_lng'          => 'required_with:from_address|numeric',
-            'from_radio'        => 'required_with:from_address|numeric',
+            // 'from_radio'        => 'required_with:from_address|numeric',
 
             'to_address'      => 'string',
             // 'to_json_address' => 'required_with:to_address|array',
             'to_lat'          => 'required_with:to_address|numeric',
             'to_lng'          => 'required_with:to_address|numeric',
-            'to_radio'        => 'required_with:to_address|numeric',
+            // 'to_radio'        => 'required_with:to_address|numeric',
         ]);
     }
 
@@ -62,7 +62,7 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
                 // is_passenger
                 foreach ($userSuscriptions as $s) {
                     $coincideFecha = false;
-                    if (!empty($s->trip_date) && !empty($model->trip_date)) {
+                    if (! empty($s->trip_date) && ! empty($model->trip_date)) {
                         $coincideFecha = ($s->trip_date == $model->trip_date);
                     } else {
                         if (empty($s->trip_date) && empty($model->trip_date)) {
@@ -70,7 +70,7 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
                         }
                     }
                     $coincideFrom = false;
-                    if (!empty($s->from_lat) && !empty($model->from_lat)) {
+                    if (! empty($s->from_lat) && ! empty($model->from_lat)) {
                         $coincideFrom = (strval($s->from_lat) == strval($model->from_lat) && strval($s->from_lng) == strval($model->from_lng));
                     } else {
                         if (empty($s->from_lat) && empty($model->from_lat)) {
@@ -78,7 +78,7 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
                         }
                     }
                     $coincideTo = false;
-                    if (!empty($s->to_lat) && !empty($model->to_lat)) {
+                    if (! empty($s->to_lat) && ! empty($model->to_lat)) {
                         $coincideTo = (strval($s->to_lat) == strval($model->to_lat) && strval($s->to_lng) == strval($model->to_lng));
                     } else {
                         if (empty($s->to_lat) && empty($model->to_lat)) {
@@ -89,6 +89,7 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
 
                     if ($coincideFecha && $coincideFrom && $coincideTo && $coincidePasajero) {
                         $ok = false;
+
                         break;
                     }
                 }
@@ -97,9 +98,9 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
                 $this->repo->create($model);
             } else {
                 $this->setErrors(['error' => 'subscription_exist']);
+
                 return;
             }
-
 
             return $model;
         }
@@ -162,9 +163,8 @@ class SubscriptionsManager extends BaseManager implements SubscriptionLogic
         return $this->repo->list($user, true);
     }
 
-    public function syncTrip ($trip) 
+    public function syncTrip($trip)
     {
         $user = $trip->user;
-        
     }
 }

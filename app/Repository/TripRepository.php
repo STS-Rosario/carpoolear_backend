@@ -7,12 +7,44 @@ use STS\User;
 use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
+use STS\Entities\Route;
+use STS\Entities\NodeGeo;
 use STS\Entities\TripPoint;
+use STS\Events\Trip\Create  as CreateEvent;
 use STS\Entities\TripVisibility;
 use STS\Contracts\Repository\Trip as TripRepo;
 
 class TripRepository implements TripRepo
 {
+    private function getPotentialNode ($point) {
+        $n1 = new NodeGeo;
+        $n1->lat = $point['lat'] - 0.05;
+        $n1->lng = $point['lng'] - 0.1;
+        $n2 = new NodeGeo;
+        $n2->lat = $point['lat'] + 0.05;
+        $n2->lng = $point['lng'] + 0.1;
+        $maxLat = 0;
+        $minLat = 0;
+        $minLng = 0;
+        $maxLng = 0;
+        if ($n1->lat > $n2->lat) {
+            $maxLat = $n1->lat;
+            $minLat = $n2->lat;
+        } else {
+            $maxLat = $n2->lat;
+            $minLat = $n1->lat;
+        }
+        if ($n1->lng > $n2->lng) {
+            $maxLng = $n1->lng;
+            $minLng = $n2->lng;
+        } else {
+            $maxLng = $n2->lng;
+            $minLng = $n1->lng;
+        }
+        $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
+        $query->whereBetween('lng', [$minLng, $maxLng]);
+        return $query->first();
+    }
     public function generateTripFriendVisibility ($trip) {
         if ($trip->friendship_type_id < 2) {
             if ($trip->friendship_type_id == 1) {
@@ -54,6 +86,39 @@ class TripRepository implements TripRepo
         unset($data['points']);
         $trip = Trip::create($data);
         $this->addPoints($trip, $points);
+        // obtener ruta o crear
+        $routeIds = [];
+        for ($i = 1; $i < count($points); $i++) {
+            $origin = is_array($points[$i - 1]['json_address']) ? (object)$points[$i - 1]['json_address'] : json_decode($points[$i - 1]['json_address']);
+            $destiny = is_array($points[$i]['json_address']) ? (object)$points[$i]['json_address'] : json_decode($points[$i]['json_address']);
+            if (!isset($origin->id) || !isset($destiny->id)) {
+                $origin = $this->getPotentialNode($points[$i - 1]);
+                $destiny = $this->getPotentialNode($points[$i]);
+            }
+            if (isset($origin->id) && $origin->id > 0 && isset($destiny->id) && $destiny->id > 0) {
+                $route = Route::where('from_id', $origin->id)->where('to_id', $destiny->id)->first();
+                if (!$route) {
+                    $route = new Route();
+                    $route->from_id = $origin->id;
+                    $route->to_id = $destiny->id;
+                    $route->processed = false;
+                    $route->save();
+                    
+                    $nodes = [$origin->id, $destiny->id];
+                    $route->nodes()->sync($nodes);
+                    
+                } else {
+                    if ($route->processed) {
+                        event(new CreateEvent($trip));
+                    }
+                }
+                $routeIds[] = $route->id;
+            }
+        }
+        if (count($routeIds)) {
+            $trip->routes()->sync($routeIds);
+        }
+
         $this->generateTripFriendVisibility($trip);
         return $trip;
     }
@@ -74,9 +139,14 @@ class TripRepository implements TripRepo
         return $trip;
     }
 
-    public function show($id)
+    public function show($user, $id)
     {
-        return Trip::with(['user', 'points'])->whereId($id)->first();
+        if ($user->is_admin) {
+            $trip = Trip::with(['user', 'points', 'car', 'passenger', 'ratings'])->whereId($id)->first();
+            return $trip;
+        } else {
+            return Trip::with(['user', 'points'])->whereId($id)->first();
+        }
     }
 
     public function index($criterias, $withs = [])
@@ -100,12 +170,12 @@ class TripRepository implements TripRepo
         return $trips->get();
     }
 
-    public function myTrips($user, $asDriver)
+    public function getTrips($user, $userId, $asDriver)
     {
         $trips = Trip::where('trip_date', '>=', Carbon::Now());
 
         if ($asDriver) {
-            $trips->where('user_id', $user->id);
+            $trips->where('user_id', $userId);
         } else {
             /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
@@ -124,13 +194,12 @@ class TripRepository implements TripRepo
         return $trips->get();
     }
 
-
-    public function myOldTrips($user, $asDriver)
+    public function getOldTrips($user, $userId, $asDriver)
     {
         $trips = Trip::where('trip_date', '<', Carbon::Now());
 
         if ($asDriver) {
-            $trips->where('user_id', $user->id);
+            $trips->where('user_id', $userId);
         } else {
             /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
@@ -150,103 +219,179 @@ class TripRepository implements TripRepo
     }
 
     public function search($user, $data)
-    {
-        if (isset($data['date'])) {
-            if (isset($data['strict'])) {
-                $trips = Trip::where(DB::Raw('DATE(trip_date)'), $data['date']);
-                $trips->orderBy('trip_date');
-            } else {
-                $date_search = parse_date($data['date']);
-                $from = $date_search->copy()->subDays(3);
-                $to = $date_search->copy()->addDays(3);
+    {       
+        \Log::info('search data');
+        \Log::info($data);
 
-                $now = Carbon::now('America/Argentina/Buenos_Aires'); 
-                if($from->lte($now)){
-                    $from = $now;
-                }
-                $trips = Trip::where('trip_date', '>=', date_to_string($from, "Y-m-d H:i:s"));
-                $trips->where('trip_date', '<=', date_to_string($to, "Y-m-d H:i:s"));
-                
-                $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
-                $trips->orderBy('trip_date');
-            }
-            //$trips->setBindings([$data['date']]);
-        } else {
-            if (! isset($data['history'])) {
-                $trips = Trip::where('trip_date', '>=', Carbon::Now());
-                $trips->orderBy('trip_date');
-            }
-        }
-
+        $trips = Trip::query()->with(['routes', 'routes.nodes']);
         if (isset($data['is_passenger'])) {
             $trips->where('is_passenger', parse_boolean($data['is_passenger']));
         }
+        
+        if (isset($data['from_date']) || isset($data['to_date'])) {
+            if (isset($data['from_date'])) {
+                $date_from = parse_date($data['from_date']);
+                
+                $trips = $trips->where('trip_date', '>=', date_to_string($date_from, 'Y-m-d H:i:s'));
+                $trips->orderBy('trip_date');
+            }
+            if (isset($data['to_date'])) {
+                $date_to = parse_date($data['to_date']);
+                
+                $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));             
+                $trips->orderBy('trip_date');
+            }
+        } else {
+            if (isset($data['date'])) {
+                if (isset($data['strict'])) {
+                    $trips = $trips->where(DB::Raw('DATE(trip_date)'), $data['date']);
+                    $trips->orderBy('trip_date');
+                } else {
+                    $date_search = parse_date($data['date']);
+                    $from = $date_search->copy()->subDays(3);
+                    $to = $date_search->copy()->addDays(3);
 
+                    $now = Carbon::now('America/Argentina/Buenos_Aires');
+                    if ($from->lte($now)) {
+                        $from = $now;
+                    }
+                    $trips->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
+                    $trips->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
+                    $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
+                    $trips->orderBy('trip_date');
+                }
+                //$trips->setBindings([$data['date']]);
+            } else {
+                if (!isset($data['history'])) {
+                    $trips = $trips->where('trip_date', '>=', Carbon::Now());
+                    $trips->orderBy('trip_date');
+                }
+            }
+        }
         if (isset($data['user_id'])) {
             $trips->whereUserId($data['user_id']);
         }
-
-        $trips->where(function ($q) use ($user) {
-            if ($user) {
-                $q->whereUserId($user->id);
-                $q->orWhere(function ($q) use ($user) {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+        if ($user && !$user->is_admin) {
+            $trips->where(function ($q) use ($user) {
+                if ($user) {
+                    $q->whereUserId($user->id);
                     $q->orWhere(function ($q) use ($user) {
-                        $q->where('friendship_type_id', '<' , Trip::PRIVACY_PUBLIC);
-                        $q->whereHas('userVisibility', function ($q) use ($user) {
-                            $q->where('user_id', $user->id);
+                        $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                        $q->orWhere(function ($q) use ($user) {
+                            $q->where('friendship_type_id', '<' , Trip::PRIVACY_PUBLIC);
+                            $q->whereHas('userVisibility', function ($q) use ($user) {
+                                $q->where('user_id', $user->id);
+                            });
                         });
-                    });
-                    /* $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
-                        $q->whereHas('user.friends', function ($q) use ($user) {
-                            $q->whereId($user->id);
-                        });
-                    });
-                    $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
-                        $q->where(function ($q) use ($user) {
+                        /* $q->orWhere(function ($q) use ($user) {
+                            $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
                             $q->whereHas('user.friends', function ($q) use ($user) {
                                 $q->whereId($user->id);
                             });
-                            $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
-                                $q->whereId($user->id);
-                            });
                         });
-                    }); */
+                        $q->orWhere(function ($q) use ($user) {
+                            $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
+                            $q->where(function ($q) use ($user) {
+                                $q->whereHas('user.friends', function ($q) use ($user) {
+                                    $q->whereId($user->id);
+                                });
+                                $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
+                                    $q->whereId($user->id);
+                                });
+                            });
+                        }); */
+                    });
+                } else {
+                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                }
+            });
+        }
+        if (isset($data['origin_id']) && isset($data['destination_id'])) {
+            /* $trips->whereHas('routes', function ($q) use ($data) {
+                $q->join('route_nodes as o', function($join) use ($data) {
+                    $join->on('routes.id', '=', 'o.route_id');
+                    $join->on('o.node_id', DB::raw($data['origin_id']));
+                });
+                $q->join('route_nodes as d', function($join) use ($data) {
+                    $join->on('routes.id', '=', 'd.route_id');
+                    $join->on('d.node_id', DB::raw($data['destination_id']));
+                    $join->on('o.id', '<', 'd.id');
+                });
+            }); */
+            // $data['origin_id']
+            // $data['destination_id']
+            /* $origin_raw = '(SELECT tro.id
+                                FROM trip_routes tro 
+                                INNER JOIN route_nodes rno ON tro.route_id = rno.route_id AND rno.node_id = ' . $data['origin_id'] . '
+                                WHERE tro.trip_id = trips.id LIMIT 1)';
+            $destination_raw = '(SELECT trd.id 
+                                FROM trip_routes trd
+                                INNER JOIN route_nodes rnd ON trd.route_id = rnd.route_id AND rnd.node_id = ' . $data['destination_id'] . '
+                                WHERE trd.trip_id = trips.id LIMIT 1)';
+            $trips->whereNotNull(DB::raw($origin_raw));
+            $trips->whereNotNull(DB::raw($destination_raw));
+            $trips->where(DB::raw($origin_raw), '<=', DB::raw($destination_raw)); */
+
+            $trips->whereHas('routes', function ($q) use ($data) {
+                $q->where('routes.from_id', $data['origin_id']);
+                $q->where('routes.to_id', $data['destination_id']);
+            });
+        } else {
+            if (isset($data['origin_id'])) {
+                /* $trips->whereHas('routes.nodes', function ($q) use ($data) {
+                    $q->where('nodes_geo.id', $data['origin_id']);  
+                    // TODO considerar origen
+                }); */
+
+                $trips->whereHas('routes', function ($q) use ($data) {
+                    $q->where('routes.from_id', $data['origin_id']);
                 });
             } else {
-                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
+                    $distance = 1000.0;
+                    if (isset($data['origin_radio'])) {
+                        $distance = floatval($data['origin_radio']);
+                    }
+                    $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
+                }
             }
-        });
+            if (isset($data['destination_id'])) {
+                /* $trips->whereHas('routes.nodes', function ($q) use ($data) {
+                    $q->where('nodes_geo.id', $data['destination_id']);
+                }); */
 
-        if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
-            $distance = 1000.0;
-            if (isset($data['origin_radio'])) {
-                $distance = floatval($data['origin_radio']);
+                $trips->whereHas('routes', function ($q) use ($data) {
+                    $q->where('routes.to_id', $data['destination_id']);
+                });
+            } else {
+                if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
+                    $distance = 1000.0;
+                    if (isset($data['destination_radio'])) {
+                        $distance = floatval($data['destination_radio']);
+                    }
+                    $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
+                }
             }
-            $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
         }
 
-        if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
-            $distance = 1000.0;
-            if (isset($data['destination_radio'])) {
-                $distance = floatval($data['destination_radio']);
-            }
-            $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
-        }
-
-        $trips->with(['user', 'user.accounts', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
-
+        $trips->with([
+            'user', 
+            'user.accounts', 
+            'points', 
+            'passenger',
+            'passengerAccepted', 
+            'car', 
+            'ratings'
+        ]);
+        
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
-
-        // DB::enableQueryLog(); // Enable query log
-
         
-        return make_pagination($trips, $pageNumber, $pageSize);
-        
-        // var_dump(DB::getQueryLog()); // Show results of log
+        // DB::enableQueryLog();
+        $pagination = make_pagination($trips, $pageNumber, $pageSize);
+        // echo '<pre>';
+        // \Log::info(DB::getQueryLog());
+        return $pagination;
     }
 
     private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)
@@ -304,8 +449,32 @@ class TripRepository implements TripRepo
         }
     }
 
+    public function shareTrip($user, $other) {
+        $trip = Trip::with(['user']);
+        $trip = $trip->where('user_id', '=', $user->id);
+        $trip = $trip->where('trip_date', '>=', Carbon::Now());
+        $trip = $trip->whereHas('passengerAccepted', function ($query) use ($other) {
+            $query->where('user_id', '=', $other->id);
+        });
+
+        if ($trip->first()) {
+            return true;
+        }
+        return false;
+    }
+
     public function deletePoints($trip)
     {
         $trip->points()->delete();
+    }
+
+    public function simplePrice($distance)
+    {
+        return $distance * config('carpoolear.fuel_price') / 1000;
+    }
+    
+    public function getTripByTripPassenger ($transaction_id)
+    {
+        return Passenger::where('id', $transaction_id)->first();
     }
 }

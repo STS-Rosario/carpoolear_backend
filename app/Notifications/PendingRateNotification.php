@@ -18,6 +18,8 @@ class PendingRateNotification extends BaseNotification
             'title' => 'Contanos como te fue en el viaje hacia '.$this->getAttribute('trip')->to_town.'?',
             'email_view' => 'pending_rate',
             'url' =>  config('app.url').'/app/profile/me#0',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -38,7 +40,7 @@ class PendingRateNotification extends BaseNotification
         return [
             'message' => 'Tienes un viaje por calificar.',
             'url' => 'my-trips',
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

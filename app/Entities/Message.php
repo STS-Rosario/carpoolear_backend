@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Message extends Model
 {
     const STATE_NOLEIDO = 0;
+
     const STATE_LEIDO = 1;
 
     protected $table = 'messages';
+
     protected $fillable = [
         'id',
         'user_id',

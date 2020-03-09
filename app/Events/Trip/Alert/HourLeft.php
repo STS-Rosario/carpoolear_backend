@@ -10,6 +10,7 @@ class HourLeft extends Event
     use SerializesModels;
 
     public $to;
+
     public $trip;
 
     /**

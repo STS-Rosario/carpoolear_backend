@@ -14,6 +14,7 @@ class UserAdmin
      * @var Guard
      */
     protected $auth;
+
     protected $user;
 
     /**

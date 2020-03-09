@@ -6,20 +6,26 @@ use Carbon\Carbon;
 use STS\Entities\Trip;
 use STS\Entities\Passenger;
 use STS\Entities\Rating as RatingModel;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-// use Illuminate\Database\Eloquent\SoftDeletes;
-use STS\Services\Notifications\Models\DatabaseNotification;
+use Illuminate\Notifications\Notifiable;
 use STS\Contracts\Repository\IRatingRepository;
+// use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use STS\Services\Notifications\Models\DatabaseNotification;
 
 class User extends Authenticatable
 {
+    use Notifiable;
+
     protected $table = 'users';
 
     const FRIEND_REQUEST = 0;
+
     const FRIEND_ACCEPTED = 1;
+
     const FRIEND_REJECT = 2;
 
     const FRIENDSHIP_SYSTEM = 0;
+
     const FRIENDSHIP_FACEBOOK = 1;
 
     protected $fillable = [
@@ -42,9 +48,17 @@ class User extends Authenticatable
         'has_pin',
         'is_member',
         'monthly_donate',
+        'unaswered_messages_limit',
         'do_not_alert_request_seat',
         'do_not_alert_accept_passenger',
         'do_not_alert_pending_rates',
+        'autoaccept_requests',
+        'driver_is_verified',
+        'driver_data_docs',
+        'account_number',
+        'account_type',
+        'account_bank',
+        'data_visibility'
     ];
 
     protected $dates = [
@@ -53,7 +67,11 @@ class User extends Authenticatable
         'updated_at',
     ];
 
-    protected $hidden = ['password', 'remember_token', 'terms_and_conditions'];
+    protected $hidden = [
+        'password', 
+        'remember_token', 
+        'terms_and_conditions'
+    ];
 
     protected $cast = [
         'banned'               => 'boolean',
@@ -65,12 +83,15 @@ class User extends Authenticatable
         'monthly_donate'       => 'boolean',
         'do_not_alert_request_seat'       => 'boolean',
         'do_not_alert_accept_passenger'   => 'boolean',
-        'do_not_alert_pending_rates'      => 'boolean'
+        'do_not_alert_pending_rates'      => 'boolean',
+        'driver_is_verified'      => 'boolean',
+        'driver_data_docs'      => 'array',
     ];
 
     protected $appends = [
         'positive_ratings',
         'negative_ratings',
+        'references'
     ];
 
     public function accounts()
@@ -100,7 +121,8 @@ class User extends Authenticatable
         return $this->hasMany('STS\Entities\Car', 'user_id');
     }
 
-    public function subscriptions() {
+    public function subscriptions()
+    {
         return $this->hasMany('STS\Entities\Subscription', 'user_id');
     }
 
@@ -141,6 +163,7 @@ class User extends Authenticatable
         $donations = $this->hasMany("STS\Entities\Donation", 'user_id');
         $donations->where('month', '<=', date('Y-m-t 23:59:59'));
         $donations->where('month', '>=', date('Y-m-01 00:00:00'));
+
         return $donations;
     }
 
@@ -166,39 +189,81 @@ class User extends Authenticatable
         return $this->belongsToMany('STS\Entities\Conversation', 'conversations_users', 'user_id', 'conversation_id')->withPivot('read');
     }
 
-    public function tripsAsPassenger($state = null)
+    public function tripsAsPassenger($state = null, $hours_range = null, $date = null)
     {
         $user_id = $this->id;
         $trips = Trip::whereHas('passenger', function ($q) use ($user_id) {
             $q->whereUserId($user_id);
             $q->whereRequestState(Passenger::STATE_ACCEPTED);
         });
-        if ($state == Trip::FINALIZADO) {
+        if ($state === Trip::FINALIZADO) {
             $trips->where('trip_date', '<', Carbon::Now());
-        } elseif ($state == Trip::ACTIVO) {
+        } elseif ($state === Trip::ACTIVO) {
             $trips->where('trip_date', '>=', Carbon::Now());
+        }
+        if ($hours_range) {
+            $date = !$date ? Carbon::Now() : new Carbon($date);
+            $start_date = $date->copy()->subHours($hours_range)->toDateTimeString();
+            $end_date = $date->copy()->addHours($hours_range)->toDateTimeString();
+            $trips->where('trip_date', '>=', $start_date);
+            $trips->where('trip_date', '<=', $end_date);
         }
 
         return $trips;
     }
 
+    public function pendingRequests ($hours_range = null, $date = null) {
+        $user_id = $this->id;
+        $trip_ids = $this->tripsRequested($hours_range, $date)->pluck('id')->toArray();
+        $pendingRequests = Passenger::whereIn('trip_id', $trip_ids);
+        $pendingRequests->where('user_id', $user_id);
+        $pendingRequests->where(function($q) {
+            $q->where('request_state', Passenger::STATE_PENDING);
+            $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);         
+        });
+        return $pendingRequests;
+    }
+
+    public function tripsRequested ($hours_range = null, $date = null)
+    {
+        $user_id = $this->id;
+        $trips_requested = Trip::whereHas('passenger', function ($q) use ($user_id) {
+            $q->whereUserId($user_id);
+            $q->where(function($q) {
+                $q->where('request_state', Passenger::STATE_PENDING);
+                $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);         
+            });
+        });
+        if ($hours_range) {
+            $date = !$date ? Carbon::Now() : new Carbon($date);
+            $start_date = $date->copy()->subHours($hours_range)->toDateTimeString();
+            $end_date = $date->copy()->addHours($hours_range)->toDateTimeString();
+            $trips_requested->where('trip_date', '>=', $start_date);
+            $trips_requested->where('trip_date', '<=', $end_date);
+        }
+        return $trips_requested;
+    }
+
+    public function referencesReceived()
+    {
+        return $this->hasMany('STS\Entities\References', 'user_id_to');
+    }
+
     public function ratingGiven()
     {
         return $this->hasMany('STS\Entities\Rating', 'user_id_from')->where('available', 1);
-                    /* ->where('voted', 1)
-                    ->where('created_at', '<=', Carbon::Now()
-                    ->subDays(RatingModel::RATING_INTERVAL));*/
+        /* ->where('voted', 1)
+        ->where('created_at', '<=', Carbon::Now()
+        ->subDays(RatingModel::RATING_INTERVAL));*/
     }
 
     public function ratingReceived()
     {
         return $this->hasMany('STS\Entities\Rating', 'user_id_to')->where('available', 1);
-                    /* ->where('voted', 1)
-                    ->where('created_at', '<=', Carbon::Now()
-                    ->subDays(RatingModel::RATING_INTERVAL)); */
+        /* ->where('voted', 1)
+        ->where('created_at', '<=', Carbon::Now()
+        ->subDays(RatingModel::RATING_INTERVAL)); */
     }
-
-    
 
     public function ratings($value = null)
     {
@@ -226,5 +291,10 @@ class User extends Authenticatable
     public function getNegativeRatingsAttribute()
     {
         return $this->ratings(RatingModel::STATE_NEGATIVO)->count();
+    }
+
+    public function getReferencesAttribute()
+    {
+        return $this->referencesReceived()->get();
     }
 }

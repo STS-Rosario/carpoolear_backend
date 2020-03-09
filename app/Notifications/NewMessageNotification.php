@@ -18,6 +18,8 @@ class NewMessageNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
             'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -40,12 +42,12 @@ class NewMessageNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' @ '.$message->text,
-            'url' => "conversations/" . $message->conversation_id,
+            'url' => 'conversations/'.$message->conversation_id,
             'type' => 'conversation',
             'extras' => [
                 'id' => $message->conversation_id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

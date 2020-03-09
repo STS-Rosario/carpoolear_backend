@@ -20,10 +20,13 @@ class Trip extends Model
     use SoftDeletes;
 
     const FINALIZADO = 0;
+
     const ACTIVO = 1;
 
     const PRIVACY_PUBLIC = 2;
+
     const PRIVACY_FRIENDS = 0;
+
     const PRIVACY_FOF = 1;
 
     protected $table = 'trips';
@@ -37,6 +40,7 @@ class Trip extends Model
         'total_seats',
         'friendship_type_id',
         'distance',
+        'seat_price',
         'estimated_time',
         'co2',
         'es_recurrente',
@@ -45,7 +49,11 @@ class Trip extends Model
         'return_trip_id',
         'enc_path',
         'car_id',
-        'parent_trip_id'
+        'parent_trip_id',
+        'allow_smoking',
+        'allow_kids',
+        'allow_animals',
+        'seat_price'
     ];
 
     protected $hidden = [
@@ -60,7 +68,7 @@ class Trip extends Model
 
     protected $casts = [
         'is_passenger'  => 'boolean',
-        'es_recurrente' => 'boolean',
+        'es_recurrente' => 'boolean'
     ];
 
     protected $dates = [
@@ -92,6 +100,10 @@ class Trip extends Model
         return $this->hasMany('STS\Entities\Passenger', 'trip_id')->with('user');
     }
 
+    public function routes () {
+        return $this->belongsToMany('STS\Entities\Route', 'trip_routes', 'trip_id', 'route_id');
+    }
+
     public function passengerAccepted()
     {
         return $this->passenger()->whereRequestState(Passenger::STATE_ACCEPTED)->where('user_id', '<>', $this->user_id);
@@ -99,7 +111,10 @@ class Trip extends Model
 
     public function passengerPending()
     {
-        return $this->passenger()->whereRequestState(Passenger::STATE_PENDING);
+        return $this->passenger()->whereIn('request_state', [
+            Passenger::STATE_PENDING, 
+            Passenger::STATE_WAITING_PAYMENT
+        ]);
     }
 
     public function days()
@@ -112,9 +127,9 @@ class Trip extends Model
         return $this->hasMany('STS\Entities\TripPoint', 'trip_id');
     }
 
-    public function califications()
+    public function ratings()
     {
-        return $this->hasMany('STS\Entities\Calification', 'viajes_id');
+        return $this->hasMany('STS\Entities\Rating', 'trip_id')->with(['from','to']);
     }
 
     public function outbound()

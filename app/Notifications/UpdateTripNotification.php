@@ -18,6 +18,8 @@ class UpdateTripNotification extends BaseNotification
             'title' => $this->getAttribute('from')->name.' ha cambiado las condiciones de su viaje.',
             'email_view' => 'update_trip',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -40,11 +42,11 @@ class UpdateTripNotification extends BaseNotification
 
         return [
             'message' => $this->getAttribute('from')->name.' ha cambiado las condiciones de su viaje.',
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

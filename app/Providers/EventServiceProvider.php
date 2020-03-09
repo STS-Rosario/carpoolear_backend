@@ -3,7 +3,7 @@
 namespace STS\Providers;
 
 use STS\Listeners\Ratings\CreateRatingDeleteTrip;
-use Illuminate\Contracts\Events\Dispatcher as DispatcherContract;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
 class EventServiceProvider extends ServiceProvider
@@ -65,16 +65,23 @@ class EventServiceProvider extends ServiceProvider
         'STS\Events\Passenger\Request' => [
             'STS\Listeners\Notification\PassengerRequest',
         ],
+        'STS\Events\Passenger\AutoRequest' => [
+            'STS\Listeners\Notification\PassengerAutoRequest',
+        ],
         'STS\Events\Passenger\Cancel' => [
             'STS\Listeners\Notification\PassengerCancel',
             // 'STS\Listeners\Conversation\removeUserConversation',
         ],
         'STS\Events\Passenger\Accept' => [
             'STS\Listeners\Notification\PassengerAccept',
+            'STS\Listeners\Request\ModuleLimitedRequest'
             // 'STS\Listeners\Conversation\addUserConversation',
         ],
         'STS\Events\Passenger\Reject' => [
             'STS\Listeners\Notification\PassengerReject',
+        ],
+        'STS\Events\Passenger\AutoCancel' => [
+            'STS\Listeners\Notification\PassengerAutoCancel',
         ],
         'STS\Events\Rating\PendingRate' => [
             'STS\Listeners\Notification\PendingRate',
@@ -91,9 +98,9 @@ class EventServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function boot(DispatcherContract $events)
+    public function boot()
     {
-        parent::boot($events);
+        parent::boot();
 
         //
     }

@@ -20,9 +20,15 @@ class Kernel extends ConsoleKernel
         Commands\DownloadPoints::class,
         Commands\FacebookImage::class,
         Commands\UpdateUser::class,
+        Commands\ConversationCreate::class,
+        Commands\BuildNodes::class,
+        Commands\BuildRoutes::class,
+        Commands\BuildNodesSuburb::class,
+        Commands\BuildNodesWeights::class,
+        Commands\updateTrips::class,
+        Commands\RatesAvailability::class,
         Commands\GenerateTripVisibility::class,
         Commands\CleanTripVisibility::class,
-        Commands\ConversationCreate::class,
     ];
 
     /**
@@ -37,11 +43,28 @@ class Kernel extends ConsoleKernel
         $schedule->command('rate:create')->hourly();
 
         $schedule->command('trip:remainder')->hourly();
+        
+        $schedule->command('rating:availables')->everyMinute();
 
         $schedule->command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
         $schedule->command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
 
         $schedule->command('trip:visibilityclean')->dailyAt('03:00')->timezone('America/Argentina/Buenos_Aires');
+
+        // $schedule->command('georoute:build')->everyMinute();
+
+        $schedule->command('node:buildweights')->hourly();
+
+    }
+
+    /**
+     * Register the Closure based commands for the application.
+     *
+     * @return void
+     */
+    protected function commands()
+    {
+        require base_path('routes/console.php');
     }
 }

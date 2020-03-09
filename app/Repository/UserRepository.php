@@ -6,6 +6,9 @@ use DB;
 use STS\User;
 use Carbon\Carbon;
 use STS\Contracts\Repository\User as UserRep;
+use STS\Entities\Trip;
+use STS\Entities\Passenger;
+use STS\Entities\Conversation;
 
 class UserRepository implements UserRep
 {
@@ -50,6 +53,22 @@ class UserRepository implements UserRep
     public function getUserBy($key, $value)
     {
         return User::where($key, $value)->first();
+    }
+    public function searchUsers($name)
+    {
+
+        if ($name) {
+            $users = User::where('name', 'like', '%'.$name.'%');
+            $users->orWhere('email', 'like', '%'.$name.'%');
+        } else {
+            return null;
+        }
+        $users->with('accounts');
+        $users->orderBy('name');
+        $users->limit(9);
+        $users = $users->get();
+
+        return $users;
     }
 
     public function index($user, $search_text = null)
@@ -144,4 +163,24 @@ class UserRepository implements UserRep
         $notification->readed();
     }
 
+
+    public function unansweredConversationOrRequestsByTrip ($userId, $tripId) {
+        // todas las request que pertenezcan a un viaje mio y que esten pendientes
+        $pendingRequests = Passenger::with('trip')
+            ->where('trip_id', $tripId)
+            ->whereHas('trip', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where('request_state', Passenger::STATE_PENDING)
+            ->count();
+
+        // conversaciones que no tegan mensajes mios (respuestas)
+        $unasweredConversations = Conversation::where('trip_id', $tripId)
+            ->whereDoesntHave('messages', function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->count();
+        
+        return $pendingRequests + $unasweredConversations;
+    }
 }

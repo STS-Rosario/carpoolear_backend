@@ -3,7 +3,9 @@
 namespace STS\Transformers;
 
 use STS\Entities\Conversation;
+use STS\Entities\Trip;
 use League\Fractal\TransformerAbstract;
+use STS\Transformers\TripTransformer;
 
 class ConversationsTransformer extends TransformerAbstract
 {
@@ -26,15 +28,33 @@ class ConversationsTransformer extends TransformerAbstract
             'type' => $conversation->type,
         ];
 
+        $module_module_coordinate_by_message = config('carpoolear.module_coordinate_by_message', false);
+        if ($module_module_coordinate_by_message) {
+            $trip = Trip::find($conversation->trip_id);
+            // old client, maybe null
+            if ($trip) {
+                $tripTransformer = new TripTransformer($this->user);
+                if ($trip->return_trip_id) {
+                    $returnTrip = Trip::find($trip->return_trip_id);
+                    if ($returnTrip) {
+                        $data['return_trip'] = $tripTransformer->transform($returnTrip);
+                    }
+                }
+                $data['trip'] = $tripTransformer->transform($trip);
+            }
+        }
+
         switch ($conversation->type) {
             case Conversation::TYPE_PRIVATE_CONVERSATION:
                 $width = $conversation->users()->where('id', '<>', $this->user->id)->first();
                 $data['title'] = $width->name;
                 $data['image'] = $width->image ? '/image/profile/'.$width->image : '';
+
                 break;
             default:
                 $data['title'] = $conversation->title;
                 $data['image'] = '';
+
                 break;
         }
 

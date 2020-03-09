@@ -4,6 +4,8 @@ namespace STS\Transformers;
 
 use STS\User;
 use League\Fractal\TransformerAbstract;
+use STS\Services\Logic\TripsManager as TripLogic;
+use STS\Repository\TripRepository as TripRepo;
 
 class ProfileTransformer extends TransformerAbstract
 {
@@ -12,6 +14,7 @@ class ProfileTransformer extends TransformerAbstract
     public function __construct($user)
     {
         $this->user = $user;
+        $this->tripLogic = new TripLogic(new tripRepo);
     }
 
     /**
@@ -31,24 +34,61 @@ class ProfileTransformer extends TransformerAbstract
             'negative_ratings' => $user->negative_ratings,
             'birthday' => $user->birthday,
             'gender' => $user->gender,
-            'mobile_phone' => $user->mobile_phone,
-            'nro_doc' => $user->nro_doc,
+            // 'mobile_phone' => $user->mobile_phone,
+            // 'nro_doc' => $user->nro_doc,
             'last_connection' => $user->last_connection ? $user->last_connection->toDateTimeString() : '',
             'accounts' => $user->accounts,
             'donations' => $user->donations,
-            'has_pin' => $user->has_pin,
-            'is_member' => $user->is_member,
+            'has_pin' => intval($user->has_pin),
+            'is_member' => intval($user->is_member),
+            'banned' => intval($user->banned),
+            'active' => intval($user->active),
             'monthly_donate' => $user->monthly_donate,
-            'do_not_alert_request_seat'       => $user->do_not_alert_request_seat,
-            'do_not_alert_accept_passenger'   => $user->do_not_alert_accept_passenger,
-            'do_not_alert_pending_rates'      => $user->do_not_alert_pending_rates
+            'do_not_alert_request_seat'       => intval($user->do_not_alert_request_seat),
+            'do_not_alert_accept_passenger'   => intval($user->do_not_alert_accept_passenger),
+            'do_not_alert_pending_rates'      => intval($user->do_not_alert_pending_rates),
+            'monthly_donate' => intval($user->monthly_donate),
+            'unaswered_messages_limit'    => intval($user->unaswered_messages_limit),
+            'autoaccept_requests'    => intval($user->autoaccept_requests),
+            'driver_is_verified'    => intval($user->driver_is_verified),
+            'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
+            'references' => $user->references,
+            'data_visibility' => $user->data_visibility
         ];
-        if ($user->id = $this->user->id || $this->user->is_admin) {
+
+        if ($user->id == $this->user->id || $this->user->is_admin) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
             $data['accounts'] = $user->accounts;
             $data['donations'] = $user->donations;
             $data['email'] = $user->email;
+            $data['mobile_phone'] = $user->mobile_phone;
+            $data['nro_doc'] = $user->nro_doc;
+            // bank data
+            $data['account_number'] = $user->account_number;
+            $data['account_type'] = $user->account_type;
+            $data['account_bank'] = $user->account_bank;
+            $data['on_boarding_view'] = $user->on_boarding_view;
+        }
+        
+        switch ($user->data_visibility) {
+            case '0':
+                # viaja conmigo
+                if ($this->tripLogic->shareTrip($this->user, $user)) {
+                    $data['nro_doc'] = $user->nro_doc;
+                    $data['email'] = $user->email;
+                    $data['mobile_phone'] = $user->mobile_phone;
+                }
+                break;
+            case '1':
+                # publico
+                $data['nro_doc'] = $user->nro_doc;
+                $data['email'] = $user->email;
+                $data['mobile_phone'] = $user->mobile_phone;
+                break;
+            default:
+                # privado
+                break;
         }
 
         if ($user->state) {

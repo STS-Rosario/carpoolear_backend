@@ -44,7 +44,7 @@ gulp.task('deploy', ['deploy-file'] ,function() {
 gulp.task('deploy-file', function() {
   
   // Dirs and Files to sync
-  rsyncPaths = [ 'after_deploy.sh', 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert' ];
+  rsyncPaths = ['artisan', 'after_deploy.sh', 'composer.json', 'composer.lock',  'app' , 'config' , 'database' , 'public' , 'resources' , 'bootstrap' , 'cert', 'tests', 'routes', 'storage/banks', 'storage/cc', 'storage/geojson' ];
   
   // Default options for rsync
   rsyncConf = {
@@ -77,6 +77,14 @@ gulp.task('deploy-file', function() {
     rsyncConf.hostname = '104.131.15.228'; // hostname
     rsyncConf.username = argv.user || 'movilizame'; // ssh username
     rsyncConf.destination = '/home/movilizame/sites/carpoolear_dev/'; // path where uploaded files go
+    
+  
+  } else if (argv.apalancar) {
+
+    rsyncConf.port = 2200;
+    rsyncConf.hostname = '45.55.196.14'; // hostname
+    rsyncConf.username = argv.user || 'movilizame'; // ssh username
+    rsyncConf.destination = '/home/movilizame/sites/apalancar/'; // path where uploaded files go
     
   
   // Missing/Invalid Target  

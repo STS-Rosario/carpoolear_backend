@@ -3,9 +3,9 @@
 namespace STS\Listeners\Subscriptions;
 
 use STS\Events\User\Trip;
-use STS\Notifications\SubscriptionMatchNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Contracts\Repository\User as UserRepository;
+use STS\Notifications\SubscriptionMatchNotification;
 use STS\Contracts\Repository\Subscription as SubscriptionsRepository;
 
 class OnNewTrip implements ShouldQueue

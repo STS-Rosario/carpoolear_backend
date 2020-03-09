@@ -18,6 +18,8 @@ class RequestRemainderNotification extends BaseNotification
             'title' => 'Tienes solicitudes pendientes de contestar',
             'email_view' => 'request_remainder',
             'url' =>  config('app.url').'/app/profile/me#0',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -44,7 +46,7 @@ class RequestRemainderNotification extends BaseNotification
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

@@ -8,6 +8,7 @@ use Illuminate\Queue\SerializesModels;
 class RequestRemainder extends Event
 {
     use SerializesModels;
+
     public $trip;
 
     /**

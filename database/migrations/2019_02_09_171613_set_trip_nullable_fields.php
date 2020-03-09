@@ -5,7 +5,7 @@ use Illuminate\Database\Migrations\Migration;
 
 class SetTripNullableFields extends Migration
 {
-     /**
+    /**
      * Run the migrations.
      *
      * @return void

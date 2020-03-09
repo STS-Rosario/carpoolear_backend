@@ -18,6 +18,8 @@ class SubscriptionMatchNotification extends BaseNotification
             'title' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
             'email_view' => 'subscription_match',
             'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -39,11 +41,11 @@ class SubscriptionMatchNotification extends BaseNotification
 
         return [
             'message' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
-            'url' => "trips/" . $trip->id,
+            'url' => 'trips/'.$trip->id,
             'extras' => [
                 'id' => $trip->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }

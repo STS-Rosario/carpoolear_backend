@@ -7,7 +7,7 @@ compañeros de viaje.
 <br>
 Saludos!
 <br>
-Carpoolear
+{{$name_app}}
 <br>
 <br>
-<small style="color: red;">Si no deseás recibir más este tipo de correo, <a href="https://carpoolear.com.ar/desuscribirme?email={{ $user->email }}">hacé click aquí</a>.</small>
+<small style="color: red;">Si no deseás recibir más este tipo de correo, <a href="{{ $domain }}/desuscribirme?email={{ $user->email }}">hacé click aquí</a>.</small>

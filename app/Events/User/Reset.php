@@ -8,7 +8,9 @@ use Illuminate\Queue\SerializesModels;
 class Reset extends Event
 {
     use SerializesModels;
+
     public $id;
+
     public $token;
 
     /**

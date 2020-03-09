@@ -6,4 +6,4 @@ Para restablecer tu contraseña haz click <a href="{{$url}}">aquí</a>.
 <br>
 Saludos!
 <br>
-Carpoolear
+{{$name_app}}

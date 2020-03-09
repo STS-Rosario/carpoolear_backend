@@ -8,7 +8,7 @@ interface Trip
 
     public function update($trip, array $data);
 
-    public function show($id);
+    public function show($user, $id);
 
     public function index($data);
 
@@ -20,5 +20,5 @@ interface Trip
 
     public function deletePoints($trip);
 
-    public function myTrips($user, $asDriver);
+    public function getTrips($user, $userId, $asDriver);
 }

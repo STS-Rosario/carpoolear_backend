@@ -19,6 +19,8 @@ class FriendRejectNotification extends BaseNotification
             'email_view' => 'friends_email',
             'type' => 'reject',
             'message_mail' => 'rechazado',
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
         ];
     }
 
@@ -44,7 +46,7 @@ class FriendRejectNotification extends BaseNotification
             'extras' => [
                 'id' => $from->id,
             ],
-            "image" => "https://carpoolear.com.ar/app/static/img/carpoolear_logo.png"
+            'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
 }
