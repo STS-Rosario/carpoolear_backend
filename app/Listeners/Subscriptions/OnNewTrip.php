@@ -34,17 +34,18 @@ class OnNewTrip implements ShouldQueue
     {
         $trip = $event->trip;
         $user = $trip->user;
-        $subscriptions =  $this->subRepo->search($user, $trip);
+        // $subscriptions =  $this->subRepo->search($user, $trip);
         // console_log($subscriptions);
-        foreach ($subscriptions as $s) {
+        // foreach ($subscriptions as $s) {
             // \Log::info($trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
-            $notification = new SubscriptionMatchNotification();
+            // FIXME
+            /* $notification = new SubscriptionMatchNotification();
             $notification->setAttribute('trip', $trip);
             try {
                 $notification->notify($s->user);
             } catch (\Exception $e) {
                 \Log::info('Ex: ' . $trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
-            }
-        }
+            } */
+        // }
     }
 }

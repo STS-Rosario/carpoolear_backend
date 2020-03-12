@@ -30,6 +30,7 @@ class CreateHandler implements ShouldQueue
      */
     public function handle(Create $event)
     {
+        \Log::info('create handler');
         $user = $this->userRepo->show($event->id);
         if ($user && $user->email) {
             $notification = new NewUserNotification();
