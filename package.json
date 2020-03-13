@@ -13,7 +13,7 @@
     "gulp-prompt": "^0.2.0",
     "gulp-rsync": "0.0.7",
     "gulp-util": "^3.0.8",
-    "minimist": "^1.2.0"
+    "minimist": "^1.2.2"
   },
   "dependencies": {
     "gulp": "^3.9.1",
