@@ -41,8 +41,9 @@ class RatesAvailability extends Command
      */
     public function handle()
     {
-        \Log::info('Rates Availability');
-        Rating::where('created_at', '<', Carbon::Now()->subDays(Rating::RATING_INTERVAL))->update(['available' => 1]);
+        Rating::where('created_at', '<', Carbon::Now()->subDays(Rating::RATING_INTERVAL))
+        ->where('voted', '=', DB::raw(1))
+        ->update(['available' => 1]);
 
         
         $rates = DB::table('rating as r')->where('r.created_at', '>=', Carbon::Now()->subDays(Rating::RATING_INTERVAL))->where('r.voted', 1);
@@ -51,6 +52,7 @@ class RatesAvailability extends Command
             $join->on('r.user_id_from', '=', 'r2.user_id_to');
             $join->on('r.user_id_to', '=', 'r2.user_id_from');
             $join->on('r2.voted', '=', DB::raw(1));
+            $join->on('r.voted', '=', DB::raw(1));
         });
 
         $rates->update(['r.available' => 1]);
