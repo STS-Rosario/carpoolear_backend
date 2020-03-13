@@ -85,11 +85,11 @@ class SubscriptionsRepository implements SubscriptionRepository
                 break;
         }
         // $points = $trip->points;
-        // $this->makeDistance($query, $points[0], 'from');
-        // $this->makeDistance($query, $points[count($points) - 1], 'to');
+        $this->makeDistance($query, $points[0], 'from');
+        $this->makeDistance($query, $points[count($points) - 1], 'to');
 
         // TODO take in account route nodes
-        $countOrder = 0;
+        /* $countOrder = 0;
         $nodes = [];
         $processed = 1;
         foreach ($trip->routes as $r) {
@@ -102,8 +102,8 @@ class SubscriptionsRepository implements SubscriptionRepository
                 $nodes[$countOrder] = $node->id;
                 $countOrder++;
             }
-        }
-        $query->where(function ($q) use ($nodes, $processed) {
+        } */
+        /* $query->where(function ($q) use ($nodes, $processed) {
             $q->where(function ($q) {
                 $q->whereNull('from_id');
                 $q->whereNull('to_id');
@@ -118,11 +118,9 @@ class SubscriptionsRepository implements SubscriptionRepository
                     $q->whereIn('to_id', $nodes);
                 });
             }
-            // FIXME join with routes_node para una route y verificar que origin es menor que destiny
-            /* $q->orWhere(function ($q) {
+        }); */
 
-            }); */
-        });
+
         $query->where('is_passenger', $trip->is_passenger);
         return $query->get();
         return [];
@@ -141,6 +139,32 @@ class SubscriptionsRepository implements SubscriptionRepository
                 $q->whereRaw($name.'_sin_lat * '.$sin_lat.' + '.$name.'_cos_lat * '.$cos_lat.' *  ('.$name.'_cos_lng * '.$cos_lng.' + '.$name.'_sin_lng * '.$sin_lng.') > cos( '.$name.'_radio / 1000.0 / 6371.0)');
             });
         });
+    }
+
+
+
+    public function getPotentialNode ($n1, $n2) {
+        $maxLat = 0;
+        $minLat = 0;
+        $minLng = 0;
+        $maxLng = 0;
+        if ($n1->lat > $n2->lat) {
+            $maxLat = $n1->lat;
+            $minLat = $n2->lat;
+        } else {
+            $maxLat = $n2->lat;
+            $minLat = $n1->lat;
+        }
+        if ($n1->lng > $n2->lng) {
+            $maxLng = $n1->lng;
+            $minLng = $n2->lng;
+        } else {
+            $maxLng = $n2->lng;
+            $minLng = $n1->lng;
+        }
+        $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
+        $query->whereBetween('lng', [$minLng, $maxLng]);
+        return $query->first();
     }
 
     // private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)
