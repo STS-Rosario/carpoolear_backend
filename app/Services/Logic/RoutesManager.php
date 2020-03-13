@@ -4,7 +4,7 @@ namespace STS\Services\Logic;
 
 use STS\Repository\RoutesRepository as RoutesRep;
 use STS\Contracts\Logic\Routes as RoutesLogic;
-
+use DB;
 
 use Carbon\Carbon;
 use STS\Entities\Trip;
@@ -30,16 +30,21 @@ class RoutesManager implements RoutesLogic
         $destinyNode = $route->destiny;
         // 1- Obenter todos los nodos geo dentro de la circunferencia
         $nodes = $this->routesRepo->getPotentialsNodes($sourceNode, $destinyNode);
+        DB::disconnect('mysql');
         // var_dump($nodes);die;
         // 2- Calcular con OSM la ruta
-        $url = "https://router.project-osrm.org/route/v1/driving/$sourceNode->lng,$sourceNode->lat;$destinyNode->lng,$destinyNode->lat?overview=false&alternatives=true&steps=true&hints=";
+        $url = "http://router.project-osrm.org/route/v1/driving/$sourceNode->lng,$sourceNode->lat;$destinyNode->lng,$destinyNode->lat?overview=false&alternatives=true&steps=true&hints=";
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_URL, $url); // CURLOPT_TIMEOUT	
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
         $result = curl_exec($ch);
         curl_close($ch);
         
+        \Log::info($url);
+
         $result = json_decode($result, true);
+        \Log::info('decode ok');
         // var_dump($result);die;
         foreach ($result['routes'][0]['legs'][0]['steps'] as $step) {
             foreach ($step['intersections'] as $i) {
@@ -48,6 +53,8 @@ class RoutesManager implements RoutesLogic
         }
         // 3- Buscar los puntos obtenidos en 1 cercanos a los segumentos
         $nearPoints = [];
+        \Log::info('count($points): ' . count($points));
+        \Log::info('count($nodesArr): ' . count($nodes->toArray()));
         for ($i = 1; $i < count($points); $i++) { 
             $p1 = $points[$i - 1];
             $p2 = $points[$i];
@@ -64,6 +71,9 @@ class RoutesManager implements RoutesLogic
             $nodesArr = $nodes->toArray();
             for ($j = count($nodesArr) - 1; $j >= 0; $j--) {
                 $node = (object)$nodesArr[$j];
+                if (isset($nearPoints[$node->id])) {
+                    break;
+                }
                 // | m * x1 - y1 + b | / sqr(pow(m, 2) + 1)
                 $d = abs($m * $node->lat - $node->lng + $b) / sqrt(pow($m, 2) + 1);
                 if ($d < 0.125) {
@@ -82,6 +92,7 @@ class RoutesManager implements RoutesLogic
                             if (!isset($nearPoints[$node->id])) {
                                 $node->d = $d;
                                 $nearPoints[$node->id] = $node;
+                                break;
                             }
                         }
                     }
@@ -91,7 +102,9 @@ class RoutesManager implements RoutesLogic
 
             }
         }
+        DB::disconnect('mysql');
         // 4- Grabar
+        \Log::info('Saving route');
         $this->routesRepo->saveRoute($route, $nearPoints);
 
     }
