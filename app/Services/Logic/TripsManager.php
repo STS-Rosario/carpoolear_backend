@@ -135,7 +135,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function changeTripSeats($user, $trip_id, $increment)
     {
-        $trip = $this->tripRepo->show($trip_id);
+        $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
                 $data = [];
@@ -252,7 +252,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function tripOwner($user, $trip)
     {
-        $trip = $trip instanceof Model ? $trip : $this->tripRepo->show($trip);
+        $trip = $trip instanceof Model ? $trip : $this->tripRepo->show($user, $trip);
         if ($trip) {
             return $trip->user_id == $user->id || $user->is_admin;
         }
@@ -274,7 +274,7 @@ class TripsManager extends BaseManager implements TripLogic
     {
         $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
         if (is_int($trip)) {
-            $trip = $this->tripRepo->show($trip);
+            $trip = $this->tripRepo->show($user, $trip);
         }
 
         if (! $trip) {
