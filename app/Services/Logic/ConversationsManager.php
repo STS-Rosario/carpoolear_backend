@@ -223,6 +223,8 @@ class ConversationsManager extends BaseManager implements ConversationRepo
     private function newMessage(array $data)
     {
         $message = (new Message())->fill($data);
+        // the message starts no notified
+        $message->already_notified = 0;
         $this->messageRepository->store($message);
 
         return $message;
