@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="container">
+{{-- <div class="container">
     <div class="row">
         <div class="col-sm-12 pt48">
             <br>
@@ -25,8 +25,8 @@
             <br>
         </div>
     </div>
-</div>
-{{-- <section class="image-bg parallax pt240 pb104 pt-xs-80 pb-xs-80">
+</div> --}}
+<section class="image-bg parallax pt240 pb104 pt-xs-80 pb-xs-80">
     <div class="background-image-holder">
         <img alt="image" class="background-image" src="img/carpoolear-home3.jpg" />
     </div>
@@ -265,5 +265,5 @@
             </div>	
         </div><!--end of row-->
     </div><!--end of container-->
-</section> --}}
+</section>
 @endsection
