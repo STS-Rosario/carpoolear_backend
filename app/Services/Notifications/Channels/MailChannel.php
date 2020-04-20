@@ -10,6 +10,7 @@ class MailChannel
 
     public function send($notification, $user)
     {
+        // \Log::info('mail channel send');
         if ($user->email) {
             $data = $this->getData($notification, $user);
             $data = array_merge($data, $notification->getAttributes());
@@ -20,6 +21,8 @@ class MailChannel
                 \Log::info($data);
 
                 return;
+            } else {
+                \Log::info('sending_mail:' . json_encode($data));
             }
 
             \Mail::send('email.'.$data['email_view'], $data, function ($message) use ($user, $data) {

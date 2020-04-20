@@ -61,6 +61,7 @@ class BuildRoutes extends Command
                 }
             } catch (\Exception $ex) {
                 \Log::info('Route builder ex');
+                \Log::info($ex);
             }
         }
     }

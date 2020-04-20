@@ -8,12 +8,10 @@ use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\FacebookChannel;
 
-class NewMessageNotification extends BaseNotification
+class NewMessagePushNotification extends BaseNotification
 {
     protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class,
-        FacebookChannel::class
+        PushChannel::class,
     ];
 
     public function toEmail($user)
@@ -45,7 +43,7 @@ class NewMessageNotification extends BaseNotification
         $message = $this->getAttribute('messages');
 
         return [
-            'message' => 'De ' . $this->getAttribute('from')->name.' has recibido nuevos mensajes.',
+            'message' => $this->getAttribute('from')->name.' @ '.$message->text,
             'url' => 'conversations/'.$message->conversation_id,
             'type' => 'conversation',
             'extras' => [

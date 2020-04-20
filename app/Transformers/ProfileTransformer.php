@@ -78,6 +78,7 @@ class ProfileTransformer extends TransformerAbstract
                     $data['nro_doc'] = $user->nro_doc;
                     $data['email'] = $user->email;
                     $data['mobile_phone'] = $user->mobile_phone;
+                    $data['cars'] = $user->cars;
                 }
                 break;
             case '1':
@@ -85,6 +86,7 @@ class ProfileTransformer extends TransformerAbstract
                 $data['nro_doc'] = $user->nro_doc;
                 $data['email'] = $user->email;
                 $data['mobile_phone'] = $user->mobile_phone;
+                $data['cars'] = $user->cars;
                 break;
             default:
                 # privado

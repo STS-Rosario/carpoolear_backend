@@ -38,6 +38,7 @@ class OnNewTrip implements ShouldQueue
         // console_log($subscriptions);
         foreach ($subscriptions as $s) {
             // \Log::info($trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
+            // FIXME
             $notification = new SubscriptionMatchNotification();
             $notification->setAttribute('trip', $trip);
             try {

@@ -160,6 +160,7 @@ class AuthController extends Controller
 
     public function reset(Request $request)
     {
+        \Log::info('resetPassword authController');
         $email = $request->get('email');
         if ($email) {
             $token = $this->userLogic->resetPassword($email);

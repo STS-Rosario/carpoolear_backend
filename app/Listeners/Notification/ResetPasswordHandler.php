@@ -30,6 +30,7 @@ class ResetPasswordHandler implements ShouldQueue
      */
     public function handle(Reset $event)
     {
+        \Log::info('ResetPasswordHandler');
         $token = $event->token;
         $user = $this->userRepo->show($event->id);
         if ($user) {

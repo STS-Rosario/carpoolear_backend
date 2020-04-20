@@ -13,6 +13,7 @@ class NewUserNotification extends BaseNotification
 
     public function toEmail($user)
     {
+        \Log::info('NewUserNotification toEmail' . config('carpoolear.name_app'));
         return [
             'title' => 'Bienvenido a ' . config('carpoolear.name_app') . '!',
             'email_view' => 'create_account',

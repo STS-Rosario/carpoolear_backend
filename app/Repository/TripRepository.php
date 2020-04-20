@@ -219,9 +219,7 @@ class TripRepository implements TripRepo
     }
 
     public function search($user, $data)
-    {       
-        \Log::info('search data');
-        \Log::info($data);
+    {
 
         $trips = Trip::query()->with(['routes', 'routes.nodes']);
         if (isset($data['is_passenger'])) {

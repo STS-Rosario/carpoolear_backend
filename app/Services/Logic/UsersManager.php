@@ -80,6 +80,8 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['activation_token'] = str_random(40);
             }
             $u = $this->repo->create($data);
+
+            \Log::info('UserManager before CreateEvent');
             event(new CreateEvent($u->id));
 
             return $u;
@@ -216,11 +218,14 @@ class UsersManager extends BaseManager implements UserLogic
 
     public function resetPassword($email)
     {
+        \Log::info('resetPassword userManager');
         $user = $this->repo->getUserBy('email', $email);
         if ($user) {
             $token = str_random(40);
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
+
+            \Log::info('resetPassword before event');
             event(new ResetEvent($user->id, $token));
             return $token;
         } else {

@@ -4,7 +4,7 @@ namespace STS\Listeners\Notification;
 
 use STS\Events\MessageSend as SendEvent;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Notifications\NewMessageNotification;
+use STS\Notifications\NewMessagePushNotification;
 
 class MessageSend implements ShouldQueue
 {
@@ -29,7 +29,7 @@ class MessageSend implements ShouldQueue
         $from = $event->from;
         $to = $event->to;
         $message = $event->message;
-        $notification = new NewMessageNotification();
+        $notification = new NewMessagePushNotification();
         $notification->setAttribute('from', $from);
         $notification->setAttribute('messages', $message);
         try {
