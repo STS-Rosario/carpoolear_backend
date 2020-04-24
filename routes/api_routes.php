@@ -9,7 +9,7 @@ $api->version('v1', [], function ($api) use ($v1_path) {
     $api->post('retoken', $v1_path.'AuthController@retoken');
     $api->get('config', $v1_path.'AuthController@getConfig');
     $api->post('logout', $v1_path.'AuthController@logout');
-    $api->post('activate/{activation_token?}', $v1_path.'AuthController@active');
+    /* $api->post('activate/{activation_token?}', $v1_path.'AuthController@active');
     $api->post('reset-password', $v1_path.'AuthController@reset');
     $api->post('change-password/{token?}', $v1_path.'AuthController@changePasswod');
     $api->post('log', $v1_path.'DebugController@log');
@@ -132,5 +132,5 @@ $api->version('v1', [], function ($api) use ($v1_path) {
     });
     $api->group(['prefix' => 'references'], function ($api) use ($v1_path) {
         $api->post('/', $v1_path.'ReferencesController@create');
-    });
+    }); */
 });
