@@ -221,7 +221,7 @@ class TripRepository implements TripRepo
     public function search($user, $data)
     {
 
-        $trips = Trip::query()->with(['routes', 'routes.nodes']);
+        $trips = Trip::query()->with(['routes']);
         if (isset($data['is_passenger'])) {
             $trips->where('is_passenger', parse_boolean($data['is_passenger']));
         }
@@ -269,6 +269,7 @@ class TripRepository implements TripRepo
         if (isset($data['user_id'])) {
             $trips->whereUserId($data['user_id']);
         }
+        
         if ($user && !$user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 if ($user) {
@@ -281,23 +282,6 @@ class TripRepository implements TripRepo
                                 $q->where('user_id', $user->id);
                             });
                         });
-                        /* $q->orWhere(function ($q) use ($user) {
-                            $q->whereFriendshipTypeId(Trip::PRIVACY_FRIENDS);
-                            $q->whereHas('user.friends', function ($q) use ($user) {
-                                $q->whereId($user->id);
-                            });
-                        });
-                        $q->orWhere(function ($q) use ($user) {
-                            $q->whereFriendshipTypeId(Trip::PRIVACY_FOF);
-                            $q->where(function ($q) use ($user) {
-                                $q->whereHas('user.friends', function ($q) use ($user) {
-                                    $q->whereId($user->id);
-                                });
-                                $q->orWhereHas('user.friends.friends', function ($q) use ($user) {
-                                    $q->whereId($user->id);
-                                });
-                            });
-                        }); */
                     });
                 } else {
                     $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
@@ -305,30 +289,6 @@ class TripRepository implements TripRepo
             });
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
-            /* $trips->whereHas('routes', function ($q) use ($data) {
-                $q->join('route_nodes as o', function($join) use ($data) {
-                    $join->on('routes.id', '=', 'o.route_id');
-                    $join->on('o.node_id', DB::raw($data['origin_id']));
-                });
-                $q->join('route_nodes as d', function($join) use ($data) {
-                    $join->on('routes.id', '=', 'd.route_id');
-                    $join->on('d.node_id', DB::raw($data['destination_id']));
-                    $join->on('o.id', '<', 'd.id');
-                });
-            }); */
-            // $data['origin_id']
-            // $data['destination_id']
-            /* $origin_raw = '(SELECT tro.id
-                                FROM trip_routes tro 
-                                INNER JOIN route_nodes rno ON tro.route_id = rno.route_id AND rno.node_id = ' . $data['origin_id'] . '
-                                WHERE tro.trip_id = trips.id LIMIT 1)';
-            $destination_raw = '(SELECT trd.id 
-                                FROM trip_routes trd
-                                INNER JOIN route_nodes rnd ON trd.route_id = rnd.route_id AND rnd.node_id = ' . $data['destination_id'] . '
-                                WHERE trd.trip_id = trips.id LIMIT 1)';
-            $trips->whereNotNull(DB::raw($origin_raw));
-            $trips->whereNotNull(DB::raw($destination_raw));
-            $trips->where(DB::raw($origin_raw), '<=', DB::raw($destination_raw)); */
 
             $trips->whereHas('routes', function ($q) use ($data) {
                 $q->where('routes.from_id', $data['origin_id']);
@@ -336,10 +296,6 @@ class TripRepository implements TripRepo
             });
         } else {
             if (isset($data['origin_id'])) {
-                /* $trips->whereHas('routes.nodes', function ($q) use ($data) {
-                    $q->where('nodes_geo.id', $data['origin_id']);  
-                    // TODO considerar origen
-                }); */
 
                 $trips->whereHas('routes', function ($q) use ($data) {
                     $q->where('routes.from_id', $data['origin_id']);
@@ -354,10 +310,6 @@ class TripRepository implements TripRepo
                 }
             }
             if (isset($data['destination_id'])) {
-                /* $trips->whereHas('routes.nodes', function ($q) use ($data) {
-                    $q->where('nodes_geo.id', $data['destination_id']);
-                }); */
-
                 $trips->whereHas('routes', function ($q) use ($data) {
                     $q->where('routes.to_id', $data['destination_id']);
                 });
@@ -387,7 +339,7 @@ class TripRepository implements TripRepo
         
         // DB::enableQueryLog();
         $pagination = make_pagination($trips, $pageNumber, $pageSize);
-        // echo '<pre>';
+        // $pagination = $trips->take(7)->get();
         // \Log::info(DB::getQueryLog());
         return $pagination;
     }

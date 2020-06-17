@@ -4,7 +4,7 @@
 
 @section('content')
 
-<div class="container">
+{{-- <div class="container">
     <div class="row">
         <div class="col-sm-12 pt48">
             <br>
@@ -13,7 +13,7 @@
             <img src="img/suspendido.png" style="display:block;margin: 1em auto;" />
             <br>
             <p class="lead">
-                <strong>Carpoolear</strong> apoya las medidas preventivas por el Coronavirus y da de baja la plataforma y grupos de viaje vinculados hasta el 24 de marzo inclusive.
+                <strong>Carpoolear</strong> apoya las medidas preventivas por el Coronavirus y da de baja la plataforma y grupos de viaje vinculados hasta el 10 de mayo inclusive.
             </p>
             <p class="lead">
                 Lamentamos cualquier problema ocasionado y te pedimos no viajar si no es necesario.
@@ -25,8 +25,8 @@
             <br>
         </div>
     </div>
-</div>
-{{-- <section class="image-bg parallax pt240 pb104 pt-xs-80 pb-xs-80">
+</div> --}}
+<section class="image-bg parallax pt240 pb104 pt-xs-80 pb-xs-80">
     <div class="background-image-holder">
         <img alt="image" class="background-image" src="img/carpoolear-home3.jpg" />
     </div>
@@ -265,5 +265,5 @@
             </div>	
         </div><!--end of row-->
     </div><!--end of container-->
-</section> --}}
+</section>
 @endsection

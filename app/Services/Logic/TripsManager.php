@@ -213,7 +213,9 @@ class TripsManager extends BaseManager implements TripLogic
     }
 
     private function proccessTrips ($trips) {
+        $index = 0;
         foreach ($trips as $trip) {
+            $index++;
             if (count($trip->points)) {
                 foreach ($trip->points as $point) {
                     if (is_array($point->json_address) && empty($point->json_address['ciudad'])) {
@@ -231,8 +233,11 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function search($user, $data)
     {
+        \Log::info('enter serach');
         $trips = $this->tripRepo->search($user, $data);
+        \Log::info('db serach completed');
         $trips = $this->proccessTrips($trips);
+        \Log::info('db serach process');
         return $trips;
     }
 
