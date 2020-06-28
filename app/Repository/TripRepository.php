@@ -427,4 +427,8 @@ class TripRepository implements TripRepo
     {
         return Passenger::where('id', $transaction_id)->first();
     }
+
+    public function hideTrips ($user) {
+        return Trip::where('user_id', $user->id)->where('trip_date', '>=', Carbon::Now())->update(['deleted_at' => '2000-01-01']);
+    }
 }

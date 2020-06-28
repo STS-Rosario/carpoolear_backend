@@ -12,14 +12,16 @@ use STS\Contracts\Logic\User as UserLogic;
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent;
 use STS\Contracts\Repository\User as UserRep;
+use STS\Contracts\Repository\Trip as TripRep;
 
 class UsersManager extends BaseManager implements UserLogic
 {
     protected $repo;
 
-    public function __construct(UserRep $userRep)
+    public function __construct(UserRep $userRep, TripRep $tripRepository)
     {
         $this->repo = $userRep;
+        $this->tripRepository = $tripRepository;
     }
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false)
@@ -119,6 +121,10 @@ class UsersManager extends BaseManager implements UserLogic
             }
             \Log::info($data);
             $this->repo->update($user, $data);
+            if ($user->banned > 0) {
+                // hide user trips
+                $this->tripRepository->hideTrips($user);
+            }
 
             if (isset($data['driver_data_docs'])) {
                 if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs']) && !$user->driver_is_verified) {

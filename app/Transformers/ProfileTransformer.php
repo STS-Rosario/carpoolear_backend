@@ -53,7 +53,8 @@ class ProfileTransformer extends TransformerAbstract
             'driver_is_verified'    => intval($user->driver_is_verified),
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
             'references' => $user->references,
-            'data_visibility' => $user->data_visibility
+            'data_visibility' => $user->data_visibility,
+            'references_data' => $user->referencesReceived
         ];
 
         if ($user->id == $this->user->id || $this->user->is_admin) {
