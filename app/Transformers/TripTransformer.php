@@ -44,7 +44,12 @@ class TripTransformer extends TransformerAbstract
         ];
 
         if ($trip->deleted_at) {
-            $data['deleted'] = true;
+            $data['deleted_at'] = $trip->deleted_at->toDateTimeString();
+            if ($trip->deleted_at->toDateTimeString() === '2000-01-01 00:00:00') {
+                $data['hidden'] = true;
+            } else{
+                $data['deleted'] = true;
+            }
         }
 
         $data['request'] = '';

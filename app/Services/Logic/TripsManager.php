@@ -233,11 +233,8 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function search($user, $data)
     {
-        \Log::info('enter serach');
         $trips = $this->tripRepo->search($user, $data);
-        \Log::info('db serach completed');
         $trips = $this->proccessTrips($trips);
-        \Log::info('db serach process');
         return $trips;
     }
 
@@ -272,6 +269,35 @@ class TripsManager extends BaseManager implements TripLogic
             return $this->calcTripPrice($from, $to, $distance);
         } else {
             return $this->tripRepo->simplePrice($distance);
+        }
+    }
+
+
+    public function changeVisibility($user, $trip_id) 
+    {
+        $trip = $this->tripRepo->show($user, $trip_id);
+        if ($trip) {
+            \Log::info('changeVisibility trip: ' . $trip->id);
+            if ($user->id == $trip->user->id || $user->is_admin) {
+                if (!isset($trip->deleted_at) || is_null($trip->deleted_at) || empty($trip->deleted_at->toDateTimeString())) {
+                    Trip::where('id', $trip_id)
+                        ->update(['deleted_at' => '2000-01-01 00:00:00']);
+                } else {
+                    Trip::onlyTrashed()
+                        ->where('id', $trip_id)
+                        ->update(['deleted_at' => null]);
+                }
+                $trip = $this->tripRepo->show($user, $trip_id);
+                return $trip;
+            } else {
+                $this->setErrors(trans('errors.tripowner'));
+
+                return;
+            }
+        } else {
+            $this->setErrors(trans('errors.notrip'));
+
+            return;
         }
     }
 

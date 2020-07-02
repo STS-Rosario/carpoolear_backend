@@ -124,6 +124,8 @@ class UsersManager extends BaseManager implements UserLogic
             if ($user->banned > 0) {
                 // hide user trips
                 $this->tripRepository->hideTrips($user);
+            } else {
+                $this->tripRepository->unhideTrips($user);
             }
 
             if (isset($data['driver_data_docs'])) {

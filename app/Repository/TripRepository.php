@@ -142,7 +142,7 @@ class TripRepository implements TripRepo
     public function show($user, $id)
     {
         if ($user->is_admin) {
-            $trip = Trip::with(['user', 'points', 'car', 'passenger', 'ratings'])->whereId($id)->first();
+            $trip = Trip::with(['user', 'points', 'car', 'passenger', 'ratings'])->withTrashed()->whereId($id)->first();
             return $trip;
         } else {
             return Trip::with(['user', 'points'])->whereId($id)->first();
@@ -224,6 +224,9 @@ class TripRepository implements TripRepo
         $trips = Trip::query()->with(['routes']);
         if (isset($data['is_passenger'])) {
             $trips->where('is_passenger', parse_boolean($data['is_passenger']));
+        }
+        if (isset($data['is_admin']) && strval($data['is_admin']) === 'true') {
+            $trips->withTrashed();
         }
         
         if (isset($data['from_date']) || isset($data['to_date'])) {
@@ -429,6 +432,16 @@ class TripRepository implements TripRepo
     }
 
     public function hideTrips ($user) {
-        return Trip::where('user_id', $user->id)->where('trip_date', '>=', Carbon::Now())->update(['deleted_at' => '2000-01-01']);
+        return Trip::where('user_id', $user->id)
+                        ->where('trip_date', '>=', Carbon::Now())
+                        ->update(['deleted_at' => '2000-01-01']);
+    }
+
+    public function unhideTrips ($user) {
+        return Trip::onlyTrashed()
+                        ->where('user_id', $user->id)
+                        ->where('trip_date', '>=', Carbon::Now())
+                        ->where('deleted_at', '2000-01-01 00:00:00')
+                        ->update(['deleted_at' => null]);
     }
 }
