@@ -213,7 +213,9 @@ class TripsManager extends BaseManager implements TripLogic
     }
 
     private function proccessTrips ($trips) {
+        $index = 0;
         foreach ($trips as $trip) {
+            $index++;
             if (count($trip->points)) {
                 foreach ($trip->points as $point) {
                     if (is_array($point->json_address) && empty($point->json_address['ciudad'])) {
@@ -267,6 +269,35 @@ class TripsManager extends BaseManager implements TripLogic
             return $this->calcTripPrice($from, $to, $distance);
         } else {
             return $this->tripRepo->simplePrice($distance);
+        }
+    }
+
+
+    public function changeVisibility($user, $trip_id) 
+    {
+        $trip = $this->tripRepo->show($user, $trip_id);
+        if ($trip) {
+            \Log::info('changeVisibility trip: ' . $trip->id);
+            if ($user->id == $trip->user->id || $user->is_admin) {
+                if (!isset($trip->deleted_at) || is_null($trip->deleted_at) || empty($trip->deleted_at->toDateTimeString())) {
+                    Trip::where('id', $trip_id)
+                        ->update(['deleted_at' => '2000-01-01 00:00:00']);
+                } else {
+                    Trip::onlyTrashed()
+                        ->where('id', $trip_id)
+                        ->update(['deleted_at' => null]);
+                }
+                $trip = $this->tripRepo->show($user, $trip_id);
+                return $trip;
+            } else {
+                $this->setErrors(trans('errors.tripowner'));
+
+                return;
+            }
+        } else {
+            $this->setErrors(trans('errors.notrip'));
+
+            return;
         }
     }
 

@@ -151,7 +151,7 @@ class HomeController extends Controller
 
     public function test()
     {
-        $repo = new RoutesRepository();
+        /* $repo = new RoutesRepository();
         $manager = new \STS\Services\Logic\RoutesManager($repo);
         $bsAs = NodeGeo::where('id', 39428)->first();
         $laplata = NodeGeo::where('id', 29198)->first();
@@ -160,8 +160,19 @@ class HomeController extends Controller
             'origin' => $bsAs,
             'destiny' => $laplata
         ];
-        $manager->createRoute($route);
-
+        $manager->createRoute($route); */
+        $trip = Trip::where('id', 182307)->with([
+            'user', 
+            'user.accounts', 
+            'points', 
+            'passenger',
+            'passengerAccepted', 
+            'car', 
+            'ratings',
+            'routes'
+        ])->first();
+        echo '<pre>';
+        var_dump(json_encode($trip));die;
     }
 
     public function handleApp($name)

@@ -277,14 +277,6 @@ class User extends Authenticatable
 
     public function getPositiveRatingsAttribute()
     {
-        /* $user = new \STS\User();
-        $user->id = $this->id;
-        $ratingRepository = new \STS\Repository\RatingRepository();
-        $data = array();
-        $data['value'] = RatingModel::STATE_POSITIVO;
-        $ratings = $ratingRepository->getRatingsCount($user, $data);
-        return  $ratings; */
-
         return $this->ratings(RatingModel::STATE_POSITIVO)->count();
     }
 
@@ -295,6 +287,6 @@ class User extends Authenticatable
 
     public function getReferencesAttribute()
     {
-        return $this->referencesReceived()->get();
+        return $this->referencesReceived()->count();
     }
 }

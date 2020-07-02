@@ -29,6 +29,8 @@ class Kernel extends ConsoleKernel
         Commands\RatesAvailability::class,
         Commands\GenerateTripVisibility::class,
         Commands\CleanTripVisibility::class,
+        Commands\EmailMessageNotification::class,
+
     ];
 
     /**
@@ -55,6 +57,8 @@ class Kernel extends ConsoleKernel
         // $schedule->command('georoute:build')->everyMinute();
 
         $schedule->command('node:buildweights')->hourly();
+
+        $schedule->command('messages:email')->everyTenMinutes();
 
     }
 

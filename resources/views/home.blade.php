@@ -13,7 +13,7 @@
             <img src="img/suspendido.png" style="display:block;margin: 1em auto;" />
             <br>
             <p class="lead">
-                <strong>Carpoolear</strong> apoya las medidas preventivas por el Coronavirus y da de baja la plataforma y grupos de viaje vinculados hasta el 24 de marzo inclusive.
+                <strong>Carpoolear</strong> apoya las medidas preventivas por el Coronavirus y da de baja la plataforma y grupos de viaje vinculados hasta el 10 de mayo inclusive.
             </p>
             <p class="lead">
                 Lamentamos cualquier problema ocasionado y te pedimos no viajar si no es necesario.

@@ -92,6 +92,8 @@ class TripController extends Controller
 
         $this->user = $this->auth->user();
         $trips = $this->tripsLogic->search($this->user, $data);
+        \Log::info('search controller: ' . $trips->count() );
+        /// return $trips;
         return $this->response->paginator($trips, new TripTransformer($this->user));
     }
 
@@ -144,5 +146,16 @@ class TripController extends Controller
 
         
         return $this->tripsLogic->price($from, $to, $distance);       
+    }
+
+    public function changeVisibility($id, Request $request) 
+    {
+        $this->user = $this->auth->user();
+        $trip = $this->tripsLogic->changeVisibility($this->user, $id);
+        if (! $trip) {
+            throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
+        }
+
+        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
     }
 }

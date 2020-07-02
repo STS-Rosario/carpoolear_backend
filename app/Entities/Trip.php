@@ -72,7 +72,8 @@ class Trip extends Model
     ];
 
     protected $dates = [
-        'deleted_at', 'trip_date',
+        'deleted_at', 
+        'trip_date',
     ];
 
     public function parentTrip()

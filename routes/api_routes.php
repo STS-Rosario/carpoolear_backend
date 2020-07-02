@@ -72,6 +72,7 @@ $api->version('v1', [], function ($api) use ($v1_path) {
         $api->delete('/{id?}', $v1_path.'TripController@delete');
         $api->get('/{id?}', $v1_path.'TripController@show');
         $api->post('/{id?}/changeSeats', $v1_path.'TripController@changeTripSeats');
+        $api->post('/{id}/change-visibility', $v1_path.'TripController@changeVisibility');
         $api->post('/price', $v1_path.'TripController@price');
         
         $api->get('/{tripId}/passengers', $v1_path.'PassengerController@passengers');
