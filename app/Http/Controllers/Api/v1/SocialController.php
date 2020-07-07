@@ -44,7 +44,7 @@ class SocialController extends Controller
 
         try {
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
-            $user = $socialServices->loginOrCreate();
+            $user = $socialServices->loginOrCreate($request->all());
             if (! $user) {
                 throw new StoreResourceFailedException('Could not create new user.', $socialServices->getErrors());
             }

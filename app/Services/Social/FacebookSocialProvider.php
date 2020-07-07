@@ -24,7 +24,7 @@ class FacebookSocialProvider implements SocialProvider
         return 'facebook';
     }
 
-    public function getUserData()
+    public function getUserData($data)
     {
         $response = $this->request('/me?fields=email,name,gender,picture.width(300),link'); // ,birthday
         if ($response->getStatusCode() == 200) {
@@ -92,7 +92,7 @@ class FacebookSocialProvider implements SocialProvider
 
     private function request($url)
     {
-        $res = $this->client->request('GET', 'https://graph.facebook.com/v2.9'.$url.'&access_token='.$this->token);
+        $res = $this->client->request('GET', 'https://graph.facebook.com/v3.3'.$url.'&access_token='.$this->token);
 
         return $res;
     }

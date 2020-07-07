@@ -31,8 +31,11 @@ class UsersManager extends BaseManager implements UserLogic
                 'name'     => 'max:255',
                 'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
-                // 'gender'   => 'string|in:Masculino,Femenino,N/A',
             ];
+            if (config('carpoolear.module_unique_doc_phone', false))  {
+                $rules['nro_doc'] = 'unique:users,nro_doc,'.$id;
+                $rules['mobile_phone'] = 'unique:users,mobile_phone,'.$id;
+            }
         } else {
             if (!$is_social) {
                 $rules = [

@@ -6,7 +6,7 @@ interface SocialProvider
 {
     public function getProviderName();
 
-    public function getUserData();
+    public function getUserData($data);
 
     public function getUserFriends();
 

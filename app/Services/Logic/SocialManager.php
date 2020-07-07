@@ -50,9 +50,9 @@ class SocialManager extends BaseManager implements SocialLogic
         }
     }
 
-    public function loginOrCreate()
+    public function loginOrCreate($data)
     {
-        $account = $this->getAccounts();
+        $account = $this->getAccounts($data);
         if ($account) {
             $user = $account->user;
             if (! $user->image && isset($this->userData['image'])) {
@@ -113,9 +113,9 @@ class SocialManager extends BaseManager implements SocialLogic
         }
     }
 
-    private function getAccounts()
+    private function getAccounts($data)
     {
-        $this->userData = $this->provider->getUserData();
+        $this->userData = $this->provider->getUserData($data);
         $this->provider_user_id = $this->userData['provider_user_id'];
         $account = $this->socialRepo->find($this->provider_user_id);
 
