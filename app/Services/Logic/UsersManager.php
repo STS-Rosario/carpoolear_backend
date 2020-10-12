@@ -24,7 +24,7 @@ class UsersManager extends BaseManager implements UserLogic
         $this->tripRepository = $tripRepository;
     }
 
-    public function validator(array $data, $id = null, $is_social = false, $is_driver = false)
+    public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
     {
         if ($id) {
             $rules = [
@@ -32,7 +32,7 @@ class UsersManager extends BaseManager implements UserLogic
                 'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
             ];
-            if (config('carpoolear.module_unique_doc_phone', false))  {
+            if (config('carpoolear.module_unique_doc_phone', false) && !$is_admin)  {
                 $rules['nro_doc'] = 'unique:users,nro_doc,'.$id;
                 $rules['mobile_phone'] = 'unique:users,mobile_phone,'.$id;
             }
@@ -93,9 +93,9 @@ class UsersManager extends BaseManager implements UserLogic
         }
     }
 
-    public function update($user, array $data, $is_driver = false)
+    public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
-        $v = $this->validator($data, $user->id, null, $is_driver);
+        $v = $this->validator($data, $user->id, null, $is_driver, $is_admin);
         if ($v->fails()) {
             $this->setErrors($v->errors());
             return;

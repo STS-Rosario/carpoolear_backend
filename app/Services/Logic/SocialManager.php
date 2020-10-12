@@ -70,7 +70,7 @@ class SocialManager extends BaseManager implements SocialLogic
 
     public function makeFriends(UserModel $user)
     {
-        $account = $this->getAccounts();
+        $account = $this->getAccounts(null);
         if ($account && $user->id == $account->user->id) {
             return $this->syncFriends($account->user);
         } else {
@@ -80,7 +80,7 @@ class SocialManager extends BaseManager implements SocialLogic
 
     public function updateProfile(UserModel $user)
     {
-        $account = $this->getAccounts();
+        $account = $this->getAccounts(null);
         if ($account && $user->id == $account->user->id) {
             if (isset($this->userData['image'])) {
                 $img = file_get_contents($this->userData['image']);

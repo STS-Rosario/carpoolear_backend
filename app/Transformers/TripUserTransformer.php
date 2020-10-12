@@ -37,6 +37,7 @@ class TripUserTransformer extends TransformerAbstract
             'do_not_alert_request_seat'       => $user->do_not_alert_request_seat,
             'do_not_alert_accept_passenger'   => $user->do_not_alert_accept_passenger,
             'do_not_alert_pending_rates'      => $user->do_not_alert_pending_rates,
+            'do_not_alert_pricing'      => $user->do_not_alert_pricing,
             'autoaccept_requests'    => $user->autoaccept_requests,
             'driver_is_verified'    => $user->driver_is_verified,
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,

@@ -74,7 +74,7 @@ class UserController extends Controller
             unset($data['user']);
         }
         if ($me->is_admin) {
-            $profile = $this->userLogic->update($user, $data);
+            $profile = $this->userLogic->update($user, $data, false, true);
         } else {
             throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
         }
