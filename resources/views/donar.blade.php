@@ -52,16 +52,16 @@
                     <h3>Donar</h3>
                     <div class="radio">
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation50" value="50" v-model="donateValue"><span>$ 50</span>
+                            <input type="radio" name="donationValor" id="donation50" value="200" v-model="donateValue"><span>$ 200</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation100" value="100" v-model="donateValue"><span>$ 100</span>
+                            <input type="radio" name="donationValor" id="donation100" value="400" v-model="donateValue"><span>$ 400</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation200" value="200" v-model="donateValue"><span>$ 200</span>
+                            <input type="radio" name="donationValor" id="donation200" value="1000" v-model="donateValue"><span>$ 1000</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation500" value="500" v-model="donateValue"><span>$ 500</span>
+                            <input type="radio" name="donationValor" id="donation500" value="50" v-model="donateValue"><span>Elegí tu propia aventura (solo mensual)</span>
                         </label>
                     </div>
                     <div>
@@ -133,16 +133,15 @@
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
     var linksUnicaVez = {
-        50: "http://mpago.la/jgap",
-        100: "http://mpago.la/CaSZ",
-        200: "http://mpago.la/xntw",
-        500: "http://mpago.la/QEiN"
+        200: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-f94a3145-7336-4d79-9eb9-76c5402894fa",
+        400: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-42de1d74-f967-455f-80bf-a7a77650db06",
+        1000: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-c693bd88-7fd4-49d8-9f22-2b80151d184e"
     };
     var linksMensual = {
-        50: "http://mpago.la/1w3aci",
-        100: "http://mpago.la/BfZ",
-        200: "http://mpago.la/P02H",
-        500: "http://mpago.la/k8Xp"
+        50: "http://mpago.la/2XdoxpF",
+        200: "http://mpago.la/2k6JFz6",
+        400: "http://mpago.la/1FE4px6",
+        1000: "http://mpago.la/1EcA6f4"
     };
     var btns = document.querySelectorAll(".btn-donar");
     btns.forEach(function (btn) {
