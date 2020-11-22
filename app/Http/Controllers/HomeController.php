@@ -161,7 +161,7 @@ class HomeController extends Controller
             'destiny' => $laplata
         ];
         $manager->createRoute($route); */
-        $trip = Trip::where('id', 182307)->with([
+        /* $trip = Trip::where('id', 182307)->with([
             'user', 
             'user.accounts', 
             'points', 
@@ -172,7 +172,10 @@ class HomeController extends Controller
             'routes'
         ])->first();
         echo '<pre>';
-        var_dump(json_encode($trip));die;
+        var_dump(json_encode($trip));die; */
+        \Mail::raw('Text to e-mail', function ($message) {
+            $message->to('pabloluisbotta@gmail.com', 'test')->subject('email test text');
+        });
     }
 
     public function handleApp($name)
