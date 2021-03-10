@@ -129,6 +129,17 @@ class HomeController extends Controller
         return view('covid');
     }
 
+    public function freelance()
+    {
+        return view('freelance');
+    }
+
+    public function lucro()
+    {
+        return view('lucro');
+    }
+
+
     public function donarcompartir()
     {
         return view('donar-compartir');
