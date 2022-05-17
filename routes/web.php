@@ -43,6 +43,7 @@ Route::get('/donar', 'HomeController@donar');
 Route::get('/donar-compartir', 'HomeController@donarcompartir');
 Route::get('/datos', 'HomeController@datos');
 Route::get('/freelance', 'HomeController@freelance');
+Route::get('/derrumbe', 'HomeController@derrumbe');
 Route::get('/lucro', 'HomeController@lucro');
 Route::get('/covid', 'HomeController@covid');
 Route::get('/colabora-programando', 'HomeController@programar');

@@ -133,6 +133,10 @@ class HomeController extends Controller
     {
         return view('freelance');
     }
+    public function derrumbe()
+    {
+        return view('derrumbe');
+    }
 
     public function lucro()
     {

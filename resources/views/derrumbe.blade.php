@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title', 'Freelancing en Carpoolear')
+@section('title', 'Programacion Carpoolear en zona de derrumbe ¡aiiiiuda!')
 @section('body-class', 'body-difusion')
 
 @section('content')
@@ -48,27 +48,28 @@
         <div class="row">
             <div class="col-sm-12 pt48 body-donar">
                 <div class="donation donation-top">
-                    <h3>¿Seguís buscando qué hacer éste año? :P</h3>
-                    <img src="/img/freelance-carpoolear.jpg" style="width: 100%; max-width: 450px;" class="hidden-xs" />
-                    <p> En #Carpoolear estamos buscando sumar una persona para programación freelance para poder seguir mejorando la #plataforma.  Por eso, si hacés programación frontend/backend/fullstack, ¡Esta es tu chance!  (Si no programás pero conocés a alguien que sí, ¡pasale el dato!)</p>
+                    <h3>Programacion Carpoolear en zona de derrumbe ¡aiiiiuda!</h3>
+                    <img src="/img/derrumbe.jpg" style="width: 100%; max-width: 450px;" class="hidden-xs" />
+                    <p>Necesitamos ayuda con el desarrollo de la plataforma, nos falta gente para poder resolver errores e implementar mejoras pendientes. Si no logramos sumar personas para esas cuestiones, tendremos que apagar el motor de Carpoolear y dejar en pausa el proyecto :(</p>
 
-                    <p>Todo el código de Carpoolear es LIBRE (GPL v3). <br />
-                        Sí! Tanto frontend como backend están disponibles en https://github.com/STS-Rosario</p>
+                    <p>(Si no programas pero conocés a alguien que sí, ¡pasale el dato!  😉 )</p>
 
+                    <p>En #Carpoolear estamos buscando sumar personas para programación que lo hagan en forma freelance o voluntaria.</p>
+                    <p><b>Detalles para programar</b></p>
                     <p>
-                        Nuestro stack backend es Apache 2.4 + MySQL 5.8 + PHP 7.2. Utilizamos Laravel 5.3 como framework para la arquitectura de nuestra REST+API. Usamos Docker para todo el entorno para facilitar la programación. Por otra parte nuestro stack frontend está conformado por Node.js + Apache
-Cordova + Vue.js con la cual construimos nuestra app web y móvil (Android e iOS) híbrida. Versionamos todo nuestro código utilizando git y los cambios que se suman los aceptamos a través de Pull Request.
+                        Nuestro stack backend es Apache 2.4 + MySQL 5.8 + PHP 7.2. Utilizamos Laravel 5.3 como framework para la arquitectura de nuestra REST+API. Usamos Docker para todo el entorno para facilitar la programación. Por otra parte nuestro stack frontend está conformado por Node.js + Apache Cordova + Vue.js con la cual construimos nuestra app web y móvil (Android e iOS) híbrida. 
+Versionamos todo nuestro código utilizando git y los cambios que se suman los aceptamos a través de Pull Request.
+
                     </p>
 
                     
                     <p>
-                        Si no te interesa/se te complica lo de freelance pero querés
-colaborar voluntariamente con el código unas horas cada tanto, también vale, o incluso si el código te sirve para aprender). Si te interesa sumarte, contanos de vos a carpoolear@stsrosario.org.ar y mandanos tu CV /trabajos realizados. Es requisito tener en marcha el entorno de programación de Carpoolear, está todo explicado en los repositorios de nuestro github.
+                        Todo el código de Carpoolear es LIBRE (GPL v3). Sí! Tanto frontend como backend están disponibles en https://github.com/STS-Rosario (o sea que si no te interesa/se te complica lo de freelance pero querés colaborar voluntariamente con el código unas horas cada tanto, también vale, o incluso si el código te sirve para aprender).
 
                     </p>
 
                     <p>
-                        Carpoolear es un #proyecto de gestión colectiva, sin fines de lucro y de código libre de la asociación civil STS Rosario personas de todas partes de #Argentina colaboran para que sigamos en ruta. Vos también podés sumar.
+                        Si te interesa sumarte, contanos de vos a carpoolear@stsrosario.org.ar . Si te interesa sumarte de freelance en programación, mandanos tu CV / trabajos realizados y poné en marcha el entorno de programación (sí, es requisito tener en marcha el entorno de programación de Carpoolear, está todo explicado en los repositorios de nuestro Github)
                     </p>
 
                     <p>

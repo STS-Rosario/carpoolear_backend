@@ -133,7 +133,7 @@
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
     var linksUnicaVez = {
-        200: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-f94a3145-7336-4d79-9eb9-76c5402894fa",
+        200: "https://www.mercadopago.com/mla/checkout/start?preference-id=201279444-00678cdd-844a-4f8d-93e0-ed29397793e2",
         400: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-42de1d74-f967-455f-80bf-a7a77650db06",
         1000: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-c693bd88-7fd4-49d8-9f22-2b80151d184e"
     };
