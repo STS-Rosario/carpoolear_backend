@@ -2,11 +2,11 @@ version: '3'
 services:
   backend:
     build: .
-    image: carpoolear_backend
+    image: estudiantes_backend
     ports:
       - "8080:80"
     volumes:
-      - '.:/var/www/carpoolear/'
+      - '.:/var/www/estudiantes/'
 networks:
     default:
         ipam:

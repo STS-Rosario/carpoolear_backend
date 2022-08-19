@@ -47,6 +47,7 @@ class ProfileTransformer extends TransformerAbstract
             'do_not_alert_request_seat'       => intval($user->do_not_alert_request_seat),
             'do_not_alert_accept_passenger'   => intval($user->do_not_alert_accept_passenger),
             'do_not_alert_pending_rates'      => intval($user->do_not_alert_pending_rates),
+            'do_not_alert_pricing'      => intval($user->do_not_alert_pricing),
             'monthly_donate' => intval($user->monthly_donate),
             'unaswered_messages_limit'    => intval($user->unaswered_messages_limit),
             'autoaccept_requests'    => intval($user->autoaccept_requests),

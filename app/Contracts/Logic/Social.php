@@ -6,7 +6,7 @@ use STS\User as UserModel;
 
 interface Social
 {
-    public function loginOrCreate();
+    public function loginOrCreate($data);
 
     public function makeFriends(UserModel $user);
 

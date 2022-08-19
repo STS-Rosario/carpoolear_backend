@@ -60,7 +60,7 @@ class EmailMessageNotification extends Command
                 $notification->setAttribute('messages', $message);
                 foreach ($message->users as $to) {
                     try {
-                        $notification->notify($to);
+                        // $notification->notify($to);
                     } catch (\Exception $e) {
                         \Log::info('Error on sending notification');
                         \Log::info($e);

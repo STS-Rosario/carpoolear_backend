@@ -24,15 +24,18 @@ class UsersManager extends BaseManager implements UserLogic
         $this->tripRepository = $tripRepository;
     }
 
-    public function validator(array $data, $id = null, $is_social = false, $is_driver = false)
+    public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
     {
         if ($id) {
             $rules = [
                 'name'     => 'max:255',
                 'email'    => 'email|max:255|unique:users,email,'.$id,
                 'password' => 'min:6|confirmed',
-                // 'gender'   => 'string|in:Masculino,Femenino,N/A',
             ];
+            if (config('carpoolear.module_unique_doc_phone', false) && !$is_admin)  {
+                $rules['nro_doc'] = 'unique:users,nro_doc,'.$id;
+                $rules['mobile_phone'] = 'unique:users,mobile_phone,'.$id;
+            }
         } else {
             if (!$is_social) {
                 $rules = [
@@ -54,6 +57,9 @@ class UsersManager extends BaseManager implements UserLogic
         }
         if (config('carpoolear.module_validated_drivers', false) && $is_driver)  {
             $rules['driver_data_docs'] = 'required|array|min:1';
+        }
+        if ($is_admin) {
+            unset($rules['email']);
         }
         $validator = Validator::make($data, $rules);
         return $validator;
@@ -90,10 +96,13 @@ class UsersManager extends BaseManager implements UserLogic
         }
     }
 
-    public function update($user, array $data, $is_driver = false)
+    public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
-        $v = $this->validator($data, $user->id, null, $is_driver);
+        \Log::info('update manager: ' . $user->name);
+        $v = $this->validator($data, $user->id, null, $is_driver, $is_admin);
         if ($v->fails()) {
+            \Log::info('update manager: ' . $user->name . ' failedddd why?');
+            \Log::info($v->errors());
             $this->setErrors($v->errors());
             return;
         } else {

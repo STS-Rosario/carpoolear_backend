@@ -66,6 +66,7 @@ class UserController extends Controller
     }
     
     public function adminUpdate(Request $request) {
+        \Log::info('update controller: acaaaaaaaaaa ........ ---------' );
         $me = $this->auth->user();
         $data = $request->all();
         if (isset($data['user'])) {
@@ -74,10 +75,12 @@ class UserController extends Controller
             unset($data['user']);
         }
         if ($me->is_admin) {
-            $profile = $this->userLogic->update($user, $data);
-        } else {
-            throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
-        }
+            \Log::info('update controller: ' . $user->name);
+            $profile = $this->userLogic->update($user, $data, false, true);
+            if (!$profile) {
+                throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
+            }
+        } 
         return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
     }
 

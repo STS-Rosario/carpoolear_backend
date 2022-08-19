@@ -32,6 +32,7 @@ class TripTransformer extends TransformerAbstract
             'distance' => $trip->distance,
             'estimated_time' => $trip->estimated_time,
             'seat_price' => $trip->seat_price,
+            'total_price' => $trip->total_price,
             'is_passenger' => $trip->is_passenger,
             'passenger_count' => $trip->passenger_count,
             'seats_available' => $trip->seats_available,

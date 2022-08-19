@@ -41,6 +41,7 @@ class Trip extends Model
         'friendship_type_id',
         'distance',
         'seat_price',
+        'total_price',
         'estimated_time',
         'co2',
         'es_recurrente',
@@ -52,8 +53,7 @@ class Trip extends Model
         'parent_trip_id',
         'allow_smoking',
         'allow_kids',
-        'allow_animals',
-        'seat_price'
+        'allow_animals'
     ];
 
     protected $hidden = [

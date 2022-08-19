@@ -12,7 +12,7 @@ class NewMessageNotification extends BaseNotification
 {
     protected $via = [
         DatabaseChannel::class, 
-        MailChannel::class,
+        // MailChannel::class,
         FacebookChannel::class
     ];
 

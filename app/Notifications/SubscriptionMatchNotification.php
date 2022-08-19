@@ -10,7 +10,9 @@ use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class SubscriptionMatchNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
+    // , MailChannel::class
+
+    protected $via = [DatabaseChannel::class, PushChannel::class, FacebookChannel::class];
 
     public function toEmail($user)
     {

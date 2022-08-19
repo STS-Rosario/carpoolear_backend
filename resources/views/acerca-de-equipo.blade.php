@@ -48,18 +48,20 @@
                         </li>
                         <li><img src="img/foto_mariasol.jpg" width="100" height="100" alt="Foto de María Sol Tadeo">
                         <p><strong>María Sol Tadeo:</strong> Soy de Arroyo Dulce, un pueblito de Buenos Aires, pero me enamoré de Rosario cuando vine a estudiar y me quedé. Soy Ingeniera Civil. Estoy en Carpoolear porque quiero ayudar a un uso más racional de los autos.</p></li>          
-                        <li><img src="img/foto_gabriel.jpg" width="100" height="100" alt="Foto de Gabriel Weitz">
+                        <!--<li><img src="img/foto_gabriel.jpg" width="100" height="100" alt="Foto de Gabriel Weitz">
                         <p><strong>Gabriel Weitz:</strong> Rosarino exiliado en Buenos Aires, carpoolero desde la primera hora, empleado de Google, fundador de este hermoso delirio que es STS. Uso demasiado Twitter.</p>
                         </li>
                         <li><img src="img/foto_martin_acosta.jpg" width="100" height="100" alt="Foto de Martín Acosta">
                         <p><strong>Martín Acosta:</strong> Soy de Pergamino, Buenos Aires. Me encanta todo lo que sea colaborativo y que ayude a la gente. En Carpoolear encontré ambas por lo que me sumé para aportar mi granito de arena en programación y comunicación.</p>
-                        </li>
+                        </li>-->
                         <!--<li><img src="img/foto_camila.jpg" width="100" height="100" alt="Foto de Camila Grimi">
                         <p><strong>Camila Grimi:</strong> Diseñadora gráfica de Rosario, amante del rock, el cine y el Tetris. Me incorporé en el área de comunicación de Carpoolear en 2017 para promover y ser parte de este gran proyecto sustentable.</p>
                         </li>-->
                         <li><img src="img/foto_misslemon.jpg" width="100" height="100" alt="Foto de María Sánchez Villalba">
                         <p><strong>María Sánchez Villalba:</strong> Tucumana. Un gusto musical variado, matemáticas, psicología, hornear galletas y contarle a viajeros sobre mi ciudad, hacen mis días. Andar en bici para transportarme y conocer nuevos lugares, me fascina. Combino hobbies y principios varios con Carpoolear, colaboro desde 2016.</p>
                         </li>
+                        <li><img src="img/foto_maga.jpg" width="100" height="100" alt="Foto de María Sánchez Villalba">
+                            <p><strong>Maga:</strong> Técnica de laboratorio. Carpoolera desde 2017, cuando me enteré que la plataforma era de Rosario, donde vivo, quise colaborar si o sí</p>
                         </li>
                         <!--<li><img src="img/foto_sole.jpg" width="100" height="100" alt="Foto de Soledad Larroucau">
                         <p><strong>Soledad Larroucau:</strong> Rosarina por adopción. Estudié comunicación social, sin peros, trabajo en Innovación Pública del Gobierno de Santa Fe. Juego a las Ciencias Sociales en el Centro de Investigaciones en Mediatizaciones y contagio ideas desde TEDxRosario. Fan con vincha de STS Rosario.</p>
@@ -67,10 +69,10 @@
                         <!--li><img src="img/foto_seba.jpg" width="100" height="100" alt="Foto de Sebastián La Spina">
                         <p><strong>Sebastián La Spina:</strong> Descripción</p>
                         </li-->
-                        <li>
+                        <!--<li>
                             <img src="img/foto_yeye.jpg" width="100" height="100" alt="Foto de Soledad Larroucau">
                             <p><strong>Yeye Rueda:</strong> Colombiana viviendo en Buenos Aires, Diseñadora gráfica y Multimedia. Formo parte de la comunidad carpoolera desde hace un par de años y desde el año pasado empecé a colaborar en la parte de comunicación del proyecto.</p>
-                        </li>
+                        </li>-->
                         <li>
                             <img src="img/foto_rios.png" width="100" height="100" alt="Foto de Soledad Larroucau">
                             <p><strong>Pablo Ríos:</strong> Soy correntino, vivo en Santa Fe Capital, y estudio Comunicación Social en Paraná, Entre Ríos. Padezco de la grave tendencia a sumarme a un montón de proyectos colaborativos, sobretodo cuando hay interdisciplina y cuestiones relacionadas al cine, periodismo científico y tecnología sustentable. Formo parte del equipo Carpoolear desde el 2018, dando una mano con el diseño gráfico. </p>
