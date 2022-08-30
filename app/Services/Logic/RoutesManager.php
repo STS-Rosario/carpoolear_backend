@@ -33,7 +33,7 @@ class RoutesManager implements RoutesLogic
         DB::disconnect('mysql');
         // var_dump($nodes);die;
         // 2- Calcular con OSM la ruta
-        $url = "http://router.project-osrm.org/route/v1/driving/$sourceNode->lng,$sourceNode->lat;$destinyNode->lng,$destinyNode->lat?overview=false&alternatives=true&steps=true&hints=";
+        $url = "http://router.project-osrm.org/route/v1/driving/$sourceNode->lng,$sourceNode->lat;$destinyNode->lng,$destinyNode->lat?overview=false&alternatives=true&steps=true";
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_URL, $url); // CURLOPT_TIMEOUT	
