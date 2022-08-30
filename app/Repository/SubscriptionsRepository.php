@@ -84,7 +84,7 @@ class SubscriptionsRepository implements SubscriptionRepository
 
                 break;
         }
-        // $points = $trip->points;
+        $points = $trip->points;
         $this->makeDistance($query, $points[0], 'from');
         $this->makeDistance($query, $points[count($points) - 1], 'to');
 
