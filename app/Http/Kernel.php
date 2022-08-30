@@ -41,6 +41,7 @@ class Kernel extends HttpKernel
 
         'logged' => [
             'api.auth',
+            'check.userbanned',
             'update.connection',
         ],
     ];
@@ -62,6 +63,7 @@ class Kernel extends HttpKernel
         'jwt.refresh' => '\Tymon\JWTAuth\Middleware\RefreshToken',
         'user.admin'  => 'STS\Http\Middleware\UserAdmin',
         'update.connection' => \STS\Http\Middleware\UpdateConnection::class,
+        'check.userbanned' => \STS\Http\Middleware\CheckUserBanned::class,
         'cors' => \Barryvdh\Cors\HandleCors::class,
     ];
 }
