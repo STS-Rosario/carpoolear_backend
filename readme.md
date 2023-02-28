@@ -1,3 +1,39 @@
+Este proyecto es una  copia de https://github.com/STS-Rosario/carpoolear_backend, en caso de querer colaborar ingrese al proyecto original.
+
+# Actualizacion 28/2/23
+Para inicializar el proyecto actualmente hay que ingresar los siguientes comandos:
+```bash
+git clone https://gitlab.com/medeiro/carpoolear
+```
+Iniciamos docker
+```bash
+docker-compose up -d
+```
+Instalamos dependencias
+```bash
+docker exec -it carpoolear_backend composer install
+```
+Creamos las tablas en la db
+```bash
+docker exec -it carpoolear_backend php artisan migrate
+```
+Instalamos datos de prueba
+```bash
+docker exec -it carpoolear_backend php artisan db:seed --class=TestingSeeder
+```
+El proyecto inicializara en local con puerto 8080 // 127.0.0.1:8080 y 127.0.0.1:81 el administrador de base de datos. con las siguientes credenciales:
+```bash
+ user:carpoolear
+ pass:carpoolear
+```
+
+A partir de este momento el proyecto esta listo para trabajar :)
+
+Despues de creado el proyecto solamente ingresar comando para inciar docker.
+```bash
+docker-compose up -d
+```
+
 # Carpoolear backend
 
 Carpoolear es la primera aplicación argentina de Facebook que permite a los usuarios de dicha red social compartir viajes en automóvil con otros usuarios de su entorno.

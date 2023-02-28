@@ -1,15 +1,52 @@
-version: '3'
+version: '2'
 services:
-  backend:
-    build: .
-    image: estudiantes_backend
-    ports:
-      - "8080:80"
+  carpoolear_db:
+    image: mysql
+    container_name: carpoolear_db
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: carpoolear
+      MYSQL_USER: carpoolear
+      MYSQL_PASSWORD: carpoolear
+      MYSQL_ROOT_PASSWORD: carpoolear
     volumes:
-      - '.:/var/www/estudiantes/'
+      - ./.db:/var/lib/mysql
+    networks:
+      - esnet
+  carpoolear_backend:
+    build: .
+    container_name: carpoolear_backend
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      SERVER_PORT: 8080
+      DB_HOST: carpoolear_db
+      DB_DATABASE: carpoolear
+      DB_USERNAME: carpoolear
+      DB_PASSWORD: carpoolear
+      APP_KEY: qwertyuiopasdfghjklzxcvbnm123456
+      JWT_KEY: qwertyuiopasdfghjklzxcvbnm123456
+      API_PREFIX: api
+      API_VERSION: v1
+    ports:
+      - 8080:80
+    volumes:
+      - ./:/var/www/carpoolear
+    networks:
+      - esnet
+  phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: carpoolear-phpmyadmin
+        links:
+            - carpoolear_db:db
+        ports:
+            - 81:80
+        environment:
+            MYSQL_USER: carpoolear
+            MYSQL_PASSWORD: carpoolear
+            MYSQL_ROOT_PASSWORD: carpoolear
+        networks:
+            - esnet
 networks:
-    default:
-        ipam:
-            driver: default
-            config:
-                - subnet: 192.169.0.0/24
+  esnet:
+    driver: bridge
