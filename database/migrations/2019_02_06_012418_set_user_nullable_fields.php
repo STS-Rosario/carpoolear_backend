@@ -20,7 +20,7 @@ class SetUserNullableFields extends Migration
             $table->boolean('banned')->default(false)->change();
             $table->boolean('is_admin')->default(false)->change();
             $table->boolean('active')->default(false)->change();
-            $table->datetime('last_connection')->default(DB::raw('CURRENT_TIMESTAMP'))->change();
+            $table->datetime('last_connection')->nullable()->change();
             $table->boolean('has_pin')->default(false)->change();
             $table->boolean('is_member')->default(false)->change();
             $table->boolean('monthly_donate')->default(false)->change();
