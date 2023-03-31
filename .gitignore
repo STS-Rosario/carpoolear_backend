@@ -10,3 +10,4 @@ cert/*.pem
 .idea/*
 public/image/docs
 app.sql
+.db/*
