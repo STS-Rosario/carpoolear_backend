@@ -11,6 +11,7 @@ services:
       MYSQL_ROOT_PASSWORD: carpoolear
     volumes:
       - ./.db:/var/lib/mysql
+      - ./:/var/data
     networks:
       - esnet
   carpoolear_backend:
