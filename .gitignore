@@ -10,4 +10,5 @@ cert/*.pem
 .idea/*
 public/image/docs
 app.sql
+app2.sql
 .db/*

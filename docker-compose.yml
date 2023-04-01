@@ -43,8 +43,9 @@ services:
         ports:
             - 81:80
         environment:
-            MYSQL_USER: carpoolear
-            MYSQL_PASSWORD: carpoolear
+            PMA_HOST: carpoolear_db  
+            PMA_USER:  carpoolear
+            PMA_PASSWORD: carpoolear
             MYSQL_ROOT_PASSWORD: carpoolear
         networks:
             - esnet
