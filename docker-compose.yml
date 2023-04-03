@@ -29,6 +29,10 @@ services:
       JWT_KEY: qwertyuiopasdfghjklzxcvbnm123456
       API_PREFIX: api
       API_VERSION: v1
+      MAIL_DRIVER: smtp
+      MAIL_HOST: smtp-tester
+      MAIL_PORT: 1025
+      QUEUE_DRIVER: sync
     ports:
       - 8080:80
     volumes:
@@ -47,6 +51,13 @@ services:
             PMA_USER:  carpoolear
             PMA_PASSWORD: carpoolear
             MYSQL_ROOT_PASSWORD: carpoolear
+        networks:
+            - esnet
+  smtp-tester:
+        image: mailhog/mailhog
+        container_name: smtp-tester
+        ports:
+            - 8025:8025
         networks:
             - esnet
 networks:
