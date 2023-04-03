@@ -34,7 +34,8 @@ services:
       MAIL_PORT: 1025
       QUEUE_DRIVER: sync
     ports:
-      - 8080:80
+      - 80:80
+      - 443:443
     volumes:
       - ./:/var/www/carpoolear
     networks:
