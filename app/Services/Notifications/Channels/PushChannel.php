@@ -17,12 +17,17 @@ class PushChannel
         foreach ($user->devices as $device) {
             $data = $this->getData($notification, $user, $device);
             $data['extras'] = $this->getExtraData($notification);
+          
             if ($device->notifications) {
                 if ($device->isAndroid()) {
                     $this->sendAndroid($device, $data);
                 }
                 if ($device->isIOS()) {
                     $this->sendIOS($device, $data);
+                }
+              
+                if ($device->isWeb()) {
+                    $this->sendWeb($device, $data);
                 }
             }
         }
@@ -43,6 +48,16 @@ class PushChannel
             return $notification->getExtras();
         }
     }
+
+    public function sendWeb($device, $data)
+    {
+      //var_dump($device);
+      //var_dump($data);
+       $device->session_id = $device->session_id."listo";
+       $device->save();
+      
+    }
+
 
     public function sendAndroid($device, $data)
     {

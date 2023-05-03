@@ -32,7 +32,7 @@ services:
       MAIL_DRIVER: smtp
       MAIL_HOST: smtp-tester
       MAIL_PORT: 1025
-      QUEUE_DRIVER: database
+      QUEUE_DRIVER: sync
     ports:
       - 80:80
       - 443:443
