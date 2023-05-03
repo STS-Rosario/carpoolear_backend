@@ -11,4 +11,5 @@ cert/*.pem
 public/image/docs
 app.sql
 app2.sql
+worker.log
 .db/*
