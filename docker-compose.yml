@@ -32,7 +32,8 @@ services:
       MAIL_DRIVER: smtp
       MAIL_HOST: smtp-tester
       MAIL_PORT: 1025
-      QUEUE_DRIVER: sync
+      QUEUE_DRIVER: database
+      FCM_TOKEN: "AAAAvvvBnNs:APA91bEx8Ud2_DLt_prrgXdNxg_UB0MZFoY0tSo4RPJ-JGIBDrEm4qVrX8FG0OTuoSwXqXMGSASlURVMWR7aUj7n7e3qOG9BIHVQswBzTOIXTDKr4GfT1bCwruSEzdayKf77Qz4v7kbE"
     ports:
       - 80:80
       - 443:443

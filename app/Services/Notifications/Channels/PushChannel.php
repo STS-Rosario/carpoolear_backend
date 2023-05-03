@@ -51,10 +51,50 @@ class PushChannel
 
     public function sendWeb($device, $data)
     {
-      //var_dump($device);
-      //var_dump($data);
-       $device->session_id = $device->session_id."listo";
-       $device->save();
+       // var_dump(\Config::get('fcm.token'));
+        if(\Config::get('fcm.token')==""){
+            return;
+        }
+       
+        // El token de registro del dispositivo al que se enviará la notificación
+        $device_token = $device->device_id;
+      
+        // El mensaje que se enviará
+        $message = array(
+            'title' => 'Carpoolear',
+            'body' => $data["message"],
+            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
+        );
+
+        if (isset($data['url'])) {
+            $message['click_action'] =  \Config::get('app.url')."/".$data['url'];
+        }
+        
+        
+        // La estructura de datos que se enviará en la solicitud HTTP
+        $fields = array(
+            'to' => $device_token,
+            'notification' => $message
+        );
+        
+        // Codificamos los datos en formato JSON
+        $json_data = json_encode($fields);
+        
+        // Preparamos la solicitud HTTP
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: key=' . \Config::get('fcm.token'),
+            'Content-Type: application/json'
+        ));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
+        
+        // Ejecutamos la solicitud HTTP y cerramos la conexión
+        $result = curl_exec($ch);
+        curl_close($ch);
+
       
     }
 
@@ -62,7 +102,6 @@ class PushChannel
     public function sendAndroid($device, $data)
     {
         $message = $data['message'];
-
         $defaultData = [
             'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
         ];
