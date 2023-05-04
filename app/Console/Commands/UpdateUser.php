@@ -71,7 +71,7 @@ class UpdateUser extends Command
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);
             $user->active = 0;
-            $trip->save();
+            $user->save();
             $this->info('User has been removed.');
         }
 
