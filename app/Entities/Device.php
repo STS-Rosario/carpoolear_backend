@@ -3,6 +3,7 @@
 namespace STS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Device extends Model
 {
@@ -15,6 +16,7 @@ class Device extends Model
         'user_id',
         'app_version',
         'notifications',
+        "last_activity"
     ];
 
     protected $hidden = [];
@@ -22,6 +24,11 @@ class Device extends Model
     protected $cast = [
         'notifications' => 'boolean',
     ];
+
+    public function getLastActivityAttribute($value)
+    {
+        return Carbon::parse($value);
+    }
 
     public function user()
     {

@@ -3,6 +3,7 @@
 namespace STS\Services\Notifications\Channels;
 
 use STS\Entities\Device;
+use Carbon\Carbon;
 
 class PushChannel
 {
@@ -14,7 +15,18 @@ class PushChannel
 
     public function send($notification, $user)
     {
-        foreach ($user->devices as $device) {
+
+        $devicesFiltered = $user->devices->filter(function ($device)  {
+            if(\Config::get('carpoolear.send_push_notifications_to_device_activity_days')==0){
+               return true;
+            }
+            if($device->last_activity==null){
+                return false;
+            }
+            return $device->last_activity->greaterThan(Carbon::now()->subDays(\Config::get('carpoolear.send_push_notifications_to_device_activity_days')));
+        });
+
+        foreach ($devicesFiltered as $device) {
             $data = $this->getData($notification, $user, $device);
             $data['extras'] = $this->getExtraData($notification);
           
