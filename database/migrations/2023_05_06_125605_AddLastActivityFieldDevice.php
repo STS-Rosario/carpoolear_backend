@@ -3,13 +3,14 @@
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Carbon\Carbon;
 
 class AddLastActivityFieldDevice extends Migration
 {
     public function up()
     {
         Schema::table('users_devices', function (Blueprint $table) {
-            $table->date('last_activity')->nullable();
+            $table->date('last_activity')->default(Carbon::now());
           
         });
     }
