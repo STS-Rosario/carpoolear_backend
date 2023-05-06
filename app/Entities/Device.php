@@ -38,8 +38,8 @@ class Device extends Model
         return strpos($this->device_type, 'iOS') !== false;
     }
 
-    public function isWeb()
+    public function isBrowser()
     {
-        return strpos($this->device_type, 'Web') !== false;
+        return strpos($this->device_type, 'Browser') !== false;
     }
 }

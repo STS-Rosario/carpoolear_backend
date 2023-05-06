@@ -26,8 +26,8 @@ class PushChannel
                     $this->sendIOS($device, $data);
                 }
               
-                if ($device->isWeb()) {
-                    $this->sendWeb($device, $data);
+                if ($device->isBrowser()) {
+                    $this->sendBrowser($device, $data);
                 }
             }
         }
@@ -49,7 +49,7 @@ class PushChannel
         }
     }
 
-    public function sendWeb($device, $data)
+    public function sendBrowser($device, $data)
     {
        // var_dump(\Config::get('fcm.token'));
         if(\Config::get('fcm.token')==""){
