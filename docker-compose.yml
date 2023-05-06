@@ -40,6 +40,8 @@ services:
       - 8080:80
     volumes:
       - ./:/var/www/carpoolear
+      - ./cert/apache_ssl/ssl-cert-snakeoil.crt:/etc/ssl/certs/ssl-cert-snakeoil.pem
+      - ./cert/apache_ssl/ssl-cert-snakeoil.key:/etc/ssl/private/ssl-cert-snakeoil.key
     networks:
       - esnet
   phpmyadmin:
