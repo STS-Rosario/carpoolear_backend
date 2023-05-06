@@ -4,6 +4,7 @@ namespace STS\Services\Logic;
 
 use STS\User;
 use Validator;
+use Carbon\Carbon;
 use STS\Entities\Device;
 use STS\Contracts\Logic\Devices as DeviceLogic;
 use STS\Contracts\Repository\Devices as DeviceRepository;
@@ -54,6 +55,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
             $device->device_id = $data['device_id'];
             $device->device_type = $data['device_type'];
             $device->app_version = $data['app_version'];
+            $device->last_activity = Carbon::now();
             $device->user_id = $user->id;
             $device->language = 'es';
             $device->notifications = true;
@@ -95,6 +97,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
     {
         $device->session_id = $data['session_id'];
         $device->app_version = $data['app_version'];
+        $device->last_activity = Carbon::now();
         $device->device_type = $data['device_type'];
         $device->device_id = $data['device_id'];
         $device->notifications = parse_boolean($data['notifications']);
