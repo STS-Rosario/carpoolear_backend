@@ -47,6 +47,6 @@ class Device extends Model
 
     public function isBrowser()
     {
-        return strpos($this->device_type, 'Browser') !== false;
+        return strpos($this->device_type, 'browser') !== false;
     }
 }
