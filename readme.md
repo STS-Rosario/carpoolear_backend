@@ -9,6 +9,13 @@ Iniciamos docker
 ```bash
 docker-compose up -d
 ```
+
+Permisos a la carpeta storage
+```base
+chmod 777 -R storage/
+chmod 777 -R public/
+```
+
 Instalamos dependencias
 ```bash
 docker exec -it carpoolear_backend composer install

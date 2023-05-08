@@ -9,6 +9,7 @@ services:
       MYSQL_USER: carpoolear
       MYSQL_PASSWORD: carpoolear
       MYSQL_ROOT_PASSWORD: carpoolear
+      MYSQL_ROOT_HOST: "%"
     volumes:
       - ./.db:/var/lib/mysql
       - ./:/var/data
