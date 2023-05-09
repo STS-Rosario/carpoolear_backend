@@ -76,6 +76,7 @@ class PushChannel
             'title' => 'Carpoolear',
             'body' => $data["message"],
             'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
+            'data' => $data["extras"]
         );
 
         if (isset($data['url'])) {
