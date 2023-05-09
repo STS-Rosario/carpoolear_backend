@@ -15,15 +15,15 @@ class PushChannel
 
     public function send($notification, $user)
     {
-
         $devicesFiltered = $user->devices->filter(function ($device)  {
-            if(\Config::get('carpoolear.send_push_notifications_to_device_activity_days')==0){
+            $activity_days = \Config::get('carpoolear.send_push_notifications_to_device_activity_days')
+            if ($activity_days==0){
                return true;
             }
-            if($device->last_activity==null){
+            if ($device->last_activity==null){
                 return false;
             }
-            return $device->last_activity->greaterThan(Carbon::now()->subDays(\Config::get('carpoolear.send_push_notifications_to_device_activity_days')));
+            return $device->last_activity->greaterThan(Carbon::now()->subDays($activity_days));
         });
 
         foreach ($devicesFiltered as $device) {
@@ -37,7 +37,6 @@ class PushChannel
                 if ($device->isIOS()) {
                     $this->sendIOS($device, $data);
                 }
-              
                 if ($device->isBrowser()) {
                     $this->sendBrowser($device, $data);
                 }
@@ -64,7 +63,7 @@ class PushChannel
     public function sendBrowser($device, $data)
     {
        // var_dump(\Config::get('fcm.token'));
-        if(\Config::get('fcm.token')==""){
+        if (\Config::get('fcm.token')==""){
             return;
         }
        

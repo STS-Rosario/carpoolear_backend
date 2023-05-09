@@ -9,7 +9,6 @@ settings.json
 cert/*.pem
 .idea/*
 public/image/docs
-app.sql
-app2.sql
+app*.sql
 worker.log
 .db/*
