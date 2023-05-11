@@ -16,11 +16,11 @@ class PushChannel
     public function send($notification, $user)
     {
         $devicesFiltered = $user->devices->filter(function ($device)  {
-            $activity_days = \Config::get('carpoolear.send_push_notifications_to_device_activity_days')
-            if ($activity_days==0){
+            $activity_days = \Config::get('carpoolear.send_push_notifications_to_device_activity_days');
+            if ($activity_days==0) {
                return true;
             }
-            if ($device->last_activity==null){
+            if ($device->last_activity==null) {
                 return false;
             }
             return $device->last_activity->greaterThan(Carbon::now()->subDays($activity_days));
