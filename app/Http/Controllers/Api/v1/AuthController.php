@@ -117,8 +117,8 @@ class AuthController extends Controller
         $config = $this->_getConfig();
 
         if ($request->has('app_version')) {
-            $data['app_version'] = $request->get('app_version');
-            $device = $this->deviceLogic->updateBySession($oldToken, $data);
+            $data['app_version'] =$request->get('app_version');
+            $device = $this->deviceLogic->updateBySession($oldToken, $data);    
         }
 
         if (isset($user)) {

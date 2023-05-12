@@ -43,13 +43,14 @@ Happy coding!
 1) Complete your environment file.
 
 2) Building docker images: 
-```
-docker build -t carpoolear_backend .
+```bash
+docker-compose up -d
 ```
 
-3) Run image in a container: 
-```
-docker run --rm --name carpoolear_backend  -p 8080:8080 -d carpoolear_backend 
+3) Depens on operation system, you need to add permission to some folder: 
+```bash
+chmod 777 -R storage/
+chmod 777 -R public/
 ```
 
 4) Seed database:

@@ -3,6 +3,7 @@
 namespace STS\Services\Notifications\Channels;
 
 use STS\Entities\Device;
+use Carbon\Carbon;
 
 class PushChannel
 {
@@ -14,15 +15,30 @@ class PushChannel
 
     public function send($notification, $user)
     {
-        foreach ($user->devices as $device) {
+        $devicesFiltered = $user->devices->filter(function ($device)  {
+            $activity_days = \Config::get('carpoolear.send_push_notifications_to_device_activity_days');
+            if ($activity_days==0) {
+               return true;
+            }
+            if ($device->last_activity==null) {
+                return false;
+            }
+            return $device->last_activity->greaterThan(Carbon::now()->subDays($activity_days));
+        });
+
+        foreach ($devicesFiltered as $device) {
             $data = $this->getData($notification, $user, $device);
             $data['extras'] = $this->getExtraData($notification);
+          
             if ($device->notifications) {
                 if ($device->isAndroid()) {
                     $this->sendAndroid($device, $data);
                 }
                 if ($device->isIOS()) {
                     $this->sendIOS($device, $data);
+                }
+                if ($device->isBrowser()) {
+                    $this->sendBrowser($device, $data);
                 }
             }
         }
@@ -44,10 +60,60 @@ class PushChannel
         }
     }
 
+    public function sendBrowser($device, $data)
+    {
+       // var_dump(\Config::get('fcm.token'));
+        if (\Config::get('fcm.token')==""){
+            return;
+        }
+       
+        // El token de registro del dispositivo al que se enviará la notificación
+        $device_token = $device->device_id;
+      
+        // El mensaje que se enviará
+        $message = array(
+            'title' => 'Carpoolear',
+            'body' => $data["message"],
+            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
+            'data' => $data["extras"]
+        );
+
+        if (isset($data['url'])) {
+            $message['click_action'] =  \Config::get('app.url')."/".$data['url'];
+        }
+        
+        
+        // La estructura de datos que se enviará en la solicitud HTTP
+        $fields = array(
+            'to' => $device_token,
+            'notification' => $message
+        );
+        
+        // Codificamos los datos en formato JSON
+        $json_data = json_encode($fields);
+        
+        // Preparamos la solicitud HTTP
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://fcm.googleapis.com/fcm/send');
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Authorization: key=' . \Config::get('fcm.token'),
+            'Content-Type: application/json'
+        ));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
+        
+        // Ejecutamos la solicitud HTTP y cerramos la conexión
+        $result = curl_exec($ch);
+        curl_close($ch);
+
+      
+    }
+
+
     public function sendAndroid($device, $data)
     {
         $message = $data['message'];
-
         $defaultData = [
             'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
         ];
