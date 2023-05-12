@@ -47,7 +47,6 @@ class RequestPassengerNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
-
         return [
             'message' => $this->getAttribute('from')->name.' quiere subirse a uno de tus viajes.',
             'url' => 'my-trips',

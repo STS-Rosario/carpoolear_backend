@@ -16,15 +16,20 @@ RUN apt-get update -y &&\
     php-xml \
     unzip \
     git \
-    apache2
+    apache2 \
+    supervisor 
 
 #install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 #setup apache
 COPY ./000-default.conf /etc/apache2/sites-available/
+COPY ./default-ssl.conf /etc/apache2/sites-available/
+COPY ./queue-worker.conf /etc/supervisor/conf.d/
 RUN a2enmod rewrite && a2enmod headers
+RUN a2enmod ssl
+RUN a2ensite default-ssl
 # COPY . /var/www/carpoolear/
 # RUN chmod -R ugo+rw /var/www/carpoolear/storage/*
 WORKDIR /var/www/carpoolear/
 EXPOSE 80
-CMD apachectl -D FOREGROUND
+CMD  /usr/bin/supervisord & apachectl -D FOREGROUND
