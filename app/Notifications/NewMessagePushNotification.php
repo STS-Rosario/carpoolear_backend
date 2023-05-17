@@ -12,6 +12,7 @@ class NewMessagePushNotification extends BaseNotification
 {
     protected $via = [
         PushChannel::class,
+        DatabaseChannel::class, 
     ];
 
     public function toEmail($user)
