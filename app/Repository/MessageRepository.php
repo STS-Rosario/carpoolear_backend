@@ -23,7 +23,7 @@ class MessageRepository implements MessageRepo
 
     public function getMessages(Conversation $conversation, $timestamp, $pageSize)
     {
-        $conversationMessages = $conversation->messages()->orderBy('updated_at', 'desc');
+        $conversationMessages = $conversation->messages()->orderBy('created_at', 'desc');
         if ($timestamp) {
             $conversationMessages->where('created_at', '<', $timestamp);
         }
@@ -38,7 +38,7 @@ class MessageRepository implements MessageRepo
         return $conversation->messages()->whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
-        })->orderBy('updated_at', 'desc')->get();
+        })->orderBy('created_at', 'desc')->get();
     }
 
     public function changeMessageReadState(Message $message, User $user, $read_state)
@@ -75,7 +75,7 @@ class MessageRepository implements MessageRepo
         }
 
         return $msgs->orderBy('conversation_id')
-                    ->orderBy('updated_at', 'desc')
+                    ->orderBy('created_at', 'desc')
                     ->get();
     }
 
