@@ -10,8 +10,13 @@ use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class FriendCancelNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
-
+    protected $via = [
+        DatabaseChannel::class, 
+        MailChannel::class, 
+        PushChannel::class, 
+        // FacebookChannel::class
+    ];
+    
     public function toEmail($user)
     {
         return [
