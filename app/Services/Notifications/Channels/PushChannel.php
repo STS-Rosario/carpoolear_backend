@@ -79,7 +79,7 @@ class PushChannel
         );
 
         if (isset($data['url'])) {
-            $message['click_action'] =  \Config::get('app.url')."/".$data['url'];
+            $message['click_action'] =  \Config::get('app.url') . '/app/' . $data['url'];
         }
         
         
