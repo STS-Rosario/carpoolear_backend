@@ -10,8 +10,13 @@ use  STS\Services\Notifications\Channels\FacebookChannel;
 
 class CancelPassengerNotification extends BaseNotification
 {
-    protected $via = [DatabaseChannel::class, MailChannel::class, PushChannel::class, FacebookChannel::class];
-
+    protected $via = [
+        DatabaseChannel::class, 
+        MailChannel::class, 
+        PushChannel::class, 
+        // FacebookChannel::class
+    ];
+    
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
