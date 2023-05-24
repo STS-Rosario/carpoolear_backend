@@ -12,7 +12,10 @@ class SubscriptionMatchNotification extends BaseNotification
 {
     // , MailChannel::class
 
-    protected $via = [DatabaseChannel::class, PushChannel::class, FacebookChannel::class];
+    protected $via = [
+        DatabaseChannel::class, 
+        PushChannel::class
+    ];
 
     public function toEmail($user)
     {

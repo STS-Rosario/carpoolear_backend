@@ -14,7 +14,7 @@ class RequestNotAnswerNotification extends BaseNotification
         DatabaseChannel::class, 
         // MailChannel::class, 
         PushChannel::class, 
-        FacebookChannel::class
+        // FacebookChannel::class
     ];
 
     public function toEmail($user)
