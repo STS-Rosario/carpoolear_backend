@@ -84,14 +84,6 @@ services:
       DB_DATABASE: carpoolear
       DB_USERNAME: carpoolear
       DB_PASSWORD: carpoolear
-      APP_KEY: qwertyuiopasdfghjklzxcvbnm123456
-      JWT_KEY: qwertyuiopasdfghjklzxcvbnm123456
-      API_PREFIX: api
-      API_VERSION: v1
-      MAIL_DRIVER: smtp
-      MAIL_HOST: smtp-tester
-      MAIL_PORT: 1025
-      QUEUE_DRIVER: database
 
   phpmyadmin:
         image: phpmyadmin/phpmyadmin
