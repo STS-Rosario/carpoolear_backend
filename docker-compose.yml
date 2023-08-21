@@ -23,8 +23,6 @@ services:
     build: .
     container_name: carpoolear_backend
     environment:
-      # APACHE_RUN_USER: devuser
-      # APACHE_RUN_GROUP: 1000
       APP_ENV: local
       APP_DEBUG: "true"
       SERVER_PORT: 8080
