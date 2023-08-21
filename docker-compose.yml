@@ -15,6 +15,10 @@ services:
       - ./:/var/data
     networks:
       - esnet
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
   carpoolear_backend:
     build: .
     container_name: carpoolear_backend
@@ -51,8 +55,10 @@ services:
     # image: composer:2.2.21
     build: .
     depends_on:
-      - carpoolear_backend
-      - carpoolear_db
+      carpoolear_backend:
+        condition: service_started
+      carpoolear_db:
+        condition: service_healthy
     restart: "no"
     working_dir: /var/www/carpoolear
     entrypoint: [ "composer", "install"]
@@ -61,7 +67,8 @@ services:
   database-seed-and-migrate:
     build: .
     depends_on:
-      - composer-install
+      composer-install:
+        condition: service_completed_successfully
     restart: "no"
     working_dir: /var/www/carpoolear
     entrypoint: ["sh", "-c", "php artisan migrate && php artisan db:seed --class=TestingSeeder"]
