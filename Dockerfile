@@ -46,12 +46,4 @@ RUN a2enmod rewrite && a2enmod headers
 RUN a2enmod ssl
 RUN a2ensite default-ssl
 
-# WORKDIR /var/www/carpoolear/
-# COPY ./composer.json .
-# COPY ./composer.lock .
-# TODO: remove the COPY . .
-# COPY . .
-# RUN composer install 
-# RUN php artisan key:generate
-
 CMD /usr/bin/supervisord & apachectl -D FOREGROUND
