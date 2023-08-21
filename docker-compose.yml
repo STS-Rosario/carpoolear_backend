@@ -19,6 +19,8 @@ services:
     build: .
     container_name: carpoolear_backend
     environment:
+      # APACHE_RUN_USER: devuser
+      # APACHE_RUN_GROUP: 1000
       APP_ENV: local
       APP_DEBUG: "true"
       SERVER_PORT: 8080
@@ -45,6 +47,45 @@ services:
       - ./cert/apache_ssl/ssl-cert-snakeoil.key:/etc/ssl/private/ssl-cert-snakeoil.key
     networks:
       - esnet
+  composer-install:
+    # image: composer:2.2.21
+    build: .
+    depends_on:
+      - carpoolear_backend
+      - carpoolear_db
+    restart: "no"
+    working_dir: /var/www/carpoolear
+    entrypoint: [ "composer", "install"]
+    volumes:
+      - ./:/var/www/carpoolear
+  database-seed-and-migrate:
+    build: .
+    depends_on:
+      - composer-install
+    restart: "no"
+    working_dir: /var/www/carpoolear
+    entrypoint: ["sh", "-c", "php artisan migrate && php artisan db:seed --class=TestingSeeder"]
+    volumes:
+      - ./:/var/www/carpoolear
+    networks:
+      - esnet
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      SERVER_PORT: 8080
+      DB_HOST: carpoolear_db
+      DB_DATABASE: carpoolear
+      DB_USERNAME: carpoolear
+      DB_PASSWORD: carpoolear
+      APP_KEY: qwertyuiopasdfghjklzxcvbnm123456
+      JWT_KEY: qwertyuiopasdfghjklzxcvbnm123456
+      API_PREFIX: api
+      API_VERSION: v1
+      MAIL_DRIVER: smtp
+      MAIL_HOST: smtp-tester
+      MAIL_PORT: 1025
+      QUEUE_DRIVER: database
+
   phpmyadmin:
         image: phpmyadmin/phpmyadmin
         container_name: carpoolear-phpmyadmin
