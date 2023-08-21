@@ -42,22 +42,9 @@ Happy coding!
 
 1) Complete your environment file.
 
-2) Building docker images: 
+2) Building and running docker images: 
 ```bash
-docker-compose up -d
-```
-
-3) Depens on operation system, you need to add permission to some folder: 
-```bash
-chmod 777 -R storage/
-chmod 777 -R public/
-```
-
-4) Seed database:
-
-```
-docker exec -it carpoolear_backend php artisan migrate
-docker exec -it carpoolear_backend php artisan db:seed --class=TestingSeeder
+docker-compose up
 ```
 
 5) Now start your frontend and enjoy carpoolear!
