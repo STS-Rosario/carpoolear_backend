@@ -42,7 +42,7 @@ Happy coding!
 
 1) Complete your environment file.
 
-2) Building and running docker images: 
+2) Building and running docker images:
 ```bash
 docker-compose up
 ```
