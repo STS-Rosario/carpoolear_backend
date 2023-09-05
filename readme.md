@@ -40,27 +40,18 @@ Happy coding!
 
 ## Carpoolear on Docker
 
-1) Complete your environment file.
+1) Depending on your operating system, you may need to add permissions to these folders: 
+    ```bash
+    sudo chmod 777 -R storage/
+    sudo chmod 777 -R public/
+    ```
 
-2) Building docker images: 
-```bash
-docker-compose up -d
-```
+1) Building and running docker images: 
+    ```bash
+    docker-compose up
+    ```
 
-3) Depens on operation system, you need to add permission to some folder: 
-```bash
-chmod 777 -R storage/
-chmod 777 -R public/
-```
-
-4) Seed database:
-
-```
-docker exec -it carpoolear_backend php artisan migrate
-docker exec -it carpoolear_backend php artisan db:seed --class=TestingSeeder
-```
-
-5) Now start your frontend and enjoy carpoolear!
+1) Now start your frontend and enjoy carpoolear!
 
 ___Docker compose file:___
 You can start a develp environment with just one command with docker-compose:
