@@ -15,6 +15,10 @@ services:
       - ./:/var/data
     networks:
       - esnet
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
   carpoolear_backend:
     build: .
     container_name: carpoolear_backend
@@ -45,6 +49,40 @@ services:
       - ./cert/apache_ssl/ssl-cert-snakeoil.key:/etc/ssl/private/ssl-cert-snakeoil.key
     networks:
       - esnet
+  composer-install:
+    # image: composer:2.2.21
+    build: .
+    depends_on:
+      carpoolear_backend:
+        condition: service_started
+      carpoolear_db:
+        condition: service_healthy
+    restart: "no"
+    working_dir: /var/www/carpoolear
+    entrypoint: [ "composer", "install"]
+    volumes:
+      - ./:/var/www/carpoolear
+  database-seed-and-migrate:
+    build: .
+    depends_on:
+      composer-install:
+        condition: service_completed_successfully
+    restart: "no"
+    working_dir: /var/www/carpoolear
+    entrypoint: ["sh", "-c", "php artisan migrate && php artisan db:seed --class=TestingSeeder"]
+    volumes:
+      - ./:/var/www/carpoolear
+    networks:
+      - esnet
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      SERVER_PORT: 8080
+      DB_HOST: carpoolear_db
+      DB_DATABASE: carpoolear
+      DB_USERNAME: carpoolear
+      DB_PASSWORD: carpoolear
+
   phpmyadmin:
         image: phpmyadmin/phpmyadmin
         container_name: carpoolear-phpmyadmin
