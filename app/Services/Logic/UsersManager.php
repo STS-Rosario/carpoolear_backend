@@ -74,60 +74,72 @@ class UsersManager extends BaseManager implements UserLogic
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
-        if (!isset($data['token'])) {
-            return false;
-        }
-
-        $url = "https://www.google.com/recaptcha/api/siteverify";
-        $recaptchaData = [
-            'secret' => env('RECAPTCHA_SECRET_KEY'),
-            'response' => $_POST['token'],
-            'remoteip' => $_SERVER['REMOTE_ADDR']
-        ];
-
-        $options = array(
-            'http' => array(
-            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-            'method'  => 'POST',
-            'content' => http_build_query($recaptchaData)
-            )
-            );
-        
-        # Creates and returns stream context with options supplied in options preset 
-        $context  = stream_context_create($options);
-        # file_get_contents() is the preferred way to read the contents of a file into a string
-        $response = file_get_contents($url, false, $context);
-        # Takes a JSON encoded string and converts it into a PHP variable
-        $res = json_decode($response, true);
-        # END setting reCaptcha v3 validation data
-        
-        # Post form OR output alert and bypass post if false. NOTE: score conditional is optional
-        # since the successful score default is set at >= 0.5 by Google. Some developers want to
-        # be able to control score result conditions, so I included that in this example.
-
-        if ($res['success'] == true && $res['score'] >= 0.5) {
-            $v = $this->validator($data, null, $is_social, $is_driver);
-            if ($v->fails() && $validate) {
-                $this->setErrors($v->errors());
-                return;
-            } else {
-                $data['emails_notifications'] = true;
+        $v = $this->validator($data, null, $is_social, $is_driver);
+        if ($v->fails() && $validate) {
+            $this->setErrors($v->errors());
+            return;
+        } else {
+            $data['emails_notifications'] = true;
+            // if token (reCAPTCHA) is not present, use email confirmation
+            if (!isset($data['token'])) {
                 if (isset($data['password'])) {
                     $data['password'] = bcrypt($data['password']);
                 }
                 if (! isset($data['active'])) {
                     $data['active'] = false;
                     $data['activation_token'] = str_random(40);
+
+                    $u = $this->repo->create($data);
+
+                    \Log::info('UserManager before CreateEvent');
+                    event(new CreateEvent($u->id));
+
+                    return $u;
                 }
-                $u = $this->repo->create($data);
+            } else {
+                // if we have reCAPTCHA token, skip email verification
+                $data['active'] = true;
 
-                \Log::info('UserManager before CreateEvent');
-                event(new CreateEvent($u->id));
+                $url = "https://www.google.com/recaptcha/api/siteverify";
+                $recaptchaData = [
+                    'secret' => env('RECAPTCHA_SECRET_KEY'),
+                    'response' => $_POST['token'],
+                    'remoteip' => $_SERVER['REMOTE_ADDR']
+                ];
 
-                return $u;
+                $options = array(
+                    'http' => array(
+                    'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                    'method'  => 'POST',
+                    'content' => http_build_query($recaptchaData)
+                    )
+                    );
+                
+                # Creates and returns stream context with options supplied in options preset 
+                $context  = stream_context_create($options);
+                # file_get_contents() is the preferred way to read the contents of a file into a string
+                $response = file_get_contents($url, false, $context);
+                # Takes a JSON encoded string and converts it into a PHP variable
+                $res = json_decode($response, true);
+                # END setting reCaptcha v3 validation data
+                
+                # Post form OR output alert and bypass post if false. NOTE: score conditional is optional
+                # since the successful score default is set at >= 0.5 by Google. Some developers want to
+                # be able to control score result conditions, so I included that in this example.
+
+                if ($res['success'] == true && $res['score'] >= 0.5) {
+                    $u = $this->repo->create($data);
+
+                    \Log::info('UserManager before CreateEvent.');
+                    event(new CreateEvent($u->id));
+
+                    return $u;
+                } else {
+                    return false;
+                }
             }
-        } else {
-            return false;
+            
+            
         }
     }
 
