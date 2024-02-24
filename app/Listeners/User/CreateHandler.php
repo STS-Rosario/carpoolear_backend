@@ -32,7 +32,7 @@ class CreateHandler implements ShouldQueue
     {
         \Log::info('create handler');
         $user = $this->userRepo->show($event->id);
-        if ($user && $user->email) {
+        if ($user && $user->email && !$user->active) {
 
 
             $domain = config('app.url');
