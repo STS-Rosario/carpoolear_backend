@@ -193,9 +193,9 @@ class HomeController extends Controller
         ])->first();
         echo '<pre>';
         var_dump(json_encode($trip));die; */
-        \Mail::raw('Text to e-mail', function ($message) {
+        /* \Mail::raw('Text to e-mail', function ($message) {
             $message->to('pabloluisbotta@gmail.com', 'test')->subject('email test text');
-        });
+        });*/
     }
 
     public function handleApp($name)

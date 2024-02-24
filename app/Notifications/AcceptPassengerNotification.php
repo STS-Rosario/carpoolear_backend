@@ -33,7 +33,7 @@ class AcceptPassengerNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' ha aceptado tu solicitud.';
+        return is_object($this->getAttribute('from')) ? ($this->getAttribute('from')->name.' ha aceptado tu solicitud.') : 'Han aceptado tu solicitud.';
     }
 
     public function getExtras()
@@ -50,7 +50,7 @@ class AcceptPassengerNotification extends BaseNotification
         }
         return [
             'type' => 'trip',
-            'trip_id' => $this->getAttribute('trip')->id,
+            'trip_id' => is_object($this->getAttribute('trip')) ? $this->getAttribute('trip')->id : '',
         ];
     }
 

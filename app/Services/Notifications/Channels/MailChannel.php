@@ -25,9 +25,14 @@ class MailChannel
                 \Log::info('sending_mail:' . json_encode($data));
             }
 
-            \Mail::send('email.'.$data['email_view'], $data, function ($message) use ($user, $data) {
+            /* \Mail::send('email.'.$data['email_view'], $data, function ($message) use ($user, $data) {
                 $message->to($user->email, $user->name)->subject($data['title']);
-            });
+            }); */
+
+            \Log::info('estoy aca:');
+            $html = view('email.'.$data['email_view'], $data)->render();
+            ssmtp_send_mail($data['title'], $user->email, $html);
+            \Log::info('estoy alla:');
         }
     }
 

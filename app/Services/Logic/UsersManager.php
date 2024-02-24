@@ -74,17 +74,20 @@ class UsersManager extends BaseManager implements UserLogic
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
+        \Log::info('Create USER: ' . $data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
             $this->setErrors($v->errors());
+
+            \Log::info('Error validation: ' . $data['name']);
             return;
         } else {
             $data['emails_notifications'] = true;
+            if (isset($data['password'])) {
+                $data['password'] = bcrypt($data['password']);
+            }
             // if token (reCAPTCHA) is not present, use email confirmation
             if (!isset($data['token'])) {
-                if (isset($data['password'])) {
-                    $data['password'] = bcrypt($data['password']);
-                }
                 if (! isset($data['active'])) {
                     $data['active'] = false;
                     $data['activation_token'] = str_random(40);
@@ -101,8 +104,10 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['active'] = true;
 
                 $url = "https://www.google.com/recaptcha/api/siteverify";
+
+                \Log::info('Captcha val: ' . env('RECAPTCHA_SECRET_KEY') . ' - ip  ' . $_SERVER['REMOTE_ADDR'] . ' token = '. $_POST['token']);
                 $recaptchaData = [
-                    'secret' => env('RECAPTCHA_SECRET_KEY'),
+                    'secret' => env('RECAPTCHA_SECRET_KEY', ''),
                     'response' => $_POST['token'],
                     'remoteip' => $_SERVER['REMOTE_ADDR']
                 ];
@@ -121,6 +126,8 @@ class UsersManager extends BaseManager implements UserLogic
                 $response = file_get_contents($url, false, $context);
                 # Takes a JSON encoded string and converts it into a PHP variable
                 $res = json_decode($response, true);
+
+                \Log::info('Captcha val: ' . $response);
                 # END setting reCaptcha v3 validation data
                 
                 # Post form OR output alert and bypass post if false. NOTE: score conditional is optional
@@ -135,6 +142,8 @@ class UsersManager extends BaseManager implements UserLogic
 
                     return $u;
                 } else {
+
+                    \Log::info('captcha failed: ' . $data['name']);
                     return false;
                 }
             }
@@ -290,7 +299,22 @@ class UsersManager extends BaseManager implements UserLogic
             $this->repo->storeResetToken($user, $token);
 
             \Log::info('resetPassword before event');
-            event(new ResetEvent($user->id, $token));
+            // event(new ResetEvent($user->id, $token));
+            /*
+
+            'url' => config('app.url').'/app/reset-password/'.$this->getAttribute('token'),
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
+            user
+            */
+            $domain = config('app.url');
+            $name_app = config('carpoolear.name_app');
+            $url = config('app.url').'/app/reset-password/'. $token;
+            $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
+            ssmtp_send_mail('Recuperación de contraseña', $user->email, $html);
+            \Log::info('resetPassword post event event');
+
+
             return $token;
         } else {
             $this->setErrors(['error' => 'user_not_found']);
