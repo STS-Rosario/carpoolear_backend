@@ -35,6 +35,14 @@ class CreateHandler implements ShouldQueue
         if ($user && $user->email) {
             $notification = new NewUserNotification();
             $notification->notify($user);
+
+
+            $domain = config('app.url');
+            $name_app = config('carpoolear.name_app');
+            $url = config('app.url').'/app/activate/'.$user->activation_token;
+            $html = view('email.create_account', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
+            ssmtp_send_mail('Bienvenido a ' . config('carpoolear.name_app') . '!', $user->email, $html);
+            \Log::info('resetPassword post event event');
         }
     }
 }
