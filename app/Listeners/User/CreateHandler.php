@@ -33,8 +33,6 @@ class CreateHandler implements ShouldQueue
         \Log::info('create handler');
         $user = $this->userRepo->show($event->id);
         if ($user && $user->email) {
-            $notification = new NewUserNotification();
-            $notification->notify($user);
 
 
             $domain = config('app.url');
@@ -43,6 +41,10 @@ class CreateHandler implements ShouldQueue
             $html = view('email.create_account', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
             ssmtp_send_mail('Bienvenido a ' . config('carpoolear.name_app') . '!', $user->email, $html);
             \Log::info('resetPassword post event event');
+
+
+            $notification = new NewUserNotification();
+            $notification->notify($user);
         }
     }
 }
