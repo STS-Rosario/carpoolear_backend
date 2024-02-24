@@ -80,11 +80,11 @@ class UsersManager extends BaseManager implements UserLogic
             return;
         } else {
             $data['emails_notifications'] = true;
+            if (isset($data['password'])) {
+                $data['password'] = bcrypt($data['password']);
+            }
             // if token (reCAPTCHA) is not present, use email confirmation
             if (!isset($data['token'])) {
-                if (isset($data['password'])) {
-                    $data['password'] = bcrypt($data['password']);
-                }
                 if (! isset($data['active'])) {
                     $data['active'] = false;
                     $data['activation_token'] = str_random(40);
