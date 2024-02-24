@@ -74,9 +74,12 @@ class UsersManager extends BaseManager implements UserLogic
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
+        \Log::info('Create USER: ' . $data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
             $this->setErrors($v->errors());
+
+            \Log::info('Error validation: ' . $data['name']);
             return;
         } else {
             $data['emails_notifications'] = true;
@@ -101,8 +104,10 @@ class UsersManager extends BaseManager implements UserLogic
                 $data['active'] = true;
 
                 $url = "https://www.google.com/recaptcha/api/siteverify";
+
+                \Log::info('Captcha val: ' . env('RECAPTCHA_SECRET_KEY') . ' - ip  ' . $_SERVER['REMOTE_ADDR'] . ' token = '. $_POST['token']);
                 $recaptchaData = [
-                    'secret' => env('RECAPTCHA_SECRET_KEY'),
+                    'secret' => env('RECAPTCHA_SECRET_KEY', ''),
                     'response' => $_POST['token'],
                     'remoteip' => $_SERVER['REMOTE_ADDR']
                 ];
@@ -121,6 +126,8 @@ class UsersManager extends BaseManager implements UserLogic
                 $response = file_get_contents($url, false, $context);
                 # Takes a JSON encoded string and converts it into a PHP variable
                 $res = json_decode($response, true);
+
+                \Log::info('Captcha val: ' . $response);
                 # END setting reCaptcha v3 validation data
                 
                 # Post form OR output alert and bypass post if false. NOTE: score conditional is optional
@@ -135,6 +142,8 @@ class UsersManager extends BaseManager implements UserLogic
 
                     return $u;
                 } else {
+
+                    \Log::info('captcha failed: ' . $data['name']);
                     return false;
                 }
             }
