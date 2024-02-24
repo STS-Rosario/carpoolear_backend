@@ -243,7 +243,22 @@ class UsersManager extends BaseManager implements UserLogic
             $this->repo->storeResetToken($user, $token);
 
             \Log::info('resetPassword before event');
-            event(new ResetEvent($user->id, $token));
+            // event(new ResetEvent($user->id, $token));
+            /*
+
+            'url' => config('app.url').'/app/reset-password/'.$this->getAttribute('token'),
+            'name_app' => config('carpoolear.name_app'),
+            'domain' => config('app.url')
+            user
+            */
+            $domain = config('app.url');
+            $name_app = config('carpoolear.name_app');
+            $url = config('app.url').'/app/reset-password/'. $token;
+            $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
+            ssmtp_send_mail('Recuperación de contraseña', $user->email, $html);
+            \Log::info('resetPassword post event event');
+
+
             return $token;
         } else {
             $this->setErrors(['error' => 'user_not_found']);

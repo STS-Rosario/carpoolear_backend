@@ -37,7 +37,8 @@
         },
         "files": [
             "app/Helpers/Queries.php",
-            "app/Helpers/Dates.php"
+            "app/Helpers/Dates.php",
+            "app/Helpers/Mails.php"
         ]
     },
     "autoload-dev": {
