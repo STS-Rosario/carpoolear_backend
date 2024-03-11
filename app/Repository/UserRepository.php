@@ -31,7 +31,10 @@ class UserRepository implements UserRep
 
     public function show($id)
     {
-        return User::with(['accounts', 'donations', 'referencesReceived'])->where('id', $id)->first();
+        $user =User::with(['accounts', 'donations', 'referencesReceived'])->where('id', $id)->first(); 
+        // prevent from returning the private_note to the frontend
+        $user->private_note = null; // TODO: how to better hide this?
+        return $user;
     }
 
     public function acceptTerms($user)
