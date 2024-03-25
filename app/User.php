@@ -39,6 +39,7 @@ class User extends Authenticatable
         'banned',
         'nro_doc',
         'description',
+        'private_note',
         'mobile_phone',
         'image',
         'active',

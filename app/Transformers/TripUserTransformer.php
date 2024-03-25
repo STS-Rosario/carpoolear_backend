@@ -26,6 +26,7 @@ class TripUserTransformer extends TransformerAbstract
             'name' => $user->name,
             //'email' => $user->email,
             'descripcion' => $user->descripcion,
+            'private_note' => $user->private_note,
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
             'negative_ratings' => $user->negative_ratings,
