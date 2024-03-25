@@ -60,6 +60,8 @@ class UserRepository implements UserRep
         if ($name) {
             $users = User::where('name', 'like', '%'.$name.'%');
             $users->orWhere('email', 'like', '%'.$name.'%');
+            $users->orWhere('nro_doc', 'like', '%'.$name.'%');
+            $users->orWhere('mobile_phone', 'like', '%'.$name.'%');
         } else {
             return null;
         }
