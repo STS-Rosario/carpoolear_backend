@@ -4,40 +4,6 @@ Carpoolear es la primera aplicación argentina de Facebook que permite a los usu
 
 Es una customización ad-hoc para Argentina de la filosofía carpooling, la cual consiste en compartir nuestros viajes en auto con otras personas de forma cotidiana. El carpooling es una práctica popular en Estados Unidos y Europa, donde se realiza de manera organizada para lograr aumentar el número de viajes compartidos y que estos sean concretados con otras personas además de nuestros vecinos y amigos.
 
-## Start coding
-
-Clone repository (remember to make your own fork)
-```bash
-git clone https://github.com/STS-Rosario/carpoolear_backend.git
-```
-
-Install dependencies
-```bash
-composer install
-```
-Configure the database access in the .env file
-```bash
-cp .env.example .env
-```
-Generate laravel key
-```bash
-php artisan key:generate
-```
-
-Give read/write access to the storage folder
-```bash
-chmod -R ugo+rw storage/
-```
-
-Generate the database
-```bash
-php artisan migrate
-```
-
-You will need to use a local webserver and point it to the public folder
-
-Happy coding!
-
 ## Carpoolear on Docker
 
 1) Depending on your operating system, you may need to add permissions to these folders: 
@@ -51,10 +17,21 @@ Happy coding!
     docker-compose up
     ```
 
+    NOTE: if you have trouble running Docker, try removing the `composer-install` y `database-seed-and-migrate` sections from `docker-compose.yml` and trying again.
+
+1) Set your `.env` (use `.env.example` as an example)
+
+1) (OPTIONAL: only if you removed `composer-install` y `database-seed-and-migrate` from `docker-compose.yml` in a previous step). Go to Docker UI, go to the `carpoolear_backend` container, enter the `Terminal` for that container, and execute the following commands:
+    1) `composer update`
+    1) `php artisan migrate`
+    1) `php artisan db:seed --class=TestingSeeder`
+    1) `php artisan config:clear`
+    1) `php artisan georoute:build`
+
 1) Now start your frontend and enjoy carpoolear!
 
 ___Docker compose file:___
-You can start a develp environment with just one command with docker-compose:
+You can start a develop environment with just one command with docker-compose:
 
 ```
 docker-compose up -d
@@ -104,6 +81,42 @@ services:
 networks:
   esnet:  
 ```
+
+
+
+## Start coding (old way)
+
+Clone repository (remember to make your own fork)
+```bash
+git clone https://github.com/STS-Rosario/carpoolear_backend.git
+```
+
+Install dependencies
+```bash
+composer install
+```
+Configure the database access in the .env file
+```bash
+cp .env.example .env
+```
+Generate laravel key
+```bash
+php artisan key:generate
+```
+
+Give read/write access to the storage folder
+```bash
+chmod -R ugo+rw storage/
+```
+
+Generate the database
+```bash
+php artisan migrate
+```
+
+You will need to use a local webserver and point it to the public folder
+
+Happy coding!
 
 ## Contributing
 
