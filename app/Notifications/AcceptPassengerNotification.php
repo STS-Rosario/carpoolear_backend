@@ -38,13 +38,14 @@ class AcceptPassengerNotification extends BaseNotification
 
     public function getExtras()
     {
+        $trip = $this->getAttribute('trip');
         $to =  $this->getAttribute('token');
         if (is_object($to) && isset($to->id)) {
             $request = $this->getAttribute('trip')->passenger()->where('user_id', $to->id)->first();
             if (is_object($request) && $request->request_state == 4) {
                 return [
                     'type' => 'my-trips',
-                    'trip_id' => $this->getAttribute('trip')->id,
+                    'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
                 ];
             }
         }
