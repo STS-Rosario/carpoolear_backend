@@ -38,9 +38,11 @@ class AutoCancelRequestIfRequestLimitedNotification extends BaseNotification
 
     public function getExtras()
     {
+        $trip = $this->getAttribute('trip');
+
         return [
             'type' => 'trip',
-            'trip_id' => $this->getAttribute('trip')->id,
+            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
         ];
     }
 
