@@ -4,10 +4,11 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Services\Logic\FriendsManager;
+use STS\Services\Logic\UsersManager;
 use STS\Transformers\ProfileTransformer;
 use Dingo\Api\Exception\ResourceException;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Logic\Friends as FriendsLogic;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException; 
 
 class FriendsController extends Controller
 {
@@ -17,7 +18,7 @@ class FriendsController extends Controller
 
     protected $users;
 
-    public function __construct(Request $r, FriendsLogic $friends, UserLogic $users)
+    public function __construct(Request $r, FriendsManager $friends, UsersManager $users)
     {
         $this->middleware('logged');
         $this->friends = $friends;
@@ -26,7 +27,7 @@ class FriendsController extends Controller
 
     public function request(Request $request, $id)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->request($this->user, $friend);
@@ -35,12 +36,12 @@ class FriendsController extends Controller
             }
         }
 
-        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
+        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function accept(Request $request, $id)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->accept($this->user, $friend);
@@ -49,12 +50,12 @@ class FriendsController extends Controller
             }
         }
 
-        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
+        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function delete(Request $request, $id)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->delete($this->user, $friend);
@@ -63,12 +64,12 @@ class FriendsController extends Controller
             }
         }
 
-        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
+        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function reject(Request $request, $id)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $friend = $this->users->find($id);
         if ($friend) {
             $ret = $this->friends->reject($this->user, $friend);
@@ -77,12 +78,12 @@ class FriendsController extends Controller
             }
         }
 
-        throw new ResourceException('Bad request exceptions', $this->friends->getErrors());
+        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function index(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $data = $request->all();
         $users = $this->friends->getFriends($this->user, $data);
         if (isset($data['page_size'])) {
@@ -94,7 +95,7 @@ class FriendsController extends Controller
 
     public function pedings(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $users = $this->friends->getPendings($this->user);
 
         return $this->collection($users, new ProfileTransformer($this->user));

@@ -3,7 +3,7 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Entities\Message;
+use STS\Models\Message;
 use Illuminate\Console\Command;
 use STS\Notifications\NewMessageNotification;
 

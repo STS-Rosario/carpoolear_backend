@@ -2,9 +2,9 @@
 
 namespace STS\Console\Commands;
 
-use STS\User;
+use STS\Models\User;
 use Carbon\Carbon;
-use STS\Entities\NodeGeo;
+use STS\Models\NodeGeo;
 use Illuminate\Console\Command;
 use Storage;
 use GuzzleHttp\Client;

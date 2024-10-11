@@ -3,7 +3,7 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Passenger\Accept;
-use STS\Contracts\Repository\Conversations as ConversationRepo;
+use STS\Repository\ConversationRepository; 
 
 class addUserConversation
 {
@@ -14,7 +14,7 @@ class addUserConversation
      *
      * @return void
      */
-    public function __construct(ConversationRepo $repo)
+    public function __construct(ConversationRepository $repo)
     {
         $this->conversationRepo = $repo;
     }

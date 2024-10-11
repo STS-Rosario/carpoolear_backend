@@ -2,10 +2,10 @@
 
 namespace STS\Console\Commands;
 
-use STS\User;
-use STS\Entities\Trip;
-use STS\Entities\Rating;
-use STS\Entities\Passenger;
+use STS\Models\User;
+use STS\Models\Trip;
+use STS\Models\Rating;
+use STS\Models\Passenger;
 use Illuminate\Console\Command;
 
 class UpdateUser extends Command

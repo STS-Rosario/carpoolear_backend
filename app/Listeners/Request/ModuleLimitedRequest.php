@@ -3,9 +3,9 @@
 namespace STS\Listeners\Request;
 
 use STS\Events\Passenger\Accept as AcceptEvent;
-use STS\Entities\Passenger;
-use STS\Entities\Trip;
-use STS\User;
+use STS\Models\Passenger;
+use STS\Models\Trip;
+use STS\Models\User;
 use STS\Events\Passenger\AutoCancel as AutoCancelEvent;
 
 class ModuleLimitedRequest

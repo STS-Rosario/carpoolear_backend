@@ -2,7 +2,7 @@
 
 namespace STS\Transformers;
 
-use STS\Entities\Passenger;
+use STS\Models\Passenger;
 use League\Fractal\TransformerAbstract;
 
 class PassengerTransformer extends TransformerAbstract

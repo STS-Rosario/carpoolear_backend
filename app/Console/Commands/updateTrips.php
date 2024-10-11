@@ -3,12 +3,12 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use Illuminate\Console\Command;
-use STS\Services\Logic\RoutesManager as RoutesManager;
-use STS\Contracts\Repository\Routes as RoutesRepository;
-use STS\Entities\Route;
-use STS\Entities\Trip;
-use STS\Entities\NodeGeo;
+use Illuminate\Console\Command; 
+use STS\Models\Route;
+use STS\Models\Trip;
+use STS\Models\NodeGeo;
+use STS\Repository\RoutesRepository;
+use STS\Services\Logic\RoutesManager;
 
 class updateTrips extends Command
 {

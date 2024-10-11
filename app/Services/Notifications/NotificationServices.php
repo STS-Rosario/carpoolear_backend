@@ -22,7 +22,7 @@ class NotificationServices
         // \Log::info('NotificationServices send');
         // FIXME ??? no config data on sending
 
-        $settings = \STS\Entities\AppConfig::all();
+        $settings = \STS\Models\AppConfig::all();
         foreach ($settings as $config) {
             if (isset($config->is_laravel) && $config->is_laravel) {
                 \Config::set($config->key, $config->value);

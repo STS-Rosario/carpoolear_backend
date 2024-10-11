@@ -2,15 +2,10 @@
 
 namespace STS\Repository;
 
-use Carbon\Carbon;
-use STS\Entities\Route;
-use STS\Entities\NodeGeo;
-use DB;
-
-use STS\Contracts\Repository\Routes as RoutesRep;
+use STS\Models\NodeGeo;
 
 
-class RoutesRepository implements RoutesRep
+class RoutesRepository
 {
     public function __construct () {
     }
@@ -45,6 +40,7 @@ class RoutesRepository implements RoutesRep
     }
     public function autocomplete($name, $country, $multicountry) 
     {
+        \Log::info($name. ' ' . $country);
         //sometime someone will implement full text search
         $query = NodeGeo::query();
         $query->whereRaw("CONCAT(name, ' ', state, ' ', country) like ?", '%'.$name.'%');

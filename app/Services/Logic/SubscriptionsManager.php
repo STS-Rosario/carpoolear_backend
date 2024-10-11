@@ -2,17 +2,16 @@
 
 namespace STS\Services\Logic;
 
+use STS\Repository\SubscriptionsRepository;
 use Validator;
-use STS\User as UserModel;
-use STS\Entities\Subscription as SubscriptionModel;
-use STS\Contracts\Logic\Subscription as SubscriptionLogic;
-use STS\Contracts\Repository\Subscription as SubscriptionRepo;
+use STS\Models\User as UserModel;
+use STS\Models\Subscription as SubscriptionModel;
 
-class SubscriptionsManager extends BaseManager implements SubscriptionLogic
+class SubscriptionsManager extends BaseManager
 {
     protected $repo;
 
-    public function __construct(SubscriptionRepo $subscriptionsRepo)
+    public function __construct(SubscriptionsRepository $subscriptionsRepo)
     {
         $this->repo = $subscriptionsRepo;
     }

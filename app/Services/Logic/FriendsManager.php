@@ -2,19 +2,18 @@
 
 namespace STS\Services\Logic;
 
-use STS\User as UserModel;
+use STS\Repository\FriendsRepository;
+use STS\Models\User as UserModel;
 use STS\Events\Friend\Cancel as CancelEvent;
 use STS\Events\Friend\Accept  as AcceptEvent;
 use STS\Events\Friend\Reject  as RejectEvent;
-use STS\Events\Friend\Request as RequestEvent;
-use STS\Contracts\Logic\Friends as FriendsLogic;
-use STS\Contracts\Repository\Friends as FriendsRepo;
+use STS\Events\Friend\Request as RequestEvent; 
 
-class FriendsManager extends BaseManager implements FriendsLogic
+class FriendsManager extends BaseManager
 {
     protected $friendsRepo;
 
-    public function __construct(FriendsRepo $friends)
+    public function __construct(FriendsRepository $friends)
     {
         $this->friendsRepo = $friends;
     }

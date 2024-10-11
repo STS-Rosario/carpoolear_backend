@@ -2,23 +2,23 @@
 
 namespace STS\Services\Logic;
 
-use STS\User;
+use STS\Models\Passenger;
+use STS\Models\User;
+use STS\Repository\TripRepository;
+use STS\Repository\UserRepository;
 use Validator;
-use Illuminate\Validation\Rule;
-use STS\Entities\Trip;
+use STS\Models\Trip;
 use STS\Repository\FileRepository;
-use STS\Events\User\Reset  as ResetEvent;
-use STS\Contracts\Logic\User as UserLogic;
 use STS\Events\User\Create as CreateEvent;
-use STS\Events\User\Update as UpdateEvent;
-use STS\Contracts\Repository\User as UserRep;
-use STS\Contracts\Repository\Trip as TripRep;
+use STS\Events\User\Update as UpdateEvent; 
+use Illuminate\Support\Str;
 
-class UsersManager extends BaseManager implements UserLogic
+class UsersManager extends BaseManager
 {
     protected $repo;
+    protected $tripRepository;
 
-    public function __construct(UserRep $userRep, TripRep $tripRepository)
+    public function __construct(UserRepository $userRep, TripRepository $tripRepository)
     {
         $this->repo = $userRep;
         $this->tripRepository = $tripRepository;
@@ -90,7 +90,7 @@ class UsersManager extends BaseManager implements UserLogic
             if (!isset($data['token'])) {
                 if (! isset($data['active'])) {
                     $data['active'] = false;
-                    $data['activation_token'] = str_random(40);
+                    $data['activation_token'] = Str::random(40);
 
                     $u = $this->repo->create($data);
 
@@ -294,7 +294,7 @@ class UsersManager extends BaseManager implements UserLogic
         \Log::info('resetPassword userManager');
         $user = $this->repo->getUserBy('email', $email);
         if ($user) {
-            $token = str_random(40);
+            $token = Str::random(40);
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
 
@@ -313,8 +313,6 @@ class UsersManager extends BaseManager implements UserLogic
             $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
             ssmtp_send_mail('Recuperación de contraseña', $user->email, $html);
             \Log::info('resetPassword post event event');
-
-
             return $token;
         } else {
             $this->setErrors(['error' => 'user_not_found']);
@@ -404,7 +402,7 @@ class UsersManager extends BaseManager implements UserLogic
     {
         $bankPath = storage_path() . '/banks/';
         $ccPath = storage_path() . '/cc/';
-        $country = config('carpoolear.osm_country');
+        $country = config('carpoolear.osm_country', 'ARG');
         $banks = json_decode(file_get_contents($bankPath . $country . '.json'), true);
         $cc = json_decode(file_get_contents($ccPath . $country . '.json'), true);
 
@@ -418,7 +416,7 @@ class UsersManager extends BaseManager implements UserLogic
         $path = storage_path() . '/terms/';
         $app_name = config('carpoolear.target_app');
         if (!empty($lang)) {
-            $path = $path . $app_name . '_' . $request->get('lang') . '.html';
+            $path = $path . $app_name . '_' . $lang . '.html';
         } else {
             $path = $path . $app_name . '.html';
         }

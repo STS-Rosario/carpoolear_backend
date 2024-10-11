@@ -2,7 +2,7 @@
 
 namespace STS\Services;
 
-use STS\User;
+use STS\Models\User;
 use Validator;
 use Illuminate\Contracts\Auth\Registrar as RegistrarContract;
 

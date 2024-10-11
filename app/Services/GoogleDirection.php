@@ -2,7 +2,7 @@
 
 namespace STS\Services;
 
-use STS\Entities\TripPoint;
+use STS\Models\TripPoint;
 
 class GoogleDirection
 {

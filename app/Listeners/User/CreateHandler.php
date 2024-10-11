@@ -5,7 +5,7 @@ namespace STS\Listeners\User;
 use STS\Events\User\Create;
 use STS\Notifications\NewUserNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Contracts\Repository\User as UserRepository;
+use STS\Repository\UserRepository; 
 
 class CreateHandler implements ShouldQueue
 {

@@ -2,7 +2,7 @@
 
 namespace STS\Services\Notifications\Channels;
 
-use STS\Entities\Device;
+use STS\Models\Device;
 use Carbon\Carbon;
 
 class PushChannel

@@ -3,8 +3,8 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Trip\Create;
-use STS\Contracts\Logic\Conversation as ConversationLogic;
-use STS\Contracts\Repository\Conversations as ConversationsRepo;
+use STS\Repository\ConversationRepository;
+use STS\Services\Logic\ConversationsManager; 
 
 class createConversation
 {
@@ -17,7 +17,7 @@ class createConversation
      *
      * @return void
      */
-    public function __construct(ConversationLogic $logic, ConversationsRepo $repo)
+    public function __construct(ConversationsManager $logic, ConversationRepository $repo)
     {
         $this->conversationLogic = $logic;
         $this->repoConv = $repo;

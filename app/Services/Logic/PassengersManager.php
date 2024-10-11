@@ -3,20 +3,17 @@
 namespace STS\Services\Logic;
 
 use Validator;
-use STS\Entities\Passenger;
-use STS\Contracts\Logic\IPassengersLogic;
-use STS\Contracts\Logic\Trip as TripLogic;
-use STS\Contracts\Repository\User as UserRepo;
+use STS\Repository\PassengersRepository;
+use STS\Repository\UserRepository;
+use STS\Models\Passenger;
 use STS\Events\Passenger\Accept as AcceptEvent;
-use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
 use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
-use STS\Contracts\Repository\IPassengersRepository;
 use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\UsersManager;
 
-class PassengersManager extends BaseManager implements IPassengersLogic
+class PassengersManager extends BaseManager
 {
     protected $passengerRepository;
 
@@ -28,7 +25,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
     protected $userManager;
 
-    public function __construct(IPassengersRepository $passengerRepository, TripLogic $tripLogic, UserRepo $uRepo, ConversationsManager $conversationManager, UsersManager $userManager)
+    public function __construct(PassengersRepository $passengerRepository, TripsManager $tripLogic, UserRepository $uRepo, ConversationsManager $conversationManager, UsersManager $userManager)
     {
         $this->passengerRepository = $passengerRepository;
         $this->tripLogic = $tripLogic;
@@ -39,7 +36,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
 
     public function getPassengers($tripId, $user, $data)
     {
-        if (! $this->tripLogic->tripOwner($user, $tripId) || $this->isUserRequestAccepted($tripId, $user->id)) {
+        if (!$this->tripLogic->tripOwner($user, $tripId) || $this->isUserRequestAccepted($tripId, $user->id)) {
             $this->setErrors(['error' => 'access_denied']);
 
             return;
@@ -51,7 +48,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     public function getPendingRequests($tripId, $user, $data)
     {
         if ($tripId) {
-            if (! $this->tripLogic->tripOwner($user, $tripId)) {
+            if (!$this->tripLogic->tripOwner($user, $tripId)) {
                 $this->setErrors(['error' => 'access_denied']);
 
                 return;
@@ -65,7 +62,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
     public function getPendingPaymentRequests($tripId, $user, $data)
     {
         if ($tripId) {
-            if (! $this->tripLogic->tripOwner($user, $tripId)) {
+            if (!$this->tripLogic->tripOwner($user, $tripId)) {
                 $this->setErrors(['error' => 'access_denied']);
                 return;
             }
@@ -102,7 +99,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $userId,
         ];
 
-        if (! $this->isInputValid($input)) {
+        if (!$this->isInputValid($input)) {
             return;
         }
         if ($this->passengerRepository->userHasActiveRequest($tripId, $userId)) {
@@ -110,7 +107,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
 
         $trip = $this->tripLogic->show($user, $tripId);
-        if ($trip && ! $trip->expired()) {
+        if ($trip && !$trip->expired()) {
             $module_unaswered_message_limit = config('carpoolear.module_unaswered_message_limit', false);
             if ($module_unaswered_message_limit) {
                 $allow = $this->userManager->unansweredConversationOrRequestsByTrip($trip);
@@ -133,7 +130,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
                 if ($trip->user->autoaccept_requests) {
                     // $result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);
-                    if (!config('carpoolear.module_trip_seats_payment', false))  {
+                    if (!config('carpoolear.module_trip_seats_payment', false)) {
                         if ($result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data)) {
                             event(new AutoRequestEvent($trip, $user, $trip->user));
                             event(new AcceptEvent($trip, $trip->user, $user));
@@ -162,7 +159,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $cancelUserId,
         ];
 
-        if (! $this->isInputValid($input)) {
+        if (!$this->isInputValid($input)) {
             return;
         }
 
@@ -174,7 +171,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         if ($this->isUserRequestPending($tripId, $cancelUserId) && $cancelUserId == $user->id) {
             $canceledState = Passenger::CANCELED_REQUEST;
         }
-        
+
         if ($this->isUserRequestAccepted($tripId, $cancelUserId) || $this->isUserRequestWaitingPayment($tripId, $cancelUserId)) {
             if ($cancelUserId == $user->id) {
                 if ($this->isUserRequestWaitingPayment($tripId, $cancelUserId)) {
@@ -186,7 +183,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
                 $canceledState = Passenger::CANCELED_DRIVER;
             }
         }
-        
+
         if ($canceledState !== null) {
             if ($result = $this->passengerRepository->cancelRequest($tripId, $cancelUser, $canceledState)) {
                 if ($trip->user_id == $user->id) {
@@ -204,8 +201,9 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
     }
 
-    public function sendFullTripMessage ($trip) {
-        if (config('carpoolear.module_send_full_trip_message', false) && $trip->user->send_full_trip_message > 0)  {
+    public function sendFullTripMessage($trip)
+    {
+        if (config('carpoolear.module_send_full_trip_message', false) && $trip->user->send_full_trip_message > 0) {
             \Log::info('$sendFullTripMessage: ' . count($trip->passengerAccepted) . ' / ' . $trip->seats_available);
             if (count($trip->passengerAccepted) >= $trip->seats_available) {
                 // tengo mas aceptados que asientos 
@@ -222,7 +220,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $acceptedUserId,
         ];
 
-        if (! $this->isInputValid($input)) {
+        if (!$this->isInputValid($input)) {
             return;
         }
 
@@ -234,7 +232,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
                 return;
             }
 
-            if (!config('carpoolear.module_trip_seats_payment', false))  {
+            if (!config('carpoolear.module_trip_seats_payment', false)) {
                 if ($result = $this->passengerRepository->acceptRequest($tripId, $acceptedUserId, $user, $data)) {
                     $this->sendFullTripMessage($trip);
                     event(new AcceptEvent($trip, $user, $acceptedUser));
@@ -253,7 +251,8 @@ class PassengersManager extends BaseManager implements IPassengersLogic
         }
     }
 
-    public function transactions($user) {
+    public function transactions($user)
+    {
         $trips = $this->passengerRepository->tripsWithTransactions($user);
         $transactions = [];
 
@@ -266,7 +265,7 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             }
         }
 
-        return $transactions; 
+        return $transactions;
     }
 
 
@@ -277,13 +276,13 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $rejectedUserId,
         ];
 
-        if (! $this->isInputValid($input)) {
+        if (!$this->isInputValid($input)) {
             return;
         }
 
         $payedUser = $this->uRepo->show($payedUserId);
         $trip = $this->tripLogic->show($user, $tripId);
-        if (! $this->isUserRequestWaitingPayment($tripId, $payedUserId)) {
+        if (!$this->isUserRequestWaitingPayment($tripId, $payedUserId)) {
             $this->setErrors(['error' => 'not_valid_request']);
 
             return;
@@ -304,13 +303,13 @@ class PassengersManager extends BaseManager implements IPassengersLogic
             'user_id' => $rejectedUserId,
         ];
 
-        if (! $this->isInputValid($input)) {
+        if (!$this->isInputValid($input)) {
             return;
         }
 
         $rejectedUser = $this->uRepo->show($rejectedUserId);
         $trip = $this->tripLogic->show($user, $tripId);
-        if (! $this->isUserRequestPending($tripId, $rejectedUserId) || ! $this->tripLogic->tripOwner($user, $trip)) {
+        if (!$this->isUserRequestPending($tripId, $rejectedUserId) || !$this->tripLogic->tripOwner($user, $trip)) {
             $this->setErrors(['error' => 'not_valid_request']);
 
             return;

@@ -3,16 +3,10 @@
 namespace STS\Services\Logic;
 
 use STS\Repository\RoutesRepository as RoutesRep;
-use STS\Contracts\Logic\Routes as RoutesLogic;
 use DB;
 
-use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\Entities\Route;
-use STS\Entities\NodeGeo;
 
-
-class RoutesManager implements RoutesLogic
+class RoutesManager
 {
     protected $routesRepo;
 
