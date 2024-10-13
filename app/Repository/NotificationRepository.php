@@ -3,9 +3,8 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
-use STS\Contracts\Repository\INotification;
 
-class NotificationRepository implements INotification
+class NotificationRepository
 {
     public function getNotifications($user, $unread = false, $page_size = null, $page = null)
     {

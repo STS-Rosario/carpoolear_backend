@@ -1,20 +1,20 @@
 <?php
 
 namespace STS\Http\Controllers;
+ 
+use Illuminate\Http\Request; 
 
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\Trip as TripLogic;
-
+use STS\Models\Passenger;
+use STS\Services\Logic\TripsManager;
 use Transbank\Webpay\Configuration;
-use Transbank\Webpay\Webpay;
-use Illuminate\Support\Facades\Redirect;
+use Transbank\Webpay\Webpay; 
+ 
+// [TODO] Transbank
 
-use STS\Entities\Passenger;
 
 class PaymentController extends Controller
 {
-    public function transbank (Request $request, TripLogic $tripLogic)
+    public function transbank (Request $request, TripsManager $tripLogic)
     {
         $baseUrl = $request->getSchemeAndHttpHost();
         if ($request->has('tp_id')) {
@@ -45,7 +45,7 @@ class PaymentController extends Controller
         }
     }
 
-    public function transbankResponse (Request $request, TripLogic $tripLogic) {
+    public function transbankResponse (Request $request, TripsManager $tripLogic) {
         $transaction = (new Webpay(Configuration::forTestingWebpayPlusNormal()))->getNormalTransaction();
         $transactionResultOutput = $transaction->getTransactionResult($request->input("token_ws"));
         // var_dump($transactionResultOutput);die;

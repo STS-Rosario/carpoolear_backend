@@ -1,111 +1,25 @@
-version: '2'
+version: "3.8"
+
 services:
-  carpoolear_db:
-    image: mysql:5.6
-    container_name: carpoolear_db
-    ports:
-      - 3306:3306
-    command: --default-authentication-plugin=mysql_native_password
+  mysql:
+    image: mysql:5.7.33
+    env_file:
+      - .env
     environment:
       MYSQL_DATABASE: carpoolear
       MYSQL_USER: carpoolear
-      MYSQL_PASSWORD: carpoolear
-      MYSQL_ROOT_PASSWORD: carpoolear
-      MYSQL_ROOT_HOST: "%"
+      MYSQL_PASSWORD: "@passAkjkas.78"
+      MYSQL_ROOT_PASSWORD: holamundo
     volumes:
       - ./.db:/var/lib/mysql
-      - ./:/var/data
-    networks:
-      - esnet
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 20s
-      retries: 10
-  carpoolear_backend:
-    build: .
-    container_name: carpoolear_backend
-    environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      SERVER_PORT: 8080
-      DB_HOST: carpoolear_db
-      DB_DATABASE: carpoolear
-      DB_USERNAME: carpoolear
-      DB_PASSWORD: carpoolear
-      APP_KEY: qwertyuiopasdfghjklzxcvbnm123456
-      JWT_KEY: qwertyuiopasdfghjklzxcvbnm123456
-      API_PREFIX: api
-      API_VERSION: v1
-      MAIL_DRIVER: smtp
-      MAIL_HOST: smtp-tester
-      MAIL_PORT: 1025
-      QUEUE_DRIVER: database
-      FCM_TOKEN: "AAAAvvvBnNs:APA91bEx8Ud2_DLt_prrgXdNxg_UB0MZFoY0tSo4RPJ-JGIBDrEm4qVrX8FG0OTuoSwXqXMGSASlURVMWR7aUj7n7e3qOG9BIHVQswBzTOIXTDKr4GfT1bCwruSEzdayKf77Qz4v7kbE"
     ports:
-      - 80:80
-      - 443:443
-      - 8080:80
-    volumes:
-      - ./:/var/www/carpoolear
-      - ./cert/apache_ssl/ssl-cert-snakeoil.crt:/etc/ssl/certs/ssl-cert-snakeoil.pem
-      - ./cert/apache_ssl/ssl-cert-snakeoil.key:/etc/ssl/private/ssl-cert-snakeoil.key
-    networks:
-      - esnet
-  composer-install:
-    # image: composer:2.2.21
-    build: .
-    depends_on:
-      carpoolear_backend:
-        condition: service_started
-      carpoolear_db:
-        condition: service_healthy
-    restart: "no"
-    working_dir: /var/www/carpoolear
-    entrypoint: [ "composer", "install"]
-    volumes:
-      - ./:/var/www/carpoolear
-  database-seed-and-migrate:
-    build: .
-    depends_on:
-      composer-install:
-        condition: service_completed_successfully
-    restart: "no"
-    working_dir: /var/www/carpoolear
-    entrypoint: ["sh", "-c", "php artisan migrate && php artisan db:seed --class=TestingSeeder"]
-    volumes:
-      - ./:/var/www/carpoolear
-    networks:
-      - esnet
-    environment:
-      APP_ENV: local
-      APP_DEBUG: "true"
-      SERVER_PORT: 8080
-      DB_HOST: carpoolear_db
-      DB_DATABASE: carpoolear
-      DB_USERNAME: carpoolear
-      DB_PASSWORD: carpoolear
+      - 3306:3306
 
-  phpmyadmin:
-        image: phpmyadmin/phpmyadmin
-        container_name: carpoolear-phpmyadmin
-        links:
-            - carpoolear_db:db
-        ports:
-            - 81:80
-        environment:
-            PMA_HOST: carpoolear_db  
-            PMA_USER:  carpoolear
-            PMA_PASSWORD: carpoolear
-            MYSQL_ROOT_PASSWORD: carpoolear
-        networks:
-            - esnet
-  smtp-tester:
-        image: mailhog/mailhog
-        container_name: smtp-tester
-        ports:
-            - 8025:8025
-        networks:
-            - esnet
-networks:
-  esnet:
-    driver: bridge
+  app:
+    image: movilizame-php82  
+    volumes:
+      - ./:/var/www
+    ports:
+      - 8000:8000
+    entrypoint: php artisan serve --host=0.0.0.0
+

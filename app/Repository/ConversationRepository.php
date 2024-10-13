@@ -2,12 +2,11 @@
 
 namespace STS\Repository;
 
-use STS\User;
-use STS\Entities\Trip;
-use STS\Entities\Conversation;
-use STS\Contracts\Repository\Conversations as ConversationRepo;
+use STS\Models\User;
+use STS\Models\Trip;
+use STS\Models\Conversation;
 
-class ConversationRepository implements ConversationRepo
+class ConversationRepository
 {
     public function store(Conversation $conversation)
     {

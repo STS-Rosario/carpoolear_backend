@@ -32,10 +32,10 @@ function console_log($obj)
     }
 }
 
-function transform($obj)
-{
-    return json_decode(json_encode($obj));
-}
+// function transform($obj)
+// {
+//     return json_decode(json_encode($obj));
+// }
 
 function start_log_query()
 {

@@ -2,11 +2,10 @@
 
 namespace STS\Repository;
 
-use STS\User as UserModel;
-use STS\Entities\Car as CarModel;
-use STS\Contracts\Repository\Car as CarRepository;
+use STS\Models\User as UserModel;
+use STS\Models\Car as CarModel;
 
-class CarsRepository implements CarRepository
+class CarsRepository
 {
     public function create(CarModel $car)
     {

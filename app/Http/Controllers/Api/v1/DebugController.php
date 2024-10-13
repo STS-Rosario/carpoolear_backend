@@ -24,7 +24,7 @@ class DebugController extends Controller
             if ($request->has('log')) {
                 \Log::info('ERROR IN APP: '.$request->get('log'));
             }
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
         }
     }
 }

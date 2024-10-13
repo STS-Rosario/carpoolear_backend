@@ -2,7 +2,7 @@
 
 namespace STS\Console\Commands;
 
-use STS\Entities\Rating;
+use STS\Models\Rating;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
 use DB;

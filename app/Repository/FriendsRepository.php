@@ -2,15 +2,14 @@
 
 namespace STS\Repository;
 
-use STS\User as UserModel;
-use STS\Entities\Trip as TripModel;
-use STS\Entities\TripVisibility as TripVisibilityModel;
-use STS\Contracts\Repository\Friends as FriendsRepo;
+use STS\Models\User as UserModel;
+use STS\Models\Trip as TripModel;
+use STS\Models\TripVisibility as TripVisibilityModel;
 
 use DB;
 
 
-class FriendsRepository implements FriendsRepo
+class FriendsRepository
 {
     public function add(UserModel $user1, UserModel $user2, $state)
     {

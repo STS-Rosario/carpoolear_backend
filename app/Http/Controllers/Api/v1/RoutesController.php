@@ -4,12 +4,12 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Contracts\Logic\Routes as RoutesLogic;
-use Carbon\Carbon;
+use STS\Services\Logic\RoutesManager; 
 
 class RoutesController extends Controller
 {
-    public function __construct(RoutesLogic $routesLogic)
+    protected $routesLogic;
+    public function __construct(RoutesManager $routesLogic)
     {
         $this->middleware('logged', ['except' => ['autocomplete']]);
         $this->routesLogic = $routesLogic;
@@ -21,7 +21,9 @@ class RoutesController extends Controller
         $data = $request->all();
         if (isset($data['name']) && isset($data['country']) && isset($data['multicountry'])) {
             $node = $this->routesLogic->autocomplete($data['name'], $data['country'], ($data['multicountry'] === 'true'));
-            return $node;
+            return response()->json([
+                'nodes_geos' => $node
+            ]);
         }
     }
 }

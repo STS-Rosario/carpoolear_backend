@@ -4,10 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Services\Logic\TripsManager;
 use STS\Transformers\TripTransformer;
-use STS\Contracts\Logic\Trip as TripLogic;
-use Dingo\Api\Exception\StoreResourceFailedException;
-use Carbon\Carbon;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;   
 
 class TripController extends Controller
 {
@@ -15,7 +14,7 @@ class TripController extends Controller
 
     protected $tripsLogic;
 
-    public function __construct(Request $r, TripLogic $tripsLogic)
+    public function __construct(Request $r, TripsManager $tripsLogic)
     {
         $this->middleware('logged', ['except' => ['search']]);
         $this->tripsLogic = $tripsLogic;
@@ -23,63 +22,63 @@ class TripController extends Controller
 
     public function create(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $data = $request->all();
         $trip = $this->tripsLogic->create($this->user, $data);
         if (! $trip) {
-            throw new StoreResourceFailedException('Could not create new trip.', $this->tripsLogic->getErrors());
+            throw new BadRequestHttpException('Could not create new trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
-        //return $this->response->withArray(['data' => $trip]);
+        return $this->item($trip, new TripTransformer($this->user));
+        //return response()->json(['data' => $trip]);
     }
 
     public function update($id, Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $data = $request->all();
         $trip = $this->tripsLogic->update($this->user, $id, $data);
         if (! $trip) {
-            throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new BadRequestHttpException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
-        //return $this->response->withArray(['data' => $trip]);
+        return $this->item($trip, new TripTransformer($this->user));
+        //return response()->json(['data' => $trip]);
     }
 
     public function changeTripSeats($id, Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $increment = $request->get('increment');
         $trip = $this->tripsLogic->changeTripSeats($this->user, $id, $increment);
         if (! $trip) {
-            throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new BadRequestHttpException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
+        return $this->item($trip, new TripTransformer($this->user));
     }
 
     public function delete($id, Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $result = $this->tripsLogic->delete($this->user, $id);
         if (! $result) {
-            throw new StoreResourceFailedException('Could not delete trip.', $this->tripsLogic->getErrors());
+            throw new BadRequestHttpException('Could not delete trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => 'ok']);
+        return response()->json(['data' => 'ok']);
     }
 
     public function show($id, Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $trip = $this->tripsLogic->show($this->user, $id);
         if (! $trip) {
-            throw new StoreResourceFailedException('Could not found trip.', $this->tripsLogic->getErrors());
+            throw new BadRequestHttpException('Could not found trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
-        //return $this->response->withArray(['data' => $trip]);
+        return $this->item($trip, new TripTransformer($this->user));
+        //return response()->json(['data' => $trip]);
     }
 
     public function search(Request $request)
@@ -90,16 +89,16 @@ class TripController extends Controller
             $data['page_size'] = 20;
         }
 
-        $this->user = $this->auth->user();
+        $this->user = auth('api')->user();
         $trips = $this->tripsLogic->search($this->user, $data);
-        \Log::info('search controller: ' . $trips->count() );
+        \Log::info('search controller: ' . $trips->count());
         /// return $trips;
-        return $this->response->paginator($trips, new TripTransformer($this->user));
+        return $this->paginator($trips, new TripTransformer($this->user));
     }
 
     public function getTrips(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
 
         if ($request->has('as_driver')) {
             $asDriver = parse_boolean($request->get('as_driver'));
@@ -113,12 +112,12 @@ class TripController extends Controller
         }
 
         return $this->collection($trips, new TripTransformer($this->user));
-        //return $this->response->withArray(['data' => $trips]);
+        //return response()->json(['data' => $trips]);
     }
 
     public function getOldTrips(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
 
         
         if ($request->has('as_driver')) {
@@ -150,12 +149,12 @@ class TripController extends Controller
 
     public function changeVisibility($id, Request $request) 
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $trip = $this->tripsLogic->changeVisibility($this->user, $id);
         if (! $trip) {
-            throw new StoreResourceFailedException('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new BadRequestHttpException('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
-        return $this->item($trip, new TripTransformer($this->user), ['key' => 'data']);
+        return $this->item($trip, new TripTransformer($this->user));
     }
 }

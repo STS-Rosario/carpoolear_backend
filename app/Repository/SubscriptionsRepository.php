@@ -3,12 +3,11 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\User as UserModel;
-use STS\Entities\Subscription as SubscriptionModel;
-use STS\Contracts\Repository\Subscription as SubscriptionRepository;
+use STS\Models\Trip;
+use STS\Models\User as UserModel;
+use STS\Models\Subscription as SubscriptionModel;
 
-class SubscriptionsRepository implements SubscriptionRepository
+class SubscriptionsRepository
 {
     public function create(SubscriptionModel $model)
     {

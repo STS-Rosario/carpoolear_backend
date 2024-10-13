@@ -2,13 +2,11 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\IRateLogic;
+use Illuminate\Http\Request; 
 use STS\Http\Controllers\Controller;
-use STS\Transformers\RatingTransformer;
-use Dingo\Api\Exception\ResourceException;
-use STS\Contracts\Logic\User as UserLogic;
-use Dingo\Api\Exception\UpdateResourceFailedException;
+use STS\Services\Logic\RatingManager;
+use STS\Services\Logic\UsersManager;
+use STS\Transformers\RatingTransformer; 
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class RatingController extends Controller
@@ -17,9 +15,9 @@ class RatingController extends Controller
 
     protected $rateLogic;
 
-    public function __construct(IRateLogic $rateLogic, UserLogic $userLogic)
+    public function __construct(RatingManager $rateLogic, UsersManager $userLogic)
     {
-        $this->middleware('logged', ['except' => ['pendingRate', 'rate']]);
+        $this->middleware('logged', ['except' => ['rate']]);
         $this->rateLogic = $rateLogic;
         $this->userLogic = $userLogic;
     }
@@ -28,7 +26,7 @@ class RatingController extends Controller
     {
         $data = request()->all();
 
-        $me = $this->auth->user();
+        $me = auth()->user();
         $user = null;
         if (is_null($id) || $me->id == $id) {
             $user = $me;
@@ -37,19 +35,19 @@ class RatingController extends Controller
         }
 
         if (! $user) {
-            throw new ResourceException('Users not found.', $this->userLogic->getErrors());
+            throw new BadRequestHttpException('Users not found.', $this->userLogic->getErrors());
         }
 
         $data = $this->rateLogic->getRatings($user, $data);
 
-        return $this->response->paginator($data, new RatingTransformer());
+        return $this->paginator($data, new RatingTransformer());
     }
 
     public function pendingRate(Request $request)
     {
         $data = $request->all();
 
-        $me = $this->auth->user();
+        $me = auth()->user();
         if ($me) {
             $data = $this->rateLogic->getPendingRatings($me);
         } else {
@@ -61,12 +59,12 @@ class RatingController extends Controller
             }
         }
 
-        return $this->response->collection($data, new RatingTransformer());
+        return $this->collection($data, new RatingTransformer());
     }
 
     public function rate($tripId, $userId, Request $request)
     {
-        $me = $this->auth->user();
+        $me = auth()->user();
 
         if ($me) {
             $response = $this->rateLogic->rateUser($me, $userId, $tripId, $request->all());
@@ -80,24 +78,24 @@ class RatingController extends Controller
         }
 
         if (! $response) {
-            throw new UpdateResourceFailedException('Could not rate user.', $this->rateLogic->getErrors());
+            throw new BadRequestHttpException('Could not rate user.', $this->rateLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => 'ok']);
+        return response()->json(['data' => 'ok']);
     }
 
     public function replay($tripId, $userId, Request $request)
     {
-        $me = $this->auth->user();
+        $me = auth()->user();
 
         $comment = $request->get('comment');
 
         $response = $this->rateLogic->replyRating($me, $userId, $tripId, $comment);
 
         if (! $response) {
-            throw new UpdateResourceFailedException('Could not replay user.', $this->rateLogic->getErrors());
+            throw new BadRequestHttpException('Could not replay user.', $this->rateLogic->getErrors());
         }
 
-        return $this->response->withArray(['data' => 'ok']);
+        return response()->json(['data' => 'ok']);
     }
 }

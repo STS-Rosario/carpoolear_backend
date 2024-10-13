@@ -4,7 +4,7 @@ namespace STS\Console\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use STS\Contracts\Logic\IRateLogic;
+use STS\Services\Logic\RatingManager; 
 
 class CreateRates extends Command
 {
@@ -29,7 +29,7 @@ class CreateRates extends Command
      *
      * @returnactiveRatings void
      */
-    public function __construct(IRateLogic $logic)
+    public function __construct(RatingManager $logic)
     {
         parent::__construct();
         $this->rateLogic = $logic;

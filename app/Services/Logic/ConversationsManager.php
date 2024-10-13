@@ -2,22 +2,20 @@
 
 namespace STS\Services\Logic;
 
-use STS\User;
+use STS\Repository\ConversationRepository;
+use STS\Repository\MessageRepository;
+use STS\Repository\UserRepository;
+use STS\Models\User;
 use Carbon\Carbon;
 use Validator;
-use STS\Entities\Message;
+use STS\Models\Message;
 use STS\Events\MessageSend;
-use STS\Entities\Passenger;
-use STS\Entities\Conversation;
-use STS\Entities\Trip;
-use STS\Contracts\Logic\Friends as FriendsLogic;
-use STS\Contracts\Repository\User as UserRepository;
-use STS\Contracts\Logic\Conversation as ConversationRepo;
-use STS\Contracts\Repository\Messages as MessageRepository;
-use STS\Contracts\Repository\Conversations as ConversationRepository;
+use STS\Models\Passenger;
+use STS\Models\Conversation;
+use STS\Models\Trip; 
 use STS\Services\Logic\UsersManager;
 
-class ConversationsManager extends BaseManager implements ConversationRepo
+class ConversationsManager extends BaseManager
 {
     protected $messageRepository;
 
@@ -29,7 +27,7 @@ class ConversationsManager extends BaseManager implements ConversationRepo
 
     protected $userManager;
 
-    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsLogic $friendsLogic, UsersManager $userManager)
+    public function __construct(ConversationRepository $conversationRepository, MessageRepository $messageRepository, UserRepository $userRepo, FriendsManager $friendsLogic, UsersManager $userManager)
     {
         $this->conversationRepository = $conversationRepository;
         $this->messageRepository = $messageRepository;

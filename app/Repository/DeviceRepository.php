@@ -2,11 +2,10 @@
 
 namespace STS\Repository;
 
-use STS\User;
-use STS\Entities\Device;
-use STS\Contracts\Repository\Devices as DeviceRepo;
+use STS\Models\User;
+use STS\Models\Device;
 
-class DeviceRepository implements DeviceRepo
+class DeviceRepository
 {
     public function store(Device $device)
     {

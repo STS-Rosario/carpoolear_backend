@@ -2,11 +2,11 @@
 
 namespace STS\Console\Commands;
 
-use STS\User;
+use STS\Models\User;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
-use STS\Contracts\Repository\Files as FilesRep;
+use STS\Repository\FileRepository; 
 
 class FacebookImage extends Command
 {
@@ -33,7 +33,7 @@ class FacebookImage extends Command
      *
      * @returnactiveRatings void
      */
-    public function __construct(FilesRep $files)
+    public function __construct(FileRepository $files)
     {
         parent::__construct();
         $this->files = $files;
