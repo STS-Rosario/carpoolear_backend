@@ -4,11 +4,10 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\FriendsManager;
 use STS\Services\Logic\UsersManager;
 use STS\Transformers\ProfileTransformer;
-use Dingo\Api\Exception\ResourceException;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException; 
 
 class FriendsController extends Controller
 {
@@ -36,7 +35,7 @@ class FriendsController extends Controller
             }
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function accept(Request $request, $id)
@@ -50,7 +49,7 @@ class FriendsController extends Controller
             }
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function delete(Request $request, $id)
@@ -64,7 +63,7 @@ class FriendsController extends Controller
             }
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function reject(Request $request, $id)
@@ -78,7 +77,7 @@ class FriendsController extends Controller
             }
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->friends->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->friends->getErrors());
     }
 
     public function index(Request $request)

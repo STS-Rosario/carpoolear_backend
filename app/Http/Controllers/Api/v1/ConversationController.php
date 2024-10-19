@@ -4,12 +4,12 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\UsersManager;
 use STS\Transformers\MessageTransformer;
 use STS\Transformers\ProfileTransformer; 
-use STS\Transformers\ConversationsTransformer; 
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use STS\Transformers\ConversationsTransformer;  
 
 class ConversationController extends Controller
 {
@@ -45,7 +45,7 @@ class ConversationController extends Controller
         if ($conversations) {
             return $this->paginator($conversations, new ConversationsTransformer($this->user));
         } else {
-            throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+            throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
         }
     }
 
@@ -56,7 +56,7 @@ class ConversationController extends Controller
         if ($conversation) {
             return $this->item($conversation, new ConversationsTransformer($this->user));
         } else {
-            throw new BadRequestHttpException('Bad request exceptions');
+            throw new ExceptionWithErrors('Bad request exceptions');
         }
     }
 
@@ -72,14 +72,14 @@ class ConversationController extends Controller
                 if ($conversation) {
                     return $this->item($conversation, new ConversationsTransformer($this->user));
                 } else {
-                    throw new BadRequestHttpException('ConversationController: Unabled to create conversation', $this->conversationLogic->getErrors());
+                    throw new ExceptionWithErrors('ConversationController: Unabled to create conversation', $this->conversationLogic->getErrors());
                     
                 }
             } else {
-                throw new BadRequestHttpException("Bad request exceptions: Destinatary user doesn't exist.");
+                throw new ExceptionWithErrors("Bad request exceptions: Destinatary user doesn't exist.");
             }
         } else {
-            throw new BadRequestHttpException('Bad request exceptions: Destinatary user not provided.');
+            throw new ExceptionWithErrors('Bad request exceptions: Destinatary user not provided.');
         }
  
     }
@@ -101,7 +101,7 @@ class ConversationController extends Controller
             return $this->collection($messages, new MessageTransformer($this->user));
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 
     public function send(Request $request, $id)
@@ -112,7 +112,7 @@ class ConversationController extends Controller
             return $this->item($m, new MessageTransformer($this->user));
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 
     public function users(Request $request, $id)
@@ -122,7 +122,7 @@ class ConversationController extends Controller
         if ($users) {
             return $users;
         } else {
-            throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+            throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
         }
     }
 
@@ -134,7 +134,7 @@ class ConversationController extends Controller
         if ($ret) {
             return response()->json('OK');
         } else {
-            throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+            throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
         }
     }
 
@@ -146,7 +146,7 @@ class ConversationController extends Controller
         if ($ret) {
             return response()->json('OK');
         } else {
-            throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+            throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
         }
     }
 
@@ -187,6 +187,6 @@ class ConversationController extends Controller
             return ['message' => true];
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->conversationLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 }

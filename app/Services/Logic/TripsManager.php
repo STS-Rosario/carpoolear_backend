@@ -32,6 +32,7 @@ class TripsManager extends BaseManager
                 'estimated_time'        => 'required|string',
                 'distance'              => 'required|numeric',
                 'co2'                   => 'required|numeric',
+                'gatoconbotas'                   => 'required|numeric',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
                 'parent_trip_id'        => 'exists:trips,id',

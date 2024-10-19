@@ -4,9 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
  
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller; 
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class DeviceController extends Controller
@@ -34,7 +34,7 @@ class DeviceController extends Controller
             return response()->json(['data' => $device]);
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->deviceLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->deviceLogic->getErrors());
     }
 
     public function update($id, Request $request)
@@ -47,7 +47,7 @@ class DeviceController extends Controller
             return response()->json(['data' => $device]);
         }
 
-        throw new BadRequestHttpException('Bad request exceptions', $this->deviceLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->deviceLogic->getErrors());
     }
 
     public function delete($id, Request $request)

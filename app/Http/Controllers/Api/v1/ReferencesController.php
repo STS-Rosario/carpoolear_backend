@@ -4,8 +4,8 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request; 
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\ReferencesManager;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException; 
 
 class ReferencesController extends Controller
 {
@@ -30,10 +30,10 @@ class ReferencesController extends Controller
             if ($reference) {
                 return response()->json($reference);
             } else {
-                throw new BadRequestHttpException('Could not rate user.', $this->referencesLogic->getErrors());
+                throw new ExceptionWithErrors('Could not rate user.', $this->referencesLogic->getErrors());
             }
         } else {
-            throw new BadRequestHttpException('User not logged.');
+            throw new ExceptionWithErrors('User not logged.');
         }
     }
 }

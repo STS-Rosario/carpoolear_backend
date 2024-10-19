@@ -2,14 +2,14 @@
 
 namespace STS\Http\Controllers\Api\v1;
  
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\User;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller; 
 use Tymon\JWTAuth\Exceptions\JWTException; 
-use Tymon\JWTAuth\Exceptions\TokenExpiredException; 
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -152,7 +152,7 @@ class AuthController extends Controller
     {
         $user = $this->userLogic->activeAccount($activation_token);
         if (! $user) {
-            throw new BadRequestHttpException('user_not_found');
+            throw new ExceptionWithErrors('user_not_found');
         }
         $token = auth()->fromUser($user);
 
@@ -167,10 +167,10 @@ class AuthController extends Controller
             if ($token) {
                 return response()->json(['data' => 'ok']);
             } else {
-                throw new BadRequestHttpException('User not found');
+                throw new ExceptionWithErrors('User not found');
             }
         } else {
-            throw new BadRequestHttpException('E-mail not provided');
+            throw new ExceptionWithErrors('E-mail not provided');
         }
     }
 
@@ -181,7 +181,7 @@ class AuthController extends Controller
         if ($status) {
             return response()->json(['data' => 'ok']);
         } else {
-            throw new BadRequestHttpException('Could not update user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
     }
 }

@@ -4,9 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller; 
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\PassengersManager;
 use STS\Transformers\PassengerTransformer;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException; 
 
 class PassengerController extends Controller
 {
@@ -68,7 +68,7 @@ class PassengerController extends Controller
         $request = $this->passengerLogic->newRequest($tripId, $this->user, $data);
 
         if (! $request) {
-            throw new BadRequestHttpException('Could not create new request.', $this->passengerLogic->getErrors());
+            throw new ExceptionWithErrors('Could not create new request.', $this->passengerLogic->getErrors());
         }
 
         return response()->json(['data' => $request]);
@@ -87,7 +87,7 @@ class PassengerController extends Controller
         $request = $this->passengerLogic->cancelRequest($tripId, $userId, $this->user, $data);
 
         if (!$request) {
-            throw new BadRequestHttpException('Could not cancel request.', $this->passengerLogic->getErrors());
+            throw new ExceptionWithErrors('Could not cancel request.', $this->passengerLogic->getErrors());
         }
 
         return response()->json(['data' => $request]);
@@ -101,7 +101,7 @@ class PassengerController extends Controller
         $request = $this->passengerLogic->acceptRequest($tripId, $userId, $this->user, $data);
 
         if (! $request) {
-            throw new BadRequestHttpException('Could not accept request.', $this->passengerLogic->getErrors());
+            throw new ExceptionWithErrors('Could not accept request.', $this->passengerLogic->getErrors());
         }
 
         return response()->json(['data' => $request]);
@@ -116,7 +116,7 @@ class PassengerController extends Controller
         $request = $this->passengerLogic->payRequest($tripId, $userId, $this->user, $data);
 
         if (! $request) {
-            throw new BadRequestHttpException('Could not accept request.', $this->passengerLogic->getErrors());
+            throw new ExceptionWithErrors('Could not accept request.', $this->passengerLogic->getErrors());
         }
 
         return response()->json(['data' => $request]);
@@ -130,7 +130,7 @@ class PassengerController extends Controller
         $request = $this->passengerLogic->rejectRequest($tripId, $userId, $this->user, $data);
 
         if (! $request) {
-            throw new BadRequestHttpException('Could not accept request.', $this->passengerLogic->getErrors());
+            throw new ExceptionWithErrors('Could not accept request.', $this->passengerLogic->getErrors());
         }
 
         return response()->json(['data' => $request]);

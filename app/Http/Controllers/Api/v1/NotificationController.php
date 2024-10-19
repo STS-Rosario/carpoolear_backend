@@ -4,8 +4,8 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Services\Logic\NotificationManager;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException; 
+use STS\Http\ExceptionWithErrors;
+use STS\Services\Logic\NotificationManager; 
 
 class NotificationController extends Controller
 {
@@ -42,7 +42,7 @@ class NotificationController extends Controller
         $this->user = auth()->user();
         $result = $this->logic->delete($this->user, $id);
         if (! $result) {
-            throw new BadRequestHttpException('Could not delete notiication.', []);
+            throw new ExceptionWithErrors('Could not delete notiication.', []);
         }
 
         return response()->json(['data' => 'ok']);

@@ -4,10 +4,6 @@ namespace STS\Http\Controllers\Api\v1;
 
 use DB;
 use STS\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Entities\Rating as RatingModel;
-use Carbon\Carbon;
 
 class DataController extends Controller
 {

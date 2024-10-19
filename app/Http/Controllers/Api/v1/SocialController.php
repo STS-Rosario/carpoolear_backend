@@ -4,9 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
  
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Tymon\JWTAuth\Facades\JWTAuth;  
 
 class SocialController extends Controller
@@ -45,7 +45,7 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate($request->all());
             if (! $user) {
-                throw new BadRequestHttpException('Could not create new user.', $socialServices->getErrors());
+                throw new ExceptionWithErrors('Could not create new user.', $socialServices->getErrors());
             }
             $token = JWTAuth::fromUser($user);
         } catch (\ReflectionException $e) {
@@ -53,7 +53,7 @@ class SocialController extends Controller
         }
 
         if ($user->banned) {
-            throw new BadRequestHttpException(null, 'user_banned');
+            throw new ExceptionWithErrors(null, 'user_banned');
         }
 
         // Registro mi devices
@@ -77,12 +77,12 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->updateProfile($user);
             if (! $ret) {
-                throw new BadRequestHttpException('Could not update user.', $socialServices->gerErrors());
+                throw new ExceptionWithErrors('Could not update user.', $socialServices->gerErrors());
             }
 
             return response()->json('OK');
         } catch (\ReflectionException $e) {
-            throw new BadRequestHttpException('provider not supported');
+            throw new ExceptionWithErrors('provider not supported');
         }
     }
 
@@ -96,12 +96,12 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->makeFriends($user);
             if (! $ret) {
-                throw new BadRequestHttpException('Could not refresh for friends.', $socialServices->gerErrors());
+                throw new ExceptionWithErrors('Could not refresh for friends.', $socialServices->gerErrors());
             }
 
             return response()->json('OK');
         } catch (\ReflectionException $e) {
-            throw new BadRequestHttpException('provider not supported');
+            throw new ExceptionWithErrors('provider not supported');
         }
     }
 }

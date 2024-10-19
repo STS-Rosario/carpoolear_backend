@@ -2,12 +2,12 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
+use STS\Http\ExceptionWithErrors;
 use STS\Models\Donation;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Services\Logic\UsersManager;
 use STS\Transformers\ProfileTransformer;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException; 
 
 class UserController extends Controller
 {
@@ -38,7 +38,7 @@ class UserController extends Controller
         }
         $user = $this->userLogic->create($data);
         if (! $user) {
-            throw new BadRequestHttpException('Could not create new user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not create new user.', $this->userLogic->getErrors());
         }
 
         // return response()->json(['user' => $user]);
@@ -57,7 +57,7 @@ class UserController extends Controller
         // var_dump($is_driver);die;
         $profile = $this->userLogic->update($me, $data, $is_driver);
         if (! $profile) {
-            throw new BadRequestHttpException('Could not update user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
         return $this->item($profile, new ProfileTransformer($me));
     }
@@ -75,7 +75,7 @@ class UserController extends Controller
             \Log::info('update controller: ' . $user->name);
             $profile = $this->userLogic->update($user, $data, false, true);
             if (!$profile) {
-                throw new BadRequestHttpException('Could not update user.', $this->userLogic->getErrors());
+                throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
             }
         } 
         return $this->item($profile, new ProfileTransformer($user));
@@ -86,7 +86,7 @@ class UserController extends Controller
         $me = auth()->user();
         $profile = $this->userLogic->updatePhoto($me, $request->all());
         if (! $profile) {
-            throw new BadRequestHttpException('Could not update user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
 
         return $this->item($profile, new ProfileTransformer($me));
@@ -100,7 +100,7 @@ class UserController extends Controller
         }
         $profile = $this->userLogic->show($me, $id);
         if (! $profile) {
-            throw new BadRequestHttpException('Users not found.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Users not found.', $this->userLogic->getErrors());
         }
 
         return $this->item($profile, new ProfileTransformer($me));

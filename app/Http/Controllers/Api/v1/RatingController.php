@@ -4,10 +4,10 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request; 
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\RatingManager;
 use STS\Services\Logic\UsersManager;
-use STS\Transformers\RatingTransformer; 
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use STS\Transformers\RatingTransformer;
 
 class RatingController extends Controller
 {
@@ -35,7 +35,7 @@ class RatingController extends Controller
         }
 
         if (! $user) {
-            throw new BadRequestHttpException('Users not found.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Users not found.', $this->userLogic->getErrors());
         }
 
         $data = $this->rateLogic->getRatings($user, $data);
@@ -55,7 +55,7 @@ class RatingController extends Controller
                 $hash = $request->has('hash');
                 $data = $this->rateLogic->getPendingRatings($hash);
             } else {
-                throw new BadRequestHttpException('Hash not provided');
+                throw new ExceptionWithErrors('Hash not provided');
             }
         }
 
@@ -73,12 +73,12 @@ class RatingController extends Controller
                 $hash = $request->has('hash');
                 $response = $this->rateLogic->rateUser($me, $hash, $tripId, $request->all());
             } else {
-                throw new BadRequestHttpException('Hash not provided');
+                throw new ExceptionWithErrors('Hash not provided');
             }
         }
 
         if (! $response) {
-            throw new BadRequestHttpException('Could not rate user.', $this->rateLogic->getErrors());
+            throw new ExceptionWithErrors('Could not rate user.', $this->rateLogic->getErrors());
         }
 
         return response()->json(['data' => 'ok']);
@@ -93,7 +93,7 @@ class RatingController extends Controller
         $response = $this->rateLogic->replyRating($me, $userId, $tripId, $comment);
 
         if (! $response) {
-            throw new BadRequestHttpException('Could not replay user.', $this->rateLogic->getErrors());
+            throw new ExceptionWithErrors('Could not replay user.', $this->rateLogic->getErrors());
         }
 
         return response()->json(['data' => 'ok']);

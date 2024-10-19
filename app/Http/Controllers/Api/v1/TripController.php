@@ -4,9 +4,9 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\TripsManager;
 use STS\Transformers\TripTransformer;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;   
 
 class TripController extends Controller
 {
@@ -26,7 +26,7 @@ class TripController extends Controller
         $data = $request->all();
         $trip = $this->tripsLogic->create($this->user, $data);
         if (! $trip) {
-            throw new BadRequestHttpException('Could not create new trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not create new trip.', $this->tripsLogic->getErrors());
         }
 
         return $this->item($trip, new TripTransformer($this->user));
@@ -39,7 +39,7 @@ class TripController extends Controller
         $data = $request->all();
         $trip = $this->tripsLogic->update($this->user, $id, $data);
         if (! $trip) {
-            throw new BadRequestHttpException('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
         return $this->item($trip, new TripTransformer($this->user));
@@ -52,7 +52,7 @@ class TripController extends Controller
         $increment = $request->get('increment');
         $trip = $this->tripsLogic->changeTripSeats($this->user, $id, $increment);
         if (! $trip) {
-            throw new BadRequestHttpException('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
         return $this->item($trip, new TripTransformer($this->user));
@@ -63,7 +63,7 @@ class TripController extends Controller
         $this->user = auth()->user();
         $result = $this->tripsLogic->delete($this->user, $id);
         if (! $result) {
-            throw new BadRequestHttpException('Could not delete trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not delete trip.', $this->tripsLogic->getErrors());
         }
 
         return response()->json(['data' => 'ok']);
@@ -74,7 +74,7 @@ class TripController extends Controller
         $this->user = auth()->user();
         $trip = $this->tripsLogic->show($this->user, $id);
         if (! $trip) {
-            throw new BadRequestHttpException('Could not found trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not found trip.', $this->tripsLogic->getErrors());
         }
 
         return $this->item($trip, new TripTransformer($this->user));
@@ -152,7 +152,7 @@ class TripController extends Controller
         $this->user = auth()->user();
         $trip = $this->tripsLogic->changeVisibility($this->user, $id);
         if (! $trip) {
-            throw new BadRequestHttpException('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update trip.', $this->tripsLogic->getErrors());
         }
 
         return $this->item($trip, new TripTransformer($this->user));

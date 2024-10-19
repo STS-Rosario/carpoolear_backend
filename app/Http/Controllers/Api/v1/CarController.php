@@ -4,8 +4,8 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;  
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\CarsManager;
-use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 
 class CarController extends Controller
 {
@@ -25,7 +25,7 @@ class CarController extends Controller
         $data = $request->all();
         $car = $this->carsLogic->create($this->user, $data);
         if (! $car) {
-            throw new BadRequestHttpException('Could not create new car.', $this->carsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not create new car.', $this->carsLogic->getErrors());
         }
 
         return response()->json(['data' => $car]);
@@ -37,7 +37,7 @@ class CarController extends Controller
         $data = $request->all();
         $car = $this->carsLogic->update($this->user, $id, $data);
         if (! $car) {
-            throw new BadRequestHttpException('Could not update car.', $this->carsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update car.', $this->carsLogic->getErrors());
         }
 
         return response()->json(['data' => $car]);
@@ -48,7 +48,7 @@ class CarController extends Controller
         $this->user = auth()->user();
         $result = $this->carsLogic->delete($this->user, $id);
         if (! $result) {
-            throw new BadRequestHttpException('Could not delete car.', $this->carsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not delete car.', $this->carsLogic->getErrors());
         }
 
         return response()->json(['data' => 'ok']);
@@ -59,7 +59,7 @@ class CarController extends Controller
         $this->user = auth()->user();
         $car = $this->carsLogic->show($this->user, $id);
         if (! $car) {
-            throw new BadRequestHttpException('Could not found car.', $this->carsLogic->getErrors());
+            throw new ExceptionWithErrors('Could not found car.', $this->carsLogic->getErrors());
         }
 
         return response()->json(['data' => $car]);
