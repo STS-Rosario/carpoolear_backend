@@ -3,11 +3,10 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
-use STS\Entities\Passenger;
-use STS\Contracts\Repository\IPassengersRepository;
-use STS\Entities\Trip;
+use STS\Models\Passenger;
+use STS\Models\Trip;
 
-class PassengersRepository implements IPassengersRepository
+class PassengersRepository
 {
     public function getPassengers($tripId, $user, $data)
     {

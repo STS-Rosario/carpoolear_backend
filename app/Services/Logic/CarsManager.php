@@ -2,17 +2,16 @@
 
 namespace STS\Services\Logic;
 
+use STS\Repository\CarsRepository;
 use Validator;
-use STS\User as UserModel;
-use STS\Entities\Car as CarModel;
-use STS\Contracts\Logic\Car as CarLogic;
-use STS\Contracts\Repository\Car as CarRepo;
+use STS\Models\User as UserModel;
+use STS\Models\Car as CarModel;
 
-class CarsManager extends BaseManager implements CarLogic
+class CarsManager extends BaseManager
 {
     protected $repo;
 
-    public function __construct(CarRepo $carsRepo)
+    public function __construct(CarsRepository $carsRepo)
     {
         $this->repo = $carsRepo;
     }

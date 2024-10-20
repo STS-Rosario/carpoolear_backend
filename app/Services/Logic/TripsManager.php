@@ -2,21 +2,19 @@
 
 namespace STS\Services\Logic;
 
+use STS\Repository\TripRepository;
 use Validator;
-use STS\Entities\Trip;
+use STS\Models\Trip;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\MessageBag;
-use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Delete  as DeleteEvent;
-use STS\Events\Trip\Update  as UpdateEvent;
-use STS\Contracts\Repository\Trip as TripRepo;
-
-class TripsManager extends BaseManager implements TripLogic
+use STS\Events\Trip\Update  as UpdateEvent; 
+class TripsManager extends BaseManager
 {
     protected $tripRepo;
 
-    public function __construct(TripRepo $trips)
+    public function __construct(TripRepository $trips)
     {
         $this->tripRepo = $trips;
     }
@@ -34,6 +32,7 @@ class TripsManager extends BaseManager implements TripLogic
                 'estimated_time'        => 'required|string',
                 'distance'              => 'required|numeric',
                 'co2'                   => 'required|numeric',
+                'gatoconbotas'                   => 'required|numeric',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
                 'parent_trip_id'        => 'exists:trips,id',
@@ -303,7 +302,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function userCanSeeTrip($user, $trip)
     {
-        $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
+        $friendsManager = \App::make('\STS\Services\Logic\FriendsManager');
         if (is_int($trip)) {
             $trip = $this->tripRepo->show($user, $trip);
         }

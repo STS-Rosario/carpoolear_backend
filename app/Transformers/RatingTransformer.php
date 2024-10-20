@@ -2,7 +2,7 @@
 
 namespace STS\Transformers;
 
-use STS\Entities\Rating;
+use STS\Models\Rating;
 use League\Fractal\TransformerAbstract;
 
 class RatingTransformer extends TransformerAbstract

@@ -2,17 +2,15 @@
 
 namespace STS\Services\Logic;
 
-use STS\Entities\References as ReferencesModel;
-use Validator;
-use STS\Contracts\Repository\IReferencesRepository as ReferencesRepo;
-use STS\User as UserModel;
-use STS\Contracts\Logic\IReferencesLogic;
-
-class ReferencesManager extends BaseManager implements IReferencesLogic
+use STS\Models\References as ReferencesModel;
+use STS\Repository\ReferencesRepository;
+use Validator; 
+use STS\Models\User as UserModel;
+class ReferencesManager extends BaseManager
 {
     protected $referencesRepo;
 
-    public function __construct(ReferencesRepo $referencesRepo)
+    public function __construct(ReferencesRepository $referencesRepo)
     {
         $this->referencesRepo = $referencesRepo;
     }

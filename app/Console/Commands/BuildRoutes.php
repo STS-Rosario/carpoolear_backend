@@ -5,10 +5,9 @@ namespace STS\Console\Commands;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use STS\Services\Logic\RoutesManager as RoutesManager;
-use STS\Contracts\Repository\Routes as RoutesRepo;
 use STS\Events\Trip\Create  as CreateEvent;
-use STS\Entities\Route;
-use STS\Entities\Trip;
+use STS\Models\Route;
+use STS\Models\Trip;
 
 class BuildRoutes extends Command
 {

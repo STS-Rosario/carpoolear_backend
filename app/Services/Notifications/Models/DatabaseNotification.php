@@ -2,7 +2,7 @@
 
 namespace STS\Services\Notifications\Models;
 
-use STS\User;
+use STS\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use STS\Services\Notifications\Collections\NotificationCollection;
 

@@ -3,10 +3,6 @@
 namespace STS\Http\Controllers;
 
 use DB;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use STS\Entities\Rating as RatingModel;
-use STS\Contracts\Logic\User as UserLogic;
 
 class DataController extends Controller
 {
@@ -93,7 +89,7 @@ class DataController extends Controller
 
         $frecuencia_origenes_destinos_posterior_ago_2017 = array_slice($frecuencia_origenes_destinos_posterior_ago_2017, 0, 25);
 
-        return $this->response->withArray([
+        return response()->json([
             'usuarios' => $usuarios,
             'viajes' => $viajes,
             'solicitudes' => $solicitudes,
@@ -139,7 +135,7 @@ class DataController extends Controller
         ';
         $pasajeros = DB::select(DB::raw($queryViajesPasajeros), []);
 
-        return $this->response->withArray([
+        return response()->json([
             'ranking_calificaciones' => $calificaciones,
             'ranking_conductores' => $conductores,
             'ranking_pasajeros' => $pasajeros,

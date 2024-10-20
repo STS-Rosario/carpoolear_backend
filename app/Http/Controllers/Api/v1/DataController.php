@@ -4,10 +4,6 @@ namespace STS\Http\Controllers\Api\v1;
 
 use DB;
 use STS\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Entities\Rating as RatingModel;
-use Carbon\Carbon;
 
 class DataController extends Controller
 {
@@ -22,9 +18,9 @@ class DataController extends Controller
             WHERE is_passenger = 0
             GROUP BY DATE_FORMAT(trip_date, '%Y-%m')
         ";
-        $viajes = DB::select(DB::raw($queryViajes), array());
+        $viajes = DB::select($queryViajes, array());
 
-        return $this->response->withArray([
+        return response()->json([
             'trips' => $viajes
         ]);
 
@@ -49,9 +45,9 @@ class DataController extends Controller
             WHERE t.is_passenger = 0
             GROUP BY DATE_FORMAT(trip_date, '%Y-%m'), tp.request_state
         ";
-        $asientos = DB::select(DB::raw($querySolicitudes), array());
+        $asientos = DB::select($querySolicitudes, array());
 
-        return $this->response->withArray([
+        return response()->json([
             'seats' => $asientos
         ]);
 
@@ -68,9 +64,9 @@ class DataController extends Controller
         WHERE created_at IS NOT NULL
         GROUP BY DATE_FORMAT(created_at, '%Y-%m')
         ";
-        $usuarios = DB::select(DB::raw($queryUsuarios), array());
+        $usuarios = DB::select($queryUsuarios, array());
 
-        return $this->response->withArray([
+        return response()->json([
             'users' => $usuarios
         ]);
     }
@@ -86,7 +82,7 @@ class DataController extends Controller
             ORDER BY count(*) DESC
         ";
         
-        $frecuencia_origenes_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesFrecuencia), array());
+        $frecuencia_origenes_posterior_ago_2017 = DB::select($queryOrigenesFrecuencia, array());
 
         $frecuencia_origenes_posterior_ago_2017 = array_slice($frecuencia_origenes_posterior_ago_2017, 0, 25);
 
@@ -98,7 +94,7 @@ class DataController extends Controller
             GROUP BY tp.lat, tp.lng
             ORDER BY count(*) DESC
         ";
-        $frecuencia_destinos_posterior_ago_2017 = DB::select(DB::raw($queryDestinosFrecuencia), array());
+        $frecuencia_destinos_posterior_ago_2017 = DB::select($queryDestinosFrecuencia, array());
 
         $frecuencia_destinos_posterior_ago_2017 = array_slice($frecuencia_destinos_posterior_ago_2017, 0, 25);
 
@@ -112,12 +108,12 @@ class DataController extends Controller
             GROUP BY tpo.lat, tpo.lng, tpd.lat, tpo.lng
             ORDER BY count(*) DESC
         ";
-        $frecuencia_origenes_destinos_posterior_ago_2017 = DB::select(DB::raw($queryOrigenesDestinosFrecuencia), array());
+        $frecuencia_origenes_destinos_posterior_ago_2017 = DB::select($queryOrigenesDestinosFrecuencia, array());
 
         $frecuencia_origenes_destinos_posterior_ago_2017 = array_slice($frecuencia_origenes_destinos_posterior_ago_2017, 0, 25);
 
 
-        return $this->response->withArray([
+        return response()->json([
             'usuarios' => $usuarios,
             'viajes' => $viajes,
             'solicitudes' => $solicitudes,
@@ -137,7 +133,7 @@ class DataController extends Controller
                 ORDER BY COUNT(*) DESC
             LIMIT 50;
         ";
-        $calificaciones = DB::select(DB::raw($queryCalificaciones), array());
+        $calificaciones = DB::select($queryCalificaciones, array());
 
 
         $queryViajesConductores = "
@@ -149,7 +145,7 @@ class DataController extends Controller
                 ORDER BY COUNT(*) DESC
             LIMIT 50;
         ";
-        $conductores = DB::select(DB::raw($queryViajesConductores), array());
+        $conductores = DB::select($queryViajesConductores, array());
 
 
 
@@ -163,9 +159,9 @@ class DataController extends Controller
             LIMIT 50;
 
         ";
-        $pasajeros = DB::select(DB::raw($queryViajesPasajeros), array());
+        $pasajeros = DB::select($queryViajesPasajeros, array());
 
-        return $this->response->withArray([
+        return response()->json([
             'ranking_calificaciones' => $calificaciones,
             'ranking_conductores' => $conductores,
             'ranking_pasajeros' => $pasajeros

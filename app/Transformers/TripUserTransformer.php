@@ -2,7 +2,7 @@
 
 namespace STS\Transformers;
 
-use STS\User;
+use STS\Models\User;
 use League\Fractal\TransformerAbstract;
 
 class TripUserTransformer extends TransformerAbstract

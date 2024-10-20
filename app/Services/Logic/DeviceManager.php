@@ -2,14 +2,13 @@
 
 namespace STS\Services\Logic;
 
-use STS\User;
+use STS\Repository\DeviceRepository;
+use STS\Models\User;
 use Validator;
 use Carbon\Carbon;
-use STS\Entities\Device;
-use STS\Contracts\Logic\Devices as DeviceLogic;
-use STS\Contracts\Repository\Devices as DeviceRepository;
+use STS\Models\Device; 
 
-class DeviceManager extends BaseManager implements DeviceLogic
+class DeviceManager extends BaseManager
 {
     protected $deviceRepo;
 
@@ -23,7 +22,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
         return Validator::make($data, [
             'session_id'  => 'required|string',
             'device_id'   => 'required|string',
-            'device_type' => 'required|string',
+            // 'device_type' => 'required|string',
             'app_version' => 'required|integer',
             'notifications' => 'in:1,0,true,false',
         ]);
@@ -53,7 +52,7 @@ class DeviceManager extends BaseManager implements DeviceLogic
             $device = new Device();
             $device->session_id = $data['session_id'];
             $device->device_id = $data['device_id'];
-            $device->device_type = $data['device_type'];
+            $device->device_type = ""; // $data['device_type'];
             $device->app_version = $data['app_version'];
             $device->last_activity = Carbon::now();
             $device->user_id = $user->id;

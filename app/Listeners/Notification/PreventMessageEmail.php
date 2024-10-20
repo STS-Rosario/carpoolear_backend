@@ -4,9 +4,9 @@ namespace STS\Listeners\Notification;
 
 use STS\Notifications\NewMessageNotification;
 use  STS\Events\Notification\NotificationSending;
+use STS\Repository\ConversationRepository;
 use  STS\Services\Notifications\Channels\MailChannel;
-use STS\Services\Notifications\Channels\DatabaseChannel;
-use STS\Contracts\Repository\Conversations as ConversationsRepo;
+use STS\Services\Notifications\Channels\DatabaseChannel; 
 
 class PreventMessageEmail
 {
@@ -17,7 +17,7 @@ class PreventMessageEmail
      *
      * @return void
      */
-    public function __construct(ConversationsRepo $cRepo)
+    public function __construct(ConversationRepository $cRepo)
     {
         $this->conversationsRepository = $cRepo;
     }

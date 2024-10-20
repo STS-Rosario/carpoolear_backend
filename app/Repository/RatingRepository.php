@@ -4,10 +4,9 @@ namespace STS\Repository;
 
 use DB;
 use Carbon\Carbon;
-use STS\Entities\Rating as RatingModel;
-use STS\Contracts\Repository\IRatingRepository;
+use STS\Models\Rating as RatingModel;
 
-class RatingRepository implements IRatingRepository
+class RatingRepository
 {
     public function getRating($user_from_id, $user_to_id, $trip_id)
     {

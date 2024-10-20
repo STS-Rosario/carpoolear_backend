@@ -3,9 +3,9 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\Contracts\Repository\Trip as TripRepo;
+use STS\Models\Trip; 
 use Illuminate\Console\Command;
+use STS\Repository\TripRepository;
 
 class GenerateTripVisibility extends Command
 {
@@ -31,7 +31,7 @@ class GenerateTripVisibility extends Command
      *
      * @returnactiveRatings void
      */
-    public function __construct(TripRepo $repo)
+    public function __construct(TripRepository $repo)
     {
         $this->tripRepo = $repo;
         parent::__construct();

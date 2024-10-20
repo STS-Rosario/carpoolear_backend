@@ -3,7 +3,7 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Entities\Trip;
+use STS\Models\Trip;
 use Illuminate\Console\Command;
 use STS\Events\Trip\Alert\RequestRemainder as  RequestRemainderEvent;
 

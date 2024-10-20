@@ -3,11 +3,10 @@
 namespace STS\Listeners\Subscriptions;
 
 use STS\Events\User\Trip;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Contracts\Repository\User as UserRepository;
+use Illuminate\Contracts\Queue\ShouldQueue; 
 use STS\Notifications\SubscriptionMatchNotification;
-use STS\Contracts\Repository\Subscription as SubscriptionsRepository;
-
+use STS\Repository\SubscriptionsRepository;
+use STS\Repository\UserRepository; 
 class OnNewTrip implements ShouldQueue
 {
     protected $userRepo, $subRepo;

@@ -3,8 +3,8 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Console\Command;
 use STS\Events\Trip\Alert\RequestNotAnswer as  RequestNotAnswerEvent;
 

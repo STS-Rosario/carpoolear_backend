@@ -2,7 +2,7 @@
 
 namespace STS\Console\Commands;
 
-use STS\User;
+use STS\Models\User;
 use Illuminate\Console\Command;
 
 /*

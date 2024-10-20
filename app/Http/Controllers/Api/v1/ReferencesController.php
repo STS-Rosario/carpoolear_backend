@@ -2,11 +2,10 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Illuminate\Http\Request;
-use STS\Contracts\Logic\IReferencesLogic;
+use Illuminate\Http\Request; 
 use STS\Http\Controllers\Controller;
-use Dingo\Api\Exception\BadRequestHttpException;
-use Dingo\Api\Exception\UpdateResourceFailedException;
+use STS\Http\ExceptionWithErrors;
+use STS\Services\Logic\ReferencesManager;
 
 class ReferencesController extends Controller
 {
@@ -14,7 +13,7 @@ class ReferencesController extends Controller
 
     protected $user;
 
-    public function __construct(IReferencesLogic $referencesLogic)
+    public function __construct(ReferencesManager $referencesLogic)
     {
         $this->middleware('logged');
         $this->referencesLogic = $referencesLogic;
@@ -22,7 +21,7 @@ class ReferencesController extends Controller
 
     public function create(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
 
         if ($this->user) {
             $data = $request->all();
@@ -31,10 +30,10 @@ class ReferencesController extends Controller
             if ($reference) {
                 return response()->json($reference);
             } else {
-                throw new UpdateResourceFailedException('Could not rate user.', $this->referencesLogic->getErrors());
+                throw new ExceptionWithErrors('Could not rate user.', $this->referencesLogic->getErrors());
             }
         } else {
-            throw new BadRequestHttpException('User not logged.');
+            throw new ExceptionWithErrors('User not logged.');
         }
     }
 }

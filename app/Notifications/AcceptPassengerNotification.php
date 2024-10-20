@@ -7,7 +7,7 @@ use  STS\Services\Notifications\Channels\MailChannel;
 use  STS\Services\Notifications\Channels\PushChannel;
 use  STS\Services\Notifications\Channels\DatabaseChannel;
 use  STS\Services\Notifications\Channels\FacebookChannel;
-use STS\Entities\Passenger;
+use STS\Models\Passenger;
 
 class AcceptPassengerNotification extends BaseNotification
 {

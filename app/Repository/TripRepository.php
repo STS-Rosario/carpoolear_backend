@@ -3,18 +3,16 @@
 namespace STS\Repository;
 
 use DB;
-use STS\User;
+use STS\Models\User;
 use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
-use STS\Entities\Route;
-use STS\Entities\NodeGeo;
-use STS\Entities\TripPoint;
+use STS\Models\Trip;
+use STS\Models\Passenger;
+use STS\Models\Route;
+use STS\Models\NodeGeo;
+use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
-use STS\Entities\TripVisibility;
-use STS\Contracts\Repository\Trip as TripRepo;
 
-class TripRepository implements TripRepo
+class TripRepository
 {
     private function getPotentialNode ($point) {
         $n1 = new NodeGeo;

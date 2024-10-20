@@ -3,9 +3,8 @@
 namespace STS\Repository;
 
 use File;
-use STS\Contracts\Repository\Files as FilesRepo;
 
-class FileRepository implements FilesRepo
+class FileRepository
 {
     public function __construct()
     {
