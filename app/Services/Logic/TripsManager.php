@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\MessageBag;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Delete  as DeleteEvent;
-use STS\Events\Trip\Update  as UpdateEvent; 
+use STS\Events\Trip\Update  as UpdateEvent;
 class TripsManager extends BaseManager
 {
     protected $tripRepo;
@@ -32,7 +32,6 @@ class TripsManager extends BaseManager
                 'estimated_time'        => 'required|string',
                 'distance'              => 'required|numeric',
                 'co2'                   => 'required|numeric',
-                'gatoconbotas'                   => 'required|numeric',
                 'description'           => 'string',
                 'return_trip_id'        => 'exists:trips,id',
                 'parent_trip_id'        => 'exists:trips,id',
@@ -261,7 +260,7 @@ class TripsManager extends BaseManager
         return false;
     }
 
-    public function price($from, $to, $distance) 
+    public function price($from, $to, $distance)
     {
         if ($from && $to && config('carpoolear.api_price'))
         {
@@ -272,7 +271,7 @@ class TripsManager extends BaseManager
     }
 
 
-    public function changeVisibility($user, $trip_id) 
+    public function changeVisibility($user, $trip_id)
     {
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
@@ -335,8 +334,8 @@ class TripsManager extends BaseManager
     public function shareTrip ($me, $user) {
         return ($this->tripRepo->shareTrip($me, $user) || $this->tripRepo->shareTrip($user, $me));
     }
-    
-    public function getTripByTripPassenger ($transaction_id) 
+
+    public function getTripByTripPassenger ($transaction_id)
     {
         return $this->tripRepo->getTripByTripPassenger($transaction_id);
     }
@@ -364,13 +363,13 @@ class TripsManager extends BaseManager
 
             if (!empty($slug_destiny) && !empty($slug_origin)) {
                 $url = 'https://ww2.copec.cl/chiletur/planner_route.json?start_destination=' . $slug_origin . '&end_destination=' . $slug_destiny;
-        
+
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, $url);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                 $output = curl_exec($ch);
                 curl_close($ch);
-        
+
                 $calc = json_decode($output);
                 if (!isset($calc->error)) {
                     $price_pretol = $calc->combustible->default_gasoline_value * ($calc->distance / 1000) / 14; // 14 lts por km en ruta
