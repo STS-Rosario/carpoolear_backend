@@ -33,8 +33,8 @@ class Rating extends Model
     protected function casts(): array
     {
         return [
-            'reply_comment_created_at' => 'date',
-            'rate_at' => 'date',
+            'reply_comment_created_at' => 'datetime',
+            'rate_at' => 'datetime',
         ];
     } 
 

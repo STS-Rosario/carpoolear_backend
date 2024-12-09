@@ -24,7 +24,7 @@ class Subscription extends Model
         return [
             'to_json_address' => 'array',
             'from_json_address' => 'array',
-            'trip_date' => 'date',
+            'trip_date' => 'datetime',
         ];
     } 
     

@@ -71,8 +71,8 @@ class Trip extends Model
         return [
             'es_recurrente' => 'boolean',
             'is_passenger' => 'boolean',
-            'trip_date' => 'date',
-            'deleted_at' => 'date',
+            'trip_date' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     } 
 

@@ -78,8 +78,9 @@ class User extends Authenticatable implements JWTSubject
             'do_not_alert_accept_passenger'   => 'boolean',
             'do_not_alert_pending_rates'      => 'boolean',
             'driver_is_verified'      => 'boolean',
+            'emails_notifications' => 'boolean',
             'driver_data_docs'      => 'array',
-            'last_connection' => 'date'
+            'last_connection' => 'datetime'
         ];
     }
  
