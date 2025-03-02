@@ -9,11 +9,19 @@ class FirebaseService
 {
     private $googleClient;
 
+    private $firebaseFile = '';
+    private $firebaseName = '';
+
+
     public function __construct()
     {
+        $this->firebaseFile = config('firebase.firebase_path');
+        $this->firebaseName = config('firebase.firebase_project_name');
+
+
         // Inicializamos el cliente de Google con la cuenta de servicio
         $this->googleClient = new Client();
-        $this->googleClient->setAuthConfig(storage_path('firebase.json'));
+        $this->googleClient->setAuthConfig(storage_path($this->firebaseFile));
         $this->googleClient->addScope('https://www.googleapis.com/auth/firebase.messaging');
     }
 
@@ -34,7 +42,7 @@ class FirebaseService
         $accessToken = $this->getAccessToken();
 
         $http = new HttpClient();
-        $url = 'https://fcm.googleapis.com/v1/projects/carpoolear-test/messages:send';
+        $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
 
         // Construir el payload de la notificación
         $message = [
@@ -51,7 +59,7 @@ class FirebaseService
         $response = $http->post($url, [
             'headers' => [
                 'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type'  => 'application/json',
+                'Content-Type' => 'application/json',
             ],
             'json' => $message,
         ]);
