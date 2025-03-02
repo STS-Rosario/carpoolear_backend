@@ -14,6 +14,7 @@ class ValueNotification extends Model
 
     public function value()
     {
+        $this->value_type = str_replace('STS\User', 'STS\Models\User', $this->value_type);
         if (strlen($this->value_type) > 0) {
             return $this->morphTo()->withTrashed();
         } else {
