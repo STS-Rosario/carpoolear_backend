@@ -63,7 +63,6 @@ class FirebaseService
             ],
             'json' => $message,
         ]);
-        \Log::info($response->getBody());
         return json_decode($response->getBody(), true);
     }
 }
