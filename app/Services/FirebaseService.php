@@ -20,6 +20,7 @@ class FirebaseService
 
 
         // Inicializamos el cliente de Google con la cuenta de servicio
+        \Log::info(storage_path($this->firebaseFile));
         $this->googleClient = new Client();
         $this->googleClient->setAuthConfig(storage_path($this->firebaseFile));
         $this->googleClient->addScope('https://www.googleapis.com/auth/firebase.messaging');
@@ -63,6 +64,7 @@ class FirebaseService
             ],
             'json' => $message,
         ]);
+        \Log::info('message: ' . $response->getBody());
         return json_decode($response->getBody(), true);
     }
 }
