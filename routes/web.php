@@ -40,3 +40,7 @@ Route::get('/colabora-programando', [HomeController::class, 'programar']);
 Route::get('/transbank', [PaymentController::class, 'transbank']);
 Route::any('/transbank-respuesta', [PaymentController::class, 'transbankResponse']);
 Route::any('/transbank-final', [PaymentController::class, 'transbankFinal']);
+
+Route::get('/config.xml', function () {
+    return response()->file(public_path('app/config.xml'));
+});

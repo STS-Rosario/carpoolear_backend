@@ -64,6 +64,10 @@ class SubscriptionsRepository
 
         $query->where('state', true);
 
+        // Add condition for createdAt less than 6 months
+        $sixMonthsAgo = Carbon::now()->subMonths(6);
+        $query->where('created_at', '>=', $sixMonthsAgo);
+
         switch ($trip->friendship_type_id) {
             case Trip::PRIVACY_PUBLIC:
                 // Nothings;
