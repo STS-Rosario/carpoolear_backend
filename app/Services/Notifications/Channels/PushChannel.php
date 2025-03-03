@@ -32,12 +32,14 @@ class PushChannel
             $data['extras'] = $this->getExtraData($notification);
           
             if ($device->notifications) {
-                if ($device->isAndroid()) {
-                    $this->sendAndroid($device, $data);
-                }
-                if ($device->isIOS()) {
-                    $this->sendIOS($device, $data);
-                }
+                // no va mas
+                
+                // if ($device->isAndroid()) {
+                //     $this->sendAndroid($device, $data);
+                // }
+                // if ($device->isIOS()) {
+                //     $this->sendIOS($device, $data);
+                // }
                 if ($device->isBrowser()) {
                     $this->sendBrowser($device, $data);
                 }
