@@ -37,13 +37,18 @@ class DatabaseNotification extends Model
 
         $this->_attributes = [];
         $plains_values = $this->plain_values;
+
         foreach ($plains_values as $plain) {
-            $plain->value_type = str_replace('STS\User', 'STS\Models\User', $plain->value_type);
+            $plain->value_type = str_replace('STS\\User', 'STS\\Models\\User', $plain->value_type);
             $plain->value_type = str_replace('Entities', 'Models', $plain->value_type);
         }
+
         foreach ($plains_values as $plain) {
-            if ($model = $plain->value) {
-                $this->_attributes[$plain->key] = $model;
+            if (strlen($plain->value_type) > 0) {
+                $model = $plain->value;
+                if ($model) {
+                    $this->_attributes[$plain->key] = $model;
+                }
             } else {
                 $this->_attributes[$plain->key] = $plain->value_text;
             }
