@@ -1,14 +1,13 @@
 <?php
 
 namespace STS\Http\Controllers\Api\v1;
-
-use JWTAuth;
-use STS\User;
+ 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Logic\Devices as DeviceLogic;
-use Dingo\Api\Exception\StoreResourceFailedException;
+use STS\Http\ExceptionWithErrors;
+use STS\Services\Logic\DeviceManager;
+use STS\Services\Logic\UsersManager;
+use Tymon\JWTAuth\Facades\JWTAuth;  
 
 class SocialController extends Controller
 {
@@ -18,7 +17,7 @@ class SocialController extends Controller
 
     protected $deviceLogic;
 
-    public function __construct(UserLogic $userLogic, DeviceLogic $devices)
+    public function __construct(UsersManager $userLogic, DeviceManager $devices)
     {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
@@ -46,7 +45,7 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $user = $socialServices->loginOrCreate($request->all());
             if (! $user) {
-                throw new StoreResourceFailedException('Could not create new user.', $socialServices->getErrors());
+                throw new ExceptionWithErrors('Could not create new user.', $socialServices->getErrors());
             }
             $token = JWTAuth::fromUser($user);
         } catch (\ReflectionException $e) {
@@ -54,7 +53,7 @@ class SocialController extends Controller
         }
 
         if ($user->banned) {
-            throw new UnauthorizedHttpException(null, 'user_banned');
+            throw new ExceptionWithErrors(null, 'user_banned');
         }
 
         // Registro mi devices
@@ -65,12 +64,12 @@ class SocialController extends Controller
             $this->deviceLogic->register($user, $data);
         }
         */
-        return $this->response->withArray(['token' => $token]);
+        return response()->json(['token' => $token]);
     }
 
     public function update(Request $request, $provider)
     {
-        $user = $this->auth->user();
+        $user = auth()->user();
         $accessToken = $request->get('access_token');
         $this->installProvider($provider, $accessToken);
 
@@ -78,18 +77,18 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->updateProfile($user);
             if (! $ret) {
-                throw new StoreResourceFailedException('Could not update user.', $socialServices->gerErrors());
+                throw new ExceptionWithErrors('Could not update user.', $socialServices->gerErrors());
             }
 
             return response()->json('OK');
         } catch (\ReflectionException $e) {
-            throw new BadRequestHttpException('provider not supported');
+            throw new ExceptionWithErrors('provider not supported');
         }
     }
 
     public function friends(Request $request, $provider)
     {
-        $user = $this->auth->user();
+        $user = auth()->user();
         $accessToken = $request->get('access_token');
         $this->installProvider($provider, $accessToken);
 
@@ -97,12 +96,12 @@ class SocialController extends Controller
             $socialServices = \App::make('\STS\Contracts\Logic\Social');
             $ret = $socialServices->makeFriends($user);
             if (! $ret) {
-                throw new StoreResourceFailedException('Could not refresh for friends.', $socialServices->gerErrors());
+                throw new ExceptionWithErrors('Could not refresh for friends.', $socialServices->gerErrors());
             }
 
             return response()->json('OK');
         } catch (\ReflectionException $e) {
-            throw new BadRequestHttpException('provider not supported');
+            throw new ExceptionWithErrors('provider not supported');
         }
     }
 }

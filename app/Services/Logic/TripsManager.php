@@ -2,21 +2,19 @@
 
 namespace STS\Services\Logic;
 
+use STS\Repository\TripRepository;
 use Validator;
-use STS\Entities\Trip;
+use STS\Models\Trip;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\MessageBag;
-use STS\Contracts\Logic\Trip as TripLogic;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Delete  as DeleteEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
-use STS\Contracts\Repository\Trip as TripRepo;
-
-class TripsManager extends BaseManager implements TripLogic
+class TripsManager extends BaseManager
 {
     protected $tripRepo;
 
-    public function __construct(TripRepo $trips)
+    public function __construct(TripRepository $trips)
     {
         $this->tripRepo = $trips;
     }
@@ -262,7 +260,7 @@ class TripsManager extends BaseManager implements TripLogic
         return false;
     }
 
-    public function price($from, $to, $distance) 
+    public function price($from, $to, $distance)
     {
         if ($from && $to && config('carpoolear.api_price'))
         {
@@ -273,7 +271,7 @@ class TripsManager extends BaseManager implements TripLogic
     }
 
 
-    public function changeVisibility($user, $trip_id) 
+    public function changeVisibility($user, $trip_id)
     {
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
@@ -303,7 +301,7 @@ class TripsManager extends BaseManager implements TripLogic
 
     public function userCanSeeTrip($user, $trip)
     {
-        $friendsManager = \App::make('\STS\Contracts\Logic\Friends');
+        $friendsManager = \App::make('\STS\Services\Logic\FriendsManager');
         if (is_int($trip)) {
             $trip = $this->tripRepo->show($user, $trip);
         }
@@ -336,8 +334,8 @@ class TripsManager extends BaseManager implements TripLogic
     public function shareTrip ($me, $user) {
         return ($this->tripRepo->shareTrip($me, $user) || $this->tripRepo->shareTrip($user, $me));
     }
-    
-    public function getTripByTripPassenger ($transaction_id) 
+
+    public function getTripByTripPassenger ($transaction_id)
     {
         return $this->tripRepo->getTripByTripPassenger($transaction_id);
     }
@@ -365,13 +363,13 @@ class TripsManager extends BaseManager implements TripLogic
 
             if (!empty($slug_destiny) && !empty($slug_origin)) {
                 $url = 'https://ww2.copec.cl/chiletur/planner_route.json?start_destination=' . $slug_origin . '&end_destination=' . $slug_destiny;
-        
+
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, $url);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
                 $output = curl_exec($ch);
                 curl_close($ch);
-        
+
                 $calc = json_decode($output);
                 if (!isset($calc->error)) {
                     $price_pretol = $calc->combustible->default_gasoline_value * ($calc->distance / 1000) / 14; // 14 lts por km en ruta

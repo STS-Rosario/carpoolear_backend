@@ -3,10 +3,10 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use Illuminate\Console\Command;
-use STS\Contracts\Logic\Trip as TripLogic;
-use STS\Contracts\Repository\Trip as TripRepo;
+use Illuminate\Console\Command; 
 use STS\Events\Trip\Alert\HourLeft as  HourLeftEvent;
+use STS\Repository\TripRepository;
+use STS\Services\Logic\TripsManager;
 
 class TripRemainder extends Command
 {
@@ -33,7 +33,7 @@ class TripRemainder extends Command
      *
      * @returnactiveRatings void
      */
-    public function __construct(TripLogic $logic, TripRepo $repo)
+    public function __construct(TripsManager $logic, TripRepository $repo)
     {
         parent::__construct();
         $this->tripLogic = $logic;

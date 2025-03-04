@@ -3,13 +3,12 @@
 namespace STS\Repository;
 
 use DB;
-use STS\User;
+use STS\Models\User;
 use Carbon\Carbon;
-use STS\Entities\Message;
-use STS\Entities\Conversation;
-use STS\Contracts\Repository\Messages as MessageRepo;
+use STS\Models\Message;
+use STS\Models\Conversation;
 
-class MessageRepository implements MessageRepo
+class MessageRepository
 {
     public function store(Message $message)
     {

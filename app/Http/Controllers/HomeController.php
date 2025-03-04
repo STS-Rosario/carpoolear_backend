@@ -1,18 +1,9 @@
 <?php
 
 namespace STS\Http\Controllers;
-
-use Carbon\Carbon;
+ 
 use Illuminate\Http\Request;
-use STS\Entities\Trip as TripModel;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Logic\Routes as RoutesLogic;
-use STS\Entities\NodeGeo;
-use STS\Entities\Trip;
-use STS\Entities\Route;
-use STS\Repository\RoutesRepository;
-
-use Illuminate\Support\Facades\Redirect;
+use STS\Services\Logic\UsersManager; 
 
 class HomeController extends Controller
 {
@@ -222,7 +213,7 @@ class HomeController extends Controller
         }
     }
 
-    public function desuscribirme(Request $request, UserLogic $userLogic)
+    public function desuscribirme(Request $request, UsersManager $userLogic)
     {
         $email = $request->get('email');
         if ($email) {

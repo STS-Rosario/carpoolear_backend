@@ -1,14 +1,13 @@
 <?php
 
 namespace STS\Http\Controllers\Api\v1;
-
-use JWTAuth;
+ 
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Logic\Devices as DeviceLogic;
-use Dingo\Api\Exception\StoreResourceFailedException;
-use Dingo\Api\Exception\UpdateResourceFailedException;
+use STS\Http\Controllers\Controller; 
+use STS\Http\ExceptionWithErrors;
+use STS\Services\Logic\DeviceManager;
+use STS\Services\Logic\UsersManager;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class DeviceController extends Controller
 {
@@ -18,7 +17,7 @@ class DeviceController extends Controller
 
     protected $deviceLogic;
 
-    public function __construct(UserLogic $userLogic, DeviceLogic $devices)
+    public function __construct(UsersManager $userLogic, DeviceManager $devices)
     {
         $this->middleware('logged');
         $this->userLogic = $userLogic;
@@ -27,33 +26,33 @@ class DeviceController extends Controller
 
     public function register(Request $request)
     {
-        $user = $this->auth->user();
+        $user = auth()->user();
         $data = $request->all();
         $data['session_id'] = JWTAuth::getToken()->get();
 
         if ($device = $this->deviceLogic->register($user, $data)) {
-            return $this->response->withArray(['data' => $device]);
+            return response()->json(['data' => $device]);
         }
 
-        throw new StoreResourceFailedException('Bad request exceptions', $this->deviceLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->deviceLogic->getErrors());
     }
 
     public function update($id, Request $request)
     {
-        $user = $this->auth->user();
+        $user = auth()->user();
         $data = $request->all();
         $data['session_id'] = JWTAuth::getToken()->get();
 
         if ($device = $this->deviceLogic->update($user, $id, $data)) {
-            return $this->response->withArray(['data' => $device]);
+            return response()->json(['data' => $device]);
         }
 
-        throw new UpdateResourceFailedException('Bad request exceptions', $this->deviceLogic->getErrors());
+        throw new ExceptionWithErrors('Bad request exceptions', $this->deviceLogic->getErrors());
     }
 
     public function delete($id, Request $request)
     {
-        $user = $this->auth->user();
+        $user = auth()->user();
         $this->deviceLogic->delete($user, $id);
 
         return response()->json('OK');
@@ -61,7 +60,7 @@ class DeviceController extends Controller
 
     public function index(Request $request)
     {
-        $user = $this->auth->user();
+        $user = auth()->user();
 
         return $this->deviceLogic->getDevices($user);
     }

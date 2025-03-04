@@ -2,16 +2,13 @@
 
 namespace STS\Services\Logic;
 
+use STS\Repository\FileRepository;
+use STS\Repository\SocialRepository;
 use Validator;
-use STS\User as UserModel;
-use STS\Contracts\SocialProvider;
-use STS\Contracts\Logic\User as UserLogic;
-use STS\Contracts\Logic\Social as SocialLogic;
-use STS\Contracts\Repository\Files as FilesRep;
-use STS\Contracts\Logic\Friends as FriendsLogic;
-use STS\Contracts\Repository\Social as SocialRepo;
+use STS\Models\User as UserModel;
+use STS\Contracts\SocialProvider;  
 
-class SocialManager extends BaseManager implements SocialLogic
+class SocialManager extends BaseManager
 {
     protected $friendsRepo;
 
@@ -25,7 +22,9 @@ class SocialManager extends BaseManager implements SocialLogic
 
     protected $userData;
 
-    public function __construct(SocialProvider $provider, UserLogic $userRep, FriendsLogic $friendsRepo, FilesRep $files, SocialRepo $social)
+
+    // [TODO] social provider
+    public function __construct(SocialProvider $provider, UsersManager $userRep, FriendsManager $friendsRepo, FileRepository $files, SocialRepository $social)
     {
         $this->provider = $provider;
         $this->userLogic = $userRep;

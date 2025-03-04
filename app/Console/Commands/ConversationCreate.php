@@ -2,9 +2,9 @@
 
 namespace STS\Console\Commands;
 
-use STS\User;
+use STS\Models\User;
 use Carbon\Carbon;
-use STS\Entities\Conversation;
+use STS\Models\Conversation;
 use Illuminate\Console\Command;
 use STS\Services\Logic\ConversationsManager as ConversationManager;
 

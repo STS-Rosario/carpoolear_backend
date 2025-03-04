@@ -2,21 +2,18 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use STS\Entities\Donation;
+use STS\Http\ExceptionWithErrors;
+use STS\Models\Donation;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Services\Logic\UsersManager;
 use STS\Transformers\ProfileTransformer;
-use Dingo\Api\Exception\ResourceException;
-use STS\Contracts\Logic\User as UserLogic;
-use Dingo\Api\Exception\StoreResourceFailedException;
-use Dingo\Api\Exception\UpdateResourceFailedException;
-use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
     protected $userLogic;
 
-    public function __construct(UserLogic $userLogic)
+    public function __construct(UsersManager $userLogic)
     {
         $this->middleware('logged', ['except' => ['create', 'registerDonation', 'bankData', 'terms']]);
         $this->userLogic = $userLogic;
@@ -41,17 +38,17 @@ class UserController extends Controller
         }
         $user = $this->userLogic->create($data);
         if (! $user) {
-            throw new StoreResourceFailedException('Could not create new user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not create new user.', $this->userLogic->getErrors());
         }
 
-        // return $this->response->withArray(['user' => $user]);
-        return $this->item($user, new ProfileTransformer($user), ['key' => 'user']);
+        // return response()->json(['user' => $user]);
+        return $this->item($user, new ProfileTransformer($user));
 
     }
 
     public function update(Request $request)
     {
-        $me = $this->auth->user();
+        $me = auth()->user();
         $data = $request->all();
         if (isset($data['email'])) {
             unset($data['email']);
@@ -60,14 +57,14 @@ class UserController extends Controller
         // var_dump($is_driver);die;
         $profile = $this->userLogic->update($me, $data, $is_driver);
         if (! $profile) {
-            throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
-        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
+        return $this->item($profile, new ProfileTransformer($me));
     }
     
     public function adminUpdate(Request $request) {
         \Log::info('update controller: acaaaaaaaaaa ........ ---------' );
-        $me = $this->auth->user();
+        $me = auth()->user();
         $data = $request->all();
         if (isset($data['user'])) {
             $user = $data['user'];
@@ -78,35 +75,35 @@ class UserController extends Controller
             \Log::info('update controller: ' . $user->name);
             $profile = $this->userLogic->update($user, $data, false, true);
             if (!$profile) {
-                throw new UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
+                throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
             }
         } 
-        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
+        return $this->item($profile, new ProfileTransformer($user));
     }
 
     public function updatePhoto(Request $request)
     {
-        $me = $this->auth->user();
+        $me = auth()->user();
         $profile = $this->userLogic->updatePhoto($me, $request->all());
         if (! $profile) {
-            throw new  UpdateResourceFailedException('Could not update user.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
 
-        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
+        return $this->item($profile, new ProfileTransformer($me));
     }
 
     public function show($id = null)
     {
-        $me = $this->auth->user();
+        $me = auth()->user();
         if (!($id > 0)) {
             $id = $me->id;
         }
         $profile = $this->userLogic->show($me, $id);
         if (! $profile) {
-            throw new ResourceException('Users not found.', $this->userLogic->getErrors());
+            throw new ExceptionWithErrors('Users not found.', $this->userLogic->getErrors());
         }
 
-        return $this->item($profile, new ProfileTransformer($me), ['key' => 'user']);
+        return $this->item($profile, new ProfileTransformer($me));
     }
 
     public function index(Request $request)
@@ -115,9 +112,9 @@ class UserController extends Controller
         if ($request->has('value')) {
             $search_text = $request->get('value');
         }
-        $users = $this->userLogic->index($this->user, $search_text);
+        $users = $this->userLogic->index(auth()->user(), $search_text);
 
-        return $this->collection($users, new ProfileTransformer($this->user));
+        return $this->collection($users, new ProfileTransformer(auth()->user()));
     }
     public function searchUsers (Request $request) {
         $search_text = null;
@@ -125,7 +122,7 @@ class UserController extends Controller
             $search_text = $request->get('name');
         }
         $users = $this->userLogic->searchUsers($search_text);
-        return $this->collection($users, new ProfileTransformer($this->user));
+        return $this->collection($users, new ProfileTransformer(auth()->user()));
     }
 
     public function registerDonation(Request $request)
@@ -151,7 +148,7 @@ class UserController extends Controller
                 $user->id = 164619; //donador anonimo
             }
         } else {
-            $user = $this->user;
+            $user = auth()->user();
         }
         $donation = $this->userLogic->registerDonation($user, $donation);
 
@@ -175,12 +172,12 @@ class UserController extends Controller
 
     public function changeBooleanProperty($property, $value, Request $request)
     {
-        $user = $this->user;
+        $user = auth()->user();
         $user->$property = $value > 0;
         $user->save();
         $profile = $this->userLogic->show($user, $user->id);
 
-        return $this->item($profile, new ProfileTransformer($user), ['key' => 'user']);
+        return $this->item($profile, new ProfileTransformer($user));
 
     }
 }

@@ -2,11 +2,10 @@
 
 namespace STS\Repository;
 
-use STS\User;
-use STS\Entities\SocialAccount;
-use STS\Contracts\Repository\Social as SocialRepo;
+use STS\Models\User;
+use STS\Models\SocialAccount;
 
-class SocialRepository implements SocialRepo
+class SocialRepository
 {
     protected $provider;
 

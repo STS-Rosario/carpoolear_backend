@@ -7,3 +7,4 @@ Dockerfile
 .dokerignore
 .gitignore
 .gitattributes
+.db

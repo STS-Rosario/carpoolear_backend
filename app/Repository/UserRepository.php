@@ -3,14 +3,12 @@
 namespace STS\Repository;
 
 use DB;
-use STS\User;
+use STS\Models\User;
 use Carbon\Carbon;
-use STS\Contracts\Repository\User as UserRep;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
-use STS\Entities\Conversation;
+use STS\Models\Passenger;
+use STS\Models\Conversation;
 
-class UserRepository implements UserRep
+class UserRepository
 {
     /**
      * Create a new user instance after a valid registration.

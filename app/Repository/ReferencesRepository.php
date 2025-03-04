@@ -2,10 +2,9 @@
 
 namespace STS\Repository;
 
-use STS\Entities\References as ReferencesModel;
-use STS\Contracts\Repository\IReferencesRepository;
+use STS\Models\References as ReferencesModel;
 
-class ReferencesRepository implements IReferencesRepository
+class ReferencesRepository
 {
     public function create(ReferencesModel $reference)
     {

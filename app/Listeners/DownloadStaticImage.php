@@ -3,7 +3,7 @@
 namespace STS\Listeners;
 
 use STS\Events\Trip\Create;
-use STS\Contracts\Repository\Files as FilesRepo;
+use STS\Repository\FileRepository; 
 
 class DownloadStaticImage
 {
@@ -14,7 +14,7 @@ class DownloadStaticImage
      *
      * @return void
      */
-    public function __construct(FilesRepo $filesRepo)
+    public function __construct(FileRepository $filesRepo)
     {
         $this->filesRepo = $filesRepo;
     }

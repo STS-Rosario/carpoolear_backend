@@ -3,7 +3,7 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Passenger\Cancel;
-use STS\Contracts\Repository\Conversations as ConversationRepo;
+use STS\Repository\ConversationRepository; 
 
 class removeUserConversation
 {
@@ -14,7 +14,7 @@ class removeUserConversation
      *
      * @return void
      */
-    public function __construct(ConversationRepo $logic)
+    public function __construct(ConversationRepository $logic)
     {
         $this->conversationRepo = $logic;
     }

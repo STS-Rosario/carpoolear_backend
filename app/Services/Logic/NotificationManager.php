@@ -1,15 +1,14 @@
 <?php
 
 namespace STS\Services\Logic;
+use STS\Repository\NotificationRepository;
+ 
 
-use STS\Contracts\Logic\INotification as NotificationLogic;
-use STS\Contracts\Repository\INotification as NotificationRep;
-
-class NotificationManager implements NotificationLogic
+class NotificationManager
 {
     protected $repo;
 
-    public function __construct(NotificationRep $repo)
+    public function __construct(NotificationRepository $repo)
     {
         $this->repo = $repo;
     }

@@ -2,7 +2,7 @@
 
 namespace STS\Transformers;
 
-use STS\Entities\Message;
+use STS\Models\Message;
 use League\Fractal\TransformerAbstract;
 
 class MessageTransformer extends TransformerAbstract

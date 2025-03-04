@@ -3,12 +3,11 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\User as UserModel;
-use STS\Entities\Subscription as SubscriptionModel;
-use STS\Contracts\Repository\Subscription as SubscriptionRepository;
+use STS\Models\Trip;
+use STS\Models\User as UserModel;
+use STS\Models\Subscription as SubscriptionModel;
 
-class SubscriptionsRepository implements SubscriptionRepository
+class SubscriptionsRepository
 {
     public function create(SubscriptionModel $model)
     {
@@ -64,6 +63,10 @@ class SubscriptionsRepository implements SubscriptionRepository
         }
 
         $query->where('state', true);
+
+        // Add condition for createdAt less than 6 months
+        $sixMonthsAgo = Carbon::now()->subMonths(6);
+        $query->where('created_at', '>=', $sixMonthsAgo);
 
         switch ($trip->friendship_type_id) {
             case Trip::PRIVACY_PUBLIC:

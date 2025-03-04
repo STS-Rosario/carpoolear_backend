@@ -1,10 +1,10 @@
 <?php
 
 namespace STS\Transformers;
-
-use STS\Entities\Conversation;
-use STS\Entities\Trip;
+ 
 use League\Fractal\TransformerAbstract;
+use STS\Models\Conversation;
+use STS\Models\Trip;
 use STS\Transformers\TripTransformer;
 
 class ConversationsTransformer extends TransformerAbstract

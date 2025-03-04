@@ -4,8 +4,8 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
-use Dingo\Api\Exception\StoreResourceFailedException;
-use STS\Contracts\Logic\INotification as NotificationLogic;
+use STS\Http\ExceptionWithErrors;
+use STS\Services\Logic\NotificationManager; 
 
 class NotificationController extends Controller
 {
@@ -13,7 +13,7 @@ class NotificationController extends Controller
 
     protected $logic;
 
-    public function __construct(Request $r, NotificationLogic $logic)
+    public function __construct(Request $r, NotificationManager $logic)
     {
         $this->middleware('logged');
         $this->logic = $logic;
@@ -21,30 +21,30 @@ class NotificationController extends Controller
 
     public function index(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $data = $request->all();
         $notifications = $this->logic->getNotifications($this->user, $data);
 
-        return $this->response->withArray(['data' => $notifications]);
+        return response()->json(['data' => $notifications]);
     }
 
     public function count(Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $data = $request->all();
         $count = $this->logic->getUnreadCount($this->user);
 
-        return $this->response->withArray(['data' => $count]);
+        return response()->json(['data' => $count]);
     }
 
     public function delete($id, Request $request)
     {
-        $this->user = $this->auth->user();
+        $this->user = auth()->user();
         $result = $this->logic->delete($this->user, $id);
         if (! $result) {
-            throw new StoreResourceFailedException('Could not delete notiication.', []);
+            throw new ExceptionWithErrors('Could not delete notiication.', []);
         }
 
-        return $this->response->withArray(['data' => 'ok']);
+        return response()->json(['data' => 'ok']);
     }
 }

@@ -2,10 +2,11 @@
 
 namespace STS\Listeners\Ratings;
 
-use STS\Entities\Passenger;
+use Illuminate\Support\Str;
+use STS\Models\Passenger;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Notifications\DeleteTripNotification;
-use STS\Contracts\Repository\IRatingRepository;
+use STS\Repository\RatingRepository; 
 
 class CreateRatingDeleteTrip
 {
@@ -16,7 +17,7 @@ class CreateRatingDeleteTrip
      */
     protected $ratingRepository;
 
-    public function __construct(IRatingRepository $ratingRepository)
+    public function __construct(RatingRepository $ratingRepository)
     {
         $this->ratingRepository = $ratingRepository;
     }
@@ -34,7 +35,7 @@ class CreateRatingDeleteTrip
         $passengers = $trip->passengerAccepted;
         if ($passengers->count() > 0) {
             foreach ($passengers as $passenger) {
-                $passenger_hash = str_random(40);
+                $passenger_hash = Str::random(40);
                 $rate = $this->ratingRepository->create($passenger->user_id, $trip->user_id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
 
                 $notification = new DeleteTripNotification();

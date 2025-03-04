@@ -2,24 +2,24 @@
 
 namespace STS\Services\Logic;
 
-use STS\User;
+use Illuminate\Support\Str;
+use STS\Models\User;
+use STS\Repository\RatingRepository;
+use STS\Repository\TripRepository;
 use Validator;
 use Carbon\Carbon;
-use STS\Entities\Rating;
-use STS\Entities\Passenger;
-use STS\Contracts\Logic\IRateLogic;
-use Illuminate\Database\Eloquent\Collection;
-use STS\Contracts\Repository\Trip as TripRepo;
-use STS\Contracts\Repository\IRatingRepository;
+use STS\Models\Rating;
+use STS\Models\Passenger;
+use Illuminate\Database\Eloquent\Collection; 
 use STS\Events\Rating\PendingRate as PendingEvent;
 
-class RatingManager extends BaseManager implements IRateLogic
+class RatingManager extends BaseManager
 {
     protected $ratingRepository;
 
     protected $tripRepo;
 
-    public function __construct(IRatingRepository $ratingRepository, TripRepo $tripRepo)
+    public function __construct(RatingRepository $ratingRepository, TripRepository $tripRepo)
     {
         $this->ratingRepository = $ratingRepository;
         $this->tripRepo = $tripRepo;
@@ -128,7 +128,7 @@ class RatingManager extends BaseManager implements IRateLogic
 
         foreach ($trips as $trip) {
             $driver = $trip->user;
-            $driver_hash = str_random(40);
+            $driver_hash = Str::random(40);
             $has_passenger = false;
 
             $passengers = $trip->passenger()->orderBy('created_at', 'desc')->get();
@@ -148,7 +148,7 @@ class RatingManager extends BaseManager implements IRateLogic
                 if ($inRatingState && $canceledButAccepted) {
                     // the passenger could be make more than one trip request
                     if (! in_array($passenger->user->id, $passenger_ids_rates_created)) {
-                        $passenger_hash = str_random(40);
+                        $passenger_hash = Str::random(40);
                         $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
 
                         $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);

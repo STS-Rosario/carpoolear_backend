@@ -5,9 +5,8 @@ namespace STS\Console\Commands;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use STS\Services\Logic\RoutesManager as RoutesManager;
-use STS\Contracts\Repository\Routes as RoutesRepo;
-use STS\Entities\Route;
-use STS\Entities\NodeGeo;
+use STS\Models\Route;
+use STS\Models\NodeGeo;
 use DB;
 
 class BuildNodesWeights extends Command
