@@ -300,15 +300,8 @@ class UsersManager extends BaseManager
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
 
-            \Log::info('resetPassword before event');
-            // event(new ResetEvent($user->id, $token));
-            /*
-
-            'url' => config('app.url').'/app/reset-password/'.$this->getAttribute('token'),
-            'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
-            user
-            */
+            \Log::info('resetPassword before event'); 
+            
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'. $token;
