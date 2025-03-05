@@ -7,4 +7,4 @@ composer dump-autoload
 php artisan optimize 
 php artisan config:cache
 
-sudo supervisorctl restart "laravel-worker:*"
+t

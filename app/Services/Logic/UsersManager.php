@@ -311,7 +311,9 @@ class UsersManager extends BaseManager
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'. $token;
             $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
+            
             ssmtp_send_mail('Recuperación de contraseña', $user->email, $html);
+
             \Log::info('resetPassword post event event');
             return $token;
         } else {
