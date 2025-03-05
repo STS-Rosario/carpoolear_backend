@@ -13,7 +13,7 @@ use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent; 
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\ResetPassword;
+use STS\Mail\ResetPassword;
 
 class UsersManager extends BaseManager
 {
