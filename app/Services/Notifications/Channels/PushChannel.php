@@ -74,9 +74,7 @@ class PushChannel
         $message = array(
             'title' => 'Carpoolear',
             'body' => $data["message"],
-            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
-            'click_action' => 'https://carpoolear.movilizame.com.ar/app/notifications',
-            // 'data' => 
+            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png'
         ); 
 
         if (isset($data['url'])) {

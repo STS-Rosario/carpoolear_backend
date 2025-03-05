@@ -1,6 +1,6 @@
 <?php
 
-namespace STS\Listeners\User;
+namespace STS\Listeners;
 
 use STS\Events\User\Create;
 use STS\Notifications\NewUserNotification;

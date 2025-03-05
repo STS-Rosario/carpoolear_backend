@@ -44,16 +44,3 @@ Route::any('/transbank-final', [PaymentController::class, 'transbankFinal']);
 Route::get('/config.xml', function () {
     return response()->file(public_path('app/config.xml'));
 });
-
-Route::get('/test-event', function () {
-    $firebase = new \STS\Services\FirebaseService();
-    $firebase->sendNotification('cj3NVsP6pv7f8MK5zOPBjZ:APA91bHci1clzbWleeIlc1hEh40uLvxQP4toj1hdVN835DyQIPqXu9-Kar1fytXet1S8Ambt4IMmuh2tM8CQ0x3nTnWu1axpAoPEQClw3QWfMsphVVVAMI4', [
-        'title' => 'Test',
-        'body' => 'Test body'
-    ], [
-        'key' => 'value'
-    ]);
-    // cj3NVsP6pv7f8MK5zOPBjZ:APA91bHci1clzbWleeIlc1hEh40uLvxQP4toj1hdVN835DyQIPqXu9-Kar1fytXet1S8Ambt4IMmuh2tM8CQ0x3nTnWu1axpAoPEQClw3QWfMsphVVVAMI4
-    event(new STS\Events\TestEvent());
-    return 'Event fired';
-});
