@@ -40,8 +40,8 @@ class CreateHandler implements ShouldQueue
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/activate/'.$user->activation_token;
-            $html = view('email.create_account', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
-
+            // $html = view('email.create_account', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
+            $token = $user->activation_token;
             Mail::to($user->email)->send(new NewAccount($token, $user, $url, $name_app, $domain));
 
             \Log::info('resetPassword post event event');
