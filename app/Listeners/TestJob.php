@@ -15,7 +15,7 @@ class TestJob implements ShouldQueue
      *
      * @return void
      */
-    public function __construct(U)
+    public function __construct()
     {
         
     }
