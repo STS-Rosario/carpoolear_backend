@@ -12,6 +12,8 @@ use STS\Repository\FileRepository;
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent; 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ResetPassword;
 
 class UsersManager extends BaseManager
 {
@@ -311,8 +313,8 @@ class UsersManager extends BaseManager
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'. $token;
             $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
-            
-            ssmtp_send_mail('Recuperación de contraseña', $user->email, $html);
+             
+            Mail::to($user->email)->send(new ResetPassword($token, $user, $url, $name_app, $domain));
 
             \Log::info('resetPassword post event event');
             return $token;
