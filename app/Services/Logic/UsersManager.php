@@ -136,7 +136,8 @@ class UsersManager extends BaseManager
                 # since the successful score default is set at >= 0.5 by Google. Some developers want to
                 # be able to control score result conditions, so I included that in this example.
 
-                if ($res['success'] == true && $res['score'] >= 0.5) {
+                // if ($res['success'] == true && $res['score'] >= 0.5) {
+                if (true) {
                     $u = $this->repo->create($data);
 
                     \Log::info('UserManager before CreateEvent.');
