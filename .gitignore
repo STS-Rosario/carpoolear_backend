@@ -21,4 +21,4 @@ yarn-error.log
 /.zed
 .db
 
-storage/firebase.json
+storage/firebase*.json

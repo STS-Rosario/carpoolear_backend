@@ -44,3 +44,8 @@ Route::any('/transbank-final', [PaymentController::class, 'transbankFinal']);
 Route::get('/config.xml', function () {
     return response()->file(public_path('app/config.xml'));
 });
+
+Route::get('/test-event', function () {
+    event(new STS\Events\TestEvent());
+    return 'Event fired';
+});

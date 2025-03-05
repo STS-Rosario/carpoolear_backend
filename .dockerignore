@@ -8,5 +8,3 @@ Dockerfile
 .gitignore
 .gitattributes
 .db
-
-storage/firebase-production.json
