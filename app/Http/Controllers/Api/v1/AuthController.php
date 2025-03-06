@@ -100,7 +100,6 @@ class AuthController extends Controller
             $oldToken = $token = JWTAuth::getToken()->get();
             $payload = JWTAuth::setToken($token)->checkOrFail();
             $user = JWTAuth::setToken($token)->user();
-            \Log::info($oldToken);
         } catch (TokenExpiredException $e) {
             try {
                 $oldToken = auth('api')->getToken()->get();
@@ -183,5 +182,9 @@ class AuthController extends Controller
         } else {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
+    }
+
+    public function log() {
+        return true;
     }
 }

@@ -8,4 +8,5 @@ return [
     'donation_ammount_needed' => env('DONATION_AMMOUNT_NEEDED', '1000'),
     'banner_url' => env('BANNER_URL', ''),
     'banner_image' => env('BANNER_IMAGE', ''),
+    'target_app' => env('TARGET_APP', 'carpoolear'),
 ];

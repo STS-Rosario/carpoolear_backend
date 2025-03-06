@@ -18,7 +18,7 @@ class MailChannel
 
             if (! config('mail.enabled')) {
                 \Log::info('notification info:');
-                \Log::info($data);
+                // \Log::info($data);
 
                 return;
             } else {

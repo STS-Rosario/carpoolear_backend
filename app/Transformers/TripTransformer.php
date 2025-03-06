@@ -56,7 +56,6 @@ class TripTransformer extends TransformerAbstract
         $data['request'] = '';
         $data['passenger'] = [];
         if ($this->user) {
-            \Log::info('TNEGO USER');
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
             if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id || $this->user->is_admin) {

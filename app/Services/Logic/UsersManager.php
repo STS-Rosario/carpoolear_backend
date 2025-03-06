@@ -12,6 +12,8 @@ use STS\Repository\FileRepository;
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent; 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
+use STS\Mail\ResetPassword;
 
 class UsersManager extends BaseManager
 {
@@ -105,7 +107,7 @@ class UsersManager extends BaseManager
 
                 $url = "https://www.google.com/recaptcha/api/siteverify";
 
-                \Log::info('Captcha val: ' . env('RECAPTCHA_SECRET_KEY') . ' - ip  ' . $_SERVER['REMOTE_ADDR'] . ' token = '. $_POST['token']);
+                \Log::info('Captcha val: ' . env('RECAPTCHA_SECRET_KEY', '123456789') . ' - ip  ' . $_SERVER['REMOTE_ADDR'] . ' token = '. $_POST['token']);
                 $recaptchaData = [
                     'secret' => env('RECAPTCHA_SECRET_KEY', ''),
                     'response' => $_POST['token'],
@@ -135,6 +137,7 @@ class UsersManager extends BaseManager
                 # be able to control score result conditions, so I included that in this example.
 
                 if ($res['success'] == true && $res['score'] >= 0.5) {
+                // if (true) {
                     $u = $this->repo->create($data);
 
                     \Log::info('UserManager before CreateEvent.');
@@ -298,20 +301,15 @@ class UsersManager extends BaseManager
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
 
-            \Log::info('resetPassword before event');
-            // event(new ResetEvent($user->id, $token));
-            /*
-
-            'url' => config('app.url').'/app/reset-password/'.$this->getAttribute('token'),
-            'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
-            user
-            */
+            \Log::info('resetPassword before event'); 
+            
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'. $token;
             $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
-            ssmtp_send_mail('Recuperación de contraseña', $user->email, $html);
+             
+            Mail::to($user->email)->send(new ResetPassword($token, $user, $url, $name_app, $domain));
+
             \Log::info('resetPassword post event event');
             return $token;
         } else {

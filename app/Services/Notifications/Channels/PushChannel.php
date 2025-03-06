@@ -74,12 +74,11 @@ class PushChannel
         $message = array(
             'title' => 'Carpoolear',
             'body' => $data["message"],
-            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
-            // 'data' => 
+            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png'
         ); 
 
         if (isset($data['url'])) {
-            $message['click_action'] =  \Config::get('app.url') . '/app/' . $data['url'];
+            $message['click_action'] = $data['url'];
         } 
         
         $a = $firebase->sendNotification($device_token, $message, $data["extras"]);
