@@ -29,7 +29,7 @@ class UpdateConnection
     {
         if (! \App::environment('testing')) {
             $this->auth = $auth;
-            $this->user = $this->auth->parseToken()->authenticate();
+            
         }
     }
 
@@ -43,6 +43,7 @@ class UpdateConnection
      */
     public function handle($request, Closure $next)
     {
+        $this->user = $this->auth->parseToken()->authenticate();
         if ($this->user) {
             $this->user->last_connection = Carbon::Now();
             $this->user->save();
