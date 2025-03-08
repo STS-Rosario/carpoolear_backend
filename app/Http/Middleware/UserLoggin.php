@@ -41,7 +41,8 @@ class UserLoggin
     { 
         try {
             $this->user = $this->auth->parseToken()->authenticate();
-        } catch (\Exception $e) {
+        } catch (\Exception $e) { 
+            \Log::info('Exception: ' . get_class($e) . ' - ' . 'Request URL: ' . $request->url()); 
             $this->user = null;
         }
 
