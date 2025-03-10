@@ -25,9 +25,8 @@ class UserLoggin
      * @return void
      */
     public function __construct(JWTAuth $auth)
-    {
-        $this->auth = $auth;
-        $this->user = $this->auth->parseToken()->authenticate();
+    { 
+        $this->auth = $auth; 
     }
 
     /**
@@ -40,10 +39,17 @@ class UserLoggin
      */
     public function handle($request, Closure $next)
     { 
+        try {
+            $this->user = $this->auth->parseToken()->authenticate();
+        } catch (\Exception $e) { 
+            \Log::info('Exception: ' . get_class($e) . ' - ' . 'Request URL: ' . $request->url()); 
+            $this->user = null;
+        }
+
         if ($this->user && !$this->user->banned && $this->user->active) {
             return $next($request);
         } else {
-            return response()->json('Unauthorized.', 401);
+            return response()->json(['message' => 'Unauthorized.'], 401);
         }
     }
 }

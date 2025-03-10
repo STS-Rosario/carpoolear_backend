@@ -29,7 +29,6 @@ class CheckUserBanned
     {
         if (! \App::environment('testing')) {
             $this->auth = $auth;
-            $this->user = $this->auth->parseToken()->authenticate();
         }
     }
 
@@ -43,6 +42,7 @@ class CheckUserBanned
      */
     public function handle($request, Closure $next)
     {
+        $this->user = $this->auth->parseToken()->authenticate();
         if ($this->user && $this->user->banned) {
             abort(403, 'Access denied');
         }
