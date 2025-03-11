@@ -11,6 +11,8 @@ class NewUserNotification extends BaseNotification
     protected $via = [
         MailChannel::class,
     ];
+
+    public $force_email = true;
     
     public function toEmail($user)
     {
@@ -22,7 +24,6 @@ class NewUserNotification extends BaseNotification
             'email_view' => 'new_user',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url'),
-            'token' => $token ?: '',
             'url' => config('app.url').'/app/activate/'.($token ?: '')
         ];
     }

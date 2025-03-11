@@ -27,6 +27,8 @@ class RejectPassengerNotification extends BaseNotification
         return [
             'title' => $senderName.' ha rechazado tu solicitud.',
             'email_view' => 'reject_passenger',
+            'type' => 'reject',
+            'reason_message' => 'ha rechazado',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')

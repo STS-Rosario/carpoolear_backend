@@ -41,7 +41,7 @@ class RequestRemainderNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         return [
-            'type' => 'trip',
+            'type' => 'my-trips',
             'trip_id' => $trip ? $trip->id : null,
         ];
     }
@@ -52,7 +52,7 @@ class RequestRemainderNotification extends BaseNotification
 
         return [
             'message' => 'Tienes solicitudes pendientes de contestar.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => 'my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

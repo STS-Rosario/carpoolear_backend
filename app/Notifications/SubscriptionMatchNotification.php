@@ -38,10 +38,8 @@ class SubscriptionMatchNotification extends BaseNotification
 
     public function getExtras()
     {
-        $trip = $this->getAttribute('trip');
         return [
-            'type' => 'trip',
-            'trip_id' => $trip ? $trip->id : null,
+            'type' => 'subscription',
         ];
     }
 

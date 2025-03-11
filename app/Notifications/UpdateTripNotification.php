@@ -37,7 +37,7 @@ class UpdateTripNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' ha cambiado las condiciones del viaje.';
+        return $senderName.' ha cambiado las condiciones de su viaje.';
     }
 
     public function getExtras()
@@ -56,7 +56,7 @@ class UpdateTripNotification extends BaseNotification
         $senderName = $from ? $from->name : 'Alguien';
 
         return [
-            'message' => $senderName.' ha cambiado las condiciones del viaje.',
+            'message' => $senderName.' ha cambiado las condiciones de su viaje.',
             'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

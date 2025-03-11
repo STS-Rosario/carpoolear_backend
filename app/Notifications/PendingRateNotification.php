@@ -25,7 +25,7 @@ class PendingRateNotification extends BaseNotification
         return [
             'title' => 'Contanos como te fue en el viaje hacia '.$destination.'?',
             'email_view' => 'pending_rate',
-            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
+            'url' => config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -33,17 +33,13 @@ class PendingRateNotification extends BaseNotification
 
     public function toString()
     {
-        $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return 'Viaje con '.$senderName.' finalizado.';
+        return 'Tienes un viaje por calificar.';
     }
 
     public function getExtras()
     {
-        $trip = $this->getAttribute('trip');
         return [
-            'type' => 'rate',
-            'trip_id' => $trip ? $trip->id : null,
+            'type' => 'my-trips',
         ];
     }
 

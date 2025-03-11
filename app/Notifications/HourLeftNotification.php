@@ -23,7 +23,7 @@ class HourLeftNotification extends BaseNotification
         $destination = $trip ? $trip->to_town : 'destino desconocido';
 
         return [
-            'title' => 'Contanos como te fue en el viaje hacia '.$destination.'?',
+            'title' => 'Recordatorio de viaje hacia '.$destination.'?',
             'email_view' => 'hour_left',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),

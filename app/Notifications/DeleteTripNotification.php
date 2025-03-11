@@ -25,7 +25,7 @@ class DeleteTripNotification extends BaseNotification
         $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
 
         return [
-            'title' => $senderName.' ha eliminado un viaje.',
+            'title' => $senderName.' ha eliminado su viaje.',
             'email_view' => 'delete_trip',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -37,7 +37,7 @@ class DeleteTripNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' ha eliminado un viaje.';
+        return $senderName.' ha eliminado su viaje.';
     }
 
     public function getExtras()
@@ -56,7 +56,7 @@ class DeleteTripNotification extends BaseNotification
         $senderName = $from ? $from->name : 'Alguien';
 
         return [
-            'message' => $senderName.' ha eliminado un viaje.',
+            'message' => $senderName.' ha eliminado su viaje.',
             'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
