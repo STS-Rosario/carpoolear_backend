@@ -19,12 +19,15 @@ class RejectPassengerNotification extends BaseNotification
     
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+
         return [
-            'title' => $this->getAttribute('from')->name.' ha rechazado tu solicitud',
-            'email_view' => 'passenger_email',
-            'type' => 'reject',
-            'reason_message' => 'ha rechazado',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'title' => $senderName.' ha rechazado tu solicitud.',
+            'email_view' => 'reject_passenger',
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -32,28 +35,31 @@ class RejectPassengerNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' ha rechazado tu solicitud.';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        return $senderName.' ha rechazado tu solicitud.';
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
             'type' => 'trip',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
 
         return [
-            'message' => $this->getAttribute('from')->name.' ha rechazado tu solicitud.',
-            'url' => 'trips/'.$trip->id,
+            'message' => $senderName.' ha rechazado tu solicitud.',
+            'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

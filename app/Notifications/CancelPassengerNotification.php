@@ -21,19 +21,14 @@ class CancelPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-
-        $isDriver = $trip->user_id == $from->id;
-
-        $title = $isDriver ? $from->name.' te ha bajado del viaje' : $from->name.' se ha bajado del viaje';
-        $reasonMessage = $isDriver ? 'te ha bajado del viaje' : 'se ha bajado del viaje';
+        $isDriver = $this->getAttribute('is_driver');
+        $senderName = $from ? $from->name : 'Alguien';
+        $title = $isDriver ? $senderName.' te ha bajado del viaje' : $senderName.' se ha bajado del viaje';
 
         return [
             'title' => $title,
-            'email_view' => 'passenger_out_email',
-            'type' => 'cancel',
-            'is_driver' => $isDriver,
-            'reason_message' => $reasonMessage,
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'email_view' => 'cancel_passenger',
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -41,23 +36,18 @@ class CancelPassengerNotification extends BaseNotification
 
     public function toString()
     {
-        $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-
-        $isDriver = $trip->user_id == $from->id;
-
-        $title = $isDriver ? $from->name.' te ha bajado del viaje' : $from->name.' se ha bajado del viaje';
-
-        return $title;
+        $isDriver = $this->getAttribute('is_driver');
+        $senderName = $from ? $from->name : 'Alguien';
+        return $isDriver ? $senderName.' te ha bajado del viaje' : $senderName.' se ha bajado del viaje';
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
             'type' => 'trip',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
@@ -65,14 +55,15 @@ class CancelPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $isDriver = $trip->user_id == $from->id;
-        $title = $isDriver ? $from->name.' te ha bajado del viaje' : $from->name.' se ha bajado del viaje';
+        $isDriver = $this->getAttribute('is_driver');
+        $senderName = $from ? $from->name : 'Alguien';
+        $message = $isDriver ? $senderName.' te ha bajado del viaje' : $senderName.' se ha bajado del viaje';
 
         return [
-            'message' => $title,
-            'url' => 'trips/'.$trip->id,
+            'message' => $message,
+            'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

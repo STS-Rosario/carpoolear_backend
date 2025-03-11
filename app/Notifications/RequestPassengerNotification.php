@@ -19,12 +19,15 @@ class RequestPassengerNotification extends BaseNotification
     
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+
         return [
-            'title' => $this->getAttribute('from')->name.' desea subirse a uno de tus viajes.',
-            'from' => $this->getAttribute('from')->name,
-            'email_view' => 'passenger_request',
-            'type' => 'request',
-            'url' =>  config('app.url').'/app/profile/me#0',
+            'title' => $senderName.' quiere subirse a tu viaje.',
+            'email_view' => 'request_passenger',
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -33,31 +36,30 @@ class RequestPassengerNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        if (is_object($from)) {
-            return $from->name.' quiere subirse a uno de tus viajes.';
-        } else {
-            return 'Un pasajero quiere subirse a uno de tus viajes.';
-        }
+        $senderName = $from ? $from->name : 'Alguien';
+        return $senderName.' quiere subirse a uno de tus viajes.';
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
-            'type' => 'my-trips',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'type' => 'trip',
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        
         return [
-            'message' => $this->getAttribute('from')->name.' quiere subirse a uno de tus viajes.',
+            'message' => $senderName.' quiere subirse a uno de tus viajes.',
             'url' => 'my-trips',
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

@@ -19,11 +19,13 @@ class FriendRejectNotification extends BaseNotification
     
     public function toEmail($user)
     {
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+
         return [
-            'title' => $this->getAttribute('from')->name.' ha rechazado tu solicitud de amistad.',
-            'email_view' => 'friends_email',
-            'type' => 'reject',
-            'message_mail' => 'rechazado',
+            'title' => $senderName.' ha rechazado tu solicitud de amistad.',
+            'email_view' => 'friends_reject',
+            'url' => config('app.url').'/app/profile/'.($from ? $from->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -31,25 +33,30 @@ class FriendRejectNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' ha rechazado tu solicitud de amistad.';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        return $senderName.' ha rechazado tu solicitud de amistad.';
     }
 
     public function getExtras()
     {
+        $from = $this->getAttribute('from');
         return [
-            'type' => 'friends',
+            'type' => 'friend',
+            'user_id' => $from ? $from->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
 
         return [
-            'message' => $from->name.' ha rechazado tu solicitud de amistad.',
+            'message' => $senderName.' ha rechazado tu solicitud de amistad.',
             'url' => 'setting/friends',
             'extras' => [
-                'id' => $from->id,
+                'id' => $from ? $from->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

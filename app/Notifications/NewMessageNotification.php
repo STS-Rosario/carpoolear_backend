@@ -12,16 +12,21 @@ class NewMessageNotification extends BaseNotification
 {
     protected $via = [
         DatabaseChannel::class, 
-        // MailChannel::class,
+        MailChannel::class, 
+        PushChannel::class,
         // FacebookChannel::class
     ];
 
     public function toEmail($user)
     {
+        $from = $this->getAttribute('from');
+        $message = $this->getAttribute('messages');
+        $senderName = $from ? $from->name : 'Alguien';
+
         return [
-            'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
+            'title' => $senderName.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
-            'url' => config('app.url').'/app/conversations/'.$this->getAttribute('messages')->conversation_id,
+            'url' => config('app.url').'/app/conversations/'.($message ? $message->conversation_id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -29,27 +34,33 @@ class NewMessageNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' te ha enviado un mensaje.';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        return $senderName.' te ha enviado un mensaje.';
     }
 
     public function getExtras()
     {
+        $message = $this->getAttribute('messages');
         return [
             'type' => 'conversation',
-            'conversation_id' => $this->getAttribute('messages')->conversation_id,
+            'conversation_id' => $message ? $message->conversation_id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $message = $this->getAttribute('messages');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        $messageText = $message ? $message->text : '';
 
         return [
-            'message' => 'De ' . $this->getAttribute('from')->name.' has recibido nuevos mensajes.',
-            'url' => 'conversations/'.$message->conversation_id,
+            'message' => $senderName.' @ '.$messageText,
+            'url' => 'conversations/'.($message ? $message->conversation_id : ''),
             'type' => 'conversation',
             'extras' => [
-                'id' => $message->conversation_id,
+                'id' => $message ? $message->conversation_id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

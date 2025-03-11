@@ -17,8 +17,10 @@ class NewMessagePushNotification extends BaseNotification
 
     public function toEmail($user)
     {
+        $senderName = $this->from ? $this->from->name : 'Alguien';
+
         return [
-            'title' => $this->getAttribute('from')->name.' te ha enviado un mensaje.',
+            'title' => $senderName.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
             'url' => config('app.url') . '/app/conversations/'.$this->getAttribute('messages')->conversation_id,
             'name_app' => config('carpoolear.name_app'),
@@ -28,7 +30,8 @@ class NewMessagePushNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' te ha enviado un mensaje.';
+        $senderName = $this->from ? $this->from->name : 'Alguien';
+        return $senderName.' te ha enviado un mensaje.';
     }
 
     public function getExtras()
@@ -42,9 +45,11 @@ class NewMessagePushNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $message = $this->getAttribute('messages');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Nuevo mensaje';
 
         return [
-            'message' => $this->getAttribute('from')->name.' @ '.$message->text,
+            'message' => $senderName.' @ '.$message->text,
             'url' => 'conversations/'.$message->conversation_id,
             'type' => 'conversation',
             'extras' => [
