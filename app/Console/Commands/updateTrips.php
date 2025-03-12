@@ -47,6 +47,7 @@ class updateTrips extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND updateTrips");
         // iterar x viajes creados, asignar ruta / crearla
         $query = Trip::query()->with(['routes', 'routes.nodes', 'points']);
         $query->where('trip_date', '>=', '2017-09-01 00:00:00'); 

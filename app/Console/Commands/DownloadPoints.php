@@ -41,6 +41,7 @@ class DownloadPoints extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND DownloadPoints");
         $trips = Trip::where('trip_date', '>=', Carbon::now()->toDateTimeString());
         // $trips->has('points', '=', 0);
         // $trips->limit(1);

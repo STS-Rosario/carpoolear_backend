@@ -44,6 +44,7 @@ class RequestRemainder extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND RequestRemainder");
         $now = Carbon::now();
 
         $trips = Trip::where('trip_date', '>=', $now->toDateTimeString())->where('is_passenger', 0);

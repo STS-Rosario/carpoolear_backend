@@ -116,6 +116,7 @@ class BuildNodes extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND BuildNodes");
         $startNode = 0;
         $startCountry = 0;
         $endCountry = 1;

@@ -47,6 +47,7 @@ class FacebookImage extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND FacebookImage");
         $users = User::whereHas('trips', function ($query) {
             $query->where('trip_date', '>=', Carbon::now()->toDateTimeString());
         })->has('accounts')->with('accounts')->get();

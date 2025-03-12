@@ -45,6 +45,7 @@ class RequestNotAnswer extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND RequestNotAnswer");
         $now = Carbon::now();
 
         $passengers = Passenger::whereIn('request_state', [Passenger::STATE_PENDING]);

@@ -116,6 +116,7 @@ class BuildNodesSuburb extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND BuildNodesSuburb");
         $startNode = 0;
         $startCountry = 0;
         $endCountry = 1;
