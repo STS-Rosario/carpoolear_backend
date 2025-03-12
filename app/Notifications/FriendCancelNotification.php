@@ -24,8 +24,8 @@ class FriendCancelNotification extends BaseNotification
 
         return [
             'title' => $senderName.' ha dejado de ser tu amigo',
-            'email_view' => 'friends_cancel',
-            'url' => config('app.url').'/app/profile/'.($from ? $from->id : ''),
+            'email_view' => 'friends_cancel_email',
+            'type' => 'cancel',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -42,8 +42,7 @@ class FriendCancelNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         return [
-            'type' => 'friend',
-            'user_id' => $from ? $from->id : null,
+            'type' => 'friends'
         ];
     }
 

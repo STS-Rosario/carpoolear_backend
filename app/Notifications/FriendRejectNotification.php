@@ -24,8 +24,9 @@ class FriendRejectNotification extends BaseNotification
 
         return [
             'title' => $senderName.' ha rechazado tu solicitud de amistad.',
-            'email_view' => 'friends_reject',
-            'url' => config('app.url').'/app/profile/'.($from ? $from->id : ''),
+            'email_view' => 'friends_email',
+            'type' => 'reject',
+            'message_mail' => 'rechazado',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -42,7 +43,7 @@ class FriendRejectNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         return [
-            'type' => 'friend',
+            'type' => 'friends',
             'user_id' => $from ? $from->id : null,
         ];
     }

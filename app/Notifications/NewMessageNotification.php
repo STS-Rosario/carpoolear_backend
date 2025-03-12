@@ -56,7 +56,7 @@ class NewMessageNotification extends BaseNotification
         $messageText = $message ? $message->text : '';
 
         return [
-            'message' => $senderName.' @ '.$messageText,
+            'message' => 'De ' . $senderName . ' has recibido nuevos mensajes.',
             'url' => 'conversations/'.($message ? $message->conversation_id : ''),
             'type' => 'conversation',
             'extras' => [
