@@ -41,7 +41,7 @@ class RequestNotAnswerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         return [
-            'type' => 'trip',
+            'type' => 'my-trips',
             'trip_id' => $trip ? $trip->id : null,
         ];
     }

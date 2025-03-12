@@ -26,7 +26,8 @@ class RequestPassengerNotification extends BaseNotification
 
         return [
             'title' => $senderName.' quiere subirse a tu viaje.',
-            'email_view' => 'request_passenger',
+            'email_view' => 'passenger_request',
+            'type' => 'request',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')

@@ -30,7 +30,8 @@ class NewMessagePushNotification extends BaseNotification
 
     public function toString()
     {
-        $senderName = $this->from ? $this->from->name : 'Alguien';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
         return $senderName.' te ha enviado un mensaje.';
     }
 
