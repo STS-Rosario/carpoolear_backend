@@ -45,6 +45,7 @@ class BuildRoutes extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND BuildRoutes");
         \Log::info('Route builder ');
         $route = Route::where('processed', 0)->with(['origin', 'destiny'])->first();
         if ($route) {

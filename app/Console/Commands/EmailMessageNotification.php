@@ -40,6 +40,7 @@ class EmailMessageNotification extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND EmailMessageNotification");
         // notified once each conversation
         $messages = Message::with(['from', 'users'])->where('already_notified', 0)->get();
         $conversation_notified = [];

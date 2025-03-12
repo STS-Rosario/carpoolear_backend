@@ -41,6 +41,7 @@ class UpdateUser extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND UpdateUser");
         $originalId = $this->argument('original');
         $newId = $this->argument('new');
 

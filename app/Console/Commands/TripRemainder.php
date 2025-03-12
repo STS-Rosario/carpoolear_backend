@@ -47,6 +47,7 @@ class TripRemainder extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND TripRemainder");
         $time = Carbon::now()->minute(0)->second(0)->addHour();
         $time2 = $time->copy()->minute(59)->second(59);
 

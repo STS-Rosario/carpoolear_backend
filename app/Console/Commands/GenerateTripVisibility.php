@@ -44,6 +44,7 @@ class GenerateTripVisibility extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND GenerateTripVisibility");
         $now = Carbon::now();
 
         $trips = Trip::where('trip_date', '>=', $now->toDateTimeString())->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC);

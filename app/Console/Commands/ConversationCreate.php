@@ -44,6 +44,7 @@ class ConversationCreate extends Command
      */
     public function handle()
     {
+        \Log::info("COMMAND ConversationCreate");
         $userTo = User::find($this->argument('to'));
         $userFrom = User::find($this->argument('from'));
 
