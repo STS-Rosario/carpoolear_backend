@@ -21,11 +21,13 @@ class AutoCancelPassengerRequestIfRequestLimitedNotification extends BaseNotific
  
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
+
         return [
-            'title' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $this->getAttribute('trip')->to_town . ' debido a que se subió a otro viaje con igual destino.',
-            'email_view' => 'passenger_autocancel_trip_owner',
-            'type' => 'auto_cancel',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'title' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.',
+            'email_view' => 'auto_cancel_request',
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -33,28 +35,30 @@ class AutoCancelPassengerRequestIfRequestLimitedNotification extends BaseNotific
 
     public function toString()
     {
-        return 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $this->getAttribute('trip')->to_town . ' debido a que se subió a otro viaje con igual destino.';
+        $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        return 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.';
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
             'type' => 'trip',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
 
         return [
-            'message' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $this->getAttribute('trip')->to_town . ' debido a que se subió a otro viaje con igual destino.',
-            'url' => 'trips/'.$trip->id,
+            'message' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.',
+            'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

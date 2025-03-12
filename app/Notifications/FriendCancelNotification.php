@@ -19,10 +19,13 @@ class FriendCancelNotification extends BaseNotification
     
     public function toEmail($user)
     {
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+
         return [
-            'title' => $this->getAttribute('from')->name.' ha dejado de ser tu amigo',
-            'email_view' => 'friends_cancel_email',
-            'type' => 'cancel',
+            'title' => $senderName.' ha dejado de ser tu amigo',
+            'email_view' => 'friends_cancel',
+            'url' => config('app.url').'/app/profile/'.($from ? $from->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -30,25 +33,30 @@ class FriendCancelNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' ha dejado de ser tu amigo';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        return $senderName.' ha dejado de ser tu amigo';
     }
 
     public function getExtras()
     {
+        $from = $this->getAttribute('from');
         return [
-            'type' => 'friends',
+            'type' => 'friend',
+            'user_id' => $from ? $from->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
 
         return [
-            'message' => $from->name.' ha dejado de ser tu amigo',
+            'message' => $senderName.' ha dejado de ser tu amigo',
             'url' => 'setting/friends',
             'extras' => [
-                'id' => $from->id,
+                'id' => $from ? $from->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

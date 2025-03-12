@@ -19,10 +19,13 @@ class HourLeftNotification extends BaseNotification
     
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
+
         return [
-            'title' => 'Recordatorio de viaje hacia '.$this->getAttribute('trip')->to_town,
+            'title' => 'Recordatorio de viaje hacia '.$destination.'?',
             'email_view' => 'hour_left',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -30,28 +33,30 @@ class HourLeftNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Recuerda que en poco más de una hora viajas hacia '.$this->getAttribute('trip')->to_town;
+        $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        return 'Recuerda que en poco más de una hora viajas hacia '.$destination;
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
             'type' => 'trip',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
 
         return [
-            'message' => 'Recuerda que en poco más de una hora viajas hacia '.$trip->to_town,
-            'url' => 'trips/'.$trip->id,
+            'message' => 'Recuerda que en poco más de una hora viajas hacia '.$destination,
+            'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

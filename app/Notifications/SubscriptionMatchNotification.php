@@ -14,15 +14,18 @@ class SubscriptionMatchNotification extends BaseNotification
 
     protected $via = [
         DatabaseChannel::class, 
-        PushChannel::class
+        MailChannel::class, 
+        PushChannel::class,
     ];
 
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+
         return [
             'title' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
             'email_view' => 'subscription_match',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -45,10 +48,10 @@ class SubscriptionMatchNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
-            'url' => 'trips/'.$trip->id,
+            'message' => 'Hemos encontrado un viaje que coincide con tu búsqueda.',
+            'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

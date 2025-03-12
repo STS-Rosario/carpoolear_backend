@@ -31,25 +31,30 @@ class FriendRequestNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('from')->name.' te ha enviado una solicitud de amistad.';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        return $senderName.' te ha enviado una solicitud de amistad.';
     }
 
     public function getExtras()
     {
+        $from = $this->getAttribute('from');
         return [
             'type' => 'friends',
+            'user_id' => $from ? $from->id : null,
         ];
     }
 
     public function toPush($user, $device)
     {
         $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
 
         return [
-            'message' => $from->name.' te ha enviado una solicitud de amistad.',
+            'message' => $senderName.' te ha enviado una solicitud de amistad.',
             'url' => 'setting/friends',
             'extras' => [
-                'id' => $from->id,
+                'id' => $from ? $from->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

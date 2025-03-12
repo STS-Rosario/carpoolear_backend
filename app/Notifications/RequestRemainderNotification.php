@@ -12,15 +12,19 @@ class RequestRemainderNotification extends BaseNotification
 {
     protected $via = [
         DatabaseChannel::class, 
-        // MailChannel::class, 
-        PushChannel::class, 
-        // FacebookChannel::class
+        MailChannel::class, 
+        PushChannel::class,
     ];
 
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+
         return [
-            'title' => 'Tienes solicitudes pendientes de contestar',
+            'title' => 'Tienes solicitudes pendientes de contestar.',
             'email_view' => 'request_remainder',
             'url' =>  config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
@@ -36,10 +40,9 @@ class RequestRemainderNotification extends BaseNotification
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
             'type' => 'my-trips',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
@@ -51,7 +54,7 @@ class RequestRemainderNotification extends BaseNotification
             'message' => 'Tienes solicitudes pendientes de contestar.',
             'url' => 'my-trips',
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

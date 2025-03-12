@@ -19,10 +19,12 @@ class RequestNotAnswerNotification extends BaseNotification
 
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+
         return [
             'title' => 'Una de tus solicitudes aún no fue contestada',
             'email_view' => 'request_not_answer',
-            'url' => config('app.url').'/app/trips/'.$this->getAttribute('trip')->id,
+            'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -30,16 +32,17 @@ class RequestNotAnswerNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Una de tus solicitudes aún no fue contestada';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        return 'Solicitud de '.$senderName.' pendiente.';
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
-
         return [
-            'type' => 'my-trips',
-            'trip_id' => isset($trip) && is_object($trip) ? $trip->id : 0,
+            'type' => 'trip',
+            'trip_id' => $trip ? $trip->id : null,
         ];
     }
 
@@ -49,9 +52,9 @@ class RequestNotAnswerNotification extends BaseNotification
 
         return [
             'message' => 'Una de tus solicitudes aún no fue contestada',
-            'url' => 'trips/'.$trip->id,
+            'url' => 'trips/'.($trip ? $trip->id : ''),
             'extras' => [
-                'id' => $trip->id,
+                'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

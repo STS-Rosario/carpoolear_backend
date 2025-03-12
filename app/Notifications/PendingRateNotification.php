@@ -19,10 +19,13 @@ class PendingRateNotification extends BaseNotification
     
     public function toEmail($user)
     {
+        $trip = $this->getAttribute('trip');
+        $destination = $trip ? $trip->to_town : 'destino desconocido';
+
         return [
-            'title' => 'Contanos como te fue en el viaje hacia '.$this->getAttribute('trip')->to_town.'?',
+            'title' => 'Contanos como te fue en el viaje hacia '.$destination.'?',
             'email_view' => 'pending_rate',
-            'url' =>  config('app.url').'/app/profile/me#0',
+            'url' => config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
