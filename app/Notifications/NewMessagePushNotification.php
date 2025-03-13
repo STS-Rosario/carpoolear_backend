@@ -17,12 +17,15 @@ class NewMessagePushNotification extends BaseNotification
 
     public function toEmail($user)
     {
-        $senderName = $this->from ? $this->from->name : 'Alguien';
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : 'Alguien';
+        $messages = $this->getAttribute('messages');
+        $conversationId = $messages ? $messages->conversation_id : '';
 
         return [
             'title' => $senderName.' te ha enviado un mensaje.',
             'email_view' => 'new_message',
-            'url' => config('app.url') . '/app/conversations/'.$this->getAttribute('messages')->conversation_id,
+            'url' => config('app.url') . '/app/conversations/'.$conversationId,
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
         ];
@@ -37,9 +40,10 @@ class NewMessagePushNotification extends BaseNotification
 
     public function getExtras()
     {
+        $messages = $this->getAttribute('messages');
         return [
             'type' => 'conversation',
-            'conversation_id' => $this->getAttribute('messages')->conversation_id,
+            'conversation_id' => $messages ? $messages->conversation_id : null,
         ];
     }
 
@@ -48,13 +52,15 @@ class NewMessagePushNotification extends BaseNotification
         $message = $this->getAttribute('messages');
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : 'Nuevo mensaje';
+        $messageText = $message ? $message->text : '';
+        $conversationId = $message ? $message->conversation_id : '';
 
         return [
-            'message' => $senderName.' @ '.$message->text,
-            'url' => 'conversations/'.$message->conversation_id,
+            'message' => $senderName.' @ '.$messageText,
+            'url' => 'conversations/'.$conversationId,
             'type' => 'conversation',
             'extras' => [
-                'id' => $message->conversation_id,
+                'id' => $conversationId,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
