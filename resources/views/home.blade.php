@@ -36,20 +36,20 @@
             <div class="col-md-12 col-sm-12 text-center">
                 <h1><a class="accede-app" href="https://carpoolear.com.ar/app">Compartí tu viaje</a></h1>
                 <a class="btn btn-lg btn-filled boton-usa-plataforma" href="https://carpoolear.com.ar/app">Usá la plataforma</a>
-                <p class="lead disponible-celulares mb-xs-32">
+                <!-- <p class="lead disponible-celulares mb-xs-32">
                     También disponible para celulares:
-                </p>
+                </p> -->
                 <!--<a href="https://carpoolear.com.ar/app">-->
                     <!--<img class="image-small" alt="Accedé a la aplicación" src="img/accede-aplicacion.png" />-->
                 <!--</a>-->
-                <div class="logos-store">
+                <!-- <div class="logos-store">
                     <a href="https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419">
                         <img class="image-xs" alt="Disponible en Google Play" src="img/googleplay.png" />
                     </a>
                     <a href="https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8">
                         <img class="image-xs" alt="App Store" src="img/appstore.png" />
                     </a>
-                </div>
+                </div> -->
                 <img class="firma" src="img/firma.png" alt="Un proyecto de la ONG STS Rosario. Un proyecto argentino, sin fines de lucro y colaborativo">
             </div>
         </div>
