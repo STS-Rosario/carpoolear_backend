@@ -11,7 +11,7 @@ class Rating extends Model
 
     const STATE_POSITIVO = 1;
 
-    const RATING_INTERVAL = 15;
+    const RATING_INTERVAL = 25; // TODO: roll back to 15 on 2025-03-25
 
     protected $table = 'rating';
 
