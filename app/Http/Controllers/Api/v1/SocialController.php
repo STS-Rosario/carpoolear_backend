@@ -21,7 +21,7 @@ class SocialController extends Controller
     {
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
-        $this->middleware('logged', ['except' => ['login']]);
+        $this->middleware('logged:optional', ['except' => ['login']]);
     }
 
     public function installProvider($provider, $accessToken)
