@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use STS\Http\Middleware\UserLoggin;
+use STS\Http\Middleware\AuthOptional;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +23,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->group('logged', [
             UserLoggin::class,
+            \STS\Http\Middleware\UpdateConnection::class,
+            \STS\Http\Middleware\CheckUserBanned::class,
+        ]);
+
+
+        $middleware->group('logged.optional', [
+            AuthOptional::class,
             \STS\Http\Middleware\UpdateConnection::class,
             \STS\Http\Middleware\CheckUserBanned::class,
         ]);

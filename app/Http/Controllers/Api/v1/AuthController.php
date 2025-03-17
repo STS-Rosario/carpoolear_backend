@@ -24,7 +24,7 @@ class AuthController extends Controller
 
     public function __construct(UsersManager $userLogic, DeviceManager $devices)
     {
-        $this->middleware('logged', ['only' => ['logout, retoken, getConfig']]);
+        $this->middleware('logged')->only(['logout', 'retoken', 'getConfig']);
 
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
