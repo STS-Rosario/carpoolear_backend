@@ -11,7 +11,8 @@ class RoutesController extends Controller
     protected $routesLogic;
     public function __construct(RoutesManager $routesLogic)
     {
-        $this->middleware('logged:optional', ['except' => ['autocomplete']]);
+        $this->middleware('logged')->except(['autocomplete']);
+        $this->middleware('logged.optional')->only('autocomplete');
         $this->routesLogic = $routesLogic;
     }
 

@@ -15,7 +15,8 @@ class UserController extends Controller
 
     public function __construct(UsersManager $userLogic)
     {
-        $this->middleware('logged:optional', ['except' => ['create', 'registerDonation', 'bankData', 'terms']]);
+        $this->middleware('logged')->except(['create', 'registerDonation', 'bankData', 'terms']);
+        $this->middleware('logged.optional')->only(['create', 'registerDonation', 'bankData', 'terms']);
         $this->userLogic = $userLogic;
     }
 

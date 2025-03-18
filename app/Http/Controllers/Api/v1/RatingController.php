@@ -17,7 +17,8 @@ class RatingController extends Controller
 
     public function __construct(RatingManager $rateLogic, UsersManager $userLogic)
     {
-        $this->middleware('logged:optional', ['except' => ['rate']]);
+        $this->middleware('logged')->except('rate');
+        $this->middleware('logged.optional')->only('rate');
         $this->rateLogic = $rateLogic;
         $this->userLogic = $userLogic;
     }
@@ -52,7 +53,7 @@ class RatingController extends Controller
             $data = $this->rateLogic->getPendingRatings($me);
         } else {
             if ($request->has('hash')) {
-                $hash = $request->has('hash');
+                $hash = $request->get('hash');
                 $data = $this->rateLogic->getPendingRatings($hash);
             } else {
                 throw new ExceptionWithErrors('Hash not provided');
@@ -66,11 +67,12 @@ class RatingController extends Controller
     {
         $me = auth()->user();
 
+        
         if ($me) {
             $response = $this->rateLogic->rateUser($me, $userId, $tripId, $request->all());
         } else {
             if ($request->has('hash')) {
-                $hash = $request->has('hash');
+                $hash = $request->get('hash');
                 $response = $this->rateLogic->rateUser($me, $hash, $tripId, $request->all());
             } else {
                 throw new ExceptionWithErrors('Hash not provided');

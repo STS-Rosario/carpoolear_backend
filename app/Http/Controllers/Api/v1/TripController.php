@@ -16,7 +16,8 @@ class TripController extends Controller
 
     public function __construct(Request $r, TripsManager $tripsLogic)
     {
-        $this->middleware('logged:optional', ['except' => ['search']]);
+        $this->middleware('logged')->except(['search']);
+        $this->middleware('logged.optional')->only('search');
         $this->tripsLogic = $tripsLogic;
     }
 
