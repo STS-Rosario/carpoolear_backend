@@ -43,10 +43,17 @@ class UpdateConnection
      */
     public function handle($request, Closure $next)
     {
-        $this->user = $this->auth->parseToken()->authenticate();
-        if ($this->user) {
-            $this->user->last_connection = Carbon::Now();
-            $this->user->save();
+        try {
+            // Only try to parse token if it exists
+            if ($this->auth->parser()->hasToken()) {
+                $this->user = $this->auth->parseToken()->authenticate();
+                if ($this->user) {
+                    $this->user->last_connection = Carbon::now();
+                    $this->user->save();
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('UpdateConnection middleware error: ' . $e->getMessage());
         }
 
         return $next($request);
