@@ -20,6 +20,9 @@ class RoutesController extends Controller
     {
         // TODO pagination / return errors 
         $data = $request->all();
+        if (!isset($data['country'])) {
+            $data['country'] = 'ARG';
+        }
         if (isset($data['name']) && isset($data['country']) && isset($data['multicountry'])) {
             $node = $this->routesLogic->autocomplete($data['name'], $data['country'], ($data['multicountry'] === 'true'));
             return response()->json([
