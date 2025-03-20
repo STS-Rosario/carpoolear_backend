@@ -30,7 +30,7 @@ class AuthController extends Controller
         $this->deviceLogic = $devices;
     }
 
-    private function _getConfig () {
+    private function _getConfig ($isCordova = false) {
 
         $config = new \stdClass();
         $config->donation = new \stdClass();
@@ -40,8 +40,8 @@ class AuthController extends Controller
         $config->donation->trips_rated = config('carpoolear.donation_trips_rated');
         $config->donation->ammount_needed = config('carpoolear.donation_ammount_needed');
         $config->banner = new \stdClass();
-        $config->banner->url = config('carpoolear.banner_url');
-        $config->banner->image = config('carpoolear.banner_image');
+        $config->banner->url = $isCordova ? config('carpoolear.banner_url_cordova') : config('carpoolear.banner_url');
+        $config->banner->image = $isCordova ? config('carpoolear.banner_image_cordova') : config('carpoolear.banner_image');
         $exclude = [
             'donation_month_days',
             'donation_trips_count',
@@ -61,8 +61,16 @@ class AuthController extends Controller
         return $config;
     }
 
-    public function getConfig () {
-        return response()->json($this->_getConfig());
+    public function getConfig (Request $request) {
+        $isCordova = false;
+        if (isset($_SERVER['HTTP_SEC_CH_UA'])) {
+            $secChUa = $_SERVER['HTTP_SEC_CH_UA'];
+            if (strpos($secChUa, 'WebView') !== false) {
+                $isCordova = true;
+            }
+        }
+        
+        return response()->json($this->_getConfig($isCordova));
     }
 
     public function login(Request $request)
