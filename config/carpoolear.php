@@ -8,6 +8,8 @@ return [
     'donation_ammount_needed' => env('DONATION_AMMOUNT_NEEDED', '1000'),
     'banner_url' => env('BANNER_URL', ''),
     'banner_image' => env('BANNER_IMAGE', ''),
+    'banner_url_cordova' => env('BANNER_URL_CORDOVA', ''),
+    'banner_image_cordova' => env('BANNER_IMAGE_CORDOVA', ''),
     'target_app' => env('TARGET_APP', 'carpoolear'),
     'module_coordinate_by_message' => env('MODULE_COORDINATE_BY_MESSAGE', false),
 ];
