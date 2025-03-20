@@ -9,4 +9,5 @@ return [
     'banner_url' => env('BANNER_URL', ''),
     'banner_image' => env('BANNER_IMAGE', ''),
     'target_app' => env('TARGET_APP', 'carpoolear'),
+    'module_coordinate_by_message' => env('MODULE_COORDINATE_BY_MESSAGE', false),
 ];
