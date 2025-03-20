@@ -42,9 +42,16 @@ class CheckUserBanned
      */
     public function handle($request, Closure $next)
     {
-        $this->user = $this->auth->parseToken()->authenticate();
-        if ($this->user && $this->user->banned) {
-            abort(403, 'Access denied');
+        try {
+            // Only try to parse token if it exists
+            if ($this->auth->parser()->hasToken()) {
+                $this->user = $this->auth->parseToken()->authenticate();
+                if ($this->user && $this->user->banned) {
+                    abort(403, 'Access denied');
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::warning('CheckUserBanned middleware error: ' . $e->getMessage());
         }
 
         return $next($request);
