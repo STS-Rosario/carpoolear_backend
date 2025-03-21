@@ -12,4 +12,6 @@ return [
     'banner_image_cordova' => env('BANNER_IMAGE_CORDOVA', ''),
     'target_app' => env('TARGET_APP', 'carpoolear'),
     'module_coordinate_by_message' => env('MODULE_COORDINATE_BY_MESSAGE', false),
+    'module_user_request_limited_enabled' => env('MODULE_USER_REQUEST_LIMITED_ENABLED', false),
+    'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2)
 ];
