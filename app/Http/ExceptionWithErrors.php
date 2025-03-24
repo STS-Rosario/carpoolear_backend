@@ -25,12 +25,12 @@ class ExceptionWithErrors extends Exception
         if (is_null($this->errors)) {
             return response()->json([
                 'message' => $this->message,
-            ], 400);
+            ], 422);
         } else {
             return response()->json([
                 'errors' => $this->errors->toArray(),
                 'message' => $this->message,
-            ], 400);
+            ], 422);
         }
     }
 }
