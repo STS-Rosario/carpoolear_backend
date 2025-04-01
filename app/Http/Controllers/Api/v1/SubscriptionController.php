@@ -69,6 +69,6 @@ class SubscriptionController extends Controller
         $this->user = auth()->user();
         $models = $this->subscriptionsLogic->index($this->user);
 
-        return $models;
+        return response()->json(['data' => $models]);
     }
 }
