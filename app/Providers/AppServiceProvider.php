@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
+use STS\Console\Kernel as STSConsoleKernel;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -11,7 +13,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(ConsoleKernel::class, STSConsoleKernel::class);
     }
 
     /**
