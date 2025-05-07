@@ -32,5 +32,10 @@ return [
     // List of banned phone numbers that will trigger user ban if found in their profile or in trip descriptions
     'banned_phones' => [
         '1151415054'
-    ]
+    ],
+
+    'trip_creation_limits' => [
+        'max_trips' => 5,        // Maximum number of trips allowed
+        'time_window' => 24,     // Time window in hours
+    ],
 ];

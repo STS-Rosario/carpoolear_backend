@@ -5,7 +5,9 @@ namespace STS\Transformers;
 use STS\Models\User;
 use League\Fractal\TransformerAbstract;
 use STS\Repository\TripRepository;
-use STS\Services\Logic\TripsManager; 
+use STS\Services\Logic\TripsManager;
+use STS\Services\Logic\UsersManager;
+use STS\Repository\UserRepository;
 
 class ProfileTransformer extends TransformerAbstract
 {
@@ -15,7 +17,7 @@ class ProfileTransformer extends TransformerAbstract
     public function __construct($user)
     {
         $this->user = $user;
-        $this->tripLogic = new TripsManager(new TripRepository);
+        $this->tripLogic = new TripsManager(new TripRepository, new UsersManager(new UserRepository));
     }
 
     /**

@@ -442,4 +442,11 @@ class TripRepository
                         ->where('deleted_at', '2000-01-01 00:00:00')
                         ->update(['deleted_at' => null]);
     }
+
+    public function getRecentTrips($userId, $hours)
+    {
+        return Trip::where('user_id', $userId)
+            ->where('created_at', '>=', Carbon::now()->subHours($hours))
+            ->get();
+    }
 }
