@@ -143,6 +143,28 @@ create user username@localhost identified with mysql_native_password by 'passwor
 alter user 'username'@'localhost' identified with mysql_native_password by 'password';
 ```
 
+## Feature Flags
+
+The application uses several feature flags to control different functionalities. These can be configured in your `.env` file:
+
+### Module Flags
+
+- `MODULE_COORDINATE_BY_MESSAGE`: Enables the ability to coordinate trip details through messages. When enabled, users can exchange specific trip coordination information through the messaging system.
+
+- `MODULE_USER_REQUEST_LIMITED_ENABLED`: If enabled, the user will not be able to request a ride if there are already requests in the same trip date, FOR THE SAME DESTINATION and in the range of hours defined in MODULE_USER_REQUEST_LIMITED_HOURS_RANGE
+
+- `MODULE_USER_REQUEST_LIMITED_HOURS_RANGE`: 12 hours before and after the trip date
+
+- `MODULE_SEND_FULL_TRIP_MESSAGE`: If enabled, the app will send a message to the remaining passengers when the trip is full when accepting a passenger
+
+- `MODULE_UNIQUE_DOC_PHONE`: If enabled, it will prevent users from registering with same phone or DNI than other users
+
+- `MODULE_UNASWERED_MESSAGE_LIMIT`: If enabled, implements a limit on unanswered messages in conversations to maintain active communication between users
+
+- `MODULE_TRIP_SEATS_PAYMENT`: If enabled, allows users to make payments for specific seats on a trip, implementing a payment system for trip reservations
+
+- `MODULE_VALIDATED_DRIVERS`: If enabled, users must go through a verification process before they can create trips as drivers, adding a layer of safety and trust to the platform
+
 ## License
 
 The Carpoolear backend is open-sourced software licensed under the [GPL 3.0](https://github.com/STS-Rosario/carpoolear_backend/blob/master/LICENSE).
