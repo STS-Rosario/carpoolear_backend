@@ -15,7 +15,7 @@ return [
     'module_user_request_limited_enabled' => env('MODULE_USER_REQUEST_LIMITED_ENABLED', false),
     'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2),
         
-    // List of banned words that will trigger user ban if found in their name
+    // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words' => [
         'admin',
         'administrator',
