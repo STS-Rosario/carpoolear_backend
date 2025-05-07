@@ -96,6 +96,19 @@ class UsersManager extends BaseManager
 
                     $u = $this->repo->create($data);
 
+                    // Check if user name contains any banned words
+                    $banned_words = config('carpoolear.banned_words', []);
+                    if (!empty($banned_words)) {
+                        $user_name_lower = strtolower($u->name);
+                        foreach ($banned_words as $word) {
+                            if (str_contains($user_name_lower, strtolower($word))) {
+                                $this->repo->update($u, ['banned' => 1]);
+                                \Log::info('User banned due to name containing banned word: ' . $u->name . ' (matched: ' . $word . ')');
+                                break;
+                            }
+                        }
+                    }
+
                     \Log::info('UserManager before CreateEvent');
                     event(new CreateEvent($u->id));
 
@@ -139,6 +152,19 @@ class UsersManager extends BaseManager
                 if ($res['success'] == true && $res['score'] >= 0.5) {
                 // if (true) {
                     $u = $this->repo->create($data);
+
+                    // Check if user name contains any banned words
+                    $banned_words = config('carpoolear.banned_words', []);
+                    if (!empty($banned_words)) {
+                        $user_name_lower = strtolower($u->name);
+                        foreach ($banned_words as $word) {
+                            if (str_contains($user_name_lower, strtolower($word))) {
+                                $this->repo->update($u, ['banned' => 1]);
+                                \Log::info('User banned due to name containing banned word: ' . $u->name . ' (matched: ' . $word . ')');
+                                break;
+                            }
+                        }
+                    }
 
                     \Log::info('UserManager before CreateEvent.');
                     event(new CreateEvent($u->id));

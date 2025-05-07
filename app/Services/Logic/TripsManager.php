@@ -10,13 +10,17 @@ use Illuminate\Support\MessageBag;
 use STS\Events\Trip\Create  as CreateEvent;
 use STS\Events\Trip\Delete  as DeleteEvent;
 use STS\Events\Trip\Update  as UpdateEvent;
+use STS\Services\Logic\UsersManager;
+
 class TripsManager extends BaseManager
 {
     protected $tripRepo;
+    protected $userManager;
 
-    public function __construct(TripRepository $trips)
+    public function __construct(TripRepository $trips, UsersManager $userManager)
     {
         $this->tripRepo = $trips;
+        $this->userManager = $userManager;
     }
 
     public function validator(array $data, $user_id, $id = null)
@@ -78,6 +82,55 @@ class TripsManager extends BaseManager
                 $this->setErrors($messageBag);
                 return;
             }
+
+            // Check trip creation limits
+            $maxTrips = config('carpoolear.trip_creation_limits.max_trips', 5);
+            $timeWindow = config('carpoolear.trip_creation_limits.time_window_hours', 24);
+            \Log::info('maxTrips: ' . $maxTrips);
+            \Log::info('timeWindow: ' . $timeWindow);
+            
+            $recentTrips = $this->tripRepo->getRecentTrips($user->id, $timeWindow);
+            \Log::info('recentTrips: ' . $recentTrips->count());
+            if ($recentTrips->count() > $maxTrips) {
+                $this->userManager->update($user, ['banned' => 1]);
+                \Log::info('User banned due to exceeding trip creation limits. User ID: ' . $user->id . ', Trips created: ' . $recentTrips->count() . ' in last ' . $timeWindow . ' hours');
+                $messageBag = new MessageBag;
+                $messageBag->add('banned', 'Your account has been banned due to excessive trip creation.');
+                $this->setErrors($messageBag);
+                return;
+            }
+
+            // Check for banned words and phone numbers in description
+            if (isset($data['description'])) {
+                $description = strtolower($data['description']);
+                
+                // Check banned words
+                $banned_words = config('carpoolear.banned_words', []);
+                foreach ($banned_words as $word) {
+                    if (str_contains($description, strtolower($word))) {
+                        $this->userManager->update($user, ['banned' => 1]);
+                        \Log::info('User banned due to banned word in trip description: ' . $word);
+                        $messageBag = new MessageBag;
+                        $messageBag->add('banned', 'Your account has been banned due to inappropriate content.');
+                        $this->setErrors($messageBag);
+                        return;
+                    }
+                }
+
+                // Check banned phone numbers
+                $banned_phones = config('carpoolear.banned_phones', []);
+                foreach ($banned_phones as $phone) {
+                    if (str_contains($description, $phone)) {
+                        $this->userManager->update($user, ['banned' => 1]);
+                        \Log::info('User banned due to banned phone number in trip description: ' . $phone);
+                        $messageBag = new MessageBag;
+                        $messageBag->add('banned', 'Your account has been banned due to inappropriate content.');
+                        $this->setErrors($messageBag);
+                        return;
+                    }
+                }
+            }
+
             $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
             if (isset($data['parent_trip_id'])) {

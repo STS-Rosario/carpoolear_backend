@@ -14,6 +14,30 @@ return [
     'module_coordinate_by_message' => env('MODULE_COORDINATE_BY_MESSAGE', false),
     'module_user_request_limited_enabled' => env('MODULE_USER_REQUEST_LIMITED_ENABLED', false),
     'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2),
+
+    // List of banned words that will trigger user ban if found in their name or in trip descriptions
+    'banned_words' => [
+        'admin',
+        'administrator',
+        'moderator',
+        'support',
+        'helpdesk',
+        'carpoolear',
+        'staff',
+        'system',
+        'robot',
+        'carpy'
+    ],
+
+    // List of banned phone numbers that will trigger user ban if found in their profile or in trip descriptions
+    'banned_phones' => [
+        '1151415054'
+    ],
+
+    'trip_creation_limits' => [
+        'max_trips' => 4,        // Maximum number of trips allowed
+        'time_window_hours' => 24,     // Time window in hours
+    ],
     'module_send_full_trip_message' => env('MODULE_SEND_FULL_TRIP_MESSAGE', false),
     'module_unaswered_message_limit' => env('MODULE_UNASWERED_MESSAGE_LIMIT', false),
     'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),

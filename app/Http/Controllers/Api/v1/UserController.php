@@ -60,6 +60,22 @@ class UserController extends Controller
         if (! $profile) {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
+
+        // Check if user's phone number contains any banned numbers
+        if (isset($data['mobile_phone'])) {
+            $banned_phones = config('carpoolear.banned_phones', []);
+            if (!empty($banned_phones)) {
+                $user_phone = $data['mobile_phone'];
+                foreach ($banned_phones as $banned_phone) {
+                    if (str_contains($user_phone, $banned_phone)) {
+                        $this->userLogic->update($profile, ['banned' => 1]);
+                        \Log::info('User banned due to phone number containing banned number: ' . $user_phone . ' (matched: ' . $banned_phone . ')');
+                        break;
+                    }
+                }
+            }
+        }
+        
         return $this->item($profile, new ProfileTransformer($me));
     }
     

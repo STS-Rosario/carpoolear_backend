@@ -52,6 +52,15 @@ class AuthController extends Controller
             'banner_image'
         ];
         $allConfigs = config('carpoolear');
+        \Log::info('Environment Check:', [
+            'raw_env' => [
+                'MODULE_USER_REQUEST_LIMITED_ENABLED' => env('MODULE_USER_REQUEST_LIMITED_ENABLED'),
+                'MODULE_USER_REQUEST_LIMITED_HOURS_RANGE' => env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE'),
+            ],
+            'config_values' => config('carpoolear'),
+            'app_env' => app()->environment(),
+            'env_path' => app()->environmentFilePath(),
+        ]);
         foreach ($exclude as $key) {
             unset($allConfigs[$key]);
         }
@@ -88,11 +97,11 @@ class AuthController extends Controller
         $user = auth()->user();
 
         if ($user->banned) {
-            throw new UnauthorizedHttpException(null, 'user_banned');
+            throw new UnauthorizedHttpException('', 'user_banned');
         }
 
         if (! $user->active) {
-            throw new UnauthorizedHttpException(null, 'user_not_active');
+            throw new UnauthorizedHttpException('', 'user_not_active');
         }
 
         $config = $this->_getConfig();
