@@ -27,5 +27,10 @@ return [
         'system',
         'robot',
         'carpy'
+    ],
+
+    // List of banned phone numbers that will trigger user ban if found in their profile or in trip descriptions
+    'banned_phones' => [
+        '1151415054'
     ]
 ];
