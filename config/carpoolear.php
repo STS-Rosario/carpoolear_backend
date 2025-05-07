@@ -13,5 +13,10 @@ return [
     'target_app' => env('TARGET_APP', 'carpoolear'),
     'module_coordinate_by_message' => env('MODULE_COORDINATE_BY_MESSAGE', false),
     'module_user_request_limited_enabled' => env('MODULE_USER_REQUEST_LIMITED_ENABLED', false),
-    'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2)
+    'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2),
+    'module_send_full_trip_message' => env('MODULE_SEND_FULL_TRIP_MESSAGE', false),
+    'module_unaswered_message_limit' => env('MODULE_UNASWERED_MESSAGE_LIMIT', false),
+    'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),
+    'module_unique_doc_phone' => env('MODULE_UNIQUE_DOC_PHONE', false),
+    'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false)
 ];
