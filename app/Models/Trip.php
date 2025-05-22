@@ -155,6 +155,11 @@ class Trip extends Model
         return $this->hasOne('STS\Models\Conversation', 'trip_id');
     }
 
+    public function payments()
+    {
+        return $this->hasMany('STS\Models\Payment', 'trip_id');
+    }
+
     public function getPassengerCountAttribute()
     {
         return $this->passengerAccepted()->count();

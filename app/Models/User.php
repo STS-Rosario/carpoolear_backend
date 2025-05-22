@@ -197,6 +197,11 @@ class User extends Authenticatable implements JWTSubject
         return $trips;
     }
 
+    public function payments()
+    {
+        return $this->hasMany('STS\Models\Payment', 'user_id');
+    }
+
     public function conversations()
     {
         return $this->belongsToMany('STS\Models\Conversation', 'conversations_users', 'user_id', 'conversation_id')->withPivot('read');
