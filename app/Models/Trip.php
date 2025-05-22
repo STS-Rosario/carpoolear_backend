@@ -29,6 +29,10 @@ class Trip extends Model
 
     const PRIVACY_FOF = 1;
 
+    const STATE_AWAITING_PAYMENT = 'awaiting_payment';
+    const STATE_READY = 'ready';
+    const STATE_CANCELED = 'canceled';
+
     protected $table = 'trips';
 
     protected $fillable = [
@@ -53,7 +57,8 @@ class Trip extends Model
         'parent_trip_id',
         'allow_smoking',
         'allow_kids',
-        'allow_animals'
+        'allow_animals',
+        'state'
     ];
 
     protected $hidden = [
@@ -74,6 +79,7 @@ class Trip extends Model
             'trip_date' => 'datetime',
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
+            'state' => 'string',
         ];
     } 
 
@@ -177,6 +183,39 @@ class Trip extends Model
     public function setDescriptionAttribute($value)
     {
         $this->attributes['description'] = $value; //htmlentities($value);
+    }
+
+    public function isAwaitingPayment()
+    {
+        return $this->state === self::STATE_AWAITING_PAYMENT;
+    }
+
+    public function isReady()
+    {
+        return $this->state === self::STATE_READY;
+    }
+
+    public function isCanceled()
+    {
+        return $this->state === self::STATE_CANCELED;
+    }
+
+    public function setStateAwaitingPayment()
+    {
+        $this->state = self::STATE_AWAITING_PAYMENT;
+        return $this;
+    }
+
+    public function setStateReady()
+    {
+        $this->state = self::STATE_READY;
+        return $this;
+    }
+
+    public function setStateCanceled()
+    {
+        $this->state = self::STATE_CANCELED;
+        return $this;
     }
 
     public function expired()
