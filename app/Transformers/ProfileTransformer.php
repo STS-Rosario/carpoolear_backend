@@ -17,7 +17,7 @@ class ProfileTransformer extends TransformerAbstract
     public function __construct($user)
     {
         $this->user = $user;
-        $this->tripLogic = new TripsManager(new TripRepository, new UsersManager(new UserRepository));
+        $this->tripLogic = new TripsManager(new TripRepository, new UsersManager(new UserRepository, new TripRepository));
     }
 
     /**
