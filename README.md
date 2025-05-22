@@ -165,6 +165,10 @@ The application uses several feature flags to control different functionalities.
 
 - `MODULE_VALIDATED_DRIVERS`: If enabled, users must go through a verification process before they can create trips as drivers, adding a layer of safety and trust to the platform
 
+- `MODULE_TRIP_CREATION_PAYMENT_ENABLED`: If enabled, the trip creator will be asked to pay a fee
+
+- `MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS`: Amount in cents that the trip creator will have to pay if enabled
+
 ## License
 
 The Carpoolear backend is open-sourced software licensed under the [GPL 3.0](https://github.com/STS-Rosario/carpoolear_backend/blob/master/LICENSE).
