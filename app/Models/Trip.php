@@ -40,7 +40,7 @@ class Trip extends Model
         'total_seats',
         'friendship_type_id',
         'distance',
-        'seat_price',
+        'seat_price_cents',
         'total_price',
         'estimated_time',
         'co2',
@@ -73,6 +73,7 @@ class Trip extends Model
             'is_passenger' => 'boolean',
             'trip_date' => 'datetime',
             'deleted_at' => 'datetime',
+            'seat_price_cents' => 'integer',
         ];
     } 
 
@@ -202,4 +203,14 @@ class Trip extends Model
                 return ! is_null($fiends) || ! is_null($fof);
         }
     }
+
+    // public function getSeatPriceAttribute()
+    // {
+    //     return $this->seat_price_cents / 100;
+    // }
+
+    // public function setSeatPriceAttribute($value)
+    // {
+    //     $this->attributes['seat_price_cents'] = round($value * 100);
+    // }
 }

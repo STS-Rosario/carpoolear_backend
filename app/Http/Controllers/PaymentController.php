@@ -25,7 +25,7 @@ class PaymentController extends Controller
                 $sessionId = $passengerRequest->id;
                 // Identificador único de orden de compra:
                 $buyOrder = $tpId;
-                $amount = floatval($passengerRequest->trip->seat_price);
+                $amount = $passengerRequest->trip->seat_price_cents;
                 $returnUrl = $baseUrl . '/transbank-respuesta';
                 $finalUrl = $baseUrl . '/transbank-final';
                 // Transbank work
