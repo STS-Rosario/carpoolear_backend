@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->string('payment_id')->unique(); // Unique identifier from payment provider
+            $table->string('payment_id'); // Mercado Pago ID
             $table->string('payment_status'); // e.g., 'pending', 'completed', 'failed'
             $table->foreignId('trip_id')->constrained('trips')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

@@ -14,6 +14,7 @@
         "laravel/framework": "^11.9",
         "laravel/tinker": "^2.9",
         "league/fractal": "^0.20.1",
+        "mercadopago/dx-php": "^3.4",
         "transbank/transbank-sdk": "^4.0",
         "tymon/jwt-auth": "^2.1"
     },
