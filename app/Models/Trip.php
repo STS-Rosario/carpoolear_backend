@@ -30,6 +30,7 @@ class Trip extends Model
     const PRIVACY_FOF = 1;
 
     const STATE_AWAITING_PAYMENT = 'awaiting_payment';
+    const STATE_PAYMENT_FAILED = 'payment_failed';
     const STATE_READY = 'ready';
     const STATE_CANCELED = 'canceled';
 
@@ -195,6 +196,11 @@ class Trip extends Model
         return $this->state === self::STATE_AWAITING_PAYMENT;
     }
 
+    public function isPaymentFailed()
+    {
+        return $this->state === self::STATE_PAYMENT_FAILED;
+    }
+
     public function isReady()
     {
         return $this->state === self::STATE_READY;
@@ -208,6 +214,12 @@ class Trip extends Model
     public function setStateAwaitingPayment()
     {
         $this->state = self::STATE_AWAITING_PAYMENT;
+        return $this;
+    }
+
+    public function setStatePaymentFailed()
+    {
+        $this->state = self::STATE_PAYMENT_FAILED;
         return $this;
     }
 

@@ -42,5 +42,7 @@ return [
     'module_unaswered_message_limit' => env('MODULE_UNASWERED_MESSAGE_LIMIT', false),
     'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),
     'module_unique_doc_phone' => env('MODULE_UNIQUE_DOC_PHONE', false),
-    'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false)
+    'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false),
+    'module_trip_creation_payment_enabled' => env('MODULE_TRIP_CREATION_PAYMENT_ENABLED', false),
+    'module_trip_creation_payment_amount_cents' => env('MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS', 0),
 ];
