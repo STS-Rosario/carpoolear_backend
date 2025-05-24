@@ -275,9 +275,10 @@ class TripRepository
             $trips->where(function ($q) use ($user) {
                 if ($user) {
                     // only show trips that are ready (paid by driver) or have no state
-                    $q->where(function($q) {
+                    $q->where(function($q) use ($user) {
                         $q->where('state', '=', Trip::STATE_READY)
-                          ->orWhereNull('state');
+                          ->orWhereNull('state')
+                          ->orWhere('user_id', $user->id);
                     });
                     
                     $q->where(function ($q) use ($user) {
