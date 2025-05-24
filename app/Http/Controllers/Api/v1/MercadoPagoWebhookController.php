@@ -64,26 +64,78 @@ class MercadoPagoWebhookController extends Controller
 
     protected function verifyMercadoPagoRequest(Request $request)
     {
-        // Get the signature from the request header
-        $signature = $request->header('x-signature');
-        if (!$signature) {
-            Log::error('No signature in webhook request');
+        // Get required headers and parameters
+        $xSignature = $request->header('x-signature');
+        $xRequestId = $request->header('x-request-id');
+        $dataId = $request->query('data.id');
+
+        if (!$xSignature || !$xRequestId || !$dataId) {
+            Log::error('Missing required headers or parameters in webhook request', [
+                'has_signature' => !empty($xSignature),
+                'has_request_id' => !empty($xRequestId),
+                'has_data_id' => !empty($dataId)
+            ]);
             return false;
         }
 
-        // Get the request body
-        $payload = $request->getContent();
-        
-        // Verify the signature using Mercado Pago's public key
-        $publicKey = config('services.mercadopago.public_key');
-        if (!$publicKey) {
-            Log::error('Mercado Pago public key not configured');
+        // Parse x-signature to get ts and v1 values
+        $parts = explode(',', $xSignature);
+        $ts = null;
+        $hash = null;
+
+        foreach ($parts as $part) {
+            $keyValue = explode('=', $part, 2);
+            if (count($keyValue) == 2) {
+                $key = trim($keyValue[0]);
+                $value = trim($keyValue[1]);
+                if ($key === "ts") {
+                    $ts = $value;
+                } elseif ($key === "v1") {
+                    $hash = $value;
+                }
+            }
+        }
+
+        if (!$ts || !$hash) {
+            Log::error('Invalid x-signature format', ['signature' => $xSignature]);
             return false;
         }
 
-        // TODO: Implement proper signature verification
-        // For now, we'll just check if the request has the expected structure
-        return $request->has('data.id') && $request->has('type');
+        // Validate timestamp (allow 5 minutes tolerance)
+        $timestamp = (int)($ts / 1000); // Convert milliseconds to seconds
+        $now = time();
+        if (abs($now - $timestamp) > 300) { // 5 minutes tolerance
+            Log::error('Webhook timestamp is too old', [
+                'timestamp' => $timestamp,
+                'now' => $now,
+                'difference' => abs($now - $timestamp)
+            ]);
+            return false;
+        }
+
+        // Get the secret key from config
+        $secret = config('services.mercadopago.webhook_secret');
+        if (!$secret) {
+            Log::error('Mercado Pago webhook secret not configured');
+            return false;
+        }
+
+        // Generate the manifest string
+        $manifest = "id:{$dataId};request-id:{$xRequestId};ts:{$ts};";
+
+        // Generate HMAC signature
+        $calculatedHash = hash_hmac('sha256', $manifest, $secret);
+
+        // Compare signatures
+        if (!hash_equals($calculatedHash, $hash)) {
+            Log::error('Invalid webhook signature', [
+                'calculated' => $calculatedHash,
+                'received' => $hash
+            ]);
+            return false;
+        }
+
+        return true;
     }
 
     protected function getMercadoPagoPayment($paymentId)
