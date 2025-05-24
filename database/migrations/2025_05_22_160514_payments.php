@@ -15,13 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('payment_id'); // Mercado Pago ID
             $table->string('payment_status'); // e.g., 'pending', 'completed', 'failed'
-            $table->foreignId('trip_id')->constrained('trips')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->unsignedInteger('trip_id');
+            $table->unsignedInteger('user_id');
             $table->integer('amount_cents');
             $table->string('error_message')->nullable();
             $table->json('payment_data')->nullable()->comment('Additional payment provider specific data (e.g., transaction details, card info, etc.)');
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
+
+            $table->foreign('trip_id')->references('id')->on('trips')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
