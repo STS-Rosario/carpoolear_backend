@@ -367,6 +367,11 @@ class TripsManager extends BaseManager
             return true;
         }
 
+        // if not own trip, and trip is not ready (paid), user can't see it yet until paid
+        if ($trip->state !== Trip::STATE_READY) {
+            return false;
+        }
+
         if ($trip->friendship_type_id == Trip::PRIVACY_PUBLIC) {
             return true;
         }
