@@ -274,18 +274,30 @@ class TripRepository
         if ($user && !$user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 if ($user) {
-                    $q->whereUserId($user->id);
-                    $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
-                        $q->orWhere(function ($q) use ($user) {
-                            $q->where('friendship_type_id', '<' , Trip::PRIVACY_PUBLIC);
-                            $q->whereHas('userVisibility', function ($q) use ($user) {
-                                $q->where('user_id', $user->id);
-                            });
-                        });
+                    // only show trips that are ready (paid by driver) or have no state
+                    $q->where(function($q) {
+                        $q->where('state', '=', Trip::STATE_READY)
+                          ->orWhereNull('state');
+                    });
+                    
+                    $q->where(function ($q) use ($user) {
+                        $q->whereUserId($user->id)
+                          ->orWhere(function ($q) use ($user) {
+                              $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
+                                ->orWhere(function ($q) use ($user) {
+                                    $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
+                                      ->whereHas('userVisibility', function ($q) use ($user) {
+                                          $q->where('user_id', $user->id);
+                                      });
+                                });
+                          });
                     });
                 } else {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                    $q->where(function($q) {
+                        $q->where('state', '=', Trip::STATE_READY)
+                          ->orWhereNull('state');
+                    })
+                      ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
         }
