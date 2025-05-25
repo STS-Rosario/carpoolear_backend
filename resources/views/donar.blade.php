@@ -147,7 +147,6 @@
     btns.forEach(function (btn) {
         btn.addEventListener("click", function (event) {
             var rdb = document.querySelector('input[name="donationValor"]:checked');
-            console.log('rdb', rdb);
             if (rdb) {
                 var value = rdb.value;
                 if (event.target.className.indexOf("btn-unica") >= 0) {
