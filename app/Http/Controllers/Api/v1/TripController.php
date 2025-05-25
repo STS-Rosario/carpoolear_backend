@@ -147,6 +147,27 @@ class TripController extends Controller
         return $this->tripsLogic->price($from, $to, $distance);       
     }
 
+    public function getTripInfo(Request $request)
+    {
+        $data = $request->all();
+        $points = isset($data['points']) ? $data['points'] : null;
+        return $this->tripsLogic->getTripInfo($points);
+    }
+
+    public function selladoViaje(Request $request)
+    {
+        $this->user = auth()->user();
+
+        $needsToPayForNextTrip = $this->tripsLogic->selladoViaje($this->user);
+
+        return response()->json([
+            'success' => true, 
+            'data' => [
+                'needsToPayForNextTrip' => $needsToPayForNextTrip
+            ]
+        ]);
+    }
+
     public function changeVisibility($id, Request $request) 
     {
         $this->user = auth()->user();

@@ -11,6 +11,7 @@ use STS\Models\Route;
 use STS\Models\NodeGeo;
 use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
+use Illuminate\Support\Facades\Http;
 
 class TripRepository
 {
@@ -438,6 +439,66 @@ class TripRepository
     public function simplePrice($distance)
     {
         return $distance * config('carpoolear.fuel_price') / 1000;
+    }
+
+    public function getTripInfo($points)
+    {
+        \Log::info('getTripInfo repository', [$points]);
+        $coords = '';
+        foreach ($points as $point) {
+            \Log::info('point', [$point]);
+            if ($coords) {
+                $coords .= ';';
+            }
+            $coords .= $point['lng'] . ',';
+            $coords .= $point['lat'];
+        }
+        \Log::info('coords', [$coords]);
+
+        $url =
+            'https://router.project-osrm.org/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
+
+        // TODO: check OSM cache first
+
+        $response = Http::get($url);
+
+        if ($response->successful() && $response->json()['code'] === 'Ok' && $response->json()['routes'] && count($response->json()['routes'])) {
+            // TODO: cache the OSM response
+            $route = $response->json()['routes'][0];
+            $distance = $route['distance'];
+            $duration = $route['duration'];
+            $co2 = $distance * 0.15;
+
+            // TODO: calculate the route price (recommended and maximum)
+            // TODO: check if the route is paid (origin and destination are inside paid cities)
+
+            $data = [
+                'distance' => $distance,
+                'duration' => $duration,
+                'co2' => $co2
+            ];
+            return [
+                'status' => true, 
+                'data' => $data,
+                'message' => 'Route found'
+            ];
+        } else {
+            return [
+                'status' => false, 
+                'data' => null,
+                'message' => 'Route not found'
+            ];
+        }
+    }
+
+    public function selladoViaje($user)
+    {
+        // if user has created at least 2 trips, they have to pay for the next one
+        $trips = Trip::where('user_id', $user->id)->count();
+        if ($trips >= 2) {
+            return true;
+        }
+        return false;
     }
     
     public function getTripByTripPassenger ($transaction_id)

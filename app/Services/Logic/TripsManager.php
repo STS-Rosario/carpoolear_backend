@@ -323,6 +323,16 @@ class TripsManager extends BaseManager
         }
     }
 
+    public function getTripInfo($points)
+    {
+        return $this->tripRepo->getTripInfo($points);
+    }
+
+    public function selladoViaje($user)
+    {
+        return $this->tripRepo->selladoViaje($user);
+    }
+
 
     public function changeVisibility($user, $trip_id)
     {

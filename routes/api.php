@@ -37,6 +37,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/my-old-trips', [TripController::class,'getOldTrips']);
         Route::get('/requests', [PassengerController::class,'allRequests']);
         Route::get('/payment-pending', [PassengerController::class,'paymentPendingRequest']);
+        Route::get('/sellado-viaje', [TripController::class, 'selladoViaje']);
 
         Route::get('/list', [UserController::class,'index']);
         Route::get('/search', [UserController::class,'searchUsers']);
@@ -89,6 +90,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/{id?}/changeSeats', [TripController::class, 'changeTripSeats']);
         Route::post('/{id}/change-visibility', [TripController::class, 'changeVisibility']);
         Route::post('/price', [TripController::class, 'price']);
+        Route::post('/trip-info', [TripController::class, 'getTripInfo']);
         
         Route::get('/{tripId}/passengers', [PassengerController::class, 'passengers']);
         Route::get('/{tripId}/requests', [PassengerController::class, 'requests']);
