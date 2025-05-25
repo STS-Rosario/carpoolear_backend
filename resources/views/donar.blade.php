@@ -52,13 +52,13 @@
                     <h3>Donar</h3>
                     <div class="radio">
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation50" value="1000" v-model="donateValue"><span>$ 1000</span>
+                            <input type="radio" name="donationValor" id="donation50" value="2000" v-model="donateValue"><span>$ 2000</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation100" value="2000" v-model="donateValue"><span>$ 2000</span>
+                            <input type="radio" name="donationValor" id="donation100" value="5000" v-model="donateValue"><span>$ 5000</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation200" value="5000" v-model="donateValue"><span>$ 5000</span>
+                            <input type="radio" name="donationValor" id="donation200" value="10000" v-model="donateValue"><span>$ 10000</span>
                         </label>
                         <label class="radio-inline">
                             <input type="radio" name="donationValor" id="donation500" value="50" v-model="donateValue"><span>Elegí tu propia aventura (solo mensual)</span>
@@ -133,20 +133,21 @@
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
     var linksUnicaVez = {
-        1000: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-c693bd88-7fd4-49d8-9f22-2b80151d184e",
         2000: "https://mpago.la/1WhaoLf",
-        5000: "https://mpago.la/1SB6on8"
+        5000: "https://mpago.la/1SB6on8",
+        10000: "https://mpago.la/2USgEBv"
     };
     var linksMensual = {
         50: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c938084749ef7f70174ad5d6f151110",
-        1000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c93808474a9e8340174ad3f98e7019b",
         2000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380848a2fd5c9018a33702cc50181",
-        5000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380848cee0ea5018d0e9ea71016d7"
+        5000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380848cee0ea5018d0e9ea71016d7 ",
+        10000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c93808497030fc7019705478b370068"
     };
     var btns = document.querySelectorAll(".btn-donar");
     btns.forEach(function (btn) {
         btn.addEventListener("click", function (event) {
             var rdb = document.querySelector('input[name="donationValor"]:checked');
+            console.log('rdb', rdb);
             if (rdb) {
                 var value = rdb.value;
                 if (event.target.className.indexOf("btn-unica") >= 0) {
