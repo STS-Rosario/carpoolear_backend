@@ -175,6 +175,10 @@ class MercadoPagoWebhookController extends Controller
     {
         $oldStatus = $payment->payment_status;
         $newStatus = $this->mapMercadoPagoStatus($mpPayment['status']);
+
+        // TODO: check if pending and update trip state to pending_payment?
+        // TODO: check if approved and update trip state to ready
+        // TODO: check if failed and update trip state to payment_failed
         
         if ($oldStatus === $newStatus) {
             return;

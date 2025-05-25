@@ -61,6 +61,7 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('messages:email')->everyTenMinutes();
 
+        // TODO: add a job to check if trip is awaiting_payment after 30 minutes and send push/email?
     }
 
     /**

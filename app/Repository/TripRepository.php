@@ -118,6 +118,9 @@ class TripRepository
         }
 
         $this->generateTripFriendVisibility($trip);
+        // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay 
+        // for this trip (origin and destination in paid cities), 
+        // if so, mark trip as awaiting_payment, create payment_id and return it to the frontend so it can redirect
         return $trip;
     }
 
