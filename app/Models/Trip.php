@@ -30,6 +30,7 @@ class Trip extends Model
     const PRIVACY_FOF = 1;
 
     const STATE_AWAITING_PAYMENT = 'awaiting_payment';
+    const STATE_PENDING_PAYMENT = 'pending_payment';
     const STATE_PAYMENT_FAILED = 'payment_failed';
     const STATE_READY = 'ready';
     const STATE_CANCELED = 'canceled';
