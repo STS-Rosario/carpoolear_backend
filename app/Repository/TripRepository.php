@@ -12,9 +12,19 @@ use STS\Models\NodeGeo;
 use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
 use Illuminate\Support\Facades\Http;
+use STS\Services\GeoService;
 
 class TripRepository
 {
+    private $paidRegions;
+    private $geoService;
+
+    public function __construct(GeoService $geoService)
+    {
+        $this->geoService = $geoService;
+        $this->paidRegions = $this->geoService->getPaidRegions();
+    }
+
     private function getPotentialNode ($point) {
         $n1 = new NodeGeo;
         $n1->lat = $point['lat'] - 0.05;
@@ -470,12 +480,16 @@ class TripRepository
             $co2 = $distance * 0.15;
 
             // TODO: calculate the route price (recommended and maximum)
-            // TODO: check if the route is paid (origin and destination are inside paid cities)
+
+            // check if the user needs to pay for the trip
+            $pointsToCheck = [[$points[0]['lat'], $points[0]['lng']], [$points[1]['lat'], $points[1]['lng']]];
+            $userHasToPay = $this->geoService->arePointsInPaidRegions($pointsToCheck);
 
             $data = [
                 'distance' => $distance,
                 'duration' => $duration,
-                'co2' => $co2
+                'co2' => $co2,
+                'userHasToPay' => $userHasToPay
             ];
             return [
                 'status' => true, 
