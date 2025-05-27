@@ -69,6 +69,11 @@ class GeoService
         ];
     }
 
+    public function getPaidRegions(): array
+    {
+        return $this->paidRegions;
+    }
+
     public function arePointsInPaidRegions(array $points): bool
     {
         foreach ($points as $point) {

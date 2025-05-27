@@ -13,6 +13,7 @@ use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Http\Controllers\Api\v1\UserController;
+use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
 use STS\Http\Controllers\DataController;
 
 
@@ -154,5 +155,5 @@ Route::middleware(['api'])->group(function () {
         Route::post('/', [ReferencesController::class,'create']);
     });
 
-    Route::post('webhooks/mercadopago', 'Api\v1\MercadoPagoWebhookController@handle');
+    Route::post('webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle']);
 });
