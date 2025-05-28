@@ -117,4 +117,4 @@ class GeoService
 
         return $inside;
     }
-} 
+}
