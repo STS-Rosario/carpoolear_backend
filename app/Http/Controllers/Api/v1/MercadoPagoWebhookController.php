@@ -50,14 +50,14 @@ class MercadoPagoWebhookController extends Controller
         }
 
         // create the payment in the database
-        $payment = new PaymentAttempt();
-        $payment->payment_id = $paymentId;
-        $payment->payment_status = $request->input('data.status');
-        $payment->payment_data = $request->input('data');
+        $paymentAttempt = new PaymentAttempt();
+        $paymentAttempt->payment_id = $paymentId;
+        $paymentAttempt->payment_status = $request->input('data.status');
+        $paymentAttempt->payment_data = $request->input('data');
         if ($trip) {
-            $payment->trip_id = $trip->id;
+            $paymentAttempt->trip_id = $trip->id;
         }
-        $payment->save();
+        $paymentAttempt->save();
 
 
         // Get the payment status from Mercado Pago
@@ -68,7 +68,7 @@ class MercadoPagoWebhookController extends Controller
         }
 
         // Update payment status
-        $this->updatePaymentStatus($payment, $mpPayment);
+        $this->updatePaymentStatus($paymentAttempt, $mpPayment);
 
         return response()->json(['status' => 'success']);
     }
