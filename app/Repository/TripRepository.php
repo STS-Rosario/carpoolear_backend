@@ -13,16 +13,19 @@ use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
 use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
+use STS\Services\MercadoPagoService;
 
 class TripRepository
 {
     private $paidRegions;
     private $geoService;
+    private $mercadoPagoService;
 
-    public function __construct(GeoService $geoService)
+    public function __construct(GeoService $geoService, MercadoPagoService $mercadoPagoService)
     {
         $this->geoService = $geoService;
         $this->paidRegions = $this->geoService->getPaidRegions();
+        $this->mercadoPagoService = $mercadoPagoService;
     }
 
     private function getPotentialNode ($point) {
@@ -92,9 +95,33 @@ class TripRepository
     public function create(array $data)
     {
         $points = $data['points'];
+        \Log::info('TripRepository::create points', [$points]);
         unset($data['points']);
+
         $trip = Trip::create($data);
+        \Log::info('TripRepository::create trip', [$trip]);
         $this->addPoints($trip, $points);
+        \Log::info('TripRepository::create trip after add points', [$trip]);
+
+        $pointsToCheck = [[$points[0]['lat'], $points[0]['lng']], [$points[1]['lat'], $points[1]['lng']]];
+        $routeNeedsPayment = $this->geoService->arePointsInPaidRegions($pointsToCheck);
+        \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
+
+        $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+        // if route is paid, and user should pay, create payment
+        if ($routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
+            $trip->state = Trip::STATE_AWAITING_PAYMENT;
+            
+            // Create MercadoPago payment preference
+            $preference = $this->mercadoPagoService->createPaymentPreference($trip);
+            $trip->payment_id = $preference->id;
+            
+            // Return the preference URL to redirect the user
+            $trip->payment_url = $preference->init_point;
+
+            $trip->save();
+        }
+
         // obtener ruta o crear
         $routeIds = [];
         for ($i = 1; $i < count($points); $i++) {
@@ -485,13 +512,13 @@ class TripRepository
 
             // check if the user needs to pay for the trip
             $pointsToCheck = [[$points[0]['lat'], $points[0]['lng']], [$points[1]['lat'], $points[1]['lng']]];
-            $userHasToPay = $this->geoService->arePointsInPaidRegions($pointsToCheck);
+            $routeNeedsPayment = $this->geoService->arePointsInPaidRegions($pointsToCheck);
 
             $data = [
                 'distance' => $distance,
                 'duration' => $duration,
                 'co2' => $co2,
-                'userHasToPay' => $userHasToPay
+                'routeNeedsPayment' => $routeNeedsPayment
             ];
             return [
                 'status' => true, 
