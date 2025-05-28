@@ -203,6 +203,8 @@ class MercadoPagoWebhookController extends Controller
             $payment->trip->setStateReady()->save();
         } elseif ($newStatus === Payment::STATUS_FAILED) {
             $payment->trip->setStatePaymentFailed()->save();
+        } elseif ($newStatus === Payment::STATUS_PENDING) {
+            $payment->trip->setStatePendingPayment()->save();
         }
 
         $payment->save();
