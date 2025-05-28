@@ -5,10 +5,10 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\Trip;
-use STS\Models\Payment;
+use STS\Models\PaymentAttempt;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\ConversationsManager;
-use MercadoPago\SDK;
+use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Payment as MPPayment;
 use Log;
 
@@ -23,7 +23,7 @@ class MercadoPagoWebhookController extends Controller
         $this->conversationManager = $conversationManager;
         
         // Initialize Mercado Pago SDK
-        SDK::setAccessToken(config('services.mercadopago.access_token'));
+        MercadoPagoConfig::setAccessToken(config('services.mercadopago.access_token'));
     }
 
     public function handle(Request $request)
@@ -42,12 +42,23 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'No payment ID'], 400);
         }
 
-        // Find the payment in our database
-        $payment = Payment::where('payment_id', $paymentId)->first();
-        if (!$payment) {
-            Log::error('Payment not found', ['payment_id' => $paymentId]);
-            return response()->json(['error' => 'Payment not found'], 404);
+        // get the trip from the payment ID
+        $trip = Trip::where('payment_id', $paymentId)->first();
+        if (!$trip) {
+            Log::error('Trip not found', ['payment_id' => $paymentId]);
+            return response()->json(['error' => 'Trip not found'], 404);
         }
+
+        // create the payment in the database
+        $payment = new PaymentAttempt();
+        $payment->payment_id = $paymentId;
+        $payment->payment_status = $request->input('data.status');
+        $payment->payment_data = $request->input('data');
+        if ($trip) {
+            $payment->trip_id = $trip->id;
+        }
+        $payment->save();
+
 
         // Get the payment status from Mercado Pago
         $mpPayment = $this->getMercadoPagoPayment($paymentId);
@@ -171,7 +182,7 @@ class MercadoPagoWebhookController extends Controller
         }
     }
 
-    protected function updatePaymentStatus(Payment $payment, $mpPayment)
+    protected function updatePaymentStatus(PaymentAttempt $payment, $mpPayment)
     {
         $oldStatus = $payment->payment_status;
         $newStatus = $this->mapMercadoPagoStatus($mpPayment['status']);
@@ -198,12 +209,12 @@ class MercadoPagoWebhookController extends Controller
             'last_webhook' => now()->toIso8601String()
         ]);
 
-        if ($newStatus === Payment::STATUS_COMPLETED) {
+        if ($newStatus === PaymentAttempt::STATUS_COMPLETED) {
             $payment->paid_at = now();
             $payment->trip->setStateReady()->save();
-        } elseif ($newStatus === Payment::STATUS_FAILED) {
+        } elseif ($newStatus === PaymentAttempt::STATUS_FAILED) {
             $payment->trip->setStatePaymentFailed()->save();
-        } elseif ($newStatus === Payment::STATUS_PENDING) {
+        } elseif ($newStatus === PaymentAttempt::STATUS_PENDING) {
             $payment->trip->setStatePendingPayment()->save();
         }
 
@@ -220,15 +231,15 @@ class MercadoPagoWebhookController extends Controller
     protected function mapMercadoPagoStatus($mpStatus)
     {
         $statusMap = [
-            'approved' => Payment::STATUS_COMPLETED,
-            'rejected' => Payment::STATUS_FAILED,
-            'pending' => Payment::STATUS_PENDING,
-            'in_process' => Payment::STATUS_PENDING,
-            'cancelled' => Payment::STATUS_FAILED,
-            'refunded' => Payment::STATUS_FAILED,
-            'charged_back' => Payment::STATUS_FAILED
+            'approved' => PaymentAttempt::STATUS_COMPLETED,
+            'rejected' => PaymentAttempt::STATUS_FAILED,
+            'pending' => PaymentAttempt::STATUS_PENDING,
+            'in_process' => PaymentAttempt::STATUS_PENDING,
+            'cancelled' => PaymentAttempt::STATUS_FAILED,
+            'refunded' => PaymentAttempt::STATUS_FAILED,
+            'charged_back' => PaymentAttempt::STATUS_FAILED
         ];
 
-        return $statusMap[$mpStatus] ?? Payment::STATUS_PENDING;
+        return $statusMap[$mpStatus] ?? PaymentAttempt::STATUS_PENDING;
     }
 } 

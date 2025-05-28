@@ -4,8 +4,14 @@ namespace STS\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Payment extends Model
+class PaymentAttempt extends Model
 {
+    protected $table = 'payment_attempts';
+
+    const STATUS_PENDING = 'pending';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_FAILED = 'failed';
+
     protected $fillable = [
         'payment_id',
         'payment_status',
@@ -14,19 +20,13 @@ class Payment extends Model
         'amount_cents',
         'error_message',
         'payment_data',
-        'paid_at',
+        'paid_at'
     ];
 
     protected $casts = [
         'payment_data' => 'array',
-        'amount_cents' => 'integer',
-        'paid_at' => 'datetime',
+        'paid_at' => 'datetime'
     ];
-
-    // Payment status constants
-    const STATUS_PENDING = 'pending';
-    const STATUS_COMPLETED = 'completed';
-    const STATUS_FAILED = 'failed';
 
     public function trip()
     {
