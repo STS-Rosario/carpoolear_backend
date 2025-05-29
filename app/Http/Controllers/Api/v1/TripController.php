@@ -158,13 +158,11 @@ class TripController extends Controller
     {
         $this->user = auth()->user();
 
-        $needsToPayForNextTrip = $this->tripsLogic->selladoViaje($this->user);
+        $infoSelladoViaje = $this->tripsLogic->selladoViaje($this->user);
 
         return response()->json([
             'success' => true, 
-            'data' => [
-                'needsToPayForNextTrip' => $needsToPayForNextTrip
-            ]
+            'data' => $infoSelladoViaje
         ]);
     }
 

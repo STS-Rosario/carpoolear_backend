@@ -537,11 +537,16 @@ class TripRepository
     public function selladoViaje($user)
     {
         // if user has created enough free trips, they have to pay for the next one
-        $trips = Trip::where('user_id', $user->id)->count();
-        if ($trips >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
-            return true;
-        }
-        return false;
+        $tripsCreatedByUser = Trip::where('user_id', $user->id)->count();
+        $freeTripsAmount = config('carpoolear.module_trip_creation_payment_trips_threshold');
+        $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
+
+        return [
+            'tripCreationPaymentEnabled' => config('carpoolear.module_trip_creation_payment_enabled'),
+            'freeTripsAmount' => $freeTripsAmount,
+            'tripsCreatedByUserAmount' => $tripsCreatedByUser,
+            'userOverFreeLimit' => $userOverFreeLimit
+        ];
     }
     
     public function getTripByTripPassenger ($transaction_id)

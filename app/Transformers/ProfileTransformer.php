@@ -8,6 +8,8 @@ use STS\Repository\TripRepository;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\UsersManager;
 use STS\Repository\UserRepository;
+use STS\Services\GeoService;
+use STS\Services\MercadoPagoService;
 
 class ProfileTransformer extends TransformerAbstract
 {
@@ -17,7 +19,10 @@ class ProfileTransformer extends TransformerAbstract
     public function __construct($user)
     {
         $this->user = $user;
-        $this->tripLogic = new TripsManager(new TripRepository, new UsersManager(new UserRepository, new TripRepository));
+        $geoService = app(GeoService::class);
+        $mercadoPagoService = app(MercadoPagoService::class);
+        $tripRepository = new TripRepository($geoService, $mercadoPagoService);
+        $this->tripLogic = new TripsManager($tripRepository, new UsersManager(new UserRepository, $tripRepository));
     }
 
     /**
