@@ -41,9 +41,9 @@ class MercadoPagoService
                 // "success" => config('app.url') . "/app/trips/{$trip->id}/payment-success",
                 // "failure" => config('app.url') . "/app/trips/{$trip->id}/payment-failed",
                 // "pending" => config('app.url') . "/app/trips/{$trip->id}/payment-pending",
-                "success" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id.'/payment-success',
-                "failure" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id.'/payment-failed',
-                "pending" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id.'/payment-pending',
+                "success" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id,
+                "failure" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id,
+                "pending" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id,
             ],
             "auto_return" => "approved",
             'external_reference' => 'Sellado de Viaje ID: ' . $trip->id
