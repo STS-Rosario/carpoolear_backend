@@ -8,14 +8,15 @@ use STS\Models\Trip;
 use STS\Models\PaymentAttempt;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\ConversationsManager;
+use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
-use MercadoPago\Payment as MPPayment;
 use Log;
 
 class MercadoPagoWebhookController extends Controller
 {
     protected $tripLogic;
     protected $conversationManager;
+    protected $paymentClient;
 
     public function __construct(TripsManager $tripLogic, ConversationsManager $conversationManager)
     {
@@ -24,41 +25,40 @@ class MercadoPagoWebhookController extends Controller
         
         // Initialize Mercado Pago SDK
         MercadoPagoConfig::setAccessToken(config('services.mercadopago.access_token'));
+        $this->paymentClient = new PaymentClient();
     }
 
     public function handle(Request $request)
     {
-        Log::info('MercadoPago webhook received', ['data' => $request->all()]);
+        Log::info('MercadoPago webhook received', [
+            'method' => $request->method(),
+            'type' => $request->header('type'),
+            'action' => $request->header('action'),
+            'data' => $request->all(),
+            'content' => $request->getContent(),
+            'headers' => $request->headers->all(),
+            'content_type' => $request->header('Content-Type')
+        ]);
 
+        // we only want action = payment.created
+        \Log::info('MercadoPago webhook received', ['action' => $request->input('action')]);
+        if ($request->input('action') !== 'payment.created') {
+            // discard other actions
+            return response()->json(['status' => 'success']);
+        }
         // Verify the request is from Mercado Pago
         if (!$this->verifyMercadoPagoRequest($request)) {
             Log::error('Invalid MercadoPago webhook request');
             return response()->json(['error' => 'Invalid request'], 400);
         }
+        Log::info('MercadoPago webhook request verified');
 
-        $paymentId = $request->input('data.id');
+        $paymentId = $request->input('data_id');
         if (!$paymentId) {
             Log::error('No payment ID in webhook request');
             return response()->json(['error' => 'No payment ID'], 400);
         }
-
-        // get the trip from the payment ID
-        $trip = Trip::where('payment_id', $paymentId)->first();
-        if (!$trip) {
-            Log::error('Trip not found', ['payment_id' => $paymentId]);
-            return response()->json(['error' => 'Trip not found'], 404);
-        }
-
-        // create the payment in the database
-        $paymentAttempt = new PaymentAttempt();
-        $paymentAttempt->payment_id = $paymentId;
-        $paymentAttempt->payment_status = $request->input('data.status');
-        $paymentAttempt->payment_data = $request->input('data');
-        if ($trip) {
-            $paymentAttempt->trip_id = $trip->id;
-        }
-        $paymentAttempt->save();
-
+        \Log::info('MercadoPago $paymentId', ['payment_id' => $paymentId]);
 
         // Get the payment status from Mercado Pago
         $mpPayment = $this->getMercadoPagoPayment($paymentId);
@@ -66,9 +66,37 @@ class MercadoPagoWebhookController extends Controller
             Log::error('Could not fetch payment from MercadoPago', ['payment_id' => $paymentId]);
             return response()->json(['error' => 'Could not fetch payment'], 500);
         }
+        Log::info('MP WEBHOOK payment', ['payment' => $mpPayment]);
+
+        // parse tripId from external reference
+        $externalReference = $mpPayment['external_reference'];
+        $tripId = explode('Sellado de Viaje ID: ', $externalReference)[1];
+
+        // get the trip for this payment
+        $trip = Trip::where('id', $tripId)->first();
+        if (!$trip) {
+            Log::error('Trip not found', [
+                'payment_id' => $paymentId,
+                'external_reference' => $externalReference,
+                'trip_id' => $tripId
+            ]);
+            return response()->json(['error' => 'Trip not found'], 404);
+        }
+
+        // create the payment attempt in the database
+        $paymentAttempt = new PaymentAttempt();
+        $paymentAttempt->payment_id = $paymentId;
+        $paymentAttempt->payment_status = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
+        $paymentAttempt->payment_data = $mpPayment;
+        $paymentAttempt->trip_id = $trip->id;
+        $paymentAttempt->user_id = $trip->user_id;
+        $paymentAttempt->save();
 
         // Update payment status
-        $this->updatePaymentStatus($paymentAttempt, $mpPayment);
+        $newStatus = $this->updatePaymentStatus($paymentAttempt, $mpPayment);
+        
+        // Update trip status based on payment status
+        $this->updateTripStatus($trip, $newStatus);
 
         return response()->json(['status' => 'success']);
     }
@@ -78,7 +106,7 @@ class MercadoPagoWebhookController extends Controller
         // Get required headers and parameters
         $xSignature = $request->header('x-signature');
         $xRequestId = $request->header('x-request-id');
-        $dataId = $request->query('data.id');
+        $dataId = $request->input('id');
 
         if (!$xSignature || !$xRequestId || !$dataId) {
             Log::error('Missing required headers or parameters in webhook request', [
@@ -112,18 +140,6 @@ class MercadoPagoWebhookController extends Controller
             return false;
         }
 
-        // Validate timestamp (allow 5 minutes tolerance)
-        $timestamp = (int)($ts / 1000); // Convert milliseconds to seconds
-        $now = time();
-        if (abs($now - $timestamp) > 300) { // 5 minutes tolerance
-            Log::error('Webhook timestamp is too old', [
-                'timestamp' => $timestamp,
-                'now' => $now,
-                'difference' => abs($now - $timestamp)
-            ]);
-            return false;
-        }
-
         // Get the secret key from config
         $secret = config('services.mercadopago.webhook_secret');
         if (!$secret) {
@@ -152,8 +168,9 @@ class MercadoPagoWebhookController extends Controller
     protected function getMercadoPagoPayment($paymentId)
     {
         try {
-            // Use the SDK to fetch payment details
-            $payment = MPPayment::find_by_id($paymentId);
+            \Log::info('MP WEBHOOK fetching payment', ['payment_id' => $paymentId]);
+            // Use the SDK client to fetch payment details
+            $payment = $this->paymentClient->get($paymentId);
             
             if (!$payment) {
                 Log::error('Payment not found in MercadoPago', ['payment_id' => $paymentId]);
@@ -176,7 +193,8 @@ class MercadoPagoWebhookController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching MercadoPago payment', [
                 'payment_id' => $paymentId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'api_response' => $e->getApiResponse() ? $e->getApiResponse()->getContent() : 'No API response'
             ]);
             return null;
         }
@@ -185,14 +203,10 @@ class MercadoPagoWebhookController extends Controller
     protected function updatePaymentStatus(PaymentAttempt $payment, $mpPayment)
     {
         $oldStatus = $payment->payment_status;
-        $newStatus = $this->mapMercadoPagoStatus($mpPayment['status']);
-
-        // TODO: check if pending and update trip state to pending_payment?
-        // TODO: check if approved and update trip state to ready
-        // TODO: check if failed and update trip state to payment_failed
+        $newStatus = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
         
         if ($oldStatus === $newStatus) {
-            return;
+            return $newStatus;
         }
 
         $payment->payment_status = $newStatus;
@@ -211,11 +225,6 @@ class MercadoPagoWebhookController extends Controller
 
         if ($newStatus === PaymentAttempt::STATUS_COMPLETED) {
             $payment->paid_at = now();
-            $payment->trip->setStateReady()->save();
-        } elseif ($newStatus === PaymentAttempt::STATUS_FAILED) {
-            $payment->trip->setStatePaymentFailed()->save();
-        } elseif ($newStatus === PaymentAttempt::STATUS_PENDING) {
-            $payment->trip->setStatePendingPayment()->save();
         }
 
         $payment->save();
@@ -223,12 +232,24 @@ class MercadoPagoWebhookController extends Controller
         Log::info('Payment status updated', [
             'payment_id' => $payment->payment_id,
             'old_status' => $oldStatus,
-            'new_status' => $newStatus,
-            'trip_id' => $payment->trip_id
+            'new_status' => $newStatus
         ]);
+
+        return $newStatus;
     }
 
-    protected function mapMercadoPagoStatus($mpStatus)
+    protected function updateTripStatus(Trip $trip, $paymentStatus)
+    {
+        if ($paymentStatus === PaymentAttempt::STATUS_COMPLETED) {
+            $trip->setStateReady()->save();
+        } elseif ($paymentStatus === PaymentAttempt::STATUS_FAILED) {
+            $trip->setStatePaymentFailed()->save();
+        } elseif ($paymentStatus === PaymentAttempt::STATUS_PENDING) {
+            $trip->setStateAwaitingPayment()->save();
+        }
+    }
+
+    protected function mapMercadoPagoStatusToPaymentAttemptStatus($mpStatus)
     {
         $statusMap = [
             'approved' => PaymentAttempt::STATUS_COMPLETED,
@@ -237,9 +258,26 @@ class MercadoPagoWebhookController extends Controller
             'in_process' => PaymentAttempt::STATUS_PENDING,
             'cancelled' => PaymentAttempt::STATUS_FAILED,
             'refunded' => PaymentAttempt::STATUS_FAILED,
+            'in_mediation' => PaymentAttempt::STATUS_PENDING,
             'charged_back' => PaymentAttempt::STATUS_FAILED
         ];
 
         return $statusMap[$mpStatus] ?? PaymentAttempt::STATUS_PENDING;
+    }
+
+    protected function mapMercadoPagoStatusToTripState($mpStatus)
+    {
+        $statusMap = [
+            'approved' => Trip::STATE_READY,
+            'rejected' => Trip::STATE_PAYMENT_FAILED,
+            'pending' => Trip::STATE_PENDING_PAYMENT,
+            'in_process' => Trip::STATE_PENDING_PAYMENT,
+            'cancelled' => Trip::STATE_PAYMENT_FAILED,
+            'refunded' => Trip::STATE_PAYMENT_FAILED,
+            'in_mediation' => Trip::STATE_PENDING_PAYMENT,
+            'charged_back' => Trip::STATE_PAYMENT_FAILED
+        ];
+
+        return $statusMap[$mpStatus] ?? Trip::STATE_PENDING_PAYMENT;
     }
 } 

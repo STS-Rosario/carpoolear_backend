@@ -61,7 +61,8 @@ class Trip extends Model
         'allow_smoking',
         'allow_kids',
         'allow_animals',
-        'state'
+        'state',
+        'payment_id'
     ];
 
     protected $hidden = [
@@ -82,7 +83,7 @@ class Trip extends Model
             'trip_date' => 'datetime',
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
-            'state' => 'string',
+            'state' => 'string'
         ];
     } 
 

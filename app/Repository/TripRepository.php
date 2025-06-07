@@ -113,13 +113,13 @@ class TripRepository
             $trip->state = Trip::STATE_AWAITING_PAYMENT;
             
             // Create MercadoPago payment preference
-            $preference = $this->mercadoPagoService->createPaymentPreference($trip);
+            $preference = $this->mercadoPagoService->createPaymentPreference($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
             $trip->payment_id = $preference->id;
             
+            $trip->save();
+
             // Return the preference URL to redirect the user
             $trip->payment_url = $preference->init_point;
-
-            $trip->save();
         }
 
         // obtener ruta o crear
@@ -504,21 +504,31 @@ class TripRepository
         if ($response->successful() && $response->json()['code'] === 'Ok' && $response->json()['routes'] && count($response->json()['routes'])) {
             // TODO: cache the OSM response
             $route = $response->json()['routes'][0];
-            $distance = $route['distance'];
+            $distanceInMeters = $route['distance'];
             $duration = $route['duration'];
-            $co2 = $distance * 0.15;
-
-            // TODO: calculate the route price (recommended and maximum)
+            $co2 = $distanceInMeters * 0.15;
 
             // check if the user needs to pay for the trip
             $pointsToCheck = [[$points[0]['lat'], $points[0]['lng']], [$points[1]['lat'], $points[1]['lng']]];
             $routeNeedsPayment = $this->geoService->arePointsInPaidRegions($pointsToCheck);
 
+            // calculate price based on distance, fuel price, kilometers per liter
+            $fuelPrice = config('carpoolear.module_max_price_fuel_price');
+            $kilometersPerLiter = config('carpoolear.module_max_price_kilometer_by_liter');
+            $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
+            $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
+
+            // convert distance to kilometers and calculate recommended price, round it so we have integer
+            $recommendedTripPriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100) + $selladoViajePrice;
+            $maximumTripPriceCents = round($recommendedTripPriceCents * 1.15) + $selladoViajePrice;
+
             $data = [
-                'distance' => $distance,
+                'distance' => $distanceInMeters,
                 'duration' => $duration,
                 'co2' => $co2,
-                'routeNeedsPayment' => $routeNeedsPayment
+                'route_needs_payment' => $routeNeedsPayment,
+                'recommended_trip_price_cents' => $recommendedTripPriceCents,
+                'maximum_trip_price_cents' => $maximumTripPriceCents
             ];
             return [
                 'status' => true, 
@@ -542,10 +552,10 @@ class TripRepository
         $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
 
         return [
-            'tripCreationPaymentEnabled' => config('carpoolear.module_trip_creation_payment_enabled'),
-            'freeTripsAmount' => $freeTripsAmount,
-            'tripsCreatedByUserAmount' => $tripsCreatedByUser,
-            'userOverFreeLimit' => $userOverFreeLimit
+            'trip_creation_payment_enabled' => config('carpoolear.module_trip_creation_payment_enabled'),
+            'free_trips_amount' => $freeTripsAmount,
+            'trips_created_by_user_amount' => $tripsCreatedByUser,
+            'user_over_free_limit' => $userOverFreeLimit
         ];
     }
     

@@ -27,7 +27,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \STS\Http\Middleware\CheckUserBanned::class,
         ]);
 
-
         $middleware->group('logged.optional', [
             AuthOptional::class,
             \STS\Http\Middleware\UpdateConnection::class,
