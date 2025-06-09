@@ -95,8 +95,21 @@ class TripRepository
     public function create(array $data)
     {
         $points = $data['points'];
-        \Log::info('TripRepository::create points', [$points]);
         unset($data['points']);
+
+        // Calculate maximum allowed price if seat_price_cents is provided
+        if (isset($data['seat_price_cents'])) {
+            $tripInfo = $this->getTripInfo($points);
+            $total_seats = $data['total_seats'];
+            $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
+
+            if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
+                    \Log::info('TripRepository::create seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
+                    $data['seat_price_cents'] = $maximum_seat_price_cents;
+                }
+            }
+        }
 
         $trip = Trip::create($data);
         \Log::info('TripRepository::create trip', [$trip]);
