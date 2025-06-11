@@ -62,7 +62,8 @@ class Trip extends Model
         'allow_kids',
         'allow_animals',
         'state',
-        'payment_id'
+        'payment_id',
+        'needs_sellado'
     ];
 
     protected $hidden = [

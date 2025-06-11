@@ -43,7 +43,8 @@ class TripTransformer extends TransformerAbstract
             'allow_kids' => $trip->allow_kids,
             'allow_animals' => $trip->allow_animals,
             'allow_smoking' => $trip->allow_smoking,
-            'payment_id' => $trip->payment_id
+            'payment_id' => $trip->payment_id,
+            'needs_sellado' => $trip->needs_sellado
         ];
 
         if ($trip->deleted_at) {
