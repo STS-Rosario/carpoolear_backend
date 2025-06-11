@@ -106,7 +106,7 @@ class MercadoPagoWebhookController extends Controller
         // Get required headers and parameters
         $xSignature = $request->header('x-signature');
         $xRequestId = $request->header('x-request-id');
-        $dataId = $request->input('id');
+        $dataId = $request->query('data_id');
 
         if (!$xSignature || !$xRequestId || !$dataId) {
             Log::error('Missing required headers or parameters in webhook request', [
