@@ -128,6 +128,7 @@ class TripRepository
             // Create MercadoPago payment preference
             $preference = $this->mercadoPagoService->createPaymentPreference($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
             $trip->payment_id = $preference->id;
+            $trip->needs_sellado = true;
             
             $trip->save();
 
