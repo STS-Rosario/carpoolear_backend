@@ -28,7 +28,7 @@ class ExceptionWithErrors extends Exception
             ], 422);
         } else {
             return response()->json([
-                'errors' => $this->errors->toArray(),
+                'errors' => is_object($this->errors) ? $this->errors->toArray() : $this->errors,
                 'message' => $this->message,
             ], 422);
         }
