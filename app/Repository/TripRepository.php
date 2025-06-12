@@ -116,8 +116,9 @@ class TripRepository
         $this->addPoints($trip, $points);
         \Log::info('TripRepository::create trip after add points', [$trip]);
 
-        $pointsToCheck = [[$points[0]['lat'], $points[0]['lng']], [$points[1]['lat'], $points[1]['lng']]];
-        $routeNeedsPayment = $this->geoService->arePointsInPaidRegions($pointsToCheck);
+        $originToCheck = [$points[0]['lat'], $points[0]['lng']];
+        $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
+        $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
         \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
 
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
@@ -523,8 +524,9 @@ class TripRepository
             $co2 = $distanceInMeters * 0.15;
 
             // check if the user needs to pay for the trip
-            $pointsToCheck = [[$points[0]['lat'], $points[0]['lng']], [$points[1]['lat'], $points[1]['lng']]];
-            $routeNeedsPayment = $this->geoService->arePointsInPaidRegions($pointsToCheck);
+            $originToCheck = [$points[0]['lat'], $points[0]['lng']];
+            $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
+            $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
 
             // calculate price based on distance, fuel price, kilometers per liter
             $fuelPrice = config('carpoolear.module_max_price_fuel_price');

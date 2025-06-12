@@ -64,8 +64,20 @@ class GeoService
             $buenosAires,
             $rosario,
             $cordoba,
-            $marDelPlata,
-            $laPlata
+            $marDelPlata
+        ];
+
+        $this->paidRoutes = [
+            [$rosario, $buenosAires],
+            [$buenosAires, $rosario],
+            [$buenosAires, $cordoba],
+            [$cordoba, $buenosAires],
+            [$buenosAires, $marDelPlata],
+            [$marDelPlata, $buenosAires],
+            [$rosario, $cordoba],
+            [$cordoba, $rosario],
+            [$rosario, $marDelPlata],
+            [$marDelPlata, $rosario]
         ];
     }
 
@@ -116,5 +128,40 @@ class GeoService
         }
 
         return $inside;
+    }
+
+    public function arePointsInPaidRoutes(array $point1, array $point2): bool
+    {
+        // First check if both points are in any paid region
+        if (!$this->arePointsInPaidRegions([$point1, $point2])) {
+            return false;
+        }
+
+        // Find which regions each point belongs to
+        $region1 = null;
+        $region2 = null;
+
+        foreach ($this->paidRegions as $index => $polygon) {
+            if ($this->isPointInPolygon($polygon, $point1)) {
+                $region1 = $polygon;
+            }
+            if ($this->isPointInPolygon($polygon, $point2)) {
+                $region2 = $polygon;
+            }
+        }
+
+        // If we couldn't find both regions, return false
+        if ($region1 === null || $region2 === null) {
+            return false;
+        }
+
+        // Check if this combination of regions exists in paid routes
+        foreach ($this->paidRoutes as $route) {
+            if ($route[0] === $region1 && $route[1] === $region2) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
