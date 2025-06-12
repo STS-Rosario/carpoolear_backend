@@ -378,7 +378,7 @@ class TripsManager extends BaseManager
         }
 
         // if not own trip, and trip is not ready (paid), user can't see it yet until paid
-        if ($trip->state !== Trip::STATE_READY) {
+        if ($trip->needs_sellado == true && $trip->state !== Trip::STATE_READY) {
             return false;
         }
 
