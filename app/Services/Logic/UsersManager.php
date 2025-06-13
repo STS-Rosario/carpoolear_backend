@@ -97,7 +97,7 @@ class UsersManager extends BaseManager
                     $u = $this->repo->create($data);
 
                     // Check if user name contains any banned words
-                    $banned_words = config('carpoolear.banned_words', []);
+                    $banned_words = config('carpoolear.banned_words_names', []);
                     if (!empty($banned_words)) {
                         $user_name_lower = strtolower($u->name);
                         foreach ($banned_words as $word) {
@@ -154,7 +154,7 @@ class UsersManager extends BaseManager
                     $u = $this->repo->create($data);
 
                     // Check if user name contains any banned words
-                    $banned_words = config('carpoolear.banned_words', []);
+                    $banned_words = config('carpoolear.banned_words_names', []);
                     if (!empty($banned_words)) {
                         $user_name_lower = strtolower($u->name);
                         foreach ($banned_words as $word) {
