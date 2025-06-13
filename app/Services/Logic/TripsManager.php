@@ -105,7 +105,7 @@ class TripsManager extends BaseManager
                 $description = strtolower($data['description']);
                 
                 // Check banned words
-                $banned_words = config('carpoolear.banned_words', []);
+                $banned_words = config('carpoolear.banned_words_trip_description', []);
                 foreach ($banned_words as $word) {
                     if (str_contains($description, strtolower($word))) {
                         $this->userManager->update($user, ['banned' => 1]);
