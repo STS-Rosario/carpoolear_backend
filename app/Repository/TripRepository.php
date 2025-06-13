@@ -14,6 +14,7 @@ use STS\Events\Trip\Create  as CreateEvent;
 use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
 use STS\Services\MercadoPagoService;
+use STS\Models\RouteCache;
 
 class TripRepository
 {
@@ -498,6 +499,22 @@ class TripRepository
     public function getTripInfo($points)
     {
         \Log::info('getTripInfo repository', [$points]);
+        
+        // Check cache first
+        $cacheKey = json_encode($points);
+        $hashedPoints = hash('sha256', $cacheKey);
+        $cachedRoute = RouteCache::where('hashed_points', $hashedPoints)
+            ->where(function($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if ($cachedRoute) {
+            \Log::info('Route found in cache');
+            return $cachedRoute->route_data;
+        }
+
         $coords = '';
         foreach ($points as $point) {
             \Log::info('point', [$point]);
@@ -512,12 +529,9 @@ class TripRepository
         $url =
             'https://router.project-osrm.org/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
 
-        // TODO: check OSM cache first
-
         $response = Http::get($url);
 
         if ($response->successful() && $response->json()['code'] === 'Ok' && $response->json()['routes'] && count($response->json()['routes'])) {
-            // TODO: cache the OSM response
             $route = $response->json()['routes'][0];
             $distanceInMeters = $route['distance'];
             $duration = $route['duration'];
@@ -546,17 +560,42 @@ class TripRepository
                 'recommended_trip_price_cents' => $recommendedTripPriceCents,
                 'maximum_trip_price_cents' => $maximumTripPriceCents
             ];
-            return [
+
+            $response = [
                 'status' => true, 
                 'data' => $data,
                 'message' => 'Route found'
             ];
+
+            // Cache the complete response for 24 hours
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $response,
+                    'expires_at' => now()->addHours(24)
+                ]
+            );
+
+            return $response;
         } else {
-            return [
+            $response = [
                 'status' => false, 
                 'data' => null,
                 'message' => 'Route not found'
             ];
+
+            // Cache failed responses for a shorter time (1 hour) to avoid hammering the API
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $response,
+                    'expires_at' => now()->addHour()
+                ]
+            );
+
+            return $response;
         }
     }
 
