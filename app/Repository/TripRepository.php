@@ -124,7 +124,7 @@ class TripRepository
 
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
         // if route is paid, and user should pay, create payment
-        if ($routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
+        if (config('carpoolear.module_trip_creation_payment_enabled') && $routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
             $trip->state = Trip::STATE_AWAITING_PAYMENT;
             
             // Create MercadoPago payment preference
