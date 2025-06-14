@@ -15,9 +15,13 @@ class CampaignController extends Controller
      */
     public function index(): JsonResponse
     {
-        $campaigns = Campaign::with(['milestones', 'donations'])
-            ->latest()
-            ->get();
+        $campaigns = Campaign::latest()
+            ->get()
+            ->map(function ($campaign) {
+                $campaign->total_donated = $campaign->total_donated ?? 0;
+                return $campaign;
+            });
+            
         return response()->json($campaigns);
     }
 
@@ -32,11 +36,14 @@ class CampaignController extends Controller
             'image_path' => 'nullable|string|max:255',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after:start_date',
-            'mp_slug' => 'nullable|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'payment_slug' => 'nullable|string|max:255',
         ]);
 
         // Generate slug from title if not provided
-        $validated['slug'] = Str::slug($request->title);
+        if (!$request->has('slug')) {
+            $validated['slug'] = Str::slug($request->title);
+        }
 
         $campaign = Campaign::create($validated);
 
@@ -48,7 +55,12 @@ class CampaignController extends Controller
      */
     public function show(Campaign $campaign): JsonResponse
     {
-        return response()->json($campaign->load(['milestones', 'donations']));
+        $campaign->load(['milestones', 'donations' => function ($query) {
+            $query->where('status', 'paid');
+        }]);
+        $campaign->total_donated = $campaign->total_donated ?? 0;
+        
+        return response()->json($campaign);
     }
 
     /**
@@ -62,7 +74,7 @@ class CampaignController extends Controller
             'image_path' => 'nullable|string|max:255',
             'start_date' => 'sometimes|required|date',
             'end_date' => 'nullable|date|after:start_date',
-            'mp_slug' => 'nullable|string|max:255',
+            'payment_slug' => 'nullable|string|max:255',
         ]);
 
         // Update slug if title is being updated

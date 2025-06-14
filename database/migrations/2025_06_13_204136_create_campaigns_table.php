@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('campaigns', function (Blueprint $table) {
-            $table->id();
+            $table->unsignedInteger('id')->autoIncrement();
             $table->string('slug')->unique(); // friendly URL
             $table->string('title');
             $table->text('description');
@@ -29,6 +29,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('campaign_donations');
+        Schema::dropIfExists('campaign_milestones');
         Schema::dropIfExists('campaigns');
     }
 };

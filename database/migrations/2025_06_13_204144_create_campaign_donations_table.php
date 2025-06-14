@@ -13,17 +13,20 @@ return new class extends Migration
     {
         Schema::create('campaign_donations', function (Blueprint $table) {
             $table->id();
-            $table
-                ->foreignId('campaign_id')
-                ->constrained('campaigns')
+            $table->unsignedInteger('campaign_id');
+            $table->foreign('campaign_id')
+                ->references('id')
+                ->on('campaigns')
                 ->onDelete('cascade');
             $table->string('payment_id')->nullable(); // Mercado Pago preference/payment ID
             $table->integer('amount_cents');
             $table->string('name')->nullable();
             $table->text('comment')->nullable();
-            $table->foreignId('user_id')
-                ->nullable()
-                ->constrained('users');
+            $table->unsignedInteger('user_id')->nullable();
+            $table->foreign('user_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
             $table->enum('status', ['pending', 'paid', 'failed'])->default('pending');
             $table->timestamps();
         });

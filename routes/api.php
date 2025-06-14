@@ -157,7 +157,7 @@ Route::middleware(['api'])->group(function () {
     });
 
     // Admin routes
-    Route::prefix('admin')->group(function () {
+    Route::prefix('admin')->middleware('user.admin')->group(function () {
         Route::apiResource('badges', BadgeController::class);
         // Campaign routes
         Route::apiResource('campaigns', CampaignController::class);

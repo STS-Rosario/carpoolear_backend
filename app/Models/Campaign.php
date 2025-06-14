@@ -16,7 +16,7 @@ class Campaign extends Model
         'image_path',
         'start_date',
         'end_date',
-        'mp_slug',
+        'payment_slug',
     ];
 
     protected $casts = [

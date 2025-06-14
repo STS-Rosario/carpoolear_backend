@@ -13,16 +13,13 @@ return new class extends Migration
     {
         Schema::create('user_badges', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->onDelete('cascade');
-            $table->foreignId('badge_id')
-                ->constrained('badges')
-                ->onDelete('cascade');
+            $table->unsignedInteger('user_id');
+            $table->unsignedBigInteger('badge_id');
             $table->timestamp('awarded_at');
             $table->timestamps();
 
-            // Prevent duplicate badges for the same user
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('badge_id')->references('id')->on('badges')->onDelete('cascade');
             $table->unique(['user_id', 'badge_id']);
         });
     }
