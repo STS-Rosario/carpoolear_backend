@@ -11,6 +11,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use STS\Services\Notifications\Models\DatabaseNotification;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -301,5 +302,13 @@ class User extends Authenticatable implements JWTSubject
     public function getReferencesAttribute()
     {
         return $this->referencesReceived()->count();
+    }
+
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'user_badges')
+            ->using(UserBadge::class)
+            ->withPivot('awarded_at')
+            ->withTimestamps();
     }
 }

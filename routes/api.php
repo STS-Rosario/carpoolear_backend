@@ -14,6 +14,7 @@ use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Http\Controllers\Api\v1\UserController;
 use STS\Http\Controllers\DataController;
+use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignDonationController;
@@ -157,6 +158,7 @@ Route::middleware(['api'])->group(function () {
 
     // Admin routes
     Route::prefix('admin')->group(function () {
+        Route::apiResource('badges', BadgeController::class);
         // Campaign routes
         Route::apiResource('campaigns', CampaignController::class);
         Route::apiResource('campaigns.milestones', CampaignMilestoneController::class);
