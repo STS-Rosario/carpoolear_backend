@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CampaignDonation extends Model
 {
+    protected $table = 'campaign_donations';
+
     protected $fillable = [
         'campaign_id',
         'payment_id',

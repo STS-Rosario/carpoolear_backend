@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Campaign extends Model
 {
+    protected $table = 'campaigns';
+
     protected $fillable = [
         'slug',
         'title',

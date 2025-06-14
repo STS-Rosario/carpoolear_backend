@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CampaignMilestone extends Model
 {
+    protected $table = 'campaign_milestones';
+
     protected $fillable = [
         'campaign_id',
         'title',
