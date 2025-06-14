@@ -15,7 +15,9 @@ class CampaignController extends Controller
      */
     public function index(): JsonResponse
     {
-        $campaigns = Campaign::latest()->get();
+        $campaigns = Campaign::with(['milestones', 'donations'])
+            ->latest()
+            ->get();
         return response()->json($campaigns);
     }
 
@@ -46,7 +48,7 @@ class CampaignController extends Controller
      */
     public function show(Campaign $campaign): JsonResponse
     {
-        return response()->json($campaign);
+        return response()->json($campaign->load(['milestones', 'donations']));
     }
 
     /**

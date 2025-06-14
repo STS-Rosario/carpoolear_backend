@@ -46,7 +46,7 @@ class CampaignDonationController extends Controller
      */
     public function show(CampaignDonation $donation): JsonResponse
     {
-        return response()->json($donation->load('user'));
+        return response()->json($donation->load(['user', 'campaign']));
     }
 
     /**

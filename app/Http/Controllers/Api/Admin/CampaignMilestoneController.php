@@ -41,7 +41,7 @@ class CampaignMilestoneController extends Controller
      */
     public function show(CampaignMilestone $milestone): JsonResponse
     {
-        return response()->json($milestone);
+        return response()->json($milestone->load('campaign'));
     }
 
     /**
