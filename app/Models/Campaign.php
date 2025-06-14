@@ -22,7 +22,16 @@ class Campaign extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'visible' => 'boolean',
     ];
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     /**
      * Get the milestones for the campaign.
