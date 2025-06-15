@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\HomeController;
 use STS\Http\Controllers\PaymentController;
+use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
     
 Route::get('/', [HomeController::class, 'home']);
 Route::get('/home', [HomeController::class, 'home']);
@@ -40,6 +41,10 @@ Route::get('/colabora-programando', [HomeController::class, 'programar']);
 Route::get('/transbank', [PaymentController::class, 'transbank']);
 Route::any('/transbank-respuesta', [PaymentController::class, 'transbankResponse']);
 Route::any('/transbank-final', [PaymentController::class, 'transbankFinal']);
+
+// MercadoPago webhook
+Route::any('/webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle'])
+    ->withoutMiddleware(['web']);
 
 Route::get('/config.xml', function () {
     return response()->file(public_path('app/config.xml'));
