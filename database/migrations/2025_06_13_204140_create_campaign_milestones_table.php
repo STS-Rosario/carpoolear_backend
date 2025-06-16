@@ -13,11 +13,7 @@ return new class extends Migration
     {
         Schema::create('campaign_milestones', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('campaign_id');
-            $table->foreign('campaign_id')
-                ->references('id')
-                ->on('campaigns')
-                ->onDelete('cascade');
+            $table->foreignId('campaign_id')->constrained('campaigns')->onDelete('cascade');
             $table->string('title');
             $table->text('description');
             $table->string('image_path')->nullable();

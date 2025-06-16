@@ -13,11 +13,7 @@ return new class extends Migration
     {
         Schema::create('campaign_donations', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('campaign_id');
-            $table->foreign('campaign_id')
-                ->references('id')
-                ->on('campaigns')
-                ->onDelete('cascade');
+            $table->foreignId('campaign_id')->constrained('campaigns')->onDelete('cascade');
             $table->string('payment_id')->nullable(); // Mercado Pago preference/payment ID
             $table->integer('amount_cents');
             $table->string('name')->nullable();

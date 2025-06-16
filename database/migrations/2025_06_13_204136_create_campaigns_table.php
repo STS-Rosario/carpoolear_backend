@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('campaigns', function (Blueprint $table) {
-            $table->unsignedInteger('id')->autoIncrement();
+            $table->id();
             $table->string('slug')->unique(); // friendly URL
             $table->string('title');
             $table->text('description');
