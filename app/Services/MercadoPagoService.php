@@ -100,7 +100,7 @@ class MercadoPagoService
             ],
             "auto_return" => "approved",
             'external_reference' => sprintf(
-                'Donación Campaña ID: %d ; Slug: %s ; Reward ID: %d ; User ID: %s',
+                'Donación Campaña ID: %d; Slug: %s; Reward ID: %d; User ID: %s',
                 $campaign->id,
                 $campaign->payment_slug,
                 $rewardId ?? 0,
