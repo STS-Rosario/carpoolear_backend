@@ -18,7 +18,9 @@ use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignDonationController;
+use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
+use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 
 
 Route::middleware(['api'])->group(function () {
@@ -167,5 +169,8 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns', CampaignController::class);
         Route::apiResource('campaigns.milestones', CampaignMilestoneController::class);
         Route::apiResource('campaigns.donations', CampaignDonationController::class);
+        Route::apiResource('campaigns.rewards', CampaignRewardController::class); 
     });
+
+    Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase']);
 });

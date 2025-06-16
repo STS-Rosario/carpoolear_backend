@@ -80,7 +80,7 @@ class MercadoPagoService
     /**
      * Create a payment preference for campaign donations
      */
-    public function createPaymentPreferenceForCampaignDonation(int $campaignId, int $amountInCents, ?int $userId = null)
+    public function createPaymentPreferenceForCampaignDonation(int $campaignId, int $amountInCents, ?int $userId = null, ?int $rewardId = null)
     {
         $campaign = Campaign::findOrFail($campaignId);
         
@@ -100,10 +100,11 @@ class MercadoPagoService
             ],
             "auto_return" => "approved",
             'external_reference' => sprintf(
-                'Donación Campaña ID: %d ; Slug: %s%s; User ID: %s',
+                'Donación Campaña ID: %d ; Slug: %s ; Reward ID: %d ; User ID: %s',
                 $campaign->id,
                 $campaign->payment_slug,
-                $userId || 'Anonymous'
+                $rewardId ?? 0,
+                $userId ?? 'Anonymous'
             )
         ];
 

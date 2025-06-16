@@ -8,6 +8,7 @@ use STS\Models\Trip;
 use STS\Models\PaymentAttempt;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
+use STS\Models\CampaignReward;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\ConversationsManager;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -300,20 +301,21 @@ class MercadoPagoWebhookController extends Controller
 
     protected function handleCampaignDonation($mpPayment)
     {
-        // Parse campaign ID and user ID from external reference
-        // Format: "Donación Campaña ID: {campaignId} ; Slug: {slug} ; User ID: {userId}"
+        // Parse campaign ID, reward ID and user ID from external reference
+        // Format: "Donación Campaña ID: {campaignId} ; Slug: {slug} ; Reward ID: {rewardId} ; User ID: {userId}"
         $externalReference = $mpPayment['external_reference'];
-        preg_match('/Donación Campaña ID: (\d+) ; Slug: ([^;]+) ; User ID: ([^;]+)/', $externalReference, $matches);
+        preg_match('/Donación Campaña ID: (\d+) ; Slug: ([^;]+) ; Reward ID: (\d+) ; User ID: ([^;]+)/', $externalReference, $matches);
         
-        if (count($matches) !== 4) {
+        if (count($matches) !== 5) {
             Log::error('Invalid campaign donation external reference format', ['external_reference' => $externalReference]);
             return response()->json(['error' => 'Invalid external reference format'], 400);
         }
 
         $campaignId = $matches[1];
-        $userId = $matches[3] === 'Anonymous' ? null : $matches[3];
+        $rewardId = $matches[3];
+        $userId = $matches[4] === 'Anonymous' ? null : $matches[4];
 
-        // Get the campaign
+        // Get the campaign and reward
         $campaign = Campaign::find($campaignId);
         if (!$campaign) {
             Log::error('Campaign not found', [
@@ -324,11 +326,22 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Campaign not found'], 404);
         }
 
+        $reward = CampaignReward::find($rewardId);
+        if (!$reward || $reward->campaign_id !== $campaignId) {
+            Log::error('Campaign reward not found or does not belong to campaign', [
+                'payment_id' => $mpPayment['id'],
+                'reward_id' => $rewardId,
+                'campaign_id' => $campaignId
+            ]);
+            return response()->json(['error' => 'Campaign reward not found'], 404);
+        }
+
         // Only create donation record if payment is approved
         if ($mpPayment['status'] === 'approved') {
             // Create the donation record
             $donation = new CampaignDonation();
             $donation->campaign_id = $campaignId;
+            $donation->campaign_reward_id = $rewardId;
             $donation->payment_id = $mpPayment['id'];
             $donation->amount_cents = $mpPayment['amount'] * 100; // Convert to cents
             $donation->user_id = $userId;
@@ -338,6 +351,7 @@ class MercadoPagoWebhookController extends Controller
             Log::info('Campaign donation created', [
                 'payment_id' => $mpPayment['id'],
                 'campaign_id' => $campaignId,
+                'reward_id' => $rewardId,
                 'amount_cents' => $donation->amount_cents,
                 'user_id' => $userId
             ]);
