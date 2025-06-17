@@ -33,7 +33,10 @@ class CampaignMilestoneController extends Controller
 
         $milestone = $campaign->milestones()->create($validated);
 
-        return response()->json($milestone, 201);
+        return response()->json([
+            'message' => 'Milestone created',
+            'data' => $milestone
+        ], 201);
     }
 
     /**

@@ -57,6 +57,8 @@ class CampaignController extends Controller
     {
         $campaign->load(['milestones', 'donations' => function ($query) {
             $query->where('status', 'paid');
+        }, 'rewards' => function ($query) {
+            $query->where('is_active', true);
         }]);
         $campaign->total_donated = $campaign->total_donated ?? 0;
         

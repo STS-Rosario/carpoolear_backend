@@ -25,7 +25,8 @@ class CampaignReward extends Model
 
     protected $appends = [
         'donation_amount',
-        'is_sold_out'
+        'is_sold_out',
+        'quantity_remaining'
     ];
 
     public function campaign(): BelongsTo
@@ -53,7 +54,7 @@ class CampaignReward extends Model
         return $soldQuantity >= $this->quantity_available;
     }
 
-    public function getRemainingQuantityAttribute(): ?int
+    public function getQuantityRemainingAttribute(): ?int
     {
         if ($this->quantity_available === null) {
             return null;

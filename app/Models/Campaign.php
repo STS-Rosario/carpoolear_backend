@@ -50,6 +50,14 @@ class Campaign extends Model
     }
 
     /**
+     * Get the rewards for the campaign.
+     */
+    public function rewards(): HasMany
+    {
+        return $this->hasMany(CampaignReward::class);
+    }
+
+    /**
      * Get the total amount donated to the campaign.
      */
     public function getTotalDonatedAttribute(): int

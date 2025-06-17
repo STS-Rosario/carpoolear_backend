@@ -24,6 +24,8 @@ class CampaignController extends Controller
         }, 'donations' => function ($query) {
             $query->where('status', 'paid')
                   ->orderBy('created_at', 'desc');
+        }, 'rewards' => function ($query) {
+            $query->where('is_active', true);
         }]);
         
         $campaign->total_donated = $campaign->total_donated ?? 0;
