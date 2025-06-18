@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use STS\Http\Controllers\Controller;
 use STS\Models\Campaign;
 use STS\Models\CampaignReward;
+use STS\Models\CampaignDonation;
 use STS\Services\MercadoPagoService;
 use Illuminate\Http\Request;
 
@@ -32,15 +33,38 @@ class CampaignRewardController extends Controller
         }
 
         try {
+            // Create a CampaignDonation record first
+            $donation = CampaignDonation::create([
+                'campaign_id' => $campaign->id,
+                'campaign_reward_id' => $reward->id,
+                'amount_cents' => $reward->donation_amount_cents,
+                'name' => $request->input('name'),
+                'comment' => $request->input('comment'),
+                'user_id' => $request->user()?->id,
+                'status' => 'pending'
+            ]);
+
+            // Create the payment preference with the donation ID
             $preference = $this->mercadoPagoService->createPaymentPreferenceForCampaignDonation(
                 $campaign->id,
                 $reward->donation_amount_cents,
-                $request->user()?->id
+                $request->user()?->id,
+                $reward->id
             );
 
+            \Log::info('Preference created', ['preference' => $preference]);
+
+            // Update the donation with the payment ID from MercadoPago
+            $donation->update([
+                'payment_id' => $preference->id
+            ]);
+
             return response()->json([
-                'init_point' => $preference->init_point,
-                'sandbox_init_point' => $preference->sandbox_init_point
+                'message' => 'Payment preference created',
+                'data' => [
+                    'url' => $preference->init_point,
+                    'sandbox_url' => $preference->sandbox_init_point
+                ]
             ]);
         } catch (\Exception $e) {
             \Log::error('Error creating payment preference for campaign reward', [
