@@ -95,7 +95,8 @@ class User extends Authenticatable implements JWTSubject
     protected $appends = [
         'positive_ratings',
         'negative_ratings',
-        'references'
+        'references',
+        'image',
     ];
 
     public function getJWTIdentifier()
@@ -310,5 +311,16 @@ class User extends Authenticatable implements JWTSubject
             ->using(UserBadge::class)
             ->withPivot('awarded_at')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the full URL for the user's image.
+     */
+    public function getImageAttribute($value): ?string
+    {
+        if (!$value) {
+            return null;
+        }
+        return rtrim(env('BASE_URL', ''), '/') . '/image/profile/' . ltrim($value, '/');
     }
 }
