@@ -172,5 +172,5 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class); 
     });
 
-    Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase']);
+    Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
 });
