@@ -49,7 +49,8 @@ class CampaignRewardController extends Controller
                 $campaign->id,
                 $reward->donation_amount_cents,
                 $request->user()?->id,
-                $reward->id
+                $reward->id,
+                $donation->id
             );
 
             \Log::info('Preference created', ['preference' => $preference]);

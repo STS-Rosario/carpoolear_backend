@@ -161,6 +161,7 @@ class MercadoPagoWebhookController extends Controller
             }
 
             return [
+                'id' => $payment->id,
                 'status' => $payment->status,
                 'status_detail' => $payment->status_detail,
                 'amount' => $payment->transaction_amount,
@@ -301,67 +302,63 @@ class MercadoPagoWebhookController extends Controller
 
     protected function handleCampaignDonation($mpPayment)
     {
-        // Parse campaign ID, reward ID and user ID from external reference
-        // Format: "Donación Campaña ID: {campaignId} ; Slug: {slug} ; Reward ID: {rewardId} ; User ID: {userId}"
+        // Parse campaign ID, reward ID, user ID and donation ID from external reference
+        // Format: "Donación Campaña ID: {campaignId}; Slug: {slug}; Reward ID: {rewardId}; User ID: {userId}; Donation ID: {donationId}"
         $externalReference = $mpPayment['external_reference'];
-        preg_match('/Donación Campaña ID: (\d+) ; Slug: ([^;]+) ; Reward ID: (\d+) ; User ID: ([^;]+)/', $externalReference, $matches);
+        preg_match('/Donación Campaña ID: (\d+); Slug: ([^;]+); Reward ID: (\d+); User ID: ([^;]+); Donation ID: (\d+)/', $externalReference, $matches);
         
-        if (count($matches) !== 5) {
+        if (count($matches) !== 6) {
             Log::error('Invalid campaign donation external reference format', ['external_reference' => $externalReference]);
             return response()->json(['error' => 'Invalid external reference format'], 400);
         }
 
-        $campaignId = $matches[1];
-        $rewardId = $matches[3];
-        $userId = $matches[4] === 'Anonymous' ? null : $matches[4];
+        $campaignId = intval($matches[1]);
+        $rewardId = intval($matches[3]);
+        $userId = $matches[4] === 'Anonymous' ? null : intval($matches[4]);
+        $donationId = intval($matches[5]);
 
-        // Get the campaign and reward
-        $campaign = Campaign::find($campaignId);
-        if (!$campaign) {
-            Log::error('Campaign not found', [
+        // Find the existing donation
+        $donation = CampaignDonation::find($donationId);
+        if (!$donation) {
+            Log::error('Campaign donation not found', [
                 'payment_id' => $mpPayment['id'],
-                'external_reference' => $externalReference,
-                'campaign_id' => $campaignId
+                'donation_id' => $donationId,
+                'external_reference' => $externalReference
             ]);
-            return response()->json(['error' => 'Campaign not found'], 404);
+            return response()->json(['error' => 'Campaign donation not found'], 404);
         }
 
-        $reward = CampaignReward::find($rewardId);
-        if (!$reward || $reward->campaign_id !== $campaignId) {
-            Log::error('Campaign reward not found or does not belong to campaign', [
+        // Verify the donation belongs to the correct campaign and reward
+        if ($donation->campaign_id !== $campaignId || $donation->campaign_reward_id !== $rewardId) {
+            Log::error('Campaign donation does not match external reference', [
                 'payment_id' => $mpPayment['id'],
-                'reward_id' => $rewardId,
-                'campaign_id' => $campaignId
+                'donation_id' => $donationId,
+                'donation_campaign_id' => $donation->campaign_id,
+                'donation_reward_id' => $donation->campaign_reward_id,
+                'expected_campaign_id' => $campaignId,
+                'expected_reward_id' => $rewardId
             ]);
-            return response()->json(['error' => 'Campaign reward not found'], 404);
+            return response()->json(['error' => 'Campaign donation mismatch'], 400);
         }
 
-        // Only create donation record if payment is approved
-        if ($mpPayment['status'] === 'approved') {
-            // Create the donation record
-            $donation = new CampaignDonation();
-            $donation->campaign_id = $campaignId;
-            $donation->campaign_reward_id = $rewardId;
-            $donation->payment_id = $mpPayment['id'];
-            $donation->amount_cents = $mpPayment['amount'] * 100; // Convert to cents
-            $donation->user_id = $userId;
-            $donation->status = 'paid';
-            $donation->save();
+        // Update the donation status based on payment status
+        $newStatus = $this->mapMercadoPagoStatusToDonationStatus($mpPayment['status']);
+        $donation->status = $newStatus;
+        
+        // Update payment_id with the actual payment ID
+        $donation->payment_id = $mpPayment['id'];
+        
+        $donation->save();
 
-            Log::info('Campaign donation created', [
-                'payment_id' => $mpPayment['id'],
-                'campaign_id' => $campaignId,
-                'reward_id' => $rewardId,
-                'amount_cents' => $donation->amount_cents,
-                'user_id' => $userId
-            ]);
-        } else {
-            Log::info('Payment not approved, skipping donation creation', [
-                'payment_id' => $mpPayment['id'],
-                'status' => $mpPayment['status'],
-                'payment' => $mpPayment
-            ]);
-        }
+        Log::info('Campaign donation status updated', [
+            'payment_id' => $mpPayment['id'],
+            'donation_id' => $donationId,
+            'campaign_id' => $campaignId,
+            'reward_id' => $rewardId,
+            'old_status' => $donation->getOriginal('status'),
+            'new_status' => $newStatus,
+            'user_id' => $userId
+        ]);
 
         return response()->json(['status' => 'success']);
     }
