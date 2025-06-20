@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('campaigns', function (Blueprint $table) {
             $table->id();
-            $table->string('slug')->unique(); // friendly URL
+            $table->string('slug', 191)->unique(); // friendly URL
             $table->string('title');
             $table->text('description');
             $table->string('image_path')->nullable();

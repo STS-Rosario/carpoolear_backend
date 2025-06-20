@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('badges', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->string('slug')->unique();
+            $table->string('slug', 191)->unique(); // friendly URL
             $table->text('description')->nullable();
             $table->string('image_path')->nullable(); // path to image asset
             $table->json('rules')->nullable(); // logic conditions
