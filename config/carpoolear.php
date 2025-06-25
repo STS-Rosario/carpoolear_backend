@@ -24,7 +24,8 @@ return [
     'module_trip_creation_payment_trips_threshold' => (int)env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', true),
     'module_max_price_fuel_price' => (int) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
-    'module_max_price_price_variance' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE', 15),
+    'module_max_price_price_variance_tolls' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
+    'module_max_price_price_variance_max_extra' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
     'module_max_price_kilometer_by_liter' => (int) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions

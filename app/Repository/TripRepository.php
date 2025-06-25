@@ -548,9 +548,23 @@ class TripRepository
             $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
             $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
 
-            // convert distance to kilometers and calculate recommended price, round it so we have integer
-            $recommendedTripPriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100) + $selladoViajePrice;
-            $maximumTripPriceCents = round($recommendedTripPriceCents * 1.15) + $selladoViajePrice;
+            // get tolls variance percentage (e.g., 10 for 10% extra)
+            $tollsVariancePercent = config('carpoolear.module_max_price_price_variance_tolls', 0);
+
+            // get maximum price variance percentage (e.g., 15 for 15% extra)
+            $maxPriceVariancePercent = config('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+            // calculate base price without sellado
+            $basePriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100);
+
+            // calculate tolls variance amount
+            $tollsVarianceCents = round($basePriceCents * ($tollsVariancePercent / 100));
+
+            // recommended price: base + tolls variance + sellado
+            $recommendedTripPriceCents = $basePriceCents + $tollsVarianceCents + $selladoViajePrice;
+
+            // maximum price: (base + tolls variance) * max_variance + sellado
+            $maximumTripPriceCents = round(($basePriceCents + $tollsVarianceCents) * (1 + $maxPriceVariancePercent / 100)) + $selladoViajePrice;
 
             $data = [
                 'distance' => $distanceInMeters,
