@@ -98,9 +98,11 @@ class TripRepository
         $points = $data['points'];
         unset($data['points']);
 
+        // Get trip info for price calculations and route data
+        $tripInfo = $this->getTripInfo($points);
+        
         // Calculate maximum allowed price if seat_price_cents is provided
         if (isset($data['seat_price_cents'])) {
-            $tripInfo = $this->getTripInfo($points);
             $total_seats = $data['total_seats'];
             $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
 
@@ -114,6 +116,13 @@ class TripRepository
 
         $trip = Trip::create($data);
         \Log::info('TripRepository::create trip', [$trip]);
+        
+        // Save recommended trip price if available from trip info
+        if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
+            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+            $trip->save();
+        }
+        
         $this->addPoints($trip, $points);
         \Log::info('TripRepository::create trip after add points', [$trip]);
 

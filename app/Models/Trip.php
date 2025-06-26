@@ -48,6 +48,7 @@ class Trip extends Model
         'friendship_type_id',
         'distance',
         'seat_price_cents',
+        'recommended_trip_price_cents',
         'total_price',
         'estimated_time',
         'co2',
@@ -84,6 +85,7 @@ class Trip extends Model
             'trip_date' => 'datetime',
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
+            'recommended_trip_price_cents' => 'integer',
             'state' => 'string'
         ];
     } 
