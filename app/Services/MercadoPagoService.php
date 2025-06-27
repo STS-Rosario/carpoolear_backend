@@ -94,9 +94,9 @@ class MercadoPagoService
                 ]
             ],
             "back_urls" => [
-                "success" => config('app.url') . "/campaigns/{$campaign->slug}/payment-success",
-                "failure" => config('app.url') . "/campaigns/{$campaign->slug}/payment-failed",
-                "pending" => config('app.url') . "/campaigns/{$campaign->slug}/payment-pending",
+                "success" => config('app.url') . "/campaigns/{$campaign->slug}?result=success",
+                "failure" => config('app.url') . "/campaigns/{$campaign->slug}?result=failed",
+                "pending" => config('app.url') . "/campaigns/{$campaign->slug}?result=pending",
             ],
             "auto_return" => "approved",
             'external_reference' => sprintf(
