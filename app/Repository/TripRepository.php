@@ -627,7 +627,7 @@ class TripRepository
         // if user has created enough free trips, they have to pay for the next one
         $tripsCreatedByUser = Trip::where('user_id', $user->id)->count();
         $freeTripsAmount = config('carpoolear.module_trip_creation_payment_trips_threshold');
-        $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
+        $userOverFreeLimit = $tripsCreatedByUser > $freeTripsAmount;
 
         return [
             'trip_creation_payment_enabled' => config('carpoolear.module_trip_creation_payment_enabled'),
