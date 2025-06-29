@@ -102,7 +102,7 @@ class TripRepository
         $tripInfo = $this->getTripInfo($points);
         
         // Calculate maximum allowed price if seat_price_cents is provided
-        if (isset($data['seat_price_cents'])) {
+        if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
             $total_seats = $data['total_seats'];
             $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
 
