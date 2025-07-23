@@ -7,6 +7,7 @@ use STS\Models\Trip;
 use STS\Models\Rating;
 use STS\Models\Passenger;
 use Illuminate\Console\Command;
+use STS\Models\References;
 
 class UpdateUser extends Command
 {
@@ -69,6 +70,21 @@ class UpdateUser extends Command
             $trip->save();
         }
 
+        // Actualizar references: user_id_from
+        $referencesFrom = References::where('user_id_from', '=', $originalId)->get();
+        foreach ($referencesFrom as $reference) {
+            $reference->user_id_from = $newId;
+            $reference->save();
+        }
+
+        // Actualizar references: user_id_to
+        $referencesTo = References::where('user_id_to', '=', $originalId)->get();
+        foreach ($referencesTo as $reference) {
+            $reference->user_id_to = $newId;
+            $reference->save();
+        }
+
+
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);
             $user->active = 0;
@@ -76,6 +92,6 @@ class UpdateUser extends Command
             $this->info('User has been removed.');
         }
 
-        $this->info('Trips, ratings and passenger have been updated.');
+        $this->info('Trips, references ratings and passenger have been updated.');
     }
 }
