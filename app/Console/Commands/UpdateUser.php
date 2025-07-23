@@ -70,14 +70,14 @@ class UpdateUser extends Command
             $trip->save();
         }
 
-        // Actualizar references: user_id_from
+        
         $referencesFrom = References::where('user_id_from', '=', $originalId)->get();
         foreach ($referencesFrom as $reference) {
             $reference->user_id_from = $newId;
             $reference->save();
         }
 
-        // Actualizar references: user_id_to
+        
         $referencesTo = References::where('user_id_to', '=', $originalId)->get();
         foreach ($referencesTo as $reference) {
             $reference->user_id_to = $newId;
