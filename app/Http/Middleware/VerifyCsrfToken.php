@@ -13,6 +13,7 @@ class VerifyCsrfToken extends BaseVerifier
      */
     protected $except = [
         'transbank-respuesta',
-        'transbank-final'
+        'transbank-final',
+        'webhooks/mercadopago'
     ];
 }
