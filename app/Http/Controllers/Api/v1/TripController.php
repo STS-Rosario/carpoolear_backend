@@ -105,7 +105,7 @@ class TripController extends Controller
         } else {
             $asDriver = true;
         }
-        if ($request->has('user_id')  && $this->user->is_admin) {
+        if ($request->has('user_id')  ) {
             $trips = $this->tripsLogic->getTrips($this->user,$request->get('user_id'), $asDriver);
         } else {
             $trips = $this->tripsLogic->getTrips($this->user,$this->user->id, $asDriver);
