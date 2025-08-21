@@ -73,15 +73,60 @@ class MercadoPagoWebhookController extends Controller
 
         // parse external reference to determine payment type
         $externalReference = $mpPayment['external_reference'];
+        $decodedReference = $this->parseExternalReference($externalReference);
         
-        if (stripos($externalReference, 'sellado') !== false) {
+        if (!$decodedReference) {
+            Log::error('Failed to parse external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+        
+        if (stripos($decodedReference, 'sellado') !== false) {
             return $this->handleTripPayment($mpPayment);
-        } elseif (stripos($externalReference, 'campaña') !== false) {
+        } elseif (stripos($decodedReference, 'campaña') !== false) {
             return $this->handleCampaignDonation($mpPayment);
         }
 
-        Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference]);
+        Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
         return response()->json(['error' => 'Unknown payment type'], 400);
+    }
+
+    /**
+     * Parse and verify external reference from MercadoPago payment
+     * Returns decoded reference string or null if invalid
+     */
+    protected function parseExternalReference($externalReference)
+    {
+        // Check if it's a hashed reference (new format)
+        if (strpos($externalReference, ':') !== false) {
+            // Split hash and encoded data
+            $parts = explode(':', $externalReference, 2);
+            if (count($parts) !== 2) {
+                Log::error('Invalid external reference format', ['external_reference' => $externalReference]);
+                return null;
+            }
+            
+            $hash = $parts[0];
+            $encodedData = $parts[1];
+            
+            // Verify hash
+            $referenceString = base64_decode($encodedData);
+            $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
+            $expectedHash = hash('sha256', $referenceString . $salt);
+            
+            if (!hash_equals($hash, $expectedHash)) {
+                Log::error('Invalid external reference hash', [
+                    'external_reference' => $externalReference,
+                    'calculated_hash' => $expectedHash,
+                    'received_hash' => $hash
+                ]);
+                return null;
+            }
+            
+            return $referenceString;
+        }
+        
+        // Legacy format (plain text) - return as is
+        return $externalReference;
     }
 
     protected function verifyMercadoPagoRequest(Request $request)
@@ -269,7 +314,14 @@ class MercadoPagoWebhookController extends Controller
     {
         // parse tripId from external reference
         $externalReference = $mpPayment['external_reference'];
-        $tripId = explode('Sellado de Viaje ID: ', $externalReference)[1];
+        $decodedReference = $this->parseExternalReference($externalReference);
+        
+        if (!$decodedReference) {
+            Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+        
+        $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
 
         // get the trip for this payment
         $trip = Trip::where('id', $tripId)->first();
@@ -303,12 +355,19 @@ class MercadoPagoWebhookController extends Controller
     protected function handleCampaignDonation($mpPayment)
     {
         // Parse campaign ID, reward ID, user ID and donation ID from external reference
-        // Format: "Donación Campaña ID: {campaignId}; Slug: {slug}; Reward ID: {rewardId}; User ID: {userId}; Donation ID: {donationId}"
         $externalReference = $mpPayment['external_reference'];
-        preg_match('/Donación Campaña ID: (\d+); Slug: ([^;]+); Reward ID: (\d+); User ID: ([^;]+); Donation ID: (\d+)/', $externalReference, $matches);
+        $decodedReference = $this->parseExternalReference($externalReference);
+        
+        if (!$decodedReference) {
+            Log::error('Failed to parse campaign donation external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+        
+        // Parse the decoded reference
+        preg_match('/Donación Campaña ID: (\d+); Slug: ([^;]+); Reward ID: (\d+); User ID: ([^;]+); Donation ID: (\d+)/', $decodedReference, $matches);
         
         if (count($matches) !== 6) {
-            Log::error('Invalid campaign donation external reference format', ['external_reference' => $externalReference]);
+            Log::error('Invalid campaign donation external reference format', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
             return response()->json(['error' => 'Invalid external reference format'], 400);
         }
 

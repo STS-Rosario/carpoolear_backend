@@ -99,8 +99,7 @@ class MercadoPagoService
                 "pending" => config('app.url') . "/campaigns/{$campaign->slug}?result=pending",
             ],
             "auto_return" => "approved",
-            'external_reference' => sprintf(
-                'Donación Campaña ID: %d; Slug: %s; Reward ID: %d; User ID: %s; Donation ID: %d',
+            'external_reference' => $this->createHashedExternalReference(
                 $campaign->id,
                 $campaign->payment_slug,
                 $rewardId ?? 0,
@@ -110,5 +109,27 @@ class MercadoPagoService
         ];
 
         return $this->createPaymentPreference($preferenceData);
+    }
+
+    /**
+     * Create a hashed external reference for campaign donations
+     * Format: {hash}:{base64_encoded_data}
+     */
+    private function createHashedExternalReference(int $campaignId, string $slug, int $rewardId, $userId, int $donationId): string
+    {
+        $referenceString = sprintf(
+            'Donación Campaña ID: %d; Slug: %s; Reward ID: %d; User ID: %s; Donation ID: %d',
+            $campaignId,
+            $slug,
+            $rewardId,
+            $userId,
+            $donationId
+        );
+
+        $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
+        $hash = hash('sha256', $referenceString . $salt);
+        $encodedData = base64_encode($referenceString);
+
+        return $hash . ':' . $encodedData;
     }
 }  
