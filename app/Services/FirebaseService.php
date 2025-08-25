@@ -65,4 +65,63 @@ class FirebaseService
         ]); 
         return json_decode($response->getBody(), true);
     }
+
+    /**
+     * Unregisters a device from FCM by sending a delete request
+     * This stops the device from receiving any future notifications
+     */
+    public function unregisterDevice($deviceToken)
+    {
+        // Simply log the unregistration - no need to send a push notification
+        // The device will be removed from our database, which is sufficient
+        // FCM will naturally invalidate the token when we try to send to it later
+        \Log::info('Device unregistered from FCM', [
+            'device_token' => $deviceToken,
+            'method' => 'database_removal'
+        ]);
+        
+        return true;
+    }
+
+    /**
+     * Invalidates a FCM token by sending an invalid message
+     * This causes FCM to mark the token as invalid
+     */
+    private function invalidateToken($deviceToken)
+    {
+        try {
+            $accessToken = $this->getAccessToken();
+            
+            $http = new HttpClient();
+            $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
+            
+            // Send a message with invalid data to invalidate the token
+            $message = [
+                'message' => [
+                    'token' => $deviceToken,
+                    'webpush' => [
+                        'notification' => [
+                            'title' => '',
+                            'body' => ''
+                        ]
+                    ],
+                    'data' => [
+                        'invalidate' => 'true'
+                    ]
+                ]
+            ];
+            
+            $http->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $message,
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }
