@@ -159,7 +159,26 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        auth()->parseToken()->invalidate();
+        $user = auth()->user();
+
+        // Clean up only the current device to stop push notifications for this session
+        if ($user) {
+            $token = JWTAuth::getToken();
+            if ($token) {
+                $this->deviceLogic->logoutDevice($token, $user);
+            }
+        }
+        
+        // Invalidate the JWT token using the correct method
+        try {
+            $token = JWTAuth::getToken();
+            if ($token) {
+                JWTAuth::invalidate($token);
+                \Log::info('JWT token invalidated successfully');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to invalidate JWT token: ' . $e->getMessage());
+        }
 
         return response()->json('OK');
     }
