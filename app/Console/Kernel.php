@@ -31,6 +31,8 @@ class Kernel extends ConsoleKernel
         Commands\GenerateTripVisibility::class,
         Commands\CleanTripVisibility::class,
         Commands\EmailMessageNotification::class,
+        Commands\SendAnnouncement::class,
+        Commands\TestAnnouncement::class,
 
     ];
 
