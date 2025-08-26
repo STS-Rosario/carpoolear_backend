@@ -39,7 +39,8 @@ class BadgeRequest extends FormRequest
                 'registration_duration',
                 'donated_to_campaign',
                 'total_donated',
-                'monthly_donor'
+                'monthly_donor',
+                'carpoolear_member'
             ])],
             'rules.days' => ['required_if:rules.type,registration_duration', 'integer', 'min:1'],
             'rules.campaign_id' => ['required_if:rules.type,donated_to_campaign', 'integer', 'exists:campaigns,id'],
@@ -55,7 +56,7 @@ class BadgeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'rules.type.in' => 'The badge type must be one of: registration_duration, donated_to_campaign, total_donated, monthly_donor',
+            'rules.type.in' => 'The badge type must be one of: registration_duration, donated_to_campaign, total_donated, monthly_donor, carpoolear_member',
             'rules.days.required_if' => 'The days field is required for registration duration badges',
             'rules.campaign_id.required_if' => 'The campaign ID is required for campaign donation badges',
             'rules.amount.required_if' => 'The amount is required for total donation badges',
