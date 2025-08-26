@@ -74,6 +74,7 @@ class AuthController extends Controller
         $isCordova = false;
         if (isset($_SERVER['HTTP_SEC_CH_UA'])) {
             $secChUa = $_SERVER['HTTP_SEC_CH_UA'];
+            $userAgent = $_SERVER['HTTP_USER_AGENT'];
             
             $user = auth()->user();
             
@@ -84,7 +85,7 @@ class AuthController extends Controller
                 \Log::warning('getConfig called without authenticated user');
             }
             
-            if (strpos($secChUa, 'WebView') !== false) {
+            if (strpos($secChUa, 'WebView') !== false && strpos($userAgent, 'Instagram') === false) {
                 $isCordova = true;
             }
         }
