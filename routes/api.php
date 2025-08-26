@@ -146,6 +146,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/', [DeviceController::class,'register']);
         Route::put('/{id?}', [DeviceController::class,'update']);
         Route::delete('/{id?}', [DeviceController::class,'delete']);
+        Route::post('/logout', [DeviceController::class,'logout']);
     });
 
     Route::prefix('data')->group( function () {
