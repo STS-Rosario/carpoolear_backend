@@ -22,5 +22,6 @@ yarn-error.log
 /.vscode
 /.zed
 .db
+.DS_Store
 
 storage/firebase*.json
