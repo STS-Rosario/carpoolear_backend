@@ -36,7 +36,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('log', [AuthController::class, 'log']);
 
     Route::prefix('users')->group( function () {
-        Route::get('/ratings', [RatingController::class,'rratings']);
+        Route::get('/ratings', [RatingController::class,'ratings']);
         Route::get('/ratings/pending', [RatingController::class,'pendingRate']);
         Route::get('/get-trips', [TripController::class,'getTrips']);
         Route::get('/get-old-trips', [TripController::class,'getOldTrips']);
