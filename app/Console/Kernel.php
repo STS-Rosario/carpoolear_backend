@@ -33,6 +33,7 @@ class Kernel extends ConsoleKernel
         Commands\EmailMessageNotification::class,
         Commands\SendAnnouncement::class,
         Commands\TestAnnouncement::class,
+        Commands\EvaluateBadges::class,
 
     ];
 
@@ -62,6 +63,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('node:buildweights')->hourly();
 
         $schedule->command('messages:email')->everyTenMinutes();
+
+        // Evaluate badges daily at 2 AM
+        // $schedule->command('badges:evaluate')->dailyAt('02:00')->timezone('America/Argentina/Buenos_Aires');
 
     }
 

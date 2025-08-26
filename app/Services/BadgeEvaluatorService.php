@@ -63,6 +63,7 @@ class BadgeEvaluatorService
             'donated_to_campaign' => $this->checkCampaignDonation($user, $rules),
             'total_donated' => $this->checkTotalDonations($user, $rules),
             'monthly_donor' => $this->checkMonthlyDonor($user),
+            'carpoolear_member' => $this->checkCarpoolearMember($user),
             default => false,
         };
     }
@@ -86,7 +87,12 @@ class BadgeEvaluatorService
         if (!isset($rules['campaign_id'])) {
             throw new \InvalidArgumentException('Campaign donation badge requires campaign_id parameter');
         }
-        return $user->donations()->where('campaign_id', $rules['campaign_id'])->exists();
+        
+        // Check campaign_donations table for paid donations
+        return $user->campaignDonations()
+            ->where('campaign_id', $rules['campaign_id'])
+            ->where('status', 'paid')
+            ->exists();
     }
 
     /**
@@ -106,5 +112,16 @@ class BadgeEvaluatorService
     protected function checkMonthlyDonor(User $user): bool
     {
         return $user->donations()->where('is_recurring', true)->exists();
+    }
+
+    /**
+     * Check if user is a Carpoolear team member.
+     */
+    protected function checkCarpoolearMember(User $user): bool
+    {
+        // Hardcoded list of Carpoolear team member IDs
+        $teamMemberIds = [3209, 3203];
+        
+        return in_array($user->id, $teamMemberIds);
     }
 } 
