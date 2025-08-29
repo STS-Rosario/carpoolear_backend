@@ -37,7 +37,8 @@ class Conversation extends Model
 
     public function read(UserModel $user)
     {
-        return $this->users()->where('user_id', $user->id)->first()->pivot->read;
+        $userRelation = $this->users()->where('user_id', $user->id)->first();
+        return $userRelation ? $userRelation->pivot->read : false;
     }
 
     public function messages()
