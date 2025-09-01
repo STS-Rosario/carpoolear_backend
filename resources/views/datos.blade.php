@@ -26,6 +26,8 @@
                 <h3>Usuarios registrados</h3>
                 <canvas id="grafico-usuarios"></canvas>
                 <canvas id="grafico-usuarios-totales"></canvas>
+                <h3>Usuarios activos por mes</h3>
+                <canvas id="grafico-usuarios-activos"></canvas>
                 <!--<h3>Conductores con más viajes cargados</h3>
                 <div id="ranking-conductores"></div>
                 <h3>Pasajeros que más han carpooleado</h3>
@@ -121,6 +123,59 @@
                 title: {
                     display: true,
                     text: 'Usuarios totales registrados'
+                },
+                tooltips: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
+                scales: {
+                    xAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Mes'
+                        }
+                    }],
+                    yAxes: [{
+                        display: true,
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'Cantidad'
+                        }
+                    }]
+                }
+            }
+        });
+    }
+
+    function crearGraficoUsuariosActivos (labels, data) {
+        var ctx = document.getElementById('grafico-usuarios-activos');
+        var chart = new Chart(ctx, {
+            // The type of chart we want to create
+            type: 'line',
+
+            // The data for our dataset
+            data: {
+                labels: labels,
+                datasets: [{
+                        label: 'Usuarios Activos',
+                        backgroundColor: "#0066CC",
+                        borderColor: "#0066CC",
+                        data: data,
+                        fill: false,
+                }]
+            },
+
+            // Configuration options go here
+            options: {
+                responsive: true,
+                title: {
+                    display: true,
+                    text: 'Usuarios activos por mes'
                 },
                 tooltips: {
                     mode: 'index',
@@ -378,6 +433,17 @@
                     datasetTotales.push(total);
                 });
                 crearGraficoUsuarios(labels, dataset, datasetTotales);
+            }
+
+            if (data && data.usuarios_activos) {
+                console.log(data.usuarios_activos);
+                var labels = [];
+                var dataset = [];
+                data.usuarios_activos.forEach(function (el) {
+                    labels.push(el.key);
+                    dataset.push(el.cantidad);
+                });
+                crearGraficoUsuariosActivos(labels, dataset);
             }
 
         });

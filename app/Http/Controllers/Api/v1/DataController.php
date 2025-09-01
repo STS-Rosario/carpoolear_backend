@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use DB;
 use Exception;
 use STS\Http\Controllers\Controller;
+use STS\Models\ActiveUsersPerMonth;
 
 class DataController extends Controller
 {
@@ -152,13 +153,28 @@ class DataController extends Controller
             
             $frecuencia_origenes_destinos = DB::select($queryOrigenesDestinosFrecuencia, [self::LIMIT_TOP]);
 
+            // Get active users per month data
+            $activeUsersPerMonth = ActiveUsersPerMonth::orderBy('year', 'asc')
+                ->orderBy('month', 'asc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'key' => sprintf('%04d-%02d', $item->year, $item->month),
+                        'año' => $item->year,
+                        'mes' => $item->month,
+                        'cantidad' => $item->value,
+                        'saved_at' => $item->saved_at
+                    ];
+                });
+
             return response()->json([
                 'usuarios' => $usuarios,
                 'viajes' => $viajes,
                 'solicitudes' => $solicitudes,
                 'frecuencia_origenes_posterior_ago_2017' => $frecuencia_origenes,
                 'frecuencia_destinos_posterior_ago_2017' => $frecuencia_destinos,
-                'frecuencia_origenes_destinos_posterior_ago_2017' => $frecuencia_origenes_destinos
+                'frecuencia_origenes_destinos_posterior_ago_2017' => $frecuencia_origenes_destinos,
+                'usuarios_activos' => $activeUsersPerMonth
             ]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving data'], 500);

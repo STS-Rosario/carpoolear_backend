@@ -3,6 +3,7 @@
 namespace STS\Http\Controllers;
 
 use DB;
+use STS\Models\ActiveUsersPerMonth;
 
 class DataController extends Controller
 {
@@ -97,6 +98,20 @@ class DataController extends Controller
 
         $frecuencia_origenes_destinos_posterior_ago_2017 = array_slice($frecuencia_origenes_destinos_posterior_ago_2017, 0, 25);
 
+        // Get active users per month data
+        $activeUsersPerMonth = ActiveUsersPerMonth::orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'key' => sprintf('%04d-%02d', $item->year, $item->month),
+                    'año' => $item->year,
+                    'mes' => $item->month,
+                    'cantidad' => $item->value,
+                    'saved_at' => $item->saved_at
+                ];
+            });
+
         return response()->json([
             'usuarios' => $usuarios,
             'viajes' => $viajes,
@@ -104,6 +119,7 @@ class DataController extends Controller
             'frecuencia_origenes_posterior_ago_2017' => $frecuencia_origenes_posterior_ago_2017,
             'frecuencia_destinos_posterior_ago_2017' => $frecuencia_destinos_posterior_ago_2017,
             'frecuencia_origenes_destinos_posterior_ago_2017' => $frecuencia_origenes_destinos_posterior_ago_2017,
+            'usuarios_activos' => $activeUsersPerMonth,
         ]);
     }
 
