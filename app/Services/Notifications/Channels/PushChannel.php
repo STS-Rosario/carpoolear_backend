@@ -28,20 +28,29 @@ class PushChannel
         });
 
         foreach ($devicesFiltered as $device) {
+
             $data = $this->getData($notification, $user, $device);
             $data['extras'] = $this->getExtraData($notification);
           
             if ($device->notifications) {
-                // no va mas
-                
-                // if ($device->isAndroid()) {
-                //     $this->sendAndroid($device, $data);
-                // }
-                // if ($device->isIOS()) {
-                //     $this->sendIOS($device, $data);
-                // }
-                if ($device->isBrowser()) {
+                if ($device->isAndroid()) {
+                    $this->sendAndroid($device, $data);
+                    return;
+                }
+                if ($device->isIOS()) {
+                    $this->sendIOS($device, $data);
+                    return;
+                }
+                elseif ($device->isBrowser()) {
                     $this->sendBrowser($device, $data);
+                    return;
+                } else {
+                    \Log::warning('PushChannel: Device type not supported for push', [
+                        'device_type' => $device->device_type,
+                        'is_android' => $device->isAndroid(),
+                        'is_ios' => $device->isIOS(),
+                        'is_browser' => $device->isBrowser()
+                    ]);
                 }
             }
         }
@@ -67,10 +76,8 @@ class PushChannel
     { 
         $firebase = new FirebaseService();
        
-        // El token de registro del dispositivo al que se enviará la notificación
         $device_token = $device->device_id;
       
-        // El mensaje que se enviará
         $message = array(
             'title' => 'Carpoolear',
             'body' => $data["message"],
@@ -81,78 +88,90 @@ class PushChannel
             $message['click_action'] = $data['url'];
         } 
         
-        $a = $firebase->sendNotification($device_token, $message, $data["extras"]);
-      
+        $firebase->sendNotification($device_token, $message, $data["extras"], 'browser');
     }
 
 
     public function sendAndroid($device, $data)
     {
-        $message = $data['message'];
-        $defaultData = [
-            'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
-        ];
+        try {
+            $firebase = new FirebaseService();
+            
+            $device_token = $device->device_id;
+            
+            $message = array(
+                'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
+                'body' => $data['message'],
+                'icon' => isset($data['image']) ? $data['image'] : 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png'
+            ); 
 
-        if (isset($data['sound'])) {
-            $defaultData['soundname'] = $data['sound'];
+            if (isset($data['url'])) {
+                $message['click_action'] = $data['url'];
+            }
+
+            $dataPayload = [];
+            if (isset($data['type'])) {
+                $dataPayload['type'] = (string) $data['type'];
+            }
+            if (isset($data['extras'])) {
+                foreach ($data['extras'] as $key => $value) {
+                    $dataPayload[$key] = (string) $value;
+                }
+            }
+            if (isset($data['url'])) {
+                $dataPayload['url'] = (string) $data['url'];
+            }
+
+            $response = $firebase->sendNotification($device_token, $message, $dataPayload, 'android');
+            
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('PushChannel: sendAndroid error', [
+                'device_id' => $device->id,
+                'device_token' => $device->device_id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
-
-        if (isset($data['url'])) {
-            $defaultData['url'] = $data['url'];
-        }
-
-        if (isset($data['type'])) {
-            $defaultData['type'] = $data['type'];
-        }
-
-        if (isset($data['extras'])) {
-            $defaultData['extras'] = $data['extras'];
-        }
-
-        if (isset($data['action'])) {
-            $defaultData['actions'] = $android_actions[$data['action']];
-        }
-        if (! isset($data['time_to_live'])) {
-            $defaultData['time_to_live'] = 2419200;
-        }
-
-        $defaultData['image'] = isset($data['image']) ? $data['image'] : 'www/logo.png';
-
-        $collection = \PushNotification::app('android')
-                                    ->to($device->device_id)
-                                    ->send($message, $defaultData);
-
-        $this->_inspectGoogleResponse($device, $collection);
     }
 
     public function sendIOS($device, $data)
     {
-        $message = $data['message'];
+        try {
+            $firebase = new FirebaseService();
+            
+            $device_token = $device->device_id;
+            
+            $message = array(
+                'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
+                'body' => $data['message'],
+                'icon' => isset($data['image']) ? $data['image'] : 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png'
+            ); 
 
-        $defaultData = [
-            'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
-        ];
+            $dataPayload = [];
+            if (isset($data['type'])) {
+                $dataPayload['type'] = (string) $data['type'];
+            }
+            if (isset($data['extras'])) {
+                foreach ($data['extras'] as $key => $value) {
+                    $dataPayload[$key] = (string) $value;
+                }
+            }
+            if (isset($data['url'])) {
+                $dataPayload['url'] = (string) $data['url'];
+            }
 
-        if (isset($data['sound'])) {
-            $defaultData['sound'] = 'www/audio/'.$data['sound'].'.wav';
+            $response = $firebase->sendNotification($device_token, $message, $dataPayload, 'ios');
+            
+            return $response;
+        } catch (\Exception $e) {
+            \Log::error('PushChannel: sendIOS error', [
+                'device_id' => $device->id,
+                'device_token' => $device->device_id,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
         }
-
-        $defaultData['custom'] = [];
-        if (isset($data['url'])) {
-            $defaultData['custom']['url'] = $data['url'];
-        }
-
-        if (isset($data['extras'])) {
-            $defaultData['custom']['extras'] = $data['extras'];
-        }
-
-        if (isset($data['action'])) {
-            $defaultData['category'] = $data['action'];
-        }
-
-        $collection = \PushNotification::app('ios')
-                        ->to($device->device_id)
-                        ->send($message, $defaultData);
     }
 
     public function _inspectGoogleResponse($device, $collection)

@@ -35,35 +35,91 @@ class FirebaseService
     }
 
     /**
-     * Envía una notificación Webpush usando FCM.
+     * Envía una notificación usando FCM según el tipo de dispositivo.
      */
-    public function sendNotification($deviceToken, $notification, $data)
+    public function sendNotification($deviceToken, $notification, $data, $deviceType = 'android')
     {
-        $accessToken = $this->getAccessToken();
+        try {
+            $accessToken = $this->getAccessToken();
+            
+            $http = new HttpClient();
+            $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
 
-        $http = new HttpClient();
-        $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
-
-        // Construir el payload de la notificación
-        $message = [
-            'message' => [
-                'token' => $deviceToken,
-                'webpush' => [
-                    'notification' => $notification,
+            $message = [
+                'message' => [
+                    'token' => $deviceToken
                 ]
-                // 'data' => $data
-            ]
-        ];
+            ];
 
-        // Hacer la solicitud POST al servidor de FCM
-        $response = $http->post($url, [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type' => 'application/json',
-            ],
-            'json' => $message,
-        ]); 
-        return json_decode($response->getBody(), true);
+            switch (strtolower($deviceType)) {
+                case 'android':
+                    $stringData = [];
+                    if (is_array($data)) {
+                        foreach ($data as $key => $value) {
+                            $stringData[$key] = (string) $value;
+                        }
+                    }
+                    
+                    $message['message']['android'] = [
+                        'notification' => $notification,
+                        'data' => $stringData
+                    ];
+                    break;
+                    
+                case 'ios':
+                    $stringData = [];
+                    if (is_array($data)) {
+                        foreach ($data as $key => $value) {
+                            $stringData[$key] = (string) $value;
+                        }
+                    }
+                    
+                    $message['message']['apns'] = [
+                        'payload' => [
+                            'aps' => [
+                                'alert' => [
+                                    'title' => $notification['title'],
+                                    'body' => $notification['body']
+                                ],
+                                'sound' => 'default',
+                                'badge' => 1
+                            ]
+                        ],
+                        'headers' => [
+                            'apns-priority' => '10'
+                        ]
+                    ];
+                    $message['message']['data'] = $stringData;
+                    break;
+                    
+                case 'browser':
+                case 'web':
+                default:
+                    $message['message']['webpush'] = [
+                        'notification' => $notification,
+                        'data' => $data
+                    ];
+                    break;
+            }
+
+            $response = $http->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $message
+            ]);
+
+            return json_decode($response->getBody(), true);
+            
+        } catch (\Exception $e) {
+            \Log::error('FirebaseService: Error sending notification', [
+                'device_token' => $deviceToken,
+                'device_type' => $deviceType,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
 
     /**
@@ -72,14 +128,6 @@ class FirebaseService
      */
     public function unregisterDevice($deviceToken)
     {
-        // Simply log the unregistration - no need to send a push notification
-        // The device will be removed from our database, which is sufficient
-        // FCM will naturally invalidate the token when we try to send to it later
-        \Log::info('Device unregistered from FCM', [
-            'device_token' => $deviceToken,
-            'method' => 'database_removal'
-        ]);
-        
         return true;
     }
 
@@ -95,7 +143,6 @@ class FirebaseService
             $http = new HttpClient();
             $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
             
-            // Send a message with invalid data to invalidate the token
             $message = [
                 'message' => [
                     'token' => $deviceToken,
