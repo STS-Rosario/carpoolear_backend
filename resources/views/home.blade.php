@@ -128,14 +128,21 @@
                     <h5 class="uppercase bold mb16">Funciona en todos los dispositivos</h5>
                     <p class="fade-1-4 mb0">
                         Usá nuestra web app desde tu celular o PC , ingresá a <a href="https://www.carpoolear.com.ar/app">www.carpoolear.com.ar/app</a>
+<<<<<<< HEAD
                         desde cualquier navegador y aceptá instalarla para tener notificaciones.
                     </p>
                     <p class="fade-1-4 small">
                         En caso de Iphone, ingresá de navegador Safari y instalá siguiendo las instrucciones que te aparecen al ingresar
+=======
+                        desde cualquier navegador* y aceptá instalarla para tener notificaciones. 
+                    </p>
+                    <p class="fade-1-4 small">
+                        En caso de Iphone, ingresá de navegador Safari y instalá siguiendo las instrucciones que te aparecen al ingresar                        
+>>>>>>> 68f2ac36b6a661e0a415ab8161ec238c3601c9da
                     </p>
                 </div>
                 
-                <div class="mt80 mt-xs-80 text-right text-left-xs">
+                <div class="mt80 mt-xs-0 text-right text-left-xs">
                     <h5 class="uppercase bold mb16">Sistema de calificaciones</h5>
                     <p class="fade-1-4">
                         Compartí viajes y contale al resto de la comunidad Carpoolear cómo te fue :)
