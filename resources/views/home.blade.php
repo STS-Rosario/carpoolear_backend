@@ -126,9 +126,12 @@
             <div class="col-md-3 col-md-pull-6">
                 <div class="mt80 mt-xs-0 text-right text-left-xs">
                     <h5 class="uppercase bold mb16">Funciona en todos los dispositivos</h5>
-                    <p class="fade-1-4">
-                        Usá la plataforma en PC/tablet/smartphone en su <a href="https://carpoolear.com.ar/app">versión web</a>
-                        o descargarte las apps para <a href="https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419">Android</a> o <a href="https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8">iPhone</a>.
+                    <p class="fade-1-4 mb0">
+                        Usá nuestra web app desde tu celular o PC , ingresá a <a href="https://www.carpoolear.com.ar/app">www.carpoolear.com.ar/app</a>
+                        desde cualquier navegador y aceptá instalarla para tener notificaciones.
+                    </p>
+                    <p class="fade-1-4 small">
+                        En caso de Iphone, ingresá de navegador Safari y instalá siguiendo las instrucciones que te aparecen al ingresar
                     </p>
                 </div>
                 
