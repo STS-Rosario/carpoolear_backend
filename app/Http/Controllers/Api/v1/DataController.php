@@ -81,6 +81,29 @@ class DataController extends Controller
         }
     }
 
+    public function monthlyUsers() 
+    {
+        try {
+            // Get active users per month data
+            $activeUsersPerMonth = ActiveUsersPerMonth::orderBy('year', 'asc')
+                ->orderBy('month', 'asc')
+                ->get()
+                ->map(function ($item) {
+                    return [
+                        'key' => sprintf('%04d-%02d', $item->year, $item->month),
+                        'año' => $item->year,
+                        'mes' => $item->month,
+                        'cantidad' => $item->value,
+                        'saved_at' => $item->saved_at
+                    ];
+                });
+            
+            return response()->json(['monthly_users' => $activeUsersPerMonth]);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'Error retrieving monthly users data'], 500);
+        }
+    }
+
     public function data() 
     {
         try {
