@@ -128,7 +128,6 @@
                     <h5 class="uppercase bold mb16">Funciona en todos los dispositivos</h5>
                     <p class="fade-1-4 mb0">
                         Usá nuestra web app desde tu celular o PC , ingresá a <a href="https://www.carpoolear.com.ar/app">www.carpoolear.com.ar/app</a>
-
                         desde cualquier navegador y aceptá instalarla para tener notificaciones.
                     </p>
                     <p class="fade-1-4 small">
