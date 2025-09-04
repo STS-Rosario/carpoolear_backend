@@ -13,7 +13,7 @@ use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Http\Controllers\Api\v1\UserController;
-use STS\Http\Controllers\DataController;
+use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
