@@ -43,7 +43,7 @@ class UserController extends Controller
         }
 
         // return response()->json(['user' => $user]);
-        return $this->item($user, new ProfileTransformer($user));
+        return $this->item($user, new ProfileTransformer(auth()->user()));
 
     }
 
@@ -80,22 +80,33 @@ class UserController extends Controller
     }
     
     public function adminUpdate(Request $request) {
-        \Log::info('update controller: acaaaaaaaaaa ........ ---------' );
         $me = auth()->user();
-        $data = $request->all();
-        if (isset($data['user'])) {
-            $user = $data['user'];
-            $user = $this->userLogic->show($me, $user['id']);
-            unset($data['user']);
+        if (!$me->is_admin) {
+            throw new ExceptionWithErrors('Access denied. Admin privileges required.');
         }
-        if ($me->is_admin) {
-            \Log::info('update controller: ' . $user->name);
-            $profile = $this->userLogic->update($user, $data, false, true);
-            if (!$profile) {
-                throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
-            }
-        } 
-        return $this->item($profile, new ProfileTransformer($user));
+        
+        $data = $request->all();
+        $user = null;
+        
+        // Extract user ID from the request
+        if (isset($data['user']) && isset($data['user']['id'])) {
+            $userId = $data['user']['id'];
+            $user = $this->userLogic->show($me, $userId);
+            unset($data['user']);
+        } else {
+            throw new ExceptionWithErrors('User ID is required for admin update.');
+        }
+        
+        if (!$user) {
+            throw new ExceptionWithErrors('User not found.');
+        }
+        
+        $profile = $this->userLogic->update($user, $data, false, true);
+        if (!$profile) {
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
+        }
+        
+        return $this->item($profile, new ProfileTransformer($me));
     }
 
     public function updatePhoto(Request $request)

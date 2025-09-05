@@ -31,4 +31,9 @@ class CarsRepository
     {
         return $user->cars;
     }
+
+    public function getUserCar($userId)
+    {
+        return CarModel::where('user_id', $userId)->first();
+    }
 }

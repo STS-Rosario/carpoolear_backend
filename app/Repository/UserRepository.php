@@ -27,11 +27,22 @@ class UserRepository
         $user->update($data);
     }
 
+    public function migrateUsers($user_id_delete, $user_id_keep)
+    {
+        $user = User::find($user_id_keep);
+        $user_delete = User::find($user_id_delete);
+        if ($user && $user_delete) {
+            $user->migrateUser($user_delete);
+        }
+    }
+
     public function show($id)
     {
-        $user =User::with(['accounts', 'donations', 'referencesReceived'])->where('id', $id)->first(); 
+        $user =User::with(['accounts', 'donations', 'referencesReceived', 'cars'])->where('id', $id)->first(); 
         // prevent from returning the private_note to the frontend
         $user->private_note = null; // TODO: how to better hide this?
+        // $exitCode = \Artisan::call('test:test', []);
+        // \Log::info('Test COMMAND exit' . $exitCode);
         return $user;
     }
 
@@ -66,7 +77,7 @@ class UserRepository
         } else {
             return null;
         }
-        $users->with('accounts');
+        $users->with(['accounts', 'cars']);
         $users->orderBy('name');
         $users->limit(9);
         $users = $users->get();
@@ -91,7 +102,7 @@ class UserRepository
             });
         }
 
-        $users->with('accounts');
+        $users->with(['accounts', 'cars']);
         $users->orderBy('name');
         $users = $users->get();
 
