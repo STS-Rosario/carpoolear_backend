@@ -63,7 +63,7 @@ class ProfileTransformer extends TransformerAbstract
             'references_data' => $user->referencesReceived
         ];
 
-        if ($user->id == $this->user->id || $this->user->is_admin) {
+        if ($this->user && ($user->id == $this->user->id || $this->user->is_admin)) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
             $data['accounts'] = $user->accounts;
@@ -86,7 +86,7 @@ class ProfileTransformer extends TransformerAbstract
         switch ($user->data_visibility) {
             case '0':
                 # viaja conmigo
-                if ($this->tripLogic->shareTrip($this->user, $user)) {
+                if ($this->user && $this->tripLogic->shareTrip($this->user, $user)) {
                     $data['nro_doc'] = $user->nro_doc;
                     $data['email'] = $user->email;
                     $data['mobile_phone'] = $user->mobile_phone;
