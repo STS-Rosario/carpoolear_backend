@@ -28,28 +28,23 @@ class PushChannel
         });
 
         foreach ($devicesFiltered as $device) {
-
             $data = $this->getData($notification, $user, $device);
             $data['extras'] = $this->getExtraData($notification);
           
             if ($device->notifications) {
-                if ($device->isAndroid()) {
-                    $this->sendAndroid($device, $data);
-                    return;
-                }
-                if ($device->isIOS()) {
-                    $this->sendIOS($device, $data);
-                    return;
-                }
-                elseif ($device->isBrowser()) {
-                    $this->sendBrowser($device, $data);
-                    return;
-                } else {
-                    \Log::warning('PushChannel: Device type not supported for push', [
+                try {
+                    if ($device->isAndroid()) {
+                        $this->sendAndroid($device, $data);
+                    } elseif ($device->isIOS()) {
+                        $this->sendIOS($device, $data);
+                    } elseif ($device->isBrowser()) {
+                        $this->sendBrowser($device, $data);
+                    }
+                } catch (\Exception $e) {
+                    \Log::error('PushChannel: Error sending push notification', [
+                        'device_id' => substr($device->device_id, 0, 20) . '...',
                         'device_type' => $device->device_type,
-                        'is_android' => $device->isAndroid(),
-                        'is_ios' => $device->isIOS(),
-                        'is_browser' => $device->isBrowser()
+                        'error' => $e->getMessage()
                     ]);
                 }
             }
@@ -174,30 +169,4 @@ class PushChannel
         }
     }
 
-    public function _inspectGoogleResponse($device, $collection)
-    {
-        foreach ($collection->pushManager as $push) {
-            $response = $push->getAdapter()->getResponse()->getResponse();
-            console_log($response);
-            if ($response['canonical_ids'] > 0) {
-                $newID = $response['results'][0]['registration_id'];
-                $d = Device::where('device_id', $newID)->first();
-                if ($d) {
-                    $device->delete();
-                } else {
-                    $hash = $device->session_id;
-                    $usuario = $device->usuario_id;
-                    $device_type = $device->device_type;
-                    $device->delete();
-
-                    $device = new Device();
-                    $device->device_id = $device_id;
-                    $device->session_id = $hash;
-                    $device->usuario_id = $usuario;
-                    $device->device_type = $device_type;
-                    $device->save();
-                }
-            }
-        }
-    }
 }

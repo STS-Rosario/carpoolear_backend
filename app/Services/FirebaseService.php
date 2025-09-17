@@ -56,7 +56,11 @@ class FirebaseService
                     $stringData = [];
                     if (is_array($data)) {
                         foreach ($data as $key => $value) {
-                            $stringData[$key] = (string) $value;
+                            if (is_array($value) || is_object($value)) {
+                                $stringData[$key] = json_encode($value);
+                            } else {
+                                $stringData[$key] = (string) $value;
+                            }
                         }
                     }
                     
@@ -70,7 +74,11 @@ class FirebaseService
                     $stringData = [];
                     if (is_array($data)) {
                         foreach ($data as $key => $value) {
-                            $stringData[$key] = (string) $value;
+                            if (is_array($value) || is_object($value)) {
+                                $stringData[$key] = json_encode($value);
+                            } else {
+                                $stringData[$key] = (string) $value;
+                            }
                         }
                     }
                     
