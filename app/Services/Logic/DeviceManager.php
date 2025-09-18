@@ -33,7 +33,6 @@ class DeviceManager extends BaseManager
         $v = $this->validator($data);
         if ($v->fails()) {
             $this->setErrors($v->errors());
-
             return;
         }
 
