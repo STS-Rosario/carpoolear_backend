@@ -24,6 +24,7 @@ Route::get('/contacto', [HomeController::class, 'contacto']);
 Route::get('/autorojo', [HomeController::class, 'autoRojo']);
 Route::get('/descarga', [HomeController::class, 'descarga']);
 Route::get('/app/{name?}', [HomeController::class, 'handleApp'])->where('name', '[\/\w\.-]*');
+Route::get('/campaigns/{name?}', [HomeController::class, 'handleCampaigns'])->where('name', '[\/\w\.-]*');
 Route::get('/dev/{name?}', [HomeController::class, 'handleDev'])->where('name', '[\/\w\.-]*');
 Route::get('/desuscribirme', [HomeController::class, 'desuscribirme']);
 Route::get('/test', [HomeController::class, 'test']);

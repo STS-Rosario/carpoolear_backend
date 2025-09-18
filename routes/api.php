@@ -14,7 +14,15 @@ use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Http\Controllers\Api\v1\UserController;
 use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
-use STS\Http\Controllers\DataController;
+use STS\Http\Controllers\Api\v1\DataController;
+use STS\Http\Controllers\Api\Admin\BadgeController;
+use STS\Http\Controllers\Api\Admin\CampaignController;
+use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
+use STS\Http\Controllers\Api\Admin\CampaignDonationController;
+use STS\Http\Controllers\Api\Admin\CampaignRewardController;
+use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
+use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 
 
 Route::middleware(['api'])->group(function () {
@@ -30,7 +38,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('log', [AuthController::class, 'log']);
 
     Route::prefix('users')->group( function () {
-        Route::get('/ratings', [RatingController::class,'rratings']);
+        Route::get('/ratings', [RatingController::class,'ratings']);
         Route::get('/ratings/pending', [RatingController::class,'pendingRate']);
         Route::get('/get-trips', [TripController::class,'getTrips']);
         Route::get('/get-old-trips', [TripController::class,'getOldTrips']);
@@ -142,6 +150,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/', [DeviceController::class,'register']);
         Route::put('/{id?}', [DeviceController::class,'update']);
         Route::delete('/{id?}', [DeviceController::class,'delete']);
+        Route::post('/logout', [DeviceController::class,'logout']);
     });
 
     Route::prefix('data')->group( function () {
@@ -151,7 +160,26 @@ Route::middleware(['api'])->group(function () {
         Route::get('/monthlyusers', [DataController::class,'monthlyUsers']);
     });
 
+    // Public campaign routes
+    Route::get('campaigns/{slug}', [ApiCampaignController::class, 'showBySlug']);
+
     Route::prefix('references')->group( function () {
         Route::post('/', [ReferencesController::class,'create']);
     });
+
+    // Admin routes
+    Route::prefix('admin')->middleware('user.admin')->group(function () {
+        Route::apiResource('badges', BadgeController::class);
+        // Campaign routes
+        Route::apiResource('campaigns', CampaignController::class);
+        Route::apiResource('campaigns.milestones', CampaignMilestoneController::class);
+        Route::apiResource('campaigns.donations', CampaignDonationController::class);
+        Route::apiResource('campaigns.rewards', CampaignRewardController::class);
+        // Car management routes
+        Route::apiResource('cars', AdminCarController::class);
+        Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
+        Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
+    });
+
+    Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
 });

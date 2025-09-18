@@ -47,19 +47,23 @@ class ConversationsTransformer extends TransformerAbstract
         switch ($conversation->type) {
             case Conversation::TYPE_PRIVATE_CONVERSATION:
                 $width = $conversation->users()->where('id', '<>', $this->user->id)->first();
-                $data['title'] = $width->name;
-                $data['image'] = $width->image ? '/image/profile/'.$width->image : '';
-
+                if ($width) {
+                    $data['title'] = $width->name;
+                    $data['image'] = $width->image ? '/image/profile/'.$width->image : '';
+                } else {
+                    // Handle case where no other user is found
+                    $data['title'] = 'Unknown User';
+                    $data['image'] = '';
+                }
                 break;
             default:
                 $data['title'] = $conversation->title;
                 $data['image'] = '';
-
                 break;
         }
 
         $data['unread'] = ! $conversation->read($this->user);
-        $data['update_at'] = $conversation->updated_at->toDateTimeString();
+        $data['update_at'] = $conversation->updated_at ? $conversation->updated_at->toDateTimeString() : null;
 
         $m = $conversation->messages()->orderBy('created_at', 'desc')->first();
         if ($m) {
@@ -74,7 +78,7 @@ class ConversationsTransformer extends TransformerAbstract
             $data['users'][] = [
                 'id' => $u->id,
                 'name' => $u->name,
-                'last_connection' => $u->last_connection->toDateTimeString(),
+                'last_connection' => $u->last_connection ? $u->last_connection->toDateTimeString() : null,
             ];
         }
 

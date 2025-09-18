@@ -30,7 +30,7 @@ return [
     'module_max_price_kilometer_by_liter' => (int) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
-    'banned_words' => [
+    'banned_words_names' => [
         'admin',
         'administrator',
         'moderator',
@@ -40,6 +40,10 @@ return [
         'staff',
         'system',
         'robot',
+        'carpy'
+    ],
+
+    'banned_words_trip_description' => [
         'carpy'
     ],
 

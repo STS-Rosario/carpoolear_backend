@@ -7,18 +7,21 @@ use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\TripsManager;
 use STS\Transformers\TripTransformer;
+use STS\Repository\TripSearchRepository;
 
 class TripController extends Controller
 {
     protected $user;
 
     protected $tripsLogic;
+    protected $tripSearchRepository;
 
-    public function __construct(Request $r, TripsManager $tripsLogic)
+    public function __construct(Request $r, TripsManager $tripsLogic, TripSearchRepository $tripSearchRepository)
     {
         $this->middleware('logged')->except(['search']);
         $this->middleware('logged.optional')->only('search');
         $this->tripsLogic = $tripsLogic;
+        $this->tripSearchRepository = $tripSearchRepository;
     }
 
     public function create(Request $request)
@@ -92,8 +95,31 @@ class TripController extends Controller
 
         $this->user = auth('api')->user();
         $trips = $this->tripsLogic->search($this->user, $data);
+        
+        // Track the search for advertising purposes
+        $this->trackSearch($data, $trips);
+        
         /// return $trips;
         return $this->paginator($trips, new TripTransformer($this->user));
+    }
+
+    private function trackSearch($data, $trips)
+    {
+        try {
+            $originId = isset($data['origin_id']) ? $data['origin_id'] : null;
+            $destinationId = isset($data['destination_id']) ? $data['destination_id'] : null;
+            $searchDate = isset($data['date']) ? $data['date'] : null;
+            $isPassenger = isset($data['is_passenger']) ? parse_boolean($data['is_passenger']) : false;
+            
+            // Track searches with either origin, destination, or both
+            if ($originId || $destinationId) {
+                $clientPlatform = 0; // Default to web for now
+                $this->tripSearchRepository->trackSearch($this->user, $originId, $destinationId, $trips, $clientPlatform, $searchDate, $isPassenger);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't break the search functionality
+            \Log::error('Error tracking trip search: ' . $e->getMessage());
+        }
     }
 
     public function getTrips(Request $request)

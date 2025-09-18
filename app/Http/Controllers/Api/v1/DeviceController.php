@@ -62,6 +62,21 @@ class DeviceController extends Controller
     {
         $user = auth()->user();
 
-        return $this->deviceLogic->getDevices($user);
+        return response()->json([
+            'data' => $this->deviceLogic->getDevices($user),
+            'count' => $this->deviceLogic->getActiveDevicesCount($user)
+        ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $user = auth()->user();
+        $session_id = JWTAuth::getToken()->get();
+        
+        if ($this->deviceLogic->logoutDevice($session_id, $user)) {
+            return response()->json(['message' => 'Device logged out successfully']);
+        }
+        
+        throw new ExceptionWithErrors('Device not found', ['device_not_found']);
     }
 }

@@ -201,6 +201,18 @@ class HomeController extends Controller
         }
     }
 
+    public function handleCampaigns($name)
+    {
+        if ($this->endsWith($name, '.js')) {
+            $strings = explode('/', $name);
+            $file = $strings[count($strings) - 1];
+
+            return \File::get(public_path().'/campaigns/'.$file);
+        } else {
+            return \File::get(public_path().'/campaigns/index.html');
+        }
+    }
+
     public function handleDev($name)
     {
         if ($this->endsWith($name, '.js')) {

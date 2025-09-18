@@ -4,8 +4,10 @@ namespace STS\Services\Logic;
 
 use STS\Models\Passenger;
 use STS\Models\User;
+use STS\Models\Car;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
+use STS\Repository\CarsRepository;
 use Validator;
 use STS\Models\Trip;
 use STS\Repository\FileRepository;
@@ -19,11 +21,13 @@ class UsersManager extends BaseManager
 {
     protected $repo;
     protected $tripRepository;
+    protected $carsRepository;
 
-    public function __construct(UserRepository $userRep, TripRepository $tripRepository)
+    public function __construct(UserRepository $userRep, TripRepository $tripRepository, CarsRepository $carsRepository = null)
     {
         $this->repo = $userRep;
         $this->tripRepository = $tripRepository;
+        $this->carsRepository = $carsRepository ?: new CarsRepository();
     }
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
@@ -62,6 +66,11 @@ class UsersManager extends BaseManager
         }
         if ($is_admin) {
             unset($rules['email']);
+            // Add patente validation for admin updates
+            if (isset($data['patente'])) {
+                $rules['patente'] = 'string|max:10';
+                $rules['car_description'] = 'nullable|string|max:255';
+            }
         }
         $validator = Validator::make($data, $rules);
         return $validator;
@@ -79,9 +88,10 @@ class UsersManager extends BaseManager
         \Log::info('Create USER: ' . $data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
+            \Log::info('Error validation: ' . $data['name']);
             $this->setErrors($v->errors());
 
-            \Log::info('Error validation: ' . $data['name']);
+            \Log::info('Error validation: ' . $v->errors());
             return;
         } else {
             $data['emails_notifications'] = true;
@@ -97,7 +107,7 @@ class UsersManager extends BaseManager
                     $u = $this->repo->create($data);
 
                     // Check if user name contains any banned words
-                    $banned_words = config('carpoolear.banned_words', []);
+                    $banned_words = config('carpoolear.banned_words_names', []);
                     if (!empty($banned_words)) {
                         $user_name_lower = strtolower($u->name);
                         foreach ($banned_words as $word) {
@@ -154,7 +164,7 @@ class UsersManager extends BaseManager
                     $u = $this->repo->create($data);
 
                     // Check if user name contains any banned words
-                    $banned_words = config('carpoolear.banned_words', []);
+                    $banned_words = config('carpoolear.banned_words_names', []);
                     if (!empty($banned_words)) {
                         $user_name_lower = strtolower($u->name);
                         foreach ($banned_words as $word) {
@@ -183,11 +193,8 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
-        \Log::info('update manager: ' . $user->name);
         $v = $this->validator($data, $user->id, null, $is_driver, $is_admin);
         if ($v->fails()) {
-            \Log::info('update manager: ' . $user->name . ' failedddd why?');
-            \Log::info($v->errors());
             $this->setErrors($v->errors());
             return;
         } else {
@@ -214,6 +221,14 @@ class UsersManager extends BaseManager
                 }
             }
             \Log::info($data);
+            
+            // Handle car/patente updates for admin
+            if ($is_admin && (isset($data['patente']) || isset($data['car_description']))) {
+                $this->updateUserCar($user, $data);
+                // Remove car fields from user data to avoid trying to update user table with car fields
+                unset($data['patente'], $data['car_description']);
+            }
+            
             $this->repo->update($user, $data);
             if ($user->banned > 0) {
                 // hide user trips
@@ -221,6 +236,9 @@ class UsersManager extends BaseManager
             } else {
                 $this->tripRepository->unhideTrips($user);
             }
+            
+            // Refresh user relationships to get updated car data
+            $user->load('cars');
 
             if (isset($data['driver_data_docs'])) {
                 if ($is_driver && is_array($data['driver_data_docs']) && count($data['driver_data_docs']) && !$user->driver_is_verified) {
@@ -295,6 +313,39 @@ class UsersManager extends BaseManager
                 $this->setErrors($error);
 
                 return;
+            }
+        }
+    }
+
+    /**
+     * Update user's car information (patente and description)
+     */
+    private function updateUserCar($user, $data)
+    {
+        $car = $this->carsRepository->getUserCar($user->id);
+        
+        if ($car) {
+            // Update existing car
+            $carData = [];
+            if (isset($data['patente'])) {
+                $carData['patente'] = $data['patente'];
+            }
+            if (isset($data['car_description'])) {
+                $carData['description'] = $data['car_description'];
+            }
+            
+            if (!empty($carData)) {
+                $car->update($carData);
+            }
+        } else {
+            // Create new car if user doesn't have one
+            if (isset($data['patente'])) {
+                $description = $data['car_description'] ?? 'Car description not provided';
+                $car = new Car();
+                $car->user_id = $user->id;
+                $car->patente = $data['patente'];
+                $car->description = $description;
+                $this->carsRepository->create($car);
             }
         }
     }
@@ -411,6 +462,13 @@ class UsersManager extends BaseManager
 
     public function searchUsers ($name) {
         return $this->repo->searchUsers($name);
+    }
+
+    public function migrateUsers($user_id_delete, $user_id_keep)
+    {
+        // $exitCode = \Artisan::call("user:update {$user_id_delete} {$user_id_keep}", []);
+        $exitCode = \Artisan::call("test:test", []);
+        \Log::info('Test COMMAND exit' . $exitCode);
     }
 
     public function registerDonation($user, $donation)

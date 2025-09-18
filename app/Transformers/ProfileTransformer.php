@@ -36,6 +36,7 @@ class ProfileTransformer extends TransformerAbstract
             'id' => $user->id,
             'name' => $user->name,
             // 'email' => $user->email,
+            'badges' => $user->badges,
             'description' => $user->description,
             'private_note' => $user->private_note,
             'image' => $user->image,
@@ -67,7 +68,7 @@ class ProfileTransformer extends TransformerAbstract
             'references_data' => $user->referencesReceived
         ];
 
-        if ($user->id == $this->user->id || $this->user->is_admin) {
+        if ($this->user && ($user->id == $this->user->id || $this->user->is_admin)) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;
             $data['accounts'] = $user->accounts;
@@ -80,12 +81,17 @@ class ProfileTransformer extends TransformerAbstract
             $data['account_type'] = $user->account_type;
             $data['account_bank'] = $user->account_bank;
             $data['on_boarding_view'] = $user->on_boarding_view;
+            
+            // Always include car information for admins or the user themselves
+            $data['cars'] = $user->cars;
+            $data['patente'] = $user->cars->first() ? $user->cars->first()->patente : null;
+            $data['car_description'] = $user->cars->first() ? $user->cars->first()->description : null;
         }
         
         switch ($user->data_visibility) {
             case '0':
                 # viaja conmigo
-                if ($this->tripLogic->shareTrip($this->user, $user)) {
+                if ($this->user && $this->tripLogic->shareTrip($this->user, $user)) {
                     $data['nro_doc'] = $user->nro_doc;
                     $data['email'] = $user->email;
                     $data['mobile_phone'] = $user->mobile_phone;

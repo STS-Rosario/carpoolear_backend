@@ -1,6 +1,8 @@
 /.phpunit.cache
 /node_modules
 /public/build
+/public/app
+/public/campaigns
 /public/hot
 /public/storage
 /storage/*.key
@@ -20,5 +22,6 @@ yarn-error.log
 /.vscode
 /.zed
 .db
+.DS_Store
 
 storage/firebase*.json

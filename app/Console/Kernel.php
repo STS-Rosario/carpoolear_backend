@@ -31,6 +31,10 @@ class Kernel extends ConsoleKernel
         Commands\GenerateTripVisibility::class,
         Commands\CleanTripVisibility::class,
         Commands\EmailMessageNotification::class,
+        Commands\SendAnnouncement::class,
+        Commands\TestAnnouncement::class,
+        Commands\EvaluateBadges::class,
+        Commands\CalculateActiveUsersPerMonth::class,
 
     ];
 
@@ -62,6 +66,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('messages:email')->everyTenMinutes();
 
         // TODO: add a job to check if trip is awaiting_payment after 30 minutes and send push/email?
+        // Evaluate badges daily at 2 AM
+        // $schedule->command('badges:evaluate')->dailyAt('02:00')->timezone('America/Argentina/Buenos_Aires');
+
+        // Calculate active users per month on the 1st of each month at 3 AM
+        $schedule->command('users:calculate-active-per-month')->monthlyOn(1, '03:00')->timezone('America/Argentina/Buenos_Aires');
+
     }
 
     /**

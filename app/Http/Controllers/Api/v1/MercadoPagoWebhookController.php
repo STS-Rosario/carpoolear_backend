@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\Trip;
 use STS\Models\PaymentAttempt;
+use STS\Models\Campaign;
+use STS\Models\CampaignDonation;
+use STS\Models\CampaignReward;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\ConversationsManager;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -68,37 +71,62 @@ class MercadoPagoWebhookController extends Controller
         }
         Log::info('MP WEBHOOK payment', ['payment' => $mpPayment]);
 
-        // parse tripId from external reference
+        // parse external reference to determine payment type
         $externalReference = $mpPayment['external_reference'];
-        $tripId = explode('Sellado de Viaje ID: ', $externalReference)[1];
-
-        // get the trip for this payment
-        $trip = Trip::where('id', $tripId)->first();
-        if (!$trip) {
-            Log::error('Trip not found', [
-                'payment_id' => $paymentId,
-                'external_reference' => $externalReference,
-                'trip_id' => $tripId
-            ]);
-            return response()->json(['error' => 'Trip not found'], 404);
+        $decodedReference = $this->parseExternalReference($externalReference);
+        
+        if (!$decodedReference) {
+            Log::error('Failed to parse external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+        
+        if (stripos($decodedReference, 'sellado') !== false) {
+            return $this->handleTripPayment($mpPayment);
+        } elseif (stripos($decodedReference, 'campaña') !== false) {
+            return $this->handleCampaignDonation($mpPayment);
         }
 
-        // create the payment attempt in the database
-        $paymentAttempt = new PaymentAttempt();
-        $paymentAttempt->payment_id = $paymentId;
-        $paymentAttempt->payment_status = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
-        $paymentAttempt->payment_data = $mpPayment;
-        $paymentAttempt->trip_id = $trip->id;
-        $paymentAttempt->user_id = $trip->user_id;
-        $paymentAttempt->save();
+        Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
+        return response()->json(['error' => 'Unknown payment type'], 400);
+    }
 
-        // Update payment status
-        $newStatus = $this->updatePaymentStatus($paymentAttempt, $mpPayment);
+    /**
+     * Parse and verify external reference from MercadoPago payment
+     * Returns decoded reference string or null if invalid
+     */
+    protected function parseExternalReference($externalReference)
+    {
+        // Check if it's a hashed reference (new format)
+        if (strpos($externalReference, ':') !== false) {
+            // Split hash and encoded data
+            $parts = explode(':', $externalReference, 2);
+            if (count($parts) !== 2) {
+                Log::error('Invalid external reference format', ['external_reference' => $externalReference]);
+                return null;
+            }
+            
+            $hash = $parts[0];
+            $encodedData = $parts[1];
+            
+            // Verify hash
+            $referenceString = base64_decode($encodedData);
+            $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
+            $expectedHash = hash('sha256', $referenceString . $salt);
+            
+            if (!hash_equals($hash, $expectedHash)) {
+                Log::error('Invalid external reference hash', [
+                    'external_reference' => $externalReference,
+                    'calculated_hash' => $expectedHash,
+                    'received_hash' => $hash
+                ]);
+                return null;
+            }
+            
+            return $referenceString;
+        }
         
-        // Update trip status based on payment status
-        $this->updateTripStatus($trip, $newStatus);
-
-        return response()->json(['status' => 'success']);
+        // Legacy format (plain text) - return as is
+        return $externalReference;
     }
 
     protected function verifyMercadoPagoRequest(Request $request)
@@ -178,6 +206,7 @@ class MercadoPagoWebhookController extends Controller
             }
 
             return [
+                'id' => $payment->id,
                 'status' => $payment->status,
                 'status_detail' => $payment->status_detail,
                 'amount' => $payment->transaction_amount,
@@ -279,5 +308,133 @@ class MercadoPagoWebhookController extends Controller
         ];
 
         return $statusMap[$mpStatus] ?? Trip::STATE_PENDING_PAYMENT;
+    }
+
+    protected function handleTripPayment($mpPayment)
+    {
+        // parse tripId from external reference
+        $externalReference = $mpPayment['external_reference'];
+        $decodedReference = $this->parseExternalReference($externalReference);
+        
+        if (!$decodedReference) {
+            Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+        
+        $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
+
+        // get the trip for this payment
+        $trip = Trip::where('id', $tripId)->first();
+        if (!$trip) {
+            Log::error('Trip not found', [
+                'payment_id' => $mpPayment['id'],
+                'external_reference' => $externalReference,
+                'trip_id' => $tripId
+            ]);
+            return response()->json(['error' => 'Trip not found'], 404);
+        }
+
+        // create the payment attempt in the database
+        $paymentAttempt = new PaymentAttempt();
+        $paymentAttempt->payment_id = $mpPayment['id'];
+        $paymentAttempt->payment_status = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
+        $paymentAttempt->payment_data = $mpPayment;
+        $paymentAttempt->trip_id = $trip->id;
+        $paymentAttempt->user_id = $trip->user_id;
+        $paymentAttempt->save();
+
+        // Update payment status
+        $newStatus = $this->updatePaymentStatus($paymentAttempt, $mpPayment);
+        
+        // Update trip status based on payment status
+        $this->updateTripStatus($trip, $newStatus);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    protected function handleCampaignDonation($mpPayment)
+    {
+        // Parse campaign ID, reward ID, user ID and donation ID from external reference
+        $externalReference = $mpPayment['external_reference'];
+        $decodedReference = $this->parseExternalReference($externalReference);
+        
+        if (!$decodedReference) {
+            Log::error('Failed to parse campaign donation external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+        
+        // Parse the decoded reference
+        preg_match('/Donación Campaña ID: (\d+); Slug: ([^;]+); Reward ID: (\d+); User ID: ([^;]+); Donation ID: (\d+)/', $decodedReference, $matches);
+        
+        if (count($matches) !== 6) {
+            Log::error('Invalid campaign donation external reference format', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
+            return response()->json(['error' => 'Invalid external reference format'], 400);
+        }
+
+        $campaignId = intval($matches[1]);
+        $rewardId = intval($matches[3]);
+        $userId = $matches[4] === 'Anonymous' ? null : intval($matches[4]);
+        $donationId = intval($matches[5]);
+
+        // Find the existing donation
+        $donation = CampaignDonation::find($donationId);
+        if (!$donation) {
+            Log::error('Campaign donation not found', [
+                'payment_id' => $mpPayment['id'],
+                'donation_id' => $donationId,
+                'external_reference' => $externalReference
+            ]);
+            return response()->json(['error' => 'Campaign donation not found'], 404);
+        }
+
+        // Verify the donation belongs to the correct campaign and reward
+        if ($donation->campaign_id !== $campaignId || $donation->campaign_reward_id !== $rewardId) {
+            Log::error('Campaign donation does not match external reference', [
+                'payment_id' => $mpPayment['id'],
+                'donation_id' => $donationId,
+                'donation_campaign_id' => $donation->campaign_id,
+                'donation_reward_id' => $donation->campaign_reward_id,
+                'expected_campaign_id' => $campaignId,
+                'expected_reward_id' => $rewardId
+            ]);
+            return response()->json(['error' => 'Campaign donation mismatch'], 400);
+        }
+
+        // Update the donation status based on payment status
+        $newStatus = $this->mapMercadoPagoStatusToDonationStatus($mpPayment['status']);
+        $donation->status = $newStatus;
+        
+        // Update payment_id with the actual payment ID
+        $donation->payment_id = $mpPayment['id'];
+        
+        $donation->save();
+
+        Log::info('Campaign donation status updated', [
+            'payment_id' => $mpPayment['id'],
+            'donation_id' => $donationId,
+            'campaign_id' => $campaignId,
+            'reward_id' => $rewardId,
+            'old_status' => $donation->getOriginal('status'),
+            'new_status' => $newStatus,
+            'user_id' => $userId
+        ]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    protected function mapMercadoPagoStatusToDonationStatus($mpStatus)
+    {
+        $statusMap = [
+            'approved' => 'paid',
+            'rejected' => 'failed',
+            'pending' => 'pending',
+            'in_process' => 'pending',
+            'cancelled' => 'failed',
+            'refunded' => 'failed',
+            'in_mediation' => 'pending',
+            'charged_back' => 'failed'
+        ];
+
+        return $statusMap[$mpStatus] ?? 'pending';
     }
 } 

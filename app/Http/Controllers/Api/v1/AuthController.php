@@ -74,7 +74,18 @@ class AuthController extends Controller
         $isCordova = false;
         if (isset($_SERVER['HTTP_SEC_CH_UA'])) {
             $secChUa = $_SERVER['HTTP_SEC_CH_UA'];
-            if (strpos($secChUa, 'WebView') !== false) {
+            $userAgent = $_SERVER['HTTP_USER_AGENT'];
+            
+            $user = auth()->user();
+            
+            // Check if user is authenticated before accessing properties
+            if ($user) {
+                $user_id = $user->id;
+            } else {
+                \Log::warning('getConfig called without authenticated user');
+            }
+            
+            if (strpos($secChUa, 'WebView') !== false && strpos($userAgent, 'Instagram') === false) {
                 $isCordova = true;
             }
         }
@@ -159,7 +170,26 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        auth()->parseToken()->invalidate();
+        $user = auth()->user();
+
+        // Clean up only the current device to stop push notifications for this session
+        if ($user) {
+            $token = JWTAuth::getToken();
+            if ($token) {
+                $this->deviceLogic->logoutDevice($token, $user);
+            }
+        }
+        
+        // Invalidate the JWT token using the correct method
+        try {
+            $token = JWTAuth::getToken();
+            if ($token) {
+                JWTAuth::invalidate($token);
+                \Log::info('JWT token invalidated successfully');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to invalidate JWT token: ' . $e->getMessage());
+        }
 
         return response()->json('OK');
     }

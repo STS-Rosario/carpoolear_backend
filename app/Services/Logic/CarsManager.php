@@ -16,17 +16,37 @@ class CarsManager extends BaseManager
         $this->repo = $carsRepo;
     }
 
-    public function validator(array $data)
+    public function validator(array $data, $userId = null, $carId = null)
     {
-        return Validator::make($data, [
-            'patente'     => 'required|string',
-            'description' => 'required|string',
-        ]);
+        $rules = [
+            'patente'     => 'required|string|max:10',
+            'description' => 'required|string|max:255',
+        ];
+
+        // Add unique validation for patente per user
+        if ($userId) {
+            $rules['patente'] .= '|unique:cars,patente,NULL,id,user_id,' . $userId;
+        }
+
+        // If updating, ignore current car's patente
+        if ($carId) {
+            $rules['patente'] = 'required|string|max:10|unique:cars,patente,' . $carId . ',id,user_id,' . $userId;
+        }
+
+        return Validator::make($data, $rules);
     }
 
     public function create(UserModel $user, $data)
     {
-        $v = $this->validator($data);
+        // Check if user already has a car
+        $existingCar = $this->repo->getUserCar($user->id);
+        if ($existingCar) {
+            $this->setErrors(['error' => 'user_already_has_car', 'message' => 'User already has a car. Please update the existing one instead.']);
+
+            return;
+        }
+
+        $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
 
@@ -46,7 +66,7 @@ class CarsManager extends BaseManager
     {
         $car = $this->show($user, $id);
         if ($car) {
-            $v = $this->validator($data);
+            $v = $this->validator($data, $user->id, $id);
             if ($v->fails()) {
                 $this->setErrors($v->errors());
 
