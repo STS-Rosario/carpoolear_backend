@@ -40,16 +40,16 @@ class Device extends Model
 
     public function isAndroid()
     {
-        return strpos($this->device_type, 'Android') !== false;
+        return strpos(strtolower($this->device_type), 'android') !== false;
     }
 
     public function isIOS()
     {
-        return strpos($this->device_type, 'iOS') !== false;
+        return strpos(strtolower($this->device_type), 'ios') !== false;
     }
 
     public function isBrowser()
     {
-        return strpos($this->device_type, 'browser') !== false;
+        return strpos(strtolower($this->device_type), 'browser') !== false;
     }
 }

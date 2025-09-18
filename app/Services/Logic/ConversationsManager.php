@@ -256,7 +256,6 @@ class ConversationsManager extends BaseManager
                     $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
                 if (count($conversation->messages) > 0) {
-                    \Log::info('count mensajes: ' . count($conversation->messages));
                     $arr = $conversation->messages->toArray();
                     $initiator = $arr[0];
                     // $initiatorUser = User::where('id', $initiator['user_id'])->first();
