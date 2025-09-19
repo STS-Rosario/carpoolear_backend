@@ -11,9 +11,24 @@ use STS\Models\Route;
 use STS\Models\NodeGeo;
 use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
+use Illuminate\Support\Facades\Http;
+use STS\Services\GeoService;
+use STS\Services\MercadoPagoService;
+use STS\Models\RouteCache;
 
 class TripRepository
 {
+    private $paidRegions;
+    private $geoService;
+    private $mercadoPagoService;
+
+    public function __construct(GeoService $geoService, MercadoPagoService $mercadoPagoService)
+    {
+        $this->geoService = $geoService;
+        $this->paidRegions = $this->geoService->getPaidRegions();
+        $this->mercadoPagoService = $mercadoPagoService;
+    }
+
     private function getPotentialNode ($point) {
         $n1 = new NodeGeo;
         $n1->lat = $point['lat'] - 0.05;
@@ -82,8 +97,56 @@ class TripRepository
     {
         $points = $data['points'];
         unset($data['points']);
+
+        // Get trip info for price calculations and route data
+        $tripInfo = $this->getTripInfo($points);
+        
+        // Calculate maximum allowed price if seat_price_cents is provided
+        if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
+            $total_seats = $data['total_seats'];
+            $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
+
+            if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
+                    \Log::info('TripRepository::create seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
+                    $data['seat_price_cents'] = $maximum_seat_price_cents;
+                }
+            }
+        }
+
         $trip = Trip::create($data);
+        \Log::info('TripRepository::create trip', [$trip]);
+        
+        // Save recommended trip price if available from trip info
+        if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
+            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+            $trip->save();
+        }
+        
         $this->addPoints($trip, $points);
+        \Log::info('TripRepository::create trip after add points', [$trip]);
+
+        $originToCheck = [$points[0]['lat'], $points[0]['lng']];
+        $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
+        $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+        \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
+
+        $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+        // if route is paid, and user should pay, create payment
+        if (config('carpoolear.module_trip_creation_payment_enabled') && $routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
+            $trip->state = Trip::STATE_AWAITING_PAYMENT;
+            
+            // Create MercadoPago payment preference
+            $preference = $this->mercadoPagoService->createPaymentPreference($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+            $trip->payment_id = $preference->id;
+            $trip->needs_sellado = true;
+            
+            $trip->save();
+
+            // Return the preference URL to redirect the user
+            $trip->payment_url = $preference->init_point;
+        }
+
         // obtener ruta o crear
         $routeIds = [];
         for ($i = 1; $i < count($points); $i++) {
@@ -118,6 +181,9 @@ class TripRepository
         }
 
         $this->generateTripFriendVisibility($trip);
+        // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay 
+        // for this trip (origin and destination in paid cities), 
+        // if so, mark trip as awaiting_payment, create payment_id and return it to the frontend so it can redirect
         return $trip;
     }
 
@@ -274,18 +340,33 @@ class TripRepository
         if ($user && !$user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 if ($user) {
-                    $q->whereUserId($user->id);
-                    $q->orWhere(function ($q) use ($user) {
-                        $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
-                        $q->orWhere(function ($q) use ($user) {
-                            $q->where('friendship_type_id', '<' , Trip::PRIVACY_PUBLIC);
-                            $q->whereHas('userVisibility', function ($q) use ($user) {
-                                $q->where('user_id', $user->id);
-                            });
-                        });
+                    // only show trips that are ready (paid by driver) or have no state
+                    $q->where(function($q) use ($user) {
+                        $q->where('state', '=', Trip::STATE_READY)
+                          ->orWhere('state', '=', Trip::STATE_PAID)
+                          ->orWhereNull('state')
+                          ->orWhere('user_id', $user->id);
+                    });
+                    
+                    $q->where(function ($q) use ($user) {
+                        $q->whereUserId($user->id)
+                          ->orWhere(function ($q) use ($user) {
+                              $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
+                                ->orWhere(function ($q) use ($user) {
+                                    $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
+                                      ->whereHas('userVisibility', function ($q) use ($user) {
+                                          $q->where('user_id', $user->id);
+                                      });
+                                });
+                          });
                     });
                 } else {
-                    $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                    $q->where(function($q) {
+                        $q->where('state', '=', Trip::STATE_READY)
+                          ->orWhere('state', '=', Trip::STATE_PAID)
+                          ->orWhereNull('state');
+                    })
+                      ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
         }
@@ -422,6 +503,138 @@ class TripRepository
     public function simplePrice($distance)
     {
         return $distance * config('carpoolear.fuel_price') / 1000;
+    }
+
+    public function getTripInfo($points)
+    {
+        \Log::info('getTripInfo repository', [$points]);
+        
+        // Check cache first
+        $cacheKey = json_encode($points);
+        $hashedPoints = hash('sha256', $cacheKey);
+        $cachedRoute = RouteCache::where('hashed_points', $hashedPoints)
+            ->where(function($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if ($cachedRoute) {
+            \Log::info('Route found in cache');
+            return $cachedRoute->route_data;
+        }
+
+        $coords = '';
+        foreach ($points as $point) {
+            \Log::info('point', [$point]);
+            if ($coords) {
+                $coords .= ';';
+            }
+            $coords .= $point['lng'] . ',';
+            $coords .= $point['lat'];
+        }
+        \Log::info('coords', [$coords]);
+
+        $url =
+            'https://router.project-osrm.org/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
+
+        $response = Http::get($url);
+
+        if ($response->successful() && $response->json()['code'] === 'Ok' && $response->json()['routes'] && count($response->json()['routes'])) {
+            $route = $response->json()['routes'][0];
+            $distanceInMeters = $route['distance'];
+            $duration = $route['duration'];
+            $co2 = $distanceInMeters * 0.15;
+
+            // check if the user needs to pay for the trip
+            $originToCheck = [$points[0]['lat'], $points[0]['lng']];
+            $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
+            $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+
+            // calculate price based on distance, fuel price, kilometers per liter
+            $fuelPrice = config('carpoolear.module_max_price_fuel_price');
+            $kilometersPerLiter = config('carpoolear.module_max_price_kilometer_by_liter');
+            $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
+            $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
+
+            // get tolls variance percentage (e.g., 10 for 10% extra)
+            $tollsVariancePercent = config('carpoolear.module_max_price_price_variance_tolls', 0);
+
+            // get maximum price variance percentage (e.g., 15 for 15% extra)
+            $maxPriceVariancePercent = config('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+            // calculate base price without sellado
+            $basePriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100);
+
+            // calculate tolls variance amount
+            $tollsVarianceCents = round($basePriceCents * ($tollsVariancePercent / 100));
+
+            // recommended price: base + tolls variance + sellado
+            $recommendedTripPriceCents = $basePriceCents + $tollsVarianceCents + $selladoViajePrice;
+
+            // maximum price: (base + tolls variance) * max_variance + sellado
+            $maximumTripPriceCents = round(($basePriceCents + $tollsVarianceCents) * (1 + $maxPriceVariancePercent / 100)) + $selladoViajePrice;
+
+            $data = [
+                'distance' => $distanceInMeters,
+                'duration' => $duration,
+                'co2' => $co2,
+                'route_needs_payment' => $routeNeedsPayment,
+                'recommended_trip_price_cents' => $recommendedTripPriceCents,
+                'maximum_trip_price_cents' => $maximumTripPriceCents
+            ];
+
+            $response = [
+                'status' => true, 
+                'data' => $data,
+                'message' => 'Route found'
+            ];
+
+            // Cache the complete response for 24 hours
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $response,
+                    'expires_at' => now()->addHours(24)
+                ]
+            );
+
+            return $response;
+        } else {
+            $response = [
+                'status' => false, 
+                'data' => null,
+                'message' => 'Route not found'
+            ];
+
+            // Cache failed responses for a shorter time (1 hour) to avoid hammering the API
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $response,
+                    'expires_at' => now()->addHour()
+                ]
+            );
+
+            return $response;
+        }
+    }
+
+    public function selladoViaje($user)
+    {
+        // if user has created enough free trips, they have to pay for the next one
+        $tripsCreatedByUser = Trip::where('user_id', $user->id)->count();
+        $freeTripsAmount = config('carpoolear.module_trip_creation_payment_trips_threshold');
+        $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
+
+        return [
+            'trip_creation_payment_enabled' => config('carpoolear.module_trip_creation_payment_enabled'),
+            'free_trips_amount' => $freeTripsAmount,
+            'trips_created_by_user_amount' => $tripsCreatedByUser,
+            'user_over_free_limit' => $userOverFreeLimit
+        ];
     }
     
     public function getTripByTripPassenger ($transaction_id)

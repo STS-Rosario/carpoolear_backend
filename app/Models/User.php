@@ -89,7 +89,8 @@ class User extends Authenticatable implements JWTSubject
     protected $hidden = [
         'password', 
         'remember_token', 
-        'terms_and_conditions'
+        'terms_and_conditions',
+        'private_note'
     ];
 
     protected $appends = [
@@ -196,6 +197,11 @@ class User extends Authenticatable implements JWTSubject
         }
 
         return $trips;
+    }
+
+    public function payments()
+    {
+        return $this->hasMany('STS\Models\Payment', 'user_id');
     }
 
     public function conversations()

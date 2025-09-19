@@ -323,6 +323,16 @@ class TripsManager extends BaseManager
         }
     }
 
+    public function getTripInfo($points)
+    {
+        return $this->tripRepo->getTripInfo($points);
+    }
+
+    public function selladoViaje($user)
+    {
+        return $this->tripRepo->selladoViaje($user);
+    }
+
 
     public function changeVisibility($user, $trip_id)
     {
@@ -365,6 +375,10 @@ class TripsManager extends BaseManager
 
         if ($user->id == $trip->user->id) {
             return true;
+        }
+
+        if ($trip->needs_sellado == true && $trip->state !== Trip::STATE_READY) {
+            return false;
         }
 
         if ($trip->friendship_type_id == Trip::PRIVACY_PUBLIC) {

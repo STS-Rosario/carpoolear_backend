@@ -31,8 +31,10 @@ class TripTransformer extends TransformerAbstract
             'friendship_type_id' => $trip->friendship_type_id,
             'distance' => $trip->distance,
             'estimated_time' => $trip->estimated_time,
-            'seat_price' => $trip->seat_price,
+            'seat_price_cents' => $trip->seat_price_cents,
+            'recommended_trip_price_cents' => $trip->recommended_trip_price_cents,
             'total_price' => $trip->total_price,
+            'state' => $trip->state,
             'is_passenger' => $trip->is_passenger,
             'passenger_count' => $trip->passenger_count,
             'seats_available' => $trip->seats_available,
@@ -41,7 +43,9 @@ class TripTransformer extends TransformerAbstract
             'updated_at' => $trip->updated_at->toDateTimeString(),
             'allow_kids' => $trip->allow_kids,
             'allow_animals' => $trip->allow_animals,
-            'allow_smoking' => $trip->allow_smoking
+            'allow_smoking' => $trip->allow_smoking,
+            'payment_id' => $trip->payment_id,
+            'needs_sellado' => $trip->needs_sellado
         ];
 
         if ($trip->deleted_at) {

@@ -14,6 +14,20 @@ return [
     'module_coordinate_by_message' => env('MODULE_COORDINATE_BY_MESSAGE', false),
     'module_user_request_limited_enabled' => env('MODULE_USER_REQUEST_LIMITED_ENABLED', false),
     'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2),
+    'module_send_full_trip_message' => env('MODULE_SEND_FULL_TRIP_MESSAGE', false),
+    'module_unaswered_message_limit' => env('MODULE_UNASWERED_MESSAGE_LIMIT', false),
+    'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),
+    'module_unique_doc_phone' => env('MODULE_UNIQUE_DOC_PHONE', false),
+    'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false),
+    'module_trip_creation_payment_enabled' => env('MODULE_TRIP_CREATION_PAYMENT_ENABLED', false),
+    'module_trip_creation_payment_amount_cents' => (int) env('MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS', 1500),
+    'module_trip_creation_payment_trips_threshold' => (int)env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
+    'module_seat_price_enabled' => env('MODULE_SEAT_PRICE_ENABLED', false),
+    'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
+    'module_max_price_fuel_price' => (int) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
+    'module_max_price_price_variance_tolls' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
+    'module_max_price_price_variance_max_extra' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
+    'module_max_price_kilometer_by_liter' => (int) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words_names' => [
@@ -41,10 +55,5 @@ return [
     'trip_creation_limits' => [
         'max_trips' => 4,        // Maximum number of trips allowed
         'time_window_hours' => 24,     // Time window in hours
-    ],
-    'module_send_full_trip_message' => env('MODULE_SEND_FULL_TRIP_MESSAGE', false),
-    'module_unaswered_message_limit' => env('MODULE_UNASWERED_MESSAGE_LIMIT', false),
-    'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),
-    'module_unique_doc_phone' => env('MODULE_UNIQUE_DOC_PHONE', false),
-    'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false)
+    ]
 ];

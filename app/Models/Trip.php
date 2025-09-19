@@ -29,6 +29,13 @@ class Trip extends Model
 
     const PRIVACY_FOF = 1;
 
+    const STATE_AWAITING_PAYMENT = 'awaiting_payment';
+    const STATE_PENDING_PAYMENT = 'pending_payment';
+    const STATE_PAID = 'paid';
+    const STATE_PAYMENT_FAILED = 'payment_failed';
+    const STATE_READY = 'ready';
+    const STATE_CANCELED = 'canceled';
+
     protected $table = 'trips';
 
     protected $fillable = [
@@ -40,7 +47,8 @@ class Trip extends Model
         'total_seats',
         'friendship_type_id',
         'distance',
-        'seat_price',
+        'seat_price_cents',
+        'recommended_trip_price_cents',
         'total_price',
         'estimated_time',
         'co2',
@@ -53,7 +61,10 @@ class Trip extends Model
         'parent_trip_id',
         'allow_smoking',
         'allow_kids',
-        'allow_animals'
+        'allow_animals',
+        'state',
+        'payment_id',
+        'needs_sellado'
     ];
 
     protected $hidden = [
@@ -73,6 +84,9 @@ class Trip extends Model
             'is_passenger' => 'boolean',
             'trip_date' => 'datetime',
             'deleted_at' => 'datetime',
+            'seat_price_cents' => 'integer',
+            'recommended_trip_price_cents' => 'integer',
+            'state' => 'string'
         ];
     } 
 
@@ -148,6 +162,11 @@ class Trip extends Model
         return $this->hasOne('STS\Models\Conversation', 'trip_id');
     }
 
+    public function payments()
+    {
+        return $this->hasMany('STS\Models\Payment', 'trip_id');
+    }
+
     public function getPassengerCountAttribute()
     {
         return $this->passengerAccepted()->count();
@@ -178,6 +197,50 @@ class Trip extends Model
         $this->attributes['description'] = $value; //htmlentities($value);
     }
 
+    public function isAwaitingPayment()
+    {
+        return $this->state === self::STATE_AWAITING_PAYMENT;
+    }
+
+    public function isPaymentFailed()
+    {
+        return $this->state === self::STATE_PAYMENT_FAILED;
+    }
+
+    public function isReady()
+    {
+        return $this->state === self::STATE_READY;
+    }
+
+    public function isCanceled()
+    {
+        return $this->state === self::STATE_CANCELED;
+    }
+
+    public function setStateAwaitingPayment()
+    {
+        $this->state = self::STATE_AWAITING_PAYMENT;
+        return $this;
+    }
+
+    public function setStatePaymentFailed()
+    {
+        $this->state = self::STATE_PAYMENT_FAILED;
+        return $this;
+    }
+
+    public function setStateReady()
+    {
+        $this->state = self::STATE_READY;
+        return $this;
+    }
+
+    public function setStateCanceled()
+    {
+        $this->state = self::STATE_CANCELED;
+        return $this;
+    }
+
     public function expired()
     {
         return $this->trip_date->lt(Carbon::now());
@@ -202,4 +265,14 @@ class Trip extends Model
                 return ! is_null($fiends) || ! is_null($fof);
         }
     }
+
+    // public function getSeatPriceAttribute()
+    // {
+    //     return $this->seat_price_cents / 100;
+    // }
+
+    // public function setSeatPriceAttribute($value)
+    // {
+    //     $this->attributes['seat_price_cents'] = round($value * 100);
+    // }
 }

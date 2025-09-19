@@ -13,6 +13,7 @@ use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Http\Controllers\Api\v1\UserController;
+use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
@@ -45,6 +46,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/my-old-trips', [TripController::class,'getOldTrips']);
         Route::get('/requests', [PassengerController::class,'allRequests']);
         Route::get('/payment-pending', [PassengerController::class,'paymentPendingRequest']);
+        Route::get('/sellado-viaje', [TripController::class, 'selladoViaje']);
 
         Route::get('/list', [UserController::class,'index']);
         Route::get('/search', [UserController::class,'searchUsers']);
@@ -97,6 +99,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/{id?}/changeSeats', [TripController::class, 'changeTripSeats']);
         Route::post('/{id}/change-visibility', [TripController::class, 'changeVisibility']);
         Route::post('/price', [TripController::class, 'price']);
+        Route::post('/trip-info', [TripController::class, 'getTripInfo']);
         
         Route::get('/{tripId}/passengers', [PassengerController::class, 'passengers']);
         Route::get('/{tripId}/requests', [PassengerController::class, 'requests']);

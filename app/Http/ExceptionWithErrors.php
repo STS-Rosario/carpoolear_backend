@@ -31,7 +31,7 @@ class ExceptionWithErrors extends Exception
             $errors = is_array($this->errors) ? $this->errors : $this->errors->toArray();
             
             return response()->json([
-                'errors' => $errors,
+                'errors' => is_object($this->errors) ? $this->errors->toArray() : $this->errors,
                 'message' => $this->message,
             ], 422);
         }
