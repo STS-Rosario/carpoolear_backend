@@ -40,6 +40,18 @@
               @endphp
               --}}
               <br>
+              <h3>Instalar web app (PWA) en Android manualmente y revisar notificaciones</h3>
+              <p>Si no te aparece el cartel para instalar la web app (PWA) en Android, podés instalarla manualmente, seguí los pasos debajo. Si tenés problemas para recibir notificaciones, revisá los pasos debajo.</p>
+              
+              <div class="row">
+                <div class="col-12">
+                  <div class="embed-responsive embed-responsive-16by9">
+                    <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/W-JExegNATE" allowfullscreen></iframe>
+                  </div>
+                </div>
+              </div>
+              
+              <br>
               <h3>No puedo iniciar sesión con Facebook/Apple</h3>
               <p>El ingreso/registro via Apple ya no funciona más. Escribinos a la mesa de ayuda de Carpoolear para poder recuperar tu cuenta y migrarla a una vinculada a mail. La mesa de ayuda de Carpoolear funciona desde <a href="mailto:carpoolear@stsrosario.org.ar" target="_top">carpoolear@stsrosario.org.ar</a>, mensaje privado de <a href="https://instagram.com/carpoolear" target="_blank">Instagram</a> y <a href="https://facebook.com/carpoolear" target="_blank">Facebook</a>.
               </p>
