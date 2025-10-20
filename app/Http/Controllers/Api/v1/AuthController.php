@@ -41,7 +41,9 @@ class AuthController extends Controller
         $config->donation->ammount_needed = config('carpoolear.donation_ammount_needed');
         $config->banner = new \stdClass();
         $config->banner->url = $isCordova ? config('carpoolear.banner_url_cordova') : config('carpoolear.banner_url');
+        $config->banner->url_mobile = $isCordova ? config('carpoolear.banner_url_cordova_mobile') : config('carpoolear.banner_url_mobile');
         $config->banner->image = $isCordova ? config('carpoolear.banner_image_cordova') : config('carpoolear.banner_image');
+        $config->banner->image_mobile = $isCordova ? config('carpoolear.banner_image_cordova_mobile') : config('carpoolear.banner_image_mobile');
         $exclude = [
             'donation_month_days',
             'donation_trips_count',
