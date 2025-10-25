@@ -163,6 +163,14 @@ class UserRepository
         }
     }
 
+    public function getLastPasswordReset($email)
+    {
+        return DB::table('password_resets')
+            ->where('email', $email)
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
     public function getNotifications($user, $unread = false)
     {
         if (! $readed) {

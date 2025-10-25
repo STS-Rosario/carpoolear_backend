@@ -33,7 +33,7 @@ Route::middleware(['api'])->group(function () {
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
-    Route::post('reset-password', [AuthController::class, 'reset']);
+    Route::post('reset-password', [AuthController::class, 'reset'])->middleware('throttle:password-reset');
     Route::post('change-password/{token?}', [AuthController::class, 'changePasswod']);
     Route::post('log', [AuthController::class, 'log']);
 
