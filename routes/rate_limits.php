@@ -115,14 +115,29 @@ RateLimiter::for('phone-verification-status', function (Request $request) {
 
 // Password reset rate limiters
 RateLimiter::for('password-reset', function (Request $request) {
-    // Check if rate limiting is disabled for testing
-    if (env('DISABLE_PASSWORD_RESET_RATE_LIMIT', false)) {
-        \Log::info('Password reset rate limiting disabled for testing');
-        return []; // No limits
-    }
-    
     $ip = $request->ip();
     $email = $request->get('email');
+    
+    // Check if rate limiting is disabled for testing/debugging
+    if (config('carpoolear.disable_password_reset_rate_limit', false)) {
+        \Log::warning('Password reset rate limiting DISABLED', [
+            'email' => $email,
+            'ip' => $ip,
+            'timestamp' => now()->toIso8601String(),
+            'reason' => 'carpoolear.disable_password_reset_rate_limit=true'
+        ]);
+        
+        // Also log to email_logs if enabled
+        if (config('mail.log_emails', false)) {
+            \Log::channel('email_logs')->warning('PASSWORD_RESET_RATE_LIMITING_DISABLED', [
+                'email' => $email,
+                'ip' => $ip,
+                'timestamp' => now()->toIso8601String()
+            ]);
+        }
+        
+        return []; // No limits
+    }
     
     $limits = [];
     
@@ -132,7 +147,7 @@ RateLimiter::for('password-reset', function (Request $request) {
     // Limit by email to prevent spam to specific users
     if ($email) {
         $limits[] = Limit::perHour(3)->by($email . ':password-reset'); // 3 password reset requests per hour per email
-        $limits[] = Limit::perDay(4)->by($email . ':password-reset-daily'); // 4 password reset requests per day per email
+        $limits[] = Limit::perDay(10)->by($email . ':password-reset-daily'); // 10 password reset requests per day per email
     }
     
     return $limits;

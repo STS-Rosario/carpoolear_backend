@@ -93,10 +93,13 @@ Add these to your `.env` file:
 QUEUE_CONNECTION=database
 DB_QUEUE_TABLE=jobs
 
-# Rate Limiting (optional - set to true to disable for testing)
+# Rate Limiting (set to true to disable for debugging)
+# WARNING: Only disable in development/staging to identify problematic emails
+# NEVER disable in production unless actively debugging
 DISABLE_PASSWORD_RESET_RATE_LIMIT=false
 
 # Email Logging (set to true to enable detailed email logging)
+# Can be enabled independently of rate limiting
 LOG_EMAILS=false
 EMAIL_LOG_DAILY_DAYS=30
 ```
@@ -287,6 +290,83 @@ php artisan queue:flush
 4. **Scalable**: Queue system can handle high volumes of email requests
 5. **Maintainable**: Automatic cleanup and monitoring tools
 
+## Debugging Mode - Finding Problematic Email Accounts
+
+If you need to identify which email account is causing Gmail rate limiting issues:
+
+### **Step 1: Enable Debugging Mode**
+
+Update your `.env`:
+
+```env
+# Enable email logging to track all requests
+LOG_EMAILS=true
+
+# Disable rate limiting temporarily to let requests through
+DISABLE_PASSWORD_RESET_RATE_LIMIT=true
+```
+
+Clear config cache:
+```bash
+php artisan config:clear
+```
+
+### **Step 2: Monitor the Logs**
+
+Watch the email logs in real-time:
+
+```bash
+# Terminal 1: Watch email logs
+tail -f storage/logs/email.log | grep PASSWORD_RESET
+
+# Terminal 2: Watch for rate limiting disabled messages
+tail -f storage/logs/laravel.log | grep "rate limiting DISABLED"
+```
+
+### **Step 3: Analyze the Results**
+
+After running for a while, check which emails are getting the most requests:
+
+```bash
+# Count requests per email
+grep "PASSWORD_RESET_REQUEST" storage/logs/email.log | \
+  grep -o '"email":"[^"]*"' | \
+  sort | uniq -c | sort -rn | head -20
+
+# Find emails that caused failures
+grep "PASSWORD_RESET_EMAIL_FAILED" storage/logs/email.log | \
+  grep -o '"email":"[^"]*"' | \
+  sort | uniq -c | sort -rn
+```
+
+### **Step 4: Re-enable Rate Limiting**
+
+Once you've identified the problematic email(s), re-enable protection:
+
+```env
+# Re-enable rate limiting
+DISABLE_PASSWORD_RESET_RATE_LIMIT=false
+
+# Optionally disable verbose logging
+LOG_EMAILS=false
+```
+
+```bash
+php artisan config:clear
+```
+
+### **What to Look For:**
+
+When rate limiting is disabled, each request logs:
+```
+[2025-10-25 20:30:00] production.WARNING: Password reset rate limiting DISABLED {"email":"problem@example.com","ip":"192.168.1.1","timestamp":"2025-10-25T20:30:00+00:00","reason":"DISABLE_PASSWORD_RESET_RATE_LIMIT=true"}
+```
+
+**Warning Signs:**
+- Same email appearing dozens of times in short period
+- Multiple IPs requesting same email (potential attack)
+- Unusual patterns (automated requests every X seconds)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -307,6 +387,9 @@ php artisan queue:failed
 
 # Retry failed jobs
 php artisan queue:retry all
+
+# Clear rate limiting cache (reset all limits)
+php artisan cache:clear
 ```
 
 This solution provides a robust, scalable approach to handling password reset emails while preventing Gmail rate limiting issues.

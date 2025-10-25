@@ -372,7 +372,7 @@ class UsersManager extends BaseManager
 
     public function resetPassword($email)
     {
-        $enableEmailLogging = config('mail.log_emails', env('LOG_EMAILS', false));
+        $enableEmailLogging = config('carpoolear.log_emails', false);
 
         \Log::info('resetPassword userManager', ['email' => $email]);
 

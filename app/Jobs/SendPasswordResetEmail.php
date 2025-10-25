@@ -43,7 +43,7 @@ class SendPasswordResetEmail implements ShouldQueue
      */
     public function handle(): void
     {
-        $enableEmailLogging = config('mail.log_emails', env('LOG_EMAILS', false));
+        $enableEmailLogging = config('carpoolear.log_emails', false);
 
         try {
             $logData = [
@@ -117,7 +117,7 @@ class SendPasswordResetEmail implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        $enableEmailLogging = config('mail.log_emails', env('LOG_EMAILS', false));
+        $enableEmailLogging = config('carpoolear.log_emails', false);
 
         $failureData = [
             'user_id' => $this->user->id,

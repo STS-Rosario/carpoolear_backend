@@ -131,7 +131,7 @@ return [
             'driver' => 'daily',
             'path' => storage_path('logs/email.log'),
             'level' => env('LOG_LEVEL', 'debug'),
-            'days' => env('EMAIL_LOG_DAILY_DAYS', 30),
+            'days' => (int) env('EMAIL_LOG_DAILY_DAYS', 30),
             'replace_placeholders' => true,
         ],
 

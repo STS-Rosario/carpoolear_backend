@@ -113,17 +113,4 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Email Logging
-    |--------------------------------------------------------------------------
-    |
-    | Enable detailed logging of email sending operations to a separate log file.
-    | When enabled, all email operations will be logged to storage/logs/email.log
-    | in addition to the regular application log.
-    |
-    */
-
-    'log_emails' => env('LOG_EMAILS', false),
-
 ];
