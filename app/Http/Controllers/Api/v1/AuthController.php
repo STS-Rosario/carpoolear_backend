@@ -209,16 +209,40 @@ class AuthController extends Controller
 
     public function reset(Request $request)
     {
+        // Apply rate limiting
+        $request->validate([
+            'email' => 'required|email'
+        ]);
+
         $email = $request->get('email');
-        if ($email) {
+        
+        try {
             $token = $this->userLogic->resetPassword($email);
             if ($token) {
                 return response()->json(['data' => 'ok']);
             } else {
+                // Check if there are specific errors from the user logic
+                $errors = $this->userLogic->getErrors();
+                if (!empty($errors)) {
+                    $errorMessage = is_array($errors) ? implode(', ', $errors) : $errors;
+                    throw new ExceptionWithErrors($errorMessage);
+                }
                 throw new ExceptionWithErrors('User not found');
             }
-        } else {
-            throw new ExceptionWithErrors('E-mail not provided');
+        } catch (\Exception $e) {
+            \Log::error('Password reset error: ' . $e->getMessage());
+            
+            // Check if it's a rate limiting error
+            if (strpos($e->getMessage(), '450') !== false || strpos($e->getMessage(), 'rate') !== false) {
+                throw new ExceptionWithErrors('Too many password reset attempts. Please try again later.');
+            }
+            
+            // Check if it's a cooldown error
+            if (strpos($e->getMessage(), 'wait') !== false && strpos($e->getMessage(), 'minutes') !== false) {
+                throw new ExceptionWithErrors($e->getMessage());
+            }
+            
+            throw $e;
         }
     }
 

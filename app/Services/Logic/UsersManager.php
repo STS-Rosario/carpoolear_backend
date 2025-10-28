@@ -16,6 +16,7 @@ use STS\Events\User\Update as UpdateEvent;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use STS\Mail\ResetPassword;
+use STS\Jobs\SendPasswordResetEmail;
 
 class UsersManager extends BaseManager
 {
@@ -371,26 +372,89 @@ class UsersManager extends BaseManager
 
     public function resetPassword($email)
     {
-        \Log::info('resetPassword userManager');
+        $enableEmailLogging = config('carpoolear.log_emails', false);
+
+        \Log::info('resetPassword userManager', ['email' => $email]);
+
+        // Log to email_logs channel if enabled
+        if ($enableEmailLogging) {
+            \Log::channel('email_logs')->info('PASSWORD_RESET_REQUEST', [
+                'email' => $email,
+                'timestamp' => now()->toIso8601String(),
+                'ip' => request()->ip()
+            ]);
+        }
+
         $user = $this->repo->getUserBy('email', $email);
         if ($user) {
+            // Check for cooldown period (5 minutes between requests)
+            $cooldownMinutes = 5;
+            $lastReset = $this->repo->getLastPasswordReset($user->email);
+            
+            if ($lastReset && $lastReset->created_at->diffInMinutes(now()) < $cooldownMinutes) {
+                $remainingMinutes = $cooldownMinutes - $lastReset->created_at->diffInMinutes(now());
+                $this->setErrors(['error' => "Please wait {$remainingMinutes} minutes before requesting another password reset"]);
+                
+                \Log::info("Password reset cooldown active for user {$user->email}, remaining: {$remainingMinutes} minutes");
+                
+                // Log to email_logs channel if enabled
+                if ($enableEmailLogging) {
+                    \Log::channel('email_logs')->warning('PASSWORD_RESET_COOLDOWN', [
+                        'user_id' => $user->id,
+                        'email' => $user->email,
+                        'remaining_minutes' => $remainingMinutes,
+                        'last_reset_at' => $lastReset->created_at->toIso8601String(),
+                        'timestamp' => now()->toIso8601String()
+                    ]);
+                }
+                
+                return;
+            }
+
             $token = Str::random(40);
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
 
-            \Log::info('resetPassword before event'); 
+            \Log::info('resetPassword before queuing email'); 
             
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'. $token;
-            $html = view('email.reset_password', compact('token', 'user', 'url', 'name_app', 'domain'))->render();
-             
-            Mail::to($user->email)->send(new ResetPassword($token, $user, $url, $name_app, $domain));
 
-            \Log::info('resetPassword post event event');
+            // Queue the email sending job instead of sending synchronously
+            \STS\Jobs\SendPasswordResetEmail::dispatch($user, $token, $url, $name_app, $domain)
+                ->onQueue('emails') // Use a dedicated queue for emails
+                ->delay(now()->addSeconds(10)); // Add a small delay to prevent immediate retries
+
+            \Log::info('resetPassword email queued successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+
+            // Log to email_logs channel if enabled
+            if ($enableEmailLogging) {
+                \Log::channel('email_logs')->info('PASSWORD_RESET_QUEUED', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'token' => substr($token, 0, 10) . '...', // Partial token for debugging
+                    'timestamp' => now()->toIso8601String()
+                ]);
+            }
+
             return $token;
         } else {
             $this->setErrors(['error' => 'user_not_found']);
+            
+            \Log::warning('Password reset requested for non-existent user', ['email' => $email]);
+            
+            // Log to email_logs channel if enabled
+            if ($enableEmailLogging) {
+                \Log::channel('email_logs')->warning('PASSWORD_RESET_USER_NOT_FOUND', [
+                    'email' => $email,
+                    'timestamp' => now()->toIso8601String(),
+                    'ip' => request()->ip()
+                ]);
+            }
 
             return;
         }

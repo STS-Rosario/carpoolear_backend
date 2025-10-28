@@ -59,5 +59,16 @@ return [
     'trip_creation_limits' => [
         'max_trips' => 4,        // Maximum number of trips allowed
         'time_window_hours' => 24,     // Time window in hours
-    ]
+    ],
+
+    // Password reset rate limiting
+    // Set to true to disable rate limiting for debugging (find culprit emails)
+    // WARNING: Only disable temporarily in development/staging
+    'disable_password_reset_rate_limit' => env('DISABLE_PASSWORD_RESET_RATE_LIMIT', false),
+
+    // Email logging
+    // Set to true to enable detailed email operation logging to storage/logs/email.log
+    // Logs all password reset email operations with structured data
+    'log_emails' => env('LOG_EMAILS', false),
+    'email_log_daily_days' => env('EMAIL_LOG_DAILY_DAYS', 30),
 ];

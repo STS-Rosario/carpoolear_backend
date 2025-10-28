@@ -35,6 +35,8 @@ class Kernel extends ConsoleKernel
         Commands\TestAnnouncement::class,
         Commands\EvaluateBadges::class,
         Commands\CalculateActiveUsersPerMonth::class,
+        Commands\ProcessEmailQueue::class,
+        Commands\CleanupPasswordResetTokens::class,
 
     ];
 
@@ -71,6 +73,9 @@ class Kernel extends ConsoleKernel
 
         // Calculate active users per month on the 1st of each month at 3 AM
         $schedule->command('users:calculate-active-per-month')->monthlyOn(1, '03:00')->timezone('America/Argentina/Buenos_Aires');
+
+        // Clean up expired password reset tokens daily at 4 AM
+        $schedule->command('auth:cleanup-reset-tokens')->dailyAt('04:00')->timezone('America/Argentina/Buenos_Aires');
 
     }
 
