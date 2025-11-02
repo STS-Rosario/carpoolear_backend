@@ -249,7 +249,7 @@ class ConversationsManager extends BaseManager
             $conversation = $this->getConversation($user, $conversationId);
             if ($conversation) {
                 $newMessage = $this->newMessage($data);
-                $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get();
+                $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get()->unique('id');
                 foreach ($otherUsers as $to) {
                     event(new MessageSend($user, $to, $newMessage));
                     $this->messageRepository->createMessageReadState($newMessage, $to, false);
