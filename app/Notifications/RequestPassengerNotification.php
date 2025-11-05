@@ -58,7 +58,7 @@ class RequestPassengerNotification extends BaseNotification
         
         return [
             'message' => $senderName.' quiere subirse a uno de tus viajes.',
-            'url' => 'my-trips',
+            'url' => '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

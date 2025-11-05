@@ -56,7 +56,7 @@ class AutoCancelPassengerRequestIfRequestLimitedNotification extends BaseNotific
 
         return [
             'message' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

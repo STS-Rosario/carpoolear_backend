@@ -55,7 +55,7 @@ class FriendRejectNotification extends BaseNotification
 
         return [
             'message' => $senderName.' ha rechazado tu solicitud de amistad.',
-            'url' => 'setting/friends',
+            'url' => '/setting/friends',
             'extras' => [
                 'id' => $from ? $from->id : null,
             ],

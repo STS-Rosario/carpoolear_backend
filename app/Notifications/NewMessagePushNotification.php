@@ -57,7 +57,7 @@ class NewMessagePushNotification extends BaseNotification
 
         return [
             'message' => $senderName.' @ '.$messageText,
-            'url' => 'conversations/'.$conversationId,
+            'url' => '/conversations/'.$conversationId,
             'type' => 'conversation',
             'extras' => [
                 'id' => $conversationId,

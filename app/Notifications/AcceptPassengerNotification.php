@@ -68,7 +68,7 @@ class AcceptPassengerNotification extends BaseNotification
 
         return [
             'message' => $senderName.' ha aceptado tu solicitud.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

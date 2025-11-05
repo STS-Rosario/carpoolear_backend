@@ -55,7 +55,7 @@ class AnnouncementNotification extends BaseNotification
         return [
             'message' => $message,
             'title' => $title,
-            'url' => $externalUrl ?: 'app/home',
+            'url' => $externalUrl ?: '/app/home',
             'extras' => [
                 'type' => 'announcement',
                 'external_url' => $externalUrl,

@@ -56,7 +56,7 @@ class AutoCancelRequestIfRequestLimitedNotification extends BaseNotification
 
         return [
             'message' => 'Se ha retirado automáticamente una solicitud que realizaste al viaje con destino a ' . $destination . ' debido a que te subiste a otro viaje con igual destino.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

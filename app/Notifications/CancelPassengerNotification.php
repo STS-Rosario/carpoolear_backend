@@ -61,7 +61,7 @@ class CancelPassengerNotification extends BaseNotification
 
         return [
             'message' => $message,
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

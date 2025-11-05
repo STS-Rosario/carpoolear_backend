@@ -57,7 +57,7 @@ class DeleteTripNotification extends BaseNotification
 
         return [
             'message' => $senderName.' ha eliminado su viaje.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],
