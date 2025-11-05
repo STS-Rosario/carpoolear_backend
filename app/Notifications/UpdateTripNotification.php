@@ -57,7 +57,7 @@ class UpdateTripNotification extends BaseNotification
 
         return [
             'message' => $senderName.' ha cambiado las condiciones de su viaje.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

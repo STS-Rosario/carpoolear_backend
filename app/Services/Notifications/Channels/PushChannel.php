@@ -42,9 +42,12 @@ class PushChannel
                     }
                 } catch (\Exception $e) {
                     \Log::error('PushChannel: Error sending push notification', [
-                        'device_id' => substr($device->device_id, 0, 20) . '...',
+                        'user_id' => $user->id ?? null,
+                        'device_id' => $device->id ?? null,
+                        'device_token' => substr($device->device_id ?? '', 0, 20) . '...',
                         'device_type' => $device->device_type,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
+                        'error_trace' => $e->getTraceAsString()
                     ]);
                 }
             }
@@ -97,12 +100,16 @@ class PushChannel
             $message = array(
                 'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
                 'body' => $data['message'],
-                'icon' => isset($data['image']) ? $data['image'] : 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png'
+                'icon' => isset($data['image']) ? $data['image'] : 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
+                'sound' => 'default'
             ); 
 
-            if (isset($data['url'])) {
-                $message['click_action'] = $data['url'];
-            }
+            // For FCM v1, click_action should match an Android intent filter
+            // If the URL is a path (not an intent action), don't set click_action
+            // Android will automatically open the app when notification + data are present
+            // The app should read the data payload to navigate (url, type, conversation_id are in data)
+            // Only set click_action if it's a valid intent action string that matches the app's filters
+            // For now, we omit click_action and rely on Android's default behavior with data payload
 
             $dataPayload = [];
             if (isset($data['type'])) {
@@ -122,9 +129,11 @@ class PushChannel
             return $response;
         } catch (\Exception $e) {
             \Log::error('PushChannel: sendAndroid error', [
-                'device_id' => $device->id,
-                'device_token' => $device->device_id,
-                'error' => $e->getMessage()
+                'device_id' => $device->id ?? null,
+                'device_token' => substr($device->device_id ?? '', 0, 20) . '...',
+                'error' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString(),
+                'input_data' => $data ?? null
             ]);
             throw $e;
         }
@@ -145,15 +154,17 @@ class PushChannel
                 ]
             ];
 
-            // Add custom data
+            // Add custom data at root level (not inside aps) so Capacitor can access it
+            if (isset($data['type'])) {
+                $payload['type'] = (string) $data['type'];
+            }
             if (isset($data['extras'])) {
                 foreach ($data['extras'] as $key => $value) {
-                    $payload[$key] = $value;
+                    $payload[$key] = (string) $value;
                 }
             }
-
             if (isset($data['url'])) {
-                $payload['url'] = $data['url'];
+                $payload['url'] = (string) $data['url'];
             }
 
             // Send via APNs

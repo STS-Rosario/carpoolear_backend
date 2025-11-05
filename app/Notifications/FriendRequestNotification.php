@@ -52,7 +52,7 @@ class FriendRequestNotification extends BaseNotification
 
         return [
             'message' => $senderName.' te ha enviado una solicitud de amistad.',
-            'url' => 'setting/friends',
+            'url' => '/setting/friends',
             'extras' => [
                 'id' => $from ? $from->id : null,
             ],

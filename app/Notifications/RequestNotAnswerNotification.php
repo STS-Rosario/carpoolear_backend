@@ -52,7 +52,7 @@ class RequestNotAnswerNotification extends BaseNotification
 
         return [
             'message' => 'Una de tus solicitudes aún no fue contestada',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

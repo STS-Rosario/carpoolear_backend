@@ -54,7 +54,7 @@ class HourLeftNotification extends BaseNotification
 
         return [
             'message' => 'Recuerda que en poco más de una hora viajas hacia '.$destination,
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

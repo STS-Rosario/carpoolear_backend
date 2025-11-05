@@ -49,7 +49,7 @@ class SubscriptionMatchNotification extends BaseNotification
 
         return [
             'message' => 'Hemos encontrado un viaje que coincide con tu búsqueda.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

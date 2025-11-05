@@ -52,7 +52,7 @@ class RequestRemainderNotification extends BaseNotification
 
         return [
             'message' => 'Tienes solicitudes pendientes de contestar.',
-            'url' => 'my-trips',
+            'url' => '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],

@@ -59,7 +59,7 @@ class RejectPassengerNotification extends BaseNotification
 
         return [
             'message' => $senderName.' ha rechazado tu solicitud.',
-            'url' => 'trips/'.($trip ? $trip->id : ''),
+            'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],
