@@ -62,6 +62,7 @@ Route::middleware(['api'])->group(function () {
         Route::put('/photo', [UserController::class,'updatePhoto']);
         Route::post('/donation', [UserController::class,'registerDonation']);
         Route::any('/change/{property?}/{value?}', [UserController::class,'changeBooleanProperty']);
+        Route::post('/delete-account-request', [UserController::class,'deleteAccountRequest']);
     });
  
     Route::prefix('notifications')->group( function () {

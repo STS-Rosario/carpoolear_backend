@@ -4,10 +4,12 @@ namespace STS\Http\Controllers\Api\v1;
 
 use STS\Http\ExceptionWithErrors;
 use STS\Models\Donation;
+use STS\Models\DeleteAccountRequest;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Services\Logic\UsersManager;
 use STS\Transformers\ProfileTransformer;
+use STS\Jobs\SendDeleteAccountRequestEmail;
 
 class UserController extends Controller
 {
@@ -207,5 +209,36 @@ class UserController extends Controller
 
         return $this->item($profile, new ProfileTransformer($user));
 
+    }
+
+    public function deleteAccountRequest(Request $request)
+    {
+        $user = auth()->user();
+
+        // Create a new delete account request
+        $deleteRequest = new DeleteAccountRequest();
+        $deleteRequest->user_id = $user->id;
+        $deleteRequest->date_requested = now();
+        $deleteRequest->action_taken = DeleteAccountRequest::ACTION_REQUESTED;
+        $deleteRequest->save();
+
+        // Send email notification to admin using the same mechanism as password reset
+        $adminEmail = 'carpoolear@stsrosario.org.ar';
+        $adminUrl = 'https://carpoolear.com.ar/app/admin';
+
+        // Queue the email sending job instead of sending synchronously
+        SendDeleteAccountRequestEmail::dispatch($adminEmail, $adminUrl)
+            ->onQueue('emails') // Use a dedicated queue for emails
+            ->delay(now()->addSeconds(10)); // Add a small delay to prevent immediate retries
+
+        \Log::info('Delete account request email queued successfully', [
+            'user_id' => $user->id,
+            'admin_email' => $adminEmail
+        ]);
+
+        return response()->json([
+            'message' => 'Delete account request created successfully',
+            'request_id' => $deleteRequest->id
+        ], 201);
     }
 }
