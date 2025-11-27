@@ -21,6 +21,7 @@ use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 
@@ -178,6 +179,8 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
+        Route::get('users/account-delete-list', [AdminUserController::class, 'accountDeleteList']);
+        Route::post('users/account-delete-update', [AdminUserController::class, 'accountDeleteUpdate']);
         Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
         Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
     });
