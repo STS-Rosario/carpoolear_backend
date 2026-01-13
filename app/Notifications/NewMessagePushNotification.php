@@ -18,12 +18,12 @@ class NewMessagePushNotification extends BaseNotification
     public function toEmail($user)
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
         $messages = $this->getAttribute('messages');
         $conversationId = $messages ? $messages->conversation_id : '';
 
         return [
-            'title' => $senderName.' te ha enviado un mensaje.',
+            'title' => __('notifications.new_message.title', ['name' => $senderName]),
             'email_view' => 'new_message',
             'url' => config('app.url') . '/app/conversations/'.$conversationId,
             'name_app' => config('carpoolear.name_app'),
@@ -34,8 +34,8 @@ class NewMessagePushNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' te ha enviado un mensaje.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.new_message.title', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -51,7 +51,7 @@ class NewMessagePushNotification extends BaseNotification
     {
         $message = $this->getAttribute('messages');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Nuevo mensaje';
+        $senderName = $from ? $from->name : __('notifications.new_message.new_message');
         $messageText = $message ? $message->text : '';
         $conversationId = $message ? $message->conversation_id : '';
 

@@ -22,8 +22,10 @@ class CancelPassengerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
         $isDriver = $this->getAttribute('is_driver');
-        $senderName = $from ? $from->name : 'Alguien';
-        $title = $isDriver ? $senderName.' te ha bajado del viaje' : $senderName.' se ha bajado del viaje';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $title = $isDriver
+            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
+            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
 
         return [
             'title' => $title,
@@ -38,8 +40,10 @@ class CancelPassengerNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         $isDriver = $this->getAttribute('is_driver');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $isDriver ? $senderName.' te ha bajado del viaje' : $senderName.' se ha bajado del viaje';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return $isDriver
+            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
+            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -56,8 +60,10 @@ class CancelPassengerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
         $isDriver = $this->getAttribute('is_driver');
-        $senderName = $from ? $from->name : 'Alguien';
-        $message = $isDriver ? $senderName.' te ha bajado del viaje' : $senderName.' se ha bajado del viaje';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $message = $isDriver
+            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
+            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
 
         return [
             'message' => $message,

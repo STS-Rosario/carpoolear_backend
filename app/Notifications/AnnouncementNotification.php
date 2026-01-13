@@ -16,7 +16,7 @@ class AnnouncementNotification extends BaseNotification
 
     public function toEmail($user)
     {
-        $title = $this->getAttribute('title', 'Anuncio de Carpoolear');
+        $title = $this->getAttribute('title', __('notifications.announcement.default_title'));
         $message = $this->getAttribute('message');
         $externalUrl = $this->getAttribute('external_url');
 
@@ -32,7 +32,7 @@ class AnnouncementNotification extends BaseNotification
 
     public function toString()
     {
-        return $this->getAttribute('message', 'Nuevo anuncio de Carpoolear');
+        return $this->getAttribute('message', __('notifications.announcement.default_message'));
     }
 
     public function getExtras()
@@ -48,8 +48,8 @@ class AnnouncementNotification extends BaseNotification
 
     public function toPush($user, $device)
     {
-        $title = $this->getAttribute('title', 'Carpoolear');
-        $message = $this->getAttribute('message', 'Nuevo anuncio de Carpoolear');
+        $title = $this->getAttribute('title', config('carpoolear.name_app'));
+        $message = $this->getAttribute('message', __('notifications.announcement.default_message'));
         $externalUrl = $this->getAttribute('external_url');
 
         return [

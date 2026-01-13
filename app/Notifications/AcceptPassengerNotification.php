@@ -22,11 +22,11 @@ class AcceptPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $tripDate = $trip ? $trip->trip_date : __('notifications.date_not_available');
 
         return [
-            'title' => $senderName.' ha aceptado tu solicitud.',
+            'title' => __('notifications.accept_passenger.title', ['name' => $senderName]),
             'email_view' => 'accept_passenger',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -37,8 +37,8 @@ class AcceptPassengerNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' ha aceptado tu solicitud.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.accept_passenger.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -64,10 +64,10 @@ class AcceptPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'message' => $senderName.' ha aceptado tu solicitud.',
+            'message' => __('notifications.accept_passenger.message', ['name' => $senderName]),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

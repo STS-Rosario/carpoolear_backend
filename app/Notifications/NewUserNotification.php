@@ -20,7 +20,7 @@ class NewUserNotification extends BaseNotification
         $token = $this->getAttribute('token');
 
         return [
-            'title' => '¡Bienvenido a Carpoolear!',
+            'title' => __('notifications.new_user.title'),
             'email_view' => 'create_account',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url'),
@@ -30,6 +30,6 @@ class NewUserNotification extends BaseNotification
 
     public function toString()
     {
-        return '¡Bienvenido a Carpoolear!';
+        return __('notifications.new_user.message');
     }
 }

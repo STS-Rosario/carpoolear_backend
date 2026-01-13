@@ -22,10 +22,10 @@ class AutoCancelPassengerRequestIfRequestLimitedNotification extends BaseNotific
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
 
         return [
-            'title' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.',
+            'title' => __('notifications.auto_cancel_passenger_request.title', ['destination' => $destination]),
             'email_view' => 'auto_cancel_request',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -36,8 +36,8 @@ class AutoCancelPassengerRequestIfRequestLimitedNotification extends BaseNotific
     public function toString()
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
-        return 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.';
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
+        return __('notifications.auto_cancel_passenger_request.message', ['destination' => $destination]);
     }
 
     public function getExtras()
@@ -52,10 +52,10 @@ class AutoCancelPassengerRequestIfRequestLimitedNotification extends BaseNotific
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
 
         return [
-            'message' => 'Se ha retirado automáticamente una solicitud de un pasajero en tu viaje con destino ' . $destination . ' debido a que se subió a otro viaje con igual destino.',
+            'message' => __('notifications.auto_cancel_passenger_request.message', ['destination' => $destination]),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

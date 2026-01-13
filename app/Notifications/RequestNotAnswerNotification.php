@@ -22,7 +22,7 @@ class RequestNotAnswerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'title' => 'Una de tus solicitudes aún no fue contestada',
+            'title' => __('notifications.request_not_answer.title'),
             'email_view' => 'request_not_answer',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -33,8 +33,8 @@ class RequestNotAnswerNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return 'Solicitud de '.$senderName.' pendiente.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.request_not_answer.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -51,7 +51,7 @@ class RequestNotAnswerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Una de tus solicitudes aún no fue contestada',
+            'message' => __('notifications.request_not_answer.push_message'),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

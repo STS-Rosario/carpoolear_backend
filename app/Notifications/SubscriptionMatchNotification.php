@@ -23,7 +23,7 @@ class SubscriptionMatchNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'title' => 'Hemos encontrado un viaje que coincide con tu búsqueda',
+            'title' => __('notifications.subscription_match.title'),
             'email_view' => 'subscription_match',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -33,7 +33,7 @@ class SubscriptionMatchNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Hemos encontrado un viaje que coincide con tu búsqueda.';
+        return __('notifications.subscription_match.message');
     }
 
     public function getExtras()
@@ -48,7 +48,7 @@ class SubscriptionMatchNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Hemos encontrado un viaje que coincide con tu búsqueda.',
+            'message' => __('notifications.subscription_match.message'),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

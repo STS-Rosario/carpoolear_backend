@@ -21,11 +21,11 @@ class RequestPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $tripDate = $trip ? $trip->trip_date : __('notifications.date_not_available');
 
         return [
-            'title' => $senderName.' quiere subirse a tu viaje.',
+            'title' => __('notifications.request_passenger.title', ['name' => $senderName]),
             'email_view' => 'passenger_request',
             'type' => 'request',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
@@ -37,8 +37,8 @@ class RequestPassengerNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' quiere subirse a uno de tus viajes.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.request_passenger.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -54,10 +54,10 @@ class RequestPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
         
         return [
-            'message' => $senderName.' quiere subirse a uno de tus viajes.',
+            'message' => __('notifications.request_passenger.message', ['name' => $senderName]),
             'url' => '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,

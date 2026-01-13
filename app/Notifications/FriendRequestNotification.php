@@ -20,7 +20,7 @@ class FriendRequestNotification extends BaseNotification
     public function toEmail($user)
     {
         return [
-            'title' => 'Nueva solicitud de amistad',
+            'title' => __('notifications.friend_request.title'),
             'email_view' => 'friends_request',
             'type' => 'request',
             'url' => config('app.url').'/app/setting/friends',
@@ -32,8 +32,8 @@ class FriendRequestNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' te ha enviado una solicitud de amistad.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.friend_request.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -48,10 +48,10 @@ class FriendRequestNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'message' => $senderName.' te ha enviado una solicitud de amistad.',
+            'message' => __('notifications.friend_request.message', ['name' => $senderName]),
             'url' => '/setting/friends',
             'extras' => [
                 'id' => $from ? $from->id : null,
