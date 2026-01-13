@@ -57,6 +57,23 @@ php artisan cache:clear
 
 You will need to use a local webserver and point it to the public folder. You can use Herd, use 8.2 as the PHP version. This will create a site like carpoolear_backend and you'll be able to point the frontend to https://carpoolear_backend.test
 
+### Notifications
+For notifications to work, you need to run the worker: 
+
+```bash
+php artisan queue:work --daemon --tries=3 &
+```
+
+### Push Notifications
+Push notifications need notifications working, and Firebase setup, which you'll need to create a project in Firebase and set the keys in the backend in frontend in the .env file
+
+```bash
+FIREBASE_JSON=firebase-service-account.json
+FIREBASE_PROJECT_NAME=project-id
+```
+
+Also you'll need to add `firebase-service-account.json` from Firebase into `/storage/app.`
+
 Happy coding!
 
 ## Contributing
