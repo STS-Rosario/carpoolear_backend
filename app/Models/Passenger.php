@@ -55,7 +55,8 @@ class Passenger extends Model
     protected function casts(): array
     {
         return [
-            'payment_info' => 'array'
+            'trip_id' => 'integer',
+            'payment_info' => 'array',
         ];
     }
 
