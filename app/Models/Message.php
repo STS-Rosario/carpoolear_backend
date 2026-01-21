@@ -23,6 +23,12 @@ class Message extends Model
 
     protected $touches = ['conversation'];
 
+    protected $casts = [
+        'user_id' => 'integer',
+        'conversation_id' => 'integer',
+        'created_at' => 'datetime',
+    ];
+
     public function conversation()
     {
         return $this->belongsTo('STS\Models\Conversation', 'conversation_id');
