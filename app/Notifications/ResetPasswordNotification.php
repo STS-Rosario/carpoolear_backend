@@ -19,7 +19,7 @@ class ResetPasswordNotification extends BaseNotification
         $appName = config('carpoolear.name_app') ?: 'Carpoolear';
 
         return [
-            'title' => 'Recuperación de contraseña de ' . $appName,
+            'title' => __('notifications.reset_password.title', ['app_name' => $appName]),
             'email_view' => 'reset_password',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url'),
@@ -30,6 +30,6 @@ class ResetPasswordNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Recuperación de contraseña';
+        return __('notifications.reset_password.message');
     }
 }

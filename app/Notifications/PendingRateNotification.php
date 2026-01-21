@@ -20,10 +20,10 @@ class PendingRateNotification extends BaseNotification
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
 
         return [
-            'title' => 'Contanos como te fue en el viaje hacia '.$destination.'?',
+            'title' => __('notifications.pending_rate.title', ['destination' => $destination]),
             'email_view' => 'pending_rate',
             'url' => config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
@@ -33,7 +33,7 @@ class PendingRateNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Tienes un viaje por calificar.';
+        return __('notifications.pending_rate.message');
     }
 
     public function getExtras()
@@ -46,7 +46,7 @@ class PendingRateNotification extends BaseNotification
     public function toPush($user, $device)
     {
         return [
-            'message' => 'Tienes un viaje por calificar.',
+            'message' => __('notifications.pending_rate.message'),
             'url' => '/my-trips',
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];

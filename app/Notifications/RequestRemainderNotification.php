@@ -20,11 +20,11 @@ class RequestRemainderNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $tripDate = $trip ? $trip->trip_date : __('notifications.date_not_available');
 
         return [
-            'title' => 'Tienes solicitudes pendientes de contestar.',
+            'title' => __('notifications.request_remainder.title'),
             'email_view' => 'request_remainder',
             'url' =>  config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
@@ -34,7 +34,7 @@ class RequestRemainderNotification extends BaseNotification
 
     public function toString()
     {
-        return 'Tienes solicitudes pendientes de contestar.';
+        return __('notifications.request_remainder.message');
     }
 
     public function getExtras()
@@ -51,7 +51,7 @@ class RequestRemainderNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
 
         return [
-            'message' => 'Tienes solicitudes pendientes de contestar.',
+            'message' => __('notifications.request_remainder.message'),
             'url' => '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,

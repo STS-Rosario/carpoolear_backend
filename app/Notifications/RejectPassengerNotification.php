@@ -21,14 +21,14 @@ class RejectPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $tripDate = $trip ? $trip->trip_date : __('notifications.date_not_available');
 
         return [
-            'title' => $senderName.' ha rechazado tu solicitud.',
+            'title' => __('notifications.reject_passenger.title', ['name' => $senderName]),
             'email_view' => 'passenger_email',
             'type' => 'reject',
-            'reason_message' => 'ha rechazado',
+            'reason_message' => __('notifications.reject_passenger.status'),
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url')
@@ -38,8 +38,8 @@ class RejectPassengerNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' ha rechazado tu solicitud.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.reject_passenger.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -55,10 +55,10 @@ class RejectPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'message' => $senderName.' ha rechazado tu solicitud.',
+            'message' => __('notifications.reject_passenger.message', ['name' => $senderName]),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

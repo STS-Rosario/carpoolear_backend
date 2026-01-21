@@ -21,11 +21,11 @@ class UpdateTripNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        $tripDate = $trip ? $trip->trip_date : 'fecha no disponible';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        $tripDate = $trip ? $trip->trip_date : __('notifications.date_not_available');
 
         return [
-            'title' => $senderName.' ha cambiado las condiciones del viaje.',
+            'title' => __('notifications.update_trip.title', ['name' => $senderName]),
             'email_view' => 'update_trip',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -36,8 +36,8 @@ class UpdateTripNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' ha cambiado las condiciones de su viaje.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.update_trip.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -53,10 +53,10 @@ class UpdateTripNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'message' => $senderName.' ha cambiado las condiciones de su viaje.',
+            'message' => __('notifications.update_trip.message', ['name' => $senderName]),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

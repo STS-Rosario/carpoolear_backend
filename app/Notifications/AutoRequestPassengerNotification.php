@@ -21,10 +21,10 @@ class AutoRequestPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'title' => $senderName.' desea subirse a uno de tus viajes.',
+            'title' => __('notifications.auto_request_passenger.title', ['name' => $senderName]),
             'email_view' => 'auto_request_passenger',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -35,8 +35,8 @@ class AutoRequestPassengerNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' desea subirse a uno de tus viajes.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.auto_request_passenger.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -52,10 +52,10 @@ class AutoRequestPassengerNotification extends BaseNotification
     {
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'message' => $senderName.' desea subirse a uno de tus viajes.',
+            'message' => __('notifications.auto_request_passenger.message', ['name' => $senderName]),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,

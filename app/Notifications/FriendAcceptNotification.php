@@ -20,10 +20,10 @@ class FriendAcceptNotification extends BaseNotification
     public function toEmail($user)
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'title' => $senderName.' ha aceptado tu solicitud de amistad.',
+            'title' => __('notifications.friend_accept.title', ['name' => $senderName]),
             'email_view' => 'friends_accept',
             'url' => config('app.url').'/app/profile/'.$from->id,
             'name_app' => config('carpoolear.name_app'),
@@ -34,8 +34,8 @@ class FriendAcceptNotification extends BaseNotification
     public function toString()
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
-        return $senderName.' ha aceptado tu solicitud de amistad.';
+        $senderName = $from ? $from->name : __('notifications.someone');
+        return __('notifications.friend_accept.message', ['name' => $senderName]);
     }
 
     public function getExtras()
@@ -50,10 +50,10 @@ class FriendAcceptNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $from = $this->getAttribute('from');
-        $senderName = $from ? $from->name : 'Alguien';
+        $senderName = $from ? $from->name : __('notifications.someone');
 
         return [
-            'message' => $senderName.' ha aceptado tu solicitud de amistad.',
+            'message' => __('notifications.friend_accept.message', ['name' => $senderName]),
             'url' => '/setting/friends',
             'extras' => [
                 'id' => $from ? $from->id : null,

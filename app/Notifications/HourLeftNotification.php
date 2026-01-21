@@ -20,10 +20,10 @@ class HourLeftNotification extends BaseNotification
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
 
         return [
-            'title' => 'Recordatorio de viaje hacia '.$destination.'?',
+            'title' => __('notifications.hour_left.title', ['destination' => $destination]),
             'email_view' => 'hour_left',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -34,8 +34,8 @@ class HourLeftNotification extends BaseNotification
     public function toString()
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
-        return 'Recuerda que en poco más de una hora viajas hacia '.$destination;
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
+        return __('notifications.hour_left.message', ['destination' => $destination]);
     }
 
     public function getExtras()
@@ -50,10 +50,10 @@ class HourLeftNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
-        $destination = $trip ? $trip->to_town : 'destino desconocido';
+        $destination = $trip ? $trip->to_town : __('notifications.destination_unknown');
 
         return [
-            'message' => 'Recuerda que en poco más de una hora viajas hacia '.$destination,
+            'message' => __('notifications.hour_left.message', ['destination' => $destination]),
             'url' => '/trips/'.($trip ? $trip->id : ''),
             'extras' => [
                 'id' => $trip ? $trip->id : null,
