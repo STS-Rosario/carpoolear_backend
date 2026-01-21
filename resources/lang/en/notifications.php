@@ -52,7 +52,7 @@ return [
     'friend_request.message' => ':name has sent you a friend request.',
 
     // HourLeftNotification
-    'hour_left.title' => 'Trip reminder to :destination?',
+    'hour_left.title' => 'Trip reminder to :destination',
     'hour_left.message' => 'Remember that in just over an hour you are traveling to :destination',
 
     // NewMessageNotification
@@ -65,7 +65,7 @@ return [
     'new_user.message' => 'Welcome to Carpoolear!',
 
     // PendingRateNotification
-    'pending_rate.title' => 'Tell us how your trip to :destination went?',
+    'pending_rate.title' => 'Tell us how your trip to :destination went',
     'pending_rate.message' => 'You have a trip to rate.',
 
     // RejectPassengerNotification

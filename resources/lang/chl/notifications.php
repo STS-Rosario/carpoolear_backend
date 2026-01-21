@@ -65,7 +65,7 @@ return [
     'new_user.message' => '¡Bienvenido a Carpoolear!',
 
     // PendingRateNotification
-    'pending_rate.title' => 'Cuéntanos como te fue en el viaje hacia :destination?',
+    'pending_rate.title' => 'Cuéntanos como te fue en el viaje hacia :destination',
     'pending_rate.message' => 'Tienes un viaje por calificar.',
 
     // RejectPassengerNotification
