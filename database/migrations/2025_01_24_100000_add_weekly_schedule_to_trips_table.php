@@ -17,7 +17,7 @@ return new class extends Migration
             // Add weekly_schedule column as an integer to store bitmask
             // This allows any combination of days to be stored in a single integer
             if (!Schema::hasColumn('trips', 'weekly_schedule')) {
-                $table->unsignedInteger('weekly_schedule')->nullable()->after('es_recurrente');
+                $table->unsignedInteger('weekly_schedule')->nullable()->after('trip_date');
             }
         });
     }
