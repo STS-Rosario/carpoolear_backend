@@ -329,31 +329,38 @@ class TripRepository
                     $dayOfWeek = $date_search->dayOfWeekIso;
                     $dayBit = pow(2, $dayOfWeek - 1); // Monday=1, Tuesday=2, ..., Sunday=64
 
-                    $trips->where(function ($query) use ($dayBit) {
+                    $trips->where(function ($query) use ($from, $to, $dayBit, $date_search) {
                         // Include regular trips matching the date range
-                        $query->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
+                        $query->where(function ($q) use ($from, $to) {
+                            $q->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
                             ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
-                    });
+                        })
 
-                    // Also include weekly schedule trips that run on this day of the week
-                    $trips->orWhere(function ($query) use ($dayBit) {
-                        $query->whereNotNull('weekly_schedule')
+                        // Also include weekly schedule trips that run on this day of the week
+                        ->orWhere(function ($q) use ($dayBit) {
+                            $q->whereNotNull('weekly_schedule')
                             ->whereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
+                        });
                     });
 
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                     $trips->orderBy('trip_date');
                 }
-                //$trips->setBindings([$data['date']]);
             } else if (isset($data['weekly_schedule'])) {
                 // Search by weekly schedule flag using bitwise AND operation
                 $weeklyScheduleFlag = intval($data['weekly_schedule']);
                 $trips->whereRaw('(weekly_schedule & ?) > 0', [$weeklyScheduleFlag]);
                 $trips->orderBy('trip_date');
             } else {
-                // Default search: include active trips OR weekly schedule trips
                 if (!isset($data['history'])) {
-                    $this->filterActiveTrips($trips);
+                    // Include active trips OR weekly schedule trips
+                    $trips->where(function ($query) {
+                        $query->where('trip_date', '>=', Carbon::Now())
+                            ->orWhere(function ($q) {
+                                $q->whereNotNull('weekly_schedule')
+                                    ->where('weekly_schedule', '>', 0);
+                            });
+                    });
                     $trips->orderBy('trip_date');
                 }
             }
@@ -368,38 +375,38 @@ class TripRepository
                     // only show trips that are ready (paid by driver) or have no state
                     $q->where(function($q) use ($user) {
                         $q->where('state', '=', Trip::STATE_READY)
-                          ->orWhere('state', '=', Trip::STATE_PAID)
-                          ->orWhereNull('state')
-                          ->orWhere('user_id', $user->id);
+                        ->orWhere('state', '=', Trip::STATE_PAID)
+                        ->orWhereNull('state')
+                        ->orWhere('user_id', $user->id);
                     });
                     
                     $q->where(function ($q) use ($user) {
                         $q->whereUserId($user->id)
-                          ->orWhere(function ($q) use ($user) {
-                              $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
+                        ->orWhere(function ($q) use ($user) {
+                            $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
                                 ->orWhere(function ($q) use ($user) {
                                     $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
-                                      ->whereHas('userVisibility', function ($q) use ($user) {
-                                          $q->where('user_id', $user->id);
-                                      });
+                                    ->whereHas('userVisibility', function ($q) use ($user) {
+                                        $q->where('user_id', $user->id);
+                                    });
                                 });
-                          });
+                        });
                     });
                 } else {
                     $q->where(function($q) {
                         $q->where('state', '=', Trip::STATE_READY)
-                          ->orWhere('state', '=', Trip::STATE_PAID)
-                          ->orWhereNull('state');
+                        ->orWhere('state', '=', Trip::STATE_PAID)
+                        ->orWhereNull('state');
                     })
-                      ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                    ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
 
             $trips->whereHas('routes', function ($q) use ($data) {
-                $q->where('routes.from_id', $data['origin_id']);
-                $q->where('routes.to_id', $data['destination_id']);
+                $q->where('routes.from_id', $data['origin_id'])
+                ->where('routes.to_id', $data['destination_id']);
             });
         } else {
             if (isset($data['origin_id'])) {
