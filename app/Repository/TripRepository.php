@@ -327,7 +327,7 @@ class TripRepository
 
                     // Calculate day of week for the search date (1=Monday, 7=Sunday)
                     $dayOfWeek = $date_search->dayOfWeekIso;
-                    $dayBit = pow(2, $dayOfWeek - 1); // Monday=1, Tuesday=2, ..., Sunday=64
+                    $dayBit = pow(2, $dayOfWeek - 1); // Monday=1, Tuesday=2, Wednesday=4, ..., Sunday=64
 
                     $trips->where(function ($query) use ($from, $to, $dayBit) {
                         // Regular trips within date range
@@ -480,13 +480,7 @@ class TripRepository
         });
     }
 
-    /**
-     * Apply active trip filtering to a query
-     * Includes active trips (trip_date >= now) OR weekly schedule trips
-     *
-     * @param $query The query builder instance
-     * @return void
-     */
+
     private function filterActiveTrips($query)
     {
         // Include active trips OR weekly schedule trips
