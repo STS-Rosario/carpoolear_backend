@@ -37,7 +37,6 @@ class Trip extends Model
     const STATE_CANCELED = 'canceled';
 
     // Weekly schedule bitmask constants
-    // Bit mapping: Monday=1, Tuesday=2, Wednesday=4, Thursday=8, Friday=16, Saturday=32, Sunday=64
     const DAY_MONDAY = 1;
     const DAY_TUESDAY = 2;
     const DAY_WEDNESDAY = 4;
