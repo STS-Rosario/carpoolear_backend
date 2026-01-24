@@ -490,11 +490,13 @@ class TripRepository
     private function filterActiveTrips($query)
     {
         // Include active trips OR weekly schedule trips
-        $query->where('trip_date', '>=', Carbon::Now())
-            ->orWhere(function ($q) {
-                $q->whereNotNull('weekly_schedule')
-                    ->where('weekly_schedule', '>', 0);
-            });
+        $query->where(function ($q) {
+            $q->where('trip_date', '>=', Carbon::Now())
+              ->orWhere(function ($q) {
+                  $q->whereNotNull('weekly_schedule')
+                      ->where('weekly_schedule', '>', 0);
+              });
+        });
     }
 
     public function delete($trip)
