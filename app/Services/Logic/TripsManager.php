@@ -40,6 +40,7 @@ class TripsManager extends BaseManager
                 'return_trip_id'        => 'exists:trips,id',
                 'parent_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
+                'weekly_schedule'        => 'nullable|integer|min:0|max:127',
 
                 'points.*.address'      => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -60,6 +61,7 @@ class TripsManager extends BaseManager
                 'return_trip_id'        => 'exists:trips,id',
                 'parent_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
+                'weekly_schedule'        => 'nullable|integer|min:0|max:127',
 
                 'points.*.address'      => 'string',
                 'points.*.json_address' => 'array',
