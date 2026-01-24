@@ -372,30 +372,30 @@ class TripRepository
                     // only show trips that are ready (paid by driver) or have no state
                     $q->where(function($q) use ($user) {
                         $q->where('state', '=', Trip::STATE_READY)
-                        ->orWhere('state', '=', Trip::STATE_PAID)
-                        ->orWhereNull('state')
-                        ->orWhere('user_id', $user->id);
+                          ->orWhere('state', '=', Trip::STATE_PAID)
+                          ->orWhereNull('state')
+                          ->orWhere('user_id', $user->id);
                     });
-                    
+
                     $q->where(function ($q) use ($user) {
                         $q->whereUserId($user->id)
-                        ->orWhere(function ($q) use ($user) {
-                            $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
+                          ->orWhere(function ($q) use ($user) {
+                              $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
                                 ->orWhere(function ($q) use ($user) {
                                     $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
-                                    ->whereHas('userVisibility', function ($q) use ($user) {
-                                        $q->where('user_id', $user->id);
-                                    });
+                                      ->whereHas('userVisibility', function ($q) use ($user) {
+                                          $q->where('user_id', $user->id);
+                                      });
                                 });
-                        });
+                          });
                     });
                 } else {
                     $q->where(function($q) {
                         $q->where('state', '=', Trip::STATE_READY)
-                        ->orWhere('state', '=', Trip::STATE_PAID)
-                        ->orWhereNull('state');
+                          ->orWhere('state', '=', Trip::STATE_PAID)
+                          ->orWhereNull('state');
                     })
-                    ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                      ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
         }
