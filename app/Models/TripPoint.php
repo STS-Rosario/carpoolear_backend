@@ -9,7 +9,7 @@ class TripPoint extends Model
     protected $table = 'trips_points';
 
     protected $fillable = [
-        'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id',
+        'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id', 'point_order',
     ];
 
     protected $hidden = [
