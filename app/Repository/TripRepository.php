@@ -329,13 +329,10 @@ class TripRepository
                     $dayOfWeek = $date_search->dayOfWeekIso;
                     $dayBit = pow(2, $dayOfWeek - 1); // Monday=1, Tuesday=2, ..., Sunday=64
 
-                    $trips->where(function ($query) use ($from, $to, $dayBit, $date_search) {
-                        // Include regular trips matching the date range
-                        $query->where(function ($q) use ($from, $to) {
-                            $q->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
-                            ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
-                        })
-
+                    $trips->where(function ($query) use ($from, $to, $dayBit) {
+                        // Regular trips within date range
+                        $query->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
+                            ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'))
                         // Also include weekly schedule trips that run on this day of the week
                         ->orWhere(function ($q) use ($dayBit) {
                             $q->whereNotNull('weekly_schedule')
