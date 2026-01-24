@@ -258,6 +258,10 @@ class Trip extends Model
         if ($this->weekly_schedule && $this->weekly_schedule > 0) {
             return false;
         }
+        // Handle nullable trip_date for weekly schedule trips
+        if ($this->trip_date === null) {
+            return false;
+        }
         return $this->trip_date->lt(Carbon::now());
     }
 

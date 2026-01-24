@@ -19,6 +19,10 @@ return new class extends Migration
             if (!Schema::hasColumn('trips', 'weekly_schedule')) {
                 $table->unsignedInteger('weekly_schedule')->nullable()->after('trip_date');
             }
+
+            // Make trip_date nullable to support weekly schedule trips
+            // Trips with weekly_schedule don't need a specific date
+            $table->datetime('trip_date')->nullable()->change();
         });
     }
 
@@ -31,6 +35,8 @@ return new class extends Migration
     {
         Schema::table('trips', function (Blueprint $table) {
             $table->dropColumn('weekly_schedule');
+            // Revert trip_date to not nullable
+            $table->datetime('trip_date')->nullable(false)->change();
         });
     }
 };
