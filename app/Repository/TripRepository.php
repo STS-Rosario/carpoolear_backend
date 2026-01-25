@@ -58,6 +58,7 @@ class TripRepository
         $query->whereBetween('lng', [$minLng, $maxLng]);
         return $query->first();
     }
+
     public function generateTripFriendVisibility ($trip) {
         if ($trip->friendship_type_id < 2) {
             if ($trip->friendship_type_id == 1) {
@@ -264,7 +265,7 @@ class TripRepository
 
         if ($asDriver) {
             $trips->where('user_id', $userId);
-        } else {
+        } else {            
             /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
                 $q->where('user_id', $user->id);
@@ -371,42 +372,50 @@ class TripRepository
             });
         }
 
-        // Check if we should use waypoint matching
-        $useWaypointMatching = isset($data['waypoints']) && is_array($data['waypoints']) && count($data['waypoints']) > 0;
-
-        // Check if we should use two-point intermediary matching (backward compatibility)
-        $useTwoPointMatching = !$useWaypointMatching && isset($data['origin_lat']) && isset($data['origin_lng'])
-            && isset($data['destination_lat']) && isset($data['destination_lng']);
-
+        // UPDATED: Advanced route matching - handles both direct and transitive routes
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
-
-            $trips->whereHas('routes', function ($q) use ($data) {
-                $q->where('routes.from_id', $data['origin_id']);
-                $q->where('routes.to_id', $data['destination_id']);
+            $trips->where(function ($q) use ($data) {
+                // Option 1: Direct route exists (A->B as single segment)
+                $q->whereHas('routes', function ($query) use ($data) {
+                    $query->where('routes.from_id', $data['origin_id'])
+                        ->where('routes.to_id', $data['destination_id']);
+                })
+                    // Option 2: Transitive route (A->B->C where we search A->C)
+                    // Trip must have a route starting from origin AND a route ending at destination
+                    ->orWhere(function ($query) use ($data) {
+                        $query->whereHas('routes', function ($q) use ($data) {
+                            $q->where('routes.from_id', $data['origin_id']);
+                    })
+                        ->whereHas('routes', function ($q) use ($data) {
+                            $q->where('routes.to_id', $data['destination_id']);
+                        });
+                    });
             });
         } else {
             if (isset($data['origin_id'])) {
-
                 $trips->whereHas('routes', function ($q) use ($data) {
                     $q->where('routes.from_id', $data['origin_id']);
                 });
-            } elseif (isset($data['destination_id'])) {
+            } else {
+                if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
+                    $distance = 1000.0;
+                    if (isset($data['origin_radio'])) {
+                        $distance = floatval($data['origin_radio']);
+                    }
+                    $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin', $distance);
+                }
+            }
+            if (isset($data['destination_id'])) {
                 $trips->whereHas('routes', function ($q) use ($data) {
                     $q->where('routes.to_id', $data['destination_id']);
                 });
-            } elseif ($useWaypointMatching) {
-                // Use SQL-based waypoint matching when multiple waypoints are provided
-                $this->whereWaypoints($trips, $data['waypoints']);
-            } elseif ($useTwoPointMatching) {
-                // Use SQL-based two-point intermediary matching when both coordinates are provided
-                $this->whereIntermediaryLocation($trips, $data['origin_lat'], $data['origin_lng'], $data['destination_lat'], $data['destination_lng']);
             } else {
-                // Use traditional location matching for single coordinate searches
-                if (isset($data['origin_lat']) && isset($data['origin_lng'])) {
-                    $this->whereLocation($trips, $data['origin_lat'], $data['origin_lng'], 'origin');
-                }
                 if (isset($data['destination_lat']) && isset($data['destination_lng'])) {
-                    $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination');
+                    $distance = 1000.0;
+                    if (isset($data['destination_radio'])) {
+                        $distance = floatval($data['destination_radio']);
+                    }
+                    $this->whereLocation($trips, $data['destination_lat'], $data['destination_lng'], 'destination', $distance);
                 }
             }
         }
@@ -423,10 +432,10 @@ class TripRepository
         
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
-        
+
         // DB::enableQueryLog();
         $pagination = make_pagination($trips, $pageNumber, $pageSize);
-
+        
         // \Log::info(DB::getQueryLog());
         return $pagination;
     }
@@ -456,124 +465,6 @@ class TripRepository
         });
     }
 
-    /**
-     * Matches trips that pass through all specified waypoints in the correct order
-     */
-    private function whereWaypoints($trips, $waypoints)
-    {
-        $tolerance = 0.00001; // ~1 meter tolerance for exact coordinate matching
-
-        // Build a dynamic query that checks all waypoints exist in order
-        $trips->whereExists(function ($query) use ($waypoints, $tolerance) {
-            $query->select(DB::raw(1))
-                ->from('trips_points as tp0');
-
-            // Join subsequent points for each waypoint
-            for ($i = 1; $i < count($waypoints); $i++) {
-                $prevIndex = $i - 1;
-                $query->join("trips_points as tp{$i}", function ($join) use ($i, $prevIndex) {
-                    $join->on("tp{$prevIndex}.trip_id", '=', "tp{$i}.trip_id")
-                        ->whereRaw("tp{$prevIndex}.point_order < tp{$i}.point_order");
-                });
-            }
-
-            // Link the first point to the trips table
-            $query->whereColumn('tp0.trip_id', 'trips.id');
-
-            // Add coordinate matching for each waypoint
-            foreach ($waypoints as $wpIndex => $waypoint) {
-                $lat = $waypoint['lat'];
-                $lng = $waypoint['lng'];
-                $query->whereBetween("tp{$wpIndex}.lat", [$lat - $tolerance, $lat + $tolerance])
-                    ->whereBetween("tp{$wpIndex}.lng", [$lng - $tolerance, $lng + $tolerance]);
-            }
-        });
-    }
-
-    /**
-     * Matches trips where origin/destination can match first/last point OR any intermediary point
-     */
-    private function whereIntermediaryLocation($trips, $originLat, $originLng, $destLat, $destLng)
-    {
-        $tolerance = 0.00001; // ~1 meter tolerance
-
-        $trips->where(function ($q) use ($originLat, $originLng, $destLat, $destLng, $tolerance) {
-            // Condition 1: Direct match (origin matches first point, destination matches last point)
-            $q->whereExists(function ($query) use ($originLat, $originLng, $tolerance) {
-                $query->select(DB::raw(1))
-                    ->from('trips_points as tp1')
-                    ->whereColumn('tp1.trip_id', 'trips.id')
-                    ->where('tp1.point_order', 0)
-                    ->whereBetween('tp1.lat', [$originLat - $tolerance, $originLat + $tolerance])
-                    ->whereBetween('tp1.lng', [$originLng - $tolerance, $originLng + $tolerance]);
-            })->whereExists(function ($query) use ($destLat, $destLng, $tolerance) {
-                $query->select(DB::raw(1))
-                    ->from('trips_points as tp2')
-                    ->whereColumn('tp2.trip_id', 'trips.id')
-                    ->where('tp2.point_order', DB::raw('(SELECT MAX(point_order) FROM trips_points WHERE trip_id = trips.id)'))
-                    ->whereBetween('tp2.lat', [$destLat - $tolerance, $destLat + $tolerance])
-                    ->whereBetween('tp2.lng', [$destLng - $tolerance, $destLng + $tolerance]);
-            });
-
-            // Condition 2: Origin as intermediary (origin matches any intermediary point, destination matches last point)
-            $q->orWhere(function ($q2) use ($originLat, $originLng, $destLat, $destLng, $tolerance) {
-                $q2->whereExists(function ($query) use ($originLat, $originLng, $tolerance) {
-                    $query->select(DB::raw(1))
-                        ->from('trips_points as tp1')
-                        ->whereColumn('tp1.trip_id', 'trips.id')
-                        ->where('tp1.point_order', '>', 0)
-                        ->where('tp1.point_order', '<', DB::raw('(SELECT MAX(point_order) FROM trips_points WHERE trip_id = trips.id)'))
-                        ->whereBetween('tp1.lat', [$originLat - $tolerance, $originLat + $tolerance])
-                        ->whereBetween('tp1.lng', [$originLng - $tolerance, $originLng + $tolerance]);
-                })->whereExists(function ($query) use ($destLat, $destLng, $tolerance) {
-                    $query->select(DB::raw(1))
-                        ->from('trips_points as tp2')
-                        ->whereColumn('tp2.trip_id', 'trips.id')
-                        ->where('tp2.point_order', DB::raw('(SELECT MAX(point_order) FROM trips_points WHERE trip_id = trips.id)'))
-                        ->whereBetween('tp2.lat', [$destLat - $tolerance, $destLat + $tolerance])
-                        ->whereBetween('tp2.lng', [$destLng - $tolerance, $destLng + $tolerance]);
-                });
-            });
-
-            // Condition 3: Destination as intermediary (origin matches first point, destination matches any intermediary point)
-            $q->orWhere(function ($q2) use ($originLat, $originLng, $destLat, $destLng, $tolerance) {
-                $q2->whereExists(function ($query) use ($originLat, $originLng, $tolerance) {
-                    $query->select(DB::raw(1))
-                        ->from('trips_points as tp1')
-                        ->whereColumn('tp1.trip_id', 'trips.id')
-                        ->where('tp1.point_order', 0)
-                        ->whereBetween('tp1.lat', [$originLat - $tolerance, $originLat + $tolerance])
-                        ->whereBetween('tp1.lng', [$originLng - $tolerance, $originLng + $tolerance]);
-                })->whereExists(function ($query) use ($destLat, $destLng, $tolerance) {
-                    $query->select(DB::raw(1))
-                        ->from('trips_points as tp2')
-                        ->whereColumn('tp2.trip_id', 'trips.id')
-                        ->where('tp2.point_order', '>', 0)
-                        ->where('tp2.point_order', '<', DB::raw('(SELECT MAX(point_order) FROM trips_points WHERE trip_id = trips.id)'))
-                        ->whereBetween('tp2.lat', [$destLat - $tolerance, $destLat + $tolerance])
-                        ->whereBetween('tp2.lng', [$destLng - $tolerance, $destLng + $tolerance]);
-                });
-            });
-
-            // Condition 4: Both as intermediaries (both match intermediary points in correct order)
-            $q->orWhereExists(function ($query) use ($originLat, $originLng, $destLat, $destLng, $tolerance) {
-                $query->select(DB::raw(1))
-                    ->from('trips_points as tp1')
-                    ->join('trips_points as tp2', function ($join) {
-                        $join->on('tp1.trip_id', '=', 'tp2.trip_id')
-                            ->whereRaw('tp1.point_order < tp2.point_order');
-                    })
-                    ->whereColumn('tp1.trip_id', 'trips.id')
-                    ->whereBetween('tp1.lat', [$originLat - $tolerance, $originLat + $tolerance])
-                    ->whereBetween('tp1.lng', [$originLng - $tolerance, $originLng + $tolerance])
-                    ->whereBetween('tp2.lat', [$destLat - $tolerance, $destLat + $tolerance])
-                    ->whereBetween('tp2.lng', [$destLng - $tolerance, $destLng + $tolerance]);
-            });
-        });
-    }
-
-
-
     public function delete($trip)
     {
         return $trip->delete();
@@ -581,7 +472,8 @@ class TripRepository
 
     public function addPoints($trip, $points)
     {
-        foreach ($points as $index => $point) {
+        $order = 0;
+        foreach ($points as $point) {
             $p = new TripPoint();
             if (isset($point['address'])) {
                 $p->address = $point['address'];
@@ -600,7 +492,7 @@ class TripRepository
             $p->json_address = $point['json_address'];
             $p->lat = $point['lat'];
             $p->lng = $point['lng'];
-            $p->point_order = $index;
+            $p->point_order = $order++;  // UPDATED: Set point_order
             $trip->points()->save($p);
         }
     }
