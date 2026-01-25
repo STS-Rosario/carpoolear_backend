@@ -93,6 +93,7 @@ class Trip extends Model
         return [
             'es_recurrente' => 'boolean',
             'weekly_schedule' => 'integer',
+            'weekly_schedule_time' => 'datetime',
             'is_passenger' => 'boolean',
             'trip_date' => 'datetime',
             'deleted_at' => 'datetime',
