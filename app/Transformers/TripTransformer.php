@@ -27,6 +27,7 @@ class TripTransformer extends TransformerAbstract
             'to_town' => $trip->to_town,
             'trip_date' => $trip->trip_date ? $trip->trip_date->toDateTimeString() : null,
             'weekly_schedule' => $trip->weekly_schedule,
+            'weekly_schedule_time' => $trip->weekly_schedule_time,
             'description' => $trip->description,
             'total_seats' => $trip->total_seats,
             'friendship_type_id' => $trip->friendship_type_id,

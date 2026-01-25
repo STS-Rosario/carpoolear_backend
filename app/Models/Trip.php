@@ -53,6 +53,7 @@ class Trip extends Model
         'to_town',
         'trip_date',
         'weekly_schedule',
+        'weekly_schedule_time',
         'description',
         'total_seats',
         'friendship_type_id',
