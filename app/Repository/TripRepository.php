@@ -378,9 +378,9 @@ class TripRepository
                 $q->whereHas('routes', function ($query) use ($data) {
                     $query->where('routes.from_id', $data['origin_id']);
                 })
-                    ->whereHas('routes', function ($query) use ($data) {
-                        $query->where('routes.to_id', $data['destination_id']);
-                    });
+                ->whereHas('routes', function ($query) use ($data) {
+                    $query->where('routes.to_id', $data['destination_id']);
+                });
             });
         } else {
             if (isset($data['origin_id'])) {
@@ -483,6 +483,7 @@ class TripRepository
             $p->json_address = $point['json_address'];
             $p->lat = $point['lat'];
             $p->lng = $point['lng'];
+            $p->point_order = $order++;  // UPDATED: Set point_order
             $trip->points()->save($p);
         }
     }
