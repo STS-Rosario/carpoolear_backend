@@ -483,7 +483,6 @@ class TripRepository
             $p->json_address = $point['json_address'];
             $p->lat = $point['lat'];
             $p->lng = $point['lng'];
-            $p->point_order = $order++;  // UPDATED: Set point_order
             $trip->points()->save($p);
         }
     }
