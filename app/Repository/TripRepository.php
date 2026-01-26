@@ -58,7 +58,6 @@ class TripRepository
         $query->whereBetween('lng', [$minLng, $maxLng]);
         return $query->first();
     }
-
     public function generateTripFriendVisibility ($trip) {
         if ($trip->friendship_type_id < 2) {
             if ($trip->friendship_type_id == 1) {
@@ -265,7 +264,7 @@ class TripRepository
 
         if ($asDriver) {
             $trips->where('user_id', $userId);
-        } else {            
+        } else {
             /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
                 $q->where('request_state', Passenger::STATE_ACCEPTED);
                 $q->where('user_id', $user->id);
@@ -371,8 +370,6 @@ class TripRepository
                 }
             });
         }
-
-        // UPDATED: Advanced route matching - handles both direct and transitive routes
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
             $trips->where(function ($q) use ($data) {
                 $q->whereHas('routes', function ($query) use ($data) {
@@ -384,6 +381,7 @@ class TripRepository
             });
         } else {
             if (isset($data['origin_id'])) {
+
                 $trips->whereHas('routes', function ($q) use ($data) {
                     $q->where('routes.from_id', $data['origin_id']);
                 });
@@ -426,7 +424,7 @@ class TripRepository
 
         // DB::enableQueryLog();
         $pagination = make_pagination($trips, $pageNumber, $pageSize);
-        
+        // $pagination = $trips->take(7)->get();
         // \Log::info(DB::getQueryLog());
         return $pagination;
     }
@@ -463,7 +461,6 @@ class TripRepository
 
     public function addPoints($trip, $points)
     {
-        $order = 0;
         foreach ($points as $point) {
             $p = new TripPoint();
             if (isset($point['address'])) {
@@ -483,7 +480,6 @@ class TripRepository
             $p->json_address = $point['json_address'];
             $p->lat = $point['lat'];
             $p->lng = $point['lng'];
-            $p->point_order = $order++;  // UPDATED: Set point_order
             $trip->points()->save($p);
         }
     }
