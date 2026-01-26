@@ -375,20 +375,11 @@ class TripRepository
         // UPDATED: Advanced route matching - handles both direct and transitive routes
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
             $trips->where(function ($q) use ($data) {
-                // Option 1: Direct route exists (A->B as single segment)
                 $q->whereHas('routes', function ($query) use ($data) {
-                    $query->where('routes.from_id', $data['origin_id'])
-                        ->where('routes.to_id', $data['destination_id']);
+                    $query->where('routes.from_id', $data['origin_id']);
                 })
-                    // Option 2: Transitive route (A->B->C where we search A->C)
-                    // Trip must have a route starting from origin AND a route ending at destination
-                    ->orWhere(function ($query) use ($data) {
-                        $query->whereHas('routes', function ($q) use ($data) {
-                            $q->where('routes.from_id', $data['origin_id']);
-                    })
-                        ->whereHas('routes', function ($q) use ($data) {
-                            $q->where('routes.to_id', $data['destination_id']);
-                        });
+                    ->whereHas('routes', function ($query) use ($data) {
+                        $query->where('routes.to_id', $data['destination_id']);
                     });
             });
         } else {
