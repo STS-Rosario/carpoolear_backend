@@ -264,7 +264,7 @@ class TripRepository
     {
         // Weekly schedule trips never expire, so exclude them from old trips
         $trips = Trip::where('trip_date', '<', Carbon::Now());
-        $trips->whereNull('weekly_schedule');
+        $trips->where('weekly_schedule', '=', 0);
 
         if ($asDriver) {
             $trips->where('user_id', $userId);
