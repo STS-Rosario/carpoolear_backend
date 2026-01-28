@@ -333,11 +333,8 @@ class TripRepository
                         // Regular trips within date range
                         $query->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
                             ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'))
-                        // Also include weekly schedule trips that run on this day of the week
-                        ->orWhere(function ($q) use ($dayBit) {
-                            $q->whereNotNull('weekly_schedule')
-                            ->whereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
-                        });
+                            // Also include weekly schedule trips that run on this day of the week
+                            ->orWhereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
                     });
 
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
@@ -353,10 +350,7 @@ class TripRepository
                     // Include active trips OR weekly schedule trips
                     $trips->where(function ($query) {
                         $query->where('trip_date', '>=', Carbon::Now())
-                            ->orWhere(function ($q) {
-                                $q->whereNotNull('weekly_schedule')
-                                    ->where('weekly_schedule', '>', 0);
-                            });
+                            ->orWhere('weekly_schedule', '>', 0);
                     });
                     $trips->orderBy('trip_date');
                 }
@@ -486,10 +480,7 @@ class TripRepository
         // Include active trips OR weekly schedule trips
         $query->where(function ($q) {
             $q->where('trip_date', '>=', Carbon::Now())
-              ->orWhere(function ($q) {
-                  $q->whereNotNull('weekly_schedule')
-                      ->where('weekly_schedule', '>', 0);
-              });
+                ->orWhere('weekly_schedule', '>', 0);
         });
     }
 

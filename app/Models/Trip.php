@@ -258,7 +258,7 @@ class Trip extends Model
     public function expired()
     {
         // Weekly schedule trips never expire
-        if ($this->weekly_schedule && $this->weekly_schedule > 0) {
+        if ($this->weekly_schedule > 0) {
             return false;
         }
         // Handle nullable trip_date for weekly schedule trips
