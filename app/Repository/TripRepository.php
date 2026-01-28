@@ -348,10 +348,7 @@ class TripRepository
             } else {
                 if (!isset($data['history'])) {
                     // Include active trips OR weekly schedule trips
-                    $trips->where(function ($query) {
-                        $query->where('trip_date', '>=', Carbon::Now())
-                            ->orWhere('weekly_schedule', '>', 0);
-                    });
+                    $this->filterActiveTrips($trips);
                     $trips->orderBy('trip_date');
                 }
             }
