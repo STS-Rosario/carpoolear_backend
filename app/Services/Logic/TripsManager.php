@@ -40,7 +40,7 @@ class TripsManager extends BaseManager
                 'return_trip_id'        => 'exists:trips,id',
                 'parent_trip_id'        => 'exists:trips,id',
                 'car_id'                => 'exists:cars,id,user_id,'.$user_id,
-                'weekly_schedule'        => 'required_without:trip_date|nullable|integer|min:1|max:127',
+                'weekly_schedule'        => 'required_without:trip_date|nullable|integer|min:0|max:127',
                 'weekly_schedule_time'  => 'nullable|date_format:H:i:s',
 
                 'points.*.address'      => 'required|string',
