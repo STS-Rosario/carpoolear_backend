@@ -202,17 +202,19 @@ Route::middleware(['api'])->group(function () {
         Route::post('users/{user}/delete', [AdminUserController::class, 'delete']);
         Route::post('users/{user}/anonymize', [AdminUserController::class, 'anonymize']);
         Route::post('users/{user}/ban-and-anonymize', [AdminUserController::class, 'banAndAnonymize']);
+        Route::post('users/{user}/clear-identity-validation', [AdminUserController::class, 'clearIdentityValidation']);
         Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
         Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
-        // Manual identity validations
+        // Manual identity validations (image route before {id} so /image/{type} is matched)
         Route::get('manual-identity-validations', [AdminManualIdentityValidationController::class, 'index']);
+        Route::get('manual-identity-validations/{id}/image/{type}', [AdminManualIdentityValidationController::class, 'image'])->where('type', 'front|back|selfie');
         Route::get('manual-identity-validations/{id}', [AdminManualIdentityValidationController::class, 'show']);
-        Route::get('manual-identity-validations/{id}/image/{type}', [AdminManualIdentityValidationController::class, 'image']);
         Route::post('manual-identity-validations/{id}/review', [AdminManualIdentityValidationController::class, 'review']);
         Route::post('manual-identity-validations/{id}/purge', [AdminManualIdentityValidationController::class, 'purge']);
         // Mercado Pago rejected validations (OAuth validation failures)
         Route::get('mercado-pago-rejected-validations', [AdminMercadoPagoRejectedValidationController::class, 'index']);
         Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
+        Route::post('mercado-pago-rejected-validations/{id}/review', [AdminMercadoPagoRejectedValidationController::class, 'review']);
         Route::post('mercado-pago-rejected-validations/{id}/approve', [AdminMercadoPagoRejectedValidationController::class, 'approve']);
     });
 

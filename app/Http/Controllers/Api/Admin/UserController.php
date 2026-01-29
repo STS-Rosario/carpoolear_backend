@@ -75,6 +75,27 @@ class UserController extends Controller
     }
 
     /**
+     * Clear identity validation for a user (admin only).
+     * Removes identity_validated, identity_validated_at, identity_validation_type,
+     * identity_validation_rejected_at, identity_validation_reject_reason.
+     */
+    public function clearIdentityValidation(User $user): JsonResponse
+    {
+        $user->identity_validated = false;
+        $user->identity_validated_at = null;
+        $user->identity_validation_type = null;
+        $user->identity_validation_rejected_at = null;
+        $user->identity_validation_reject_reason = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Identity validation cleared',
+            'data' => $user->fresh(['id', 'name', 'nro_doc', 'identity_validated', 'identity_validated_at', 'identity_validation_type']),
+        ]);
+    }
+}
+
+    /**
      * Get list of banned users, sorted by banned_at DESC.
      */
     public function bannedUsersList(Request $request): JsonResponse
