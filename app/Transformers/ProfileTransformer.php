@@ -65,7 +65,11 @@ class ProfileTransformer extends TransformerAbstract
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
             'references' => $user->references,
             'data_visibility' => $user->data_visibility,
-            'references_data' => $user->referencesReceived
+            'references_data' => $user->referencesReceived,
+            // Identity validation: exposed to every user (all viewers of the profile)
+            'identity_validated' => (bool) $user->identity_validated,
+            'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
+            'identity_validation_type' => $user->identity_validation_type,
         ];
 
         if ($this->user && ($user->id == $this->user->id || $this->user->is_admin)) {
