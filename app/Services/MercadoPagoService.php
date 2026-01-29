@@ -132,4 +132,49 @@ class MercadoPagoService
 
         return $hash . ':' . $encodedData;
     }
+
+    /**
+     * Create a payment preference for manual identity validation.
+     *
+     * @param int $requestId ManualIdentityValidation id
+     * @param int|null $amountInCents Override from config if null
+     * @param string|null $successRedirectUrl Optional override for success URL (default: backend manual-validation-success)
+     */
+    public function createPaymentPreferenceForManualValidation(int $requestId, ?int $amountInCents = null, ?string $successRedirectUrl = null): \MercadoPago\Resources\Preference
+    {
+        if ($amountInCents === null) {
+            $amountInCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
+        }
+        if ($amountInCents <= 0) {
+            throw new \InvalidArgumentException('Manual identity validation cost must be positive');
+        }
+
+        $baseUrl = rtrim(config('app.url'), '/');
+        $successPath = $baseUrl . '/api/mercadopago/manual-validation-success?request_id=' . $requestId;
+        $failurePath = $baseUrl . '/api/mercadopago/manual-validation-success?request_id=' . $requestId . '&result=failure';
+        $pendingPath = $baseUrl . '/api/mercadopago/manual-validation-success?request_id=' . $requestId . '&result=pending';
+        if ($successRedirectUrl !== null) {
+            $successPath = $successRedirectUrl;
+        }
+
+        $preferenceData = [
+            'items' => [
+                [
+                    'title' => 'Validación manual de identidad',
+                    'quantity' => 1,
+                    'unit_price' => floatval($amountInCents) / 100,
+                    'currency_id' => 'ARS',
+                ],
+            ],
+            'back_urls' => [
+                'success' => $successPath,
+                'failure' => $failurePath,
+                'pending' => $pendingPath,
+            ],
+            'auto_return' => 'approved',
+            'external_reference' => 'manual_validation:' . $requestId,
+        ];
+
+        return $this->createPaymentPreference($preferenceData);
+    }
 }  
