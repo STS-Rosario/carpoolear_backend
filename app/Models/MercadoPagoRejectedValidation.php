@@ -15,6 +15,10 @@ class MercadoPagoRejectedValidation extends Model
         'mp_payload',
         'approved_at',
         'approved_by',
+        'review_status',
+        'review_note',
+        'reviewed_at',
+        'reviewed_by',
     ];
 
     protected function casts(): array
@@ -22,6 +26,7 @@ class MercadoPagoRejectedValidation extends Model
         return [
             'mp_payload' => 'array',
             'approved_at' => 'datetime',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -33,5 +38,10 @@ class MercadoPagoRejectedValidation extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

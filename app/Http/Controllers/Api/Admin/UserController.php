@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\Admin;
 
 use STS\Http\Controllers\Controller;
 use STS\Models\DeleteAccountRequest;
+use STS\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
@@ -50,6 +51,26 @@ class UserController extends Controller
         $deleteRequest->load('user:id,name,email');
 
         return response()->json(['data' => $deleteRequest]);
+    }
+
+    /**
+     * Clear identity validation for a user (admin only).
+     * Removes identity_validated, identity_validated_at, identity_validation_type,
+     * identity_validation_rejected_at, identity_validation_reject_reason.
+     */
+    public function clearIdentityValidation(User $user): JsonResponse
+    {
+        $user->identity_validated = false;
+        $user->identity_validated_at = null;
+        $user->identity_validation_type = null;
+        $user->identity_validation_rejected_at = null;
+        $user->identity_validation_reject_reason = null;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Identity validation cleared',
+            'data' => $user->fresh(['id', 'name', 'nro_doc', 'identity_validated', 'identity_validated_at', 'identity_validation_type']),
+        ]);
     }
 }
 

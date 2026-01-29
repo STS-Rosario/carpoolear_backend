@@ -100,13 +100,13 @@ class ManualIdentityValidationController extends Controller
     }
 
     /**
-     * POST /api/admin/manual-identity-validations/{id}/review - action: approve|reject|pending, note: string (required)
+     * POST /api/admin/manual-identity-validations/{id}/review - action: approve|reject|pending, note: string (required for reject/pending, optional for approve)
      */
     public function review(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
             'action' => 'required|in:approve,reject,pending',
-            'note' => 'required|string|min:1',
+            'note' => 'required_if:action,reject,pending|nullable|string|min:1',
         ]);
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
@@ -116,17 +116,27 @@ class ManualIdentityValidationController extends Controller
         }
 
         $admin = auth()->user();
-        $item->review_status = $validated['action'];
+        $item->review_status = $validated['action'] === 'approve' ? 'approved' : ($validated['action'] === 'reject' ? 'rejected' : 'pending');
         $item->reviewed_by = $admin->id;
         $item->reviewed_at = now();
-        $item->review_note = $validated['note'];
+        $item->review_note = $validated['note'] ?? '';
         $item->save();
 
+        $user = $item->user;
         if ($validated['action'] === 'approve') {
-            $user = $item->user;
             $user->identity_validated = true;
             $user->identity_validated_at = now();
             $user->identity_validation_type = 'manual';
+            $user->identity_validation_rejected_at = null;
+            $user->identity_validation_reject_reason = null;
+            $user->save();
+        } else {
+            // Reject or Pending: clear identity validation flags and metadata
+            $user->identity_validated = false;
+            $user->identity_validated_at = null;
+            $user->identity_validation_type = null;
+            $user->identity_validation_rejected_at = null;
+            $user->identity_validation_reject_reason = null;
             $user->save();
         }
 
