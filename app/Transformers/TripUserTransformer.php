@@ -44,7 +44,8 @@ class TripUserTransformer extends TransformerAbstract
             'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
             'conversation_opened_count'      => $user->conversation_opened_count,
             'conversation_answered_count'      => $user->conversation_answered_count,
-            'answer_delay_sum'      => $user->answer_delay_sum
+            'answer_delay_sum'      => $user->answer_delay_sum,
+            'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
         ];
 
         return $data;

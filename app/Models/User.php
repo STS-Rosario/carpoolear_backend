@@ -62,7 +62,12 @@ class User extends Authenticatable implements JWTSubject
         'account_number',
         'account_type',
         'account_bank',
-        'data_visibility'
+        'data_visibility',
+        'identity_validated',
+        'identity_validated_at',
+        'identity_validation_type',
+        'identity_validation_rejected_at',
+        'identity_validation_reject_reason',
     ];
 
     protected function casts(): array
@@ -81,7 +86,10 @@ class User extends Authenticatable implements JWTSubject
             'driver_is_verified'      => 'boolean',
             'emails_notifications' => 'boolean',
             'driver_data_docs'      => 'array',
-            'last_connection' => 'datetime'
+            'last_connection' => 'datetime',
+            'identity_validated' => 'boolean',
+            'identity_validated_at' => 'datetime',
+            'identity_validation_rejected_at' => 'datetime',
         ];
     }
  
@@ -316,5 +324,10 @@ class User extends Authenticatable implements JWTSubject
             ->using(UserBadge::class)
             ->withPivot('awarded_at')
             ->withTimestamps();
+    }
+
+    public function manualIdentityValidations()
+    {
+        return $this->hasMany(ManualIdentityValidation::class, 'user_id');
     }
 }

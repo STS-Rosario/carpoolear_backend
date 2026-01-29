@@ -17,6 +17,8 @@ use STS\Services\UserDeletionService;
 use STS\Transformers\ProfileTransformer;
 use STS\Jobs\SendDeleteAccountRequestEmail;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use STS\Services\MercadoPagoOAuthService;
+use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
@@ -246,6 +248,43 @@ class UserController extends Controller
 
         return $this->item($profile, new ProfileTransformer($user));
 
+    }
+
+    /**
+     * Return Mercado Pago OAuth authorization URL for identity validation.
+     * Frontend redirects the user to this URL.
+     */
+    public function getMercadoPagoOAuthUrl(Request $request, MercadoPagoOAuthService $oauthService)
+    {
+        if (!config('carpoolear.identity_validation_mercado_pago_enabled', false)) {
+            throw new ExceptionWithErrors('Identity validation with Mercado Pago is not available.', [], 503);
+        }
+        $clientId = config('services.mercadopago.client_id');
+        if (empty($clientId) || trim($clientId) === '') {
+            throw new ExceptionWithErrors('Mercado Pago OAuth is not configured. Set MERCADO_PAGO_CLIENT_ID and related env vars.', [], 503);
+        }
+
+        $user = auth()->user();
+
+        if (empty($user->nro_doc) || trim($user->nro_doc) === '') {
+            throw new ExceptionWithErrors('User must have DNI (nro_doc) set to validate identity.', ['nro_doc' => ['required']]);
+        }
+
+        $state = bin2hex(random_bytes(16));
+        $authResult = $oauthService->getAuthorizationUrl($state);
+
+        if (is_array($authResult)) {
+            $authorizationUrl = $authResult['authorization_url'];
+            Cache::put('mp_oauth_state:' . $state, [
+                'user_id' => $user->id,
+                'code_verifier' => $authResult['code_verifier'],
+            ], 600);
+        } else {
+            $authorizationUrl = $authResult;
+            Cache::put('mp_oauth_state:' . $state, ['user_id' => $user->id], 600);
+        }
+
+        return response()->json(['authorization_url' => $authorizationUrl]);
     }
 
     public function deleteAccountRequest(Request $request)

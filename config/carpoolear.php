@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'name_app' => env('NAME_APP', 'Carpoolear'),
     'donation_month_days' => env('DONATION_MONTH_DAYS', '0'),
     'donation_trips_count' => env('DONATION_TRIPS_COUNT', '20'),
     'donation_trips_offset' => env('DONATION_TRIPS_OFFSET', '0'),
@@ -32,6 +33,12 @@ return [
     'module_max_price_price_variance_tolls' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
     'module_max_price_price_variance_max_extra' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
     'module_max_price_kilometer_by_liter' => (int) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
+
+    'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
+
+    // Identity validation: enable/disable MP OAuth and manual validation (frontend shows only enabled options)
+    'identity_validation_mercado_pago_enabled' => env('IDENTITY_VALIDATION_MERCADO_PAGO_ENABLED', false),
+    'identity_validation_manual_enabled' => env('IDENTITY_VALIDATION_MANUAL_ENABLED', false),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words_names' => [

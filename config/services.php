@@ -39,12 +39,18 @@ return [
         'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
         'webhook_secret' => env('MERCADO_PAGO_WEBHOOK_SECRET'),
         'reference_salt' => env('MERCADO_PAGO_REFERENCE_SALT', 'carpoolear_2024_secure_salt'),
-
+        'client_id' => env('MERCADO_PAGO_CLIENT_ID'),
+        'client_secret' => env('MERCADO_PAGO_CLIENT_SECRET'),
+        'oauth_redirect_uri' => env('MERCADO_PAGO_OAUTH_REDIRECT_URI'),
+        'oauth_frontend_redirect' => env('MERCADO_PAGO_OAUTH_FRONTEND_REDIRECT', env('APP_URL')),
+        'oauth_pkce_enabled' => env('MERCADO_PAGO_OAUTH_PKCE_ENABLED', false),
+        'oauth_auth_url_base' => env('MERCADO_PAGO_OAUTH_AUTH_URL_BASE', 'https://auth.mercadopago.com'),
     ],
 
-    'mercadopago' => [
-        'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
-        'webhook_secret' => env('MERCADO_PAGO_WEBHOOK_SECRET'),
+    'whatsapp' => [
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'your_verify_token_here'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
     ],
-
 ];

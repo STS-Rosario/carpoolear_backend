@@ -50,15 +50,18 @@ class ConversationsTransformer extends TransformerAbstract
                 if ($width) {
                     $data['title'] = $width->name;
                     $data['image'] = $width->image ? '/image/profile/'.$width->image : '';
+                    $data['other_user_identity_validated_at'] = $width->identity_validated_at ? $width->identity_validated_at->toDateTimeString() : null;
                 } else {
                     // Handle case where no other user is found
                     $data['title'] = 'Unknown User';
                     $data['image'] = '';
+                    $data['other_user_identity_validated_at'] = null;
                 }
                 break;
             default:
                 $data['title'] = $conversation->title;
                 $data['image'] = '';
+                $data['other_user_identity_validated_at'] = null;
                 break;
         }
 
@@ -79,6 +82,7 @@ class ConversationsTransformer extends TransformerAbstract
                 'id' => $u->id,
                 'name' => $u->name,
                 'last_connection' => $u->last_connection ? $u->last_connection->toDateTimeString() : null,
+                'identity_validated_at' => $u->identity_validated_at ? $u->identity_validated_at->toDateTimeString() : null,
             ];
         }
 
