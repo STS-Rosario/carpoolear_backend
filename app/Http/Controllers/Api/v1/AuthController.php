@@ -51,7 +51,8 @@ class AuthController extends Controller
             'donation_trips_rated',
             'donation_ammount_needed',
             'banner_url',
-            'banner_image'
+            'banner_image',
+            'qr_payment_pos_external_id', // backend only; frontend gets identity_validation_manual_qr_enabled
         ];
         $allConfigs = config('carpoolear');
         \Log::info('Environment Check:', [
@@ -69,6 +70,10 @@ class AuthController extends Controller
         foreach ($allConfigs as $key => $value) {
             $config->$key = $value;
         }
+        $config->identity_validation_manual_qr_enabled = config('carpoolear.identity_validation_manual_enabled')
+            && config('carpoolear.identity_validation_manual_qr_enabled')
+            && !empty(config('services.mercadopago.qr_payment_access_token'))
+            && !empty(config('carpoolear.qr_payment_pos_external_id'));
         return $config;
     }
 

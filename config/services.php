@@ -37,6 +37,9 @@ return [
     
     'mercadopago' => [
         'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
+        'qr_payment_access_token' => env('MERCADO_PAGO_QR_PAYMENT_ACCESS_TOKEN'),
+        'qr_payment_client_id' => env('MERCADO_PAGO_QR_PAYMENT_CLIENT_ID'),
+        'qr_payment_client_secret' => env('MERCADO_PAGO_QR_PAYMENT_CLIENT_SECRET'),
         'webhook_secret' => env('MERCADO_PAGO_WEBHOOK_SECRET'),
         'reference_salt' => env('MERCADO_PAGO_REFERENCE_SALT', 'carpoolear_2024_secure_salt'),
         'client_id' => env('MERCADO_PAGO_CLIENT_ID'),

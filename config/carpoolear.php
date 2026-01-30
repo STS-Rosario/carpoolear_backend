@@ -39,6 +39,9 @@ return [
     // Identity validation: enable/disable MP OAuth and manual validation (frontend shows only enabled options)
     'identity_validation_mercado_pago_enabled' => env('IDENTITY_VALIDATION_MERCADO_PAGO_ENABLED', false),
     'identity_validation_manual_enabled' => env('IDENTITY_VALIDATION_MANUAL_ENABLED', false),
+    // QR payment for manual validation (no physical device needed; see docs in config or README)
+    'identity_validation_manual_qr_enabled' => env('IDENTITY_VALIDATION_MANUAL_QR_ENABLED', false),
+    'qr_payment_pos_external_id' => env('MERCADO_PAGO_QR_PAYMENT_POS_EXTERNAL_ID', ''),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words_names' => [

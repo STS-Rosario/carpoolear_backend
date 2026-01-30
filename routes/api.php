@@ -71,6 +71,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/manual-identity-validation-cost', [ManualIdentityValidationController::class, 'cost']);
         Route::get('/manual-identity-validation', [ManualIdentityValidationController::class, 'status']);
         Route::post('/manual-identity-validation/preference', [ManualIdentityValidationController::class, 'createPreference']);
+        Route::post('/manual-identity-validation/qr-order', [ManualIdentityValidationController::class, 'createQrOrder']);
         Route::post('/manual-identity-validation', [ManualIdentityValidationController::class, 'submit']);
         Route::get('/{name?}', [UserController::class,'show']);
         Route::get('/{id?}/ratings', [RatingController::class,'ratings']);
