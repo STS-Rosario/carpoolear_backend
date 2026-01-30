@@ -12,7 +12,7 @@ class AddUserPrivateNote extends Migration
 			// Add weekly_schedule column as an integer to store bitmask
 			// This allows any combination of days to be stored in a single integer
 			if (!Schema::hasColumn('trips', 'weekly_schedule')) {
-				$table->unsignedInteger('weekly_schedule')->after('trip_date')->index();
+				$table->unsignedTinyInteger('weekly_schedule')->after('trip_date')->index();
 			}
 
 			// Add weekly_schedule_time column to store the time for weekly schedule trips
