@@ -9,6 +9,7 @@ use STS\Models\PaymentAttempt;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
 use STS\Models\CampaignReward;
+use STS\Models\ManualIdentityValidation;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\ConversationsManager;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -71,8 +72,14 @@ class MercadoPagoWebhookController extends Controller
         }
         Log::info('MP WEBHOOK payment', ['payment' => $mpPayment]);
 
+        $externalReference = $mpPayment['external_reference'] ?? '';
+
+        // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR - Orders API allows no colon)
+        if (strpos($externalReference, 'manual_validation:') === 0 || strpos($externalReference, 'manual_validation_') === 0) {
+            return $this->handleManualValidationPayment($mpPayment);
+        }
+
         // parse external reference to determine payment type
-        $externalReference = $mpPayment['external_reference'];
         $decodedReference = $this->parseExternalReference($externalReference);
         
         if (!$decodedReference) {
@@ -418,6 +425,47 @@ class MercadoPagoWebhookController extends Controller
             'new_status' => $newStatus,
             'user_id' => $userId
         ]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Handle payment webhook for manual identity validation (Checkout Pro or QR).
+     * external_reference: manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR)
+     */
+    protected function handleManualValidationPayment($mpPayment)
+    {
+        $externalReference = $mpPayment['external_reference'] ?? '';
+        $prefix = strpos($externalReference, 'manual_validation:') === 0 ? 'manual_validation:' : 'manual_validation_';
+        $requestId = (int) substr($externalReference, strlen($prefix));
+        if ($requestId <= 0) {
+            Log::error('Invalid manual_validation external reference', ['external_reference' => $externalReference]);
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+
+        $validationRequest = ManualIdentityValidation::find($requestId);
+        if (!$validationRequest) {
+            Log::error('Manual identity validation request not found', [
+                'payment_id' => $mpPayment['id'],
+                'request_id' => $requestId,
+            ]);
+            return response()->json(['error' => 'Request not found'], 404);
+        }
+
+        $status = $mpPayment['status'] ?? '';
+        if ($status === 'approved') {
+            if (!$validationRequest->paid) {
+                $validationRequest->paid = true;
+                $validationRequest->paid_at = now();
+                $validationRequest->payment_id = (string) $mpPayment['id'];
+                $validationRequest->save();
+                Log::info('Manual identity validation payment success', [
+                    'request_id' => $requestId,
+                    'user_id' => $validationRequest->user_id,
+                    'payment_id' => $mpPayment['id'],
+                ]);
+            }
+        }
 
         return response()->json(['status' => 'success']);
     }

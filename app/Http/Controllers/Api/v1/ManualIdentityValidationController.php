@@ -112,6 +112,65 @@ class ManualIdentityValidationController extends Controller
     }
 
     /**
+     * POST /api/users/manual-identity-validation/qr-order - create MP QR order for manual validation payment
+     * Returns request_id, qr_data (string to render as QR), order_id. Frontend displays QR; user scans with MP app.
+     * Payment confirmation is via webhook; frontend can poll status until paid.
+     */
+    public function createQrOrder(Request $request, MercadoPagoService $mpService)
+    {
+        $user = auth()->user();
+        if (!config('carpoolear.identity_validation_manual_enabled', false)) {
+            throw new ExceptionWithErrors('Manual identity validation is not available.', [], 503);
+        }
+        if (!config('carpoolear.identity_validation_manual_qr_enabled', false)) {
+            throw new ExceptionWithErrors('QR payment is not available.', [], 503);
+        }
+        $posExternalId = config('carpoolear.qr_payment_pos_external_id', '');
+        if ($posExternalId === '' || $posExternalId === null) {
+            throw new ExceptionWithErrors('QR payment is not available.', [], 503);
+        }
+        $costCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
+        if ($costCents <= 0) {
+            throw new ExceptionWithErrors('Manual identity validation is not available.', []);
+        }
+
+        $validationRequest = ManualIdentityValidation::where('user_id', $user->id)
+            ->where('paid', false)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if (!$validationRequest) {
+            $validationRequest = ManualIdentityValidation::create([
+                'user_id' => $user->id,
+                'paid' => false,
+                'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            ]);
+        }
+
+        try {
+            $result = $mpService->createQrOrderForManualValidation($validationRequest->id, $costCents);
+        } catch (\Exception $e) {
+            if ($validationRequest->wasRecentlyCreated) {
+                $validationRequest->delete();
+            }
+            throw $e;
+        }
+
+        if (empty($result['qr_data'])) {
+            if ($validationRequest->wasRecentlyCreated) {
+                $validationRequest->delete();
+            }
+            throw new ExceptionWithErrors('Failed to create QR order.', []);
+        }
+
+        return response()->json([
+            'request_id' => $result['request_id'],
+            'qr_data' => $result['qr_data'],
+            'order_id' => $result['order_id'],
+        ]);
+    }
+
+    /**
      * POST /api/users/manual-identity-validation - submit 3 images (request_id + front, back, selfie)
      */
     public function submit(Request $request)
