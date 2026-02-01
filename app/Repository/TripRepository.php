@@ -211,19 +211,12 @@ class TripRepository
         $nodeIds = $trip->points()
             ->orderBy('id')
             ->get()
-            ->map(function ($point) {
-                $address = is_array($point->json_address)
-                    ? (object)$point->json_address
-                    : json_decode($point->json_address);
-
-                return $address->id ?? null;
-            })
+            ->map(fn($point) => ((object)$point->json_address)->id ?? null)
             ->filter(fn($id) => $id > 0)
-            ->values()
-            ->toArray();
+            ->values();
 
-        if (!empty($nodeIds)) {
-            $trip->path = '>' . implode('>', $nodeIds) . '>';
+        if ($nodeIds->isNotEmpty()) {
+            $trip->path = '>' . $nodeIds->implode('>') . '>';
             $trip->save();
         }
 
