@@ -126,6 +126,8 @@ class TripRepository
         $this->addPoints($trip, $points);
         \Log::info('TripRepository::create trip after add points', [$trip]);
 
+        $this->generateTripPath($trip);
+
         $originToCheck = [$points[0]['lat'], $points[0]['lng']];
         $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
         $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
@@ -198,10 +200,36 @@ class TripRepository
         if ($points) {
             $this->deletePoints($trip);
             $this->addPoints($trip, $points);
+            $this->generateTripPath($trip);
         }
 
         return $trip;
     }
+
+    public function generateTripPath($trip)
+    {
+        $nodeIds = $trip->points()
+            ->orderBy('id')
+            ->get()
+            ->map(function ($point) {
+                $address = is_array($point->json_address)
+                    ? (object)$point->json_address
+                    : json_decode($point->json_address);
+
+                return $address->id ?? null;
+            })
+            ->filter(fn($id) => $id > 0)
+            ->values()
+            ->toArray();
+
+        if (!empty($nodeIds)) {
+            $trip->path = '>' . implode('>', $nodeIds) . '>';
+            $trip->save();
+        }
+
+        return $trip->path;
+    }
+
 
     public function show($user, $id)
     {
@@ -394,10 +422,33 @@ class TripRepository
             });
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
+            $fromId = (int) $data['origin_id'];
+            $toId = (int) $data['destination_id'];
 
-            $trips->whereHas('routes', function ($q) use ($data) {
-                $q->where('routes.from_id', $data['origin_id'])
-                ->where('routes.to_id', $data['destination_id']);
+            \Log::info('Search origin_id and destination_id', [
+                'origin_id_raw' => $data['origin_id'],
+                'destination_id_raw' => $data['destination_id'],
+                'fromId' => $fromId,
+                'toId' => $toId
+            ]);
+
+            $trips->where(function ($query) use ($fromId, $toId) {
+                // For trips with a path
+                $query->where(function ($q) use ($fromId, $toId) {
+                    $q->where('path', '!=', '')
+                        ->where(function ($subQ) use ($fromId, $toId) {
+                            $subQ->where('path', 'LIKE', "%>{$fromId}>{$toId}>%")
+                                ->orWhere('path', 'LIKE', "%>{$fromId}>%>{$toId}>%");
+                        });
+                })
+                    // OR for trips without a path
+                    ->orWhere(function ($q) use ($fromId, $toId) {
+                        $q->where('path', '')
+                            ->whereHas('routes', function ($routeQ) use ($fromId, $toId) {
+                                $routeQ->where('routes.from_id', $fromId)
+                                    ->where('routes.to_id', $toId);
+                            });
+                    });
             });
         } else {
             if (isset($data['origin_id'])) {
