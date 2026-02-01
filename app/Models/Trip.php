@@ -36,6 +36,15 @@ class Trip extends Model
     const STATE_READY = 'ready';
     const STATE_CANCELED = 'canceled';
 
+    // Weekly schedule bitmask constants
+    const DAY_MONDAY = 1;
+    const DAY_TUESDAY = 2;
+    const DAY_WEDNESDAY = 4;
+    const DAY_THURSDAY = 8;
+    const DAY_FRIDAY = 16;
+    const DAY_SATURDAY = 32;
+    const DAY_SUNDAY = 64;
+
     protected $table = 'trips';
 
     protected $fillable = [
@@ -43,6 +52,8 @@ class Trip extends Model
         'from_town',
         'to_town',
         'trip_date',
+        'weekly_schedule',
+        'weekly_schedule_time',
         'description',
         'total_seats',
         'friendship_type_id',
@@ -81,8 +92,11 @@ class Trip extends Model
     {
         return [
             'es_recurrente' => 'boolean',
+            'weekly_schedule' => 'integer',
+            'weekly_schedule_time' => 'datetime',
             'is_passenger' => 'boolean',
             'trip_date' => 'datetime',
+            'created_at' => 'datetime',
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
             'recommended_trip_price_cents' => 'integer',
@@ -243,6 +257,14 @@ class Trip extends Model
 
     public function expired()
     {
+        // Weekly schedule trips never expire
+        if ($this->weekly_schedule > 0) {
+            return false;
+        }
+        // Handle nullable trip_date for weekly schedule trips
+        if ($this->trip_date === null) {
+            return false;
+        }
         return $this->trip_date->lt(Carbon::now());
     }
 

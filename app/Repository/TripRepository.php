@@ -236,7 +236,9 @@ class TripRepository
 
     public function getTrips($user, $userId, $asDriver)
     {
-        $trips = Trip::where('trip_date', '>=', Carbon::Now());
+        // Weekly schedule trips never expire, so include them regardless of trip_date
+        $trips = Trip::query();
+        $this->filterActiveTrips($trips);
 
         if ($asDriver) {
             $trips->where('user_id', $userId);
@@ -260,7 +262,9 @@ class TripRepository
 
     public function getOldTrips($user, $userId, $asDriver)
     {
+        // Weekly schedule trips never expire, so exclude them from old trips
         $trips = Trip::where('trip_date', '<', Carbon::Now());
+        $trips->where('weekly_schedule', '=', 0);
 
         if ($asDriver) {
             $trips->where('user_id', $userId);
@@ -320,15 +324,34 @@ class TripRepository
                     if ($from->lte($now)) {
                         $from = $now;
                     }
-                    $trips->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
-                    $trips->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
+
+                    // Calculate day of week for the search date (1=Monday, 7=Sunday)
+                    $dayOfWeek = $date_search->dayOfWeekIso;
+                    $dayBit = pow(2, $dayOfWeek - 1); // Monday=1, Tuesday=2, Wednesday=4, ..., Sunday=64
+
+                    $trips->where(function ($query) use ($from, $to, $dayBit) {
+                        // Regular trips within date range
+                        $query->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
+                            ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'))
+                            // Also include weekly schedule trips that run on this day of the week
+                            ->orWhere(function($query) use ($dayBit) {
+                                $query->where('weekly_schedule', '>', 0)
+                                      ->whereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
+                            });
+                    });
+
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                     $trips->orderBy('trip_date');
                 }
-                //$trips->setBindings([$data['date']]);
+            } else if (isset($data['weekly_schedule'])) {
+                // Search by weekly schedule flag using bitwise AND operation
+                $weeklyScheduleFlag = intval($data['weekly_schedule']);
+                $trips->whereRaw('(weekly_schedule & ?) > 0', [$weeklyScheduleFlag]);
+                $trips->orderBy('trip_date');
             } else {
                 if (!isset($data['history'])) {
-                    $trips = $trips->where('trip_date', '>=', Carbon::Now());
+                    // Include active trips OR weekly schedule trips
+                    $this->filterActiveTrips($trips);
                     $trips->orderBy('trip_date');
                 }
             }
@@ -347,7 +370,7 @@ class TripRepository
                           ->orWhereNull('state')
                           ->orWhere('user_id', $user->id);
                     });
-                    
+
                     $q->where(function ($q) use ($user) {
                         $q->whereUserId($user->id)
                           ->orWhere(function ($q) use ($user) {
@@ -373,8 +396,8 @@ class TripRepository
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
 
             $trips->whereHas('routes', function ($q) use ($data) {
-                $q->where('routes.from_id', $data['origin_id']);
-                $q->where('routes.to_id', $data['destination_id']);
+                $q->where('routes.from_id', $data['origin_id'])
+                ->where('routes.to_id', $data['destination_id']);
             });
         } else {
             if (isset($data['origin_id'])) {
@@ -451,6 +474,16 @@ class TripRepository
         });
     }
 
+
+    private function filterActiveTrips($query)
+    {
+        // Include active trips OR weekly schedule trips
+        $query->where(function ($q) {
+            $q->where('trip_date', '>=', Carbon::Now())
+                ->orWhere('weekly_schedule', '>', 0);
+        });
+    }
+
     public function delete($trip)
     {
         return $trip->delete();
@@ -484,7 +517,8 @@ class TripRepository
     public function shareTrip($user, $other) {
         $trip = Trip::with(['user']);
         $trip = $trip->where('user_id', '=', $user->id);
-        $trip = $trip->where('trip_date', '>=', Carbon::Now());
+        // Include weekly schedule trips since they never expire
+        $this->filterActiveTrips($trip);
         $trip = $trip->whereHas('passengerAccepted', function ($query) use ($other) {
             $query->where('user_id', '=', $other->id);
         });
@@ -643,17 +677,17 @@ class TripRepository
     }
 
     public function hideTrips ($user) {
-        return Trip::where('user_id', $user->id)
-                        ->where('trip_date', '>=', Carbon::Now())
-                        ->update(['deleted_at' => '2000-01-01']);
+        $trips = Trip::where('user_id', $user->id);
+        $this->filterActiveTrips($trips);
+        return $trips->update(['deleted_at' => '2000-01-01']);
     }
 
     public function unhideTrips ($user) {
         return Trip::onlyTrashed()
-                        ->where('user_id', $user->id)
-                        ->where('trip_date', '>=', Carbon::Now())
-                        ->where('deleted_at', '2000-01-01 00:00:00')
-                        ->update(['deleted_at' => null]);
+            ->where('user_id', $user->id)
+            ->where('trip_date', '>=', Carbon::Now())
+            ->where('deleted_at', '2000-01-01 00:00:00')
+            ->update(['deleted_at' => null]);
     }
 
     public function getRecentTrips($userId, $hours)
