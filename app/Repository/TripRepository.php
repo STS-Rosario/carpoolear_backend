@@ -334,7 +334,10 @@ class TripRepository
                         $query->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
                             ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'))
                             // Also include weekly schedule trips that run on this day of the week
-                            ->orWhereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
+                            ->orWhere(function($query) use ($dayBit) {
+                                $query->where('weekly_schedule', '>', 0)
+                                      ->whereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
+                            });
                     });
 
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
