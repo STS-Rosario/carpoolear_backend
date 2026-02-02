@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -29,8 +28,11 @@ return new class extends Migration
                 ->get();
 
             $nodeIds = collect($points)
-                ->map(fn($point) => ((object)$point->json_address)->id ?? null)
-                ->filter(fn($id) => $id > 0)
+                ->map(function ($point) {
+                    $jsonAddress = json_decode($point->json_address);
+                    return $jsonAddress->id ?? null;
+                })
+                ->filter(fn($id) => $id !== null && $id > 0)
                 ->values();
 
             if ($nodeIds->isNotEmpty()) {
