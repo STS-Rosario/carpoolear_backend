@@ -418,21 +418,12 @@ class TripRepository
             $fromId = (int) $data['origin_id'];
             $toId = (int) $data['destination_id'];
 
-            \Log::info('Search origin_id and destination_id', [
-                'origin_id_raw' => $data['origin_id'],
-                'destination_id_raw' => $data['destination_id'],
-                'fromId' => $fromId,
-                'toId' => $toId
-            ]);
-
             $trips->where(function ($query) use ($fromId, $toId) {
-                // For trips with a path
                 $query->where(function ($q) use ($fromId, $toId) {
-                    $q->where('path', '!=', '')
-                        ->where(function ($subQ) use ($fromId, $toId) {
-                            $subQ->where('path', 'LIKE', "%.{$fromId}.{$toId}.%")
-                                ->orWhere('path', 'LIKE', "%.{$fromId}.%.{$toId}.%");
-                        });
+                    $q->where(function ($subQ) use ($fromId, $toId) {
+                        $subQ->where('path', 'LIKE', "%.{$fromId}.{$toId}.%")
+                            ->orWhere('path', 'LIKE', "%.{$fromId}.%.{$toId}.%");
+                    });
                 });
             });
         } else {
