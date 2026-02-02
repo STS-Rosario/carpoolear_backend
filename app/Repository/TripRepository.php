@@ -216,7 +216,7 @@ class TripRepository
             ->values();
 
         if ($nodeIds->isNotEmpty()) {
-            $trip->path = '>' . $nodeIds->implode('>') . '>';
+            $trip->path = '.' . $nodeIds->implode('.') . '.';
             $trip->save();
         }
 
@@ -430,18 +430,10 @@ class TripRepository
                 $query->where(function ($q) use ($fromId, $toId) {
                     $q->where('path', '!=', '')
                         ->where(function ($subQ) use ($fromId, $toId) {
-                            $subQ->where('path', 'LIKE', "%>{$fromId}>{$toId}>%")
-                                ->orWhere('path', 'LIKE', "%>{$fromId}>%>{$toId}>%");
+                            $subQ->where('path', 'LIKE', "%.{$fromId}.{$toId}.%")
+                                ->orWhere('path', 'LIKE', "%.{$fromId}.%.{$toId}.%");
                         });
-                })
-                    // OR for trips without a path
-                    ->orWhere(function ($q) use ($fromId, $toId) {
-                        $q->where('path', '')
-                            ->whereHas('routes', function ($routeQ) use ($fromId, $toId) {
-                                $routeQ->where('routes.from_id', $fromId)
-                                    ->where('routes.to_id', $toId);
-                            });
-                    });
+                });
             });
         } else {
             if (isset($data['origin_id'])) {
