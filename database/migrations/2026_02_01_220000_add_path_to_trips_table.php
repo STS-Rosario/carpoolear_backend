@@ -28,17 +28,13 @@ return new class extends Migration
                 ->orderBy('id')
                 ->get();
 
-            $nodeIds = [];
-            foreach ($points as $point) {
-                $jsonAddress = json_decode($point->json_address);
-                $id = is_object($jsonAddress) ? ($jsonAddress->id ?? null) : null;
-                if ($id && $id > 0) {
-                    $nodeIds[] = $id;
-                }
-            }
+            $nodeIds = collect($points)
+                ->map(fn($point) => ((object)$point->json_address)->id ?? null)
+                ->filter(fn($id) => $id > 0)
+                ->values();
 
-            if (!empty($nodeIds)) {
-                $path = '.' . implode('.', $nodeIds) . '.';
+            if ($nodeIds->isNotEmpty()) {
+                $path = '.' . $nodeIds->implode('.') . '.';
                 DB::table('trips')
                     ->where('id', $trip->id)
                     ->update(['path' => $path]);
