@@ -87,9 +87,17 @@ class SubscriptionsRepository
 
                 break;
         }
-        $points = $trip->points;
-        $this->makeDistance($query, $points[0], 'from');
-        $this->makeDistance($query, $points[count($points) - 1], 'to');
+
+        if (!empty($trip->path)) {
+            $query->where(function ($q) use ($trip) {
+                $q->whereRaw("? LIKE CONCAT('%.', from_id, '.', to_id, '.%')", [$trip->path])
+                    ->orWhereRaw("? LIKE CONCAT('%.', from_id, '.%.', to_id, '.%')", [$trip->path]);
+            });
+        } else {
+            $points = $trip->points;
+            $this->makeDistance($query, $points[0], 'from');
+            $this->makeDistance($query, $points[count($points) - 1], 'to');
+        }
 
         // TODO take in account route nodes
         /* $countOrder = 0;
