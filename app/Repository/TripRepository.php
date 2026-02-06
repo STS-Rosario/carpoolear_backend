@@ -419,12 +419,8 @@ class TripRepository
             $toId = (int) $data['destination_id'];
 
             $trips->where(function ($query) use ($fromId, $toId) {
-                $query->where(function ($q) use ($fromId, $toId) {
-                    $q->where(function ($subQ) use ($fromId, $toId) {
-                        $subQ->where('path', 'LIKE', "%.{$fromId}.{$toId}.%")
-                            ->orWhere('path', 'LIKE', "%.{$fromId}.%.{$toId}.%");
-                    });
-                });
+                $query->where('path', 'LIKE', "%.{$fromId}.{$toId}.%")
+                    ->orWhere('path', 'LIKE', "%.{$fromId}.%.{$toId}.%");
             });
         } else {
             if (isset($data['origin_id'])) {
