@@ -38,6 +38,7 @@ class PassengerCancel implements ShouldQueue
             $notification = new CancelPassengerNotification();
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
+            $notification->setAttribute('is_driver', $from && (int) $trip->user_id === (int) $from->id);
             $notification->setAttribute('canceledState', $state);
             $notification->notify($to);
         }

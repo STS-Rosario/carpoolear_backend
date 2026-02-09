@@ -7,6 +7,7 @@ use STS\Repository\PassengersRepository;
 use STS\Repository\UserRepository;
 use STS\Models\Passenger;
 use STS\Events\Passenger\Accept as AcceptEvent;
+use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
 use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
@@ -187,9 +188,9 @@ class PassengersManager extends BaseManager
         if ($canceledState !== null) {
             if ($result = $this->passengerRepository->cancelRequest($tripId, $cancelUser, $canceledState)) {
                 if ($trip->user_id == $user->id) {
-                    // event(new CancelEvent($trip, $trip->user, $cancelUser, $canceledState));
+                    event(new CancelEvent($trip, $trip->user, $cancelUser, $canceledState));
                 } else {
-                    // event(new CancelEvent($trip, $cancelUser, $trip->user, $canceledState));
+                    event(new CancelEvent($trip, $cancelUser, $trip->user, $canceledState));
                 }
             }
 
