@@ -139,7 +139,7 @@ class TripRepository
             $trip->state = Trip::STATE_AWAITING_PAYMENT;
             
             // Create MercadoPago payment preference
-            $preference = $this->mercadoPagoService->createPaymentPreference($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+            $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
             $trip->payment_id = $preference->id;
             $trip->needs_sellado = true;
             
@@ -196,11 +196,79 @@ class TripRepository
             $points = $data['points'];
             unset($data['points']);
         }
+        
+        // Store old points to compare if route changed from non-paid to paid
+        $oldPoints = null;
+        $oldRouteNeedsPayment = false;
+        if ($points) {
+            $oldPoints = $trip->points()->orderBy('id')->get();
+            if ($oldPoints->count() >= 2) {
+                $oldOriginToCheck = [$oldPoints[0]->lat, $oldPoints[0]->lng];
+                $oldDestinationToCheck = [$oldPoints[1]->lat, $oldPoints[1]->lng];
+                $oldRouteNeedsPayment = $this->geoService->arePointsInPaidRoutes($oldOriginToCheck, $oldDestinationToCheck);
+            }
+        }
+        
+        // Get trip info for price calculations and route data if points are being updated
+        $tripInfo = null;
+        if ($points) {
+            $tripInfo = $this->getTripInfo($points);
+            
+            // Calculate maximum allowed price if seat_price_cents is provided
+            if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
+                $total_seats = $data['total_seats'] ?? $trip->total_seats;
+                $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
+
+                if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                    if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
+                        \Log::info('TripRepository::update seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
+                        $data['seat_price_cents'] = $maximum_seat_price_cents;
+                    }
+                }
+            }
+        }
+        
         $trip->update($data);
+        
+        // Save recommended trip price if available from trip info
+        if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
+            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+            $trip->save();
+        }
+        
         if ($points) {
             $this->deletePoints($trip);
             $this->addPoints($trip, $points);
             $this->generateTripPath($trip);
+            
+            // Check if the updated route needs payment
+            $originToCheck = [$points[0]['lat'], $points[0]['lng']];
+            $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
+            $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+            \Log::info('TripRepository::update routeNeedsPayment', [$routeNeedsPayment, 'oldRouteNeedsPayment' => $oldRouteNeedsPayment]);
+
+            $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+            
+            // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
+            if (config('carpoolear.module_trip_creation_payment_enabled') && 
+                $routeNeedsPayment && 
+                !$oldRouteNeedsPayment &&
+                $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold') &&
+                $trip->state !== Trip::STATE_AWAITING_PAYMENT) {
+                
+                $trip->state = Trip::STATE_AWAITING_PAYMENT;
+                
+                // Only create payment preference if one doesn't exist
+                if (!$trip->payment_id) {
+                    // Create MercadoPago payment preference
+                    $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+                    $trip->payment_id = $preference->id;
+                    $trip->payment_url = $preference->init_point;
+                }
+                
+                $trip->needs_sellado = true;
+                $trip->save();
+            }
         }
 
         return $trip;

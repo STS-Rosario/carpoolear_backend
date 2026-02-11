@@ -215,12 +215,13 @@ class MercadoPagoOAuthService
     }
 
     /**
-     * Check if our user's name "includes" MP's first_name and last_name (avoids false negatives when user omits middle name).
-     * MP returns first_name and last_name; we compare case-insensitively with normalized spaces and accent-insensitive (e.g. González matches Gonzalez).
+     * Check if our user's name matches MP's first_name and last_name (avoids false negatives when user omits middle name).
+     * MP may return more names (e.g. first_name "Santiago Ignacio"); we accept if the user has at least one first-name
+     * part and the full last name. Comparison is case-insensitive with normalized spaces and accent-insensitive.
      *
      * @param array $me Full /users/me response (first_name, last_name).
      * @param string $userName Our user's name field.
-     * @return bool True if user name includes both MP first_name and last_name.
+     * @return bool True if user name matches (e.g. "Santiago Caso" matches first_name "Santiago Ignacio", last_name "Caso").
      */
     public static function nameMatches(array $me, string $userName): bool
     {
@@ -236,7 +237,23 @@ class MercadoPagoOAuthService
         $firstNorm = self::normalizeNameForComparison($firstName);
         $lastNorm = self::normalizeNameForComparison($lastName);
 
-        return str_contains($nameNorm, $firstNorm) && str_contains($nameNorm, $lastNorm);
+        // User must contain full last name
+        if (! str_contains($nameNorm, $lastNorm)) {
+            return false;
+        }
+
+        // User must contain full first name, or at least one word from first name (e.g. "Santiago" from "Santiago Ignacio")
+        if (str_contains($nameNorm, $firstNorm)) {
+            return true;
+        }
+        $firstWords = preg_split('/\s+/', $firstNorm, -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($firstWords as $word) {
+            if ($word !== '' && str_contains($nameNorm, $word)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

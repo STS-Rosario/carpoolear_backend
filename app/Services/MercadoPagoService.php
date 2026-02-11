@@ -56,10 +56,11 @@ class MercadoPagoService
             $amountInCents = config('carpoolear.module_trip_creation_payment_amount_cents');
         }
 
+        $baseUrl = rtrim(config('carpoolear.frontend_url'), '/');
         $selladoUrls = [
-            "success" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id,
-            "failure" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id,
-            "pending" => 'https://neutral-crucial-ram.ngrok-free.app/app/trips/'.$trip->id,
+            "success" => $baseUrl . '/app/trips/' . $trip->id,
+            "failure" => $baseUrl . '/app/trips/' . $trip->id,
+            "pending" => $baseUrl . '/app/trips/' . $trip->id,
         ];
         $preferenceData = [
             "items" => [
@@ -73,7 +74,7 @@ class MercadoPagoService
             "back_urls" => $selladoUrls,
             "back_url" => $selladoUrls,
             "auto_return" => "approved",
-            'external_reference' => 'Sellado de Viaje ID: ' . $trip->id
+            'external_reference' => $this->createHashedExternalReferenceForSellado((int) $trip->id)
         ];
 
         return $this->createPaymentPreference($preferenceData);
@@ -103,7 +104,7 @@ class MercadoPagoService
             "back_urls" => $campaignUrls,
             "back_url" => $campaignUrls,
             "auto_return" => "approved",
-            'external_reference' => $this->createHashedExternalReference(
+            'external_reference' => $this->createHashedExternalReferenceForCampaignDonation(
                 $campaign->id,
                 $campaign->payment_slug,
                 $rewardId ?? 0,
@@ -116,10 +117,23 @@ class MercadoPagoService
     }
 
     /**
-     * Create a hashed external reference for campaign donations
-     * Format: {hash}:{base64_encoded_data}
+     * Build a hashed external reference from a plain reference string (encoding + salting).
+     * Format: {hash}:{base64_encoded_data}. Used by campaign donations and sellado de viaje.
      */
-    private function createHashedExternalReference(int $campaignId, string $slug, int $rewardId, $userId, int $donationId): string
+    private function buildHashedReference(string $referenceString): string
+    {
+        $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
+        $hash = hash('sha256', $referenceString . $salt);
+        $encodedData = base64_encode($referenceString);
+
+        return $hash . ':' . $encodedData;
+    }
+
+    /**
+     * Create a hashed external reference for campaign donations.
+     * Decoded format: "Donación Campaña ID: {id}; Slug: {slug}; Reward ID: {id}; User ID: {id}; Donation ID: {id}"
+     */
+    private function createHashedExternalReferenceForCampaignDonation(int $campaignId, string $slug, int $rewardId, $userId, int $donationId): string
     {
         $referenceString = sprintf(
             'Donación Campaña ID: %d; Slug: %s; Reward ID: %d; User ID: %s; Donation ID: %d',
@@ -130,11 +144,18 @@ class MercadoPagoService
             $donationId
         );
 
-        $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
-        $hash = hash('sha256', $referenceString . $salt);
-        $encodedData = base64_encode($referenceString);
+        return $this->buildHashedReference($referenceString);
+    }
 
-        return $hash . ':' . $encodedData;
+    /**
+     * Create a hashed external reference for sellado de viaje.
+     * Decoded format: "Sellado de Viaje ID: {tripId}" (same as legacy plain format for webhook compatibility).
+     */
+    private function createHashedExternalReferenceForSellado(int $tripId): string
+    {
+        $referenceString = 'Sellado de Viaje ID: ' . $tripId;
+
+        return $this->buildHashedReference($referenceString);
     }
 
     /**
