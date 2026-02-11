@@ -2,11 +2,12 @@
 
 namespace STS\Listeners\Subscriptions;
 
-use STS\Events\User\Trip;
-use Illuminate\Contracts\Queue\ShouldQueue; 
+use STS\Events\Trip\Create;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\SubscriptionMatchNotification;
 use STS\Repository\SubscriptionsRepository;
-use STS\Repository\UserRepository; 
+use STS\Repository\UserRepository;
+
 class OnNewTrip implements ShouldQueue
 {
     protected $userRepo, $subRepo;
@@ -25,11 +26,10 @@ class OnNewTrip implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param Create $event
-     *
+     * @param  Create  $event
      * @return void
      */
-    public function handle($event)
+    public function handle(Create $event)
     {
         $trip = $event->trip;
         $user = $trip->user;
