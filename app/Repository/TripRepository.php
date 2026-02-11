@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
 use STS\Services\MercadoPagoService;
 use STS\Models\RouteCache;
+use STS\Models\PaymentAttempt;
 
 class TripRepository
 {
@@ -247,23 +248,44 @@ class TripRepository
             $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
             
             // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
-            if (config('carpoolear.module_trip_creation_payment_enabled') && 
-                $routeNeedsPayment && 
+            if (config('carpoolear.module_trip_creation_payment_enabled') &&
+                $routeNeedsPayment &&
                 !$oldRouteNeedsPayment &&
                 $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold') &&
                 $trip->state !== Trip::STATE_AWAITING_PAYMENT) {
-                
-                $trip->state = Trip::STATE_AWAITING_PAYMENT;
-                
-                // Only create payment preference if one doesn't exist
-                if (!$trip->payment_id) {
-                    // Create MercadoPago payment preference
-                    $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
-                    $trip->payment_id = $preference->id;
-                    $trip->payment_url = $preference->init_point;
+
+                // User already paid Sellado for this trip (check payment record, not just state + payment_id)
+                $selladoAlreadyPaid = PaymentAttempt::where('trip_id', $trip->id)
+                    ->where('payment_status', PaymentAttempt::STATUS_COMPLETED)
+                    ->exists();
+
+                if ($selladoAlreadyPaid) {
+                    // Just mark that route needs Sellado again; do not charge again
+                    $trip->needs_sellado = true;
+                    $trip->save();
+                } else {
+                    $trip->state = Trip::STATE_AWAITING_PAYMENT;
+
+                    // Only create payment preference if one doesn't exist
+                    if (!$trip->payment_id) {
+                        // Create MercadoPago payment preference
+                        $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+                        $trip->payment_id = $preference->id;
+                        $trip->payment_url = $preference->init_point;
+                    }
+
+                    $trip->needs_sellado = true;
+                    $trip->save();
                 }
-                
-                $trip->needs_sellado = true;
+            } elseif (config('carpoolear.module_trip_creation_payment_enabled') && !$routeNeedsPayment) {
+                // Route was edited so it no longer needs Sellado (fewer than 2 points in paid zone)
+                $trip->needs_sellado = false;
+                $paymentStates = [Trip::STATE_AWAITING_PAYMENT, Trip::STATE_PENDING_PAYMENT, Trip::STATE_PAYMENT_FAILED];
+                if (in_array($trip->state, $paymentStates)) {
+                    $trip->payment_id = null;
+                    $trip->payment_url = null;
+                    $trip->state = Trip::STATE_READY;
+                }
                 $trip->save();
             }
         }
