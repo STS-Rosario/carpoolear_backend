@@ -128,9 +128,8 @@ class TripRepository
 
         $this->generateTripPath($trip);
 
-        $originToCheck = [$points[0]['lat'], $points[0]['lng']];
-        $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
-        $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+        $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+        $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
         \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
 
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
@@ -203,9 +202,8 @@ class TripRepository
         if ($points) {
             $oldPoints = $trip->points()->orderBy('id')->get();
             if ($oldPoints->count() >= 2) {
-                $oldOriginToCheck = [$oldPoints[0]->lat, $oldPoints[0]->lng];
-                $oldDestinationToCheck = [$oldPoints[1]->lat, $oldPoints[1]->lng];
-                $oldRouteNeedsPayment = $this->geoService->arePointsInPaidRoutes($oldOriginToCheck, $oldDestinationToCheck);
+                $oldPointsToCheck = $oldPoints->map(fn ($p) => [$p->lat, $p->lng])->values()->all();
+                $oldRouteNeedsPayment = $this->geoService->doStopsRequireSellado($oldPointsToCheck);
             }
         }
         
@@ -241,10 +239,9 @@ class TripRepository
             $this->addPoints($trip, $points);
             $this->generateTripPath($trip);
             
-            // Check if the updated route needs payment
-            $originToCheck = [$points[0]['lat'], $points[0]['lng']];
-            $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
-            $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+            // Check if the updated route needs payment (2+ stops in paid zones)
+            $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+            $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
             \Log::info('TripRepository::update routeNeedsPayment', [$routeNeedsPayment, 'oldRouteNeedsPayment' => $oldRouteNeedsPayment]);
 
             $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
@@ -671,10 +668,9 @@ class TripRepository
             $duration = $route['duration'];
             $co2 = $distanceInMeters * 0.15;
 
-            // check if the user needs to pay for the trip
-            $originToCheck = [$points[0]['lat'], $points[0]['lng']];
-            $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
-            $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+            // check if the user needs to pay for the trip (2+ stops in paid zones)
+            $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+            $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
             // calculate price based on distance, fuel price, kilometers per liter
             $fuelPrice = config('carpoolear.module_max_price_fuel_price');

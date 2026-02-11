@@ -86,6 +86,34 @@ class GeoService
         return $this->paidRegions;
     }
 
+    /**
+     * Returns true if the given point [lat, lng] is inside any paid region polygon.
+     */
+    public function isPointInPaidZone(array $point): bool
+    {
+        return $this->isPointInPolygons($point);
+    }
+
+    /**
+     * Returns true if Sellado should be charged: 2 or more stops (origin, destination, intermediate)
+     * are in a paid zone.
+     *
+     * @param array $points Array of points, each [lat, lng]
+     */
+    public function doStopsRequireSellado(array $points): bool
+    {
+        $stopsInPaidZone = 0;
+        foreach ($points as $point) {
+            if ($this->isPointInPaidZone($point)) {
+                $stopsInPaidZone++;
+                if ($stopsInPaidZone >= 2) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public function arePointsInPaidRegions(array $points): bool
     {
         foreach ($points as $point) {
