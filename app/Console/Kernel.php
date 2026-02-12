@@ -34,6 +34,7 @@ class Kernel extends ConsoleKernel
         Commands\SendAnnouncement::class,
         Commands\TestAnnouncement::class,
         Commands\EvaluateBadges::class,
+        Commands\AssignMsMjmsCampaignBadge::class,
         Commands\CalculateActiveUsersPerMonth::class,
         Commands\ProcessEmailQueue::class,
         Commands\CleanupPasswordResetTokens::class,
