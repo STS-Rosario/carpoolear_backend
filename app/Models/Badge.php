@@ -12,11 +12,13 @@ class Badge extends Model
         'slug',
         'description',
         'image_path',
-        'rules'
+        'rules',
+        'visible'
     ];
 
     protected $casts = [
-        'rules' => 'array'
+        'rules' => 'array',
+        'visible' => 'boolean'
     ];
 
     /**
