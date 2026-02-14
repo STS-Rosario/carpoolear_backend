@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Commands;
+namespace Tests\Feature\Commands;
 
 use Tests\TestCase;
 use STS\Models\User;
