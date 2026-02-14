@@ -1,8 +1,11 @@
 <?php
 
-use STS\User;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+namespace Tests;
+
+use Tests\TestCase;
+use STS\Models\User;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class PassengersTest extends TestCase
@@ -11,19 +14,19 @@ class PassengersTest extends TestCase
 
     protected $passengerManager;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         start_log_query();
-        $this->passengerManager = \App::make('\STS\Contracts\Logic\IPassengersLogic');
-        $this->passengerRepository = \App::make('\STS\Contracts\Repository\IPassengersRepository');
+        $this->passengerManager = \App::make(\STS\Services\Logic\PassengersManager::class);
+        $this->passengerRepository = \App::make(\STS\Repository\PassengersRepository::class);
     }
 
     public function testNewRequest()
     {
-        $driver = factory(User::class)->create();
-        $passenger = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passenger = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
         $result = $this->passengerManager->newRequest($trip->id, $passenger);
         $this->assertNotNull($result);
         $this->assertTrue($trip->passengerPending->count() > 0);
@@ -31,9 +34,9 @@ class PassengersTest extends TestCase
 
     public function testAcceptRequest()
     {
-        $driver = factory(User::class)->create();
-        $passenger = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passenger = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
         $this->passengerRepository->newRequest($trip->id, $passenger);
 
@@ -44,9 +47,9 @@ class PassengersTest extends TestCase
 
     public function testRejectRequest()
     {
-        $driver = factory(User::class)->create();
-        $passenger = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passenger = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
         $this->passengerRepository->newRequest($trip->id, $passenger);
 
@@ -56,9 +59,9 @@ class PassengersTest extends TestCase
 
     public function testCancelRequest()
     {
-        $driver = factory(User::class)->create();
-        $passenger = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passenger = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
         $this->passengerRepository->newRequest($trip->id, $passenger);
 
         $result = $this->passengerManager->cancelRequest($trip->id, $passenger->id, $passenger);
@@ -68,13 +71,13 @@ class PassengersTest extends TestCase
 
     public function testGetPassenger()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $passengerB = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $result = $this->passengerManager->getPassengers($trip->id, $driver, []);
         $this->assertNotNull($result);
@@ -83,13 +86,13 @@ class PassengersTest extends TestCase
 
     public function testPenddingPassenger()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $passengerB = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $result = $this->passengerManager->getPendingRequests($trip->id, $driver, []);
         $this->assertNotNull($result);

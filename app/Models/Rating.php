@@ -2,11 +2,18 @@
 
 namespace STS\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class Rating extends Model
 {
+    use HasFactory;
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\RatingFactory::new();
+    }
     const STATE_NEGATIVO = 0;
 
     const STATE_POSITIVO = 1;

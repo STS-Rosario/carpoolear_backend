@@ -1,8 +1,11 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
-use STS\Entities\Trip;
-use STS\Entities\Rating;
+use STS\Models\Trip;
+use STS\Models\Rating;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RatingApiTest extends TestCase
@@ -11,17 +14,13 @@ class RatingApiTest extends TestCase
 
     protected $logic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->logic = $this->mock('STS\Contracts\Logic\IRateLogic');
+        $this->logic = $this->mock(\STS\Services\Logic\RatingManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -33,9 +32,9 @@ class RatingApiTest extends TestCase
 
     public function testGetRatings()
     {
-        $driver = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
-        $this->actingAsApiUser($driver);
+        $driver = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $this->actingAs($driver, 'api');
 
         $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::paginate(10));
 
@@ -45,9 +44,9 @@ class RatingApiTest extends TestCase
 
     public function testGetRatingsByID()
     {
-        $driver = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
-        $this->actingAsApiUser($driver);
+        $driver = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $this->actingAs($driver, 'api');
 
         $this->logic->shouldReceive('getRatings')->with($driver, [])->once()->andReturn(Rating::paginate(10));
 
@@ -57,9 +56,9 @@ class RatingApiTest extends TestCase
 
     public function testPendings()
     {
-        $driver = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
-        $this->actingAsApiUser($driver);
+        $driver = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $this->actingAs($driver, 'api');
 
         $this->logic->shouldReceive('getPendingRatings')->with($driver)->once()->andReturn(Rating::all());
 
@@ -69,9 +68,9 @@ class RatingApiTest extends TestCase
 
     public function testPendingsWithHash()
     {
-        $driver = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
-        //$this->actingAsApiUser($driver);
+        $driver = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        //$this->actingAs($driver, 'api');
 
         $this->logic->shouldReceive('getPendingRatings')->with('123456')->once()->andReturn(Rating::all());
 
@@ -81,9 +80,9 @@ class RatingApiTest extends TestCase
 
     public function testRateUser()
     {
-        $driver = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
-        $this->actingAsApiUser($driver);
+        $driver = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $this->actingAs($driver, 'api');
 
         $data = [
             'comment' =>'test comment',
@@ -97,9 +96,9 @@ class RatingApiTest extends TestCase
 
     public function testReplayUser()
     {
-        $driver = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
-        $this->actingAsApiUser($driver);
+        $driver = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $this->actingAs($driver, 'api');
 
         $data = [
             'comment' =>'test comment',

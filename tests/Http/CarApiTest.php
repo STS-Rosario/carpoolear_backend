@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
@@ -9,17 +12,13 @@ class CarApiTest extends TestCase
 
     protected $carsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->carsLogic = $this->mock('STS\Contracts\Logic\Car');
+        $this->carsLogic = $this->mock(\STS\Services\Logic\CarsManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -31,9 +30,9 @@ class CarApiTest extends TestCase
 
     public function testCreate()
     {
-        $u1 = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->carsLogic->shouldReceive('create')->once()->andReturn($car);
 
@@ -43,9 +42,9 @@ class CarApiTest extends TestCase
 
     public function testUpdate()
     {
-        $u1 = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->carsLogic->shouldReceive('update')->once()->andReturn($car);
 
@@ -55,9 +54,9 @@ class CarApiTest extends TestCase
 
     public function testDelete()
     {
-        $u1 = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->carsLogic->shouldReceive('delete')->once()->andReturn(true);
 
@@ -67,9 +66,9 @@ class CarApiTest extends TestCase
 
     public function testShow()
     {
-        $u1 = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->carsLogic->shouldReceive('show')->once()->andReturn($car);
 
@@ -82,9 +81,9 @@ class CarApiTest extends TestCase
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->carsLogic->shouldReceive('index')->once()->andReturn([$car]);
 

@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests;
+
+use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class UserTest extends TestCase
@@ -8,14 +11,10 @@ class UserTest extends TestCase
 
     protected $userManager;
 
-    public function __construct()
-    {
-    }
-
     public function testCreateUser()
     {
-        $this->expectsEvents(STS\Events\User\Create::class);
-        $userManager = \App::make('\STS\Contracts\Logic\User');
+        \Illuminate\Support\Facades\Event::fake();
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
         $data = [
             'name'                  => 'Mariano',
             'email'                 => 'marianoabotta@gmail.com',
@@ -25,11 +24,12 @@ class UserTest extends TestCase
 
         $u = $userManager->create($data);
         $this->assertTrue($u != null);
+        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\User\Create::class);
     }
 
     public function testCreateUserFail()
     {
-        $userManager = \App::make('\STS\Contracts\Logic\User');
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
         $data = [
             'name'     => 'Mariano',
             'email'    => 'marianoabotta@gmail.com',
@@ -42,8 +42,8 @@ class UserTest extends TestCase
 
     public function testCreateUserRepited()
     {
-        $this->expectsEvents(STS\Events\User\Create::class);
-        $userManager = \App::make('\STS\Contracts\Logic\User');
+        \Illuminate\Support\Facades\Event::fake();
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
         $data = [
             'name'                  => 'Mariano',
             'email'                 => 'mariano@g1.com',
@@ -56,11 +56,12 @@ class UserTest extends TestCase
         $u2 = $userManager->create($data);
 
         $this->assertNull($u2);
+        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\User\Create::class);
     }
 
     public function testUpdateUser()
     {
-        $userManager = \App::make('\STS\Contracts\Logic\User');
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
         $data = [
             'name'                  => 'Mariano',
             'email'                 => 'mariano@g1.com',
@@ -82,9 +83,9 @@ class UserTest extends TestCase
 
     public function testActiveUser()
     {
-        $token = str_random(40);
-        $userManager = \App::make('\STS\Contracts\Logic\User');
-        $u1 = factory(STS\User::class)->create([
+        $token = \Illuminate\Support\Str::random(40);
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
+        $u1 = \STS\Models\User::factory()->create([
             'activation_token' => $token,
             'active'           => false,
         ]);
@@ -97,10 +98,11 @@ class UserTest extends TestCase
 
     public function testPasswordReset()
     {
-        //$this->expectsEvents(STS\Events\User\Reset::class);
+        \Illuminate\Support\Facades\Queue::fake();
+        config(['carpoolear.name_app' => 'TestApp', 'app.url' => 'http://localhost']);
 
-        $userManager = \App::make('\STS\Contracts\Logic\User');
-        $u1 = factory(STS\User::class)->create();
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
+        $u1 = \STS\Models\User::factory()->create();
 
         $token = $userManager->resetPassword($u1->email);
 
@@ -127,10 +129,10 @@ class UserTest extends TestCase
 
     public function testIndex()
     {
-        $userManager = \App::make('\STS\Contracts\Logic\User');
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $u3 = factory(STS\User::class)->create();
+        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $u3 = \STS\Models\User::factory()->create();
 
         $users = $userManager->index($u1, null);
 

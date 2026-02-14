@@ -1,25 +1,24 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-class SubscriptionApiTest extends TestCase
+class SubscriptionsApiTest extends TestCase
 {
     use DatabaseTransactions;
 
     protected $subscriptionsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->subscriptionsLogic = $this->mock('STS\Contracts\Logic\Subscription');
+        $this->subscriptionsLogic = $this->mock(\STS\Services\Logic\SubscriptionsManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -31,9 +30,9 @@ class SubscriptionApiTest extends TestCase
 
     public function testCreate()
     {
-        $u1 = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->subscriptionsLogic->shouldReceive('create')->once()->andReturn($model);
 
@@ -43,9 +42,9 @@ class SubscriptionApiTest extends TestCase
 
     public function testUpdate()
     {
-        $u1 = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->subscriptionsLogic->shouldReceive('update')->once()->andReturn($model);
 
@@ -55,9 +54,9 @@ class SubscriptionApiTest extends TestCase
 
     public function testDelete()
     {
-        $u1 = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->subscriptionsLogic->shouldReceive('delete')->once()->andReturn(true);
 
@@ -67,9 +66,9 @@ class SubscriptionApiTest extends TestCase
 
     public function testShow()
     {
-        $u1 = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->subscriptionsLogic->shouldReceive('show')->once()->andReturn($model);
 
@@ -82,9 +81,9 @@ class SubscriptionApiTest extends TestCase
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->subscriptionsLogic->shouldReceive('index')->once()->andReturn([$model]);
 

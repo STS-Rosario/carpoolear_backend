@@ -17,8 +17,8 @@ class RatingController extends Controller
 
     public function __construct(RatingManager $rateLogic, UsersManager $userLogic)
     {
-        $this->middleware('logged')->except('rate');
-        $this->middleware('logged.optional')->only('rate');
+        $this->middleware('logged')->except(['rate', 'pendingRate']);
+        $this->middleware('logged.optional')->only(['rate', 'pendingRate']);
         $this->rateLogic = $rateLogic;
         $this->userLogic = $userLogic;
     }

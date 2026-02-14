@@ -1,9 +1,12 @@
 <?php
 
-use STS\User;
+namespace Tests\Commands;
+
+use Tests\TestCase;
+use STS\Models\User;
 use Mockery as m;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class HourLeftTest extends TestCase
@@ -12,17 +15,13 @@ class HourLeftTest extends TestCase
 
     protected $carsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        //$this->carsLogic = $this->mock('STS\Contracts\Logic\Car');
+        //$this->carsLogic = $this->mock(\STS\Services\Logic\CarsManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -34,26 +33,26 @@ class HourLeftTest extends TestCase
 
     public function testSomeMatch()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $passengerB = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addHour()->toDateTimeString()]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addHour()->toDateTimeString()]);
 
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $status = $this->artisan('trip:remainder');
     }
 
     public function testNoMatch()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $passengerB = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addHours(2)->toDateTimeString()]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addHours(2)->toDateTimeString()]);
 
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $status = $this->artisan('trip:remainder');
     }

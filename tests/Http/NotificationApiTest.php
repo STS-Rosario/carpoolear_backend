@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
@@ -9,17 +12,13 @@ class NotificationApiTest extends TestCase
 
     protected $logic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->logic = $this->mock('STS\Contracts\Logic\INotification');
+        $this->logic = $this->mock(\STS\Services\Logic\NotificationManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -31,8 +30,8 @@ class NotificationApiTest extends TestCase
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('getNotifications')->once()->andReturn([]);
 
@@ -42,8 +41,8 @@ class NotificationApiTest extends TestCase
 
     public function testCount()
     {
-        $u1 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('getUnreadCount')->once()->andReturn(5);
 
@@ -54,8 +53,8 @@ class NotificationApiTest extends TestCase
 
     public function testDelete()
     {
-        $u1 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('delete')->once()->andReturn(true);
 

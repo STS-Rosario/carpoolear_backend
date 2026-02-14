@@ -15,8 +15,8 @@ class TripsTestSeeder extends Seeder
      */
     public function run()
     {
-        $t1 = factory(Trip::class)->create();
-        $t1->points()->save(factory(TripPoint::class, 'rosario')->make());
-        $t1->points()->save(factory(TripPoint::class, 'mendoza')->make());
+        $t1 = Trip::factory()->create();
+        $t1->points()->save(TripPoint::factory()->rosario()->make());
+        $t1->points()->save(TripPoint::factory()->mendoza()->make());
     }
 }

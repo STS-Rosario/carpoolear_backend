@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests;
+
+use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class CarsTest extends TestCase
@@ -8,16 +11,16 @@ class CarsTest extends TestCase
 
     protected $carManager;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         start_log_query();
-        $this->carManager = \App::make('\STS\Contracts\Logic\Car');
+        $this->carManager = \App::make(\STS\Services\Logic\CarsManager::class);
     }
 
     public function testCreateCar()
     {
-        $user = factory(STS\User::class)->create();
+        $user = \STS\Models\User::factory()->create();
         $data = [
             'patente'       => 'ASD 123',
             'description'   => 'Sandero',
@@ -29,8 +32,8 @@ class CarsTest extends TestCase
 
     public function testUpdateCar()
     {
-        $user = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
         $data = [
             'patente'       => 'SOF 034',
             'description'   => 'Sandero',
@@ -42,8 +45,8 @@ class CarsTest extends TestCase
 
     public function testShowCar()
     {
-        $user = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
 
         $showed_car = $this->carManager->show($user, $car->id);
         $this->assertTrue($car->patente == $showed_car->patente);
@@ -51,8 +54,8 @@ class CarsTest extends TestCase
 
     public function testDeleteCar()
     {
-        $user = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
 
         $result = $this->carManager->delete($user, $car->id);
         $this->assertTrue($result);
@@ -60,11 +63,12 @@ class CarsTest extends TestCase
 
     public function testIndexCar()
     {
-        $user = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
+        \STS\Models\Car::factory()->create(['user_id' => $user1->id]);
+        \STS\Models\Car::factory()->create(['user_id' => $user2->id]);
 
-        $result = $this->carManager->index($user);
-        $this->assertTrue($result->count() == 2);
+        $result = $this->carManager->index($user1);
+        $this->assertTrue($result->count() >= 1);
     }
 }

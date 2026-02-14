@@ -2,10 +2,17 @@
 
 namespace STS\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class TripPoint extends Model
 {
+    use HasFactory;
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\TripPointFactory::new();
+    }
     protected $table = 'trips_points';
 
     protected $fillable = [

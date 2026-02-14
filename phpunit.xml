@@ -3,6 +3,8 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         beStrictAboutChangesToGlobalState="false"
+         failOnRisky="false"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -10,6 +12,29 @@
         </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="Legacy">
+            <file>tests/ExampleTest.php</file>
+            <file>tests/ApiAuthTest.php</file>
+            <file>tests/CarsTest.php</file>
+            <file>tests/FileTest.php</file>
+            <file>tests/FriendsTest.php</file>
+            <file>tests/MessagesTest.php</file>
+            <file>tests/NotificationTest.php</file>
+            <file>tests/PassengersTest.php</file>
+            <file>tests/RatingTest.php</file>
+            <file>tests/SubscriptionsTest.php</file>
+            <file>tests/TripsTest.php</file>
+            <file>tests/UserTest.php</file>
+        </testsuite>
+        <testsuite name="Http">
+            <directory>tests/Http</directory>
+        </testsuite>
+        <testsuite name="Commands">
+            <directory>tests/Commands</directory>
+        </testsuite>
+        <testsuite name="Helpers">
+            <directory>tests/Helpers</directory>
         </testsuite>
     </testsuites>
     <source>

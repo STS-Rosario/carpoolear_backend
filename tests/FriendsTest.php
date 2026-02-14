@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests;
+
+use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class FriendsTest extends TestCase
@@ -8,9 +11,9 @@ class FriendsTest extends TestCase
 
     public function testRequestAccept()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
 
         $ret = $friends->request($users[0], $users[1]);
         $this->assertTrue($ret);
@@ -24,9 +27,9 @@ class FriendsTest extends TestCase
 
     public function testRequestReject()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
 
         $ret = $friends->request($users[0], $users[1]);
         $this->assertTrue($ret);
@@ -40,9 +43,9 @@ class FriendsTest extends TestCase
 
     public function testDeleteFriends()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
 
         $ret = $friends->make($users[0], $users[1]);
         $this->assertTrue($ret);
@@ -58,9 +61,9 @@ class FriendsTest extends TestCase
 
     public function testGetFriends()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
 
         $ret = $friends->make($users[0], $users[1]);
         $ret = $friends->make($users[0], $users[2]);
@@ -71,9 +74,9 @@ class FriendsTest extends TestCase
 
     public function testUserRelationship()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
 
         $ret = $friends->make($users[0], $users[1]);
         $ret = $friends->request($users[0], $users[2]);
@@ -87,9 +90,9 @@ class FriendsTest extends TestCase
 
     public function testFriendsOfFriends()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
 
         $ret = $friends->make($users[0], $users[1]);
         $ret = $friends->make($users[1], $users[2]);
@@ -106,7 +109,7 @@ class FriendsTest extends TestCase
     {
 
         $this->refreshApplication();
-        $users = factory(STS\User::class, 3)->create();
+        $users = \STS\Models\User::factory()->count(3)->create();
         $t1 = \JWTAuth::attempt(['email' => $users[0]->email, 'password' => '123456']);
         $t2 = \JWTAuth::attempt(['email' => $users[1]->email, 'password' => '123456']);
         $t3 = \JWTAuth::attempt(['email' => $users[2]->email, 'password' => '123456']);

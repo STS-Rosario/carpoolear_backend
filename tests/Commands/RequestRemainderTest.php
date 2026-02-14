@@ -1,9 +1,12 @@
 <?php
 
-use STS\User;
+namespace Tests\Commands;
+
+use Tests\TestCase;
+use STS\Models\User;
 use Mockery as m;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RequestRemainderTest extends TestCase
@@ -12,16 +15,12 @@ class RequestRemainderTest extends TestCase
 
     protected $carsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -33,40 +32,40 @@ class RequestRemainderTest extends TestCase
 
     public function testLastWeek()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(4)->toDateTimeString()]);
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(4)->toDateTimeString()]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
         $status = $this->artisan('trip:request');
     }
 
     public function testSeccondWeek()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(8)->toDateTimeString()]);
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(8)->toDateTimeString()]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
         $status = $this->artisan('trip:request');
     }
 
     public function testSeccondWeekNotSend()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(9)->toDateTimeString()]);
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(9)->toDateTimeString()]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
         $status = $this->artisan('trip:request');
     }
 
     public function testFarAwayTrip()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(16)->toDateTimeString()]);
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(16)->toDateTimeString()]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
         $status = $this->artisan('trip:request');
     }

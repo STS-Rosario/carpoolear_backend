@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests\Helpers;
+
+use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class QueriesTest extends TestCase
@@ -8,9 +11,9 @@ class QueriesTest extends TestCase
 
     public function test_make_pagination()
     {
-        $users = factory(STS\User::class, 5)->create();
+        $users = \STS\Models\User::factory()->count(5)->create();
 
-        $query = \STS\User::orderBy('email');
+        $query = \STS\Models\User::orderBy('email');
         $answer = make_pagination($query, 1, 2);
         $answerDecode = json_decode(json_encode($answer));
         $this->assertTrue($answerDecode->total == 5 && $answerDecode->last_page == 3);
@@ -18,9 +21,9 @@ class QueriesTest extends TestCase
 
     public function test_make_pagination_no_page_specify_must_return_all_messages()
     {
-        $users = factory(STS\User::class, 5)->create();
+        $users = \STS\Models\User::factory()->count(5)->create();
 
-        $query = \STS\User::orderBy('email');
+        $query = \STS\Models\User::orderBy('email');
         $answer = make_pagination($query, null, null);
         $answerDecode = json_decode(json_encode($answer));
         $this->assertTrue(count($answerDecode) == 5);

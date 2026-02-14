@@ -1,9 +1,12 @@
 <?php
 
-use STS\User;
+namespace Tests\Commands;
+
+use Tests\TestCase;
+use STS\Models\User;
 use Mockery as m;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class RequestNotAnswerTest extends TestCase
@@ -12,16 +15,12 @@ class RequestNotAnswerTest extends TestCase
 
     protected $carsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -33,20 +32,20 @@ class RequestNotAnswerTest extends TestCase
 
     public function testThreeDays()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(10)->toDateTimeString()]);
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id, 'created_at' => Carbon\Carbon::now()->subDays(3)->toDateTimeString()]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(10)->toDateTimeString()]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id, 'created_at' => \Carbon\Carbon::now()->subDays(3)->toDateTimeString()]);
 
         $status = $this->artisan('trip:requestnotanswer');
     }
 
     public function testNotSend()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id, 'trip_date' => Carbon\Carbon::now()->addDays(10)->toDateTimeString()]);
-        factory(Passenger::class)->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id, 'created_at' => Carbon\Carbon::now()->subDays(2)->toDateTimeString()]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(10)->toDateTimeString()]);
+        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id, 'created_at' => \Carbon\Carbon::now()->subDays(2)->toDateTimeString()]);
 
         $status = $this->artisan('trip:requestnotanswer');
     }

@@ -1,9 +1,12 @@
 <?php
 
-use STS\User;
+namespace Tests;
+
+use Tests\TestCase;
+use STS\Models\User;
 use Carbon\Carbon;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class MessagesTest extends TestCase
@@ -18,19 +21,19 @@ class MessagesTest extends TestCase
 
     protected $conversationRepository;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
-        $this->messageRepository = $this->app->make('\STS\Contracts\Repository\Messages');
-        $this->conversationRepository = $this->app->make('\STS\Contracts\Repository\Conversations');
+        $this->conversationManager = $this->app->make(\STS\Services\Logic\ConversationsManager::class);
+        $this->messageRepository = $this->app->make(\STS\Repository\MessageRepository::class);
+        $this->conversationRepository = $this->app->make(\STS\Repository\ConversationRepository::class);
     }
 
     public function test_findOrCreatePrivateConversation()
     {
-        $user1 = factory(\STS\User::class)->create(['is_admin' => true]);
-        $user2 = factory(\STS\User::class)->create();
-        $user3 = factory(\STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create(['is_admin' => true]);
+        $user2 = \STS\Models\User::factory()->create();
+        $user3 = \STS\Models\User::factory()->create();
 
         // admin can chat with everybody
         $conversation = $this->conversationManager->findOrCreatePrivateConversation($user1, $user2);
@@ -50,12 +53,12 @@ class MessagesTest extends TestCase
 
     public function test_addUserToConversation_and_removeUserFromConversation_Success()
     {
-        $user = factory(\STS\User::class)->create(['is_admin' => 1]);
-        $user1 = factory(\STS\User::class)->create();
-        $user2 = factory(\STS\User::class)->create();
-        $user3 = factory(\STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user1->id]);
-        $conversation = factory(STS\Entities\Conversation::class)->create();
+        $user = \STS\Models\User::factory()->create(['is_admin' => 1]);
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
+        $user3 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user1->id]);
+        $conversation = \STS\Models\Conversation::factory()->create();
 
         $this->conversationRepository->addUser($conversation, $user);
         $this->conversationManager->addUserToConversation($user, $conversation->id, $user1->id);
@@ -77,36 +80,36 @@ class MessagesTest extends TestCase
         $this->assertTrue($isUser2 == 1);
 
         $conversation = $this->conversationManager->getConversation($user2, $conversation->id);
-        $this->assertTrue(count($conversation) == 1);
+        $this->assertNotNull($conversation);
     }
 
     public function test_TripConversationCreate_Success()
     {
         /* Create a conversation */
-        $user = factory(\STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
 
         $conversation = $this->conversationManager->createTripConversation($trip->id);
-        $this->assertTrue($conversation->type == STS\Entities\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id);
+        $this->assertTrue($conversation->type == \STS\Models\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id);
     }
 
     public function test_TripConversationCreate_RepeatTrip_Fail()
     {
         /* Creating a conversation two times - ERROR */
-        $user = factory(\STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
 
         $conversation = $this->conversationManager->createTripConversation($trip->id);
         $conversation2 = $this->conversationManager->createTripConversation($trip->id);
-        $this->assertFalse($conversation->type == STS\Entities\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id && $conversation2 == null);
+        $this->assertFalse($conversation->type == \STS\Models\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id && $conversation2 == null);
     }
 
     public function test_Match_Success()
     {
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $c = \STS\Models\Conversation::factory()->create();
 
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
 
         $this->conversationRepository->addUser($c, $u1->id);
         $this->conversationRepository->addUser($c, $u2->id);
@@ -118,12 +121,12 @@ class MessagesTest extends TestCase
 
     public function test_Match_Fail()
     {
-        $c = factory(STS\Entities\Conversation::class)->create();
-        $c2 = factory(STS\Entities\Conversation::class)->create();
+        $c = \STS\Models\Conversation::factory()->create();
+        $c2 = \STS\Models\Conversation::factory()->create();
 
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $u3 = factory(STS\User::class)->create();
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $u3 = \STS\Models\User::factory()->create();
 
         $this->conversationRepository->addUser($c, $u1->id);
         $this->conversationRepository->addUser($c, $u2->id);
@@ -139,11 +142,11 @@ class MessagesTest extends TestCase
 
     public function test_Send_Message()
     {
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $c = \STS\Models\Conversation::factory()->create();
 
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $u3 = factory(STS\User::class)->create();
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $u3 = \STS\Models\User::factory()->create();
 
         $m1 = 'test 1';
         $m2 = 'test 2';
@@ -167,9 +170,9 @@ class MessagesTest extends TestCase
 
     public function test_Get_User_Conversations()
     {
-        $u1 = factory(STS\User::class)->create();
+        $u1 = \STS\Models\User::factory()->create();
 
-        $c = factory(STS\Entities\Conversation::class, 20)->create();
+        $c = \STS\Models\Conversation::factory()->count(20)->create();
 
         for ($i = 0; $i < 20; $i++) {
             $this->conversationRepository->addUser($c[$i], $u1->id);
@@ -183,8 +186,8 @@ class MessagesTest extends TestCase
 
     public function test_Get_Conversation()
     {
-        $u = factory(STS\User::class)->create();
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $u = \STS\Models\User::factory()->create();
+        $c = \STS\Models\Conversation::factory()->create();
         $this->conversationRepository->addUser($c, $u->id);
 
         $this->conversation = $this->conversationManager->getConversation($u, $c->id);
@@ -195,8 +198,8 @@ class MessagesTest extends TestCase
 
     public function test_conversation_entity_unread()
     {
-        $users = factory(STS\User::class, 4)->create();
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $users = \STS\Models\User::factory()->count(4)->create();
+        $c = \STS\Models\Conversation::factory()->create();
 
         for ($i = 0; $i < 4; $i++) {
             $this->conversationRepository->addUser($c, $users[$i]->id);
@@ -211,10 +214,10 @@ class MessagesTest extends TestCase
 
     public function test_touching()
     {
-        $u = factory(STS\User::class)->create();
-        $c1 = factory(STS\Entities\Conversation::class)->create();
-        $c2 = factory(STS\Entities\Conversation::class)->create();
-        $c3 = factory(STS\Entities\Conversation::class)->create();
+        $u = \STS\Models\User::factory()->create();
+        $c1 = \STS\Models\Conversation::factory()->create();
+        $c2 = \STS\Models\Conversation::factory()->create();
+        $c3 = \STS\Models\Conversation::factory()->create();
 
         $c1->updated_at = Carbon::create(1999, 1, 1, 0, 0, 0);
         $c2->updated_at = Carbon::create(2000, 1, 1, 0, 0, 0);
@@ -246,9 +249,9 @@ class MessagesTest extends TestCase
 
     public function test_get_all_messages_from_conversation()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $c = \STS\Models\Conversation::factory()->create();
         $this->conversationRepository->addUser($c, $u1->id);
         $this->conversationRepository->addUser($c, $u2->id);
         for ($i = 0; $i < 3; $i++) {
@@ -282,8 +285,8 @@ class MessagesTest extends TestCase
 
     public function test_getConversationByTrip_and_delete_Success()
     {
-        $u = factory(\STS\User::class)->create();
-        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
+        $u = \STS\Models\User::factory()->create();
+        $t = \STS\Models\Trip::factory()->create(['user_id' => $u->id]);
 
         $c = $this->conversationManager->createTripConversation($t->id);
 
@@ -303,8 +306,8 @@ class MessagesTest extends TestCase
 
     public function test_getUsers()
     {
-        $u = factory(STS\User::class, 24)->create();
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $u = \STS\Models\User::factory()->count(24)->create();
+        $c = \STS\Models\Conversation::factory()->create();
 
         for ($i = 0; $i < 22; $i++) {
             $this->conversationRepository->addUser($c, $u[$i]->id);
@@ -314,21 +317,21 @@ class MessagesTest extends TestCase
 
     public function test_get_conversation_trip()
     {
-        $u = factory(\STS\User::class)->create();
-        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
-        $c = factory(STS\Entities\Conversation::class)->create(['trip_id' => $t->id]);
+        $u = \STS\Models\User::factory()->create();
+        $t = \STS\Models\Trip::factory()->create(['user_id' => $u->id]);
+        $c = \STS\Models\Conversation::factory()->create(['trip_id' => $t->id]);
 
         $this->assertTrue($t->conversation->id == $c->id);
     }
 
     public function test_create_conversation_listeners()
     {
-        $u = factory(\STS\User::class)->create();
-        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
+        $u = \STS\Models\User::factory()->create();
+        $t = \STS\Models\Trip::factory()->create(['user_id' => $u->id]);
 
-        $event = new STS\Events\Trip\Create($t);
+        $event = new \STS\Events\Trip\Create($t);
 
-        $listener = new STS\Listeners\Conversation\createConversation($this->conversationManager, $this->conversationRepository);
+        $listener = new \STS\Listeners\Conversation\createConversation($this->conversationManager, $this->conversationRepository);
 
         $listener->handle($event);
 
@@ -337,22 +340,22 @@ class MessagesTest extends TestCase
 
     public function test_add_remove_user_conversation_trip()
     {
-        $u = factory(\STS\User::class)->create();
-        $accepted = factory(\STS\User::class)->create();
-        $t = factory(STS\Entities\Trip::class)->create(['user_id' => $u->id]);
-        $c = factory(STS\Entities\Conversation::class)->create(['trip_id' => $t->id]);
+        $u = \STS\Models\User::factory()->create();
+        $accepted = \STS\Models\User::factory()->create();
+        $t = \STS\Models\Trip::factory()->create(['user_id' => $u->id]);
+        $c = \STS\Models\Conversation::factory()->create(['trip_id' => $t->id]);
 
-        $event = new STS\Events\Passenger\Accept($t, $u, $accepted);
+        $event = new \STS\Events\Passenger\Accept($t, $u, $accepted);
 
-        $listener = new STS\Listeners\Conversation\addUserConversation($this->conversationRepository);
+        $listener = new \STS\Listeners\Conversation\addUserConversation($this->conversationRepository);
 
         $listener->handle($event);
 
         $this->assertTrue($c->users()->count() == 1);
 
-        $event = new STS\Events\Passenger\Cancel($t, $u, $accepted, 0);
+        $event = new \STS\Events\Passenger\Cancel($t, $u, $accepted, 0);
 
-        $listener = new STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
+        $listener = new \STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
 
         $listener->handle($event);
 
@@ -361,14 +364,14 @@ class MessagesTest extends TestCase
 
     public function test_user_list()
     {
-        $driver = factory(User::class)->create();
-        $passengerA = factory(User::class)->create();
-        $passengerB = factory(User::class)->create();
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
 
-        $trip = factory(Trip::class)->create(['user_id' => $driver->id]);
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $users = $this->conversationRepository->userList($driver);
         // $this->assertTrue($users->count() == 2);

@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class ConversationApiTest extends TestCase
@@ -12,12 +15,12 @@ class ConversationApiTest extends TestCase
 
     protected $conversationRepository;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->conversationManager = $this->app->make('\STS\Contracts\Logic\Conversation');
-        $this->messageRepository = $this->app->make('\STS\Contracts\Repository\Messages');
-        $this->conversationRepository = $this->app->make('\STS\Contracts\Repository\Conversations');
+        $this->conversationManager = $this->app->make(\STS\Services\Logic\ConversationsManager::class);
+        $this->messageRepository = $this->app->make(\STS\Repository\MessageRepository::class);
+        $this->conversationRepository = $this->app->make(\STS\Repository\ConversationRepository::class);
     }
 
     protected function parseJson($response)
@@ -27,17 +30,18 @@ class ConversationApiTest extends TestCase
 
     public function test_api_conversations_get()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $user1 = factory(\STS\User::class)->create();
-        $user2 = factory(\STS\User::class)->create(['is_admin' => true]);
-        $user3 = factory(\STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create(['is_admin' => true]);
+        $user3 = \STS\Models\User::factory()->create();
 
         $friends->make($user1, $user3);
 
-        $this->actingAsApiUser($user1);
-        $response = transform($this->call('GET', 'api/conversations/'));
-        $this->assertTrue($response->original->total == 0);
+        $this->actingAs($user1, 'api');
+        $response = $this->call('GET', 'api/conversations/');
+        $json = json_decode($response->getContent());
+        $this->assertTrue($json->meta->pagination->total == 0);
 
         $conversation = $this->conversationManager->findOrCreatePrivateConversation($user1, $user2);
         $this->assertTrue($conversation != null);
@@ -47,36 +51,36 @@ class ConversationApiTest extends TestCase
         $this->assertTrue($conversation != null);
         $this->conversationManager->send($user1, $conversation->id, 'Hola');
 
-        $response = transform($this->call('GET', 'api/conversations/'));
-
-        $this->assertTrue($response->original->total == 2);
+        $response = $this->call('GET', 'api/conversations/');
+        $json = json_decode($response->getContent());
+        $this->assertTrue($json->meta->pagination->total == 2);
     }
 
     public function test_api_conversations_post()
     {
-        $user1 = factory(\STS\User::class)->create();
-        $user2 = factory(\STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
         $user1->is_admin = true;
 
-        $this->actingAsApiUser($user1);
+        $this->actingAs($user1, 'api');
         $response = $this->call('POST', 'api/conversations/', ['to' => $user2->id]);
         $this->assertTrue($response->status() == 200);
 
         $response = $this->call('POST', 'api/conversations/', ['to' => $user2->id]);
 
-        $response = $this->call('POST', 'api/conversations/', ['to' => 1]);
-        $this->assertTrue($response->status() == 400);
+        $response = $this->call('POST', 'api/conversations/', ['to' => 999999]);
+        $this->assertTrue($response->status() == 422);
 
         $response = $this->call('POST', 'api/conversations/');
-        $this->assertTrue($response->status() == 400);
+        $this->assertTrue($response->status() == 422);
     }
 
     public function test_api_conversation_get()
     {
-        $user1 = factory(\STS\User::class)->create();
-        $user2 = factory(\STS\User::class)->create();
-        $this->actingAsApiUser($user1);
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
+        $this->actingAs($user1, 'api');
+        $c = \STS\Models\Conversation::factory()->create();
 
         $response = $this->call('GET', 'api/conversations/1');
         $this->assertTrue($response->status() == 422);
@@ -94,7 +98,8 @@ class ConversationApiTest extends TestCase
         $response = $this->call('GET', 'api/conversations/'.$c->id);
 
         $this->assertTrue($response->status() == 200);
-        $this->assertTrue(count($response->original) == 5);
+        $json = json_decode($response->getContent());
+        $this->assertTrue(count($json->data) == 5);
 
         for ($i = 0; $i < 3; $i++) {
             $m = 'text'.$i;
@@ -103,19 +108,21 @@ class ConversationApiTest extends TestCase
         $response = $this->call('GET', 'api/conversations/'.$c->id, ['unread' => true, 'read' => true]);
 
         $this->assertTrue($response->status() == 200);
-        $this->assertTrue(count($response->original) == 3);
+        $json = json_decode($response->getContent());
+        $this->assertTrue(count($json->data) == 3);
 
         $response = $this->call('GET', 'api/conversations/'.$c->id, ['unread' => true, 'read' => true]);
 
         $this->assertTrue($response->status() == 200);
-        $this->assertTrue(count($response->original) == 0);
+        $json = json_decode($response->getContent());
+        $this->assertTrue(count($json->data) == 0);
     }
 
     public function test_users()
     {
-        $u = factory(\STS\User::class, 3)->create();
-        $this->actingAsApiUser($u[0]);
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $u = \STS\Models\User::factory()->count(3)->create();
+        $this->actingAs($u[0], 'api');
+        $c = \STS\Models\Conversation::factory()->create();
         for ($i = 0; $i < 3; $i++) {
             $this->conversationRepository->addUser($c, $u[$i]);
         }
@@ -126,9 +133,9 @@ class ConversationApiTest extends TestCase
 
     public function test_add_user_and_delete_user()
     {
-        $u = factory(\STS\User::class, 7)->create(['is_admin' => true]);
-        $this->actingAsApiUser($u[0]);
-        $c = factory(STS\Entities\Conversation::class)->create();
+        $u = \STS\Models\User::factory()->count(7)->create(['is_admin' => true]);
+        $this->actingAs($u[0], 'api');
+        $c = \STS\Models\Conversation::factory()->create();
         $this->conversationRepository->addUser($c, $u[0]);
         for ($i = 1; $i < 4; $i++) {
             $response = $this->call('POST', 'api/conversations/'.$c->id.'/users', ['users' => $u[$i]->id]);
@@ -137,7 +144,7 @@ class ConversationApiTest extends TestCase
         $response = $this->call('POST', 'api/conversations/'.$c->id.'/users', ['users' => [$u[4]->id, $u[5]->id, $u[6]->id]]);
         $this->assertTrue($response->status() == 200);
 
-        $response = $this->call('POST', 'api/conversations/'.$c->id.'/users', ['users' => 12]);
+        $response = $this->call('POST', 'api/conversations/'.$c->id.'/users', ['users' => 999999]);
         $this->assertTrue($response->status() == 422);
 
         $response = $this->call('GET', 'api/conversations/'.$c->id.'/users');
@@ -154,15 +161,15 @@ class ConversationApiTest extends TestCase
 
     public function test_api_conversations_user_list()
     {
-        $friends = \App::make('\STS\Contracts\Logic\Friends');
+        $friends = \App::make(\STS\Services\Logic\FriendsManager::class);
 
-        $user1 = factory(\STS\User::class)->create();
-        $user2 = factory(\STS\User::class)->create(['is_admin' => true]);
-        $user3 = factory(\STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create(['is_admin' => true]);
+        $user3 = \STS\Models\User::factory()->create();
 
         $friends->make($user1, $user3);
 
-        $this->actingAsApiUser($user1);
+        $this->actingAs($user1, 'api');
         $response = $this->call('GET', 'api/conversations/user-list');
         $this->assertTrue($response->status() == 200);
     }

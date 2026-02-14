@@ -1,16 +1,19 @@
 <?php
 
+namespace Tests;
+
 use Mockery as m;
+use Tests\TestCase;
 use Carbon\Carbon;
-use STS\Entities\Passenger;
-use STS\Entities\TripPoint;
+use STS\Models\Passenger;
+use STS\Models\TripPoint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class TripsTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         start_log_query();
@@ -18,10 +21,10 @@ class TripsTest extends TestCase
 
     public function testCreateTrip()
     {
-        $this->expectsEvents(STS\Events\Trip\Create::class);
-        $user = factory(STS\User::class)->create();
-        $car = factory(STS\Entities\Car::class)->create(['user_id' => $user->id]);
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        \Illuminate\Support\Facades\Event::fake();
+        $user = \STS\Models\User::factory()->create();
+        $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
         $data = [
             'is_passenger'          => 0,
@@ -53,13 +56,14 @@ class TripsTest extends TestCase
 
         $u = $tripManager->create($user, $data);
         $this->assertTrue($u != null);
+        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Create::class);
     }
 
     public function testUpdateTrip()
     {
-        $this->expectsEvents(STS\Events\Trip\Update::class);
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create();
+        \Illuminate\Support\Facades\Event::fake();
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        $trip = \STS\Models\Trip::factory()->create();
         $from = $trip->from_town;
 
         $data = [
@@ -69,23 +73,25 @@ class TripsTest extends TestCase
 
         $trip = $tripManager->update($trip->user, $trip->id, $data);
         $this->assertTrue($trip->from_town != $from);
+        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Update::class);
     }
 
     public function testDeleteTrip()
     {
-        $this->expectsEvents(STS\Events\Trip\Delete::class);
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create();
+        \Illuminate\Support\Facades\Event::fake();
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        $trip = \STS\Models\Trip::factory()->create();
 
         $from = $trip->from_town;
         $result = $tripManager->delete($trip->user, $trip->id);
         $this->assertTrue($result);
+        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Delete::class);
     }
 
     public function testShowTrip()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create();
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        $trip = \STS\Models\Trip::factory()->create();
 
         $result = $tripManager->show($trip->user, $trip->id);
         $this->assertTrue($result != null);
@@ -93,10 +99,10 @@ class TripsTest extends TestCase
 
     public function testCanSeeTrip()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create();
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        $trip = \STS\Models\Trip::factory()->create();
 
-        $other = factory(STS\User::class)->create();
+        $other = \STS\Models\User::factory()->create();
 
         $result = $tripManager->userCanSeeTrip($other, $trip);
         $this->assertTrue($result);
@@ -104,18 +110,17 @@ class TripsTest extends TestCase
 
     public function testCanSeeTripFriend()
     {
-        $this->userLogic = $this->mock('STS\Contracts\Logic\Friends');
-        $this->userLogic->shouldReceive('areFriend')->once()->andReturn(true);
+        $friendsManager = \App::make(\STS\Services\Logic\FriendsManager::class);
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $trip = factory(STS\Entities\Trip::class)->create(['friendship_type_id' => 0]);
+        $trip = \STS\Models\Trip::factory()->create(['friendship_type_id' => 0]);
+        $other = \STS\Models\User::factory()->create();
 
-        $other = factory(STS\User::class)->create();
+        // Make the users actual friends so the friendship check passes
+        $friendsManager->make($other, $trip->user);
 
         $result = $tripManager->userCanSeeTrip($other, $trip);
         $this->assertTrue($result);
-
-        m::close();
     }
 
     public function testTripSeeder()
@@ -128,10 +133,10 @@ class TripsTest extends TestCase
 
     public function testSimpleSearch()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
         $this->seed('TripsTestSeeder');
-        $other = factory(STS\User::class)->create();
+        $other = \STS\Models\User::factory()->create();
         $data = [
             'date' => Carbon::now()->toDateString(),
         ];
@@ -141,10 +146,10 @@ class TripsTest extends TestCase
 
     public function testOriginSearch()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
         $this->seed('TripsTestSeeder');
-        $other = factory(STS\User::class)->create();
+        $other = \STS\Models\User::factory()->create();
         $data = [
             'origin_lat'   => -32.946500,
             'origin_lng'   => -60.669800,
@@ -157,10 +162,10 @@ class TripsTest extends TestCase
 
     public function testDestinationSearch()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
         $this->seed('TripsTestSeeder');
-        $other = factory(STS\User::class)->create();
+        $other = \STS\Models\User::factory()->create();
         $data = [
             'destination_lat'   => -32.897273,
             'destination_lng'   => -68.834067,
@@ -172,8 +177,8 @@ class TripsTest extends TestCase
 
     public function testInbounds()
     {
-        $in = factory(STS\Entities\Trip::class)->create();
-        $out = factory(STS\Entities\Trip::class)->create();
+        $in = \STS\Models\Trip::factory()->create();
+        $out = \STS\Models\Trip::factory()->create();
 
         $out->return_trip_id = $in->id;
         $out->save();
@@ -184,44 +189,44 @@ class TripsTest extends TestCase
 
     public function testMyTripsAsDriver()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $user = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user->id]);
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        $user = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
 
-        $trips = $tripManager->myTrips($user, true);
+        $trips = $tripManager->getTrips($user, $user->id, true);
 
         $this->assertTrue($trips->count() > 0);
     }
 
     public function testMyTripsAsPassenger()
     {
-        $tripManager = \App::make('\STS\Contracts\Logic\Trip');
-        $user = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $user->id, 'trip_id' => $trip->id]);
+        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        $user = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $user->id, 'trip_id' => $trip->id]);
 
-        $trips = $tripManager->myTrips($user, false);
+        $trips = $tripManager->getTrips($user, $user->id, false);
 
         $this->assertTrue($trips->count() > 0);
     }
 
     public function testUpdateListeners()
     {
-        $driver = factory(STS\User::class)->create();
-        $passengerA = factory(STS\User::class)->create();
-        $passengerB = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
-        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $event = new STS\Events\Trip\Update($trip);
+        $event = new \STS\Events\Trip\Update($trip);
 
-        $listener = new STS\Listeners\Notification\UpdateTrip();
+        $listener = new \STS\Listeners\Notification\UpdateTrip();
 
         $listener->handle($event);
 
-        $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
+        $this->assertNotNull(\STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
     }
 }

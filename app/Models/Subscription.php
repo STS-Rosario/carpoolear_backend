@@ -2,17 +2,24 @@
 
 namespace STS\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Subscription extends Model
 {
+    use HasFactory;
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\SubscriptionFactory::new();
+    }
     protected $table = 'subscriptions';
 
     protected $fillable = [
         'user_id', 'trip_date',
         'from_address', 'from_json_address', 'from_lat', 'from_lng', 'from_radio',
         'to_address', 'to_json_address', 'to_lat', 'to_lng', 'to_radio',
-        'state', 'from_id', 'to_id'
+        'state', 'from_id', 'to_id', 'is_passenger'
     ];
 
     protected $hidden = ['created_at', 'updated_at'];

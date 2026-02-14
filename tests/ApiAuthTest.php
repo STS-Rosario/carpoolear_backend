@@ -1,6 +1,10 @@
 <?php
 
+namespace Tests;
+
 use Mockery as m;
+use Tests\TestCase;
+use STS\Models\User;
 use Tymon\JWTAuth\Token;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -12,10 +16,6 @@ class ApiAuthTest extends TestCase
     protected $userManager;
 
     protected $userLogic;
-
-    public function __construct()
-    {
-    }
 
     protected function parseJson($response)
     {
@@ -35,12 +35,12 @@ class ApiAuthTest extends TestCase
         $this->assertTrue($response->status() == 200);
 
         $json = $this->parseJson($response);
-        $this->assertTrue($json->user != null);
+        $this->assertTrue($json->data != null);
     }
 
     public function testLogin()
     {
-        $user = factory(STS\User::class)->create();
+        $user = \STS\Models\User::factory()->create();
 
         $data = [
             'email'       => $user->email,
@@ -59,7 +59,7 @@ class ApiAuthTest extends TestCase
 
     public function testRetoken()
     {
-        $user = factory(STS\User::class)->create();
+        $user = \STS\Models\User::factory()->create();
         $data = [
             'email'       => $user->email,
             'password'    => '123456',
@@ -71,27 +71,27 @@ class ApiAuthTest extends TestCase
         $json = $this->parseJson($response);
         $token = $json->token;
 
-        $deviceLogic = $this->mock('STS\Contracts\Logic\Devices');
-        //$deviceLogic->shouldReceive('updateBySession')->once()->andReturn(true);
+        $deviceLogic = $this->mock(\STS\Services\Logic\DeviceManager::class);
 
-        JWTAuth::shouldReceive('getToken')->once()->andReturn(new Token('a.b.c'));
-        JWTAuth::shouldReceive('authenticate')->once()->andReturn($user);
+        \JWTAuth::shouldReceive('getToken')->once()->andReturn(new Token('a.b.c'));
+        \JWTAuth::shouldReceive('setToken')->andReturnSelf();
+        \JWTAuth::shouldReceive('checkOrFail')->andReturn(new \stdClass());
+        \JWTAuth::shouldReceive('user')->andReturn($user);
 
         $response = $this->call('POST', 'api/retoken?token='.$json->token);
         $this->assertTrue($response->status() == 200);
 
         $json = $this->parseJson($response);
         $this->assertTrue($json->token != null);
-        //$this->assertTrue($json->token != $token);
 
         m::close();
     }
 
     public function testUpdateProfile()
     {
-        $user = factory(STS\User::class)->create();
+        $user = \STS\Models\User::factory()->create();
         $id = $user->id;
-        $this->actingAsApiUser($user);
+        $this->actingAs($user, 'api');
 
         $data = [
             'name' => 'Mariano Botta',
@@ -102,15 +102,15 @@ class ApiAuthTest extends TestCase
         $this->assertTrue($response->status() == 200);
         $this->assertEquals($userUpdated->data->name, $data['name']);
 
-        $u2 = STS\User::find($id);
+        $u2 = \STS\Models\User::find($id);
         $this->assertEquals($userUpdated->data->name, $u2->name);
     }
 
     public function testShowProfile()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $response = $this->call('GET', 'api/users/'.$u2->id);
 
@@ -121,8 +121,8 @@ class ApiAuthTest extends TestCase
 
     public function testActive()
     {
-        $u1 = factory(STS\User::class)->create();
-        $this->userLogic = $this->mock('STS\Contracts\Logic\User');
+        $u1 = \STS\Models\User::factory()->create();
+        $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
         $this->userLogic->shouldReceive('activeAccount')->once()->andReturn($u1);
 
         $response = $this->call('POST', 'api/activate/1234567890');
@@ -136,8 +136,8 @@ class ApiAuthTest extends TestCase
 
     public function testResetPassword()
     {
-        $u1 = factory(STS\User::class)->create();
-        $this->userLogic = $this->mock('STS\Contracts\Logic\User');
+        $u1 = \STS\Models\User::factory()->create();
+        $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
         $this->userLogic->shouldReceive('resetPassword')->once()->andReturn('asdqweasdqwe');
 
         $response = $this->call('POST', 'api/reset-password', ['email' => $u1->email]);
@@ -149,8 +149,8 @@ class ApiAuthTest extends TestCase
 
     public function testChagePassword()
     {
-        $u1 = factory(STS\User::class)->create();
-        $this->userLogic = $this->mock('STS\Contracts\Logic\User');
+        $u1 = \STS\Models\User::factory()->create();
+        $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
         $this->userLogic->shouldReceive('changePassword')->once()->andReturn(true);
 
         $response = $this->call('POST', 'api/change-password/1234567890');
@@ -162,12 +162,12 @@ class ApiAuthTest extends TestCase
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $u3 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $u3 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
-        $this->userLogic = $this->mock('STS\Contracts\Logic\User');
+        $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
         $this->userLogic->shouldReceive('index')->once()->andReturn(new Collection([$u2, $u3]));
 
         $response = $this->call('GET', 'api/users/list');

@@ -1,5 +1,8 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
@@ -9,17 +12,13 @@ class FriendApiTest extends TestCase
 
     protected $friendsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->friendsLogic = $this->mock('STS\Contracts\Logic\Friends');
+        $this->friendsLogic = $this->mock(\STS\Services\Logic\FriendsManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -31,9 +30,9 @@ class FriendApiTest extends TestCase
 
     public function testRequest()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->friendsLogic->shouldReceive('request')->once()->andReturn(true);
 
@@ -43,9 +42,9 @@ class FriendApiTest extends TestCase
 
     public function testAccept()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->friendsLogic->shouldReceive('accept')->once()->andReturn(true);
 
@@ -55,9 +54,9 @@ class FriendApiTest extends TestCase
 
     public function testReject()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->friendsLogic->shouldReceive('reject')->once()->andReturn(true);
 
@@ -67,9 +66,9 @@ class FriendApiTest extends TestCase
 
     public function testDelete()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->friendsLogic->shouldReceive('delete')->once()->andReturn(true);
 
@@ -79,11 +78,11 @@ class FriendApiTest extends TestCase
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
-        $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn(STS\User::all());
+        $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn(\STS\Models\User::all());
 
         $response = $this->call('GET', 'api/friends/');
         $this->assertTrue($response->status() == 200);
@@ -94,11 +93,11 @@ class FriendApiTest extends TestCase
 
     public function testPendings()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $this->actingAs($u1, 'api');
 
-        $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn(STS\User::all());
+        $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn(\STS\Models\User::all());
 
         $response = $this->call('GET', 'api/friends/pedings');
         $this->assertTrue($response->status() == 200);

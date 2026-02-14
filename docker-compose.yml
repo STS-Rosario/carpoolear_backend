@@ -3,8 +3,6 @@ version: "3.8"
 services:
   mysql:
     image: mysql:5.7.33
-    env_file:
-      - .env
     environment:
       MYSQL_DATABASE: carpoolear
       MYSQL_USER: carpoolear
@@ -14,12 +12,19 @@ services:
       - ./.db:/var/lib/mysql
     ports:
       - 3306:3306
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   app:
-    image: movilizame-php82  
+    build: .
     volumes:
       - ./:/var/www
     ports:
       - 8000:8000
+    depends_on:
+      mysql:
+        condition: service_healthy
     entrypoint: php artisan serve --host=0.0.0.0
-

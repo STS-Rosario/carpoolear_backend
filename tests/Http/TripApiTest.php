@@ -1,7 +1,10 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
-use STS\Entities\Trip;
+use STS\Models\Trip;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class TripApiTest extends TestCase
@@ -10,17 +13,13 @@ class TripApiTest extends TestCase
 
     protected $tripsLogic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->tripsLogic = $this->mock('STS\Contracts\Logic\Trip');
+        $this->tripsLogic = $this->mock(\STS\Services\Logic\TripsManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -32,9 +31,9 @@ class TripApiTest extends TestCase
 
     public function testCreate()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->tripsLogic->shouldReceive('create')->once()->andReturn($trip);
 
@@ -44,9 +43,9 @@ class TripApiTest extends TestCase
 
     public function testUpdate()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->tripsLogic->shouldReceive('update')->once()->andReturn($trip);
 
@@ -56,9 +55,9 @@ class TripApiTest extends TestCase
 
     public function testDelete()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->tripsLogic->shouldReceive('delete')->once()->andReturn(true);
 
@@ -68,9 +67,9 @@ class TripApiTest extends TestCase
 
     public function testShow()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->tripsLogic->shouldReceive('show')->once()->andReturn($trip);
 
@@ -83,9 +82,9 @@ class TripApiTest extends TestCase
 
     public function testIndex()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        $this->actingAs($u1, 'api');
 
         $this->tripsLogic->shouldReceive('search')->once()->andReturn(Trip::paginate(10));
 
@@ -95,9 +94,9 @@ class TripApiTest extends TestCase
 
     public function testIndexWithoutLogin()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        //$this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        //$this->actingAs($u1, 'api');
         $this->tripsLogic->shouldReceive('search')->once()->andReturn(Trip::paginate(10));
 
         $response = $this->call('GET', 'api/trips/');
@@ -107,11 +106,11 @@ class TripApiTest extends TestCase
 
     public function testMyTrips()
     {
-        $u1 = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create();
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create();
+        $this->actingAs($u1, 'api');
 
-        $this->tripsLogic->shouldReceive('myTrips')->once()->andReturn(Trip::all());
+        $this->tripsLogic->shouldReceive('getTrips')->once()->andReturn(Trip::all());
 
         $response = $this->call('GET', 'api/users/my-trips/');
         $this->assertTrue($response->status() == 200);

@@ -1,9 +1,12 @@
 <?php
 
-use STS\User;
-use STS\Entities\Trip;
-use STS\Entities\Rating;
-use STS\Entities\Passenger;
+namespace Tests;
+
+use Tests\TestCase;
+use STS\Models\User;
+use STS\Models\Trip;
+use STS\Models\Rating;
+use STS\Models\Passenger;
 use STS\Transformers\RatingTransformer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
@@ -15,23 +18,23 @@ class RatingTest extends TestCase
 
     protected $ratingRepository;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         start_log_query();
-        $this->ratingManager = App::make('\STS\Contracts\Logic\IRateLogic');
-        $this->ratingRepository = App::make('\STS\Contracts\Repository\IRatingRepository');
+        $this->ratingManager = \App::make(\STS\Services\Logic\RatingManager::class);
+        $this->ratingRepository = \App::make(\STS\Repository\RatingRepository::class);
     }
 
     public function testCreate()
     {
-        $driver = factory(User::class)->create();
-        $passengers = factory(User::class, 3)->create();
-        $trip = factory(Trip::class)->create(['trip_date' => '2017-01-01 08:00:00', 'user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengers = \STS\Models\User::factory()->count(3)->create();
+        $trip = \STS\Models\Trip::factory()->create(['trip_date' => '2017-01-01 08:00:00', 'user_id' => $driver->id]);
 
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[0]->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengers[0]->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
 
         $this->ratingManager->activeRatings('2017-01-01 10:00:00');
 
@@ -48,13 +51,13 @@ class RatingTest extends TestCase
 
     public function testgetRatings()
     {
-        $driver = factory(User::class)->create();
-        $passengers = factory(User::class, 3)->create();
-        $trip = factory(Trip::class)->create(['trip_date' => '2017-01-01 08:00:00', 'user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengers = \STS\Models\User::factory()->count(3)->create();
+        $trip = \STS\Models\Trip::factory()->create(['trip_date' => '2017-01-01 08:00:00', 'user_id' => $driver->id]);
 
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[0]->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
-        factory(Passenger::class, 'aceptado')->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengers[0]->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengers[1]->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengers[2]->id, 'trip_id' => $trip->id]);
 
         $this->ratingManager->activeRatings('2017-01-01 10:00:00');
 
@@ -87,21 +90,21 @@ class RatingTest extends TestCase
 
     public function testDeleteListeners()
     {
-        $driver = factory(STS\User::class)->create();
-        $passengerA = factory(STS\User::class)->create();
-        $passengerB = factory(STS\User::class)->create();
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $driver->id]);
+        $driver = \STS\Models\User::factory()->create();
+        $passengerA = \STS\Models\User::factory()->create();
+        $passengerB = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
 
-        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        factory(STS\Entities\Passenger::class, 'aceptado')->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $event = new STS\Events\Trip\Delete($trip);
+        $event = new \STS\Events\Trip\Delete($trip);
 
-        $listener = new STS\Listeners\Ratings\CreateRatingDeleteTrip($this->ratingRepository);
+        $listener = new \STS\Listeners\Ratings\CreateRatingDeleteTrip($this->ratingRepository);
 
         $listener->handle($event);
 
-        $this->assertNotNull(STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
+        $this->assertNotNull(\STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
 
         $trip->delete();
 

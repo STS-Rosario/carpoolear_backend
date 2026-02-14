@@ -1,8 +1,11 @@
 <?php
 
-use STS\User;
-use STS\Entities\Trip;
-use STS\Entities\Subscription;
+namespace Tests;
+
+use Tests\TestCase;
+use STS\Models\User;
+use STS\Models\Trip;
+use STS\Models\Subscription;
 use STS\Transformers\RatingTransformer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
@@ -14,19 +17,19 @@ class SubscriptionsTest extends TestCase
 
     protected $subscriptionsRepository;
 
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
         start_log_query();
-        $this->subscriptionsManager = App::make('\STS\Contracts\Logic\Subscription');
-        $this->subscriptionsRepository = App::make('\STS\Contracts\Repository\Subscription');
+        $this->subscriptionsManager = \App::make(\STS\Services\Logic\SubscriptionsManager::class);
+        $this->subscriptionsRepository = \App::make(\STS\Repository\SubscriptionsRepository::class);
     }
 
     public function testCreateSubscription()
     {
-        $user = factory(STS\User::class)->create();
+        $user = \STS\Models\User::factory()->create();
         $data = [
-            'trip_date'       => Carbon\Carbon::now()->addHour(),
+            'trip_date'       => \Carbon\Carbon::now()->addHour(),
         ];
 
         $model = $this->subscriptionsManager->create($user, $data);
@@ -37,10 +40,10 @@ class SubscriptionsTest extends TestCase
 
     public function testUpdateSubscription()
     {
-        $user = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
         $data = [
-            'trip_date'       => Carbon\Carbon::now()->addHour(),
+            'trip_date'       => \Carbon\Carbon::now()->addHour(),
         ];
 
         $updated_model = $this->subscriptionsManager->update($user, $model->id, $data);
@@ -49,8 +52,8 @@ class SubscriptionsTest extends TestCase
 
     public function testShowSubscription()
     {
-        $user = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
 
         $showed_model = $this->subscriptionsManager->show($user, $model->id);
         $this->assertTrue($model->trip_date == $showed_model->trip_date);
@@ -58,8 +61,8 @@ class SubscriptionsTest extends TestCase
 
     public function testDeleteCar()
     {
-        $user = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
 
         $result = $this->subscriptionsManager->delete($user, $model->id);
         $this->assertTrue($result);
@@ -67,9 +70,9 @@ class SubscriptionsTest extends TestCase
 
     public function testIndexCar()
     {
-        $user = factory(STS\User::class)->create();
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $user->id]);
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $user->id]);
+        $user = \STS\Models\User::factory()->create();
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
 
         $result = $this->subscriptionsManager->index($user);
         $this->assertTrue($result->count() == 2);
@@ -77,14 +80,14 @@ class SubscriptionsTest extends TestCase
 
     public function testMatcher()
     {
-        $user1 = factory(STS\User::class)->create();
-        $user2 = factory(STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
 
-        $model = factory(STS\Entities\Subscription::class)->create(['user_id' => $user1->id]);
-        $trip = factory(STS\Entities\Trip::class)->create(['user_id' => $user2->id]);
+        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user1->id, 'trip_date' => null]);
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user2->id]);
 
-        $trip->points()->save(factory(STS\Entities\TripPoint::class, 'rosario')->make());
-        $trip->points()->save(factory(STS\Entities\TripPoint::class, 'mendoza')->make());
+        $trip->points()->save(\STS\Models\TripPoint::factory()->rosario()->make());
+        $trip->points()->save(\STS\Models\TripPoint::factory()->mendoza()->make());
 
         $ss = $this->subscriptionsRepository->search($user2, $trip);
         $this->assertTrue($ss->count() == 1);
@@ -92,11 +95,12 @@ class SubscriptionsTest extends TestCase
 
     public function testMatcher2()
     {
-        $user1 = factory(STS\User::class)->create();
-        $user2 = factory(STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
 
-        $model = factory(STS\Entities\Subscription::class)->create([
+        $model = \STS\Models\Subscription::factory()->create([
             'user_id' => $user1->id,
+            'trip_date' => null,
             'to_address'      => 'Mendoza, Mendoza, Argentina',
             'to_json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
             'to_lat'          => -32.897273,
@@ -107,13 +111,13 @@ class SubscriptionsTest extends TestCase
             'to_cos_lng'          => cos(deg2rad(-68.834067)),
             'to_radio'          => 10000,
         ]);
-        $trip = factory(STS\Entities\Trip::class)->create([
+        $trip = \STS\Models\Trip::factory()->create([
             'friendship_type_id' => 2,
             'user_id' => $user2->id,
         ]);
 
-        $trip->points()->save(factory(STS\Entities\TripPoint::class, 'rosario')->make());
-        $trip->points()->save(factory(STS\Entities\TripPoint::class, 'mendoza')->make());
+        $trip->points()->save(\STS\Models\TripPoint::factory()->rosario()->make());
+        $trip->points()->save(\STS\Models\TripPoint::factory()->mendoza()->make());
 
         $ss = $this->subscriptionsRepository->search($user2, $trip);
         $this->assertTrue($ss->count() == 1);
@@ -121,11 +125,12 @@ class SubscriptionsTest extends TestCase
 
     public function testMatcher3()
     {
-        $user1 = factory(STS\User::class)->create();
-        $user2 = factory(STS\User::class)->create();
+        $user1 = \STS\Models\User::factory()->create();
+        $user2 = \STS\Models\User::factory()->create();
 
-        $model = factory(STS\Entities\Subscription::class)->create([
+        $model = \STS\Models\Subscription::factory()->create([
             'user_id' => $user1->id,
+            'trip_date' => null,
             'to_address'      => 'Mendoza, Mendoza, Argentina',
             'to_json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
             'to_lat'          => -32.897273,
@@ -146,12 +151,12 @@ class SubscriptionsTest extends TestCase
             'from_cos_lng'          => cos(deg2rad(-64.190543)),
             'from_radio'          => 1000,
         ]);
-        $trip = factory(STS\Entities\Trip::class)->create([
+        $trip = \STS\Models\Trip::factory()->create([
             'user_id' => $user2->id,
         ]);
 
-        $trip->points()->save(factory(STS\Entities\TripPoint::class, 'rosario')->make());
-        $trip->points()->save(factory(STS\Entities\TripPoint::class, 'mendoza')->make());
+        $trip->points()->save(\STS\Models\TripPoint::factory()->rosario()->make());
+        $trip->points()->save(\STS\Models\TripPoint::factory()->mendoza()->make());
 
         $ss = $this->subscriptionsRepository->search($user2, $trip);
         $this->assertTrue($ss->count() == 0);

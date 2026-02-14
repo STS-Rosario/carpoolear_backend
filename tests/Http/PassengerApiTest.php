@@ -1,8 +1,11 @@
 <?php
 
+namespace Tests\Http;
+
+use Tests\TestCase;
 use Mockery as m;
-use STS\Entities\Trip;
-use STS\Entities\Passenger;
+use STS\Models\Trip;
+use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class PassengerApiTest extends TestCase
@@ -11,17 +14,13 @@ class PassengerApiTest extends TestCase
 
     protected $logic;
 
-    public function __construct()
-    {
-    }
-
-    public function setUp()
+    public function setUp(): void
     {
         parent::setUp();
-        $this->logic = $this->mock('STS\Contracts\Logic\IPassengersLogic');
+        $this->logic = $this->mock(\STS\Services\Logic\PassengersManager::class);
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         m::close();
     }
@@ -33,10 +32,10 @@ class PassengerApiTest extends TestCase
 
     public function testGetPassengers()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('index')->once()->andReturn(Passenger::all());
 
@@ -46,10 +45,10 @@ class PassengerApiTest extends TestCase
 
     public function testGetPending()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('getPendingRequests')->once()->andReturn(Passenger::all());
 
@@ -59,10 +58,10 @@ class PassengerApiTest extends TestCase
 
     public function testPostRequest()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u2);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u2, 'api');
 
         $this->logic->shouldReceive('newRequest')->once()->andReturn(true);
 
@@ -72,10 +71,10 @@ class PassengerApiTest extends TestCase
 
     public function testPostAccept()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u1);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('acceptRequest')->with($trip->id, $u2->id, $u1, [])->once()->andReturn(true);
 
@@ -85,10 +84,10 @@ class PassengerApiTest extends TestCase
 
     public function testPostCancel()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u2);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u2, 'api');
 
         $this->logic->shouldReceive('cancelRequest')->once()->andReturn(true);
 
@@ -98,10 +97,10 @@ class PassengerApiTest extends TestCase
 
     public function testPostReject()
     {
-        $u1 = factory(STS\User::class)->create();
-        $u2 = factory(STS\User::class)->create();
-        $trip = factory(Trip::class)->create(['user_id' => $u1->id]);
-        $this->actingAsApiUser($u2);
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
+        $this->actingAs($u2, 'api');
 
         $this->logic->shouldReceive('rejectRequest')->once()->andReturn(true);
 
