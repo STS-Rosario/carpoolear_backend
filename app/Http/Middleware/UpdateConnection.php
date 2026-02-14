@@ -44,8 +44,8 @@ class UpdateConnection
     public function handle($request, Closure $next)
     {
         try {
-            // Only try to parse token if it exists
-            if ($this->auth->parser()->hasToken()) {
+            // Only try to parse token if auth is available and token exists
+            if ($this->auth && $this->auth->parser()->hasToken()) {
                 $this->user = $this->auth->parseToken()->authenticate();
                 if ($this->user) {
                     $this->user->last_connection = Carbon::now();

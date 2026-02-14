@@ -37,12 +37,17 @@ class UserLoggin
      * @return mixed
      */
     public function handle($request, Closure $next, $mode = null)
-    { 
+    {
         try {
             $this->user = $this->auth->parseToken()->authenticate();
-        } catch (\Exception $e) { 
-            \Log::info('JWT Exception: ' . get_class($e) . ' - ' . 'Request URL: ' . $request->url()); 
+        } catch (\Exception $e) {
+            \Log::info('JWT Exception: ' . get_class($e) . ' - ' . 'Request URL: ' . $request->url());
             $this->user = null;
+        }
+
+        // Fallback: support actingAs() in tests when no JWT token is present
+        if (!$this->user && auth()->user()) {
+            $this->user = auth()->user();
         }
 
         if ($mode === 'optional') {

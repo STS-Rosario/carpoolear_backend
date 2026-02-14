@@ -202,7 +202,7 @@ class AuthController extends Controller
         if (! $user) {
             throw new ExceptionWithErrors('user_not_found');
         }
-        $token = auth()->fromUser($user);
+        $token = auth('api')->fromUser($user);
 
         return response()->json(['token' => $token]);
     }

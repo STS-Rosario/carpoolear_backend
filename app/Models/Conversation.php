@@ -3,12 +3,18 @@
 namespace STS\Models;
 
 use STS\Models\User as UserModel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Conversation extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\ConversationFactory::new();
+    }
 
     const TYPE_PRIVATE_CONVERSATION = 0;
 
