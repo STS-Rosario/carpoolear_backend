@@ -3,6 +3,7 @@ version: "3.8"
 services:
   mysql:
     image: mysql:5.7.33
+    platform: linux/amd64
     environment:
       MYSQL_DATABASE: carpoolear
       MYSQL_USER: carpoolear
@@ -12,6 +13,7 @@ services:
       - ./.db:/var/lib/mysql
     ports:
       - 3306:3306
+    command: ["mysqld", "--innodb-use-native-aio=0"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
