@@ -374,9 +374,9 @@ class MessagesTest extends TestCase
         \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $users = $this->conversationRepository->userList($driver);
-        // $this->assertTrue($users->count() == 2);
+        $this->assertCount(0, $users, 'No conversations with messages exist yet');
 
         $users = $this->conversationRepository->userList($passengerA);
-        // $this->assertTrue($users->count() == 1);
+        $this->assertCount(0, $users, 'No conversations with messages exist yet');
     }
 }

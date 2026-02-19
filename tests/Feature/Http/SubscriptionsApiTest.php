@@ -21,6 +21,7 @@ class SubscriptionsApiTest extends TestCase
     public function tearDown(): void
     {
         m::close();
+        parent::tearDown();
     }
 
     protected function parseJson($response)

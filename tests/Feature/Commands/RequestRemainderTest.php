@@ -23,6 +23,7 @@ class RequestRemainderTest extends TestCase
     public function tearDown(): void
     {
         m::close();
+        parent::tearDown();
     }
 
     protected function parseJson($response)
@@ -37,7 +38,7 @@ class RequestRemainderTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(4)->toDateTimeString()]);
         \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:request');
+        $this->artisan('trip:request')->assertSuccessful();
     }
 
     public function testSeccondWeek()
@@ -47,7 +48,7 @@ class RequestRemainderTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(8)->toDateTimeString()]);
         \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:request');
+        $this->artisan('trip:request')->assertSuccessful();
     }
 
     public function testSeccondWeekNotSend()
@@ -57,7 +58,7 @@ class RequestRemainderTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(9)->toDateTimeString()]);
         \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:request');
+        $this->artisan('trip:request')->assertSuccessful();
     }
 
     public function testFarAwayTrip()
@@ -67,6 +68,6 @@ class RequestRemainderTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(16)->toDateTimeString()]);
         \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:request');
+        $this->artisan('trip:request')->assertSuccessful();
     }
 }

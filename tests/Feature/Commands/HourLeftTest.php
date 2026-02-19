@@ -24,6 +24,7 @@ class HourLeftTest extends TestCase
     public function tearDown(): void
     {
         m::close();
+        parent::tearDown();
     }
 
     protected function parseJson($response)
@@ -41,7 +42,7 @@ class HourLeftTest extends TestCase
         \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
         \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:remainder');
+        $this->artisan('trip:remainder')->assertSuccessful();
     }
 
     public function testNoMatch()
@@ -54,6 +55,6 @@ class HourLeftTest extends TestCase
         \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
         \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
-        $status = $this->artisan('trip:remainder');
+        $this->artisan('trip:remainder')->assertSuccessful();
     }
 }
