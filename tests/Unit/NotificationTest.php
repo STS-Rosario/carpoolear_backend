@@ -16,29 +16,31 @@ class NotificationTest extends TestCase
 
     public function testMorph()
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $t = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
-        $n = new DatabaseNotification();
-        $n->user_id = $u1->id;
-        $n->save();
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+        $notification = new DatabaseNotification();
+        $notification->user_id = $user->id;
+        $notification->save();
 
-        $v = new ValueNotification();
-        $v->key = 'trip';
-        $v->value()->associate($t);
-        $n->plain_values()->save($v);
+        $tripValue = new ValueNotification();
+        $tripValue->key = 'trip';
+        $tripValue->value()->associate($trip);
+        $notification->plain_values()->save($tripValue);
 
-        $v = new ValueNotification();
-        $v->key = 'user';
-        $v->value()->associate($u1);
-        $n->plain_values()->save($v);
+        $userValue = new ValueNotification();
+        $userValue->key = 'user';
+        $userValue->value()->associate($user);
+        $notification->plain_values()->save($userValue);
 
-        $nn = DatabaseNotification::find($n->id);
+        $fetched = DatabaseNotification::find($notification->id);
+        $this->assertNotNull($fetched);
+        $this->assertEquals(2, $fetched->plain_values()->count());
     }
 
     public function testDummyNotification()
     {
-        $user = \STS\Models\User::factory()->create(['email' => 'marianoabotta@gmail.com']);
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create(['email' => 'marianoabotta@gmail.com']);
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'dummy');
@@ -46,10 +48,10 @@ class NotificationTest extends TestCase
 
         $dummy->notify($user);
 
-        $noti = DatabaseNotification::first();
-        $this->assertNotNull($noti);
+        $notification = DatabaseNotification::first();
+        $this->assertNotNull($notification);
 
-        $this->assertEquals($noti->attributes()['trip']->id, $trip->id);
+        $this->assertEquals($notification->attributes()['trip']->id, $trip->id);
 
         $notifications = DatabaseNotification::all();
         $first = $notifications->asNotifications()->first();
@@ -59,8 +61,8 @@ class NotificationTest extends TestCase
 
     public function testNotificationLogic()
     {
-        $user = \STS\Models\User::factory()->create(['email' => 'marianoabotta@gmail.com']);
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create(['email' => 'marianoabotta@gmail.com']);
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'dummy');
@@ -70,20 +72,20 @@ class NotificationTest extends TestCase
 
         $manager = \App::make(\STS\Services\Logic\NotificationManager::class);
 
-        $datos = $manager->getNotifications($user, []);
-        $this->assertEquals(count($datos), 1);
+        $notifications = $manager->getNotifications($user, []);
+        $this->assertEquals(count($notifications), 1);
 
-        $noti = $datos[0];
+        $notification = $notifications[0];
 
-        $count = $manager->getUnreadCount($user);
-        $this->assertEquals($count, 1);
+        $unreadCount = $manager->getUnreadCount($user);
+        $this->assertEquals($unreadCount, 1);
 
-        $datos = $manager->getNotifications($user, ['mark' => true]);
-        $count = $manager->getUnreadCount($user);
-        $this->assertEquals($count, 0);
+        $notifications = $manager->getNotifications($user, ['mark' => true]);
+        $unreadCount = $manager->getUnreadCount($user);
+        $this->assertEquals($unreadCount, 0);
 
-        $manager->delete($user, $noti['id']);
-        $datos = $manager->getNotifications($user, []);
-        $this->assertEquals(count($datos), 0);
+        $manager->delete($user, $notification['id']);
+        $notifications = $manager->getNotifications($user, []);
+        $this->assertEquals(count($notifications), 0);
     }
 }

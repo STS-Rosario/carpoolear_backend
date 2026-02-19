@@ -23,6 +23,7 @@ class RequestNotAnswerTest extends TestCase
     public function tearDown(): void
     {
         m::close();
+        parent::tearDown();
     }
 
     protected function parseJson($response)
@@ -37,7 +38,7 @@ class RequestNotAnswerTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(10)->toDateTimeString()]);
         \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id, 'created_at' => \Carbon\Carbon::now()->subDays(3)->toDateTimeString()]);
 
-        $status = $this->artisan('trip:requestnotanswer');
+        $this->artisan('trip:requestnotanswer')->assertSuccessful();
     }
 
     public function testNotSend()
@@ -47,6 +48,6 @@ class RequestNotAnswerTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id, 'trip_date' => \Carbon\Carbon::now()->addDays(10)->toDateTimeString()]);
         \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id, 'created_at' => \Carbon\Carbon::now()->subDays(2)->toDateTimeString()]);
 
-        $status = $this->artisan('trip:requestnotanswer');
+        $this->artisan('trip:requestnotanswer')->assertSuccessful();
     }
 }
