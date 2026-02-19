@@ -2,10 +2,17 @@
 
 namespace STS\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Car extends Model
 {
+    use HasFactory;
+
+    protected static function newFactory()
+    {
+        return \Database\Factories\CarFactory::new();
+    }
     protected $table = 'cars';
 
     protected $fillable = ['patente', 'description', 'user_id'];

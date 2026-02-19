@@ -38,9 +38,11 @@ class UserRepository
 
     public function show($id)
     {
-        $user =User::with(['accounts', 'donations', 'referencesReceived', 'cars'])->where('id', $id)->first(); 
+        $user = User::with(['accounts', 'donations', 'referencesReceived', 'cars'])->where('id', $id)->first();
         // prevent from returning the private_note to the frontend
-        $user->private_note = null; // TODO: how to better hide this?
+        if ($user) {
+            $user->private_note = null;
+        }
         // $exitCode = \Artisan::call('test:test', []);
         // \Log::info('Test COMMAND exit' . $exitCode);
         return $user;
