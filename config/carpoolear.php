@@ -27,6 +27,8 @@ return [
     'module_trip_creation_payment_enabled' => env('MODULE_TRIP_CREATION_PAYMENT_ENABLED', false),
     'module_trip_creation_payment_amount_cents' => (int) env('MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS', 1500),
     'module_trip_creation_payment_trips_threshold' => (int)env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
+    // Frontend app base URL (e.g. for payment redirects, OAuth callbacks). Defaults to APP_URL.
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost:8080')),
     'module_seat_price_enabled' => env('MODULE_SEAT_PRICE_ENABLED', false),
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
     'module_max_price_fuel_price' => (int) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),

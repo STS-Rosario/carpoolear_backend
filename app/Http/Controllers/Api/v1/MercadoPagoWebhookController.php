@@ -44,12 +44,18 @@ class MercadoPagoWebhookController extends Controller
             'content_type' => $request->header('Content-Type')
         ]);
 
-        // we only want action = payment.created
         \Log::info('MercadoPago webhook received', ['action' => $request->input('action')]);
+
+        // Handle order.processed (QR/Orders API) - sent when QR order is paid
+        if ($request->input('action') === 'order.processed') {
+            return $this->handleOrderProcessed($request);
+        }
+
+        // Only process payment.created (Payments API / Checkout Pro)
         if ($request->input('action') !== 'payment.created') {
-            // discard other actions
             return response()->json(['status' => 'success']);
         }
+
         // Verify the request is from Mercado Pago
         if (!$this->verifyMercadoPagoRequest($request)) {
             Log::error('Invalid MercadoPago webhook request');
@@ -136,12 +142,26 @@ class MercadoPagoWebhookController extends Controller
         return $externalReference;
     }
 
-    protected function verifyMercadoPagoRequest(Request $request)
+    /**
+     * Verify webhook signature from MercadoPago.
+     * @param bool $isOrderWebhook True for Orders API (QR), false for Payments API (Checkout Pro / Sellado).
+     *                            Orders API uses data.id in query (lowercased); Payments API uses data_id.
+     */
+    protected function verifyMercadoPagoRequest(Request $request, bool $isOrderWebhook = false)
     {
-        // Get required headers and parameters
         $xSignature = $request->header('x-signature');
         $xRequestId = $request->header('x-request-id');
-        $dataId = $request->query('data_id');
+
+        if ($isOrderWebhook) {
+            // Orders API (QR): data.id from query params (per MP docs), fallback to body if absent
+            $dataId = $request->query('data.id')
+                ?? $request->input('data_id')
+                ?? $request->input('data.id');
+            $dataId = $dataId ? strtolower($dataId) : null;
+        } else {
+            // Payments API (Checkout Pro, Sellado): data_id from query params
+            $dataId = $request->query('data_id');
+        }
 
         if (!$xSignature || !$xRequestId || !$dataId) {
             Log::error('Missing required headers or parameters in webhook request', [
@@ -175,8 +195,10 @@ class MercadoPagoWebhookController extends Controller
             return false;
         }
 
-        // Get the secret key from config
-        $secret = config('services.mercadopago.webhook_secret');
+        // Get the secret key from config (QR/Orders API uses separate secret)
+        $secret = $isOrderWebhook
+            ? config('services.mercadopago.webhook_secret_qr_payment')
+            : config('services.mercadopago.webhook_secret');
         if (!$secret) {
             Log::error('Mercado Pago webhook secret not configured');
             return false;
@@ -427,6 +449,61 @@ class MercadoPagoWebhookController extends Controller
         ]);
 
         return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * Handle order.processed webhook from QR/Orders API.
+     * Payload structure differs from payment.created - order data is in request body.
+     */
+    protected function handleOrderProcessed(Request $request)
+    {
+        if (!$this->verifyMercadoPagoRequest($request, true)) {
+            Log::error('Invalid MercadoPago order webhook request');
+            return response()->json(['error' => 'Invalid request'], 400);
+        }
+
+        $orderData = $request->input('data');
+        if (!$orderData || !isset($orderData['external_reference'])) {
+            Log::error('Invalid order.processed webhook: missing data or external_reference');
+            return response()->json(['error' => 'Invalid payload'], 400);
+        }
+
+        $externalReference = $orderData['external_reference'] ?? '';
+        $orderStatus = $orderData['status'] ?? '';
+        $orderStatusDetail = $orderData['status_detail'] ?? '';
+
+        // Only process when order is fully paid (processed + accredited)
+        if ($orderStatus !== 'processed' || $orderStatusDetail !== 'accredited') {
+            Log::info('Order processed webhook ignored: not paid', [
+                'status' => $orderStatus,
+                'status_detail' => $orderStatusDetail,
+            ]);
+            return response()->json(['status' => 'success']);
+        }
+
+        // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR)
+        if (strpos($externalReference, 'manual_validation:') !== 0 && strpos($externalReference, 'manual_validation_') !== 0) {
+            Log::info('Order processed webhook: external_reference not manual_validation', [
+                'external_reference' => $externalReference,
+            ]);
+            return response()->json(['status' => 'success']);
+        }
+
+        // Get payment ID from first payment in transactions
+        $paymentId = null;
+        $payments = $orderData['transactions']['payments'] ?? [];
+        if (!empty($payments) && isset($payments[0]['id'])) {
+            $paymentId = $payments[0]['id'];
+        }
+
+        $mpPayment = [
+            'id' => $paymentId,
+            'status' => 'approved',
+            'status_detail' => $orderStatusDetail,
+            'external_reference' => $externalReference,
+        ];
+
+        return $this->handleManualValidationPayment($mpPayment);
     }
 
     /**
