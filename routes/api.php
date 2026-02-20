@@ -54,6 +54,7 @@ Route::middleware(['api'])->group(function () {
 
         Route::post('/', [UserController::class,'create']);
         Route::get('/me', [UserController::class,'show']);
+        Route::get('/{id}/badges', [UserController::class,'badges']);
         Route::get('/bank-data', [UserController::class,'bankData']);
         Route::get('/terms', [UserController::class,'terms']);
         Route::get('/{name?}', [UserController::class,'show']);

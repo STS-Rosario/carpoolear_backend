@@ -3,8 +3,10 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use STS\Http\ExceptionWithErrors;
+use STS\Http\Resources\UserBadgeResource;
 use STS\Models\Donation;
 use STS\Models\DeleteAccountRequest;
+use STS\Models\User;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Services\Logic\UsersManager;
@@ -134,6 +136,26 @@ class UserController extends Controller
         }
 
         return $this->item($profile, new ProfileTransformer($me));
+    }
+
+    /**
+     * Get visible badges for a user.
+     */
+    public function badges($id = null)
+    {
+        $me = auth()->user();
+        if (!($id > 0) || $id === 'me') {
+            $id = $me->id;
+        }
+        $user = User::find($id);
+        if (!$user) {
+            throw new ExceptionWithErrors('User not found.');
+        }
+        $badges = $user->badges()
+            ->where('visible', true)
+            ->get();
+
+        return UserBadgeResource::collection($badges);
     }
 
     public function index(Request $request)
