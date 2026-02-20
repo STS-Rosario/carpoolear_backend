@@ -267,7 +267,7 @@ class ConversationsManager extends BaseManager
                                 if ($m['user_id'] != $initiator['user_id']) {
                                     $date = Carbon::parse($initiator['created_at']);
                                     $dateLate = Carbon::parse($m['created_at']);
-                                    $diff = $date->diffInSeconds($dateLate);
+                                    $diff = (int) $date->diffInSeconds($dateLate);
                                     $to = $user;
                                     if (!isset($to->answer_delay_sum) || is_null($to->answer_delay_sum)) {
                                         $to->answer_delay_sum = 0;

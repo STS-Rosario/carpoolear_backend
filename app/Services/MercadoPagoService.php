@@ -18,6 +18,14 @@ class MercadoPagoService
     public function __construct()
     {
         $this->accessToken = config('services.mercadopago.access_token');
+        if (!empty($this->accessToken)) {
+            MercadoPagoConfig::setAccessToken($this->accessToken);
+            $this->client = new PreferenceClient();
+        }
+    }
+
+    private function ensureConfigured(): void
+    {
         if (empty($this->accessToken)) {
             throw new \Exception('MercadoPago access token is not configured');
         }
@@ -31,6 +39,7 @@ class MercadoPagoService
      */
     public function createPaymentPreference(array $preferenceData)
     {
+        $this->ensureConfigured();
         try {
             $requestOptions = new RequestOptions();
             $requestOptions->setAccessToken($this->accessToken);

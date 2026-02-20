@@ -405,8 +405,8 @@ class UsersManager extends BaseManager
             $cooldownMinutes = 5;
             $lastReset = $this->repo->getLastPasswordReset($user->email);
             
-            if ($lastReset && $lastReset->created_at->diffInMinutes(now()) < $cooldownMinutes) {
-                $remainingMinutes = $cooldownMinutes - $lastReset->created_at->diffInMinutes(now());
+            if ($lastReset && (int) $lastReset->created_at->diffInMinutes(now()) < $cooldownMinutes) {
+                $remainingMinutes = $cooldownMinutes - (int) $lastReset->created_at->diffInMinutes(now());
                 $this->setErrors(['error' => "Please wait {$remainingMinutes} minutes before requesting another password reset"]);
                 
                 \Log::info("Password reset cooldown active for user {$user->email}, remaining: {$remainingMinutes} minutes");
