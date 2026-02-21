@@ -2,6 +2,7 @@
 
 namespace STS\Services\Logic;
 
+use STS\Models\BannedUser;
 use STS\Models\Passenger;
 use STS\Models\User;
 use STS\Models\Car;
@@ -198,7 +199,21 @@ class UsersManager extends BaseManager
         if ($v->fails()) {
             $this->setErrors($v->errors());
             return;
-        } else {
+        }
+
+        // Check if nro_doc is banned (only on user update, not registration)
+        if (!$is_admin && isset($data['nro_doc']) && !empty(trim((string) $data['nro_doc']))) {
+            $nroDoc = preg_replace('/\D/', '', (string) $data['nro_doc']);
+            if (!empty($nroDoc) && BannedUser::where('nro_doc', $nroDoc)->exists()) {
+                \Log::warning('Intento de usar DNI banneado', [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                ]);
+                $this->setErrors(['error' => 'banned_dni']);
+                return;
+            }
+        }
+
             if (isset($data['password'])) {
                 $data['password'] = bcrypt($data['password']);
             }
@@ -259,7 +274,6 @@ class UsersManager extends BaseManager
             event(new UpdateEvent($user->id));
 
             return $user;
-        }
     }
 
     public function mailUnsuscribe($email)

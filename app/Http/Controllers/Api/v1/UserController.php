@@ -6,22 +6,37 @@ use STS\Http\ExceptionWithErrors;
 use STS\Http\Resources\UserBadgeResource;
 use STS\Models\Donation;
 use STS\Models\DeleteAccountRequest;
+use STS\Models\Rating;
 use STS\Models\User;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Services\AnonymizationService;
+use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
+use STS\Services\UserDeletionService;
 use STS\Transformers\ProfileTransformer;
 use STS\Jobs\SendDeleteAccountRequestEmail;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserController extends Controller
 {
     protected $userLogic;
+    protected $deviceLogic;
+    protected $userDeletionService;
+    protected $anonymizationService;
 
-    public function __construct(UsersManager $userLogic)
-    {
+    public function __construct(
+        UsersManager $userLogic,
+        DeviceManager $deviceLogic,
+        UserDeletionService $userDeletionService,
+        AnonymizationService $anonymizationService
+    ) {
         $this->middleware('logged')->except(['create', 'registerDonation', 'bankData', 'terms']);
         $this->middleware('logged.optional')->only(['create', 'registerDonation', 'bankData', 'terms']);
         $this->userLogic = $userLogic;
+        $this->deviceLogic = $deviceLogic;
+        $this->userDeletionService = $userDeletionService;
+        $this->anonymizationService = $anonymizationService;
     }
 
     public function create(Request $request)
@@ -262,5 +277,68 @@ class UserController extends Controller
             'message' => 'Delete account request created successfully',
             'request_id' => $deleteRequest->id
         ], 201);
+    }
+
+    /**
+     * Automated account deletion or anonymization based on user data.
+     * Does not create DeleteAccountRequest. Logs the action.
+     */
+    public function deleteAccount(Request $request)
+    {
+        $user = auth()->user();
+        $token = JWTAuth::getToken();
+
+        $hasTrips = $user->trips()->exists() || $user->tripsAsPassenger()->exists();
+        $hasRatings = $user->ratingReceived()->exists() || $user->ratingGiven()->exists();
+        $hasReferences = $user->referencesReceived()->exists();
+        $hasNegativeRatings = $user->ratings(Rating::STATE_NEGATIVO)->exists();
+
+        if ($hasNegativeRatings) {
+            return response()->json([
+                'message' => 'Debido a que tenés calificaciones negativas necesitamos que te pongas en contacto con la mesa de ayuda para proceder con el borrado de tu cuenta',
+                'error' => 'negative_ratings',
+            ], 422);
+        }
+
+        if (!$hasTrips && !$hasRatings && !$hasReferences) {
+            // Branch A: Delete user
+            $userId = $user->id;
+            $this->deviceLogic->logoutAllDevices($user);
+            $this->userDeletionService->deleteUser($user);
+
+            try {
+                if ($token) {
+                    JWTAuth::invalidate($token);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to invalidate JWT after delete: ' . $e->getMessage());
+            }
+
+            \Log::info('User self-deletion: actual_delete', ['user_id' => $userId]);
+
+            return response()->json([
+                'message' => 'Cuenta eliminada exitosamente',
+                'action' => 'deleted',
+            ]);
+        }
+
+        // Branch B: Anonymize user
+        $this->deviceLogic->logoutAllDevices($user);
+        $this->anonymizationService->anonymize($user);
+
+        try {
+            if ($token) {
+                JWTAuth::invalidate($token);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to invalidate JWT after anonymize: ' . $e->getMessage());
+        }
+
+        \Log::info('User self-deletion: anonymize', ['user_id' => $user->id]);
+
+        return response()->json([
+            'message' => 'Cuenta anonimizada exitosamente',
+            'action' => 'anonymized',
+        ]);
     }
 }
