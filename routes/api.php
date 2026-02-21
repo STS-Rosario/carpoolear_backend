@@ -14,6 +14,9 @@ use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Http\Controllers\Api\v1\UserController;
 use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
+use STS\Http\Controllers\Api\v1\MercadoPagoOAuthController;
+use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
+use STS\Http\Controllers\Api\v1\ManualValidationPaymentController;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
@@ -22,6 +25,8 @@ use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
+use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 
@@ -37,6 +42,11 @@ Route::middleware(['api'])->group(function () {
     Route::post('reset-password', [AuthController::class, 'reset'])->middleware('throttle:password-reset');
     Route::post('change-password/{token?}', [AuthController::class, 'changePasswod']);
     Route::post('log', [AuthController::class, 'log']);
+
+    // Mercado Pago OAuth callback (public; validated via state)
+    Route::get('mercadopago/oauth/callback', [MercadoPagoOAuthController::class, 'callback']);
+    // Manual validation payment success redirect (public)
+    Route::get('mercadopago/manual-validation-success', [ManualValidationPaymentController::class, 'success']);
 
     Route::prefix('users')->group( function () {
         Route::get('/ratings', [RatingController::class,'ratings']);
@@ -57,6 +67,12 @@ Route::middleware(['api'])->group(function () {
         Route::get('/{id}/badges', [UserController::class,'badges']);
         Route::get('/bank-data', [UserController::class,'bankData']);
         Route::get('/terms', [UserController::class,'terms']);
+        Route::get('/mercadopago-oauth-url', [UserController::class, 'getMercadoPagoOAuthUrl']);
+        Route::get('/manual-identity-validation-cost', [ManualIdentityValidationController::class, 'cost']);
+        Route::get('/manual-identity-validation', [ManualIdentityValidationController::class, 'status']);
+        Route::post('/manual-identity-validation/preference', [ManualIdentityValidationController::class, 'createPreference']);
+        Route::post('/manual-identity-validation/qr-order', [ManualIdentityValidationController::class, 'createQrOrder']);
+        Route::post('/manual-identity-validation', [ManualIdentityValidationController::class, 'submit']);
         Route::get('/{name?}', [UserController::class,'show']);
         Route::get('/{id?}/ratings', [RatingController::class,'ratings']);
         Route::put('/', [UserController::class,'update']);
@@ -187,8 +203,20 @@ Route::middleware(['api'])->group(function () {
         Route::post('users/{user}/delete', [AdminUserController::class, 'delete']);
         Route::post('users/{user}/anonymize', [AdminUserController::class, 'anonymize']);
         Route::post('users/{user}/ban-and-anonymize', [AdminUserController::class, 'banAndAnonymize']);
+        Route::post('users/{user}/clear-identity-validation', [AdminUserController::class, 'clearIdentityValidation']);
         Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
         Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
+        // Manual identity validations (image route before {id} so /image/{type} is matched)
+        Route::get('manual-identity-validations', [AdminManualIdentityValidationController::class, 'index']);
+        Route::get('manual-identity-validations/{id}/image/{type}', [AdminManualIdentityValidationController::class, 'image'])->where('type', 'front|back|selfie');
+        Route::get('manual-identity-validations/{id}', [AdminManualIdentityValidationController::class, 'show']);
+        Route::post('manual-identity-validations/{id}/review', [AdminManualIdentityValidationController::class, 'review']);
+        Route::post('manual-identity-validations/{id}/purge', [AdminManualIdentityValidationController::class, 'purge']);
+        // Mercado Pago rejected validations (OAuth validation failures)
+        Route::get('mercado-pago-rejected-validations', [AdminMercadoPagoRejectedValidationController::class, 'index']);
+        Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
+        Route::post('mercado-pago-rejected-validations/{id}/review', [AdminMercadoPagoRejectedValidationController::class, 'review']);
+        Route::post('mercado-pago-rejected-validations/{id}/approve', [AdminMercadoPagoRejectedValidationController::class, 'approve']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');

@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'name_app' => env('NAME_APP', 'Carpoolear'),
     'donation_month_days' => env('DONATION_MONTH_DAYS', '0'),
     'donation_trips_count' => env('DONATION_TRIPS_COUNT', '20'),
     'donation_trips_offset' => env('DONATION_TRIPS_OFFSET', '0'),
@@ -26,12 +27,23 @@ return [
     'module_trip_creation_payment_enabled' => env('MODULE_TRIP_CREATION_PAYMENT_ENABLED', false),
     'module_trip_creation_payment_amount_cents' => (int) env('MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS', 1500),
     'module_trip_creation_payment_trips_threshold' => (int)env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
+    // Frontend app base URL (e.g. for payment redirects, OAuth callbacks). Defaults to APP_URL.
+    'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost:8080')),
     'module_seat_price_enabled' => env('MODULE_SEAT_PRICE_ENABLED', false),
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
     'module_max_price_fuel_price' => (int) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
     'module_max_price_price_variance_tolls' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
     'module_max_price_price_variance_max_extra' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
     'module_max_price_kilometer_by_liter' => (int) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
+
+    'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
+
+    // Identity validation: enable/disable MP OAuth and manual validation (frontend shows only enabled options)
+    'identity_validation_mercado_pago_enabled' => env('IDENTITY_VALIDATION_MERCADO_PAGO_ENABLED', false),
+    'identity_validation_manual_enabled' => env('IDENTITY_VALIDATION_MANUAL_ENABLED', false),
+    // QR payment for manual validation (no physical device needed; see docs in config or README)
+    'identity_validation_manual_qr_enabled' => env('IDENTITY_VALIDATION_MANUAL_QR_ENABLED', false),
+    'qr_payment_pos_external_id' => env('MERCADO_PAGO_QR_PAYMENT_POS_EXTERNAL_ID', ''),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words_names' => [

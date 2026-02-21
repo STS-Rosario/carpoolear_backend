@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
 use STS\Services\MercadoPagoService;
 use STS\Models\RouteCache;
+use STS\Models\PaymentAttempt;
 
 class TripRepository
 {
@@ -128,9 +129,8 @@ class TripRepository
 
         $this->generateTripPath($trip);
 
-        $originToCheck = [$points[0]['lat'], $points[0]['lng']];
-        $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
-        $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+        $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+        $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
         \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
 
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
@@ -139,7 +139,7 @@ class TripRepository
             $trip->state = Trip::STATE_AWAITING_PAYMENT;
             
             // Create MercadoPago payment preference
-            $preference = $this->mercadoPagoService->createPaymentPreference($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+            $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
             $trip->payment_id = $preference->id;
             $trip->needs_sellado = true;
             
@@ -196,11 +196,98 @@ class TripRepository
             $points = $data['points'];
             unset($data['points']);
         }
+        
+        // Store old points to compare if route changed from non-paid to paid
+        $oldPoints = null;
+        $oldRouteNeedsPayment = false;
+        if ($points) {
+            $oldPoints = $trip->points()->orderBy('id')->get();
+            if ($oldPoints->count() >= 2) {
+                $oldPointsToCheck = $oldPoints->map(fn ($p) => [$p->lat, $p->lng])->values()->all();
+                $oldRouteNeedsPayment = $this->geoService->doStopsRequireSellado($oldPointsToCheck);
+            }
+        }
+        
+        // Get trip info for price calculations and route data if points are being updated
+        $tripInfo = null;
+        if ($points) {
+            $tripInfo = $this->getTripInfo($points);
+            
+            // Calculate maximum allowed price if seat_price_cents is provided
+            if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
+                $total_seats = $data['total_seats'] ?? $trip->total_seats;
+                $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
+
+                if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                    if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
+                        \Log::info('TripRepository::update seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
+                        $data['seat_price_cents'] = $maximum_seat_price_cents;
+                    }
+                }
+            }
+        }
+        
         $trip->update($data);
+        
+        // Save recommended trip price if available from trip info
+        if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
+            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+            $trip->save();
+        }
+        
         if ($points) {
             $this->deletePoints($trip);
             $this->addPoints($trip, $points);
             $this->generateTripPath($trip);
+            
+            // Check if the updated route needs payment (2+ stops in paid zones)
+            $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+            $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
+            \Log::info('TripRepository::update routeNeedsPayment', [$routeNeedsPayment, 'oldRouteNeedsPayment' => $oldRouteNeedsPayment]);
+
+            $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+            
+            // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
+            if (config('carpoolear.module_trip_creation_payment_enabled') &&
+                $routeNeedsPayment &&
+                !$oldRouteNeedsPayment &&
+                $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold') &&
+                $trip->state !== Trip::STATE_AWAITING_PAYMENT) {
+
+                // User already paid Sellado for this trip (check payment record, not just state + payment_id)
+                $selladoAlreadyPaid = PaymentAttempt::where('trip_id', $trip->id)
+                    ->where('payment_status', PaymentAttempt::STATUS_COMPLETED)
+                    ->exists();
+
+                if ($selladoAlreadyPaid) {
+                    // Just mark that route needs Sellado again; do not charge again
+                    $trip->needs_sellado = true;
+                    $trip->save();
+                } else {
+                    $trip->state = Trip::STATE_AWAITING_PAYMENT;
+
+                    // Only create payment preference if one doesn't exist
+                    if (!$trip->payment_id) {
+                        // Create MercadoPago payment preference
+                        $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+                        $trip->payment_id = $preference->id;
+                        $trip->payment_url = $preference->init_point;
+                    }
+
+                    $trip->needs_sellado = true;
+                    $trip->save();
+                }
+            } elseif (config('carpoolear.module_trip_creation_payment_enabled') && !$routeNeedsPayment) {
+                // Route was edited so it no longer needs Sellado (fewer than 2 points in paid zone)
+                $trip->needs_sellado = false;
+                $paymentStates = [Trip::STATE_AWAITING_PAYMENT, Trip::STATE_PENDING_PAYMENT, Trip::STATE_PAYMENT_FAILED];
+                if (in_array($trip->state, $paymentStates)) {
+                    $trip->payment_id = null;
+                    $trip->payment_url = null;
+                    $trip->state = Trip::STATE_READY;
+                }
+                $trip->save();
+            }
         }
 
         return $trip;
@@ -603,10 +690,9 @@ class TripRepository
             $duration = $route['duration'];
             $co2 = $distanceInMeters * 0.15;
 
-            // check if the user needs to pay for the trip
-            $originToCheck = [$points[0]['lat'], $points[0]['lng']];
-            $destinationToCheck = [$points[1]['lat'], $points[1]['lng']];
-            $routeNeedsPayment = $this->geoService->arePointsInPaidRoutes($originToCheck, $destinationToCheck);
+            // check if the user needs to pay for the trip (2+ stops in paid zones)
+            $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+            $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
             // calculate price based on distance, fuel price, kilometers per liter
             $fuelPrice = config('carpoolear.module_max_price_fuel_price');
