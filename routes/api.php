@@ -65,6 +65,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/donation', [UserController::class,'registerDonation']);
         Route::any('/change/{property?}/{value?}', [UserController::class,'changeBooleanProperty']);
         Route::post('/delete-account-request', [UserController::class,'deleteAccountRequest']);
+        Route::post('/delete-account', [UserController::class,'deleteAccount']);
     });
  
     Route::prefix('notifications')->group( function () {
@@ -182,6 +183,10 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('cars', AdminCarController::class);
         Route::get('users/account-delete-list', [AdminUserController::class, 'accountDeleteList']);
         Route::post('users/account-delete-update', [AdminUserController::class, 'accountDeleteUpdate']);
+        Route::get('banned-users', [AdminUserController::class, 'bannedUsersList']);
+        Route::post('users/{user}/delete', [AdminUserController::class, 'delete']);
+        Route::post('users/{user}/anonymize', [AdminUserController::class, 'anonymize']);
+        Route::post('users/{user}/ban-and-anonymize', [AdminUserController::class, 'banAndAnonymize']);
         Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
         Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
     });
