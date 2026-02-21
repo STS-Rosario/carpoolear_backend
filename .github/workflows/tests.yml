@@ -48,8 +48,9 @@ jobs:
         run: |
           cp .env.example .env
           php artisan key:generate
+          php artisan jwt:secret --force
 
-      - name: Run migrations and seed
+      - name: Run migrations
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -57,9 +58,7 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: |
-          php artisan migrate --force
-          php artisan db:seed --class=TestingSeeder --force
+        run: php artisan migrate --force
 
       - name: Run tests
         env:
