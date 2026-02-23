@@ -124,7 +124,6 @@ class ScheduleTest extends TestCase
             'messages:email',
             'users:calculate-active-per-month',
             'auth:cleanup-reset-tokens',
-            'inspire',
         ];
 
         foreach (array_keys($events) as $command) {
