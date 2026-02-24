@@ -20,7 +20,11 @@ class TestingSeeder extends Seeder
             if ($i === 0) {
                 $data['is_admin'] = true;
             }
-            $users[] = User::factory()->create($data);
+            $user = User::factory()->create($data);
+            $user->description = 'Test user ' . $i . ' for e2e testing';
+            $user->image = 'default.png';
+            $user->save();
+            $users[] = $user;
         }
 
         // for ($i = 0; $i < 10; $i++) {
