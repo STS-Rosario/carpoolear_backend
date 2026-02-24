@@ -16,7 +16,11 @@ class TestingSeeder extends Seeder
     {
         $users = [];
         for ($i = 0; $i < 10; $i++) {
-            $users[] = User::factory()->create(['email' => 'user' . $i . '@g.com']);
+            $data = ['email' => 'user' . $i . '@g.com'];
+            if ($i === 0) {
+                $data['is_admin'] = true;
+            }
+            $users[] = User::factory()->create($data);
         }
 
         // for ($i = 0; $i < 10; $i++) {
