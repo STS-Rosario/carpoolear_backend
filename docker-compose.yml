@@ -17,6 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build: .
+    volumes:
+      - ./:/var/www
+    depends_on:
+      mysql:
+        condition: service_healthy
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan db:seed --class=TestingSeeder --force"
+    env_file:
+      - .env
+
   app:
     build: .
     volumes:
@@ -24,6 +37,8 @@ services:
     ports:
       - 8000:8000
     depends_on:
-      mysql:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     entrypoint: php artisan serve --host=0.0.0.0
+    env_file:
+      - .env
