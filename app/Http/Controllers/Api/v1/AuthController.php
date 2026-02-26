@@ -53,6 +53,7 @@ class AuthController extends Controller
             'banner_url',
             'banner_image',
             'qr_payment_pos_external_id', // backend only; frontend gets identity_validation_manual_qr_enabled
+            'identity_validation_new_users_date', // backend only; frontend gets identity_validation_required_new_users
         ];
         $allConfigs = config('carpoolear');
         \Log::info('Environment Check:', [

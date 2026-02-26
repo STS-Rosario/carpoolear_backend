@@ -33,6 +33,8 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
+        // Incoming Webhook URL for #carpoolear_mesa-de-ayuda (banned DNI attempts, etc.)
+        'banned_dni_webhook_url' => env('SLACK_BANNED_DNI_WEBHOOK_URL'),
     ],
     
     'mercadopago' => [

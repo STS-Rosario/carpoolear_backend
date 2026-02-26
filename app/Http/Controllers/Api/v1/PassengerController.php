@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller; 
 use STS\Http\ExceptionWithErrors;
+use STS\Helpers\IdentityValidationHelper;
 use STS\Services\Logic\PassengersManager;
 use STS\Transformers\PassengerTransformer;
 
@@ -63,6 +64,9 @@ class PassengerController extends Controller
     public function newRequest($tripId, Request $request)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $data = $request->all();
 
         $request = $this->passengerLogic->newRequest($tripId, $this->user, $data);
@@ -96,6 +100,9 @@ class PassengerController extends Controller
     public function acceptRequest($tripId, $userId, Request $request)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $data = $request->all();
 
         $request = $this->passengerLogic->acceptRequest($tripId, $userId, $this->user, $data);
@@ -125,6 +132,9 @@ class PassengerController extends Controller
     public function rejectRequest($tripId, $userId, Request $request)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $data = $request->all();
 
         $request = $this->passengerLogic->rejectRequest($tripId, $userId, $this->user, $data);

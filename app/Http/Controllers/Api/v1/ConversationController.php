@@ -9,7 +9,8 @@ use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\UsersManager;
 use STS\Transformers\MessageTransformer;
 use STS\Transformers\ProfileTransformer; 
-use STS\Transformers\ConversationsTransformer;  
+use STS\Transformers\ConversationsTransformer;
+use STS\Helpers\IdentityValidationHelper;  
 
 class ConversationController extends Controller
 {
@@ -63,6 +64,9 @@ class ConversationController extends Controller
     public function create(Request $request)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $to = $request->get('to');
         $tripId = $request->get('tripId');
         if ($to) {
@@ -107,6 +111,9 @@ class ConversationController extends Controller
     public function send(Request $request, $id)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $message = $request->get('message');
         if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
             return $this->item($m, new MessageTransformer($this->user));
@@ -181,6 +188,9 @@ class ConversationController extends Controller
     public function multiSend(Request $request)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $message = $request->get('message');
         $users = $request->get('users');
         if ($m = $this->conversationLogic->sendToAll($this->user, $users, $message)) {

@@ -28,6 +28,7 @@ class ManualIdentityValidationController extends Controller
                     'user_name' => $item->user ? $item->user->name : null,
                     'paid_at' => $item->paid_at ? $item->paid_at->toDateTimeString() : null,
                     'submitted_at' => $item->submitted_at ? $item->submitted_at->toDateTimeString() : null,
+                    'manual_validation_started_at' => $item->manual_validation_started_at ? $item->manual_validation_started_at->toDateTimeString() : null,
                     'paid' => $item->paid,
                     'review_status' => $item->review_status,
                     'has_images' => $item->hasImages(),
@@ -42,7 +43,7 @@ class ManualIdentityValidationController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $item = ManualIdentityValidation::with('user:id,name,nro_doc')->findOrFail($id);
+        $item = ManualIdentityValidation::with('user:id,name,nro_doc', 'reviewedBy:id,name')->findOrFail($id);
 
         $baseUrl = rtrim(config('app.url'), '/');
         $imageUrl = fn ($type) => $baseUrl . '/api/admin/manual-identity-validations/' . $id . '/image/' . $type;
@@ -60,6 +61,7 @@ class ManualIdentityValidationController extends Controller
                 'review_note' => $item->review_note,
                 'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
                 'reviewed_by' => $item->reviewed_by,
+                'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
                 'front_image_url' => $item->front_image_path ? $imageUrl('front') : null,
                 'back_image_url' => $item->back_image_path ? $imageUrl('back') : null,
                 'selfie_image_url' => $item->selfie_image_path ? $imageUrl('selfie') : null,
@@ -116,6 +118,9 @@ class ManualIdentityValidationController extends Controller
         }
 
         $admin = auth()->user();
+        if ($item->manual_validation_started_at === null) {
+            $item->manual_validation_started_at = now();
+        }
         $item->review_status = $validated['action'] === 'approve' ? 'approved' : ($validated['action'] === 'reject' ? 'rejected' : 'pending');
         $item->reviewed_by = $admin->id;
         $item->reviewed_at = now();

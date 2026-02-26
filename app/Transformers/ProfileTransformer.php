@@ -8,6 +8,7 @@ use STS\Repository\TripRepository;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\UsersManager;
 use STS\Repository\UserRepository;
+use STS\Helpers\IdentityValidationHelper;
 use STS\Services\GeoService;
 use STS\Services\MercadoPagoService;
 
@@ -72,6 +73,10 @@ class ProfileTransformer extends TransformerAbstract
             'identity_validation_type' => $user->identity_validation_type,
         ];
 
+        if ($this->user && $user->id == $this->user->id) {
+            $data['identity_validation_required_for_user'] = IdentityValidationHelper::isNewUserRequiringValidation($user);
+            $data['validate_by_date'] = $user->validate_by_date ? $user->validate_by_date->format('Y-m-d') : null;
+        }
         if ($this->user && ($user->id == $this->user->id || $this->user->is_admin)) {
             $data['emails_notifications'] = $user->emails_notifications;
             $data['is_admin'] = $user->is_admin;

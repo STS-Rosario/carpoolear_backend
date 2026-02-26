@@ -32,9 +32,11 @@ class MercadoPagoService
     public function createPaymentPreference(array $preferenceData)
     {
         try {
+            \Log::info('MercadoPago Preference request payload', ['payload' => $preferenceData]);
+
             $requestOptions = new RequestOptions();
             $requestOptions->setAccessToken($this->accessToken);
-            
+
             $preference = $this->client->create($preferenceData, $requestOptions);
             return $preference;
         } catch (MPApiException $e) {
@@ -57,6 +59,9 @@ class MercadoPagoService
         }
 
         $baseUrl = rtrim(config('carpoolear.frontend_url'), '/');
+        if ($baseUrl === '') {
+            throw new \InvalidArgumentException('carpoolear.frontend_url must be set for MercadoPago sellado (auto_return requires valid back_urls.success)');
+        }
         $selladoUrls = [
             "success" => $baseUrl . '/app/trips/' . $trip->id,
             "failure" => $baseUrl . '/app/trips/' . $trip->id,
@@ -72,7 +77,6 @@ class MercadoPagoService
                 ]
             ],
             "back_urls" => $selladoUrls,
-            "back_url" => $selladoUrls,
             "auto_return" => "approved",
             'external_reference' => $this->createHashedExternalReferenceForSellado((int) $trip->id)
         ];
@@ -87,10 +91,14 @@ class MercadoPagoService
     {
         $campaign = Campaign::findOrFail($campaignId);
         
+        $baseUrl = rtrim(config('app.url'), '/');
+        if ($baseUrl === '') {
+            throw new \InvalidArgumentException('APP_URL must be set for MercadoPago campaign donations (auto_return requires valid back_urls.success)');
+        }
         $campaignUrls = [
-            "success" => config('app.url') . "/campaigns/{$campaign->slug}?result=success",
-            "failure" => config('app.url') . "/campaigns/{$campaign->slug}?result=failed",
-            "pending" => config('app.url') . "/campaigns/{$campaign->slug}?result=pending",
+            "success" => $baseUrl . "/campaigns/{$campaign->slug}?result=success",
+            "failure" => $baseUrl . "/campaigns/{$campaign->slug}?result=failed",
+            "pending" => $baseUrl . "/campaigns/{$campaign->slug}?result=pending",
         ];
         $preferenceData = [
             "items" => [
@@ -102,7 +110,6 @@ class MercadoPagoService
                 ]
             ],
             "back_urls" => $campaignUrls,
-            "back_url" => $campaignUrls,
             "auto_return" => "approved",
             'external_reference' => $this->createHashedExternalReferenceForCampaignDonation(
                 $campaign->id,
@@ -201,8 +208,6 @@ class MercadoPagoService
                 ],
             ],
             'back_urls' => $urls,
-            // API sometimes expects back_url (singular) when auto_return is set
-            'back_url' => $urls,
             'auto_return' => 'approved',
             'external_reference' => 'manual_validation:' . $requestId,
         ];

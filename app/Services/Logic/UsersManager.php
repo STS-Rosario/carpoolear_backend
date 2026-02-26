@@ -15,6 +15,7 @@ use STS\Repository\FileRepository;
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent; 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use STS\Mail\ResetPassword;
 use STS\Jobs\SendPasswordResetEmail;
@@ -209,6 +210,19 @@ class UsersManager extends BaseManager
                     'user_id' => $user->id,
                     'user_name' => $user->name,
                 ]);
+                $webhookUrl = config('services.slack.banned_dni_webhook_url');
+                if (!empty($webhookUrl)) {
+                    $profileLink = rtrim(config('carpoolear.frontend_url'), '/') . '#/profile/' . $user->id;
+                    $slackMessage = "@channel Intento de uso de DNI banneado: {$nroDoc} en user ID: {$user->id} Link al perfil: {$profileLink}";
+                    try {
+                        $response = Http::timeout(3)->post($webhookUrl, ['text' => $slackMessage]);
+                        if (!$response->successful()) {
+                            \Log::warning('Slack banned DNI webhook failed', ['status' => $response->status(), 'body' => $response->body()]);
+                        }
+                    } catch (\Throwable $e) {
+                        \Log::warning('Slack banned DNI webhook failed', ['error' => $e->getMessage()]);
+                    }
+                }
                 $this->setErrors(['error' => 'banned_dni']);
                 return;
             }

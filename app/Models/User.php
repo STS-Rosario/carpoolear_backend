@@ -68,6 +68,7 @@ class User extends Authenticatable implements JWTSubject
         'identity_validation_type',
         'identity_validation_rejected_at',
         'identity_validation_reject_reason',
+        'validate_by_date',
     ];
 
     protected function casts(): array
@@ -90,6 +91,7 @@ class User extends Authenticatable implements JWTSubject
             'identity_validated' => 'boolean',
             'identity_validated_at' => 'datetime',
             'identity_validation_rejected_at' => 'datetime',
+            'validate_by_date' => 'date',
         ];
     }
  
