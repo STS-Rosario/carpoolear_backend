@@ -75,6 +75,7 @@ class ProfileTransformer extends TransformerAbstract
 
         if ($this->user && $user->id == $this->user->id) {
             $data['identity_validation_required_for_user'] = IdentityValidationHelper::isNewUserRequiringValidation($user);
+            $data['validate_by_date'] = $user->validate_by_date ? $user->validate_by_date->format('Y-m-d') : null;
         }
         if ($this->user && ($user->id == $this->user->id || $this->user->is_admin)) {
             $data['emails_notifications'] = $user->emails_notifications;

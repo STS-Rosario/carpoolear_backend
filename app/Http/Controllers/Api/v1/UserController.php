@@ -152,6 +152,16 @@ class UserController extends Controller
             throw new ExceptionWithErrors('Users not found.', $this->userLogic->getErrors());
         }
 
+        // Set validate_by_date for current users who don't have it when grace days are configured
+        if ($profile->id === $me->id) {
+            $days = config('carpoolear.identity_validation_days_for_current_users', 0);
+            if ($days > 0 && $profile->validate_by_date === null) {
+                $profile->validate_by_date = now()->addDays($days);
+                $profile->save();
+                $profile = $profile->fresh();
+            }
+        }
+
         return $this->item($profile, new ProfileTransformer($me));
     }
 

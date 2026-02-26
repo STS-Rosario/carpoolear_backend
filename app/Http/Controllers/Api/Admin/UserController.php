@@ -93,7 +93,6 @@ class UserController extends Controller
             'data' => $user->fresh(['id', 'name', 'nro_doc', 'identity_validated', 'identity_validated_at', 'identity_validation_type']),
         ]);
     }
-}
 
     /**
      * Get list of banned users, sorted by banned_at DESC.

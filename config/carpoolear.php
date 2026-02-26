@@ -44,6 +44,8 @@ return [
     // Require identity validation for new users (created on or after identity_validation_new_users_date) to send messages, request seats, accept/reject passengers, create trips
     'identity_validation_required_new_users' => env('IDENTITY_VALIDATION_REQUIRED_NEW_USERS', false),
     'identity_validation_new_users_date' => env('IDENTITY_VALIDATION_NEW_USERS_DATE', null),
+    // When set (positive integer), current users without validate_by_date get it set to now + N days on /users/me
+    'identity_validation_days_for_current_users' => (int) env('IDENTITY_VALIDATION_DAYS_FOR_CURRENT_USERS', 0),
     // QR payment for manual validation (no physical device needed; see docs in config or README)
     'identity_validation_manual_qr_enabled' => env('IDENTITY_VALIDATION_MANUAL_QR_ENABLED', false),
     'qr_payment_pos_external_id' => env('MERCADO_PAGO_QR_PAYMENT_POS_EXTERNAL_ID', ''),
