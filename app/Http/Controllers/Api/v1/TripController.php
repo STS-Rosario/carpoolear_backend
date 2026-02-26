@@ -7,6 +7,7 @@ use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\TripsManager;
 use STS\Transformers\TripTransformer;
+use STS\Helpers\IdentityValidationHelper;
 use STS\Repository\TripSearchRepository;
 
 class TripController extends Controller
@@ -27,6 +28,9 @@ class TripController extends Controller
     public function create(Request $request)
     {
         $this->user = auth()->user();
+        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+            throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
+        }
         $data = $request->all();
         $trip = $this->tripsLogic->create($this->user, $data);
         if (! $trip) {
