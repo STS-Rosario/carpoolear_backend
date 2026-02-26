@@ -26,6 +26,7 @@ class ManualIdentityValidation extends Model
         'reviewed_by',
         'reviewed_at',
         'review_note',
+        'manual_validation_started_at',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class ManualIdentityValidation extends Model
             'submitted_at' => 'datetime',
             'paid_at' => 'datetime',
             'reviewed_at' => 'datetime',
+            'manual_validation_started_at' => 'datetime',
         ];
     }
 
