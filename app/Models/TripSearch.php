@@ -27,12 +27,6 @@ class TripSearch extends Model
         'is_passenger' => 'boolean'
     ];
 
-    protected $dates = [
-        'search_date',
-        'created_at',
-        'updated_at'
-    ];
-
     // Client platform constants
     const PLATFORM_WEB = 0;
     const PLATFORM_IOS = 1;

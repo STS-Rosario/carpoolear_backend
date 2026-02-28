@@ -4,6 +4,7 @@ namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class CleanupPasswordResetTokens extends Command
@@ -40,13 +41,15 @@ class CleanupPasswordResetTokens extends Command
         $this->info("Deleted {$deletedCount} expired password reset tokens.");
         
         // Also clean up failed jobs related to email sending
-        $failedEmailJobs = DB::table('failed_jobs')
-            ->where('payload', 'like', '%SendPasswordResetEmail%')
-            ->where('failed_at', '<', $cutoffTime)
-            ->delete();
-            
-        if ($failedEmailJobs > 0) {
-            $this->info("Also cleaned up {$failedEmailJobs} failed email jobs.");
+        if (Schema::hasTable('failed_jobs')) {
+            $failedEmailJobs = DB::table('failed_jobs')
+                ->where('payload', 'like', '%SendPasswordResetEmail%')
+                ->where('failed_at', '<', $cutoffTime)
+                ->delete();
+
+            if ($failedEmailJobs > 0) {
+                $this->info("Also cleaned up {$failedEmailJobs} failed email jobs.");
+            }
         }
     }
 }

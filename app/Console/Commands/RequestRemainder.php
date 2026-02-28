@@ -52,7 +52,7 @@ class RequestRemainder extends Command
         $trips = $trips->get();
 
         foreach ($trips as $trip) {
-            $days = $now->diffInDays($trip->trip_date);
+            $days = (int) $now->diffInDays($trip->trip_date);
             $weeks = $days / 7;
             if ($weeks < 1) { // Last Week
                 event(new RequestRemainderEvent($trip));
