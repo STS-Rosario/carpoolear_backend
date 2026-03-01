@@ -72,9 +72,6 @@ class UserController extends Controller
     {
         $me = auth()->user();
         $data = $request->all();
-        if (isset($data['email'])) {
-            unset($data['email']);
-        }
         $is_driver = config('carpoolear.module_validated_drivers', false) && (isset($data['user_be_driver']) || $me->driver_is_verified);
         // var_dump($is_driver);die;
         $profile = $this->userLogic->update($me, $data, $is_driver);
@@ -252,12 +249,12 @@ class UserController extends Controller
     public function changeBooleanProperty($property, $value, Request $request)
     {
         $user = auth()->user();
-        $user->$property = $value > 0;
-        $user->save();
-        $profile = $this->userLogic->show($user, $user->id);
+        $profile = $this->userLogic->update($user, [$property => $value > 0 ? 1 : 0], false, false);
+        if (!$profile) {
+            throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
+        }
 
         return $this->item($profile, new ProfileTransformer($user));
-
     }
 
     /**
