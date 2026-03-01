@@ -94,16 +94,32 @@ class ApiAuthTest extends TestCase
         $this->actingAs($user, 'api');
 
         $data = [
-            'name' => 'Mariano Botta',
+            'description' => 'Test description',
         ];
         $response = $this->call('PUT', 'api/users', $data);
 
         $userUpdated = $this->parseJson($response);
         $this->assertTrue($response->status() == 200);
-        $this->assertEquals($userUpdated->data->name, $data['name']);
+        $this->assertEquals($userUpdated->data->description, $data['description']);
 
         $u2 = \STS\Models\User::find($id);
-        $this->assertEquals($userUpdated->data->name, $u2->name);
+        $this->assertEquals($userUpdated->data->description, $u2->description);
+    }
+
+    public function testUpdateProfileBlocksForbiddenProperties()
+    {
+        $user = \STS\Models\User::factory()->create();
+        $this->actingAs($user, 'api');
+
+        $response = $this->call('PUT', 'api/users', ['is_admin' => 1]);
+        $this->assertTrue($response->status() == 422);
+        $this->assertFalse(\STS\Models\User::find($user->id)->is_admin);
+
+        $response = $this->call('PUT', 'api/users', ['banned' => 0]);
+        $this->assertTrue($response->status() == 422);
+
+        $response = $this->call('PUT', 'api/users', ['name' => 'Hacker']);
+        $this->assertTrue($response->status() == 422);
     }
 
     public function testShowProfile()
