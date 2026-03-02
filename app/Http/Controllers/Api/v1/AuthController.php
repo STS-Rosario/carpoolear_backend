@@ -2,6 +2,7 @@
 
 namespace STS\Http\Controllers\Api\v1;
  
+use STS\Helpers\OldCordovaAppHelper;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
@@ -79,25 +80,17 @@ class AuthController extends Controller
     }
 
     public function getConfig (Request $request) {
-        $isCordova = false;
-        if (isset($_SERVER['HTTP_SEC_CH_UA'])) {
-            $secChUa = $_SERVER['HTTP_SEC_CH_UA'];
-            $userAgent = $_SERVER['HTTP_USER_AGENT'];
-            
-            $user = auth()->user();
-            
-            // Check if user is authenticated before accessing properties
-            if ($user) {
-                $user_id = $user->id;
-            } else {
-                \Log::warning('getConfig called without authenticated user');
-            }
-            
-            if (strpos($secChUa, 'WebView') !== false && strpos($userAgent, 'Instagram') === false) {
-                $isCordova = true;
-            }
+        $user = auth()->user();
+
+        // Check if user is authenticated before accessing properties
+        if ($user) {
+            $user_id = $user->id;
+        } else {
+            \Log::warning('getConfig called without authenticated user');
         }
-        
+
+        $isCordova = OldCordovaAppHelper::isOldCordovaApp();
+
         return response()->json($this->_getConfig($isCordova));
     }
 
