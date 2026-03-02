@@ -172,7 +172,7 @@ class UserEditablePropertiesService
         }
 
         $bannedPropertiesStr = implode(', ', $bannedProperties);
-        $adminLinkToProfile = rtrim(config('carpoolear.frontend_url'), '/') . '#/profile/' . $user->id;
+        $adminLinkToProfile = rtrim(config('carpoolear.frontend_url'), '/') . '/profile/' . $user->id;
         $slackMessage = "Edición prohibida de perfil: {$bannedPropertiesStr} en usuario ID {$user->id}. Link al perfil: {$adminLinkToProfile}";
 
         try {
