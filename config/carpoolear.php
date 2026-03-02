@@ -92,4 +92,39 @@ return [
     // Logs all password reset email operations with structured data
     'log_emails' => env('LOG_EMAILS', false),
     'email_log_daily_days' => env('EMAIL_LOG_DAILY_DAYS', 30),
+
+    // User edit property security: allowlist-based filtering for all user update paths
+    'user_edit_properties' => [
+        // NEVER editable by anyone (including admins)
+        'forbidden' => ['is_admin'],
+
+        // Editable by regular users (self-edit). name and email are only set at registration.
+        'allowed' => [
+            'password', 'password_confirmation', 'birthday', 'gender', 'description',
+            'mobile_phone', 'emails_notifications', 'nro_doc',
+            'data_visibility',
+            'do_not_alert_request_seat', 'do_not_alert_accept_passenger',
+            'do_not_alert_pending_rates', 'do_not_alert_pricing',
+            'autoaccept_requests', 'unaswered_messages_limit',
+            'user_be_driver', 'driver_data_docs',
+            'account_number', 'account_type', 'account_bank',
+        ],
+
+        // Additional properties editable only by admin (name/email only at registration for users)
+        'admin_allowed' => [
+            'name', 'email', 'banned', 'active', 'driver_is_verified',
+            'patente', 'car_description', 'private_note',
+            'identity_validated', 'identity_validated_at',
+            'identity_validation_type', 'identity_validation_reject_reason',
+            'validate_by_date',
+        ],
+
+        // Block + log warning + Slack alert (like banned DNI)
+        'flagged' => [
+            'email', 'name', 'is_admin', 'banned', 'active',
+            'identity_validated', 'identity_validated_at',
+            'identity_validation_type', 'identity_validation_reject_reason',
+            'validate_by_date',
+        ],
+    ],
 ];
