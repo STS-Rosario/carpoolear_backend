@@ -196,6 +196,25 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
+        $requestData = $data;
+        $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin);
+
+        // Alert when non-admin tries to change forbidden/flagged props (but don't block - allow old apps)
+        $bannedProperties = $this->userEditablePropertiesService->getBlockedFlaggedPropertiesThatDiffer(
+            $user,
+            $requestData,
+            $data,
+            $is_admin
+        );
+        if (!empty($bannedProperties)) {
+            \Log::warning('Edición prohibida de perfil intentada (ignorada, cambios permitidos aplicados)', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'banned_properties' => $bannedProperties,
+            ]);
+            $this->userEditablePropertiesService->sendFlaggedPropertyAlert($user, $bannedProperties);
+        }
+
         $v = $this->validator($data, $user->id, null, $is_driver, $is_admin);
         if ($v->fails()) {
             $this->setErrors($v->errors());

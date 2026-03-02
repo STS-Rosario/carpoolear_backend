@@ -103,7 +103,40 @@ class ApiAuthTest extends TestCase
         $this->assertEquals($userUpdated->data->name, $data['name']);
 
         $u2 = \STS\Models\User::find($id);
-        $this->assertEquals($userUpdated->data->name, $u2->name);
+        $this->assertEquals($userUpdated->data->description, $u2->description);
+    }
+
+    /**
+     * Forbidden/flagged properties are silently ignored (no error) for backward compatibility.
+     * Backend filters them out, persists only allowed props, and sends Slack alert when value actually changes.
+     */
+    public function testUpdateProfileBlocksForbiddenProperties()
+    {
+        $user = \STS\Models\User::factory()->create(['name' => 'Original', 'banned' => 0]);
+        $this->actingAs($user, 'api');
+
+        // Sending is_admin=1: request succeeds (200), but is_admin is not persisted
+        $response = $this->call('PUT', 'api/users', ['is_admin' => 1]);
+        $this->assertTrue($response->status() == 200);
+        $this->assertFalse(\STS\Models\User::find($user->id)->is_admin);
+
+        // Sending banned=1: request succeeds, banned is not persisted (still 0)
+        $response = $this->call('PUT', 'api/users', ['banned' => 1]);
+        $this->assertTrue($response->status() == 200);
+        $this->assertEquals(0, \STS\Models\User::find($user->id)->banned);
+
+        // Sending name: request succeeds, name is not persisted (still Original)
+        $response = $this->call('PUT', 'api/users', ['name' => 'Hacker']);
+        $this->assertTrue($response->status() == 200);
+        $this->assertEquals('Original', \STS\Models\User::find($user->id)->name);
+
+        // Mixed: allowed + forbidden in same request - allowed is saved, forbidden ignored
+        $response = $this->call('PUT', 'api/users', ['description' => 'New desc', 'name' => 'IgnoredName', 'email' => 'other@x.com']);
+        $this->assertTrue($response->status() == 200);
+        $reloaded = \STS\Models\User::find($user->id);
+        $this->assertEquals('New desc', $reloaded->description);
+        $this->assertEquals('Original', $reloaded->name);
+        $this->assertEquals($user->email, $reloaded->email);
     }
 
     public function testShowProfile()
