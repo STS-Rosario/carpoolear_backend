@@ -19,25 +19,18 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use STS\Mail\ResetPassword;
 use STS\Jobs\SendPasswordResetEmail;
-use STS\Services\UserEditablePropertiesService;
 
 class UsersManager extends BaseManager
 {
     protected $repo;
     protected $tripRepository;
     protected $carsRepository;
-    protected $userEditablePropertiesService;
 
-    public function __construct(
-        UserRepository $userRep,
-        TripRepository $tripRepository,
-        CarsRepository $carsRepository = null,
-        ?UserEditablePropertiesService $userEditablePropertiesService = null
-    ) {
+    public function __construct(UserRepository $userRep, TripRepository $tripRepository, CarsRepository $carsRepository = null)
+    {
         $this->repo = $userRep;
         $this->tripRepository = $tripRepository;
         $this->carsRepository = $carsRepository ?: new CarsRepository();
-        $this->userEditablePropertiesService = $userEditablePropertiesService ?? new UserEditablePropertiesService();
     }
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
@@ -203,25 +196,6 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
-        $requestedKeys = array_keys($data);
-        $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin);
-
-        $bannedProperties = $this->userEditablePropertiesService->getBlockedFlaggedProperties(
-            $requestedKeys,
-            $data,
-            $is_admin
-        );
-        if (!empty($bannedProperties)) {
-            \Log::warning('Edición prohibida de perfil intentada', [
-                'user_id' => $user->id,
-                'user_name' => $user->name,
-                'banned_properties' => $bannedProperties,
-            ]);
-            $this->userEditablePropertiesService->sendFlaggedPropertyAlert($user, $bannedProperties);
-            $this->setErrors(['error' => 'forbidden_properties', 'properties' => $bannedProperties]);
-            return;
-        }
-
         $v = $this->validator($data, $user->id, null, $is_driver, $is_admin);
         if ($v->fails()) {
             $this->setErrors($v->errors());
@@ -518,18 +492,12 @@ class UsersManager extends BaseManager
     {
         $user = $this->repo->getUserByResetToken($token);
         if ($user) {
-            $v = $this->validator($data, $user->id, null, false, false);
-            if ($v->fails()) {
-                $this->setErrors($v->errors());
-                return;
-            }
             $data['active'] = true;
-            $data['password'] = bcrypt($data['password']);
-            unset($data['password_confirmation']);
-            $this->repo->update($user, $data);
-            $this->repo->deleteResetToken('email', $user->email);
+            if ($this->update($user, $data)) {
+                $this->repo->deleteResetToken('email', $user->email);
 
-            return true;
+                return true;
+            }
         }
     }
 

@@ -6,8 +6,7 @@ use STS\Repository\FileRepository;
 use STS\Repository\SocialRepository;
 use Validator;
 use STS\Models\User as UserModel;
-use STS\Contracts\SocialProvider;
-use STS\Services\UserEditablePropertiesService;
+use STS\Contracts\SocialProvider;  
 
 class SocialManager extends BaseManager
 {
@@ -82,13 +81,12 @@ class SocialManager extends BaseManager
     {
         $account = $this->getAccounts(null);
         if ($account && $user->id == $account->user->id) {
-            $userData = $this->userData;
-            if (isset($userData['image'])) {
-                $img = file_get_contents($userData['image']);
-                $userData['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
+            if (isset($this->userData['image'])) {
+                $img = file_get_contents($this->userData['image']);
+                $data['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
             }
-            $userData = app(UserEditablePropertiesService::class)->filterForUser($userData, false);
-            $user = $this->userLogic->update($user, $userData);
+            //unset($data['email']);
+            $user = $this->userLogic->update($user, $this->userData);
             if (! $user) {
                 $this->setErrors($this->userLogic->getErrors());
 

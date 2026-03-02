@@ -24,7 +24,6 @@ class UserRepository
 
     public function update($user, array $data)
     {
-        unset($data['is_admin']);
         $user->update($data);
     }
 
