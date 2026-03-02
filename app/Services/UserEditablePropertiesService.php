@@ -102,26 +102,63 @@ class UserEditablePropertiesService
     }
 
     /**
-     * Get requested keys that were blocked (flagged properties attempted by non-admin).
-     * Given original requested keys and filtered data, returns keys that were requested
-     * and are in flagged but were removed by filtering.
+     * Get requested keys that were blocked (flagged/forbidden) and where the requested value
+     * actually differs from the current user (so we only alert when they're trying to change something).
      */
-    public function getBlockedFlaggedProperties(array $requestedKeys, array $filteredData, bool $isAdmin): array
+    public function getBlockedFlaggedPropertiesThatDiffer(User $user, array $requestData, array $filteredData, bool $isAdmin): array
     {
         if ($isAdmin) {
             return [];
         }
 
+        $forbidden = $this->getForbiddenProperties();
         $flagged = $this->getFlaggedProperties();
-        $blocked = [];
+        $blockedKeys = array_unique(array_merge($forbidden, $flagged));
+        $actuallyChanged = [];
 
-        foreach ($requestedKeys as $key) {
-            if (in_array($key, $flagged) && !array_key_exists($key, $filteredData)) {
-                $blocked[] = $key;
+        foreach ($blockedKeys as $key) {
+            if (!array_key_exists($key, $requestData)) {
+                continue;
+            }
+            if (array_key_exists($key, $filteredData)) {
+                continue; // they're allowed to edit it
+            }
+            $requested = $requestData[$key];
+            $current = $user->getAttribute($key);
+            if ($this->valueActuallyDiffers($key, $requested, $current)) {
+                $actuallyChanged[] = $key;
             }
         }
 
-        return $blocked;
+        return $actuallyChanged;
+    }
+
+    /**
+     * Compare requested value vs current user value (normalize booleans, strings, etc.).
+     */
+    private function valueActuallyDiffers(string $key, $requested, $current): bool
+    {
+        $booleanAttrs = ['banned', 'active', 'is_admin', 'emails_notifications', 'identity_validated',
+            'driver_is_verified', 'do_not_alert_request_seat', 'do_not_alert_accept_passenger',
+            'do_not_alert_pending_rates', 'do_not_alert_pricing', 'autoaccept_requests'];
+        if (in_array($key, $booleanAttrs)) {
+            $reqBool = filter_var($requested, FILTER_VALIDATE_BOOLEAN);
+            $curBool = (bool) $current;
+            return $reqBool !== $curBool;
+        }
+        if (is_string($requested)) {
+            $requested = trim($requested);
+        }
+        if (is_string($current)) {
+            $current = trim((string) $current);
+        }
+        if ($current instanceof \DateTimeInterface) {
+            $current = $current->format('Y-m-d');
+        }
+        if (is_string($requested) && preg_match('/^\d{4}-\d{2}-\d{2}/', $requested)) {
+            $requested = substr($requested, 0, 10);
+        }
+        return $requested != $current;
     }
 
     /**
