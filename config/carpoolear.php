@@ -32,6 +32,7 @@ return [
 
     // Minimum app version enforcement for Capacitor (null = no enforcement)
     'min_version_android' => env('MIN_VERSION_ANDROID') ? (int) env('MIN_VERSION_ANDROID') : null,
+    'min_version_android_semver' => env('MIN_VERSION_ANDROID_SEMVER') ?: null, // e.g. "2.1.10" for fallback comparison when plugin unavailable
     'min_version_ios' => env('MIN_VERSION_IOS') ?: null,
     'module_seat_price_enabled' => env('MODULE_SEAT_PRICE_ENABLED', false),
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
