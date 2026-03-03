@@ -35,6 +35,8 @@ class UserFactory extends Factory
             'do_not_alert_request_seat' => true,
             'do_not_alert_accept_passenger' => true,
             'do_not_alert_pending_rates' => true,
+            'description' => fake()->sentence(),
+            'image' => 'default.png',
             'autoaccept_requests' => false,
             'on_boarding_view' => false,
         ];
