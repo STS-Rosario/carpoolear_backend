@@ -107,6 +107,7 @@ return [
             'do_not_alert_request_seat', 'do_not_alert_accept_passenger',
             'do_not_alert_pending_rates', 'do_not_alert_pricing',
             'autoaccept_requests', 'unaswered_messages_limit',
+            'on_boarding_view',
             'user_be_driver', 'driver_data_docs',
             'account_number', 'account_type', 'account_bank',
         ],
