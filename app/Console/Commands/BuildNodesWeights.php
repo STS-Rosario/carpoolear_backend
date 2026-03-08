@@ -63,7 +63,7 @@ class BuildNodesWeights extends Command
                 ) as calc
             GROUP BY id;
         ";
-        $nodes = DB::select(DB::raw($query), array());
+        $nodes = DB::select($query);
         foreach ($nodes as $node) {
             NodeGeo::where('id', $node->id)->update(['importance' => $node->importance]);
         }

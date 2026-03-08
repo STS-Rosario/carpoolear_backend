@@ -28,7 +28,7 @@ class RatingManager extends BaseManager
     public function validator(array $data)
     {
         return Validator::make($data, [
-            'comment' => 'string',
+            'comment' => 'nullable|string',
             'rating' => 'required|integer|in:0,1,',
         ]);
     }

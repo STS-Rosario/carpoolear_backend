@@ -8,6 +8,7 @@ use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\TripsManager;
 use STS\Transformers\TripTransformer;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Helpers\OldCordovaAppHelper;
 use STS\Repository\TripSearchRepository;
 
 class TripController extends Controller
@@ -79,6 +80,12 @@ class TripController extends Controller
 
     public function show($id, Request $request)
     {
+        if (OldCordovaAppHelper::isOldCordovaApp()) {
+            return response()->json([
+                'data' => OldCordovaAppHelper::getFakeTripData(),
+            ]);
+        }
+
         $this->user = auth()->user();
         $trip = $this->tripsLogic->show($this->user, $id);
         if (! $trip) {
@@ -91,6 +98,25 @@ class TripController extends Controller
 
     public function search(Request $request)
     {
+        if (OldCordovaAppHelper::isOldCordovaApp()) {
+            return response()->json([
+                'data' => [OldCordovaAppHelper::getFakeTripData()],
+                'meta' => [
+                    'pagination' => [
+                        'total' => 1,
+                        'count' => 1,
+                        'per_page' => 20,
+                        'current_page' => 1,
+                        'total_pages' => 1,
+                        'links' => [
+                            'previous' => null,
+                            'next' => null,
+                        ],
+                    ],
+                ],
+            ]);
+        }
+
         $data = $request->all();
 
         if (!isset($data['page_size'])) {

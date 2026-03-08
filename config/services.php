@@ -35,6 +35,8 @@ return [
         ],
         // Incoming Webhook URL for #carpoolear_mesa-de-ayuda (banned DNI attempts, etc.)
         'banned_dni_webhook_url' => env('SLACK_BANNED_DNI_WEBHOOK_URL'),
+        // Incoming Webhook URL for forbidden profile edit attempts (e.g. is_admin, banned, etc.)
+        'forbidden_edit_webhook_url' => env('SLACK_FORBIDDEN_EDIT_WEBHOOK_URL'),
     ],
     
     'mercadopago' => [

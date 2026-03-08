@@ -72,7 +72,6 @@ class UserTest extends TestCase
         $u1 = $userManager->create($data);
 
         $data = [
-            'name'                  => 'Pablo',
             'password'              => 'gatogato',
             'password_confirmation' => 'gatogato',
         ];

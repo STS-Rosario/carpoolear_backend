@@ -19,18 +19,25 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use STS\Mail\ResetPassword;
 use STS\Jobs\SendPasswordResetEmail;
+use STS\Services\UserEditablePropertiesService;
 
 class UsersManager extends BaseManager
 {
     protected $repo;
     protected $tripRepository;
     protected $carsRepository;
+    protected $userEditablePropertiesService;
 
-    public function __construct(UserRepository $userRep, TripRepository $tripRepository, CarsRepository $carsRepository = null)
-    {
+    public function __construct(
+        UserRepository $userRep,
+        TripRepository $tripRepository,
+        CarsRepository $carsRepository = null,
+        ?UserEditablePropertiesService $userEditablePropertiesService = null
+    ) {
         $this->repo = $userRep;
         $this->tripRepository = $tripRepository;
         $this->carsRepository = $carsRepository ?: new CarsRepository();
+        $this->userEditablePropertiesService = $userEditablePropertiesService ?? new UserEditablePropertiesService();
     }
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
@@ -196,6 +203,25 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
+        $requestData = $data;
+        $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin);
+
+        // Alert when non-admin tries to change forbidden/flagged props (but don't block - allow old apps)
+        $bannedProperties = $this->userEditablePropertiesService->getBlockedFlaggedPropertiesThatDiffer(
+            $user,
+            $requestData,
+            $data,
+            $is_admin
+        );
+        if (!empty($bannedProperties)) {
+            \Log::warning('Edición prohibida de perfil intentada (ignorada, cambios permitidos aplicados)', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'banned_properties' => $bannedProperties,
+            ]);
+            $this->userEditablePropertiesService->sendFlaggedPropertyAlert($user, $bannedProperties);
+        }
+
         $v = $this->validator($data, $user->id, null, $is_driver, $is_admin);
         if ($v->fails()) {
             $this->setErrors($v->errors());
@@ -419,8 +445,8 @@ class UsersManager extends BaseManager
             $cooldownMinutes = 5;
             $lastReset = $this->repo->getLastPasswordReset($user->email);
             
-            if ($lastReset && $lastReset->created_at->diffInMinutes(now()) < $cooldownMinutes) {
-                $remainingMinutes = $cooldownMinutes - $lastReset->created_at->diffInMinutes(now());
+            if ($lastReset && (int) $lastReset->created_at->diffInMinutes(now()) < $cooldownMinutes) {
+                $remainingMinutes = $cooldownMinutes - (int) $lastReset->created_at->diffInMinutes(now());
                 $this->setErrors(['error' => "Please wait {$remainingMinutes} minutes before requesting another password reset"]);
                 
                 \Log::info("Password reset cooldown active for user {$user->email}, remaining: {$remainingMinutes} minutes");
@@ -492,12 +518,18 @@ class UsersManager extends BaseManager
     {
         $user = $this->repo->getUserByResetToken($token);
         if ($user) {
-            $data['active'] = true;
-            if ($this->update($user, $data)) {
-                $this->repo->deleteResetToken('email', $user->email);
-
-                return true;
+            $v = $this->validator($data, $user->id, null, false, false);
+            if ($v->fails()) {
+                $this->setErrors($v->errors());
+                return;
             }
+            $data['active'] = true;
+            $data['password'] = bcrypt($data['password']);
+            unset($data['password_confirmation']);
+            $this->repo->update($user, $data);
+            $this->repo->deleteResetToken('email', $user->email);
+
+            return true;
         }
     }
 
