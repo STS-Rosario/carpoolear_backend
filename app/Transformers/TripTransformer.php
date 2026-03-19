@@ -50,6 +50,10 @@ class TripTransformer extends TransformerAbstract
             'needs_sellado' => $trip->needs_sellado
         ];
 
+        // Flag for frontend: show faded (e.g. 80% opacity) and "Falta pagar Sellado" when sellado is unpaid
+        $data['sellado_pending'] = (bool) ($trip->needs_sellado && $trip->state !== Trip::STATE_READY);
+        $data['sellado_pending_label'] = $data['sellado_pending'] ? 'Falta pagar Sellado' : null;
+
         if ($trip->deleted_at) {
             $data['deleted_at'] = $trip->deleted_at->toDateTimeString();
             if ($trip->deleted_at->toDateTimeString() === '2000-01-01 00:00:00') {

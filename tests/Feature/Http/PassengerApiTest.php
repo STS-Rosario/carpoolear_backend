@@ -59,8 +59,8 @@ class PassengerApiTest extends TestCase
 
     public function testPostRequest()
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $u2 = \STS\Models\User::factory()->create();
+        $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
+        $u2 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
         $this->actingAs($u2, 'api');
 
@@ -72,8 +72,8 @@ class PassengerApiTest extends TestCase
 
     public function testPostAccept()
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $u2 = \STS\Models\User::factory()->create();
+        $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
+        $u2 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
         $this->actingAs($u1, 'api');
 
@@ -98,10 +98,10 @@ class PassengerApiTest extends TestCase
 
     public function testPostReject()
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $u2 = \STS\Models\User::factory()->create();
+        $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
+        $u2 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u2, 'api');
+        $this->actingAs($u1, 'api');
 
         $this->logic->shouldReceive('rejectRequest')->once()->andReturn(true);
 

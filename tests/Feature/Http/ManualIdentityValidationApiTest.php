@@ -99,6 +99,9 @@ class ManualIdentityValidationApiTest extends TestCase
 
     public function test_submit_with_heic_stores_as_jpeg(): void
     {
+        if (! class_exists(\Imagick::class)) {
+            $this->markTestSkipped('Imagick is required for HEIC to JPEG conversion');
+        }
         config(['carpoolear.image_upload_convert_heic_to_jpeg' => true]);
         $user = User::factory()->create();
         $validationRequest = $this->createPaidValidationRequest($user);
