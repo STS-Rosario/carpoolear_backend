@@ -99,14 +99,14 @@ class ManualIdentityValidationApiTest extends TestCase
 
     public function test_submit_with_heic_stores_as_jpeg(): void
     {
-        if (! class_exists(\Imagick::class)) {
-            $this->markTestSkipped('Imagick is required for HEIC to JPEG conversion');
+        if (! \STS\Services\HeicToJpegConverter::isAvailable()) {
+            $this->markTestSkipped('HEIC to JPEG conversion is not available (Imagick with HEIC support required)');
         }
         config(['carpoolear.image_upload_convert_heic_to_jpeg' => true]);
         $user = User::factory()->create();
         $validationRequest = $this->createPaidValidationRequest($user);
 
-        $front = UploadedFile::fake()->create('front.heic', 100, 'image/heic');
+        $front = \STS\Services\HeicToJpegConverter::createValidHeicFile();
         $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
         $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
 
@@ -121,5 +121,7 @@ class ManualIdentityValidationApiTest extends TestCase
         $validationRequest->refresh();
         $this->assertNotNull($validationRequest->front_image_path);
         $this->assertStringEndsWith('.jpg', $validationRequest->front_image_path);
+
+        @unlink($front->getRealPath());
     }
 }

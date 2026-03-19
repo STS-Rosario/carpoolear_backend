@@ -81,11 +81,11 @@ class DriverDocsApiTest extends TestCase
 
     public function test_create_user_with_heic_stores_as_jpeg_when_conversion_available(): void
     {
-        if (! class_exists(\Imagick::class)) {
-            $this->markTestSkipped('Imagick is required for HEIC to JPEG conversion');
+        if (! \STS\Services\HeicToJpegConverter::isAvailable()) {
+            $this->markTestSkipped('HEIC to JPEG conversion is not available (Imagick with HEIC support required)');
         }
         config(['carpoolear.image_upload_convert_heic_to_jpeg' => true]);
-        $file = UploadedFile::fake()->create('doc.heic', 100, 'image/heic');
+        $file = \STS\Services\HeicToJpegConverter::createValidHeicFile();
         $data = [
             'name' => 'Driver User',
             'email' => 'driver' . time() . '@example.com',
@@ -104,5 +104,7 @@ class DriverDocsApiTest extends TestCase
         $this->assertCount(1, $docs);
         $filename = $docs[0];
         $this->assertStringEndsWith('.jpg', $filename);
+
+        @unlink($file->getRealPath());
     }
 }
