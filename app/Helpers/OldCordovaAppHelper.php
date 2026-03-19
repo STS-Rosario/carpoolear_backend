@@ -7,11 +7,15 @@ class OldCordovaAppHelper
     /**
      * Detects if the request comes from an old Cordova/WebView app (excluding Instagram in-app browser).
      * Same logic as AuthController::getConfig for the "update app" banner.
+     * Capacitor app sends X-App-Platform, X-App-Version, X-App-Version-Source; old Cordova does not.
      */
     public static function isOldCordovaApp(): bool
     {
         if (! isset($_SERVER['HTTP_SEC_CH_UA'], $_SERVER['HTTP_USER_AGENT'])) {
             return false;
+        }
+        if (! empty($_SERVER['HTTP_X_APP_PLATFORM']) && ! empty($_SERVER['HTTP_X_APP_VERSION'])) {
+            return false; // Capacitor sends these; old Cordova does not
         }
         $secChUa = $_SERVER['HTTP_SEC_CH_UA'];
         $userAgent = $_SERVER['HTTP_USER_AGENT'];

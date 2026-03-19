@@ -76,7 +76,7 @@ class BadgeEvaluatorService
         if (!isset($rules['days'])) {
             throw new \InvalidArgumentException('Registration duration badge requires days parameter');
         }
-        return now()->diffInDays($user->created_at) >= $rules['days'];
+        return (int) now()->diffInDays($user->created_at) >= $rules['days'];
     }
 
     /**

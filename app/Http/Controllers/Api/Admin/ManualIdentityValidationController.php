@@ -12,13 +12,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ManualIdentityValidationController extends Controller
 {
     /**
-     * GET /api/admin/manual-identity-validations - list, paid first then unpaid, by submitted_at asc (oldest first)
+     * GET /api/admin/manual-identity-validations - list: paid first; within paid: with submitted_at (docs sent) first, then pending review, approved, rejected; then by waiting time (oldest first).
+     * Waiting time = submitted_at (if submitted), else paid_at, else created_at.
      */
     public function index(): JsonResponse
     {
         $items = ManualIdentityValidation::with('user:id,name')
             ->orderByRaw('CASE WHEN paid = 1 THEN 0 ELSE 1 END')
-            ->orderBy('submitted_at', 'asc')
+            ->orderByRaw('CASE WHEN submitted_at IS NOT NULL THEN 0 ELSE 1 END')
+            ->orderByRaw("CASE WHEN COALESCE(review_status, '') = 'approved' THEN 1 WHEN COALESCE(review_status, '') = 'rejected' THEN 2 ELSE 0 END")
+            ->orderByRaw('COALESCE(submitted_at, paid_at, created_at) ASC')
             ->orderBy('created_at', 'asc')
             ->get()
             ->map(function ($item) {

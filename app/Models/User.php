@@ -57,6 +57,7 @@ class User extends Authenticatable implements JWTSubject
         'do_not_alert_pending_rates',
         'do_not_alert_pricing',
         'autoaccept_requests',
+        'on_boarding_view',
         'driver_is_verified',
         'driver_data_docs',
         'account_number',
