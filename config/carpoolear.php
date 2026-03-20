@@ -59,7 +59,7 @@ return [
     'image_upload_allowed_mimes' => ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
     'image_upload_allowed_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
     'image_upload_max_bytes' => (int) env('IMAGE_UPLOAD_MAX_BYTES', 10 * 1024 * 1024),
-    'image_upload_convert_heic_to_jpeg' => env('IMAGE_UPLOAD_CONVERT_HEIC', true),
+    'image_upload_convert_heic_to_jpeg' => filter_var(env('IMAGE_UPLOAD_CONVERT_HEIC', true), FILTER_VALIDATE_BOOLEAN),
 
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words_names' => [

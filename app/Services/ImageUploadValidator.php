@@ -9,7 +9,6 @@ class ImageUploadValidator
     /**
      * Validate an uploaded image file (MIME, extension, size).
      *
-     * @param  array<string>  $errors  Optional; will be filled with field-keyed errors when invalid
      * @return array{valid: bool, errors?: array<string, array<string>>}
      */
     public function validate(UploadedFile $file, ?string $field = 'image'): array

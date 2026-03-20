@@ -269,7 +269,11 @@ class UsersManager extends BaseManager
                             if (is_string($file)) {
                                 $img_names[] = $file;
                             } else {
-                                $img_names[] = $this->uploadDoc($file);
+                                $uploaded = $this->uploadDoc($file);
+                                if ($uploaded === false) {
+                                    return null;
+                                }
+                                $img_names[] = $uploaded;
                             }
                         }
                     }
@@ -335,13 +339,6 @@ class UsersManager extends BaseManager
         $result = $validator->validate($file, 'image');
         if (! ($result['valid'] ?? true)) {
             $this->setErrors($result['errors'] ?? []);
-
-            return false;
-        }
-
-        $maxBytes = (int) config('carpoolear.image_upload_max_bytes', 10 * 1024 * 1024);
-        if ($file->getSize() === null || $file->getSize() > $maxBytes) {
-            $this->setErrors(['image' => ['File too large. Maximum size: ' . ($maxBytes / (1024 * 1024)) . ' MB.']]);
 
             return false;
         }
