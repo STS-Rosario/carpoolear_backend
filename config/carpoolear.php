@@ -55,6 +55,12 @@ return [
     'identity_validation_manual_qr_enabled' => env('IDENTITY_VALIDATION_MANUAL_QR_ENABLED', false),
     'qr_payment_pos_external_id' => env('MERCADO_PAGO_QR_PAYMENT_POS_EXTERNAL_ID', ''),
 
+    // Document/identity image uploads: allowed types, size limit, HEIC conversion
+    'image_upload_allowed_mimes' => ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
+    'image_upload_allowed_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
+    'image_upload_max_bytes' => (int) env('IMAGE_UPLOAD_MAX_BYTES', 10 * 1024 * 1024),
+    'image_upload_convert_heic_to_jpeg' => filter_var(env('IMAGE_UPLOAD_CONVERT_HEIC', true), FILTER_VALIDATE_BOOLEAN),
+
     // List of banned words that will trigger user ban if found in their name or in trip descriptions
     'banned_words_names' => [
         'admin',

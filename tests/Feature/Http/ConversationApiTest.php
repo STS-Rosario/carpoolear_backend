@@ -58,9 +58,8 @@ class ConversationApiTest extends TestCase
 
     public function test_api_conversations_post()
     {
-        $user1 = \STS\Models\User::factory()->create();
+        $user1 = \STS\Models\User::factory()->create(['is_admin' => true, 'identity_validated' => true]);
         $user2 = \STS\Models\User::factory()->create();
-        $user1->is_admin = true;
 
         $this->actingAs($user1, 'api');
         $response = $this->call('POST', 'api/conversations/', ['to' => $user2->id]);

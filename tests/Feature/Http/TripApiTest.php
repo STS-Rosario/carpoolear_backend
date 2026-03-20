@@ -32,7 +32,7 @@ class TripApiTest extends TestCase
 
     public function testCreate()
     {
-        $u1 = \STS\Models\User::factory()->create();
+        $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $trip = \STS\Models\Trip::factory()->create();
         $this->actingAs($u1, 'api');
 

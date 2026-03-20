@@ -20,6 +20,10 @@ use Illuminate\Support\Facades\Mail;
 use STS\Mail\ResetPassword;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Services\UserEditablePropertiesService;
+use STS\Services\ImageUploadValidator;
+use STS\Services\HeicToJpegConverter;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 
 class UsersManager extends BaseManager
 {
@@ -265,7 +269,11 @@ class UsersManager extends BaseManager
                             if (is_string($file)) {
                                 $img_names[] = $file;
                             } else {
-                                $img_names[] = $this->uploadDoc($file);
+                                $uploaded = $this->uploadDoc($file);
+                                if ($uploaded === false) {
+                                    return null;
+                                }
+                                $img_names[] = $uploaded;
                             }
                         }
                     }
@@ -325,18 +333,39 @@ class UsersManager extends BaseManager
         return $user;
     }
 
-    public function uploadDoc ($file) {
-        $mil = str_replace(".", "", microtime());
-        $mil = str_replace(" ", "", $mil);
-        $newfilename = date('mdYHis') . $mil;
-        $imageName = $newfilename . "." . $file->getClientOriginalExtension();
+    public function uploadDoc(UploadedFile $file)
+    {
+        $validator = app(ImageUploadValidator::class);
+        $result = $validator->validate($file, 'image');
+        if (! ($result['valid'] ?? true)) {
+            $this->setErrors($result['errors'] ?? []);
 
-        if ($file->getClientSize() > 4096 * 1024 ) {
             return false;
         }
-        $file->move(
-            base_path() . '/public/image/docs/', $imageName
-        );
+
+        $converter = app(HeicToJpegConverter::class);
+        $jpegContent = $converter->convert($file);
+
+        $mil = str_replace('.', '', microtime());
+        $mil = str_replace(' ', '', $mil);
+        $newfilename = date('mdYHis') . $mil;
+        $docsDir = base_path() . '/public/image/docs/';
+
+        if (! File::isDirectory($docsDir)) {
+            File::makeDirectory($docsDir, 0755, true);
+        }
+
+        if ($jpegContent !== null) {
+            $imageName = $newfilename . '.jpg';
+            File::put($docsDir . $imageName, $jpegContent);
+
+            return $imageName;
+        }
+
+        $extension = $file->getClientOriginalExtension();
+        $imageName = $newfilename . '.' . $extension;
+        $file->move($docsDir, $imageName);
+
         return $imageName;
     }
 

@@ -5,8 +5,12 @@ namespace STS\Http\Controllers\Api\v1;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Models\ManualIdentityValidation;
+use STS\Services\ImageUploadValidator;
+use STS\Services\HeicToJpegConverter;
 use STS\Services\MercadoPagoService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ManualIdentityValidationController extends Controller
 {
@@ -198,15 +202,24 @@ class ManualIdentityValidationController extends Controller
         $back = $request->file('back_image');
         $selfie = $request->file('selfie_image');
 
-        if (!$front || !$back || !$selfie) {
+        if (! $front || ! $back || ! $selfie) {
             throw new ExceptionWithErrors('All three images are required: front_image, back_image, selfie_image.', []);
         }
 
-        $basePath = 'identity_validations/' . $validationRequest->id;
+        $validator = app(ImageUploadValidator::class);
+        foreach (['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie] as $field => $file) {
+            $result = $validator->validate($file, $field);
+            if (! ($result['valid'] ?? true)) {
+                throw new ExceptionWithErrors('Invalid image upload.', $result['errors'] ?? []);
+            }
+        }
 
-        $frontPath = $front->store($basePath, 'local');
-        $backPath = $back->store($basePath, 'local');
-        $selfiePath = $selfie->store($basePath, 'local');
+        $basePath = 'identity_validations/' . $validationRequest->id;
+        $converter = app(HeicToJpegConverter::class);
+
+        $frontPath = $this->storeIdentityImage($front, $basePath, $converter);
+        $backPath = $this->storeIdentityImage($back, $basePath, $converter);
+        $selfiePath = $this->storeIdentityImage($selfie, $basePath, $converter);
 
         $validationRequest->front_image_path = $frontPath;
         $validationRequest->back_image_path = $backPath;
@@ -218,5 +231,21 @@ class ManualIdentityValidationController extends Controller
             'message' => 'Submission received.',
             'request_id' => $validationRequest->id,
         ], 201);
+    }
+
+    /**
+     * Store an identity validation image, converting HEIC/HEIF to JPEG when configured.
+     */
+    private function storeIdentityImage($file, string $basePath, HeicToJpegConverter $converter): string
+    {
+        $jpegContent = $converter->convert($file);
+        if ($jpegContent !== null) {
+            $path = $basePath . '/' . Str::random(40) . '.jpg';
+            Storage::disk('local')->put($path, $jpegContent);
+
+            return $path;
+        }
+
+        return $file->store($basePath, 'local');
     }
 }
