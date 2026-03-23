@@ -79,7 +79,7 @@
                         </li>
                     </ul>
                     
-                    <p><strong>Colaboradores</strong>: Gonzalo González Mora, Carmen García, Barbara Cravero, Andrés Culasso, Gerardo Tjor, Germán Gentile, Luciana Bernard, Tristana Retamoso, Santiago Cantarutti, Marina Cebollada, Ana Garrote, Camila Grimi, Soledad Larroucau y Gala DK.</p>
+                    <p><strong>Colaboradores</strong>: Gonzalo González Mora, Carmen García, Barbara Cravero, Andrés Culasso, Gerardo Tjor, Germán Gentile, Luciana Bernard, Tristana Retamoso, Santiago Cantarutti, Marina Cebollada, Ana Garrote, Camila Grimi, Soledad Larroucau, Gala DK y Eugenia Leonhardt.</p>
                     
                     <p>Han formado parte del equipo:</p>
                     <p>Santiago Cantarutti, Marina Cebollada, Ana Garrote, Camila Grimi, Soledad Larroucau, Rocío Anselmo, Samuel Burgueño, Martín Bruno, Bárbara Cravero, Pilar Frechou, Mariel Figueroa, Ezequiel Grosso, Gisel Levit, Cintia Pereyra, Ramiro Picó, Galo Pugliese, Mariano Soto, Martin Cesanelli, Sofia Visintini, Pablo Raissiguier, Octavio Danieli, Fernando López Guevara, Ruben Acevedo, Walter Cejas, Ezequiel Catalani, Angel Arancibia, Carmen García, Federico Cadierno Moksha, Ohnos Diseño.</p>
