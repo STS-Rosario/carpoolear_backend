@@ -11,6 +11,7 @@ use STS\Models\Route;
 use STS\Models\NodeGeo;
 use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
 use STS\Services\MercadoPagoService;
@@ -105,9 +106,8 @@ class TripRepository
         // Calculate maximum allowed price if seat_price_cents is provided
         if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
             $total_seats = $data['total_seats'];
-            $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
-
             if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
                 if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
                     \Log::info('TripRepository::create seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                     $data['seat_price_cents'] = $maximum_seat_price_cents;
@@ -216,9 +216,8 @@ class TripRepository
             // Calculate maximum allowed price if seat_price_cents is provided
             if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
                 $total_seats = $data['total_seats'] ?? $trip->total_seats;
-                $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
-
                 if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                    $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
                     if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
                         \Log::info('TripRepository::update seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                         $data['seat_price_cents'] = $maximum_seat_price_cents;
@@ -692,7 +691,33 @@ class TripRepository
         $url =
             'https://router.project-osrm.org/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
 
-        $response = Http::get($url);
+        try {
+            $response = Http::timeout(45)->get($url);
+        } catch (ConnectionException $e) {
+            \Log::warning('OSRM connection error in getTripInfo', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return [
+                'status' => false,
+                'data' => null,
+                'message' => 'Routing service unavailable',
+                'error_code' => 'routing_service_unavailable',
+            ];
+        }
+
+        if ($response->serverError()) {
+            \Log::warning('OSRM server error in getTripInfo', [
+                'status' => $response->status(),
+            ]);
+
+            return [
+                'status' => false,
+                'data' => null,
+                'message' => 'Routing service unavailable',
+                'error_code' => 'routing_service_unavailable',
+            ];
+        }
 
         if ($response->successful() && $response->json()['code'] === 'Ok' && $response->json()['routes'] && count($response->json()['routes'])) {
             $route = $response->json()['routes'][0];
