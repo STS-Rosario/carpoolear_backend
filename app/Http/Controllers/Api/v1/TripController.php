@@ -35,7 +35,10 @@ class TripController extends Controller
         $data = $request->all();
         $trip = $this->tripsLogic->create($this->user, $data);
         if (! $trip) {
-            throw new ExceptionWithErrors('Could not create new trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors(
+                $this->messageForTripWriteErrors($this->tripsLogic->getErrors(), 'Could not create new trip.'),
+                $this->tripsLogic->getErrors()
+            );
         }
 
         return $this->item($trip, new TripTransformer($this->user));
@@ -48,7 +51,10 @@ class TripController extends Controller
         $data = $request->all();
         $trip = $this->tripsLogic->update($this->user, $id, $data);
         if (! $trip) {
-            throw new ExceptionWithErrors('Could not update trip.', $this->tripsLogic->getErrors());
+            throw new ExceptionWithErrors(
+                $this->messageForTripWriteErrors($this->tripsLogic->getErrors(), 'Could not update trip.'),
+                $this->tripsLogic->getErrors()
+            );
         }
 
         return $this->item($trip, new TripTransformer($this->user));
@@ -231,5 +237,35 @@ class TripController extends Controller
         }
 
         return $this->item($trip, new TripTransformer($this->user));
+    }
+
+    /**
+     * @param  mixed  $errors
+     */
+    private function messageForTripWriteErrors($errors, string $defaultMessage): string
+    {
+        if ($this->errorsContainCode($errors, 'routing_service_unavailable')) {
+            return trans('errors.routing_service_unavailable');
+        }
+
+        return $defaultMessage;
+    }
+
+    /**
+     * @param  mixed  $errors
+     */
+    private function errorsContainCode($errors, string $code): bool
+    {
+        if ($errors === null) {
+            return false;
+        }
+        $arr = is_object($errors) && method_exists($errors, 'toArray') ? $errors->toArray() : (array) $errors;
+        $list = $arr['error'] ?? null;
+        if ($list === null) {
+            return false;
+        }
+        $values = is_array($list) ? $list : [$list];
+
+        return in_array($code, $values, true);
     }
 }

@@ -11,7 +11,6 @@ use STS\Models\Route;
 use STS\Models\NodeGeo;
 use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
-use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
 use STS\Services\MercadoPagoService;
@@ -693,17 +692,13 @@ class TripRepository
 
         try {
             $response = Http::timeout(45)->get($url);
-        } catch (ConnectionException $e) {
-            \Log::warning('OSRM connection error in getTripInfo', [
+        } catch (\Throwable $e) {
+            \Log::warning('OSRM request failed in getTripInfo', [
                 'message' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
 
-            return [
-                'status' => false,
-                'data' => null,
-                'message' => 'Routing service unavailable',
-                'error_code' => 'routing_service_unavailable',
-            ];
+            return $this->routingServiceUnavailableResponse();
         }
 
         if ($response->serverError()) {
@@ -711,16 +706,16 @@ class TripRepository
                 'status' => $response->status(),
             ]);
 
-            return [
-                'status' => false,
-                'data' => null,
-                'message' => 'Routing service unavailable',
-                'error_code' => 'routing_service_unavailable',
-            ];
+            return $this->routingServiceUnavailableResponse();
         }
 
-        if ($response->successful() && $response->json()['code'] === 'Ok' && $response->json()['routes'] && count($response->json()['routes'])) {
-            $route = $response->json()['routes'][0];
+        $payload = $response->json();
+        if ($response->successful()
+            && is_array($payload)
+            && ($payload['code'] ?? null) === 'Ok'
+            && ! empty($payload['routes'])
+            && is_array($payload['routes'])) {
+            $route = $payload['routes'][0];
             $distanceInMeters = $route['distance'];
             $duration = $route['duration'];
             $co2 = $distanceInMeters * 0.15;
@@ -798,6 +793,16 @@ class TripRepository
 
             return $response;
         }
+    }
+
+    private function routingServiceUnavailableResponse(): array
+    {
+        return [
+            'status' => false,
+            'data' => null,
+            'message' => trans('errors.routing_service_unavailable'),
+            'error_code' => 'routing_service_unavailable',
+        ];
     }
 
     public function selladoViaje($user)
