@@ -53,6 +53,6 @@ class IdentityValidationHelper
 
     public static function identityValidationRequiredMessage(): string
     {
-        return 'You must validate your identity to perform this action.';
+        return 'You must verify your account to perform this action.';
     }
 }
