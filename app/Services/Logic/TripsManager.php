@@ -135,6 +135,17 @@ class TripsManager extends BaseManager
                 }
             }
 
+            if (isset($data['points']) && is_array($data['points'])) {
+                $tripInfoCheck = $this->tripRepo->getTripInfo($data['points']);
+                if (($tripInfoCheck['error_code'] ?? null) === 'routing_service_unavailable') {
+                    $messageBag = new MessageBag;
+                    $messageBag->add('error', 'routing_service_unavailable');
+                    $this->setErrors($messageBag);
+
+                    return;
+                }
+            }
+
             $data['user_id'] = $user->id;
             $trip = $this->tripRepo->create($data);
             if (isset($data['parent_trip_id'])) {
@@ -169,6 +180,17 @@ class TripsManager extends BaseManager
                         $this->setErrors(['error' => 'trip_invalid_seats']);
 
                         return;
+                    }
+
+                    if (isset($data['points']) && is_array($data['points'])) {
+                        $tripInfoCheck = $this->tripRepo->getTripInfo($data['points']);
+                        if (($tripInfoCheck['error_code'] ?? null) === 'routing_service_unavailable') {
+                            $messageBag = new MessageBag;
+                            $messageBag->add('error', 'routing_service_unavailable');
+                            $this->setErrors($messageBag);
+
+                            return;
+                        }
                     }
 
                     $trip = $this->tripRepo->update($trip, $data);
