@@ -5,6 +5,8 @@
 /public/campaigns
 /public/hot
 /public/storage
+/public/image/docs/*
+/public/image/profile/*
 /storage/*.key
 /vendor
 .env
@@ -23,5 +25,5 @@ yarn-error.log
 /.zed
 .db
 .DS_Store
-
+.db.backup-*
 storage/firebase*.json
