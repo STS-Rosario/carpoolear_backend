@@ -106,8 +106,16 @@ return [
     'osrm_router_fallback_base_url' => env('OSRM_ROUTER_FALLBACK_BASE_URL')
         ? rtrim((string) env('OSRM_ROUTER_FALLBACK_BASE_URL'), '/')
         : null,
-    'osrm_proxy_cache_ttl_success_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_SUCCESS', 86400),
+    // Long TTL: inter-city routes rarely need fresh geometry for map; trip-info uses same cache length for successful routes.
+    'osrm_proxy_cache_ttl_success_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_SUCCESS', 31536000),
     'osrm_proxy_cache_ttl_error_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_ERROR', 3600),
+
+    // RouteCache (getTripInfo) successful route payload — default 365 days
+    'trip_route_cache_ttl_success_seconds' => (int) env('TRIP_ROUTE_CACHE_TTL_SUCCESS_SECONDS', 31536000),
+
+    // Google Routes API v2 (server key). Used only in TripRepository::getTripInfo when OSRM fails; not used for Leaflet proxy.
+    'google_routes_api_key' => env('GOOGLE_ROUTES_API_KEY', ''),
+    'google_routes_region_code' => env('GOOGLE_ROUTES_REGION_CODE', 'AR'),
 
     // User edit property security: allowlist-based filtering for all user update paths
     'user_edit_properties' => [

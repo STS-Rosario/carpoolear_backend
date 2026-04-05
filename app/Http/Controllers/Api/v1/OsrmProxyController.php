@@ -12,6 +12,7 @@ use STS\Http\Controllers\Controller;
 /**
  * OSRM-compatible proxy for Leaflet Routing Machine (browser → our API → OSRM demo / self-hosted).
  * Caches JSON responses; tries optional fallback base URL if primary fails.
+ * Trip pricing uses TripRepository::getTripInfo (Google fallback there only); this endpoint never calls Google.
  */
 class OsrmProxyController extends Controller
 {

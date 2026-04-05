@@ -13,6 +13,7 @@ use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
 use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
+use STS\Services\GoogleDrivingRouteService;
 use STS\Services\MercadoPagoService;
 use STS\Models\RouteCache;
 use STS\Models\PaymentAttempt;
@@ -22,12 +23,17 @@ class TripRepository
     private $paidRegions;
     private $geoService;
     private $mercadoPagoService;
+    private $googleDrivingRouteService;
 
-    public function __construct(GeoService $geoService, MercadoPagoService $mercadoPagoService)
-    {
+    public function __construct(
+        GeoService $geoService,
+        MercadoPagoService $mercadoPagoService,
+        GoogleDrivingRouteService $googleDrivingRouteService
+    ) {
         $this->geoService = $geoService;
         $this->paidRegions = $this->geoService->getPaidRegions();
         $this->mercadoPagoService = $mercadoPagoService;
+        $this->googleDrivingRouteService = $googleDrivingRouteService;
     }
 
     private function getPotentialNode ($point) {
@@ -703,159 +709,218 @@ class TripRepository
             if ($coords) {
                 $coords .= ';';
             }
-            $coords .= $point['lng'] . ',';
+            $coords .= $point['lng'].',';
             $coords .= $point['lat'];
         }
 
-        $osrmBase = rtrim((string) config('carpoolear.osrm_router_base_url', 'https://router.project-osrm.org'), '/');
-        $url = $osrmBase.'/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
+        $osrmOutcome = $this->requestOsrmForTripInfoCoords($coords, $hashedPoints);
 
-        try {
-            $response = Http::timeout(45)->get($url);
-        } catch (\Throwable $e) {
-            \Log::warning('[trip_route|getTripInfo] OSRM request exception', [
-                'hashed_points' => $hashedPoints,
-                'coords_preview' => strlen($coords) > 120 ? substr($coords, 0, 120).'…' : $coords,
-                'message' => $e->getMessage(),
-                'exception' => $e::class,
-            ]);
-
-            return $this->routingServiceUnavailableResponse();
-        }
-
-        $httpStatus = $response->status();
-        $rawBodyPreview = strlen($body = $response->body()) > 500 ? substr($body, 0, 500).'…' : $body;
-
-        if ($response->serverError()) {
-            \Log::warning('[trip_route|getTripInfo] OSRM HTTP server error', [
-                'hashed_points' => $hashedPoints,
-                'http_status' => $httpStatus,
-                'body_preview' => $rawBodyPreview,
-            ]);
-
-            return $this->routingServiceUnavailableResponse();
-        }
-
-        $payload = $response->json();
-        \Log::debug('[trip_route|getTripInfo] OSRM raw response summary', [
-            'hashed_points' => $hashedPoints,
-            'http_status' => $httpStatus,
-            'payload_is_array' => is_array($payload),
-            'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
-            'osrm_message' => is_array($payload) ? ($payload['message'] ?? null) : null,
-            'routes_count' => is_array($payload) && isset($payload['routes']) && is_array($payload['routes'])
-                ? count($payload['routes'])
-                : null,
-            'waypoints_count' => is_array($payload) ? (isset($payload['waypoints']) && is_array($payload['waypoints']) ? count($payload['waypoints']) : null) : null,
-            'first_route_distance_m' => is_array($payload) && ! empty($payload['routes'][0]['distance'])
-                ? $payload['routes'][0]['distance']
-                : null,
-            'first_route_duration_s' => is_array($payload) && ! empty($payload['routes'][0]['duration'])
-                ? $payload['routes'][0]['duration']
-                : null,
-        ]);
-
-        if ($response->successful()
-            && is_array($payload)
-            && ($payload['code'] ?? null) === 'Ok'
-            && ! empty($payload['routes'])
-            && is_array($payload['routes'])) {
+        if ($osrmOutcome['status'] === 'route') {
+            $payload = $osrmOutcome['payload'];
             $route = $payload['routes'][0];
             $distanceInMeters = $route['distance'];
             $duration = $route['duration'];
-            $co2 = $distanceInMeters * 0.15;
 
-            // check if the user needs to pay for the trip (2+ stops in paid zones)
-            $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
-            $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
-
-            // calculate price based on distance, fuel price, kilometers per liter
-            $fuelPrice = config('carpoolear.module_max_price_fuel_price');
-            $kilometersPerLiter = config('carpoolear.module_max_price_kilometer_by_liter');
-            $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
-            $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
-
-            // get tolls variance percentage (e.g., 10 for 10% extra)
-            $tollsVariancePercent = config('carpoolear.module_max_price_price_variance_tolls', 0);
-
-            // get maximum price variance percentage (e.g., 15 for 15% extra)
-            $maxPriceVariancePercent = config('carpoolear.module_max_price_price_variance_max_extra', 15);
-
-            // calculate base price without sellado
-            $basePriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100);
-
-            // calculate tolls variance amount
-            $tollsVarianceCents = round($basePriceCents * ($tollsVariancePercent / 100));
-
-            // recommended price: base + tolls variance + sellado
-            $recommendedTripPriceCents = $basePriceCents + $tollsVarianceCents + $selladoViajePrice;
-
-            // maximum price: (base + tolls variance) * max_variance + sellado
-            $maximumTripPriceCents = round(($basePriceCents + $tollsVarianceCents) * (1 + $maxPriceVariancePercent / 100)) + $selladoViajePrice;
-
-            $data = [
-                'distance' => $distanceInMeters,
-                'duration' => $duration,
-                'co2' => $co2,
-                'route_needs_payment' => $routeNeedsPayment,
-                'recommended_trip_price_cents' => $recommendedTripPriceCents,
-                'maximum_trip_price_cents' => $maximumTripPriceCents
-            ];
-
-            $response = [
-                'status' => true, 
-                'data' => $data,
-                'message' => 'Route found'
-            ];
-
-            // Cache the complete response for 24 hours
-            RouteCache::updateOrCreate(
-                ['hashed_points' => $hashedPoints],
-                [
-                    'points' => $points,
-                    'route_data' => $response,
-                    'expires_at' => now()->addHours(24)
-                ]
+            return $this->storeTripInfoSuccess(
+                $points,
+                $hashedPoints,
+                (float) $distanceInMeters,
+                (float) $duration,
+                'osrm'
             );
+        }
 
-            \Log::info('[trip_route|getTripInfo] OSRM OK — cached 24h', [
+        if ($this->googleDrivingRouteService->isEnabled()) {
+            \Log::info('[trip_route|getTripInfo] trying Google Routes fallback', [
                 'hashed_points' => $hashedPoints,
-                'distance_m' => $distanceInMeters,
-                'duration_s' => $duration,
-                'route_needs_payment' => $routeNeedsPayment,
+                'osrm_status' => $osrmOutcome['status'],
+            ]);
+            $googleMetrics = $this->googleDrivingRouteService->drivingDistanceAndDuration($points);
+            if ($googleMetrics !== null) {
+                return $this->storeTripInfoSuccess(
+                    $points,
+                    $hashedPoints,
+                    (float) $googleMetrics['distance'],
+                    (float) $googleMetrics['duration'],
+                    'google_routes'
+                );
+            }
+        }
+
+        if ($osrmOutcome['status'] === 'osrm_unreachable') {
+            \Log::warning('[trip_route|getTripInfo] OSRM unreachable and Google not available or failed', [
+                'hashed_points' => $hashedPoints,
             ]);
 
-            return $response;
-        } else {
-            \Log::info('[trip_route|getTripInfo] OSRM response not usable (route not found or unexpected shape)', [
+            return $this->routingServiceUnavailableResponse();
+        }
+
+        $payload = $osrmOutcome['payload'] ?? [];
+        \Log::info('[trip_route|getTripInfo] route not found (OSRM and Google)', [
+            'hashed_points' => $hashedPoints,
+            'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
+        ]);
+
+        $failResponse = [
+            'status' => false,
+            'data' => null,
+            'message' => 'Route not found',
+        ];
+
+        RouteCache::updateOrCreate(
+            ['hashed_points' => $hashedPoints],
+            [
+                'points' => $points,
+                'route_data' => $failResponse,
+                'expires_at' => now()->addHour(),
+            ]
+        );
+
+        return $failResponse;
+    }
+
+    /**
+     * @return array{status: 'route', payload: array}|array{status: 'osrm_no_route', payload: array}|array{status: 'osrm_unreachable'}
+     */
+    private function requestOsrmForTripInfoCoords(string $coords, string $hashedPoints): array
+    {
+        $primary = rtrim((string) config('carpoolear.osrm_router_base_url', 'https://router.project-osrm.org'), '/');
+        $fallback = config('carpoolear.osrm_router_fallback_base_url')
+            ? rtrim((string) config('carpoolear.osrm_router_fallback_base_url'), '/')
+            : null;
+        $bases = array_values(array_unique(array_filter([$primary, $fallback])));
+
+        $upstreamPath = '/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true';
+        $lastPayload = null;
+        $lastHttpStatus = null;
+
+        foreach ($bases as $base) {
+            if ($base === '') {
+                continue;
+            }
+            $url = $base.$upstreamPath;
+            try {
+                $response = Http::timeout(45)->get($url);
+            } catch (\Throwable $e) {
+                \Log::warning('[trip_route|getTripInfo] OSRM request exception', [
+                    'hashed_points' => $hashedPoints,
+                    'base' => $base,
+                    'coords_preview' => strlen($coords) > 120 ? substr($coords, 0, 120).'…' : $coords,
+                    'message' => $e->getMessage(),
+                    'exception' => $e::class,
+                ]);
+
+                continue;
+            }
+
+            $lastHttpStatus = $response->status();
+            $rawBodyPreview = strlen($body = $response->body()) > 500 ? substr($body, 0, 500).'…' : $body;
+
+            if ($response->serverError()) {
+                \Log::warning('[trip_route|getTripInfo] OSRM HTTP server error', [
+                    'hashed_points' => $hashedPoints,
+                    'base' => $base,
+                    'http_status' => $lastHttpStatus,
+                    'body_preview' => $rawBodyPreview,
+                ]);
+
+                continue;
+            }
+
+            $payload = $response->json();
+            \Log::debug('[trip_route|getTripInfo] OSRM raw response summary', [
                 'hashed_points' => $hashedPoints,
-                'http_status' => $httpStatus,
-                'successful' => $response->successful(),
+                'base' => $base,
+                'http_status' => $lastHttpStatus,
+                'payload_is_array' => is_array($payload),
                 'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
                 'osrm_message' => is_array($payload) ? ($payload['message'] ?? null) : null,
             ]);
-            \Log::debug('[trip_route|getTripInfo] OSRM body preview (fail branch)', [
-                'body_preview' => $rawBodyPreview,
-            ]);
 
-            $response = [
-                'status' => false, 
-                'data' => null,
-                'message' => 'Route not found'
-            ];
+            if (! is_array($payload)) {
+                continue;
+            }
 
-            // Cache failed responses for a shorter time (1 hour) to avoid hammering the API
-            RouteCache::updateOrCreate(
-                ['hashed_points' => $hashedPoints],
-                [
-                    'points' => $points,
-                    'route_data' => $response,
-                    'expires_at' => now()->addHour()
-                ]
-            );
+            $lastPayload = $payload;
 
-            return $response;
+            if ($response->successful()
+                && ($payload['code'] ?? null) === 'Ok'
+                && ! empty($payload['routes'])
+                && is_array($payload['routes'])) {
+                return ['status' => 'route', 'payload' => $payload];
+            }
         }
+
+        if ($lastPayload !== null) {
+            return ['status' => 'osrm_no_route', 'payload' => $lastPayload];
+        }
+
+        return ['status' => 'osrm_unreachable'];
+    }
+
+    /**
+     * @return array{status: bool, data: array|null, message: string}
+     */
+    private function storeTripInfoSuccess(
+        array $points,
+        string $hashedPoints,
+        float $distanceInMeters,
+        float $duration,
+        string $provider
+    ): array {
+        $co2 = $distanceInMeters * 0.15;
+
+        $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
+        $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
+
+        $fuelPrice = config('carpoolear.module_max_price_fuel_price');
+        $kilometersPerLiter = config('carpoolear.module_max_price_kilometer_by_liter');
+        $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
+        $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
+
+        $tollsVariancePercent = config('carpoolear.module_max_price_price_variance_tolls', 0);
+        $maxPriceVariancePercent = config('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $basePriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100);
+        $tollsVarianceCents = round($basePriceCents * ($tollsVariancePercent / 100));
+        $recommendedTripPriceCents = $basePriceCents + $tollsVarianceCents + $selladoViajePrice;
+        $maximumTripPriceCents = round(($basePriceCents + $tollsVarianceCents) * (1 + $maxPriceVariancePercent / 100)) + $selladoViajePrice;
+
+        $data = [
+            'distance' => $distanceInMeters,
+            'duration' => $duration,
+            'co2' => $co2,
+            'route_needs_payment' => $routeNeedsPayment,
+            'recommended_trip_price_cents' => $recommendedTripPriceCents,
+            'maximum_trip_price_cents' => $maximumTripPriceCents,
+        ];
+
+        $response = [
+            'status' => true,
+            'data' => $data,
+            'message' => 'Route found',
+        ];
+
+        $ttl = max(3600, (int) config('carpoolear.trip_route_cache_ttl_success_seconds', 31536000));
+        RouteCache::updateOrCreate(
+            ['hashed_points' => $hashedPoints],
+            [
+                'points' => $points,
+                'route_data' => $response,
+                'expires_at' => now()->addSeconds($ttl),
+            ]
+        );
+
+        \Log::info('[trip_route|getTripInfo] route OK — cached', [
+            'hashed_points' => $hashedPoints,
+            'provider' => $provider,
+            'ttl_seconds' => $ttl,
+            'distance_m' => $distanceInMeters,
+            'duration_s' => $duration,
+            'route_needs_payment' => $routeNeedsPayment,
+        ]);
+
+        return $response;
     }
 
     private function routingServiceUnavailableResponse(): array
