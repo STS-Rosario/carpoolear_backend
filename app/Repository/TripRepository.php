@@ -659,11 +659,19 @@ class TripRepository
 
     public function getTripInfo($points)
     {
-        \Log::info('getTripInfo repository', [$points]);
-        
-        // Check cache first
         $cacheKey = json_encode($points);
         $hashedPoints = hash('sha256', $cacheKey);
+        $pointsCount = is_array($points) ? count($points) : 0;
+
+        \Log::debug('[trip_route|getTripInfo] request context', [
+            'points_count' => $pointsCount,
+            'hashed_points' => $hashedPoints,
+            'cache_key_length' => strlen($cacheKey),
+            'cache_key_preview' => strlen($cacheKey) > 400 ? substr($cacheKey, 0, 400).'…' : $cacheKey,
+            'points' => $points,
+        ]);
+
+        // Check cache first
         $cachedRoute = RouteCache::where('hashed_points', $hashedPoints)
             ->where(function($query) {
                 $query->whereNull('expires_at')
@@ -672,28 +680,42 @@ class TripRepository
             ->first();
 
         if ($cachedRoute) {
-            \Log::info('Route found in cache');
-            return $cachedRoute->route_data;
+            $routeData = $cachedRoute->route_data;
+            \Log::info('[trip_route|getTripInfo] cache HIT', [
+                'hashed_points' => $hashedPoints,
+                'expires_at' => $cachedRoute->expires_at?->toIso8601String(),
+                'cached_status' => $routeData['status'] ?? null,
+                'cached_message' => $routeData['message'] ?? null,
+                'cached_distance_m' => $routeData['data']['distance'] ?? null,
+                'cached_duration_s' => $routeData['data']['duration'] ?? null,
+                'route_cache_id' => $cachedRoute->id,
+            ]);
+
+            return $routeData;
         }
+
+        \Log::info('[trip_route|getTripInfo] cache MISS — calling OSRM', [
+            'hashed_points' => $hashedPoints,
+        ]);
 
         $coords = '';
         foreach ($points as $point) {
-            \Log::info('point', [$point]);
             if ($coords) {
                 $coords .= ';';
             }
             $coords .= $point['lng'] . ',';
             $coords .= $point['lat'];
         }
-        \Log::info('coords', [$coords]);
 
-        $url =
-            'https://router.project-osrm.org/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
+        $osrmBase = rtrim((string) config('carpoolear.osrm_router_base_url', 'https://router.project-osrm.org'), '/');
+        $url = $osrmBase.'/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true'; // &countrycodes=ar
 
         try {
             $response = Http::timeout(45)->get($url);
         } catch (\Throwable $e) {
-            \Log::warning('OSRM request failed in getTripInfo', [
+            \Log::warning('[trip_route|getTripInfo] OSRM request exception', [
+                'hashed_points' => $hashedPoints,
+                'coords_preview' => strlen($coords) > 120 ? substr($coords, 0, 120).'…' : $coords,
                 'message' => $e->getMessage(),
                 'exception' => $e::class,
             ]);
@@ -701,15 +723,38 @@ class TripRepository
             return $this->routingServiceUnavailableResponse();
         }
 
+        $httpStatus = $response->status();
+        $rawBodyPreview = strlen($body = $response->body()) > 500 ? substr($body, 0, 500).'…' : $body;
+
         if ($response->serverError()) {
-            \Log::warning('OSRM server error in getTripInfo', [
-                'status' => $response->status(),
+            \Log::warning('[trip_route|getTripInfo] OSRM HTTP server error', [
+                'hashed_points' => $hashedPoints,
+                'http_status' => $httpStatus,
+                'body_preview' => $rawBodyPreview,
             ]);
 
             return $this->routingServiceUnavailableResponse();
         }
 
         $payload = $response->json();
+        \Log::debug('[trip_route|getTripInfo] OSRM raw response summary', [
+            'hashed_points' => $hashedPoints,
+            'http_status' => $httpStatus,
+            'payload_is_array' => is_array($payload),
+            'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
+            'osrm_message' => is_array($payload) ? ($payload['message'] ?? null) : null,
+            'routes_count' => is_array($payload) && isset($payload['routes']) && is_array($payload['routes'])
+                ? count($payload['routes'])
+                : null,
+            'waypoints_count' => is_array($payload) ? (isset($payload['waypoints']) && is_array($payload['waypoints']) ? count($payload['waypoints']) : null) : null,
+            'first_route_distance_m' => is_array($payload) && ! empty($payload['routes'][0]['distance'])
+                ? $payload['routes'][0]['distance']
+                : null,
+            'first_route_duration_s' => is_array($payload) && ! empty($payload['routes'][0]['duration'])
+                ? $payload['routes'][0]['duration']
+                : null,
+        ]);
+
         if ($response->successful()
             && is_array($payload)
             && ($payload['code'] ?? null) === 'Ok'
@@ -773,8 +818,26 @@ class TripRepository
                 ]
             );
 
+            \Log::info('[trip_route|getTripInfo] OSRM OK — cached 24h', [
+                'hashed_points' => $hashedPoints,
+                'distance_m' => $distanceInMeters,
+                'duration_s' => $duration,
+                'route_needs_payment' => $routeNeedsPayment,
+            ]);
+
             return $response;
         } else {
+            \Log::info('[trip_route|getTripInfo] OSRM response not usable (route not found or unexpected shape)', [
+                'hashed_points' => $hashedPoints,
+                'http_status' => $httpStatus,
+                'successful' => $response->successful(),
+                'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
+                'osrm_message' => is_array($payload) ? ($payload['message'] ?? null) : null,
+            ]);
+            \Log::debug('[trip_route|getTripInfo] OSRM body preview (fail branch)', [
+                'body_preview' => $rawBodyPreview,
+            ]);
+
             $response = [
                 'status' => false, 
                 'data' => null,

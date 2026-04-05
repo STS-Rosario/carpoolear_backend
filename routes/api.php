@@ -12,6 +12,7 @@ use STS\Http\Controllers\Api\v1\RoutesController;
 use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\TripController;
+use STS\Http\Controllers\Api\v1\OsrmProxyController;
 use STS\Http\Controllers\Api\v1\UserController;
 use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
 use STS\Http\Controllers\Api\v1\MercadoPagoOAuthController;
@@ -42,6 +43,11 @@ Route::middleware(['api'])->group(function () {
     Route::post('reset-password', [AuthController::class, 'reset'])->middleware('throttle:password-reset');
     Route::post('change-password/{token?}', [AuthController::class, 'changePasswod']);
     Route::post('log', [AuthController::class, 'log']);
+
+    // Leaflet Routing Machine: same URL shape as OSRM /route/v1/driving/{coords}?...
+    Route::get('osrm/route/v1/{path}', [OsrmProxyController::class, 'route'])
+        ->middleware('throttle:180,1')
+        ->where('path', 'driving/.+');
 
     // Mercado Pago OAuth callback (public; validated via state)
     Route::get('mercadopago/oauth/callback', [MercadoPagoOAuthController::class, 'callback']);

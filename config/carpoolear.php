@@ -100,6 +100,15 @@ return [
     'log_emails' => env('LOG_EMAILS', false),
     'email_log_daily_days' => env('EMAIL_LOG_DAILY_DAYS', 30),
 
+    // OSRM (trip-info + public map proxy). Primary = demo or self-hosted base URL without trailing slash.
+    'osrm_router_base_url' => rtrim(env('OSRM_ROUTER_BASE_URL', 'https://router.project-osrm.org'), '/'),
+    // Optional second base (same /route/v1/... paths). Used if primary times out or errors.
+    'osrm_router_fallback_base_url' => env('OSRM_ROUTER_FALLBACK_BASE_URL')
+        ? rtrim((string) env('OSRM_ROUTER_FALLBACK_BASE_URL'), '/')
+        : null,
+    'osrm_proxy_cache_ttl_success_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_SUCCESS', 86400),
+    'osrm_proxy_cache_ttl_error_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_ERROR', 3600),
+
     // User edit property security: allowlist-based filtering for all user update paths
     'user_edit_properties' => [
         // NEVER editable by anyone (including admins)
