@@ -113,7 +113,10 @@ return [
     // RouteCache (getTripInfo) successful route payload — default 365 days
     'trip_route_cache_ttl_success_seconds' => (int) env('TRIP_ROUTE_CACHE_TTL_SUCCESS_SECONDS', 31536000),
 
-    // Google Routes API v2 (server key). Used only in TripRepository::getTripInfo when OSRM fails; not used for Leaflet proxy.
+    // Mapbox Directions API (secret access token). Trip-info fallback when OSRM fails; not used for Leaflet proxy.
+    'mapbox_access_token' => env('MAPBOX_ACCESS_TOKEN', ''),
+
+    // Google Routes API v2 — optional future fallback; not wired in getTripInfo (see GoogleDrivingRouteService).
     'google_routes_api_key' => env('GOOGLE_ROUTES_API_KEY', ''),
     'google_routes_region_code' => env('GOOGLE_ROUTES_REGION_CODE', 'AR'),
 

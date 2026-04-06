@@ -13,7 +13,7 @@ use STS\Models\TripPoint;
 use STS\Events\Trip\Create  as CreateEvent;
 use Illuminate\Support\Facades\Http;
 use STS\Services\GeoService;
-use STS\Services\GoogleDrivingRouteService;
+use STS\Services\MapboxDirectionsRouteService;
 use STS\Services\MercadoPagoService;
 use STS\Models\RouteCache;
 use STS\Models\PaymentAttempt;
@@ -23,17 +23,17 @@ class TripRepository
     private $paidRegions;
     private $geoService;
     private $mercadoPagoService;
-    private $googleDrivingRouteService;
+    private $mapboxDirectionsRouteService;
 
     public function __construct(
         GeoService $geoService,
         MercadoPagoService $mercadoPagoService,
-        GoogleDrivingRouteService $googleDrivingRouteService
+        MapboxDirectionsRouteService $mapboxDirectionsRouteService
     ) {
         $this->geoService = $geoService;
         $this->paidRegions = $this->geoService->getPaidRegions();
         $this->mercadoPagoService = $mercadoPagoService;
-        $this->googleDrivingRouteService = $googleDrivingRouteService;
+        $this->mapboxDirectionsRouteService = $mapboxDirectionsRouteService;
     }
 
     private function getPotentialNode ($point) {
@@ -730,25 +730,25 @@ class TripRepository
             );
         }
 
-        if ($this->googleDrivingRouteService->isEnabled()) {
-            \Log::info('[trip_route|getTripInfo] trying Google Routes fallback', [
+        if ($this->mapboxDirectionsRouteService->isEnabled()) {
+            \Log::info('[trip_route|getTripInfo] trying Mapbox Directions fallback', [
                 'hashed_points' => $hashedPoints,
                 'osrm_status' => $osrmOutcome['status'],
             ]);
-            $googleMetrics = $this->googleDrivingRouteService->drivingDistanceAndDuration($points);
-            if ($googleMetrics !== null) {
+            $mapboxMetrics = $this->mapboxDirectionsRouteService->drivingDistanceAndDuration($points);
+            if ($mapboxMetrics !== null) {
                 return $this->storeTripInfoSuccess(
                     $points,
                     $hashedPoints,
-                    (float) $googleMetrics['distance'],
-                    (float) $googleMetrics['duration'],
-                    'google_routes'
+                    (float) $mapboxMetrics['distance'],
+                    (float) $mapboxMetrics['duration'],
+                    'mapbox_directions'
                 );
             }
         }
 
         if ($osrmOutcome['status'] === 'osrm_unreachable') {
-            \Log::warning('[trip_route|getTripInfo] OSRM unreachable and Google not available or failed', [
+            \Log::warning('[trip_route|getTripInfo] OSRM unreachable and Mapbox not available or failed', [
                 'hashed_points' => $hashedPoints,
             ]);
 
@@ -756,7 +756,7 @@ class TripRepository
         }
 
         $payload = $osrmOutcome['payload'] ?? [];
-        \Log::info('[trip_route|getTripInfo] route not found (OSRM and Google)', [
+        \Log::info('[trip_route|getTripInfo] route not found (OSRM and Mapbox)', [
             'hashed_points' => $hashedPoints,
             'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
         ]);

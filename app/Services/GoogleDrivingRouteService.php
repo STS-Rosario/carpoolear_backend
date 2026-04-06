@@ -6,7 +6,8 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Google Routes API v2 (computeRoutes) — server-side only, for trip distance/duration when OSRM fails.
+ * Google Routes API v2 (computeRoutes) — server-side trip routing helper.
+ * Reserved for future use; TripRepository::getTripInfo currently uses MapboxDirectionsRouteService only.
  * Not used by the Leaflet OSRM proxy.
  */
 class GoogleDrivingRouteService
