@@ -10,6 +10,7 @@ use STS\Services\Logic\UsersManager;
 use STS\Repository\UserRepository;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Services\GeoService;
+use STS\Services\MapboxDirectionsRouteService;
 use STS\Services\MercadoPagoService;
 
 class ProfileTransformer extends TransformerAbstract
@@ -22,7 +23,8 @@ class ProfileTransformer extends TransformerAbstract
         $this->user = $user;
         $geoService = app(GeoService::class);
         $mercadoPagoService = app(MercadoPagoService::class);
-        $tripRepository = new TripRepository($geoService, $mercadoPagoService);
+        $mapboxDirectionsRouteService = app(MapboxDirectionsRouteService::class);
+        $tripRepository = new TripRepository($geoService, $mercadoPagoService, $mapboxDirectionsRouteService);
         $this->tripLogic = new TripsManager($tripRepository, new UsersManager(new UserRepository, $tripRepository));
     }
 

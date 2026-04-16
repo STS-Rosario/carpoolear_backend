@@ -100,6 +100,26 @@ return [
     'log_emails' => env('LOG_EMAILS', false),
     'email_log_daily_days' => env('EMAIL_LOG_DAILY_DAYS', 30),
 
+    // OSRM (trip-info + public map proxy). Primary = demo or self-hosted base URL without trailing slash.
+    'osrm_router_base_url' => rtrim(env('OSRM_ROUTER_BASE_URL', 'https://router.project-osrm.org'), '/'),
+    // Optional second base (same /route/v1/... paths). Used if primary times out or errors.
+    'osrm_router_fallback_base_url' => env('OSRM_ROUTER_FALLBACK_BASE_URL')
+        ? rtrim((string) env('OSRM_ROUTER_FALLBACK_BASE_URL'), '/')
+        : null,
+    // Long TTL: inter-city routes rarely need fresh geometry for map; trip-info uses same cache length for successful routes.
+    'osrm_proxy_cache_ttl_success_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_SUCCESS', 31536000),
+    'osrm_proxy_cache_ttl_error_seconds' => (int) env('OSRM_PROXY_CACHE_TTL_ERROR', 3600),
+
+    // RouteCache (getTripInfo) successful route payload — default 365 days
+    'trip_route_cache_ttl_success_seconds' => (int) env('TRIP_ROUTE_CACHE_TTL_SUCCESS_SECONDS', 31536000),
+
+    // Mapbox Directions API (secret access token). Trip-info fallback when OSRM fails; not used for Leaflet proxy.
+    'mapbox_access_token' => env('MAPBOX_ACCESS_TOKEN', ''),
+
+    // Google Routes API v2 — optional future fallback; not wired in getTripInfo (see GoogleDrivingRouteService).
+    'google_routes_api_key' => env('GOOGLE_ROUTES_API_KEY', ''),
+    'google_routes_region_code' => env('GOOGLE_ROUTES_REGION_CODE', 'AR'),
+
     // User edit property security: allowlist-based filtering for all user update paths
     'user_edit_properties' => [
         // NEVER editable by anyone (including admins)
