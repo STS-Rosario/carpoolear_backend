@@ -81,6 +81,10 @@ Happy coding!
 
 ## Troubleshooting
 
+### Production / staging: file cache and `storage` permissions
+
+If logs show `fopen(...storage/framework/cache/data/...)` with `ThrottleRequests` or `FileStore`, PHP (usually `www-data`) cannot write Laravel’s **file** cache under `storage`. See [docs/PRODUCTION_STORAGE_AND_CACHE.md](docs/PRODUCTION_STORAGE_AND_CACHE.md) for diagnosis and the fix (ownership + directory modes). Same steps apply when preparing a staging server.
+
 ```
 [PDOException] - SQLSTATE[HY000] [2002] No such file or directory
 ```
