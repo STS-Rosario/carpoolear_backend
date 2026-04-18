@@ -21,6 +21,7 @@ return [
 
     'allowed_origins' => [
         'capacitor://localhost',
+        'capacitor://carpoolear.com.ar',
         'https://localhost',
         'http://localhost:8080',
         'http://localhost:8081',
