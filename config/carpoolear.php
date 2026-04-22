@@ -21,6 +21,8 @@ return [
     'module_user_request_limited_hours_range' => (int) env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', 2),
     'module_send_full_trip_message' => env('MODULE_SEND_FULL_TRIP_MESSAGE', false),
     'module_unaswered_message_limit' => env('MODULE_UNASWERED_MESSAGE_LIMIT', false),
+    // When true, the Vue app shows response speed and response rate for the driver on trip cards (TripDriver.vue).
+    'module_conversation_average_delay' => env('MODULE_CONVERSATION_AVERAGE_DELAY', false),
     'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),
     'module_unique_doc_phone' => env('MODULE_UNIQUE_DOC_PHONE', false),
     'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false),
