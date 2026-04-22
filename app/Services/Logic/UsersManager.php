@@ -242,7 +242,7 @@ class UsersManager extends BaseManager
                 ]);
                 $webhookUrl = config('services.slack.banned_dni_webhook_url');
                 if (!empty($webhookUrl)) {
-                    $profileLink = rtrim(config('carpoolear.frontend_url'), '/') . '#/profile/' . $user->id;
+                    $profileLink = $this->userEditablePropertiesService->frontendAdminProfileUrl($user->id);
                     $slackMessage = "@channel Intento de uso de DNI banneado: {$nroDoc} en user ID: {$user->id} Link al perfil: {$profileLink}";
                     try {
                         $response = Http::timeout(3)->post($webhookUrl, ['text' => $slackMessage]);
