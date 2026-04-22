@@ -162,6 +162,14 @@ class UserEditablePropertiesService
     }
 
     /**
+     * Public SPA deep link to a user's profile (for admin alerts, notifications, etc.).
+     */
+    public function frontendAdminProfileUrl(int $userId): string
+    {
+        return rtrim(config('carpoolear.frontend_url'), '/') . '/app/profile/' . $userId;
+    }
+
+    /**
      * Send Slack alert for forbidden profile edit attempt.
      */
     public function sendFlaggedPropertyAlert(User $user, array $bannedProperties): void
@@ -172,7 +180,7 @@ class UserEditablePropertiesService
         }
 
         $bannedPropertiesStr = implode(', ', $bannedProperties);
-        $adminLinkToProfile = rtrim(config('carpoolear.frontend_url'), '/') . '/app/profile/' . $user->id;
+        $adminLinkToProfile = $this->frontendAdminProfileUrl($user->id);
         $slackMessage = "Edición prohibida de perfil: {$bannedPropertiesStr} en usuario ID {$user->id}. Link al perfil: {$adminLinkToProfile}";
 
         try {
