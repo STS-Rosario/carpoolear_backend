@@ -38,6 +38,38 @@ class ApiAuthTest extends TestCase
         $this->assertTrue($json->data != null);
     }
 
+    /**
+     * After registration, active users should receive a JWT so the client can log them in without a separate login call.
+     */
+    public function testRegistrationReturnsJwtTokenWhenUserIsActiveForAutoLogin()
+    {
+        $user = User::factory()->create([
+            'active' => 1,
+            'banned' => 0,
+        ]);
+
+        $this->mock(\STS\Services\Logic\UsersManager::class, function ($mock) use ($user) {
+            $mock->shouldReceive('create')->once()->andReturn($user);
+        });
+
+        $data = [
+            'name'                  => 'Auto Login Test',
+            'email'                 => 'auto-login-test@example.com',
+            'password'              => '123456',
+            'password_confirmation' => '123456',
+            'terms_and_conditions'  => '1',
+            'token'                 => 'test-recaptcha-token',
+        ];
+        $response = $this->call('POST', 'api/users', $data);
+
+        $this->assertEquals(200, $response->status());
+        $json = $this->parseJson($response);
+        $this->assertNotNull($json->data);
+        $this->assertObjectHasProperty('token', $json);
+        $this->assertNotEmpty($json->token);
+        $this->assertIsString($json->token);
+    }
+
     public function testLogin()
     {
         $user = \STS\Models\User::factory()->create();
