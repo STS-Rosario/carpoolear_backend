@@ -112,6 +112,8 @@ return [
 
     // RouteCache (getTripInfo) successful route payload — default 365 days
     'trip_route_cache_ttl_success_seconds' => (int) env('TRIP_ROUTE_CACHE_TTL_SUCCESS_SECONDS', 31536000),
+    // Debug helper: when true, getTripInfo skips RouteCache reads and writes.
+    'trip_route_cache_bypass' => filter_var(env('TRIP_ROUTE_CACHE_BYPASS', false), FILTER_VALIDATE_BOOLEAN),
 
     // Mapbox Directions API (secret access token). Trip-info fallback when OSRM fails; not used for Leaflet proxy.
     'mapbox_access_token' => env('MAPBOX_ACCESS_TOKEN', ''),

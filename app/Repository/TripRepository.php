@@ -668,6 +668,7 @@ class TripRepository
         $cacheKey = json_encode($points);
         $hashedPoints = hash('sha256', $cacheKey);
         $pointsCount = is_array($points) ? count($points) : 0;
+        $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
 
         \Log::debug('[trip_route|getTripInfo] request context', [
             'points_count' => $pointsCount,
@@ -677,27 +678,33 @@ class TripRepository
             'points' => $points,
         ]);
 
-        // Check cache first
-        $cachedRoute = RouteCache::where('hashed_points', $hashedPoints)
-            ->where(function($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
-            })
-            ->first();
+        // Check cache first (unless bypass is enabled for debugging)
+        if (! $cacheBypass) {
+            $cachedRoute = RouteCache::where('hashed_points', $hashedPoints)
+                ->where(function($query) {
+                    $query->whereNull('expires_at')
+                        ->orWhere('expires_at', '>', now());
+                })
+                ->first();
 
-        if ($cachedRoute) {
-            $routeData = $cachedRoute->route_data;
-            \Log::info('[trip_route|getTripInfo] cache HIT', [
+            if ($cachedRoute) {
+                $routeData = $cachedRoute->route_data;
+                \Log::info('[trip_route|getTripInfo] cache HIT', [
+                    'hashed_points' => $hashedPoints,
+                    'expires_at' => $cachedRoute->expires_at?->toIso8601String(),
+                    'cached_status' => $routeData['status'] ?? null,
+                    'cached_message' => $routeData['message'] ?? null,
+                    'cached_distance_m' => $routeData['data']['distance'] ?? null,
+                    'cached_duration_s' => $routeData['data']['duration'] ?? null,
+                    'route_cache_id' => $cachedRoute->id,
+                ]);
+
+                return $routeData;
+            }
+        } else {
+            \Log::info('[trip_route|getTripInfo] cache BYPASS enabled', [
                 'hashed_points' => $hashedPoints,
-                'expires_at' => $cachedRoute->expires_at?->toIso8601String(),
-                'cached_status' => $routeData['status'] ?? null,
-                'cached_message' => $routeData['message'] ?? null,
-                'cached_distance_m' => $routeData['data']['distance'] ?? null,
-                'cached_duration_s' => $routeData['data']['duration'] ?? null,
-                'route_cache_id' => $cachedRoute->id,
             ]);
-
-            return $routeData;
         }
 
         \Log::info('[trip_route|getTripInfo] cache MISS — calling OSRM', [
@@ -767,14 +774,16 @@ class TripRepository
             'message' => 'Route not found',
         ];
 
-        RouteCache::updateOrCreate(
-            ['hashed_points' => $hashedPoints],
-            [
-                'points' => $points,
-                'route_data' => $failResponse,
-                'expires_at' => now()->addHour(),
-            ]
-        );
+        if (! $cacheBypass) {
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $failResponse,
+                    'expires_at' => now()->addHour(),
+                ]
+            );
+        }
 
         return $failResponse;
     }
@@ -869,6 +878,7 @@ class TripRepository
         string $provider
     ): array {
         $co2 = $distanceInMeters * 0.15;
+        $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
 
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
@@ -901,24 +911,34 @@ class TripRepository
             'message' => 'Route found',
         ];
 
-        $ttl = max(3600, (int) config('carpoolear.trip_route_cache_ttl_success_seconds', 31536000));
-        RouteCache::updateOrCreate(
-            ['hashed_points' => $hashedPoints],
-            [
-                'points' => $points,
-                'route_data' => $response,
-                'expires_at' => now()->addSeconds($ttl),
-            ]
-        );
+        if (! $cacheBypass) {
+            $ttl = max(3600, (int) config('carpoolear.trip_route_cache_ttl_success_seconds', 31536000));
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $response,
+                    'expires_at' => now()->addSeconds($ttl),
+                ]
+            );
 
-        \Log::info('[trip_route|getTripInfo] route OK — cached', [
-            'hashed_points' => $hashedPoints,
-            'provider' => $provider,
-            'ttl_seconds' => $ttl,
-            'distance_m' => $distanceInMeters,
-            'duration_s' => $duration,
-            'route_needs_payment' => $routeNeedsPayment,
-        ]);
+            \Log::info('[trip_route|getTripInfo] route OK — cached', [
+                'hashed_points' => $hashedPoints,
+                'provider' => $provider,
+                'ttl_seconds' => $ttl,
+                'distance_m' => $distanceInMeters,
+                'duration_s' => $duration,
+                'route_needs_payment' => $routeNeedsPayment,
+            ]);
+        } else {
+            \Log::info('[trip_route|getTripInfo] route OK — cache write skipped (BYPASS)', [
+                'hashed_points' => $hashedPoints,
+                'provider' => $provider,
+                'distance_m' => $distanceInMeters,
+                'duration_s' => $duration,
+                'route_needs_payment' => $routeNeedsPayment,
+            ]);
+        }
 
         return $response;
     }
