@@ -66,9 +66,17 @@ class UserController extends Controller
             throw new ExceptionWithErrors('Could not create new user.', $this->userLogic->getErrors());
         }
 
-        // return response()->json(['user' => $user]);
-        return $this->item($user, new ProfileTransformer(auth()->user()));
+        $profileResponse = $this->item($user, new ProfileTransformer(auth()->user()));
+        $payload = json_decode($profileResponse->getContent(), true);
+        if ($user->active && ! $user->banned) {
+            try {
+                $payload['token'] = JWTAuth::fromUser($user);
+            } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+                \Log::error('Could not issue JWT after registration: '.$e->getMessage());
+            }
+        }
 
+        return response()->json($payload);
     }
 
     public function update(Request $request)
