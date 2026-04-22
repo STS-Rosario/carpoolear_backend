@@ -36,10 +36,10 @@ return [
     'min_version_ios' => env('MIN_VERSION_IOS') ?: null,
     'module_seat_price_enabled' => env('MODULE_SEAT_PRICE_ENABLED', false),
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
-    'module_max_price_fuel_price' => (int) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
-    'module_max_price_price_variance_tolls' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
-    'module_max_price_price_variance_max_extra' => (int) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
-    'module_max_price_kilometer_by_liter' => (int) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
+    'module_max_price_fuel_price' => (float) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
+    'module_max_price_price_variance_tolls' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
+    'module_max_price_price_variance_max_extra' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
+    'module_max_price_kilometer_by_liter' => (float) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
 
     'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
 
@@ -112,6 +112,8 @@ return [
 
     // RouteCache (getTripInfo) successful route payload — default 365 days
     'trip_route_cache_ttl_success_seconds' => (int) env('TRIP_ROUTE_CACHE_TTL_SUCCESS_SECONDS', 31536000),
+    // Debug helper: when true, getTripInfo skips RouteCache reads and writes.
+    'trip_route_cache_bypass' => filter_var(env('TRIP_ROUTE_CACHE_BYPASS', false), FILTER_VALIDATE_BOOLEAN),
 
     // Mapbox Directions API (secret access token). Trip-info fallback when OSRM fails; not used for Leaflet proxy.
     'mapbox_access_token' => env('MAPBOX_ACCESS_TOKEN', ''),
