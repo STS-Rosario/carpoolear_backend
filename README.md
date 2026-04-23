@@ -78,6 +78,21 @@ Happy coding!
 
 ## Contributing
 
+### Code style (Laravel Pint)
+
+Commits run [Laravel Pint](https://github.com/laravel/pint) on **staged** `.php` files via `.githooks/pre-commit`. Pint fixes style in place and those changes are re-staged so they are included in the same commit.
+
+After `composer install` or `composer update`, the repo’s Git config is updated to use the tracked hooks directory (`core.hooksPath=.githooks`). If hooks are not firing (for example you cloned before this was added), run:
+
+```bash
+composer run setup-git-hooks
+```
+
+You can still run Pint manually anytime:
+
+```bash
+./vendor/bin/pint
+```
 
 ## Troubleshooting
 

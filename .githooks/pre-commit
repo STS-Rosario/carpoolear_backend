@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+if [[ ! -f vendor/bin/pint ]]; then
+  echo "pre-commit: vendor/bin/pint not found — run composer install" >&2
+  exit 1
+fi
+
+mapfile -t files < <(git diff --cached --name-only --diff-filter=ACM | grep -E '\.php$' || true)
+
+if [[ ${#files[@]} -eq 0 ]]; then
+  exit 0
+fi
+
+existing=()
+for f in "${files[@]}"; do
+  [[ -f "$f" ]] && existing+=("$f")
+done
+
+if [[ ${#existing[@]} -eq 0 ]]; then
+  exit 0
+fi
+
+vendor/bin/pint "${existing[@]}"
+git add "${existing[@]}"
