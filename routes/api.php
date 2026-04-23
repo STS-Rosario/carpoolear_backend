@@ -1,4 +1,5 @@
 <?php
+
 use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Controllers\Api\v1\CarController;
 use STS\Http\Controllers\Api\v1\ConversationController;
@@ -28,6 +29,7 @@ use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
+use STS\Http\Controllers\Api\Admin\AdminReferenceController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 
@@ -223,6 +225,9 @@ Route::middleware(['api'])->group(function () {
         Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
         Route::post('mercado-pago-rejected-validations/{id}/review', [AdminMercadoPagoRejectedValidationController::class, 'review']);
         Route::post('mercado-pago-rejected-validations/{id}/approve', [AdminMercadoPagoRejectedValidationController::class, 'approve']);
+        // Reference management routes
+        Route::get('users/{user}/references', [AdminReferenceController::class, 'index']);
+        Route::delete('users/{user}/references/{reference}', [AdminReferenceController::class, 'deleteReference']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
