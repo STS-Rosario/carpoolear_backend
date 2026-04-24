@@ -2,29 +2,33 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use STS\Helpers\IdentityValidationHelper;
+use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Http\Resources\UserBadgeResource;
-use STS\Models\Donation;
+use STS\Jobs\SendDeleteAccountRequestEmail;
 use STS\Models\DeleteAccountRequest;
+use STS\Models\Donation;
 use STS\Models\Rating;
 use STS\Models\User;
-use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
+use STS\Services\MercadoPagoOAuthService;
 use STS\Services\UserDeletionService;
 use STS\Transformers\ProfileTransformer;
-use STS\Jobs\SendDeleteAccountRequestEmail;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use STS\Services\MercadoPagoOAuthService;
-use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
     protected $userLogic;
+
     protected $deviceLogic;
+
     protected $userDeletionService;
+
     protected $anonymizationService;
 
     public function __construct(
@@ -102,30 +106,31 @@ class UserController extends Controller
         // Check if user's phone number contains any banned numbers
         if (isset($data['mobile_phone'])) {
             $banned_phones = config('carpoolear.banned_phones', []);
-            if (!empty($banned_phones)) {
+            if (! empty($banned_phones)) {
                 $user_phone = $data['mobile_phone'];
                 foreach ($banned_phones as $banned_phone) {
                     if (str_contains($user_phone, $banned_phone)) {
                         $this->userLogic->update($profile, ['banned' => 1]);
-                        \Log::info('User banned due to phone number containing banned number: ' . $user_phone . ' (matched: ' . $banned_phone . ')');
+                        \Log::info('User banned due to phone number containing banned number: '.$user_phone.' (matched: '.$banned_phone.')');
                         break;
                     }
                 }
             }
         }
-        
+
         return $this->item($profile, new ProfileTransformer($me));
     }
-    
-    public function adminUpdate(Request $request) {
+
+    public function adminUpdate(Request $request)
+    {
         $me = auth()->user();
-        if (!$me->is_admin) {
+        if (! $me->is_admin) {
             throw new ExceptionWithErrors('Access denied. Admin privileges required.');
         }
-        
+
         $data = $request->all();
         $user = null;
-        
+
         // Extract user ID from the request
         if (isset($data['user']) && isset($data['user']['id'])) {
             $userId = $data['user']['id'];
@@ -134,16 +139,16 @@ class UserController extends Controller
         } else {
             throw new ExceptionWithErrors('User ID is required for admin update.');
         }
-        
-        if (!$user) {
+
+        if (! $user) {
             throw new ExceptionWithErrors('User not found.');
         }
-        
+
         $profile = $this->userLogic->update($user, $data, false, true);
-        if (!$profile) {
+        if (! $profile) {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
-        
+
         return $this->item($profile, new ProfileTransformer($me));
     }
 
@@ -161,7 +166,7 @@ class UserController extends Controller
     public function show($id = null)
     {
         $me = auth()->user();
-        if (!($id > 0)) {
+        if (! ($id > 0)) {
             $id = $me->id;
         }
         $profile = $this->userLogic->show($me, $id);
@@ -169,10 +174,15 @@ class UserController extends Controller
             throw new ExceptionWithErrors('Users not found.', $this->userLogic->getErrors());
         }
 
-        // Set validate_by_date for current users who don't have it when grace days are configured
+        // Set validate_by_date for pre-cutoff users on first /users/me when grace days apply and enforcement is on (not optional-only; new users use cutoff, not this date)
         if ($profile->id === $me->id) {
-            $days = config('carpoolear.identity_validation_days_for_current_users', 0);
-            if ($days > 0 && $profile->validate_by_date === null) {
+            $days = (int) config('carpoolear.identity_validation_days_for_current_users', 0);
+            if (
+                IdentityValidationHelper::enforcementIsActive()
+                && $days > 0
+                && $profile->validate_by_date === null
+                && ! IdentityValidationHelper::isUserCreatedOnOrAfterCutoff($profile)
+            ) {
                 $profile->validate_by_date = now()->addDays($days);
                 $profile->save();
                 $profile = $profile->fresh();
@@ -188,11 +198,11 @@ class UserController extends Controller
     public function badges($id = null)
     {
         $me = auth()->user();
-        if (!($id > 0) || $id === 'me') {
+        if (! ($id > 0) || $id === 'me') {
             $id = $me->id;
         }
         $user = User::find($id);
-        if (!$user) {
+        if (! $user) {
             throw new ExceptionWithErrors('User not found.');
         }
         $badges = $user->badges()
@@ -212,18 +222,21 @@ class UserController extends Controller
 
         return $this->collection($users, new ProfileTransformer(auth()->user()));
     }
-    public function searchUsers (Request $request) {
+
+    public function searchUsers(Request $request)
+    {
         $search_text = null;
         if ($request->has('name')) {
             $search_text = $request->get('name');
         }
         $users = $this->userLogic->searchUsers($search_text);
+
         return $this->collection($users, new ProfileTransformer(auth()->user()));
     }
 
     public function registerDonation(Request $request)
     {
-        $donation = new Donation();
+        $donation = new Donation;
         if ($request->has('has_donated')) {
             $donation->has_donated = $request->get('has_donated');
         }
@@ -238,10 +251,10 @@ class UserController extends Controller
         }
         $user = null;
         if ($request->has('user')) {
-            $user = new \stdClass();
+            $user = new \stdClass;
             $user->id = intval($request->get('user'));
             if (! $user->id > 0) {
-                $user->id = 164619; //donador anonimo
+                $user->id = 164619; // donador anonimo
             }
         } else {
             $user = auth()->user();
@@ -250,6 +263,7 @@ class UserController extends Controller
 
         return $donation;
     }
+
     public function bankData(Request $request)
     {
         $data = $this->userLogic->bankData();
@@ -257,8 +271,7 @@ class UserController extends Controller
         return json_encode($data);
     }
 
-
-    public function terms (Request $request)
+    public function terms(Request $request)
     {
         $lang = $request->has('lang') ? $request->get('lang') : '';
         $data = $this->userLogic->termsText($lang);
@@ -270,7 +283,7 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $profile = $this->userLogic->update($user, [$property => $value > 0 ? 1 : 0], false, false);
-        if (!$profile) {
+        if (! $profile) {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
 
@@ -283,7 +296,10 @@ class UserController extends Controller
      */
     public function getMercadoPagoOAuthUrl(Request $request, MercadoPagoOAuthService $oauthService)
     {
-        if (!config('carpoolear.identity_validation_mercado_pago_enabled', false)) {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            throw new ExceptionWithErrors('Identity validation is not available.', [], 503);
+        }
+        if (! config('carpoolear.identity_validation_mercado_pago_enabled', false)) {
             throw new ExceptionWithErrors('Identity validation with Mercado Pago is not available.', [], 503);
         }
         $clientId = config('services.mercadopago.client_id');
@@ -302,13 +318,13 @@ class UserController extends Controller
 
         if (is_array($authResult)) {
             $authorizationUrl = $authResult['authorization_url'];
-            Cache::put('mp_oauth_state:' . $state, [
+            Cache::put('mp_oauth_state:'.$state, [
                 'user_id' => $user->id,
                 'code_verifier' => $authResult['code_verifier'],
             ], 600);
         } else {
             $authorizationUrl = $authResult;
-            Cache::put('mp_oauth_state:' . $state, ['user_id' => $user->id], 600);
+            Cache::put('mp_oauth_state:'.$state, ['user_id' => $user->id], 600);
         }
 
         return response()->json(['authorization_url' => $authorizationUrl]);
@@ -319,7 +335,7 @@ class UserController extends Controller
         $user = auth()->user();
 
         // Create a new delete account request
-        $deleteRequest = new DeleteAccountRequest();
+        $deleteRequest = new DeleteAccountRequest;
         $deleteRequest->user_id = $user->id;
         $deleteRequest->date_requested = now();
         $deleteRequest->action_taken = DeleteAccountRequest::ACTION_REQUESTED;
@@ -336,12 +352,12 @@ class UserController extends Controller
 
         \Log::info('Delete account request email queued successfully', [
             'user_id' => $user->id,
-            'admin_email' => $adminEmail
+            'admin_email' => $adminEmail,
         ]);
 
         return response()->json([
             'message' => 'Delete account request created successfully',
-            'request_id' => $deleteRequest->id
+            'request_id' => $deleteRequest->id,
         ], 201);
     }
 
@@ -366,7 +382,7 @@ class UserController extends Controller
             ], 422);
         }
 
-        if (!$hasTrips && !$hasRatings && !$hasReferences) {
+        if (! $hasTrips && ! $hasRatings && ! $hasReferences) {
             // Branch A: Delete user
             $userId = $user->id;
             $this->deviceLogic->logoutAllDevices($user);
@@ -377,7 +393,7 @@ class UserController extends Controller
                     JWTAuth::invalidate($token);
                 }
             } catch (\Exception $e) {
-                \Log::error('Failed to invalidate JWT after delete: ' . $e->getMessage());
+                \Log::error('Failed to invalidate JWT after delete: '.$e->getMessage());
             }
 
             \Log::info('User self-deletion: actual_delete', ['user_id' => $userId]);
@@ -397,7 +413,7 @@ class UserController extends Controller
                 JWTAuth::invalidate($token);
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to invalidate JWT after anonymize: ' . $e->getMessage());
+            \Log::error('Failed to invalidate JWT after anonymize: '.$e->getMessage());
         }
 
         \Log::info('User self-deletion: anonymize', ['user_id' => $user->id]);

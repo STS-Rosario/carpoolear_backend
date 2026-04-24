@@ -1,18 +1,18 @@
 <?php
 
 namespace STS\Http\Controllers\Api\v1;
- 
+
+use Illuminate\Http\Request;
 use STS\Helpers\OldCordovaAppHelper;
+use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\User;
-use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller; 
-use Tymon\JWTAuth\Exceptions\JWTException; 
-use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -31,16 +31,17 @@ class AuthController extends Controller
         $this->deviceLogic = $devices;
     }
 
-    private function _getConfig ($isCordova = false) {
+    private function _getConfig($isCordova = false)
+    {
 
-        $config = new \stdClass();
-        $config->donation = new \stdClass();
+        $config = new \stdClass;
+        $config->donation = new \stdClass;
         $config->donation->month_days = config('carpoolear.donation_month_days');
         $config->donation->trips_count = config('carpoolear.donation_trips_count');
         $config->donation->trips_offset = config('carpoolear.donation_trips_offset');
         $config->donation->trips_rated = config('carpoolear.donation_trips_rated');
         $config->donation->ammount_needed = config('carpoolear.donation_ammount_needed');
-        $config->banner = new \stdClass();
+        $config->banner = new \stdClass;
         $config->banner->url = $isCordova ? config('carpoolear.banner_url_cordova') : config('carpoolear.banner_url');
         $config->banner->url_mobile = $isCordova ? config('carpoolear.banner_url_cordova_mobile') : config('carpoolear.banner_url_mobile');
         $config->banner->image = $isCordova ? config('carpoolear.banner_image_cordova') : config('carpoolear.banner_image');
@@ -54,7 +55,7 @@ class AuthController extends Controller
             'banner_url',
             'banner_image',
             'qr_payment_pos_external_id', // backend only; frontend gets identity_validation_manual_qr_enabled
-            'identity_validation_new_users_date', // backend only; frontend gets identity_validation_required_new_users
+            'identity_validation_new_users_date', // backend only; profile exposes identity_validation_required_for_user
         ];
         $allConfigs = config('carpoolear');
         \Log::info('Environment Check:', [
@@ -74,12 +75,14 @@ class AuthController extends Controller
         }
         $config->identity_validation_manual_qr_enabled = config('carpoolear.identity_validation_manual_enabled')
             && config('carpoolear.identity_validation_manual_qr_enabled')
-            && !empty(config('services.mercadopago.qr_payment_access_token'))
-            && !empty(config('carpoolear.qr_payment_pos_external_id'));
+            && ! empty(config('services.mercadopago.qr_payment_access_token'))
+            && ! empty(config('carpoolear.qr_payment_pos_external_id'));
+
         return $config;
     }
 
-    public function getConfig (Request $request) {
+    public function getConfig(Request $request)
+    {
         $user = auth()->user();
 
         // Check if user is authenticated before accessing properties
@@ -117,9 +120,10 @@ class AuthController extends Controller
         }
 
         $config = $this->_getConfig();
+
         return response()->json([
             'token' => $token,
-            'config' => $config
+            'config' => $config,
         ]);
     }
 
@@ -141,13 +145,13 @@ class AuthController extends Controller
         }
 
         $data = [
-            'session_id'  => $token,
+            'session_id' => $token,
         ];
         $config = $this->_getConfig();
 
         if ($request->has('app_version')) {
-            $data['app_version'] =$request->get('app_version');
-            $device = $this->deviceLogic->updateBySession($oldToken, $data);    
+            $data['app_version'] = $request->get('app_version');
+            $device = $this->deviceLogic->updateBySession($oldToken, $data);
         }
 
         if (isset($user)) {
@@ -162,7 +166,7 @@ class AuthController extends Controller
                 ]);
             }
         }
-        
+
         return response()->json([
             'token' => $token,
             'config' => $config,
@@ -180,7 +184,7 @@ class AuthController extends Controller
                 $this->deviceLogic->logoutDevice($token, $user);
             }
         }
-        
+
         // Invalidate the JWT token using the correct method
         try {
             $token = JWTAuth::getToken();
@@ -189,7 +193,7 @@ class AuthController extends Controller
                 \Log::info('JWT token invalidated successfully');
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to invalidate JWT token: ' . $e->getMessage());
+            \Log::error('Failed to invalidate JWT token: '.$e->getMessage());
         }
 
         return response()->json('OK');
@@ -210,11 +214,11 @@ class AuthController extends Controller
     {
         // Apply rate limiting
         $request->validate([
-            'email' => 'required|email'
+            'email' => 'required|email',
         ]);
 
         $email = $request->get('email');
-        
+
         try {
             $token = $this->userLogic->resetPassword($email);
             if ($token) {
@@ -222,25 +226,25 @@ class AuthController extends Controller
             } else {
                 // Check if there are specific errors from the user logic
                 $errors = $this->userLogic->getErrors();
-                if (!empty($errors)) {
+                if (! empty($errors)) {
                     $errorMessage = is_array($errors) ? implode(', ', $errors) : $errors;
                     throw new ExceptionWithErrors($errorMessage);
                 }
                 throw new ExceptionWithErrors('User not found');
             }
         } catch (\Exception $e) {
-            \Log::error('Password reset error: ' . $e->getMessage());
-            
+            \Log::error('Password reset error: '.$e->getMessage());
+
             // Check if it's a rate limiting error
             if (strpos($e->getMessage(), '450') !== false || strpos($e->getMessage(), 'rate') !== false) {
                 throw new ExceptionWithErrors('Too many password reset attempts. Please try again later.');
             }
-            
+
             // Check if it's a cooldown error
             if (strpos($e->getMessage(), 'wait') !== false && strpos($e->getMessage(), 'minutes') !== false) {
                 throw new ExceptionWithErrors($e->getMessage());
             }
-            
+
             throw $e;
         }
     }
@@ -256,7 +260,8 @@ class AuthController extends Controller
         }
     }
 
-    public function log() {
+    public function log()
+    {
         return true;
     }
 }

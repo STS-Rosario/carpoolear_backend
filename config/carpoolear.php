@@ -28,7 +28,7 @@ return [
     'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false),
     'module_trip_creation_payment_enabled' => env('MODULE_TRIP_CREATION_PAYMENT_ENABLED', false),
     'module_trip_creation_payment_amount_cents' => (int) env('MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS', 1500),
-    'module_trip_creation_payment_trips_threshold' => (int)env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
+    'module_trip_creation_payment_trips_threshold' => (int) env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
     // Frontend app base URL (e.g. for payment redirects, OAuth callbacks). Defaults to APP_URL.
     'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost:8080')),
 
@@ -45,13 +45,18 @@ return [
 
     'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
 
+    // Master switch: when false, hide identity validation UI and do not enforce (except admin flows).
+    'identity_validation_enabled' => filter_var(env('IDENTITY_VALIDATION_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+    // When true (and enabled), show flows but do not block restricted actions
+    'identity_validation_optional' => filter_var(env('IDENTITY_VALIDATION_OPTIONAL', false), FILTER_VALIDATE_BOOLEAN),
     // Identity validation: enable/disable MP OAuth and manual validation (frontend shows only enabled options)
     'identity_validation_mercado_pago_enabled' => env('IDENTITY_VALIDATION_MERCADO_PAGO_ENABLED', false),
     'identity_validation_manual_enabled' => env('IDENTITY_VALIDATION_MANUAL_ENABLED', false),
-    // Require identity validation for new users (created on or after identity_validation_new_users_date) to send messages, request seats, accept/reject passengers, create trips
-    'identity_validation_required_new_users' => env('IDENTITY_VALIDATION_REQUIRED_NEW_USERS', false),
+    // New users: created_on_or_after this date (Y-m-d), see IDENTITY_VALIDATION_NEW_USERS_DATE.
     'identity_validation_new_users_date' => env('IDENTITY_VALIDATION_NEW_USERS_DATE', null),
-    // When set (positive integer), current users without validate_by_date get it set to now + N days on /users/me
+    // When enforcement is on: require "new" users (per cutoff) to validate before restricted actions
+    'identity_validation_required_new_users' => filter_var(env('IDENTITY_VALIDATION_REQUIRED_NEW_USERS', false), FILTER_VALIDATE_BOOLEAN),
+    // When set (positive integer), pre-cutoff users without validate_by_date get it on first /users/me only while enforcement is active (enabled and not optional)
     'identity_validation_days_for_current_users' => (int) env('IDENTITY_VALIDATION_DAYS_FOR_CURRENT_USERS', 0),
     // QR payment for manual validation (no physical device needed; see docs in config or README)
     'identity_validation_manual_qr_enabled' => env('IDENTITY_VALIDATION_MANUAL_QR_ENABLED', false),
@@ -74,16 +79,16 @@ return [
         'staff',
         'system',
         'robot',
-        'carpy'
+        'carpy',
     ],
 
     'banned_words_trip_description' => [
-        'carpy'
+        'carpy',
     ],
 
     // List of banned phone numbers that will trigger user ban if found in their profile or in trip descriptions
     'banned_phones' => [
-        '1151415054'
+        '1151415054',
     ],
 
     'trip_creation_limits' => [

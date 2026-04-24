@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * validate_by_date: optional deadline for existing users to complete identity validation; null for new users (created after identity_validation_new_users_date).
+     * validate_by_date: optional deadline for pre-cutoff users to complete identity validation; null for new users (created on or after identity_validation_new_users_date).
      */
     public function up(): void
     {
