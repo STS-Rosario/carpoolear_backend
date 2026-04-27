@@ -208,6 +208,15 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasMany(CampaignDonation::class, 'user_id');
     }
 
+    /**
+     * All legacy monthly donation rows (no calendar-month filter).
+     * Used for lifetime totals such as badge rules.
+     */
+    public function donationRecords()
+    {
+        return $this->hasMany(Donation::class, 'user_id');
+    }
+
     public function unreadNotifications()
     {
         return $this->notifications()->whereNull('read_at');

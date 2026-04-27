@@ -7,6 +7,7 @@ use ReflectionMethod;
 use STS\Models\Badge;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
+use STS\Models\Donation;
 use STS\Models\User;
 use STS\Services\BadgeEvaluatorService;
 use Tests\TestCase;
@@ -108,6 +109,123 @@ class BadgeEvaluatorServiceTest extends TestCase
         (new BadgeEvaluatorService)->evaluate($user->fresh());
 
         $this->assertTrue($user->fresh()->badges()->where('badges.id', $badge->id)->exists());
+    }
+
+    public function test_evaluate_awards_total_donated_when_lifetime_ammount_meets_threshold(): void
+    {
+        Badge::query()->delete();
+
+        $user = User::factory()->create();
+        Donation::query()->create([
+            'user_id' => $user->id,
+            'month' => now()->subMonths(3),
+            'has_donated' => true,
+            'has_denied' => false,
+            'ammount' => 40,
+        ]);
+        Donation::query()->create([
+            'user_id' => $user->id,
+            'month' => now()->subMonth(),
+            'has_donated' => true,
+            'has_denied' => false,
+            'ammount' => 70,
+        ]);
+
+        $badge = Badge::query()->create([
+            'title' => 'Generous',
+            'slug' => 'total-don-'.uniqid('', true),
+            'rules' => [
+                'type' => 'total_donated',
+                'amount' => 100,
+            ],
+            'visible' => true,
+        ]);
+
+        (new BadgeEvaluatorService)->evaluate($user->fresh());
+
+        $this->assertTrue($user->fresh()->badges()->where('badges.id', $badge->id)->exists());
+    }
+
+    public function test_evaluate_does_not_award_total_donated_when_below_threshold(): void
+    {
+        Badge::query()->delete();
+
+        $user = User::factory()->create();
+        Donation::query()->create([
+            'user_id' => $user->id,
+            'month' => now(),
+            'has_donated' => true,
+            'has_denied' => false,
+            'ammount' => 30,
+        ]);
+
+        Badge::query()->create([
+            'title' => 'Not yet',
+            'slug' => 'total-don-low-'.uniqid('', true),
+            'rules' => [
+                'type' => 'total_donated',
+                'amount' => 500,
+            ],
+            'visible' => true,
+        ]);
+
+        (new BadgeEvaluatorService)->evaluate($user->fresh());
+
+        $this->assertSame(0, $user->fresh()->badges()->count());
+    }
+
+    public function test_evaluate_awards_monthly_donor_when_current_month_marked_donated(): void
+    {
+        Badge::query()->delete();
+
+        $user = User::factory()->create();
+        Donation::query()->create([
+            'user_id' => $user->id,
+            'month' => now(),
+            'has_donated' => true,
+            'has_denied' => false,
+            'ammount' => 10,
+        ]);
+
+        $badge = Badge::query()->create([
+            'title' => 'Monthly',
+            'slug' => 'monthly-'.uniqid('', true),
+            'rules' => [
+                'type' => 'monthly_donor',
+            ],
+            'visible' => true,
+        ]);
+
+        (new BadgeEvaluatorService)->evaluate($user->fresh());
+
+        $this->assertTrue($user->fresh()->badges()->where('badges.id', $badge->id)->exists());
+    }
+
+    public function test_evaluate_does_not_award_monthly_donor_when_has_donated_false(): void
+    {
+        Badge::query()->delete();
+
+        $user = User::factory()->create();
+        Donation::query()->create([
+            'user_id' => $user->id,
+            'month' => now(),
+            'has_donated' => false,
+            'has_denied' => false,
+            'ammount' => 99,
+        ]);
+
+        Badge::query()->create([
+            'title' => 'Not monthly',
+            'slug' => 'monthly-no-'.uniqid('', true),
+            'rules' => [
+                'type' => 'monthly_donor',
+            ],
+            'visible' => true,
+        ]);
+
+        (new BadgeEvaluatorService)->evaluate($user->fresh());
+
+        $this->assertSame(0, $user->fresh()->badges()->count());
     }
 
     public function test_evaluate_does_not_award_campaign_badge_for_pending_donation_only(): void

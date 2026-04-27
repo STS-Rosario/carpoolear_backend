@@ -99,6 +99,7 @@ class BadgeEvaluatorService
 
     /**
      * Check if user has donated the required total amount.
+     * Sums {@see Donation::$ammount} across all months (lifetime ledger).
      */
     protected function checkTotalDonations(User $user, array $rules): bool
     {
@@ -106,15 +107,15 @@ class BadgeEvaluatorService
             throw new \InvalidArgumentException('Total donations badge requires amount parameter');
         }
 
-        return $user->donations()->sum('amount') >= $rules['amount'];
+        return (int) $user->donationRecords()->sum('ammount') >= (int) $rules['amount'];
     }
 
     /**
-     * Check if user is a monthly donor.
+     * Check if user is a monthly donor (legacy {@see Donation} rows for the current month with payment).
      */
     protected function checkMonthlyDonor(User $user): bool
     {
-        return $user->donations()->where('is_recurring', true)->exists();
+        return $user->donations()->where('has_donated', true)->exists();
     }
 
     /**
