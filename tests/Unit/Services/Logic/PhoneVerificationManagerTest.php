@@ -1,0 +1,156 @@
+<?php
+
+namespace Tests\Unit\Services\Logic;
+
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use STS\Models\PhoneVerification;
+use STS\Models\User;
+use STS\Repository\PhoneVerificationRepository;
+use STS\Services\Logic\PhoneVerificationManager;
+use STS\Services\SmsService;
+use Tests\TestCase;
+
+class PhoneVerificationManagerTest extends TestCase
+{
+    private function manager(): PhoneVerificationManager
+    {
+        return new PhoneVerificationManager(
+            new PhoneVerificationRepository,
+            new SmsService
+        );
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Config::set('sms.default', 'local');
+        Config::set('sms.verification.resend_cooldown_minutes', 0);
+        Config::set('sms.verification.expires_in_minutes', 30);
+        Config::set('sms.verification.max_failed_attempts', 5);
+    }
+
+    public function test_validator_send_requires_phone(): void
+    {
+        $v = $this->manager()->validatorSend([]);
+        $this->assertTrue($v->fails());
+    }
+
+    public function test_send_verification_code_creates_row_and_returns_payload(): void
+    {
+        $user = User::factory()->create();
+        $request = Request::create('/api/phone/send', 'POST', ['phone' => '1123456789']);
+
+        $result = $this->manager()->sendVerificationCode($user, $request);
+
+        $this->assertNotNull($result);
+        $this->assertArrayHasKey('verification', $result);
+        $this->assertDatabaseHas('phone_verifications', [
+            'user_id' => $user->id,
+            'verified' => false,
+        ]);
+        $this->assertSame(6, strlen((string) $result['verification']->verification_code));
+    }
+
+    public function test_send_verification_code_rejected_when_phone_verified_for_other_user(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        PhoneVerification::create([
+            'user_id' => $owner->id,
+            'phone_number' => '+541112223344',
+            'verified' => true,
+            'verified_at' => Carbon::now(),
+        ]);
+
+        $request = Request::create('/api/phone/send', 'POST', ['phone' => '1112223344']);
+        $manager = $this->manager();
+        $result = $manager->sendVerificationCode($other, $request);
+
+        $this->assertNull($result);
+        $this->assertNotNull($manager->getErrors());
+    }
+
+    public function test_verify_phone_number_updates_user_on_success(): void
+    {
+        $user = User::factory()->create();
+        $sendReq = Request::create('/api/phone/send', 'POST', ['phone' => '1133334444']);
+        $sent = $this->manager()->sendVerificationCode($user, $sendReq);
+        $this->assertNotNull($sent);
+
+        $code = PhoneVerification::where('user_id', $user->id)->value('verification_code');
+        $verifyReq = Request::create('/api/phone/verify', 'POST', ['code' => $code]);
+
+        $result = $this->manager()->verifyPhoneNumber($user->fresh(), $verifyReq);
+
+        $this->assertNotNull($result);
+        $this->assertTrue($result['phone_verified']);
+        $user->refresh();
+        $this->assertTrue($user->phone_verified);
+        $this->assertNotNull($user->phone_verified_at);
+        $this->assertNotNull($user->mobile_phone);
+    }
+
+    public function test_verify_phone_number_fails_on_wrong_code_and_increments_attempts(): void
+    {
+        Config::set('sms.verification.max_failed_attempts', 2);
+        $user = User::factory()->create();
+        $manager = $this->manager();
+        $manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1144445555']));
+
+        $row = PhoneVerification::where('user_id', $user->id)->first();
+        $this->assertNotNull($row);
+
+        $this->assertNull($manager->verifyPhoneNumber($user, Request::create('/', 'POST', ['code' => '000000'])));
+        $this->assertSame(1, (int) $row->fresh()->failed_attempts);
+
+        $this->assertNull($manager->verifyPhoneNumber($user, Request::create('/', 'POST', ['code' => '000000'])));
+        $this->assertTrue($row->fresh()->isBlocked());
+
+        $this->assertNull($manager->verifyPhoneNumber($user, Request::create('/', 'POST', ['code' => $row->fresh()->verification_code])));
+    }
+
+    public function test_verify_phone_number_fails_when_code_expired(): void
+    {
+        $user = User::factory()->create();
+        $this->manager()->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1155556666']));
+
+        $row = PhoneVerification::where('user_id', $user->id)->first();
+        $row->forceFill(['code_sent_at' => Carbon::now()->subDays(2)])->saveQuietly();
+
+        $manager = $this->manager();
+        $this->assertNull($manager->verifyPhoneNumber($user, Request::create('/', 'POST', ['code' => $row->verification_code])));
+        $errors = $manager->getErrors();
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('code', $errors);
+    }
+
+    public function test_resend_verification_code_updates_code(): void
+    {
+        $user = User::factory()->create();
+        $manager = $this->manager();
+        $manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1166667777']));
+        $first = PhoneVerification::where('user_id', $user->id)->value('verification_code');
+
+        $result = $manager->resendVerificationCode($user);
+        $this->assertNotNull($result);
+
+        $second = PhoneVerification::where('user_id', $user->id)->value('verification_code');
+        $this->assertNotSame($first, $second);
+    }
+
+    public function test_get_verification_stats_delegates_to_repository(): void
+    {
+        $user = User::factory()->create();
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => '+549990001122',
+            'verified' => true,
+            'verified_at' => Carbon::now(),
+        ]);
+
+        $stats = $this->manager()->getVerificationStats($user);
+        $this->assertSame(1, (int) $stats->total_attempts);
+    }
+}

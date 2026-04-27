@@ -41,6 +41,8 @@ class User extends Authenticatable implements JWTSubject
         'description',
         'private_note',
         'mobile_phone',
+        'phone_verified',
+        'phone_verified_at',
         'image',
         'active',
         'activation_token',
@@ -91,6 +93,8 @@ class User extends Authenticatable implements JWTSubject
             'identity_validated_at' => 'datetime',
             'identity_validation_rejected_at' => 'datetime',
             'validate_by_date' => 'date',
+            'phone_verified' => 'boolean',
+            'phone_verified_at' => 'datetime',
         ];
     }
 
