@@ -200,6 +200,14 @@ class User extends Authenticatable implements JWTSubject
         return $donations;
     }
 
+    /**
+     * Mercado Pago / campaign checkout donations (not monthly donation rows).
+     */
+    public function campaignDonations()
+    {
+        return $this->hasMany(CampaignDonation::class, 'user_id');
+    }
+
     public function unreadNotifications()
     {
         return $this->notifications()->whereNull('read_at');

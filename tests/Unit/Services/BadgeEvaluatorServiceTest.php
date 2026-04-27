@@ -5,6 +5,8 @@ namespace Tests\Unit\Services;
 use Mockery;
 use ReflectionMethod;
 use STS\Models\Badge;
+use STS\Models\Campaign;
+use STS\Models\CampaignDonation;
 use STS\Models\User;
 use STS\Services\BadgeEvaluatorService;
 use Tests\TestCase;
@@ -66,6 +68,84 @@ class BadgeEvaluatorServiceTest extends TestCase
         (new BadgeEvaluatorService)->evaluate($user->fresh());
 
         $this->assertTrue($user->fresh()->badges()->where('badges.id', $badge->id)->exists());
+    }
+
+    public function test_evaluate_awards_donated_to_campaign_when_user_has_paid_donation(): void
+    {
+        Badge::query()->delete();
+
+        $campaign = Campaign::query()->create([
+            'slug' => 'camp-badge-'.uniqid('', true),
+            'title' => 'Fundraiser',
+            'description' => 'For badge test.',
+            'image_path' => null,
+            'start_date' => now()->toDateString(),
+            'end_date' => null,
+            'payment_slug' => null,
+        ]);
+
+        $user = User::factory()->create();
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'payment_id' => 'mp-'.uniqid(),
+            'amount_cents' => 500,
+            'name' => null,
+            'comment' => null,
+            'user_id' => $user->id,
+            'status' => 'paid',
+        ]);
+
+        $badge = Badge::query()->create([
+            'title' => 'Campaign supporter',
+            'slug' => 'camp-sup-'.uniqid('', true),
+            'rules' => [
+                'type' => 'donated_to_campaign',
+                'campaign_id' => $campaign->id,
+            ],
+            'visible' => true,
+        ]);
+
+        (new BadgeEvaluatorService)->evaluate($user->fresh());
+
+        $this->assertTrue($user->fresh()->badges()->where('badges.id', $badge->id)->exists());
+    }
+
+    public function test_evaluate_does_not_award_campaign_badge_for_pending_donation_only(): void
+    {
+        Badge::query()->delete();
+
+        $campaign = Campaign::query()->create([
+            'slug' => 'camp-pend-'.uniqid('', true),
+            'title' => 'Pending fundraiser',
+            'description' => 'For badge test.',
+            'image_path' => null,
+            'start_date' => now()->toDateString(),
+            'end_date' => null,
+            'payment_slug' => null,
+        ]);
+
+        $user = User::factory()->create();
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'payment_id' => null,
+            'amount_cents' => 100,
+            'user_id' => $user->id,
+            'status' => 'pending',
+        ]);
+
+        Badge::query()->create([
+            'title' => 'Should not unlock',
+            'slug' => 'camp-pend-badge-'.uniqid('', true),
+            'rules' => [
+                'type' => 'donated_to_campaign',
+                'campaign_id' => $campaign->id,
+            ],
+            'visible' => true,
+        ]);
+
+        (new BadgeEvaluatorService)->evaluate($user->fresh());
+
+        $this->assertSame(0, $user->fresh()->badges()->count());
     }
 
     public function test_evaluate_is_idempotent_for_same_badge(): void

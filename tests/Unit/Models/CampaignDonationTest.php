@@ -60,6 +60,24 @@ class CampaignDonationTest extends TestCase
         $this->assertSame(12.5, $donation->amount);
     }
 
+    public function test_user_has_many_campaign_donations(): void
+    {
+        $user = User::factory()->create();
+        $campaign = $this->makeCampaign();
+
+        $donation = CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'payment_id' => 'rel-'.uniqid(),
+            'amount_cents' => 400,
+            'user_id' => $user->id,
+            'status' => 'paid',
+        ]);
+
+        $this->assertTrue(
+            $user->fresh()->campaignDonations()->whereKey($donation->id)->exists()
+        );
+    }
+
     public function test_status_scopes_filter_rows(): void
     {
         $campaign = $this->makeCampaign();
