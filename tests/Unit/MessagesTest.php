@@ -2,12 +2,10 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use STS\Models\User;
 use Carbon\Carbon;
-use STS\Models\Trip;
-use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\User;
+use Tests\TestCase;
 
 class MessagesTest extends TestCase
 {
@@ -21,7 +19,7 @@ class MessagesTest extends TestCase
 
     protected $conversationRepository;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->conversationManager = $this->app->make(\STS\Services\Logic\ConversationsManager::class);
@@ -29,7 +27,7 @@ class MessagesTest extends TestCase
         $this->conversationRepository = $this->app->make(\STS\Repository\ConversationRepository::class);
     }
 
-    public function test_findOrCreatePrivateConversation()
+    public function test_find_or_create_private_conversation()
     {
         $user1 = \STS\Models\User::factory()->create(['is_admin' => true]);
         $user2 = \STS\Models\User::factory()->create();
@@ -51,7 +49,7 @@ class MessagesTest extends TestCase
         $this->assertTrue($conversation2->id == $conversation->id);
     }
 
-    public function test_addUserToConversation_and_removeUserFromConversation_Success()
+    public function test_add_user_to_conversation_and_remove_user_from_conversation_success()
     {
         $user = \STS\Models\User::factory()->create(['is_admin' => 1]);
         $user1 = \STS\Models\User::factory()->create();
@@ -83,7 +81,7 @@ class MessagesTest extends TestCase
         $this->assertNotNull($conversation);
     }
 
-    public function test_TripConversationCreate_Success()
+    public function test_trip_conversation_create_success()
     {
         /* Create a conversation */
         $user = \STS\Models\User::factory()->create();
@@ -93,7 +91,7 @@ class MessagesTest extends TestCase
         $this->assertTrue($conversation->type == \STS\Models\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id);
     }
 
-    public function test_TripConversationCreate_RepeatTrip_Fail()
+    public function test_trip_conversation_create_repeat_trip_fail()
     {
         /* Creating a conversation two times - ERROR */
         $user = \STS\Models\User::factory()->create();
@@ -104,7 +102,7 @@ class MessagesTest extends TestCase
         $this->assertFalse($conversation->type == \STS\Models\Conversation::TYPE_TRIP_CONVERSATION && $conversation->tripId = $trip->id && $conversation2 == null);
     }
 
-    public function test_Match_Success()
+    public function test_match_success()
     {
         $c = \STS\Models\Conversation::factory()->create();
 
@@ -119,7 +117,7 @@ class MessagesTest extends TestCase
         $this->assertTrue($c->id == $c2->id);
     }
 
-    public function test_Match_Fail()
+    public function test_match_fail()
     {
         $c = \STS\Models\Conversation::factory()->create();
         $c2 = \STS\Models\Conversation::factory()->create();
@@ -140,7 +138,7 @@ class MessagesTest extends TestCase
         $this->assertFalse($cc1->id == $cc2->id);
     }
 
-    public function test_Send_Message()
+    public function test_send_message()
     {
         $c = \STS\Models\Conversation::factory()->create();
 
@@ -160,15 +158,20 @@ class MessagesTest extends TestCase
         $this->conversationManager->send($u3, $c->id, $m3);
 
         $messages = $this->messageRepository->getMessages($c, null, 20);
-        $this->assertTrue(count($messages) == 3);
-        $this->assertTrue($messages[0]->user_id == $u1->id);
-        $this->assertTrue($messages[0]->text == $m1);
-        $this->assertTrue($messages[0]->conversation_id == $c->id);
-        $this->assertTrue($messages[1]->user_id == $u2->id && $messages[1]->text == $m2 && $messages[1]->conversation_id == $c->id);
-        $this->assertTrue($messages[2]->user_id == $u1->id && $messages[2]->text == $m3 && $messages[2]->conversation_id == $c->id);
+        $this->assertCount(3, $messages);
+        // Newest first (matches API); tie-break on id when created_at shares second precision.
+        $this->assertSame($c->id, $messages[0]->conversation_id);
+        $this->assertSame($u1->id, $messages[0]->user_id);
+        $this->assertSame($m3, $messages[0]->text);
+        $this->assertSame($u2->id, $messages[1]->user_id);
+        $this->assertSame($m2, $messages[1]->text);
+        $this->assertSame($c->id, $messages[1]->conversation_id);
+        $this->assertSame($u1->id, $messages[2]->user_id);
+        $this->assertSame($m1, $messages[2]->text);
+        $this->assertSame($c->id, $messages[2]->conversation_id);
     }
 
-    public function test_Get_User_Conversations()
+    public function test_get_user_conversations()
     {
         $u1 = \STS\Models\User::factory()->create();
 
@@ -184,7 +187,7 @@ class MessagesTest extends TestCase
         $this->assertTrue($userConversations->total >= 20);
     }
 
-    public function test_Get_Conversation()
+    public function test_get_conversation()
     {
         $u = \STS\Models\User::factory()->create();
         $c = \STS\Models\Conversation::factory()->create();
@@ -193,7 +196,7 @@ class MessagesTest extends TestCase
         $this->conversation = $this->conversationManager->getConversation($u, $c->id);
         $this->assertTrue($this->conversation->id == $c->id);
 
-        //invalid user - never have'benn tested'
+        // invalid user - never have'benn tested'
     }
 
     public function test_conversation_entity_unread()
@@ -283,7 +286,7 @@ class MessagesTest extends TestCase
         $this->assertTrue(count($messages) == 1);
     }
 
-    public function test_getConversationByTrip_and_delete_Success()
+    public function test_get_conversation_by_trip_and_delete_success()
     {
         $u = \STS\Models\User::factory()->create();
         $t = \STS\Models\Trip::factory()->create(['user_id' => $u->id]);
@@ -304,7 +307,7 @@ class MessagesTest extends TestCase
         $this->assertTrue($conversationResult == null);
     }
 
-    public function test_getUsers()
+    public function test_get_users()
     {
         $u = \STS\Models\User::factory()->count(24)->create();
         $c = \STS\Models\Conversation::factory()->create();
