@@ -3,12 +3,17 @@
 namespace STS\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 
 class TripVisibility extends Model
 {
+    public $incrementing = false;
+
+    public $timestamps = false;
+
     protected $table = 'user_visibility_trip';
+
     protected $fillable = ['user_id', 'trip_id'];
+
     protected $hidden = [];
 
     protected function setKeysForSaveQuery($query)
@@ -16,6 +21,7 @@ class TripVisibility extends Model
         $query
             ->where('user_id', '=', $this->getAttribute('user_id'))
             ->where('trip_id', '=', $this->getAttribute('trip_id'));
+
         return $query;
     }
 
