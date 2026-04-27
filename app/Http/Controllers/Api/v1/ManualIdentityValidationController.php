@@ -2,15 +2,15 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use STS\Http\Controllers\Controller;
-use STS\Http\ExceptionWithErrors;
-use STS\Models\ManualIdentityValidation;
-use STS\Services\ImageUploadValidator;
-use STS\Services\HeicToJpegConverter;
-use STS\Services\MercadoPagoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
+use STS\Models\ManualIdentityValidation;
+use STS\Services\HeicToJpegConverter;
+use STS\Services\ImageUploadValidator;
+use STS\Services\MercadoPagoService;
 
 class ManualIdentityValidationController extends Controller
 {
@@ -24,10 +24,14 @@ class ManualIdentityValidationController extends Controller
      */
     public function cost()
     {
-        if (!config('carpoolear.identity_validation_manual_enabled', false)) {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            return response()->json(['cost_cents' => 0]);
+        }
+        if (! config('carpoolear.identity_validation_manual_enabled', false)) {
             return response()->json(['cost_cents' => 0]);
         }
         $costCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
+
         return response()->json(['cost_cents' => $costCents]);
     }
 
@@ -36,12 +40,23 @@ class ManualIdentityValidationController extends Controller
      */
     public function status()
     {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            return response()->json([
+                'has_submission' => false,
+                'request_id' => null,
+                'paid' => null,
+                'paid_at' => null,
+                'review_status' => null,
+                'submitted_at' => null,
+                'review_note' => null,
+            ]);
+        }
         $user = auth()->user();
         $latest = ManualIdentityValidation::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (!$latest) {
+        if (! $latest) {
             return response()->json([
                 'has_submission' => false,
                 'request_id' => null,
@@ -70,7 +85,10 @@ class ManualIdentityValidationController extends Controller
     public function createPreference(Request $request, MercadoPagoService $mpService)
     {
         $user = auth()->user();
-        if (!config('carpoolear.identity_validation_manual_enabled', false)) {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            throw new ExceptionWithErrors('Identity validation is not available.', [], 503);
+        }
+        if (! config('carpoolear.identity_validation_manual_enabled', false)) {
             throw new ExceptionWithErrors('Manual identity validation is not available.', [], 503);
         }
         $costCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
@@ -84,7 +102,7 @@ class ManualIdentityValidationController extends Controller
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (!$validationRequest) {
+        if (! $validationRequest) {
             $validationRequest = ManualIdentityValidation::create([
                 'user_id' => $user->id,
                 'paid' => false,
@@ -102,7 +120,7 @@ class ManualIdentityValidationController extends Controller
         }
 
         $initPoint = $preference->init_point ?? $preference->sandbox_init_point ?? null;
-        if (!$initPoint) {
+        if (! $initPoint) {
             if ($validationRequest->wasRecentlyCreated) {
                 $validationRequest->delete();
             }
@@ -123,10 +141,13 @@ class ManualIdentityValidationController extends Controller
     public function createQrOrder(Request $request, MercadoPagoService $mpService)
     {
         $user = auth()->user();
-        if (!config('carpoolear.identity_validation_manual_enabled', false)) {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            throw new ExceptionWithErrors('Identity validation is not available.', [], 503);
+        }
+        if (! config('carpoolear.identity_validation_manual_enabled', false)) {
             throw new ExceptionWithErrors('Manual identity validation is not available.', [], 503);
         }
-        if (!config('carpoolear.identity_validation_manual_qr_enabled', false)) {
+        if (! config('carpoolear.identity_validation_manual_qr_enabled', false)) {
             throw new ExceptionWithErrors('QR payment is not available.', [], 503);
         }
         $posExternalId = config('carpoolear.qr_payment_pos_external_id', '');
@@ -143,7 +164,7 @@ class ManualIdentityValidationController extends Controller
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (!$validationRequest) {
+        if (! $validationRequest) {
             $validationRequest = ManualIdentityValidation::create([
                 'user_id' => $user->id,
                 'paid' => false,
@@ -181,20 +202,23 @@ class ManualIdentityValidationController extends Controller
     {
         $user = auth()->user();
         $requestId = $request->input('request_id');
-        if (!$requestId) {
+        if (! $requestId) {
             throw new ExceptionWithErrors('request_id is required.', ['request_id' => ['required']]);
         }
 
-        if (!config('carpoolear.identity_validation_manual_enabled', false)) {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            throw new ExceptionWithErrors('Identity validation is not available.', [], 503);
+        }
+        if (! config('carpoolear.identity_validation_manual_enabled', false)) {
             throw new ExceptionWithErrors('Manual identity validation is not available.', [], 503);
         }
 
         $validationRequest = ManualIdentityValidation::where('id', $requestId)->where('user_id', $user->id)->first();
-        if (!$validationRequest) {
+        if (! $validationRequest) {
             throw new ExceptionWithErrors('Invalid request.', [], 404);
         }
 
-        if (!$validationRequest->paid) {
+        if (! $validationRequest->paid) {
             throw new ExceptionWithErrors('Payment is required before submitting images.', [], 422);
         }
 
@@ -214,7 +238,7 @@ class ManualIdentityValidationController extends Controller
             }
         }
 
-        $basePath = 'identity_validations/' . $validationRequest->id;
+        $basePath = 'identity_validations/'.$validationRequest->id;
         $converter = app(HeicToJpegConverter::class);
 
         $frontPath = $this->storeIdentityImage($front, $basePath, $converter);
@@ -240,7 +264,7 @@ class ManualIdentityValidationController extends Controller
     {
         $jpegContent = $converter->convert($file);
         if ($jpegContent !== null) {
-            $path = $basePath . '/' . Str::random(40) . '.jpg';
+            $path = $basePath.'/'.Str::random(40).'.jpg';
             Storage::disk('local')->put($path, $jpegContent);
 
             return $path;

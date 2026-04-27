@@ -2,32 +2,104 @@
 
 namespace STS\Helpers;
 
+use Carbon\Carbon;
 use STS\Models\User;
 
 class IdentityValidationHelper
 {
     /**
-     * User is "new" (created on or after identity_validation_new_users_date) and has no validate_by_date (extra-time deadline).
-     * When identity_validation_required_new_users is true, such users must validate before performing restricted actions.
+     * Feature is on and we are in a period where unvalidated users are blocked on restricted actions.
+     */
+    public static function enforcementIsActive(): bool
+    {
+        if (! config('carpoolear.identity_validation_enabled', false)) {
+            return false;
+        }
+
+        if (config('carpoolear.identity_validation_optional', false)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * New users: created on or after identity_validation_new_users_date.
+     */
+    public static function newUsersCutoffDate(): ?Carbon
+    {
+        $raw = config('carpoolear.identity_validation_new_users_date', null);
+        if (empty($raw)) {
+            return null;
+        }
+
+        return Carbon::parse($raw)->startOfDay();
+    }
+
+    public static function isUserCreatedOnOrAfterCutoff(User $user): bool
+    {
+        $cutoff = self::newUsersCutoffDate();
+        if (! $cutoff) {
+            return false;
+        }
+
+        $createdAt = $user->created_at ? $user->created_at->copy()->startOfDay() : null;
+        if (! $createdAt) {
+            return false;
+        }
+
+        return $createdAt->gte($cutoff);
+    }
+
+    /**
+     * User is "new" and must validate immediately (no validate_by_date grace) when enforcement is on.
      */
     public static function isNewUserRequiringValidation(User $user): bool
     {
+        if (! self::enforcementIsActive()) {
+            return false;
+        }
+
         if (! config('carpoolear.identity_validation_required_new_users', false)) {
             return false;
         }
 
-        $cutoffDate = config('carpoolear.identity_validation_new_users_date');
-        if (empty($cutoffDate)) {
+        if (! self::isUserCreatedOnOrAfterCutoff($user)) {
             return false;
         }
 
-        $cutoff = \Carbon\Carbon::parse($cutoffDate)->startOfDay();
-        $createdAt = $user->created_at ? $user->created_at->startOfDay() : null;
-        if (! $createdAt || $createdAt->lt($cutoff)) {
+        if ($user->identity_validated) {
             return false;
         }
 
-        return $user->validate_by_date === null;
+        // If a grace deadline exists (e.g. admin), use deadline rules instead
+        if ($user->validate_by_date !== null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Pre-cutoff user with a validate_by_date that has passed.
+     */
+    public static function isCurrentUserPastDeadline(User $user): bool
+    {
+        if (! $user->validate_by_date) {
+            return false;
+        }
+
+        if (self::isUserCreatedOnOrAfterCutoff($user)) {
+            return false;
+        }
+
+        if ($user->identity_validated) {
+            return false;
+        }
+
+        $end = $user->validate_by_date->copy()->endOfDay();
+
+        return now()->gt($end);
     }
 
     /**
@@ -39,7 +111,19 @@ class IdentityValidationHelper
             return true;
         }
 
-        return ! self::isNewUserRequiringValidation($user);
+        if (! self::enforcementIsActive()) {
+            return true;
+        }
+
+        if (self::isNewUserRequiringValidation($user)) {
+            return false;
+        }
+
+        if (self::isCurrentUserPastDeadline($user)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

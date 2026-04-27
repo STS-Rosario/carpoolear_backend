@@ -2,20 +2,21 @@
 
 namespace STS\Transformers;
 
-use STS\Models\User;
 use League\Fractal\TransformerAbstract;
+use STS\Helpers\IdentityValidationHelper;
+use STS\Models\User;
 use STS\Repository\TripRepository;
+use STS\Repository\UserRepository;
+use STS\Services\GeoService;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\UsersManager;
-use STS\Repository\UserRepository;
-use STS\Helpers\IdentityValidationHelper;
-use STS\Services\GeoService;
 use STS\Services\MapboxDirectionsRouteService;
 use STS\Services\MercadoPagoService;
 
 class ProfileTransformer extends TransformerAbstract
 {
     protected $user;
+
     protected $tripLogic;
 
     public function __construct($user)
@@ -57,15 +58,15 @@ class ProfileTransformer extends TransformerAbstract
             'banned' => intval($user->banned),
             'active' => intval($user->active),
             'monthly_donate' => $user->monthly_donate,
-            'do_not_alert_request_seat'       => intval($user->do_not_alert_request_seat),
-            'do_not_alert_accept_passenger'   => intval($user->do_not_alert_accept_passenger),
-            'do_not_alert_pending_rates'      => intval($user->do_not_alert_pending_rates),
-            'do_not_alert_pricing'      => intval($user->do_not_alert_pricing),
+            'do_not_alert_request_seat' => intval($user->do_not_alert_request_seat),
+            'do_not_alert_accept_passenger' => intval($user->do_not_alert_accept_passenger),
+            'do_not_alert_pending_rates' => intval($user->do_not_alert_pending_rates),
+            'do_not_alert_pricing' => intval($user->do_not_alert_pricing),
             'monthly_donate' => intval($user->monthly_donate),
-            'unaswered_messages_limit'    => intval($user->unaswered_messages_limit),
-            'autoaccept_requests'    => intval($user->autoaccept_requests),
-            'driver_is_verified'    => intval($user->driver_is_verified),
-            'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
+            'unaswered_messages_limit' => intval($user->unaswered_messages_limit),
+            'autoaccept_requests' => intval($user->autoaccept_requests),
+            'driver_is_verified' => intval($user->driver_is_verified),
+            'driver_data_docs' => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
             'references' => $user->references,
             'data_visibility' => $user->data_visibility,
             'references_data' => $user->referencesReceived,
@@ -76,6 +77,7 @@ class ProfileTransformer extends TransformerAbstract
         ];
 
         if ($this->user && $user->id == $this->user->id) {
+            // True when enforcement is active and this user must validate as a "new" user (created_at >= cutoff).
             $data['identity_validation_required_for_user'] = IdentityValidationHelper::isNewUserRequiringValidation($user);
             $data['validate_by_date'] = $user->validate_by_date ? $user->validate_by_date->format('Y-m-d') : null;
         }
@@ -92,16 +94,16 @@ class ProfileTransformer extends TransformerAbstract
             $data['account_type'] = $user->account_type;
             $data['account_bank'] = $user->account_bank;
             $data['on_boarding_view'] = $user->on_boarding_view;
-            
+
             // Always include car information for admins or the user themselves
             $data['cars'] = $user->cars;
             $data['patente'] = $user->cars->first() ? $user->cars->first()->patente : null;
             $data['car_description'] = $user->cars->first() ? $user->cars->first()->description : null;
         }
-        
+
         switch ($user->data_visibility) {
             case '0':
-                # viaja conmigo
+                // viaja conmigo
                 if ($this->user && $this->tripLogic->shareTrip($this->user, $user)) {
                     $data['nro_doc'] = $user->nro_doc;
                     $data['email'] = $user->email;
@@ -110,14 +112,14 @@ class ProfileTransformer extends TransformerAbstract
                 }
                 break;
             case '1':
-                # publico
+                // publico
                 $data['nro_doc'] = $user->nro_doc;
                 $data['email'] = $user->email;
                 $data['mobile_phone'] = $user->mobile_phone;
                 $data['cars'] = $user->cars;
                 break;
             default:
-                # privado
+                // privado
                 break;
         }
 

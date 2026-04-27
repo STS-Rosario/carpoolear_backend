@@ -2,12 +2,12 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class ManualIdentityValidationApiTest extends TestCase
 {
@@ -17,7 +17,10 @@ class ManualIdentityValidationApiTest extends TestCase
     {
         parent::setUp();
         Storage::fake('local');
-        config(['carpoolear.identity_validation_manual_enabled' => true]);
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+        ]);
     }
 
     protected function createPaidValidationRequest(User $user): ManualIdentityValidation
