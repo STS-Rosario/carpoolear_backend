@@ -236,9 +236,9 @@ Route::middleware(['api'])->group(function () {
         Route::get('support/tickets', [AdminSupportTicketController::class, 'index']);
         Route::get('support/tickets/{id}', [AdminSupportTicketController::class, 'show']);
         Route::post('support/tickets/{id}/replies', [AdminSupportTicketController::class, 'reply'])->middleware('throttle:support-ticket-admin-reply');
-        Route::patch('support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
-        Route::patch('support/tickets/{id}/priority', [AdminSupportTicketController::class, 'updatePriority']);
-        Route::patch('support/tickets/{id}/internal-note', [AdminSupportTicketController::class, 'updateInternalNote']);
+        Route::match(['patch', 'put'], 'support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
+        Route::match(['patch', 'put'], 'support/tickets/{id}/priority', [AdminSupportTicketController::class, 'updatePriority']);
+        Route::match(['patch', 'put'], 'support/tickets/{id}/internal-note', [AdminSupportTicketController::class, 'updateInternalNote']);
         Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
