@@ -3,14 +3,14 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
+use STS\Helpers\IdentityValidationHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\UsersManager;
-use STS\Transformers\MessageTransformer;
-use STS\Transformers\ProfileTransformer; 
 use STS\Transformers\ConversationsTransformer;
-use STS\Helpers\IdentityValidationHelper;  
+use STS\Transformers\MessageTransformer;
+use STS\Transformers\ProfileTransformer;
 
 class ConversationController extends Controller
 {
@@ -19,7 +19,6 @@ class ConversationController extends Controller
     protected $conversations;
 
     protected $conversationLogic;
-
 
     protected $users;
 
@@ -64,7 +63,7 @@ class ConversationController extends Controller
     public function create(Request $request)
     {
         $this->user = auth()->user();
-        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+        if (! $this->user->is_admin && ! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
             throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
         }
         $to = $request->get('to');
@@ -77,7 +76,6 @@ class ConversationController extends Controller
                     return $this->item($conversation, new ConversationsTransformer($this->user));
                 } else {
                     throw new ExceptionWithErrors('ConversationController: Unabled to create conversation', $this->conversationLogic->getErrors());
-                    
                 }
             } else {
                 throw new ExceptionWithErrors("Bad request exceptions: Destinatary user doesn't exist.");
@@ -85,7 +83,7 @@ class ConversationController extends Controller
         } else {
             throw new ExceptionWithErrors('Bad request exceptions: Destinatary user not provided.');
         }
- 
+
     }
 
     public function getConversation(Request $request, $id)
@@ -111,7 +109,7 @@ class ConversationController extends Controller
     public function send(Request $request, $id)
     {
         $this->user = auth()->user();
-        if (! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
+        if (! $this->user->is_admin && ! IdentityValidationHelper::canPerformRestrictedActions($this->user)) {
             throw new ExceptionWithErrors(IdentityValidationHelper::identityValidationRequiredMessage(), IdentityValidationHelper::identityValidationRequiredError());
         }
         $message = $request->get('message');

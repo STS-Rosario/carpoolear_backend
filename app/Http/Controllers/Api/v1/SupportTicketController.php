@@ -1,0 +1,157 @@
+<?php
+
+namespace STS\Http\Controllers\Api\v1;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use STS\Http\Controllers\Controller;
+use STS\Models\SupportTicket;
+use STS\Models\SupportTicketReply;
+use STS\Services\SupportTicketService;
+
+class SupportTicketController extends Controller
+{
+    private const TYPE_DEFAULT_PRIORITY = [
+        'report' => 'high',
+        'bug_report' => 'normal',
+        'contact' => 'normal',
+        'feedback' => 'low',
+    ];
+
+    public function __construct(private readonly SupportTicketService $supportTicketService)
+    {
+        $this->middleware('logged');
+    }
+
+    public function index(): JsonResponse
+    {
+        $user = auth()->user();
+        $tickets = SupportTicket::where('user_id', $user->id)->orderByDesc('id')->get();
+
+        return response()->json(['data' => $tickets]);
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        $user = auth()->user();
+        $ticket = SupportTicket::with(['replies.attachments', 'attachments'])
+            ->where('user_id', $user->id)
+            ->find($id);
+        if (! $ticket) {
+            return response()->json(['error' => 'Ticket not found'], 404);
+        }
+
+        return response()->json(['data' => $ticket]);
+    }
+
+    public function create(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:bug_report,contact,feedback,report',
+            'subject' => 'required|string|min:3|max:160',
+            'message_markdown' => 'required|string|min:1',
+            'attachments' => 'nullable|array|max:3',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
+        ]);
+
+        $user = auth()->user();
+        $ticket = DB::transaction(function () use ($validated, $user) {
+            $ticket = SupportTicket::create([
+                'user_id' => $user->id,
+                'type' => $validated['type'],
+                'subject' => $validated['subject'],
+                'status' => 'Open',
+                'priority' => self::TYPE_DEFAULT_PRIORITY[$validated['type']] ?? 'normal',
+                'unread_for_user' => 0,
+                'unread_for_admin' => 1,
+                'created_by' => $user->id,
+                'last_reply_at' => now(),
+            ]);
+
+            $reply = SupportTicketReply::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $user->id,
+                'is_admin' => false,
+                'message_markdown' => $validated['message_markdown'],
+                'created_by' => $user->id,
+            ]);
+
+            foreach (($validated['attachments'] ?? []) as $file) {
+                $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
+            }
+
+            return $ticket->fresh();
+        });
+
+        return response()->json(['data' => $ticket]);
+    }
+
+    public function reply(int $id, Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'message_markdown' => 'required|string|min:1',
+            'attachments' => 'nullable|array|max:3',
+            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
+        ]);
+
+        $user = auth()->user();
+        $ticket = SupportTicket::where('user_id', $user->id)->find($id);
+        if (! $ticket) {
+            return response()->json(['error' => 'Ticket not found'], 404);
+        }
+        if (in_array($ticket->status, ['Resuelto', 'Cerrado'], true)) {
+            return response()->json(['error' => 'Ticket is closed for replies'], 422);
+        }
+
+        DB::transaction(function () use ($validated, $user, $ticket) {
+            $reply = SupportTicketReply::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $user->id,
+                'is_admin' => false,
+                'message_markdown' => $validated['message_markdown'],
+                'created_by' => $user->id,
+            ]);
+            foreach (($validated['attachments'] ?? []) as $file) {
+                $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
+            }
+
+            $this->supportTicketService->applyUserReplyTransition($ticket, $user->id);
+            $ticket->save();
+        });
+
+        return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    public function close(int $id, Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'message_markdown' => 'nullable|string',
+        ]);
+        $user = auth()->user();
+        $ticket = SupportTicket::where('user_id', $user->id)->find($id);
+        if (! $ticket) {
+            return response()->json(['error' => 'Ticket not found'], 404);
+        }
+
+        DB::transaction(function () use ($ticket, $user, $validated) {
+            if (! empty($validated['message_markdown'])) {
+                SupportTicketReply::create([
+                    'ticket_id' => $ticket->id,
+                    'user_id' => $user->id,
+                    'is_admin' => false,
+                    'message_markdown' => $validated['message_markdown'],
+                    'created_by' => $user->id,
+                ]);
+            }
+
+            $ticket->status = 'Cerrado';
+            $ticket->closed_by = $user->id;
+            $ticket->closed_at = now();
+            $ticket->updated_by = $user->id;
+            $ticket->save();
+        });
+
+        return response()->json(['data' => $ticket->fresh()]);
+    }
+}
