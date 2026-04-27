@@ -12,7 +12,7 @@ class BadgeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->is_admin;
+        return (bool) $this->user()?->is_admin;
     }
 
     /**
@@ -40,7 +40,7 @@ class BadgeRequest extends FormRequest
                 'donated_to_campaign',
                 'total_donated',
                 'monthly_donor',
-                'carpoolear_member'
+                'carpoolear_member',
             ])],
             'rules.days' => ['required_if:rules.type,registration_duration', 'integer', 'min:1'],
             'rules.campaign_id' => ['required_if:rules.type,donated_to_campaign', 'integer', 'exists:campaigns,id'],
