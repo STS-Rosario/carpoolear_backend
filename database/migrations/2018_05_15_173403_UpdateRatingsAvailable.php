@@ -1,12 +1,14 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 
 class UpdateRatingsAvailable extends Migration
 {
     public function up()
     {
+        DB::unprepared('DROP PROCEDURE IF EXISTS update_rating_availability');
+
         DB::unprepared('CREATE PROCEDURE update_rating_availability(
             IN _id INT,
             IN _trip_id INT,

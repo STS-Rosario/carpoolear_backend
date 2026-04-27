@@ -2,9 +2,9 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Console\Scheduling\Event;
+use Illuminate\Console\Scheduling\Schedule;
+use Tests\TestCase;
 
 class ScheduleTest extends TestCase
 {
@@ -36,19 +36,19 @@ class ScheduleTest extends TestCase
 
     // -- Hourly commands --
 
-    public function testRateCreateIsScheduledHourly()
+    public function test_rate_create_is_scheduled_hourly()
     {
         $event = $this->findEvent('rate:create');
         $this->assertEquals('0 * * * *', $event->expression);
     }
 
-    public function testTripRemainderIsScheduledHourly()
+    public function test_trip_remainder_is_scheduled_hourly()
     {
         $event = $this->findEvent('trip:remainder');
         $this->assertEquals('0 * * * *', $event->expression);
     }
 
-    public function testNodeBuildweightsIsScheduledHourly()
+    public function test_node_buildweights_is_scheduled_hourly()
     {
         $event = $this->findEvent('node:buildweights');
         $this->assertEquals('0 * * * *', $event->expression);
@@ -56,13 +56,13 @@ class ScheduleTest extends TestCase
 
     // -- Every minute / every N minutes --
 
-    public function testRatingAvailablesIsScheduledEveryMinute()
+    public function test_rating_availables_is_scheduled_every_minute()
     {
         $event = $this->findEvent('rating:availables');
         $this->assertEquals('* * * * *', $event->expression);
     }
 
-    public function testMessagesEmailIsScheduledEveryTenMinutes()
+    public function test_messages_email_is_scheduled_every_ten_minutes()
     {
         $event = $this->findEvent('messages:email');
         $this->assertEquals('*/10 * * * *', $event->expression);
@@ -70,7 +70,7 @@ class ScheduleTest extends TestCase
 
     // -- Daily commands with timezone --
 
-    public function testTripRequestIsScheduledTwiceDaily()
+    public function test_trip_request_is_scheduled_twice_daily()
     {
         $events = $this->getScheduledEvents();
         $this->assertArrayHasKey('trip:request', $events);
@@ -85,23 +85,30 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $events['trip:request'][1]->timezone);
     }
 
-    public function testTripVisibilitycleanIsScheduledDailyAt3AM()
+    public function test_trip_visibilityclean_is_scheduled_daily_at3_am()
     {
         $event = $this->findEvent('trip:visibilityclean');
         $this->assertEquals('0 3 * * *', $event->expression);
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
-    public function testCleanupResetTokensIsScheduledDailyAt4AM()
+    public function test_cleanup_reset_tokens_is_scheduled_daily_at4_am()
     {
         $event = $this->findEvent('auth:cleanup-reset-tokens');
         $this->assertEquals('0 4 * * *', $event->expression);
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
+    public function test_support_tickets_autoclose_is_scheduled_daily_at430_am()
+    {
+        $event = $this->findEvent('support-tickets:autoclose');
+        $this->assertEquals('30 4 * * *', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+    }
+
     // -- Monthly commands --
 
-    public function testCalculateActiveUsersIsScheduledMonthlyOnFirst()
+    public function test_calculate_active_users_is_scheduled_monthly_on_first()
     {
         $event = $this->findEvent('users:calculate-active-per-month');
         $this->assertEquals('0 3 1 * *', $event->expression);
@@ -110,7 +117,7 @@ class ScheduleTest extends TestCase
 
     // -- Overall schedule integrity --
 
-    public function testNoUnexpectedCommandsInSchedule()
+    public function test_no_unexpected_commands_in_schedule()
     {
         $events = $this->getScheduledEvents();
 
@@ -124,6 +131,7 @@ class ScheduleTest extends TestCase
             'messages:email',
             'users:calculate-active-per-month',
             'auth:cleanup-reset-tokens',
+            'support-tickets:autoclose',
         ];
 
         foreach (array_keys($events) as $command) {
