@@ -44,6 +44,9 @@
         }
     },
     "scripts": {
+        "test": "php artisan test",
+        "test:coverage": "php artisan test --coverage",
+        "test:coverage:ci": "php artisan test --coverage --min=5",
         "setup-git-hooks": "@php -r \"if (file_exists('.git')) { passthru('git config core.hooksPath .githooks'); }\"",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

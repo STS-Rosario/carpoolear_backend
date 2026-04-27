@@ -32,7 +32,7 @@ jobs:
         with:
           php-version: '8.5'
           extensions: pdo_mysql, mbstring, exif, pcntl, bcmath, gd, zip
-          coverage: none
+          coverage: pcov
 
       - name: Cache Composer dependencies
         uses: actions/cache@v4
@@ -60,7 +60,7 @@ jobs:
           DB_PASSWORD: password
         run: php artisan migrate --force
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
@@ -68,4 +68,4 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: php artisan test
+        run: composer run test:coverage:ci

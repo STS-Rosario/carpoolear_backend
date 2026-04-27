@@ -1,4 +1,6 @@
 /.phpunit.cache
+/build/coverage-html
+/build/coverage-clover.xml
 /node_modules
 /public/build
 /public/app
