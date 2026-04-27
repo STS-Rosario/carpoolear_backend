@@ -73,7 +73,6 @@ class SupportTicketApiTest extends TestCase
             'type' => 'bug_report',
             'subject' => 'App crash',
             'message_markdown' => 'Steps to reproduce',
-            'priority' => 'normal',
             'attachments' => [
                 UploadedFile::fake()->image('one.jpg'),
                 UploadedFile::fake()->image('two.jpg'),
@@ -84,6 +83,7 @@ class SupportTicketApiTest extends TestCase
         $ticketId = (int) data_get($createResponse->json(), 'data.id');
         $this->assertGreaterThan(0, $ticketId);
         $this->assertSame('Open', data_get($createResponse->json(), 'data.status'));
+        $this->assertSame('normal', data_get($createResponse->json(), 'data.priority'));
         $this->assertSame(0, data_get($createResponse->json(), 'data.unread_for_user'));
         $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_admin'));
 
@@ -149,6 +149,39 @@ class SupportTicketApiTest extends TestCase
             'subject' => 'Need more help',
             'message_markdown' => 'Second',
         ])->assertStatus(429);
+    }
+
+    public function test_priority_is_assigned_by_type_and_not_by_user_input(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $reportTicket = $this->post('api/support/tickets', [
+            'type' => 'report',
+            'subject' => 'Bad behavior',
+            'message_markdown' => 'Needs moderation',
+            'priority' => 'low',
+        ]);
+        $reportTicket->assertStatus(200);
+        $reportTicket->assertJsonPath('data.priority', 'high');
+
+        $bugTicket = $this->post('api/support/tickets', [
+            'type' => 'bug_report',
+            'subject' => 'Bug found',
+            'message_markdown' => 'Steps...',
+            'priority' => 'high',
+        ]);
+        $bugTicket->assertStatus(200);
+        $bugTicket->assertJsonPath('data.priority', 'normal');
+
+        $feedbackTicket = $this->post('api/support/tickets', [
+            'type' => 'feedback',
+            'subject' => 'Suggestion',
+            'message_markdown' => 'Could improve this',
+            'priority' => 'high',
+        ]);
+        $feedbackTicket->assertStatus(200);
+        $feedbackTicket->assertJsonPath('data.priority', 'low');
     }
 
     private function createUser(bool $isAdmin = false): User

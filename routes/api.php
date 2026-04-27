@@ -212,6 +212,7 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
+        Route::get('users', [AdminUserController::class, 'index']);
         Route::get('users/account-delete-list', [AdminUserController::class, 'accountDeleteList']);
         Route::post('users/account-delete-update', [AdminUserController::class, 'accountDeleteUpdate']);
         Route::get('banned-users', [AdminUserController::class, 'bannedUsersList']);

@@ -12,6 +12,13 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
+    private const TYPE_DEFAULT_PRIORITY = [
+        'report' => 'high',
+        'bug_report' => 'normal',
+        'contact' => 'normal',
+        'feedback' => 'low',
+    ];
+
     public function __construct(private readonly SupportTicketService $supportTicketService)
     {
         $this->middleware('logged');
@@ -44,7 +51,6 @@ class SupportTicketController extends Controller
             'type' => 'required|in:bug_report,contact,feedback,report',
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
-            'priority' => 'nullable|in:low,normal,high',
             'attachments' => 'nullable|array|max:3',
             'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
         ]);
@@ -56,7 +62,7 @@ class SupportTicketController extends Controller
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
                 'status' => 'Open',
-                'priority' => $validated['priority'] ?? 'normal',
+                'priority' => self::TYPE_DEFAULT_PRIORITY[$validated['type']] ?? 'normal',
                 'unread_for_user' => 0,
                 'unread_for_admin' => 1,
                 'created_by' => $user->id,

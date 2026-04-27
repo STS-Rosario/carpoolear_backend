@@ -2,6 +2,9 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Models\AdminActionLog;
@@ -12,14 +15,14 @@ use STS\Models\User;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
+use STS\Transformers\ProfileTransformer;
 
 class UserController extends Controller
 {
     protected $userDeletionService;
+
     protected $anonymizationService;
+
     protected $deviceLogic;
 
     public function __construct(
@@ -30,6 +33,40 @@ class UserController extends Controller
         $this->userDeletionService = $userDeletionService;
         $this->anonymizationService = $anonymizationService;
         $this->deviceLogic = $deviceLogic;
+    }
+
+    /**
+     * Paginated user list (newest by id first). Optional name search across name, email, DNI, phone.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        $perPage = min(max((int) $request->get('per_page', 30), 1), 100);
+        $name = $request->get('name');
+        $name = is_string($name) && trim($name) !== '' ? trim($name) : null;
+
+        $sort = $request->get('sort', 'id');
+        $sortAllowed = ['id', 'name', 'email', 'last_connection'];
+        if (! is_string($sort) || ! in_array($sort, $sortAllowed, true)) {
+            $sort = 'id';
+        }
+        $direction = strtolower((string) $request->get('direction', 'desc')) === 'asc' ? 'asc' : 'desc';
+
+        $query = User::query();
+
+        if ($name) {
+            $query->where(function ($q) use ($name) {
+                $q->where('name', 'like', '%'.$name.'%')
+                    ->orWhere('email', 'like', '%'.$name.'%')
+                    ->orWhere('nro_doc', 'like', '%'.$name.'%')
+                    ->orWhere('mobile_phone', 'like', '%'.$name.'%');
+            });
+        }
+
+        $query->orderBy($sort, $direction);
+
+        $users = $query->with(['accounts', 'cars'])->paginate($perPage);
+
+        return $this->paginator($users, new ProfileTransformer(auth()->user()));
     }
 
     /**
@@ -58,8 +95,8 @@ class UserController extends Controller
                 Rule::in([
                     DeleteAccountRequest::ACTION_REQUESTED,
                     DeleteAccountRequest::ACTION_DELETED,
-                    DeleteAccountRequest::ACTION_REJECTED
-                ])
+                    DeleteAccountRequest::ACTION_REJECTED,
+                ]),
             ],
         ]);
 
@@ -178,7 +215,7 @@ class UserController extends Controller
         $note = $request->input('note', '');
         $nroDoc = $user->nro_doc;
 
-        if (!empty($nroDoc)) {
+        if (! empty($nroDoc)) {
             $nroDoc = preg_replace('/\D/', '', (string) $nroDoc);
         }
         if (empty($nroDoc)) {
@@ -186,8 +223,8 @@ class UserController extends Controller
         }
 
         if ($nroDoc === null) {
-            $appendNote = 'user_id: ' . $user->id . ', email: ' . ($user->email ?? 'N/A');
-            $note = $note ? $note . ' | ' . $appendNote : $appendNote;
+            $appendNote = 'user_id: '.$user->id.', email: '.($user->email ?? 'N/A');
+            $note = $note ? $note.' | '.$appendNote : $appendNote;
         }
 
         BannedUser::create([
