@@ -5,16 +5,14 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use STS\Http\Controllers\Controller;
 use STS\Models\SupportTicket;
-use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
+use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
-    public function __construct()
+    public function __construct(private readonly SupportTicketService $supportTicketService)
     {
         $this->middleware('logged');
     }
@@ -74,7 +72,7 @@ class SupportTicketController extends Controller
             ]);
 
             foreach (($validated['attachments'] ?? []) as $file) {
-                $this->storeAttachment($file, $user->id, null, $reply->id);
+                $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
             }
 
             return $ticket->fresh();
@@ -109,14 +107,10 @@ class SupportTicketController extends Controller
                 'created_by' => $user->id,
             ]);
             foreach (($validated['attachments'] ?? []) as $file) {
-                $this->storeAttachment($file, $user->id, null, $reply->id);
+                $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
             }
 
-            $ticket->status = 'Esperando respuesta';
-            $ticket->unread_for_admin = $ticket->unread_for_admin + 1;
-            $ticket->unread_for_user = 0;
-            $ticket->last_reply_at = now();
-            $ticket->updated_by = $user->id;
+            $this->supportTicketService->applyUserReplyTransition($ticket, $user->id);
             $ticket->save();
         });
 
@@ -153,22 +147,5 @@ class SupportTicketController extends Controller
         });
 
         return response()->json(['data' => $ticket->fresh()]);
-    }
-
-    private function storeAttachment($file, int $userId, ?int $ticketId, ?int $replyId): SupportTicketAttachment
-    {
-        $folder = 'support/'.date('Y').'/'.date('m');
-        $filename = Str::ulid().'_'.Str::random(20).'.'.$file->getClientOriginalExtension();
-        $path = Storage::disk('public')->putFileAs($folder, $file, $filename);
-
-        return SupportTicketAttachment::create([
-            'ticket_id' => $ticketId,
-            'reply_id' => $replyId,
-            'user_id' => $userId,
-            'path' => $path,
-            'original_name' => $file->getClientOriginalName(),
-            'mime' => $file->getMimeType() ?? 'application/octet-stream',
-            'size_bytes' => (int) $file->getSize(),
-        ]);
     }
 }
