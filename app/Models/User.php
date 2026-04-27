@@ -4,19 +4,17 @@ namespace STS\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use STS\Models\Trip;
-use STS\Models\Passenger;
-use STS\Models\Rating as RatingModel;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use STS\Models\Rating as RatingModel;
 use STS\Services\Notifications\Models\DatabaseNotification;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use Notifiable;
     use HasFactory;
+    use Notifiable;
 
     protected $table = 'users';
 
@@ -75,19 +73,19 @@ class User extends Authenticatable implements JWTSubject
     protected function casts(): array
     {
         return [
-            'banned'               => 'boolean',
+            'banned' => 'boolean',
             'terms_and_conditions' => 'boolean',
-            'active'               => 'boolean',
-            'is_admin'             => 'boolean',
-            'has_pin'              => 'boolean',
-            'is_member'            => 'boolean',
-            'monthly_donate'       => 'boolean',
-            'do_not_alert_request_seat'       => 'boolean',
-            'do_not_alert_accept_passenger'   => 'boolean',
-            'do_not_alert_pending_rates'      => 'boolean',
-            'driver_is_verified'      => 'boolean',
+            'active' => 'boolean',
+            'is_admin' => 'boolean',
+            'has_pin' => 'boolean',
+            'is_member' => 'boolean',
+            'monthly_donate' => 'boolean',
+            'do_not_alert_request_seat' => 'boolean',
+            'do_not_alert_accept_passenger' => 'boolean',
+            'do_not_alert_pending_rates' => 'boolean',
+            'driver_is_verified' => 'boolean',
             'emails_notifications' => 'boolean',
-            'driver_data_docs'      => 'array',
+            'driver_data_docs' => 'array',
             'last_connection' => 'datetime',
             'identity_validated' => 'boolean',
             'identity_validated_at' => 'datetime',
@@ -95,19 +93,18 @@ class User extends Authenticatable implements JWTSubject
             'validate_by_date' => 'date',
         ];
     }
- 
 
     protected $hidden = [
-        'password', 
-        'remember_token', 
+        'password',
+        'remember_token',
         'terms_and_conditions',
-        'private_note'
+        'private_note',
     ];
 
     protected $appends = [
         'positive_ratings',
         'negative_ratings',
-        'references'
+        'references',
     ];
 
     public function getJWTIdentifier()
@@ -155,7 +152,7 @@ class User extends Authenticatable implements JWTSubject
     public function allFriends($state = null)
     {
         $friends = $this->belongsToMany('STS\Models\User', 'friends', 'uid1', 'uid2')
-                    ->withTimestamps();
+            ->withTimestamps();
         if ($state) {
             $friends->wherePivot('state', $state);
         }
@@ -166,8 +163,8 @@ class User extends Authenticatable implements JWTSubject
     public function friends($state = null)
     {
         return $this->belongsToMany('STS\Models\User', 'friends', 'uid1', 'uid2')
-                    ->withTimestamps()
-                    ->wherePivot('state', self::FRIEND_ACCEPTED);
+            ->withTimestamps()
+            ->wherePivot('state', self::FRIEND_ACCEPTED);
     }
 
     public function relativeFriends()
@@ -182,6 +179,16 @@ class User extends Authenticatable implements JWTSubject
     public function notifications()
     {
         return $this->hasMany(DatabaseNotification::class, 'user_id')->whereNull('deleted_at');
+    }
+
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class, 'user_id');
+    }
+
+    public function supportTicketReplies()
+    {
+        return $this->hasMany(SupportTicketReply::class, 'user_id');
     }
 
     public function donations()
@@ -233,7 +240,7 @@ class User extends Authenticatable implements JWTSubject
             $trips->where('trip_date', '>=', Carbon::Now());
         }
         if ($hours_range) {
-            $date = !$date ? Carbon::Now() : new Carbon($date);
+            $date = ! $date ? Carbon::Now() : new Carbon($date);
             $start_date = $date->copy()->subHours($hours_range)->toDateTimeString();
             $end_date = $date->copy()->addHours($hours_range)->toDateTimeString();
             $trips->where('trip_date', '>=', $start_date);
@@ -243,35 +250,38 @@ class User extends Authenticatable implements JWTSubject
         return $trips;
     }
 
-    public function pendingRequests ($hours_range = null, $date = null) {
+    public function pendingRequests($hours_range = null, $date = null)
+    {
         $user_id = $this->id;
         $trip_ids = $this->tripsRequested($hours_range, $date)->pluck('id')->toArray();
         $pendingRequests = Passenger::whereIn('trip_id', $trip_ids);
         $pendingRequests->where('user_id', $user_id);
-        $pendingRequests->where(function($q) {
+        $pendingRequests->where(function ($q) {
             $q->where('request_state', Passenger::STATE_PENDING);
-            $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);         
+            $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);
         });
+
         return $pendingRequests;
     }
 
-    public function tripsRequested ($hours_range = null, $date = null)
+    public function tripsRequested($hours_range = null, $date = null)
     {
         $user_id = $this->id;
         $trips_requested = Trip::whereHas('passenger', function ($q) use ($user_id) {
             $q->whereUserId($user_id);
-            $q->where(function($q) {
+            $q->where(function ($q) {
                 $q->where('request_state', Passenger::STATE_PENDING);
-                $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);         
+                $q->orWhere('request_state', Passenger::STATE_WAITING_PAYMENT);
             });
         });
         if ($hours_range) {
-            $date = !$date ? Carbon::Now() : new Carbon($date);
+            $date = ! $date ? Carbon::Now() : new Carbon($date);
             $start_date = $date->copy()->subHours($hours_range)->toDateTimeString();
             $end_date = $date->copy()->addHours($hours_range)->toDateTimeString();
             $trips_requested->where('trip_date', '>=', $start_date);
             $trips_requested->where('trip_date', '<=', $end_date);
         }
+
         return $trips_requested;
     }
 

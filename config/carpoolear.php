@@ -107,6 +107,12 @@ return [
     'log_emails' => env('LOG_EMAILS', false),
     'email_log_daily_days' => env('EMAIL_LOG_DAILY_DAYS', 30),
 
+    // Support tickets
+    'support_ticket_autoclose_days' => (int) env('SUPPORT_TICKET_AUTOCLOSE_DAYS', 10),
+    'support_ticket_rate_limit_create_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_CREATE_PER_HOUR', 5),
+    'support_ticket_rate_limit_reply_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_REPLY_PER_HOUR', 20),
+    'support_ticket_rate_limit_admin_reply_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_ADMIN_REPLY_PER_HOUR', 120),
+
     // OSRM (trip-info + public map proxy). Primary = demo or self-hosted base URL without trailing slash.
     'osrm_router_base_url' => rtrim(env('OSRM_ROUTER_BASE_URL', 'https://router.project-osrm.org'), '/'),
     // Optional second base (same /route/v1/... paths). Used if primary times out or errors.
