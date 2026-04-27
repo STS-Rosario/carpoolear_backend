@@ -1,29 +1,30 @@
-<?php 
+<?php
+
 namespace STS\Http\Middleware;
 
 use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use STS\Models\AppConfig;
 
-class LoadConfig {
-    
-
-	/**
-	 * Handle an incoming request.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @param  \Closure  $next
-	 * @return mixed
-	 */
-	public function handle($request, Closure $next)
-	{
-        $settings = \STS\Entities\AppConfig::all();
+class LoadConfig
+{
+    /**
+     * Merge persisted {@see AppConfig} rows into the runtime config repository.
+     *
+     * @return mixed
+     */
+    public function handle(Request $request, Closure $next)
+    {
+        $settings = AppConfig::all();
         foreach ($settings as $config) {
             if (isset($config->is_laravel) && $config->is_laravel) {
-                \Config::set($config->key, $config->value);
+                Config::set($config->key, $config->value);
             } else {
-                \Config::set("carpoolear." . $config->key, $config->value);
+                Config::set('carpoolear.'.$config->key, $config->value);
             }
         }
-		return $next($request);
-	}
 
+        return $next($request);
+    }
 }
