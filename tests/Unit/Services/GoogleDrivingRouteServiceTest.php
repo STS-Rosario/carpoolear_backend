@@ -53,4 +53,18 @@ class GoogleDrivingRouteServiceTest extends TestCase
 
         $this->assertSame(['distance' => 12345, 'duration' => 678], $result);
     }
+
+    public function test_driving_distance_and_duration_returns_null_when_less_than_two_points(): void
+    {
+        Config::set('carpoolear.google_routes_api_key', 'test-key');
+        Http::fake();
+
+        $service = new GoogleDrivingRouteService;
+        $result = $service->drivingDistanceAndDuration([
+            ['lat' => -34.60, 'lng' => -58.40],
+        ]);
+
+        $this->assertNull($result);
+        Http::assertNothingSent();
+    }
 }
