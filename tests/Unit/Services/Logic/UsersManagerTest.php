@@ -76,6 +76,22 @@ class UsersManagerTest extends TestCase
         $this->assertArrayNotHasKey('email', $v->getRules());
     }
 
+    public function test_validator_admin_adds_patente_and_car_description_rules_when_patente_present(): void
+    {
+        $user = User::factory()->create();
+        $v = $this->manager()->validator([
+            'name' => 'Admin touch',
+            'patente' => 'AA123BB',
+            'car_description' => 'Sedan gris',
+        ], $user->id, false, false, true);
+
+        $rules = $v->getRules();
+        $this->assertArrayHasKey('patente', $rules);
+        $this->assertArrayHasKey('car_description', $rules);
+        $this->assertStringContainsString('max:10', implode('|', $rules['patente']));
+        $this->assertStringContainsString('nullable', implode('|', $rules['car_description']));
+    }
+
     public function test_validator_driver_requires_docs_when_module_enabled(): void
     {
         config(['carpoolear.module_validated_drivers' => true]);
