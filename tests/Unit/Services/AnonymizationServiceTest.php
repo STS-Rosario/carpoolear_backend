@@ -43,4 +43,31 @@ class AnonymizationServiceTest extends TestCase
         $this->assertNull($fresh->account_type);
         $this->assertSame(0, (int) $fresh->active);
     }
+
+    public function test_anonymize_is_idempotent_for_already_anonymized_user(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Usuario anónimo',
+            'email' => null,
+            'birthday' => null,
+            'gender' => null,
+            'nro_doc' => null,
+            'description' => null,
+            'mobile_phone' => null,
+            'image' => null,
+            'account_number' => null,
+            'account_bank' => null,
+            'account_type' => null,
+            'active' => 0,
+        ]);
+
+        $service = new AnonymizationService;
+        $result = $service->anonymize($user);
+
+        $this->assertInstanceOf(User::class, $result);
+        $fresh = $user->fresh();
+        $this->assertSame('Usuario anónimo', $fresh->name);
+        $this->assertNull($fresh->email);
+        $this->assertSame(0, (int) $fresh->active);
+    }
 }
