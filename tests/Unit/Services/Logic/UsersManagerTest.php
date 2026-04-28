@@ -1180,6 +1180,26 @@ class UsersManagerTest extends TestCase
         $this->assertFalse($manager->unansweredConversationOrRequestsByTrip($trip));
     }
 
+    public function test_unanswered_conversation_or_requests_by_trip_throws_when_limit_property_is_missing(): void
+    {
+        $trip = (object) [
+            'id' => 104,
+            'user_id' => 12,
+            'user' => (object) [],
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('unansweredConversationOrRequestsByTrip')
+            ->once()
+            ->with(12, 104)
+            ->andReturn(999);
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $manager = new UsersManager($userRepo, $tripRepo);
+
+        $this->expectException(\ErrorException::class);
+        $manager->unansweredConversationOrRequestsByTrip($trip);
+    }
+
     public function test_update_photo_validation_requires_profile(): void
     {
         $user = User::factory()->create();
