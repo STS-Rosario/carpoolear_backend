@@ -215,4 +215,14 @@ class UserEditablePropertiesServiceTest extends TestCase
             'autoaccept_requests',
         ], $service->getChangeBooleanAllowedProperties());
     }
+
+    public function test_get_change_boolean_allowed_properties_does_not_include_sensitive_flags(): void
+    {
+        $service = new UserEditablePropertiesService;
+        $keys = $service->getChangeBooleanAllowedProperties();
+
+        $this->assertNotContains('is_admin', $keys);
+        $this->assertNotContains('banned', $keys);
+        $this->assertNotContains('active', $keys);
+    }
 }
