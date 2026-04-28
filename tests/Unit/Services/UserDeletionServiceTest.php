@@ -18,4 +18,16 @@ class UserDeletionServiceTest extends TestCase
         $this->assertTrue($result);
         $this->assertNull(User::query()->find($user->id));
     }
+
+    public function test_delete_user_returns_true_when_user_record_does_not_exist(): void
+    {
+        $user = new User;
+        $user->id = 9_999_999;
+
+        $service = new UserDeletionService;
+        $result = $service->deleteUser($user);
+
+        $this->assertTrue($result);
+        $this->assertNull(User::query()->find($user->id));
+    }
 }
