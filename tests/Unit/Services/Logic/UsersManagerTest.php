@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Logic;
 
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Events\User\Create as CreateEvent;
@@ -188,6 +189,33 @@ class UsersManagerTest extends TestCase
         $manager = $this->manager();
         $this->assertNull($manager->update($user, ['nro_doc' => '30.123.456']));
         $this->assertSame('banned_dni', $manager->getErrors()['error']);
+    }
+
+    public function test_update_rejects_banned_document_number_and_attempts_slack_webhook(): void
+    {
+        Http::fake([
+            'https://hooks.slack.test/*' => Http::response(['ok' => true], 200),
+        ]);
+        config(['services.slack.banned_dni_webhook_url' => 'https://hooks.slack.test/services/T000/B000/XYZ']);
+
+        $moderator = User::factory()->create();
+        BannedUser::query()->create([
+            'user_id' => $moderator->id,
+            'nro_doc' => '30999888',
+            'banned_at' => now(),
+        ]);
+        $user = User::factory()->create();
+
+        $manager = $this->manager();
+        $result = $manager->update($user, ['nro_doc' => '30.999.888']);
+
+        $this->assertNull($result);
+        $this->assertSame('banned_dni', $manager->getErrors()['error']);
+        Http::assertSentCount(1);
+        Http::assertSent(function ($request) use ($user) {
+            return str_contains($request->url(), 'https://hooks.slack.test/services/')
+                && str_contains((string) $request->body(), (string) $user->id);
+        });
     }
 
     public function test_admin_update_with_patente_creates_car_when_user_has_none(): void
