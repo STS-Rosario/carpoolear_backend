@@ -2,12 +2,12 @@
 
 namespace STS\Services\Logic;
 
+use STS\Contracts\SocialProvider;
+use STS\Models\User as UserModel;
 use STS\Repository\FileRepository;
 use STS\Repository\SocialRepository;
-use Validator;
-use STS\Models\User as UserModel;
-use STS\Contracts\SocialProvider;
 use STS\Services\UserEditablePropertiesService;
+use Validator;
 
 class SocialManager extends BaseManager
 {
@@ -22,7 +22,6 @@ class SocialManager extends BaseManager
     protected $provider;
 
     protected $userData;
-
 
     // [TODO] social provider
     public function __construct(SocialProvider $provider, UsersManager $userRep, FriendsManager $friendsRepo, FileRepository $files, SocialRepository $social)
@@ -39,12 +38,12 @@ class SocialManager extends BaseManager
     {
         if ($id) {
             return Validator::make($data, [
-                'name'  => 'max:255',
+                'name' => 'max:255',
                 'email' => 'email|max:255|unique:users,email'.$id,
             ]);
         } else {
             return Validator::make($data, [
-                'name'  => 'required|max:255',
+                'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users',
             ]);
         }
@@ -103,7 +102,7 @@ class SocialManager extends BaseManager
 
     public function linkAccount(UserModel $user)
     {
-        $account = $this->getAccounts();
+        $account = $this->getAccounts(null);
         $userAccounts = $this->socialRepo->get($user, $this->socialRepo->getProvider());
         if (! $account && $userAccounts->count() == 0) {
             $this->socialRepo->create($user, $this->provider_user_id);
@@ -114,7 +113,7 @@ class SocialManager extends BaseManager
         }
     }
 
-    private function getAccounts($data)
+    private function getAccounts($data = null)
     {
         $this->userData = $this->provider->getUserData($data);
         $this->provider_user_id = $this->userData['provider_user_id'];

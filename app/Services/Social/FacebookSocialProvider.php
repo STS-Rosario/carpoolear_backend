@@ -16,15 +16,15 @@ class FacebookSocialProvider implements SocialProvider
     public function __construct($token)
     {
         $this->token = $token;
-        $this->client = new Client();
+        $this->client = new Client;
     }
 
-    public function getProviderName()
+    public function getProviderName(): string
     {
         return 'facebook';
     }
 
-    public function getUserData($data)
+    public function getUserData($data): ?array
     {
         $response = $this->request('/me?fields=email,name,gender,picture.width(300),link'); // ,birthday
         if ($response->getStatusCode() == 200) {
@@ -50,24 +50,24 @@ class FacebookSocialProvider implements SocialProvider
             }
 
             return [
-                'provider_user_id'      => $body->id,
-                'email'                 => isset($body->email) ? $body->email : null,
-                'name'                  => $body->name,
-                'gender'                => isset($body->gender) ? $body->gender : null,
-                'birthday'              => isset($body->birthday) ? $body->birthday : null,
-                'banned'                => false,
-                'terms_and_conditions'  => false,
-                'image'                 => $body->picture->data->url,
+                'provider_user_id' => $body->id,
+                'email' => isset($body->email) ? $body->email : null,
+                'name' => $body->name,
+                'gender' => isset($body->gender) ? $body->gender : null,
+                'birthday' => isset($body->birthday) ? $body->birthday : null,
+                'banned' => false,
+                'terms_and_conditions' => false,
+                'image' => $body->picture->data->url,
                 // 'link'                  => isset($body->link) ? $body->link : null,
             ];
         } else {
             $this->error = ['error' => 'Error obteniendo el perfil'];
 
-            return;
+            return null;
         }
     }
 
-    public function getUserFriends()
+    public function getUserFriends(): array
     {
         $response = $this->request('/me/friends?limit=5000');
         if ($response->getStatusCode() == 200) {
@@ -81,11 +81,11 @@ class FacebookSocialProvider implements SocialProvider
         } else {
             $this->error = ['error' => 'Error obteniendo amistades'];
 
-            return;
+            return [];
         }
     }
 
-    public function getError()
+    public function getError(): ?array
     {
         return $this->error;
     }
