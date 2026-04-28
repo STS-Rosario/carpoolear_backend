@@ -140,6 +140,63 @@ class PhoneVerificationManagerTest extends TestCase
         $this->assertNotSame($first, $second);
     }
 
+    public function test_resend_verification_code_fails_when_no_pending_verification_exists(): void
+    {
+        $user = User::factory()->create();
+        $manager = $this->manager();
+
+        $result = $manager->resendVerificationCode($user);
+
+        $this->assertNull($result);
+        $this->assertSame('No pending verification found', $manager->getErrors()['verification']);
+    }
+
+    public function test_get_verification_status_returns_no_phone_when_user_has_no_mobile_phone(): void
+    {
+        $user = User::factory()->create([
+            'mobile_phone' => null,
+            'phone_verified' => false,
+            'phone_verified_at' => null,
+        ]);
+
+        $status = $this->manager()->getVerificationStatus($user);
+
+        $this->assertFalse($status['has_phone']);
+        $this->assertFalse($status['phone_verified']);
+        $this->assertArrayNotHasKey('pending_verification', $status);
+    }
+
+    public function test_get_verification_status_includes_pending_verification_details(): void
+    {
+        Carbon::setTestNow('2026-12-01 10:00:00');
+        $user = User::factory()->create([
+            'mobile_phone' => '+541199887766',
+            'phone_verified' => false,
+            'phone_verified_at' => null,
+        ]);
+
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => '+541199887766',
+            'verification_code' => '123456',
+            'code_sent_at' => Carbon::now(),
+            'verified' => false,
+            'failed_attempts' => 1,
+            'resend_count' => 0,
+        ]);
+
+        $status = $this->manager()->getVerificationStatus($user->fresh());
+
+        $this->assertTrue($status['has_phone']);
+        $this->assertFalse($status['phone_verified']);
+        $this->assertArrayHasKey('pending_verification', $status);
+        $this->assertSame('+541199887766', $status['pending_verification']['phone']);
+        $this->assertSame(1, $status['pending_verification']['failed_attempts']);
+        $this->assertFalse($status['pending_verification']['is_blocked']);
+
+        Carbon::setTestNow();
+    }
+
     public function test_get_verification_stats_delegates_to_repository(): void
     {
         $user = User::factory()->create();
