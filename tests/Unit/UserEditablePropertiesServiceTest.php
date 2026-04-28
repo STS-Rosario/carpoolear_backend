@@ -54,6 +54,24 @@ class UserEditablePropertiesServiceTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_send_flagged_property_alert_still_posts_when_webhook_returns_server_error(): void
+    {
+        Http::fake([
+            'https://hooks.slack.example/*' => Http::response(['ok' => false], 500),
+        ]);
+
+        Config::set('services.slack.forbidden_edit_webhook_url', 'https://hooks.slack.example/forbidden');
+        Config::set('carpoolear.frontend_url', 'https://carpoolear.com.ar');
+
+        $user = new User;
+        $user->id = 99;
+
+        $service = new UserEditablePropertiesService;
+        $service->sendFlaggedPropertyAlert($user, ['banned']);
+
+        Http::assertSentCount(1);
+    }
+
     public function test_is_property_allowed_respects_forbidden_allowed_and_admin_allowed_lists(): void
     {
         Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
