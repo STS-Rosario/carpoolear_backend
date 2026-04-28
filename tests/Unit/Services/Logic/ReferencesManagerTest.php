@@ -44,6 +44,17 @@ class ReferencesManagerTest extends TestCase
         $this->assertFalse($v->fails());
     }
 
+    public function test_validator_fails_with_whitespace_only_comment_string(): void
+    {
+        $v = $this->manager()->validator([
+            'comment' => '   ',
+            'user_id_to' => 123,
+        ]);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('comment'));
+    }
+
     public function test_create_returns_null_and_sets_errors_when_validation_fails(): void
     {
         $user = User::factory()->create();
@@ -137,6 +148,30 @@ class ReferencesManagerTest extends TestCase
             'user_id_from' => $from->id,
             'user_id_to' => $to->id,
             'comment' => 'Punctual and safe.',
+        ]);
+    }
+
+    public function test_create_allows_reference_in_reverse_direction(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        References::create([
+            'user_id_from' => $from->id,
+            'user_id_to' => $to->id,
+            'comment' => 'Forward',
+        ]);
+
+        $manager = $this->manager();
+        $reverse = $manager->create($to, [
+            'comment' => 'Reverse',
+            'user_id_to' => $from->id,
+        ]);
+
+        $this->assertInstanceOf(References::class, $reverse);
+        $this->assertDatabaseHas('users_references', [
+            'user_id_from' => $to->id,
+            'user_id_to' => $from->id,
+            'comment' => 'Reverse',
         ]);
     }
 }
