@@ -23,12 +23,48 @@ class ReferencesManagerTest extends TestCase
         $this->assertTrue($v->errors()->has('user_id_to'));
     }
 
+    public function test_validator_fails_when_comment_exceeds_max_length(): void
+    {
+        $v = $this->manager()->validator([
+            'comment' => str_repeat('a', 261),
+            'user_id_to' => 123,
+        ]);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('comment'));
+    }
+
+    public function test_validator_accepts_comment_with_exact_max_length(): void
+    {
+        $v = $this->manager()->validator([
+            'comment' => str_repeat('a', 260),
+            'user_id_to' => 123,
+        ]);
+
+        $this->assertFalse($v->fails());
+    }
+
     public function test_create_returns_null_and_sets_errors_when_validation_fails(): void
     {
         $user = User::factory()->create();
         $manager = $this->manager();
 
         $result = $manager->create($user, ['comment' => '', 'user_id_to' => null]);
+
+        $this->assertNull($result);
+        $this->assertNotNull($manager->getErrors());
+    }
+
+    public function test_create_returns_null_when_comment_is_not_string(): void
+    {
+        $user = User::factory()->create();
+        $to = User::factory()->create();
+        $manager = $this->manager();
+
+        $result = $manager->create($user, [
+            'comment' => ['not-a-string'],
+            'user_id_to' => $to->id,
+        ]);
 
         $this->assertNull($result);
         $this->assertNotNull($manager->getErrors());
