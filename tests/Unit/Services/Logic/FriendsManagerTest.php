@@ -109,6 +109,16 @@ class FriendsManagerTest extends TestCase
         $this->assertFalse($this->manager()->areFriend($alice, $bob));
     }
 
+    public function test_reject_fails_without_pending_request(): void
+    {
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $manager = $this->manager();
+
+        $this->assertNull($manager->reject($a, $b));
+        $this->assertSame('Operación inválida', $manager->getErrors()['error']);
+    }
+
     public function test_delete_removes_accepted_friendship_and_dispatches_cancel(): void
     {
         Event::fake();
@@ -141,5 +151,36 @@ class FriendsManagerTest extends TestCase
         $friends = $this->manager()->getFriends($a, []);
 
         $this->assertTrue($friends->pluck('id')->contains($b->id));
+    }
+
+    public function test_make_clears_pending_request_and_creates_mutual_friendship(): void
+    {
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $this->manager()->request($a, $b);
+
+        $this->assertTrue($this->manager()->make($a, $b));
+
+        $this->assertTrue($this->manager()->areFriend($a, $b));
+        $this->assertTrue($this->manager()->areFriend($b, $a));
+        $this->assertFalse($this->manager()->getPendings($b)->pluck('id')->contains($a->id));
+    }
+
+    public function test_get_pendings_returns_requesters_for_target_user(): void
+    {
+        $target = User::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
+        $otherTarget = User::factory()->create();
+
+        $this->manager()->request($p1, $target);
+        $this->manager()->request($p2, $target);
+        $this->manager()->request($p1, $otherTarget);
+
+        $pendings = $this->manager()->getPendings($target)->pluck('id')->all();
+
+        $this->assertContains($p1->id, $pendings);
+        $this->assertContains($p2->id, $pendings);
+        $this->assertNotContains($otherTarget->id, $pendings);
     }
 }
