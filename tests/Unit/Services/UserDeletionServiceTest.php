@@ -43,4 +43,16 @@ class UserDeletionServiceTest extends TestCase
         $this->assertTrue($second);
         $this->assertNull(User::query()->find($user->id));
     }
+
+    public function test_delete_user_does_not_remove_other_users(): void
+    {
+        $toDelete = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $service = new UserDeletionService;
+        $this->assertTrue($service->deleteUser($toDelete));
+
+        $this->assertNull(User::query()->find($toDelete->id));
+        $this->assertNotNull(User::query()->find($otherUser->id));
+    }
 }
