@@ -204,6 +204,17 @@ class UsersManagerTest extends TestCase
         $this->assertNull($this->manager()->show($viewer, 9_999_999_999));
     }
 
+    public function test_show_sets_profile_not_found_error_when_profile_missing(): void
+    {
+        $viewer = User::factory()->create();
+        $manager = $this->manager();
+
+        $result = $manager->show($viewer, 9_999_999_999);
+
+        $this->assertNull($result);
+        $this->assertSame('profile not found', $manager->getErrors()['error']);
+    }
+
     public function test_create_persists_inactive_user_and_dispatches_create_event(): void
     {
         Event::fake([CreateEvent::class]);
