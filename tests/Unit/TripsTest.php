@@ -2,64 +2,90 @@
 
 namespace Tests\Unit;
 
-use Mockery as m;
-use Tests\TestCase;
 use Carbon\Carbon;
-use STS\Models\Passenger;
-use STS\Models\TripPoint;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use STS\Models\TripPoint;
+use Tests\TestCase;
 
 class TripsTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         start_log_query();
     }
 
-    public function testCreateTrip()
+    public function test_create_trip()
     {
-        \Illuminate\Support\Facades\Event::fake();
-        $user = \STS\Models\User::factory()->create();
-        $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
-        $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+        // TripsManager and TripRepository call OSRM for routing; CI often has no outbound HTTP.
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [
+                        [
+                            'distance' => 365_000,
+                            'duration' => 18_000,
+                        ],
+                    ],
+                ], 200);
+            }
 
-        $data = [
-            'is_passenger'          => 0,
-            'from_town'             => 'Rosario, Santa Fe, Argentina',
-            'to_town'               => 'Santa Fe, Santa Fe, Argentina',
-            'trip_date'             => Carbon::now()->addDay(),
-            'total_seats'           => 5,
-            'friendship_type_id'    => 0,
-            'estimated_time'        => '05:00',
-            'distance'              => 365,
-            'co2'                   => 50.0,
-            'description'           => 'hola mundo',
-            'car_id'                => $car->id,
-            'points'                => [
-                [
-                    'address'      => 'Rosario, Santa Fe, Argentina',
-                    'json_address' => ['street' => 'Pampa'],
-                    'lat'          => 0,
-                    'lng'          => 0,
-                ], [
-                    'address'      => 'Santa Fe, Santa Fe, Argentina',
-                    'json_address' => ['street' => 'Pampa'],
-                    'lat'          => 0,
-                    'lng'          => 0,
+            return Http::response('unexpected url in test', 404);
+        });
+
+        try {
+            Event::fake();
+            Carbon::setTestNow('2026-01-01 12:00:00');
+
+            $user = \STS\Models\User::factory()->create();
+            $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
+            $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
+
+            $data = [
+                'is_passenger' => 0,
+                'from_town' => 'Rosario, Santa Fe, Argentina',
+                'to_town' => 'Santa Fe, Santa Fe, Argentina',
+                'trip_date' => '2026-06-15 10:00:00',
+                'total_seats' => 5,
+                'friendship_type_id' => 0,
+                'estimated_time' => '05:00',
+                'distance' => 365,
+                'co2' => 50.0,
+                'description' => 'hola mundo',
+                'car_id' => $car->id,
+                'points' => [
+                    [
+                        'address' => 'Rosario, Santa Fe, Argentina',
+                        'json_address' => ['street' => 'Pampa'],
+                        'lat' => -32.9468,
+                        'lng' => -60.6393,
+                    ],
+                    [
+                        'address' => 'Santa Fe, Santa Fe, Argentina',
+                        'json_address' => ['street' => 'Pampa'],
+                        'lat' => -31.6333,
+                        'lng' => -60.7000,
+                    ],
                 ],
-            ],
-            'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@',
-        ];
+                'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@',
+            ];
 
-        $u = $tripManager->create($user, $data);
-        $this->assertTrue($u != null);
-        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Create::class);
+            $u = $tripManager->create($user, $data);
+            $this->assertNotNull($u);
+            Event::assertDispatched(\STS\Events\Trip\Create::class);
+        } finally {
+            Carbon::setTestNow();
+            Http::swap(new HttpFactory);
+        }
     }
 
-    public function testUpdateTrip()
+    public function test_update_trip()
     {
         \Illuminate\Support\Facades\Event::fake();
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
@@ -68,7 +94,7 @@ class TripsTest extends TestCase
 
         $data = [
             'from_town' => 'Usuahia',
-            'enc_path'  => 'sgwpEjbkaP_AvQjQlApD{l@',
+            'enc_path' => 'sgwpEjbkaP_AvQjQlApD{l@',
         ];
 
         $trip = $tripManager->update($trip->user, $trip->id, $data);
@@ -76,7 +102,7 @@ class TripsTest extends TestCase
         \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Update::class);
     }
 
-    public function testDeleteTrip()
+    public function test_delete_trip()
     {
         \Illuminate\Support\Facades\Event::fake();
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
@@ -88,7 +114,7 @@ class TripsTest extends TestCase
         \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Delete::class);
     }
 
-    public function testShowTrip()
+    public function test_show_trip()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
         $trip = \STS\Models\Trip::factory()->create();
@@ -97,7 +123,7 @@ class TripsTest extends TestCase
         $this->assertTrue($result != null);
     }
 
-    public function testCanSeeTrip()
+    public function test_can_see_trip()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
         $trip = \STS\Models\Trip::factory()->create();
@@ -108,7 +134,7 @@ class TripsTest extends TestCase
         $this->assertTrue($result);
     }
 
-    public function testCanSeeTripFriend()
+    public function test_can_see_trip_friend()
     {
         $friendsManager = \App::make(\STS\Services\Logic\FriendsManager::class);
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
@@ -123,7 +149,7 @@ class TripsTest extends TestCase
         $this->assertTrue($result);
     }
 
-    public function testTripSeeder()
+    public function test_trip_seeder()
     {
         $this->seed('TripsTestSeeder');
 
@@ -131,7 +157,7 @@ class TripsTest extends TestCase
         $this->assertTrue($todos->count() == 2);
     }
 
-    public function testSimpleSearch()
+    public function test_simple_search()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
@@ -144,38 +170,38 @@ class TripsTest extends TestCase
         $this->assertTrue($trips->count() > 0);
     }
 
-    public function testOriginSearch()
+    public function test_origin_search()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
         $this->seed('TripsTestSeeder');
         $other = \STS\Models\User::factory()->create();
         $data = [
-            'origin_lat'   => -32.946500,
-            'origin_lng'   => -60.669800,
+            'origin_lat' => -32.946500,
+            'origin_lng' => -60.669800,
             'origin_radio' => 10000,
-            'date'         => Carbon::now()->toDateString(),
+            'date' => Carbon::now()->toDateString(),
         ];
         $trips = $tripManager->search($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 
-    public function testDestinationSearch()
+    public function test_destination_search()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
         $this->seed('TripsTestSeeder');
         $other = \STS\Models\User::factory()->create();
         $data = [
-            'destination_lat'   => -32.897273,
-            'destination_lng'   => -68.834067,
+            'destination_lat' => -32.897273,
+            'destination_lng' => -68.834067,
             'destination_radio' => 10000,
         ];
         $trips = $tripManager->search($other, $data);
         $this->assertTrue($trips->count() > 0);
     }
 
-    public function testInbounds()
+    public function test_inbounds()
     {
         $in = \STS\Models\Trip::factory()->create();
         $out = \STS\Models\Trip::factory()->create();
@@ -187,7 +213,7 @@ class TripsTest extends TestCase
         $this->assertTrue($out->inbound != null);
     }
 
-    public function testMyTripsAsDriver()
+    public function test_my_trips_as_driver()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
         $user = \STS\Models\User::factory()->create();
@@ -199,7 +225,7 @@ class TripsTest extends TestCase
         $this->assertTrue($trips->count() > 0);
     }
 
-    public function testMyTripsAsPassenger()
+    public function test_my_trips_as_passenger()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
         $user = \STS\Models\User::factory()->create();
@@ -211,7 +237,7 @@ class TripsTest extends TestCase
         $this->assertTrue($trips->count() > 0);
     }
 
-    public function testUpdateListeners()
+    public function test_update_listeners()
     {
         $driver = \STS\Models\User::factory()->create();
         $passengerA = \STS\Models\User::factory()->create();
@@ -223,7 +249,7 @@ class TripsTest extends TestCase
 
         $event = new \STS\Events\Trip\Update($trip);
 
-        $listener = new \STS\Listeners\Notification\UpdateTrip();
+        $listener = new \STS\Listeners\Notification\UpdateTrip;
 
         $listener->handle($event);
 
