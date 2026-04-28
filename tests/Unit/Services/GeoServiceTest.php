@@ -60,6 +60,16 @@ class GeoServiceTest extends TestCase
         $this->assertTrue($service->arePointsInPaidRegions([]));
     }
 
+    public function test_are_points_in_paid_regions_returns_false_when_any_point_is_outside(): void
+    {
+        $service = new GeoService;
+
+        $this->assertFalse($service->arePointsInPaidRegions([
+            [-34.60, -58.40], // Inside a paid region
+            [0.0, 0.0],       // Outside paid regions
+        ]));
+    }
+
     public function test_are_points_in_paid_routes_returns_false_when_one_point_is_outside_paid_regions(): void
     {
         $service = new GeoService;
