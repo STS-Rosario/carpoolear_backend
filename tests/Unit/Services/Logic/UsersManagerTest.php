@@ -123,6 +123,19 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($validator->errors()->has('email'));
     }
 
+    public function test_validator_social_create_allows_empty_email_string_when_key_is_present(): void
+    {
+        $validator = $this->manager()->validator([
+            'name' => 'Social User',
+            'email' => '',
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+        ], null, true, false, false);
+
+        $this->assertFalse($validator->fails());
+    }
+
     public function test_validator_update_includes_unique_email_rule_with_id(): void
     {
         $user = User::factory()->create();
