@@ -8,6 +8,7 @@ use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\BannedUser;
+use STS\Models\Car;
 use STS\Models\Donation;
 use STS\Models\User;
 use STS\Services\Logic\UsersManager;
@@ -149,6 +150,26 @@ class UsersManagerTest extends TestCase
         $manager = $this->manager();
         $this->assertNull($manager->update($user, ['nro_doc' => '30.123.456']));
         $this->assertSame('banned_dni', $manager->getErrors()['error']);
+    }
+
+    public function test_admin_update_with_patente_creates_car_when_user_has_none(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        User::factory()->create(['is_admin' => 1]);
+        $user = User::factory()->create();
+        $this->assertSame(0, Car::query()->where('user_id', $user->id)->count());
+
+        $updated = $this->manager()->update($user, [
+            'patente' => 'AA123BB',
+            'car_description' => 'Sedan gris',
+        ], false, true);
+
+        $this->assertInstanceOf(User::class, $updated);
+        $car = Car::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($car);
+        $this->assertSame('AA123BB', $car->patente);
+        $this->assertSame('Sedan gris', $car->description);
+        Event::assertDispatched(UpdateEvent::class);
     }
 
     public function test_active_account_activates_user_with_valid_token(): void
