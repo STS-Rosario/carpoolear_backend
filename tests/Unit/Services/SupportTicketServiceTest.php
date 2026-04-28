@@ -13,6 +13,16 @@ use Tests\TestCase;
 
 class SupportTicketServiceTest extends TestCase
 {
+    public function test_store_reply_attachments_with_empty_array_creates_no_records(): void
+    {
+        Storage::fake('public');
+        $service = new SupportTicketService;
+
+        $service->storeReplyAttachments([], 1, 1);
+
+        $this->assertSame(0, SupportTicketAttachment::query()->count());
+    }
+
     public function test_store_reply_attachments_persists_only_uploaded_files(): void
     {
         Storage::fake('public');
