@@ -376,4 +376,18 @@ class UsersManagerTest extends TestCase
         $this->assertNull($manager->updatePhoto($user, []));
         $this->assertTrue($manager->getErrors()->has('profile'));
     }
+
+    public function test_update_photo_sets_error_when_profile_payload_is_not_base64_data_uri(): void
+    {
+        $user = User::factory()->create();
+        $manager = $this->manager();
+
+        $this->assertNull($manager->updatePhoto($user, [
+            'profile' => 'invalid-base64-payload',
+        ]));
+
+        $errors = $manager->getErrors();
+        $this->assertIsObject($errors);
+        $this->assertSame('error_uploading_image', $errors->error);
+    }
 }
