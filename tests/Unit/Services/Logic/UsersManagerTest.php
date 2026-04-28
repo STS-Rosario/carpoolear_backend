@@ -188,6 +188,17 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($validator->errors()->has('patente'));
     }
 
+    public function test_validator_admin_accepts_patente_with_exact_max_length(): void
+    {
+        $user = User::factory()->create();
+        $validator = $this->manager()->validator([
+            'name' => 'Admin touch',
+            'patente' => 'ABC1234567',
+        ], $user->id, false, false, true);
+
+        $this->assertFalse($validator->fails());
+    }
+
     public function test_validator_admin_fails_when_car_description_exceeds_max_length(): void
     {
         $user = User::factory()->create();
