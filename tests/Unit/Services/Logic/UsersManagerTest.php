@@ -962,6 +962,29 @@ class UsersManagerTest extends TestCase
         $this->assertSame(0, (int) $this->manager()->tripsDistance($user, 9999));
     }
 
+    public function test_trips_metrics_ignore_future_driver_and_passenger_trips(): void
+    {
+        $user = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => now()->addDay(),
+            'distance' => 10000,
+        ]);
+        $futurePassengerTrip = Trip::factory()->create([
+            'trip_date' => now()->addDays(2),
+            'distance' => 25000,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $futurePassengerTrip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertSame(0, $this->manager()->tripsCount($user));
+        $this->assertSame(0, (int) $this->manager()->tripsDistance($user));
+    }
+
     public function test_register_donation_sets_user_and_month(): void
     {
         $user = User::factory()->create();
