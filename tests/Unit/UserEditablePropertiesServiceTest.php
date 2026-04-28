@@ -148,4 +148,29 @@ class UserEditablePropertiesServiceTest extends TestCase
         $adminFiltered = $service->filterForUser($requestData, true);
         $this->assertSame([], $service->getBlockedFlaggedPropertiesThatDiffer($user, $requestData, $adminFiltered, true));
     }
+
+    public function test_get_blocked_flagged_properties_treats_boolean_equivalents_as_same_value(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
+        Config::set('carpoolear.user_edit_properties.flagged', ['banned']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', []);
+
+        $service = new UserEditablePropertiesService;
+        $user = User::factory()->make([
+            'is_admin' => false,
+            'banned' => false,
+            'name' => 'Alice',
+        ]);
+
+        $requestData = [
+            'is_admin' => '0',
+            'banned' => 'false',
+            'name' => 'Alice',
+        ];
+        $filteredData = $service->filterForUser($requestData, false);
+        $blocked = $service->getBlockedFlaggedPropertiesThatDiffer($user, $requestData, $filteredData, false);
+
+        $this->assertSame([], $blocked);
+    }
 }
