@@ -47,4 +47,11 @@ class SmsServiceTest extends TestCase
 
         $this->assertSame('+541122223333', $service->formatPhoneNumber('(011) 2222-3333'));
     }
+
+    public function test_format_phone_number_preserves_existing_54_prefix_without_adding_extra_digits(): void
+    {
+        $service = new SmsService;
+
+        $this->assertSame('+541122223333', $service->formatPhoneNumber('541122223333'));
+    }
 }
