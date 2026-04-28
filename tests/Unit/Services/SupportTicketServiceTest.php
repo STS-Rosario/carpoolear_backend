@@ -132,4 +132,22 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame(77, (int) $ticket->updated_by);
         $this->assertNotNull($ticket->last_reply_at);
     }
+
+    public function test_apply_user_reply_transition_from_open_still_sets_waiting_status(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Open',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 0,
+        ]);
+
+        $service = new SupportTicketService;
+        $service->applyUserReplyTransition($ticket, 101);
+
+        $this->assertSame('Esperando respuesta', $ticket->status);
+        $this->assertSame(1, $ticket->unread_for_admin);
+        $this->assertSame(0, $ticket->unread_for_user);
+        $this->assertSame(101, (int) $ticket->updated_by);
+        $this->assertNotNull($ticket->last_reply_at);
+    }
 }
