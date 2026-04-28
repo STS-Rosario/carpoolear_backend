@@ -218,6 +218,27 @@ class UsersManagerTest extends TestCase
         });
     }
 
+    public function test_update_rejects_banned_document_number_without_webhook_config_and_skips_http_call(): void
+    {
+        Http::fake();
+        config(['services.slack.banned_dni_webhook_url' => null]);
+
+        $moderator = User::factory()->create();
+        BannedUser::query()->create([
+            'user_id' => $moderator->id,
+            'nro_doc' => '30777111',
+            'banned_at' => now(),
+        ]);
+        $user = User::factory()->create();
+
+        $manager = $this->manager();
+        $result = $manager->update($user, ['nro_doc' => '30.777.111']);
+
+        $this->assertNull($result);
+        $this->assertSame('banned_dni', $manager->getErrors()['error']);
+        Http::assertNothingSent();
+    }
+
     public function test_admin_update_with_patente_creates_car_when_user_has_none(): void
     {
         Event::fake([UpdateEvent::class]);
