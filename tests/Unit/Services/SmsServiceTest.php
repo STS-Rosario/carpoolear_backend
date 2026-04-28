@@ -22,4 +22,11 @@ class SmsServiceTest extends TestCase
         $this->assertSame('+541122223333', $service->formatPhoneNumber('1122223333'));
         $this->assertSame('+541122223333', $service->formatPhoneNumber('01122223333'));
     }
+
+    public function test_format_phone_number_keeps_existing_country_code_digits(): void
+    {
+        $service = new SmsService;
+
+        $this->assertSame('+541122223333', $service->formatPhoneNumber('+54 11 2222 3333'));
+    }
 }
