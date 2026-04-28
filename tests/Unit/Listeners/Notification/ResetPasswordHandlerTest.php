@@ -3,6 +3,8 @@
 namespace Tests\Unit\Listeners\Notification;
 
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use STS\Events\User\Reset as ResetEvent;
 use STS\Listeners\Notification\ResetPasswordHandler;
 use STS\Models\User;
@@ -17,6 +19,9 @@ class ResetPasswordHandlerTest extends TestCase
         parent::tearDown();
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_sends_reset_password_notification_when_user_exists(): void
     {
         $user = User::factory()->create();
@@ -42,6 +47,9 @@ class ResetPasswordHandlerTest extends TestCase
         $this->assertTrue(true);
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_skips_notification_when_user_is_missing(): void
     {
         $missingId = 999_999_123;

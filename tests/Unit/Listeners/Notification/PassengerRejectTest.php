@@ -3,6 +3,8 @@
 namespace Tests\Unit\Listeners\Notification;
 
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Listeners\Notification\PassengerReject;
 use STS\Models\Trip;
@@ -17,6 +19,9 @@ class PassengerRejectTest extends TestCase
         parent::tearDown();
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_creates_notification_sets_attributes_and_notifies_when_recipient_exists(): void
     {
         $trip = Trip::factory()->create();
@@ -34,6 +39,9 @@ class PassengerRejectTest extends TestCase
         $this->assertTrue(true);
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_does_nothing_when_recipient_is_null(): void
     {
         $trip = Trip::factory()->create();

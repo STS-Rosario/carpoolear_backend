@@ -3,6 +3,8 @@
 namespace Tests\Unit\Listeners\Notification;
 
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Listeners\Notification\PassengerCancel;
 use STS\Models\Passenger;
@@ -18,6 +20,9 @@ class PassengerCancelTest extends TestCase
         parent::tearDown();
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_sets_driver_flag_true_when_canceled_by_driver_and_notifies(): void
     {
         $trip = Trip::factory()->create();
@@ -37,6 +42,9 @@ class PassengerCancelTest extends TestCase
         $this->assertTrue(true);
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_sets_driver_flag_false_for_non_driver_state_and_skips_when_to_null(): void
     {
         $trip = Trip::factory()->create();

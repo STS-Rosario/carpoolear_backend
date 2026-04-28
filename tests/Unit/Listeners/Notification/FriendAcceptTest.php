@@ -3,6 +3,8 @@
 namespace Tests\Unit\Listeners\Notification;
 
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use STS\Events\Friend\Accept as AcceptEvent;
 use STS\Listeners\Notification\FriendAccept;
 use STS\Models\User;
@@ -16,6 +18,9 @@ class FriendAcceptTest extends TestCase
         parent::tearDown();
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_creates_notification_sets_sender_and_notifies_recipient(): void
     {
         $from = User::factory()->create();

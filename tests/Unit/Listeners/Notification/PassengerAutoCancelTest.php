@@ -3,6 +3,8 @@
 namespace Tests\Unit\Listeners\Notification;
 
 use Mockery;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use STS\Events\Passenger\AutoCancel as AutoCancelEvent;
 use STS\Listeners\Notification\PassengerAutoCancel;
 use STS\Models\Trip;
@@ -17,6 +19,9 @@ class PassengerAutoCancelTest extends TestCase
         parent::tearDown();
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_notifies_owner_and_passenger_when_both_participants_exist(): void
     {
         $trip = Trip::factory()->create();
@@ -39,6 +44,9 @@ class PassengerAutoCancelTest extends TestCase
         $this->assertTrue(true);
     }
 
+    #[RunInSeparateProcess]
+
+    #[PreserveGlobalState(false)]
     public function test_handle_skips_notifications_when_from_and_to_are_null(): void
     {
         $trip = Trip::factory()->create();
