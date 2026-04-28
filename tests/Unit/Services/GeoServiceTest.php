@@ -17,6 +17,13 @@ class GeoServiceTest extends TestCase
         $this->assertGreaterThanOrEqual(4, count($regions[0]));
     }
 
+    public function test_get_paid_regions_contains_expected_number_of_configured_regions(): void
+    {
+        $service = new GeoService;
+
+        $this->assertCount(4, $service->getPaidRegions());
+    }
+
     public function test_is_point_in_paid_zone_returns_false_for_far_away_point(): void
     {
         $service = new GeoService;
