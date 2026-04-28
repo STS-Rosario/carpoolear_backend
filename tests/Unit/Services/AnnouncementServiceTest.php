@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use Illuminate\Support\Facades\Cache;
+use STS\Models\User;
 use STS\Services\AnnouncementService;
 use Tests\TestCase;
 
@@ -79,5 +80,28 @@ class AnnouncementServiceTest extends TestCase
 
         $this->assertTrue($service->canSendAnnouncement());
         $this->assertSame(1, Cache::get('announcement_rate_limit'));
+    }
+
+    public function test_send_to_users_counts_user_without_devices_as_skipped(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        $service = new AnnouncementService;
+        $result = $service->sendToUsers([$user->id], 'Hello world', [
+            'device_activity_days' => 0,
+            'title' => 'Carpoolear',
+            'external_url' => null,
+        ]);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(1, $result['stats']['total']);
+        $this->assertSame(1, $result['stats']['found']);
+        $this->assertSame(1, $result['stats']['processed']);
+        $this->assertSame(0, $result['stats']['successful']);
+        $this->assertSame(1, $result['stats']['skipped']);
+        $this->assertSame(0, $result['stats']['failed']);
     }
 }
