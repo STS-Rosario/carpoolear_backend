@@ -99,6 +99,23 @@ class UsersManagerTest extends TestCase
         config(['carpoolear.module_unique_doc_phone' => false]);
     }
 
+    public function test_validator_update_does_not_add_unique_doc_and_phone_rules_for_admin(): void
+    {
+        config(['carpoolear.module_unique_doc_phone' => true]);
+        $user = User::factory()->create();
+
+        $validator = $this->manager()->validator([
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5491122223333',
+        ], $user->id, false, false, true);
+
+        $rules = $validator->getRules();
+        $this->assertArrayNotHasKey('nro_doc', $rules);
+        $this->assertArrayNotHasKey('mobile_phone', $rules);
+
+        config(['carpoolear.module_unique_doc_phone' => false]);
+    }
+
     public function test_validator_admin_omits_email_rule(): void
     {
         $user = User::factory()->create();
