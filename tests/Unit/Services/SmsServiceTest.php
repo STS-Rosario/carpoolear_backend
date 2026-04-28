@@ -40,4 +40,11 @@ class SmsServiceTest extends TestCase
 
         $this->assertFalse($service->send('1122223333', 'test message'));
     }
+
+    public function test_format_phone_number_removes_non_numeric_characters(): void
+    {
+        $service = new SmsService;
+
+        $this->assertSame('+541122223333', $service->formatPhoneNumber('(011) 2222-3333'));
+    }
 }
