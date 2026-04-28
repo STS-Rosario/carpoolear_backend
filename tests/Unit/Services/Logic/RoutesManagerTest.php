@@ -80,6 +80,35 @@ class RoutesManagerTest extends TestCase
         ];
     }
 
+    /**
+     * @param  array<int, array{0: float, 1: float}>  $locations
+     * @return array<string, mixed>
+     */
+    private function osrmFixtureWithLocations(array $locations): array
+    {
+        $steps = [];
+        for ($i = 1; $i < count($locations); $i++) {
+            $steps[] = [
+                'intersections' => [
+                    ['location' => $locations[$i - 1]],
+                    ['location' => $locations[$i]],
+                ],
+            ];
+        }
+
+        return [
+            'routes' => [
+                [
+                    'legs' => [
+                        [
+                            'steps' => $steps,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     public function test_autocomplete_delegates_to_repository(): void
     {
         $suffix = substr(uniqid('', true), 0, 8);
@@ -147,5 +176,66 @@ class RoutesManagerTest extends TestCase
         $attached = $route->nodes()->pluck('nodes_geo.id')->all();
         $this->assertNotEmpty($attached);
         $this->assertContains($mid->id, $attached);
+    }
+
+    public function test_create_route_handles_zero_lat_delta_segments(): void
+    {
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0, 'name' => 'ZFrom']);
+        $n2 = $this->makeNode(['lat' => -34.0, 'lng' => -60.0, 'name' => 'ZTo']);
+        $near = $this->makeNode(['lat' => -34.0, 'lng' => -59.0, 'name' => 'ZNear']);
+
+        $route = new Route;
+        $route->forceFill([
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'processed' => false,
+        ])->save();
+
+        $fixture = $this->osrmFixtureWithLocations([
+            [-58.0, -34.0],
+            [-59.0, -34.0],
+            [-60.0, -34.0],
+        ]);
+        $manager = new RoutesManagerWithFixture(new RoutesRep, $fixture);
+        $route->load(['origin', 'destiny']);
+
+        $manager->createRoute($route);
+
+        $route->refresh();
+        $this->assertTrue((bool) $route->processed);
+        $attached = $route->nodes()->pluck('nodes_geo.id')->all();
+        $this->assertContains($near->id, $attached);
+    }
+
+    public function test_create_route_deduplicates_repeated_near_node_candidates(): void
+    {
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0, 'name' => 'DFrom']);
+        $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -60.0, 'name' => 'DTo']);
+        $near = $this->makeNode(['lat' => -34.5, 'lng' => -59.0, 'name' => 'DNear']);
+
+        $route = new Route;
+        $route->forceFill([
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'processed' => false,
+        ])->save();
+
+        $fixture = $this->osrmFixtureWithLocations([
+            [-58.0, -34.0],
+            [-58.5, -34.25],
+            [-59.0, -34.5],
+            [-59.5, -34.75],
+            [-60.0, -35.0],
+        ]);
+        $manager = new RoutesManagerWithFixture(new RoutesRep, $fixture);
+        $route->load(['origin', 'destiny']);
+
+        $manager->createRoute($route);
+
+        $route->refresh();
+        $this->assertTrue((bool) $route->processed);
+        $attached = $route->nodes()->pluck('nodes_geo.id')->all();
+        $this->assertCount(count(array_unique($attached)), $attached);
+        $this->assertContains($near->id, $attached);
     }
 }
