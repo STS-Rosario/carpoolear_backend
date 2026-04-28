@@ -41,4 +41,15 @@ class AnnouncementServiceTest extends TestCase
         $this->assertSame(0, $result['stats']['total']);
         $this->assertSame(0, $result['stats']['processed']);
     }
+
+    public function test_send_to_users_returns_error_when_ids_array_is_empty(): void
+    {
+        $service = new AnnouncementService;
+        $result = $service->sendToUsers([], 'Hello world');
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('No valid user IDs provided', $result['message']);
+        $this->assertSame(0, $result['stats']['total']);
+        $this->assertSame(0, $result['stats']['found']);
+    }
 }
