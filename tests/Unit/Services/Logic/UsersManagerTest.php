@@ -610,6 +610,32 @@ class UsersManagerTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_update_with_blank_document_number_skips_banned_check_and_updates_user(): void
+    {
+        Http::fake();
+        $moderator = User::factory()->create();
+        BannedUser::query()->create([
+            'user_id' => $moderator->id,
+            'nro_doc' => '30123123',
+            'banned_at' => now(),
+        ]);
+        $user = User::factory()->create([
+            'description' => 'old description',
+            'nro_doc' => '12345678',
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->update($user, [
+            'nro_doc' => '   ',
+            'description' => 'updated description',
+        ]);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame('updated description', $user->fresh()->description);
+        $this->assertNull($manager->getErrors());
+        Http::assertNothingSent();
+    }
+
     public function test_admin_update_with_patente_creates_car_when_user_has_none(): void
     {
         Event::fake([UpdateEvent::class]);
