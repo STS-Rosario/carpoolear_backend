@@ -208,6 +208,17 @@ class UsersManagerTest extends TestCase
         $this->assertTrue(\Hash::check('newsecret12', $user->fresh()->password));
     }
 
+    public function test_change_password_returns_null_for_invalid_token(): void
+    {
+        $manager = $this->manager();
+
+        $this->assertNull($manager->changePassword('invalid-token', [
+            'email' => 'x@example.com',
+            'password' => 'newsecret12',
+            'password_confirmation' => 'newsecret12',
+        ]));
+    }
+
     public function test_mail_unsubscribe_turns_off_email_notifications(): void
     {
         $user = User::factory()->create([
