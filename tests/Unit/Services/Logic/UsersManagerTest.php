@@ -12,6 +12,8 @@ use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\BannedUser;
 use STS\Models\Car;
 use STS\Models\Donation;
+use STS\Models\Passenger;
+use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
@@ -806,6 +808,33 @@ class UsersManagerTest extends TestCase
         $user = User::factory()->create();
         $this->assertSame(0, $this->manager()->tripsCount($user));
         $this->assertSame(0, $this->manager()->tripsDistance($user));
+    }
+
+    public function test_trips_count_and_distance_include_finished_driver_and_passenger_trips(): void
+    {
+        $user = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => now()->subDay(),
+            'distance' => 10000,
+        ]);
+        $passengerTrip = Trip::factory()->create([
+            'trip_date' => now()->subDays(2),
+            'distance' => 25000,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $passengerTrip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertSame(2, $this->manager()->tripsCount($user));
+        $this->assertSame(35000, (int) $this->manager()->tripsDistance($user));
+        $this->assertSame(1, $this->manager()->tripsCount($user, Passenger::TYPE_CONDUCTOR));
+        $this->assertSame(1, $this->manager()->tripsCount($user, Passenger::TYPE_PASAJERO));
+        $this->assertSame(10000, (int) $this->manager()->tripsDistance($user, Passenger::TYPE_CONDUCTOR));
+        $this->assertSame(25000, (int) $this->manager()->tripsDistance($user, Passenger::TYPE_PASAJERO));
     }
 
     public function test_register_donation_sets_user_and_month(): void
