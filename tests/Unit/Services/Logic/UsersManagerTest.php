@@ -193,6 +193,27 @@ class UsersManagerTest extends TestCase
         Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
     }
 
+    public function test_create_bans_user_when_name_contains_configured_banned_word(): void
+    {
+        Event::fake([CreateEvent::class]);
+        config(['carpoolear.banned_words_names' => ['forbiddenword']]);
+        $email = 'banned-name-'.uniqid('', true).'@example.com';
+
+        $user = $this->manager()->create([
+            'name' => 'User ForbiddenWord Name',
+            'email' => $email,
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+        ]);
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertSame(1, (int) $user->fresh()->banned);
+        Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
+
+        config(['carpoolear.banned_words_names' => []]);
+    }
+
     public function test_create_returns_null_when_validation_fails(): void
     {
         Event::fake([CreateEvent::class]);
