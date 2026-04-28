@@ -42,6 +42,17 @@ class GeoServiceTest extends TestCase
         ]));
     }
 
+    public function test_do_stops_require_sellado_returns_true_when_two_stops_are_in_paid_zones(): void
+    {
+        $service = new GeoService;
+
+        $this->assertTrue($service->doStopsRequireSellado([
+            [-34.60, -58.40], // Buenos Aires area
+            [-32.95, -60.67], // Rosario area
+            [0.0, 0.0],       // Outside
+        ]));
+    }
+
     public function test_are_points_in_paid_regions_returns_true_for_empty_input(): void
     {
         $service = new GeoService;
