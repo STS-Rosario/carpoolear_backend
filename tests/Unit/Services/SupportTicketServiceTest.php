@@ -69,6 +69,24 @@ class SupportTicketServiceTest extends TestCase
         $this->assertNotNull($ticket->last_reply_at);
     }
 
+    public function test_apply_admin_reply_transition_from_waiting_status_sets_en_revision(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Esperando respuesta',
+            'unread_for_user' => 2,
+            'unread_for_admin' => 4,
+        ]);
+
+        $service = new SupportTicketService;
+        $service->applyAdminReplyTransition($ticket, 22);
+
+        $this->assertSame('En revision', $ticket->status);
+        $this->assertSame(3, $ticket->unread_for_user);
+        $this->assertSame(0, $ticket->unread_for_admin);
+        $this->assertSame(22, (int) $ticket->updated_by);
+        $this->assertNotNull($ticket->last_reply_at);
+    }
+
     public function test_apply_admin_reply_transition_keeps_non_transitionable_status(): void
     {
         $ticket = new SupportTicket([
