@@ -37,6 +37,22 @@ class PhoneVerificationManagerTest extends TestCase
         $this->assertTrue($v->fails());
     }
 
+    public function test_validator_verify_requires_exact_six_character_code(): void
+    {
+        $manager = $this->manager();
+
+        $missing = $manager->validatorVerify([]);
+        $this->assertTrue($missing->fails());
+        $this->assertTrue($missing->errors()->has('code'));
+
+        $short = $manager->validatorVerify(['code' => '12345']);
+        $this->assertTrue($short->fails());
+        $this->assertTrue($short->errors()->has('code'));
+
+        $ok = $manager->validatorVerify(['code' => '123456']);
+        $this->assertFalse($ok->fails());
+    }
+
     public function test_send_verification_code_creates_row_and_returns_payload(): void
     {
         $user = User::factory()->create();
