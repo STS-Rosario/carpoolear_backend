@@ -136,6 +136,48 @@ class CarsManagerTest extends TestCase
         $this->assertSame('After update', $updated->fresh()->description);
     }
 
+    public function test_validator_update_allows_same_patente_for_current_car_id(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AA123BB',
+            'description' => 'Current car',
+        ]);
+
+        $v = $this->manager()->validator([
+            'patente' => 'AA123BB',
+            'description' => 'Updated description',
+        ], $user->id, $car->id);
+
+        $this->assertFalse($v->fails());
+    }
+
+    public function test_update_allows_patente_used_by_another_user(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $target = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'TRG123',
+            'description' => 'Target',
+        ]);
+        Car::factory()->create([
+            'user_id' => $otherUser->id,
+            'patente' => 'DUP123',
+            'description' => 'Other user car',
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->update($user, $target->id, [
+            'patente' => 'DUP123',
+            'description' => 'Should pass',
+        ]);
+
+        $this->assertNotNull($result);
+        $this->assertSame('DUP123', $result->fresh()->patente);
+    }
+
     public function test_update_returns_null_when_car_not_found_or_not_owned(): void
     {
         $user = User::factory()->create();
