@@ -261,6 +261,57 @@ class UsersManagerTest extends TestCase
         Event::assertDispatched(UpdateEvent::class);
     }
 
+    public function test_update_sends_flagged_property_alert_and_still_updates_allowed_fields(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->make([
+            'id' => 76543,
+            'name' => 'Flagged User',
+            'banned' => 0,
+        ]);
+        $requestData = [
+            'description' => 'safe description',
+            'is_admin' => 1,
+        ];
+        $filteredData = [
+            'description' => 'safe description',
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('update')
+            ->once()
+            ->with($user, $filteredData)
+            ->andReturnUsing(function ($targetUser, $data) {
+                $targetUser->description = $data['description'];
+
+                return $targetUser;
+            });
+
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $tripRepo->shouldReceive('hideTrips')->never();
+        $tripRepo->shouldReceive('unhideTrips')->once()->with($user);
+
+        $editableService = Mockery::mock(UserEditablePropertiesService::class);
+        $editableService->shouldReceive('filterForUser')
+            ->once()
+            ->with($requestData, false)
+            ->andReturn($filteredData);
+        $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
+            ->once()
+            ->with($user, $requestData, $filteredData, false)
+            ->andReturn(['is_admin']);
+        $editableService->shouldReceive('sendFlaggedPropertyAlert')
+            ->once()
+            ->with($user, ['is_admin']);
+
+        $manager = new UsersManager($userRepo, $tripRepo, null, $editableService);
+        $result = $manager->update($user, $requestData);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame('safe description', $result->description);
+        Event::assertDispatched(UpdateEvent::class);
+    }
+
     public function test_update_rejects_banned_document_number(): void
     {
         $moderator = User::factory()->create();
