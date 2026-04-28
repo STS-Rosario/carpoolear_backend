@@ -87,6 +87,17 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($validator->errors()->has('emails_notifications'));
     }
 
+    public function test_validator_create_allows_missing_password_fields(): void
+    {
+        $validator = $this->manager()->validator([
+            'name' => 'Regular User',
+            'email' => 'regular-nopass-'.uniqid('', true).'@example.com',
+            'emails_notifications' => true,
+        ], null, false, false, false);
+
+        $this->assertFalse($validator->fails());
+    }
+
     public function test_validator_social_create_requires_email_key_to_be_present(): void
     {
         $validatorMissingEmail = $this->manager()->validator([
