@@ -195,6 +195,21 @@ class UsersManagerTest extends TestCase
         Event::assertDispatched(UpdateEvent::class);
     }
 
+    public function test_admin_update_with_only_car_description_does_not_create_new_car(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->create();
+        $this->assertSame(0, Car::query()->where('user_id', $user->id)->count());
+
+        $updated = $this->manager()->update($user, [
+            'car_description' => 'Description without patente',
+        ], false, true);
+
+        $this->assertInstanceOf(User::class, $updated);
+        $this->assertSame(0, Car::query()->where('user_id', $user->id)->count());
+        Event::assertDispatched(UpdateEvent::class);
+    }
+
     public function test_active_account_activates_user_with_valid_token(): void
     {
         $user = User::factory()->create([
