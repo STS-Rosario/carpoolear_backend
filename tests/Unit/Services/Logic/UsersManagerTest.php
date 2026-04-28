@@ -80,6 +80,25 @@ class UsersManagerTest extends TestCase
         $this->assertStringContainsString((string) $user->id, implode('|', $rules));
     }
 
+    public function test_validator_update_adds_unique_doc_and_phone_rules_when_feature_enabled_for_non_admin(): void
+    {
+        config(['carpoolear.module_unique_doc_phone' => true]);
+        $user = User::factory()->create();
+
+        $validator = $this->manager()->validator([
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5491122223333',
+        ], $user->id, false, false, false);
+
+        $rules = $validator->getRules();
+        $this->assertArrayHasKey('nro_doc', $rules);
+        $this->assertArrayHasKey('mobile_phone', $rules);
+        $this->assertStringContainsString('unique:users,nro_doc,'.$user->id, implode('|', $rules['nro_doc']));
+        $this->assertStringContainsString('unique:users,mobile_phone,'.$user->id, implode('|', $rules['mobile_phone']));
+
+        config(['carpoolear.module_unique_doc_phone' => false]);
+    }
+
     public function test_validator_admin_omits_email_rule(): void
     {
         $user = User::factory()->create();
