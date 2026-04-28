@@ -16,6 +16,7 @@ use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
 use STS\Services\Logic\UsersManager;
+use STS\Services\UserEditablePropertiesService;
 use Tests\TestCase;
 
 class UsersManagerTest extends TestCase
@@ -173,6 +174,48 @@ class UsersManagerTest extends TestCase
 
         $this->assertInstanceOf(User::class, $out);
         $this->assertSame('new profile text', $user->fresh()->description);
+        Event::assertDispatched(UpdateEvent::class);
+    }
+
+    public function test_update_hides_trips_when_user_is_banned(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->make([
+            'id' => 98765,
+            'name' => 'Banned User',
+            'banned' => 1,
+        ]);
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('update')
+            ->once()
+            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated'))
+            ->andReturnUsing(function ($targetUser, $data) {
+                $targetUser->description = $data['description'];
+
+                return $targetUser;
+            });
+
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $tripRepo->shouldReceive('hideTrips')->once()->with($user);
+        $tripRepo->shouldReceive('unhideTrips')->never();
+
+        $editableService = Mockery::mock(UserEditablePropertiesService::class);
+        $editableService->shouldReceive('filterForUser')
+            ->once()
+            ->with(Mockery::type('array'), false)
+            ->andReturnUsing(fn ($data) => $data);
+        $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
+            ->once()
+            ->with($user, Mockery::type('array'), Mockery::type('array'), false)
+            ->andReturn([]);
+        $editableService->shouldReceive('sendFlaggedPropertyAlert')->never();
+
+        $manager = new UsersManager($userRepo, $tripRepo, null, $editableService);
+        $result = $manager->update($user, ['description' => 'updated']);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame('updated', $result->description);
         Event::assertDispatched(UpdateEvent::class);
     }
 
