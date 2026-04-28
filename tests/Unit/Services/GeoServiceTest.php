@@ -80,4 +80,14 @@ class GeoServiceTest extends TestCase
             [0.0, 0.0]
         ));
     }
+
+    public function test_are_points_in_paid_routes_returns_false_for_points_within_same_paid_region(): void
+    {
+        $service = new GeoService;
+
+        $this->assertFalse($service->arePointsInPaidRoutes(
+            [-34.60, -58.40], // Buenos Aires area
+            [-34.70, -58.35]  // Also Buenos Aires area
+        ));
+    }
 }
