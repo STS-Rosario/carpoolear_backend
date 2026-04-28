@@ -82,6 +82,22 @@ class ConversationsManagerTest extends TestCase
         Event::assertNotDispatched(MessageSend::class);
     }
 
+    public function test_send_sets_conversation_error_when_user_has_no_access(): void
+    {
+        Event::fake([MessageSend::class]);
+        $member = User::factory()->create();
+        $stranger = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($member->id, ['read' => true]);
+
+        $manager = $this->manager();
+        $result = $manager->send($stranger, $conversation->id, 'Hi');
+
+        $this->assertNull($result);
+        $this->assertSame('conversation_does_not_exist', $manager->getErrors()['conversation_id']);
+        Event::assertNotDispatched(MessageSend::class);
+    }
+
     public function test_delete_soft_deletes_existing_conversation(): void
     {
         $conversation = Conversation::factory()->create();
@@ -121,6 +137,37 @@ class ConversationsManagerTest extends TestCase
 
         $this->assertTrue($this->manager()->removeUserFromConversation($admin, $conversation->id, $u2));
         $this->assertCount(1, $conversation->fresh()->users);
+    }
+
+    public function test_add_user_to_trip_conversation_is_denied(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $u2 = User::factory()->create();
+        $tripConversation = Conversation::factory()->create(['type' => Conversation::TYPE_TRIP_CONVERSATION]);
+        $tripConversation->users()->attach($admin->id, ['read' => true]);
+
+        $manager = $this->manager();
+        $result = $manager->addUserToConversation($admin, $tripConversation->id, [$u2->id]);
+
+        $this->assertNull($result);
+        $this->assertSame('user_does_not_have_access_to_conversation', $manager->getErrors()['conversation_id']);
+    }
+
+    public function test_get_conversation_returns_trip_conversation_for_admin_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $member = User::factory()->create();
+        $trip = Trip::factory()->create();
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $conversation->users()->attach($member->id, ['read' => true]);
+
+        $found = $this->manager()->getConversation($admin, $conversation->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($conversation));
     }
 
     public function test_get_conversation_by_trip_returns_trip_thread(): void
