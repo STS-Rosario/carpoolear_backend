@@ -39,6 +39,21 @@ class UserEditablePropertiesServiceTest extends TestCase
         });
     }
 
+    public function test_send_flagged_property_alert_skips_http_when_webhook_is_not_configured(): void
+    {
+        Http::fake();
+        Config::set('services.slack.forbidden_edit_webhook_url', null);
+        Config::set('carpoolear.frontend_url', 'https://carpoolear.com.ar');
+
+        $user = new User;
+        $user->id = 777;
+
+        $service = new UserEditablePropertiesService;
+        $service->sendFlaggedPropertyAlert($user, ['is_admin']);
+
+        Http::assertNothingSent();
+    }
+
     public function test_is_property_allowed_respects_forbidden_allowed_and_admin_allowed_lists(): void
     {
         Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
