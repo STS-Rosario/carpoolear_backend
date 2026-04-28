@@ -68,4 +68,22 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame(99, (int) $ticket->updated_by);
         $this->assertNotNull($ticket->last_reply_at);
     }
+
+    public function test_apply_admin_reply_transition_keeps_non_transitionable_status(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Resuelto',
+            'unread_for_user' => 5,
+            'unread_for_admin' => 2,
+        ]);
+
+        $service = new SupportTicketService;
+        $service->applyAdminReplyTransition($ticket, 55);
+
+        $this->assertSame('Resuelto', $ticket->status);
+        $this->assertSame(6, $ticket->unread_for_user);
+        $this->assertSame(0, $ticket->unread_for_admin);
+        $this->assertSame(55, (int) $ticket->updated_by);
+        $this->assertNotNull($ticket->last_reply_at);
+    }
 }
