@@ -173,4 +173,14 @@ class UserEditablePropertiesServiceTest extends TestCase
 
         $this->assertSame([], $blocked);
     }
+
+    public function test_frontend_admin_profile_url_trims_trailing_slash(): void
+    {
+        Config::set('carpoolear.frontend_url', 'https://carpoolear.com.ar/');
+
+        $service = new UserEditablePropertiesService;
+        $url = $service->frontendAdminProfileUrl(42);
+
+        $this->assertSame('https://carpoolear.com.ar/app/profile/42', $url);
+    }
 }
