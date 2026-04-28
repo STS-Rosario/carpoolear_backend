@@ -4,6 +4,7 @@ namespace Tests\Unit\Services\Logic;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent;
 use STS\Jobs\SendPasswordResetEmail;
@@ -11,11 +12,19 @@ use STS\Models\BannedUser;
 use STS\Models\Car;
 use STS\Models\Donation;
 use STS\Models\User;
+use STS\Repository\TripRepository;
+use STS\Repository\UserRepository;
 use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class UsersManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function manager(): UsersManager
     {
         return $this->app->make(UsersManager::class);
@@ -277,6 +286,33 @@ class UsersManagerTest extends TestCase
         $this->assertNull($manager->resetPassword('missing-'.uniqid('', true).'@example.com'));
         $this->assertSame('user_not_found', $manager->getErrors()['error']);
         Queue::assertNothingPushed();
+    }
+
+    public function test_reset_password_enforces_cooldown_between_requests(): void
+    {
+        Queue::fake();
+        $user = User::factory()->make([
+            'id' => 12345,
+            'email' => 'cooldown@example.com',
+        ]);
+        $lastReset = (object) ['created_at' => now()];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('getUserBy')->twice()->with('email', $user->email)->andReturn($user);
+        $userRepo->shouldReceive('getLastPasswordReset')->twice()->with($user->email)->andReturn(null, $lastReset);
+        $userRepo->shouldReceive('deleteResetToken')->once();
+        $userRepo->shouldReceive('storeResetToken')->once();
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $manager = new UsersManager($userRepo, $tripRepo);
+
+        $firstToken = $manager->resetPassword($user->email);
+        $this->assertIsString($firstToken);
+
+        $secondToken = $manager->resetPassword($user->email);
+        $this->assertNull($secondToken);
+        $this->assertStringContainsString('Please wait', $manager->getErrors()['error']);
+
+        Queue::assertPushed(SendPasswordResetEmail::class, 1);
     }
 
     public function test_change_password_updates_password_and_clears_token(): void
