@@ -501,6 +501,29 @@ class UsersManagerTest extends TestCase
         });
     }
 
+    public function test_update_rejects_banned_document_number_when_webhook_returns_error_response(): void
+    {
+        Http::fake([
+            'https://hooks.slack.test/*' => Http::response(['ok' => false], 500),
+        ]);
+        config(['services.slack.banned_dni_webhook_url' => 'https://hooks.slack.test/services/T000/B000/XYZ']);
+
+        $moderator = User::factory()->create();
+        BannedUser::query()->create([
+            'user_id' => $moderator->id,
+            'nro_doc' => '30000111',
+            'banned_at' => now(),
+        ]);
+        $user = User::factory()->create();
+
+        $manager = $this->manager();
+        $result = $manager->update($user, ['nro_doc' => '30.000.111']);
+
+        $this->assertNull($result);
+        $this->assertSame('banned_dni', $manager->getErrors()['error']);
+        Http::assertSentCount(1);
+    }
+
     public function test_update_rejects_banned_document_number_without_webhook_config_and_skips_http_call(): void
     {
         Http::fake();
