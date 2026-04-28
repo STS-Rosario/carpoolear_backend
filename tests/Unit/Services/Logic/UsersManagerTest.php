@@ -865,6 +865,19 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($rows->pluck('name')->contains(fn ($n) => str_contains((string) $n, $needle)));
     }
 
+    public function test_index_returns_users_matching_search_text(): void
+    {
+        $viewer = User::factory()->create();
+        $needle = 'IdxNm'.substr(uniqid('', true), 0, 8);
+        $matching = User::factory()->create(['name' => $needle.' Match']);
+        User::factory()->create(['name' => 'Completely Different']);
+
+        $rows = $this->manager()->index($viewer, $needle);
+
+        $this->assertTrue($rows->pluck('id')->contains($matching->id));
+        $this->assertFalse($rows->pluck('name')->contains('Completely Different'));
+    }
+
     public function test_trips_count_returns_zero_without_finished_trips(): void
     {
         $user = User::factory()->create();
