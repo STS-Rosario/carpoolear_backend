@@ -145,6 +145,18 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($validator->errors()->has('name'));
     }
 
+    public function test_validator_social_create_fails_when_name_exceeds_max_length(): void
+    {
+        $validator = $this->manager()->validator([
+            'name' => str_repeat('n', 256),
+            'email' => 'social-longname-'.uniqid('', true).'@example.com',
+            'emails_notifications' => true,
+        ], null, true, false, false);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('name'));
+    }
+
     public function test_validator_social_create_allows_empty_email_string_when_key_is_present(): void
     {
         $validator = $this->manager()->validator([
