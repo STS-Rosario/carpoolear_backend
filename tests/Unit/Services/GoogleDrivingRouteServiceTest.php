@@ -216,4 +216,31 @@ class GoogleDrivingRouteServiceTest extends TestCase
                 && ($data['regionCode'] ?? null) === 'AR';
         });
     }
+
+    public function test_driving_distance_and_duration_omits_region_code_when_not_configured(): void
+    {
+        Config::set('carpoolear.google_routes_api_key', 'test-key');
+        Config::set('carpoolear.google_routes_region_code', '');
+        Http::fake([
+            'https://routes.googleapis.com/directions/v2:computeRoutes' => Http::response([
+                'routes' => [[
+                    'distanceMeters' => 1000,
+                    'duration' => '60s',
+                ]],
+            ], 200),
+        ]);
+
+        $service = new GoogleDrivingRouteService;
+        $result = $service->drivingDistanceAndDuration([
+            ['lat' => -34.60, 'lng' => -58.40],
+            ['lat' => -34.61, 'lng' => -58.41],
+        ]);
+
+        $this->assertSame(['distance' => 1000, 'duration' => 60], $result);
+        Http::assertSent(function ($request) {
+            $data = $request->data();
+
+            return ! isset($data['regionCode']);
+        });
+    }
 }
