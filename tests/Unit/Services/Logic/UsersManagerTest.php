@@ -378,6 +378,17 @@ class UsersManagerTest extends TestCase
         $this->assertNull($this->manager()->show($viewer, 9_999_999_999));
     }
 
+    public function test_show_returns_profile_when_it_exists(): void
+    {
+        $viewer = User::factory()->create();
+        $profile = User::factory()->create();
+
+        $result = $this->manager()->show($viewer, $profile->id);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame($profile->id, $result->id);
+    }
+
     public function test_show_sets_profile_not_found_error_when_profile_missing(): void
     {
         $viewer = User::factory()->create();
