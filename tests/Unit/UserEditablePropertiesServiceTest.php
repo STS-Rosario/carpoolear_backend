@@ -183,4 +183,18 @@ class UserEditablePropertiesServiceTest extends TestCase
 
         $this->assertSame('https://carpoolear.com.ar/app/profile/42', $url);
     }
+
+    public function test_get_change_boolean_allowed_properties_returns_expected_keys(): void
+    {
+        $service = new UserEditablePropertiesService;
+
+        $this->assertSame([
+            'emails_notifications',
+            'do_not_alert_request_seat',
+            'do_not_alert_accept_passenger',
+            'do_not_alert_pending_rates',
+            'do_not_alert_pricing',
+            'autoaccept_requests',
+        ], $service->getChangeBooleanAllowedProperties());
+    }
 }
