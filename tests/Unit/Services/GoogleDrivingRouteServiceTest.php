@@ -186,4 +186,34 @@ class GoogleDrivingRouteServiceTest extends TestCase
         $this->assertNull($result);
         Http::assertSentCount(1);
     }
+
+    public function test_driving_distance_and_duration_sends_origin_and_destination_without_intermediates_for_two_points(): void
+    {
+        Config::set('carpoolear.google_routes_api_key', 'test-key');
+        Config::set('carpoolear.google_routes_region_code', 'AR');
+        Http::fake([
+            'https://routes.googleapis.com/directions/v2:computeRoutes' => Http::response([
+                'routes' => [[
+                    'distanceMeters' => 1000,
+                    'duration' => '60s',
+                ]],
+            ], 200),
+        ]);
+
+        $service = new GoogleDrivingRouteService;
+        $result = $service->drivingDistanceAndDuration([
+            ['lat' => -34.60, 'lng' => -58.40],
+            ['lat' => -34.61, 'lng' => -58.41],
+        ]);
+
+        $this->assertSame(['distance' => 1000, 'duration' => 60], $result);
+        Http::assertSent(function ($request) {
+            $data = $request->data();
+
+            return $request->url() === 'https://routes.googleapis.com/directions/v2:computeRoutes'
+                && isset($data['origin'], $data['destination'])
+                && ! isset($data['intermediates'])
+                && ($data['regionCode'] ?? null) === 'AR';
+        });
+    }
 }
