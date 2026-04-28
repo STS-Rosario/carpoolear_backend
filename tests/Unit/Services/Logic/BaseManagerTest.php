@@ -33,4 +33,24 @@ class BaseManagerTest extends TestCase
 
         $this->assertSame(['error' => 'second'], $manager->getErrors());
     }
+
+    public function test_set_errors_accepts_non_array_values(): void
+    {
+        $manager = new BaseManager;
+        $manager->setErrors('plain-error');
+        $this->assertSame('plain-error', $manager->getErrors());
+
+        $manager->setErrors(404);
+        $this->assertSame(404, $manager->getErrors());
+    }
+
+    public function test_set_errors_keeps_same_object_instance(): void
+    {
+        $manager = new BaseManager;
+        $errors = (object) ['error' => 'object_error'];
+
+        $manager->setErrors($errors);
+
+        $this->assertSame($errors, $manager->getErrors());
+    }
 }
