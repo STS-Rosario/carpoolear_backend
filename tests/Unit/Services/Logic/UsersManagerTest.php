@@ -1047,6 +1047,25 @@ class UsersManagerTest extends TestCase
         $this->assertFalse($manager->unansweredConversationOrRequestsByTrip($trip));
     }
 
+    public function test_unanswered_conversation_or_requests_by_trip_allows_when_limit_is_not_configured(): void
+    {
+        $trip = (object) [
+            'id' => 100,
+            'user_id' => 8,
+            'user' => (object) ['unaswered_messages_limit' => null],
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('unansweredConversationOrRequestsByTrip')
+            ->once()
+            ->with(8, 100)
+            ->andReturn(999);
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $manager = new UsersManager($userRepo, $tripRepo);
+
+        $this->assertTrue($manager->unansweredConversationOrRequestsByTrip($trip));
+    }
+
     public function test_update_photo_validation_requires_profile(): void
     {
         $user = User::factory()->create();
