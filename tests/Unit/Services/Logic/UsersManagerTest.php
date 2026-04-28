@@ -98,6 +98,21 @@ class UsersManagerTest extends TestCase
         $this->assertFalse($validator->fails());
     }
 
+    public function test_validator_create_fails_when_email_already_exists(): void
+    {
+        $existing = User::factory()->create();
+        $validator = $this->manager()->validator([
+            'name' => 'Regular User',
+            'email' => $existing->email,
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+        ], null, false, false, false);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('email'));
+    }
+
     public function test_validator_social_create_requires_email_key_to_be_present(): void
     {
         $validatorMissingEmail = $this->manager()->validator([
