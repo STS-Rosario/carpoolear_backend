@@ -92,6 +92,19 @@ class UsersManagerTest extends TestCase
         $this->assertStringContainsString('nullable', implode('|', $rules['car_description']));
     }
 
+    public function test_validator_admin_does_not_add_car_rules_when_patente_is_missing(): void
+    {
+        $user = User::factory()->create();
+        $v = $this->manager()->validator([
+            'name' => 'Admin touch',
+            'car_description' => 'Only description',
+        ], $user->id, false, false, true);
+
+        $rules = $v->getRules();
+        $this->assertArrayNotHasKey('patente', $rules);
+        $this->assertArrayNotHasKey('car_description', $rules);
+    }
+
     public function test_validator_driver_requires_docs_when_module_enabled(): void
     {
         config(['carpoolear.module_validated_drivers' => true]);
