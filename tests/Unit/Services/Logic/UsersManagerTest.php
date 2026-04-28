@@ -219,6 +219,48 @@ class UsersManagerTest extends TestCase
         Event::assertDispatched(UpdateEvent::class);
     }
 
+    public function test_update_unhides_trips_when_user_is_not_banned(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->make([
+            'id' => 87654,
+            'name' => 'Allowed User',
+            'banned' => 0,
+        ]);
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('update')
+            ->once()
+            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated allowed'))
+            ->andReturnUsing(function ($targetUser, $data) {
+                $targetUser->description = $data['description'];
+
+                return $targetUser;
+            });
+
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $tripRepo->shouldReceive('hideTrips')->never();
+        $tripRepo->shouldReceive('unhideTrips')->once()->with($user);
+
+        $editableService = Mockery::mock(UserEditablePropertiesService::class);
+        $editableService->shouldReceive('filterForUser')
+            ->once()
+            ->with(Mockery::type('array'), false)
+            ->andReturnUsing(fn ($data) => $data);
+        $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
+            ->once()
+            ->with($user, Mockery::type('array'), Mockery::type('array'), false)
+            ->andReturn([]);
+        $editableService->shouldReceive('sendFlaggedPropertyAlert')->never();
+
+        $manager = new UsersManager($userRepo, $tripRepo, null, $editableService);
+        $result = $manager->update($user, ['description' => 'updated allowed']);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame('updated allowed', $result->description);
+        Event::assertDispatched(UpdateEvent::class);
+    }
+
     public function test_update_rejects_banned_document_number(): void
     {
         $moderator = User::factory()->create();
