@@ -240,6 +240,25 @@ class UsersManagerTest extends TestCase
         Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
     }
 
+    public function test_create_returns_null_when_active_is_preset_without_token(): void
+    {
+        Event::fake([CreateEvent::class]);
+        $email = 'preset-active-'.uniqid('', true).'@example.com';
+
+        $result = $this->manager()->create([
+            'name' => 'Preset Active User',
+            'email' => $email,
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+            'active' => true,
+        ]);
+
+        $this->assertNull($result);
+        $this->assertNull(User::query()->where('email', $email)->first());
+        Event::assertNotDispatched(CreateEvent::class);
+    }
+
     public function test_update_allowed_field_persists_and_dispatches_update_event(): void
     {
         Event::fake([UpdateEvent::class]);
