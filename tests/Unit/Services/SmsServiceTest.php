@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use Illuminate\Support\Facades\Config;
 use STS\Services\SmsService;
 use Tests\TestCase;
 
@@ -28,5 +29,15 @@ class SmsServiceTest extends TestCase
         $service = new SmsService;
 
         $this->assertSame('+541122223333', $service->formatPhoneNumber('+54 11 2222 3333'));
+    }
+
+    public function test_send_returns_false_when_provider_is_not_configured(): void
+    {
+        Config::set('sms.default', 'unknown-provider');
+        Config::set('sms.providers.unknown-provider', []);
+
+        $service = new SmsService;
+
+        $this->assertFalse($service->send('1122223333', 'test message'));
     }
 }
