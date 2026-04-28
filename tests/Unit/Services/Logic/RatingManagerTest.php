@@ -107,6 +107,39 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_get_rate_accepts_integer_user_id_input(): void
+    {
+        Carbon::setTestNow('2026-11-06 10:00:00');
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, 'gr-int-'.uniqid('', true));
+
+        $rate = $this->manager()->getRate($passenger->id, $driver->id, $trip->id);
+
+        $this->assertInstanceOf(Rating::class, $rate);
+        $this->assertSame($passenger->id, (int) $rate->user_id_from);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_get_rate_with_hash_can_throw_when_collection_filters_return_null(): void
+    {
+        Carbon::setTestNow('2026-11-07 10:00:00');
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+        $hash = 'gr-hash-'.uniqid('', true);
+        $created = $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, $hash);
+
+        $this->expectException(\ErrorException::class);
+        $this->manager()->getRate($hash, $driver->id, $trip->id);
+
+        Carbon::setTestNow();
+    }
+
     public function test_get_rate_returns_null_when_outside_rating_interval(): void
     {
         Carbon::setTestNow('2026-12-01 12:00:00');
@@ -236,6 +269,19 @@ class RatingManagerTest extends TestCase
         $this->assertSame('user_have_already_replay', $manager->getErrors()['error']);
 
         Carbon::setTestNow();
+    }
+
+    public function test_reply_rating_sets_error_when_rate_does_not_exist(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $to->id]);
+
+        $manager = $this->manager();
+        $result = $manager->replyRating($to, $from->id, $trip->id, 'No row');
+
+        $this->assertNull($result);
+        $this->assertSame('user_have_already_replay', $manager->getErrors()['error']);
     }
 
     public function test_active_ratings_creates_pending_rows_dispatches_events_and_marks_mail_send(): void
