@@ -223,6 +223,23 @@ class UsersManagerTest extends TestCase
         Event::assertNotDispatched(CreateEvent::class);
     }
 
+    public function test_create_can_bypass_validation_when_validate_flag_is_false(): void
+    {
+        Event::fake([CreateEvent::class]);
+
+        $user = $this->manager()->create([
+            'name' => 'No Validate User',
+            'email' => 'novalidate-'.uniqid('', true).'@example.com',
+            'password' => 'secret123',
+            'password_confirmation' => 'different-confirmation',
+        ], false);
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertFalse((bool) $user->active);
+        $this->assertNotNull($user->activation_token);
+        Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
+    }
+
     public function test_update_allowed_field_persists_and_dispatches_update_event(): void
     {
         Event::fake([UpdateEvent::class]);
