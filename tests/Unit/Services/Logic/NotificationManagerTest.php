@@ -109,6 +109,25 @@ class NotificationManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_get_notifications_does_not_paginate_when_page_is_missing(): void
+    {
+        Carbon::setTestNow('2026-05-12 09:00:00');
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'first');
+        Carbon::setTestNow('2026-05-13 09:00:00');
+        $this->sendDummy($user, 'second');
+
+        $rows = $this->manager()->getNotifications($user, [
+            'page_size' => '1',
+        ]);
+
+        $this->assertCount(2, $rows);
+        $this->assertSame('Dummy Notification second', $rows[0]['text']);
+        $this->assertSame('Dummy Notification first', $rows[1]['text']);
+
+        Carbon::setTestNow();
+    }
+
     public function test_get_unread_count_ignores_read_notifications(): void
     {
         Carbon::setTestNow('2026-06-01 08:00:00');
@@ -167,8 +186,9 @@ class NotificationManagerTest extends TestCase
         $ownerRows = $this->manager()->getNotifications($owner, []);
         $id = (int) $ownerRows[0]['id'];
 
-        $this->manager()->delete($other, $id);
+        $result = $this->manager()->delete($other, $id);
 
+        $this->assertNull($result);
         $this->assertCount(1, $this->manager()->getNotifications($owner, []));
 
         Carbon::setTestNow();
