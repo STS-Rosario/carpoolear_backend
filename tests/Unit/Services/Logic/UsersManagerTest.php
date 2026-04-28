@@ -71,6 +71,27 @@ class UsersManagerTest extends TestCase
         $this->assertFalse($v->fails());
     }
 
+    public function test_validator_social_create_requires_email_key_to_be_present(): void
+    {
+        $validatorMissingEmail = $this->manager()->validator([
+            'name' => 'Social User',
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+        ], null, true, false, false);
+        $this->assertTrue($validatorMissingEmail->fails());
+        $this->assertTrue($validatorMissingEmail->errors()->has('email'));
+
+        $validatorWithValidEmail = $this->manager()->validator([
+            'name' => 'Social User',
+            'email' => 'social-'.uniqid('', true).'@example.com',
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+        ], null, true, false, false);
+        $this->assertFalse($validatorWithValidEmail->fails());
+    }
+
     public function test_validator_update_includes_unique_email_rule_with_id(): void
     {
         $user = User::factory()->create();
