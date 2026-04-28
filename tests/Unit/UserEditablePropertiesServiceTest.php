@@ -38,4 +38,99 @@ class UserEditablePropertiesServiceTest extends TestCase
                 && ! str_contains($text, 'https://carpoolear.com.ar/profile/523156');
         });
     }
+
+    public function test_is_property_allowed_respects_forbidden_allowed_and_admin_allowed_lists(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name', 'description']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', ['banned']);
+
+        $service = new UserEditablePropertiesService;
+
+        $this->assertFalse($service->isPropertyAllowed('is_admin', false));
+        $this->assertTrue($service->isPropertyAllowed('name', false));
+        $this->assertFalse($service->isPropertyAllowed('banned', false));
+        $this->assertTrue($service->isPropertyAllowed('banned', true));
+        $this->assertFalse($service->isPropertyAllowed('unknown_key', true));
+    }
+
+    public function test_filter_for_user_keeps_only_editable_keys_by_role(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name', 'description']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', ['banned']);
+
+        $service = new UserEditablePropertiesService;
+        $payload = [
+            'name' => 'New Name',
+            'description' => 'New Description',
+            'banned' => true,
+            'is_admin' => true,
+            'foo' => 'bar',
+        ];
+
+        $userFiltered = $service->filterForUser($payload, false);
+        $this->assertSame([
+            'name' => 'New Name',
+            'description' => 'New Description',
+        ], $userFiltered);
+
+        $adminFiltered = $service->filterForUser($payload, true);
+        $this->assertSame([
+            'name' => 'New Name',
+            'description' => 'New Description',
+            'banned' => true,
+        ], $adminFiltered);
+    }
+
+    public function test_get_blocked_flagged_properties_that_differ_detects_boolean_and_string_changes(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
+        Config::set('carpoolear.user_edit_properties.flagged', ['banned']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', []);
+
+        $service = new UserEditablePropertiesService;
+        $user = User::factory()->make([
+            'is_admin' => false,
+            'banned' => false,
+            'name' => 'Alice',
+        ]);
+
+        $requestData = [
+            'is_admin' => 'true',
+            'banned' => '1',
+            'name' => 'Alice',
+        ];
+        $filteredData = $service->filterForUser($requestData, false);
+        $blocked = $service->getBlockedFlaggedPropertiesThatDiffer($user, $requestData, $filteredData, false);
+
+        $this->assertEqualsCanonicalizing(['is_admin', 'banned'], $blocked);
+    }
+
+    public function test_get_blocked_flagged_properties_returns_empty_for_admin_or_same_values(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin']);
+        Config::set('carpoolear.user_edit_properties.flagged', ['banned']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', ['banned']);
+
+        $service = new UserEditablePropertiesService;
+        $user = User::factory()->make([
+            'is_admin' => false,
+            'banned' => false,
+            'name' => 'Alice',
+        ]);
+
+        $requestData = [
+            'is_admin' => 'false',
+            'banned' => 'false',
+            'name' => 'Alice',
+        ];
+        $filteredData = $service->filterForUser($requestData, false);
+        $this->assertSame([], $service->getBlockedFlaggedPropertiesThatDiffer($user, $requestData, $filteredData, false));
+
+        $adminFiltered = $service->filterForUser($requestData, true);
+        $this->assertSame([], $service->getBlockedFlaggedPropertiesThatDiffer($user, $requestData, $adminFiltered, true));
+    }
 }

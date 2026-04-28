@@ -110,4 +110,54 @@ class AuthOptionalTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_invalid_token_does_not_override_existing_acting_as_user(): void
+    {
+        $fallbackUser = User::factory()->create([
+            'banned' => false,
+            'active' => true,
+        ]);
+        $this->actingAs($fallbackUser, 'api');
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parseToken->authenticate')
+            ->andThrow(new \RuntimeException('Token invalid'));
+
+        $middleware = new AuthOptional($jwt);
+        $response = $middleware->handle(Request::create('/trips', 'GET'), function () use ($fallbackUser) {
+            $this->assertTrue(auth()->check());
+            $this->assertTrue(auth()->user()->is($fallbackUser));
+
+            return response('fallback-ok', 200);
+        });
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('fallback-ok', $response->getContent());
+    }
+
+    public function test_valid_user_overrides_previous_auth_context_in_optional_mode(): void
+    {
+        $fallbackUser = User::factory()->create([
+            'banned' => false,
+            'active' => true,
+        ]);
+        $jwtUser = User::factory()->create([
+            'banned' => false,
+            'active' => true,
+        ]);
+        $this->actingAs($fallbackUser, 'api');
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parseToken->authenticate')->andReturn($jwtUser);
+
+        $middleware = new AuthOptional($jwt);
+        $response = $middleware->handle(Request::create('/trips', 'GET'), function () use ($jwtUser) {
+            $this->assertTrue(auth()->check());
+            $this->assertTrue(auth()->user()->is($jwtUser));
+
+            return response('jwt-wins', 200);
+        });
+
+        $this->assertSame('jwt-wins', $response->getContent());
+    }
 }

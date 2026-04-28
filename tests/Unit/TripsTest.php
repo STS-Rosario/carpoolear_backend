@@ -7,7 +7,11 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use STS\Models\Passenger;
+use STS\Models\Trip;
 use STS\Models\TripPoint;
+use STS\Models\User;
+use STS\Services\Notifications\Models\DatabaseNotification;
 use Tests\TestCase;
 
 class TripsTest extends TestCase
@@ -17,7 +21,6 @@ class TripsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        start_log_query();
     }
 
     public function test_create_trip()
@@ -43,7 +46,7 @@ class TripsTest extends TestCase
             Event::fake();
             Carbon::setTestNow('2026-01-01 12:00:00');
 
-            $user = \STS\Models\User::factory()->create();
+            $user = User::factory()->create();
             $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
             $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
@@ -78,6 +81,8 @@ class TripsTest extends TestCase
 
             $u = $tripManager->create($user, $data);
             $this->assertNotNull($u);
+            $this->assertSame($user->id, (int) $u->user_id);
+            $this->assertSame(2, $u->points()->count());
             Event::assertDispatched(\STS\Events\Trip\Create::class);
         } finally {
             Carbon::setTestNow();
@@ -98,7 +103,8 @@ class TripsTest extends TestCase
         ];
 
         $trip = $tripManager->update($trip->user, $trip->id, $data);
-        $this->assertTrue($trip->from_town != $from);
+        $this->assertNotSame($from, $trip->from_town);
+        $this->assertSame('Usuahia', $trip->from_town);
         \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Update::class);
     }
 
@@ -108,10 +114,10 @@ class TripsTest extends TestCase
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
         $trip = \STS\Models\Trip::factory()->create();
 
-        $from = $trip->from_town;
         $result = $tripManager->delete($trip->user, $trip->id);
         $this->assertTrue($result);
         \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\Trip\Delete::class);
+        $this->assertTrue((bool) $trip->fresh()->trashed());
     }
 
     public function test_show_trip()
@@ -120,7 +126,8 @@ class TripsTest extends TestCase
         $trip = \STS\Models\Trip::factory()->create();
 
         $result = $tripManager->show($trip->user, $trip->id);
-        $this->assertTrue($result != null);
+        $this->assertNotNull($result);
+        $this->assertTrue($result->is($trip));
     }
 
     public function test_can_see_trip()
@@ -128,7 +135,7 @@ class TripsTest extends TestCase
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
         $trip = \STS\Models\Trip::factory()->create();
 
-        $other = \STS\Models\User::factory()->create();
+        $other = User::factory()->create();
 
         $result = $tripManager->userCanSeeTrip($other, $trip);
         $this->assertTrue($result);
@@ -154,7 +161,7 @@ class TripsTest extends TestCase
         $this->seed('TripsTestSeeder');
 
         $todos = TripPoint::all();
-        $this->assertTrue($todos->count() == 2);
+        $this->assertCount(2, $todos);
     }
 
     public function test_simple_search()
@@ -167,7 +174,7 @@ class TripsTest extends TestCase
             'date' => Carbon::now()->toDateString(),
         ];
         $trips = $tripManager->search($other, $data);
-        $this->assertTrue($trips->count() > 0);
+        $this->assertGreaterThan(0, $trips->count());
     }
 
     public function test_origin_search()
@@ -183,7 +190,7 @@ class TripsTest extends TestCase
             'date' => Carbon::now()->toDateString(),
         ];
         $trips = $tripManager->search($other, $data);
-        $this->assertTrue($trips->count() > 0);
+        $this->assertGreaterThan(0, $trips->count());
     }
 
     public function test_destination_search()
@@ -198,43 +205,43 @@ class TripsTest extends TestCase
             'destination_radio' => 10000,
         ];
         $trips = $tripManager->search($other, $data);
-        $this->assertTrue($trips->count() > 0);
+        $this->assertGreaterThan(0, $trips->count());
     }
 
     public function test_inbounds()
     {
-        $in = \STS\Models\Trip::factory()->create();
-        $out = \STS\Models\Trip::factory()->create();
+        $in = Trip::factory()->create();
+        $out = Trip::factory()->create();
 
         $out->return_trip_id = $in->id;
         $out->save();
 
-        $this->assertTrue($in->outbound != null);
-        $this->assertTrue($out->inbound != null);
+        $this->assertNotNull($in->fresh()->outbound);
+        $this->assertNotNull($out->fresh()->inbound);
     }
 
     public function test_my_trips_as_driver()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
-        $user = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create();
+        \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
+        \STS\Models\Trip::factory()->create(['user_id' => $user->id]);
 
         $trips = $tripManager->getTrips($user, $user->id, true);
 
-        $this->assertTrue($trips->count() > 0);
+        $this->assertCount(2, $trips);
     }
 
     public function test_my_trips_as_passenger()
     {
         $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
-        $user = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create();
-        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $user->id, 'trip_id' => $trip->id]);
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create();
+        Passenger::factory()->aceptado()->create(['user_id' => $user->id, 'trip_id' => $trip->id]);
 
         $trips = $tripManager->getTrips($user, $user->id, false);
 
-        $this->assertTrue($trips->count() > 0);
+        $this->assertCount(1, $trips);
     }
 
     public function test_update_listeners()
@@ -253,6 +260,6 @@ class TripsTest extends TestCase
 
         $listener->handle($event);
 
-        $this->assertNotNull(\STS\Services\Notifications\Models\DatabaseNotification::all()->count() == 2);
+        $this->assertSame(2, DatabaseNotification::query()->count());
     }
 }

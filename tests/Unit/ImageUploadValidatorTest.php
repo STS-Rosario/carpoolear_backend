@@ -71,4 +71,41 @@ class ImageUploadValidatorTest extends TestCase
         $this->assertFalse($result['valid']);
         $this->assertArrayHasKey('front_image', $result['errors']);
     }
+
+    public function test_uppercase_extension_is_accepted_after_normalization(): void
+    {
+        $file = UploadedFile::fake()->image('photo.JPG', 100, 100)->size(500);
+        $result = $this->validator->validate($file);
+
+        $this->assertTrue($result['valid']);
+    }
+
+    public function test_custom_config_restricts_mime_and_returns_expected_message(): void
+    {
+        config()->set('carpoolear.image_upload_allowed_mimes', ['image/png']);
+        config()->set('carpoolear.image_upload_allowed_extensions', ['png']);
+
+        $file = UploadedFile::fake()->image('photo.jpg', 100, 100)->size(500);
+        $result = $this->validator->validate($file, 'avatar');
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(
+            ['Invalid image type. Allowed: jpeg, png, webp, heic.'],
+            $result['errors']['avatar']
+        );
+    }
+
+    public function test_oversized_file_message_uses_configured_limit_mb(): void
+    {
+        config()->set('carpoolear.image_upload_max_bytes', 2 * 1024 * 1024);
+
+        $file = UploadedFile::fake()->image('large.jpg', 1200, 1200)->size(2100);
+        $result = $this->validator->validate($file, 'profile');
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(
+            ['File too large. Maximum size: 2 MB.'],
+            $result['errors']['profile']
+        );
+    }
 }

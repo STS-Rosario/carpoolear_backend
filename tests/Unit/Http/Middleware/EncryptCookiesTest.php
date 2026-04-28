@@ -35,4 +35,28 @@ class EncryptCookiesTest extends TestCase
         $this->assertSame(202, $response->getStatusCode());
         $this->assertSame('through', $response->getContent());
     }
+
+    public function test_disable_for_can_register_multiple_cookies(): void
+    {
+        $middleware = new EncryptCookies($this->app->make('encrypter'));
+        $middleware->disableFor('locale');
+        $middleware->disableFor('analytics_optout');
+
+        $this->assertTrue($middleware->isDisabled('locale'));
+        $this->assertTrue($middleware->isDisabled('analytics_optout'));
+        $this->assertFalse($middleware->isDisabled('session_id'));
+    }
+
+    public function test_disable_for_is_idempotent_for_same_cookie(): void
+    {
+        $middleware = new EncryptCookies($this->app->make('encrypter'));
+        $middleware->disableFor('locale');
+        $middleware->disableFor('locale');
+
+        $this->assertTrue($middleware->isDisabled('locale'));
+
+        $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('ok', 200));
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('ok', $response->getContent());
+    }
 }

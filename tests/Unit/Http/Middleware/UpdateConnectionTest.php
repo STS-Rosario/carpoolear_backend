@@ -76,6 +76,25 @@ class UpdateConnectionTest extends TestCase
         );
     }
 
+    public function test_authenticated_user_with_null_last_connection_gets_timestamp_set(): void
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['last_connection' => null])->saveQuietly();
+
+        $parser = Mockery::mock();
+        $parser->shouldReceive('hasToken')->andReturn(true);
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parser')->andReturn($parser);
+        $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
+
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
+        $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('ok-null'));
+
+        $this->assertSame('ok-null', $response->getContent());
+        $this->assertNotNull($user->fresh()->last_connection);
+    }
+
     public function test_null_authenticated_user_does_not_save(): void
     {
         $user = User::factory()->create();

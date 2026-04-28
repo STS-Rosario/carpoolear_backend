@@ -87,4 +87,34 @@ class AuthenticateTest extends TestCase
 
         $this->assertSame(401, $response->getStatusCode());
     }
+
+    public function test_default_guard_allows_request_when_web_user_is_authenticated(): void
+    {
+        $user = User::factory()->create();
+        Auth::guard('web')->login($user);
+
+        $request = Request::create('/dashboard', 'GET');
+        $middleware = new Authenticate;
+
+        $response = $middleware->handle($request, fn () => response('ok-default', 200));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('ok-default', $response->getContent());
+    }
+
+    public function test_authenticated_user_on_web_still_fails_when_api_guard_requested(): void
+    {
+        $user = User::factory()->create();
+        Auth::guard('web')->login($user);
+        $this->assertGuest('api');
+
+        $request = Request::create('/dashboard', 'GET', [], [], [], [
+            'HTTP_ACCEPT' => 'application/json',
+        ]);
+        $middleware = new Authenticate;
+        $response = $middleware->handle($request, fn () => response('next'), 'api');
+
+        $this->assertSame(401, $response->getStatusCode());
+        $this->assertSame('Unauthorized.', $response->getContent());
+    }
 }

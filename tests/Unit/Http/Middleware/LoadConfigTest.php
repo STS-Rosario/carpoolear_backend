@@ -85,4 +85,55 @@ class LoadConfigTest extends TestCase
         $this->assertSame(1, Config::get($k1));
         $this->assertSame(2, Config::get($k2));
     }
+
+    public function test_existing_config_value_is_overridden_by_database_row(): void
+    {
+        AppConfig::query()->delete();
+        $key = 'lc_override_'.uniqid('', true);
+        Config::set($key, 'from-runtime');
+
+        AppConfig::query()->create([
+            'key' => $key,
+            'value' => json_encode('from-db'),
+            'is_laravel' => true,
+        ]);
+
+        $middleware = new LoadConfig;
+        $middleware->handle(Request::create('/', 'GET'), fn () => response('ok'));
+
+        $this->assertSame('from-db', Config::get($key));
+    }
+
+    public function test_invalid_json_value_decodes_to_null_and_is_applied(): void
+    {
+        AppConfig::query()->delete();
+        $key = 'lc_invalid_json_'.uniqid('', true);
+        AppConfig::query()->create([
+            'key' => $key,
+            'value' => '{invalid',
+            'is_laravel' => true,
+        ]);
+
+        $middleware = new LoadConfig;
+        $middleware->handle(Request::create('/', 'GET'), fn () => response('ok'));
+
+        $this->assertNull(Config::get($key));
+    }
+
+    public function test_false_is_laravel_sets_carpoolear_namespace_only(): void
+    {
+        AppConfig::query()->delete();
+        $key = 'lc_false_flag_'.uniqid('', true);
+        AppConfig::query()->create([
+            'key' => $key,
+            'value' => json_encode('custom-scope'),
+            'is_laravel' => false,
+        ]);
+
+        $middleware = new LoadConfig;
+        $middleware->handle(Request::create('/', 'GET'), fn () => response('ok'));
+
+        $this->assertSame('custom-scope', Config::get('carpoolear.'.$key));
+        $this->assertNull(Config::get($key));
+    }
 }

@@ -2,163 +2,196 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Trip;
-use STS\Models\Subscription;
-use STS\Transformers\RatingTransformer;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Subscription;
+use STS\Models\Trip;
+use STS\Models\TripPoint;
+use STS\Models\User;
+use STS\Repository\SubscriptionsRepository;
+use STS\Services\Logic\SubscriptionsManager;
+use Tests\TestCase;
 
 class SubscriptionsTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected $subscriptionsManager;
+    private SubscriptionsManager $subscriptionsManager;
 
-    protected $subscriptionsRepository;
+    private SubscriptionsRepository $subscriptionsRepository;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
-        start_log_query();
-        $this->subscriptionsManager = \App::make(\STS\Services\Logic\SubscriptionsManager::class);
-        $this->subscriptionsRepository = \App::make(\STS\Repository\SubscriptionsRepository::class);
+        $this->subscriptionsManager = $this->app->make(SubscriptionsManager::class);
+        $this->subscriptionsRepository = $this->app->make(SubscriptionsRepository::class);
+        Carbon::setTestNow('2028-01-01 10:00:00');
     }
 
-    public function testCreateSubscription()
+    protected function tearDown(): void
     {
-        $user = \STS\Models\User::factory()->create();
-        $data = [
-            'trip_date'       => \Carbon\Carbon::now()->addHour(),
-        ];
-
-        $model = $this->subscriptionsManager->create($user, $data);
-
-        $this->assertTrue($model != null);
-        $this->assertTrue($model->user_id === $user->id);
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
-    public function testUpdateSubscription()
+    /**
+     * @return array<string, mixed>
+     */
+    private function validPayload(array $overrides = []): array
     {
-        $user = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
-        $data = [
-            'trip_date'       => \Carbon\Carbon::now()->addHour(),
-        ];
-
-        $updated_model = $this->subscriptionsManager->update($user, $model->id, $data);
-        $this->assertTrue($model->trip_date != $updated_model->trip_date);
+        return array_merge([
+            'trip_date' => Carbon::now()->addHours(2)->toDateTimeString(),
+            'from_address' => 'Rosario, Santa Fe, Argentina',
+            'from_lat' => -32.9465,
+            'from_lng' => -60.6698,
+            'to_address' => 'Mendoza, Mendoza, Argentina',
+            'to_lat' => -32.897273,
+            'to_lng' => -68.834067,
+            'is_passenger' => false,
+        ], $overrides);
     }
 
-    public function testShowSubscription()
+    public function test_create_subscription_sets_owner_and_persists_model(): void
     {
-        $user = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create();
+        $model = $this->subscriptionsManager->create($user, $this->validPayload());
 
-        $showed_model = $this->subscriptionsManager->show($user, $model->id);
-        $this->assertTrue($model->trip_date == $showed_model->trip_date);
+        $this->assertNotNull($model);
+        $this->assertSame($user->id, (int) $model->user_id);
+        $this->assertDatabaseHas('subscriptions', ['id' => $model->id, 'user_id' => $user->id]);
     }
 
-    public function testDeleteCar()
+    public function test_update_subscription_changes_trip_date(): void
     {
-        $user = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create();
+        $model = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        $newTripDate = Carbon::now()->addDays(5)->toDateTimeString();
+        $updatedModel = $this->subscriptionsManager->update($user, $model->id, $this->validPayload([
+            'trip_date' => $newTripDate,
+        ]));
+
+        $this->assertNotNull($updatedModel);
+        $this->assertSame($newTripDate, $updatedModel->fresh()->trip_date->toDateTimeString());
+    }
+
+    public function test_show_subscription_returns_model_for_owner(): void
+    {
+        $user = User::factory()->create();
+        $model = Subscription::factory()->create(['user_id' => $user->id]);
+
+        $showedModel = $this->subscriptionsManager->show($user, $model->id);
+        $this->assertNotNull($showedModel);
+        $this->assertTrue($showedModel->is($model));
+    }
+
+    public function test_delete_subscription_removes_row(): void
+    {
+        $user = User::factory()->create();
+        $model = Subscription::factory()->create(['user_id' => $user->id]);
 
         $result = $this->subscriptionsManager->delete($user, $model->id);
         $this->assertTrue($result);
+        $this->assertNull(Subscription::query()->find($model->id));
     }
 
-    public function testIndexCar()
+    public function test_index_subscription_returns_users_active_rows(): void
     {
-        $user = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user->id]);
+        $user = User::factory()->create();
+        Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
+        Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
+        Subscription::factory()->create(['user_id' => $user->id, 'state' => false]);
 
         $result = $this->subscriptionsManager->index($user);
-        $this->assertTrue($result->count() == 2);
+        $this->assertCount(2, $result);
+        $this->assertTrue((bool) $result->first()->state);
     }
 
-    public function testMatcher()
+    public function test_matcher_finds_subscription_when_trip_points_fit_corridor(): void
     {
-        $user1 = \STS\Models\User::factory()->create();
-        $user2 = \STS\Models\User::factory()->create();
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
 
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $user1->id, 'trip_date' => null]);
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $user2->id]);
+        Subscription::factory()->create(['user_id' => $user1->id, 'trip_date' => null]);
+        $trip = Trip::factory()->create(['user_id' => $user2->id]);
 
-        $trip->points()->save(\STS\Models\TripPoint::factory()->rosario()->make());
-        $trip->points()->save(\STS\Models\TripPoint::factory()->mendoza()->make());
+        $trip->points()->save(TripPoint::factory()->rosario()->make());
+        $trip->points()->save(TripPoint::factory()->mendoza()->make());
 
         $ss = $this->subscriptionsRepository->search($user2, $trip);
-        $this->assertTrue($ss->count() == 1);
+        $this->assertCount(1, $ss);
+        $this->assertSame($user1->id, (int) $ss->first()->user_id);
     }
 
-    public function testMatcher2()
+    public function test_matcher_with_specific_destination_radius_matches_trip(): void
     {
-        $user1 = \STS\Models\User::factory()->create();
-        $user2 = \STS\Models\User::factory()->create();
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
 
-        $model = \STS\Models\Subscription::factory()->create([
+        Subscription::factory()->create([
             'user_id' => $user1->id,
             'trip_date' => null,
-            'to_address'      => 'Mendoza, Mendoza, Argentina',
+            'to_address' => 'Mendoza, Mendoza, Argentina',
             'to_json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
-            'to_lat'          => -32.897273,
-            'to_lng'          => -68.834067,
-            'to_sin_lat'          => sin(deg2rad(-32.897273)),
-            'to_sin_lng'          => sin(deg2rad(-68.834067)),
-            'to_cos_lat'          => cos(deg2rad(-32.897273)),
-            'to_cos_lng'          => cos(deg2rad(-68.834067)),
-            'to_radio'          => 10000,
+            'to_lat' => -32.897273,
+            'to_lng' => -68.834067,
+            'to_sin_lat' => sin(deg2rad(-32.897273)),
+            'to_sin_lng' => sin(deg2rad(-68.834067)),
+            'to_cos_lat' => cos(deg2rad(-32.897273)),
+            'to_cos_lng' => cos(deg2rad(-68.834067)),
+            'to_radio' => 10000,
         ]);
-        $trip = \STS\Models\Trip::factory()->create([
+        $trip = Trip::factory()->create([
             'friendship_type_id' => 2,
             'user_id' => $user2->id,
         ]);
 
-        $trip->points()->save(\STS\Models\TripPoint::factory()->rosario()->make());
-        $trip->points()->save(\STS\Models\TripPoint::factory()->mendoza()->make());
+        $trip->points()->save(TripPoint::factory()->rosario()->make());
+        $trip->points()->save(TripPoint::factory()->mendoza()->make());
 
         $ss = $this->subscriptionsRepository->search($user2, $trip);
-        $this->assertTrue($ss->count() == 1);
+        $this->assertCount(1, $ss);
+        $this->assertSame($user1->id, (int) $ss->first()->user_id);
     }
 
-    public function testMatcher3()
+    public function test_matcher_with_non_matching_origin_returns_empty(): void
     {
-        $user1 = \STS\Models\User::factory()->create();
-        $user2 = \STS\Models\User::factory()->create();
+        $user1 = User::factory()->create();
+        $user2 = User::factory()->create();
 
-        $model = \STS\Models\Subscription::factory()->create([
+        Subscription::factory()->create([
             'user_id' => $user1->id,
             'trip_date' => null,
-            'to_address'      => 'Mendoza, Mendoza, Argentina',
+            'to_address' => 'Mendoza, Mendoza, Argentina',
             'to_json_address' => ['ciudad' => 'Mendoza', 'provincia' => 'Mendoza'],
-            'to_lat'          => -32.897273,
-            'to_lng'          => -68.834067,
-            'to_sin_lat'          => sin(deg2rad(-32.897273)),
-            'to_sin_lng'          => sin(deg2rad(-68.834067)),
-            'to_cos_lat'          => cos(deg2rad(-32.897273)),
-            'to_cos_lng'          => cos(deg2rad(-68.834067)),
-            'to_radio'          => 10000,
+            'to_lat' => -32.897273,
+            'to_lng' => -68.834067,
+            'to_sin_lat' => sin(deg2rad(-32.897273)),
+            'to_sin_lng' => sin(deg2rad(-68.834067)),
+            'to_cos_lat' => cos(deg2rad(-32.897273)),
+            'to_cos_lng' => cos(deg2rad(-68.834067)),
+            'to_radio' => 10000,
 
-            'from_address'      => 'Cordoba, Cordoba, Argentina',
+            'from_address' => 'Cordoba, Cordoba, Argentina',
             'from_json_address' => ['ciudad' => 'Cordoba', 'provincia' => 'Cordoba'],
-            'from_lat'          => -31.421045,
-            'from_lng'          => -64.190543,
-            'from_sin_lat'          => sin(deg2rad(-31.421045)),
-            'from_sin_lng'          => sin(deg2rad(-64.190543)),
-            'from_cos_lat'          => cos(deg2rad(-31.421045)),
-            'from_cos_lng'          => cos(deg2rad(-64.190543)),
-            'from_radio'          => 1000,
+            'from_lat' => -31.421045,
+            'from_lng' => -64.190543,
+            'from_sin_lat' => sin(deg2rad(-31.421045)),
+            'from_sin_lng' => sin(deg2rad(-64.190543)),
+            'from_cos_lat' => cos(deg2rad(-31.421045)),
+            'from_cos_lng' => cos(deg2rad(-64.190543)),
+            'from_radio' => 1000,
         ]);
-        $trip = \STS\Models\Trip::factory()->create([
+        $trip = Trip::factory()->create([
             'user_id' => $user2->id,
         ]);
 
-        $trip->points()->save(\STS\Models\TripPoint::factory()->rosario()->make());
-        $trip->points()->save(\STS\Models\TripPoint::factory()->mendoza()->make());
+        $trip->points()->save(TripPoint::factory()->rosario()->make());
+        $trip->points()->save(TripPoint::factory()->mendoza()->make());
 
         $ss = $this->subscriptionsRepository->search($user2, $trip);
-        $this->assertTrue($ss->count() == 0);
+        $this->assertCount(0, $ss);
     }
 }

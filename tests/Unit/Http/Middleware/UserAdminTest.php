@@ -45,9 +45,15 @@ class UserAdminTest extends TestCase
         $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
 
         $middleware = new UserAdmin($jwt);
-        $response = $middleware->handle(Request::create('/api/admin/badges', 'GET'), fn () => response('no'));
+        $ran = false;
+        $response = $middleware->handle(Request::create('/api/admin/badges', 'GET'), function () use (&$ran) {
+            $ran = true;
+
+            return response('no');
+        });
 
         $this->assertSame(401, $response->getStatusCode());
+        $this->assertFalse($ran);
         $this->assertSame('Unauthorized.', json_decode($response->getContent(), true));
     }
 
@@ -71,5 +77,20 @@ class UserAdminTest extends TestCase
         $this->expectExceptionMessage('invalid token');
 
         new UserAdmin($jwt);
+    }
+
+    public function test_numeric_admin_flag_allows_access(): void
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['is_admin' => 1])->saveQuietly();
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parseToken->authenticate')->andReturn($user->fresh());
+
+        $middleware = new UserAdmin($jwt);
+        $response = $middleware->handle(Request::create('/api/admin/reports', 'GET'), fn () => response('numeric-admin', 200));
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('numeric-admin', $response->getContent());
     }
 }

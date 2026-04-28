@@ -163,4 +163,54 @@ class UserLogginTest extends TestCase
 
         $this->assertSame('optional-banned', $response->getContent());
     }
+
+    public function test_non_optional_mode_invalid_token_keeps_existing_acting_as_user(): void
+    {
+        $fallbackUser = User::factory()->create([
+            'banned' => false,
+            'active' => true,
+        ]);
+        $this->actingAs($fallbackUser, 'api');
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parseToken->authenticate')->andThrow(new \RuntimeException('Token invalid'));
+
+        $middleware = new UserLoggin($jwt);
+        $response = $middleware->handle(Request::create('/trips', 'GET'), function () use ($fallbackUser) {
+            $this->assertTrue(auth()->check());
+            $this->assertTrue(auth()->user()->is($fallbackUser));
+
+            return response('fallback-user-ok', 200);
+        });
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('fallback-user-ok', $response->getContent());
+    }
+
+    public function test_non_optional_mode_valid_jwt_user_overrides_existing_auth_context(): void
+    {
+        $fallbackUser = User::factory()->create([
+            'banned' => false,
+            'active' => true,
+        ]);
+        $jwtUser = User::factory()->create([
+            'banned' => false,
+            'active' => true,
+        ]);
+        $this->actingAs($fallbackUser, 'api');
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parseToken->authenticate')->andReturn($jwtUser);
+
+        $middleware = new UserLoggin($jwt);
+        $response = $middleware->handle(Request::create('/trips', 'GET'), function () use ($jwtUser) {
+            $this->assertTrue(auth()->check());
+            $this->assertTrue(auth()->user()->is($jwtUser));
+
+            return response('jwt-user-ok', 200);
+        });
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('jwt-user-ok', $response->getContent());
+    }
 }

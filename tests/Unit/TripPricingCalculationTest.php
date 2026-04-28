@@ -2,13 +2,14 @@
 
 namespace Tests\Unit;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery;
-use Tests\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use STS\Repository\TripRepository;
 use STS\Services\GeoService;
-use STS\Services\MercadoPagoService;
 use STS\Services\MapboxDirectionsRouteService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Services\MercadoPagoService;
+use Tests\TestCase;
 
 class TripPricingCalculationTest extends TestCase
 {
@@ -20,10 +21,8 @@ class TripPricingCalculationTest extends TestCase
         parent::tearDown();
     }
 
-    /**
-     * @dataProvider tripPricingProvider
-     */
-    public function testStoreTripInfoSuccessCalculatesExpectedTripPrices(
+    #[DataProvider('tripPricingProvider')]
+    public function test_store_trip_info_success_calculates_expected_trip_prices(
         float $distanceMeters,
         float $fuelPrice,
         float $kilometersPerLiter,
@@ -59,32 +58,52 @@ class TripPricingCalculationTest extends TestCase
         );
 
         $this->assertTrue($response['status']);
+        $this->assertSame('Route found', $response['message']);
+        $this->assertSame($distanceMeters, (float) $response['data']['distance']);
+        $this->assertSame(11805.6, (float) $response['data']['duration']);
+        $this->assertSame($routeNeedsPayment, (bool) $response['data']['route_needs_payment']);
+        $this->assertEqualsWithDelta($distanceMeters * 0.15, (float) $response['data']['co2'], 0.0001);
         $this->assertEquals($expected['recommended_trip_price_cents'], $response['data']['recommended_trip_price_cents']);
         $this->assertEquals($expected['maximum_trip_price_cents'], $response['data']['maximum_trip_price_cents']);
     }
 
-    public function testCarpoolearConfigPreservesDecimalValuesFromEnv(): void
+    public function test_carpoolear_config_preserves_decimal_values_from_env(): void
     {
-        putenv('MODULE_MAX_PRICE_FUEL_PRICE=2378.5');
-        putenv('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS=10.5');
-        putenv('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA=15.75');
-        putenv('MODULE_MAX_PRICE_KILOMETER_BY_LITER=12.5');
+        $keys = [
+            'MODULE_MAX_PRICE_FUEL_PRICE' => '2378.5',
+            'MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS' => '10.5',
+            'MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA' => '15.75',
+            'MODULE_MAX_PRICE_KILOMETER_BY_LITER' => '12.5',
+        ];
+        $previous = [];
 
-        $_ENV['MODULE_MAX_PRICE_FUEL_PRICE'] = '2378.5';
-        $_ENV['MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS'] = '10.5';
-        $_ENV['MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA'] = '15.75';
-        $_ENV['MODULE_MAX_PRICE_KILOMETER_BY_LITER'] = '12.5';
-        $_SERVER['MODULE_MAX_PRICE_FUEL_PRICE'] = '2378.5';
-        $_SERVER['MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS'] = '10.5';
-        $_SERVER['MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA'] = '15.75';
-        $_SERVER['MODULE_MAX_PRICE_KILOMETER_BY_LITER'] = '12.5';
+        foreach ($keys as $key => $value) {
+            $previous[$key] = getenv($key);
+            putenv($key.'='.$value);
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+        }
 
-        $config = include base_path('config/carpoolear.php');
+        try {
+            $config = include base_path('config/carpoolear.php');
 
-        $this->assertSame(2378.5, $config['module_max_price_fuel_price']);
-        $this->assertSame(10.5, $config['module_max_price_price_variance_tolls']);
-        $this->assertSame(15.75, $config['module_max_price_price_variance_max_extra']);
-        $this->assertSame(12.5, $config['module_max_price_kilometer_by_liter']);
+            $this->assertSame(2378.5, $config['module_max_price_fuel_price']);
+            $this->assertSame(10.5, $config['module_max_price_price_variance_tolls']);
+            $this->assertSame(15.75, $config['module_max_price_price_variance_max_extra']);
+            $this->assertSame(12.5, $config['module_max_price_kilometer_by_liter']);
+        } finally {
+            foreach (array_keys($keys) as $key) {
+                $old = $previous[$key];
+                if ($old === false || $old === null) {
+                    putenv($key);
+                    unset($_ENV[$key], $_SERVER[$key]);
+                } else {
+                    putenv($key.'='.$old);
+                    $_ENV[$key] = $old;
+                    $_SERVER[$key] = $old;
+                }
+            }
+        }
     }
 
     public static function tripPricingProvider(): array

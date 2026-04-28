@@ -96,6 +96,42 @@ class CheckUserBannedTest extends TestCase
         }
     }
 
+    public function test_null_user_from_authenticate_continues(): void
+    {
+        $parser = Mockery::mock();
+        $parser->shouldReceive('hasToken')->andReturn(true);
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parser')->andReturn($parser);
+        $jwt->shouldReceive('parseToken->authenticate')->andReturn(null);
+
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
+        $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('null-user-ok'));
+
+        $this->assertSame('null-user-ok', $response->getContent());
+    }
+
+    public function test_banned_session_user_without_token_is_not_blocked_by_this_middleware(): void
+    {
+        $bannedUser = User::factory()->create([
+            'banned' => true,
+            'active' => true,
+        ]);
+        $this->actingAs($bannedUser, 'api');
+
+        $parser = Mockery::mock();
+        $parser->shouldReceive('hasToken')->once()->andReturn(false);
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parser')->once()->andReturn($parser);
+        $jwt->shouldNotReceive('parseToken');
+
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
+        $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('no-token-path'));
+
+        $this->assertSame('no-token-path', $response->getContent());
+    }
+
     public function test_authenticate_exception_is_swallowed_and_request_continues(): void
     {
         $parser = Mockery::mock();

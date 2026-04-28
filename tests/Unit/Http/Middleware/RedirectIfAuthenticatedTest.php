@@ -57,4 +57,39 @@ class RedirectIfAuthenticatedTest extends TestCase
         $this->assertSame(302, $response->getStatusCode());
         $this->assertSame(url('/'), $response->headers->get('Location'));
     }
+
+    public function test_explicit_api_guard_does_not_redirect_when_only_web_guard_is_authenticated(): void
+    {
+        $user = User::factory()->create();
+        Auth::guard('web')->login($user);
+        $this->assertGuest('api');
+
+        $middleware = new RedirectIfAuthenticated;
+        $request = Request::create('/register', 'GET');
+        $ran = false;
+
+        $response = $middleware->handle($request, function () use (&$ran) {
+            $ran = true;
+
+            return response('register-form', 200);
+        }, 'api');
+
+        $this->assertTrue($ran);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('register-form', $response->getContent());
+    }
+
+    public function test_explicit_api_guard_redirects_when_api_guard_is_authenticated(): void
+    {
+        $user = User::factory()->create();
+        Auth::guard('api')->login($user);
+
+        $middleware = new RedirectIfAuthenticated;
+        $request = Request::create('/login', 'GET');
+        $response = $middleware->handle($request, fn () => response('should-not-run', 200), 'api');
+
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertTrue($response->isRedirect());
+        $this->assertSame(url('/'), $response->headers->get('Location'));
+    }
 }

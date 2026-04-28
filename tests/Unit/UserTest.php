@@ -2,139 +2,124 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Queue;
+use STS\Events\User\Create as CreateEvent;
+use STS\Models\User;
+use STS\Services\Logic\UsersManager;
+use Tests\TestCase;
 
 class UserTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected $userManager;
+    private UsersManager $userManager;
 
-    public function testCreateUser()
+    protected function setUp(): void
     {
-        \Illuminate\Support\Facades\Event::fake();
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $data = [
-            'name'                  => 'Mariano',
-            'email'                 => 'marianoabotta@gmail.com',
-            'password'              => '123456',
-            'password_confirmation' => '123456',
-        ];
-
-        $u = $userManager->create($data);
-        $this->assertTrue($u != null);
-        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\User\Create::class);
+        parent::setUp();
+        $this->userManager = $this->app->make(UsersManager::class);
     }
 
-    public function testCreateUserFail()
+    /**
+     * @return array<string, mixed>
+     */
+    private function validPayload(string $email = 'marianoabotta@gmail.com'): array
     {
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $data = [
-            'name'     => 'Mariano',
-            'email'    => 'marianoabotta@gmail.com',
+        return [
+            'name' => 'Mariano',
+            'email' => $email,
             'password' => '123456',
-        ];
-
-        $u = $userManager->create($data);
-        $this->assertNull($u);
-    }
-
-    public function testCreateUserRepited()
-    {
-        \Illuminate\Support\Facades\Event::fake();
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $data = [
-            'name'                  => 'Mariano',
-            'email'                 => 'mariano@g1.com',
-            'password'              => '123456',
             'password_confirmation' => '123456',
         ];
+    }
 
-        $u1 = $userManager->create($data);
+    public function test_create_user_dispatches_event_and_persists(): void
+    {
+        Event::fake([CreateEvent::class]);
+        $u = $this->userManager->create($this->validPayload('user-'.uniqid('', true).'@example.com'));
+        $this->assertNotNull($u);
+        $this->assertFalse((bool) $u->active);
+        Event::assertDispatched(CreateEvent::class);
+    }
 
-        $u2 = $userManager->create($data);
+    public function test_create_user_fails_without_password_confirmation(): void
+    {
+        $data = $this->validPayload('fail-'.uniqid('', true).'@example.com');
+        unset($data['password_confirmation']);
+        $u = $this->userManager->create($data);
+        $this->assertNull($u);
+        $this->assertTrue($this->userManager->getErrors()->has('password'));
+    }
+
+    public function test_create_user_duplicate_email_is_rejected(): void
+    {
+        Event::fake([CreateEvent::class]);
+        $data = $this->validPayload('mariano@g1.com');
+        $u1 = $this->userManager->create($data);
+        $this->assertNotNull($u1);
+        $u2 = $this->userManager->create($data);
 
         $this->assertNull($u2);
-        \Illuminate\Support\Facades\Event::assertDispatched(\STS\Events\User\Create::class);
+        Event::assertDispatched(CreateEvent::class, 1);
     }
 
-    public function testUpdateUser()
+    public function test_update_user_changes_password_and_persists_hash(): void
     {
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $data = [
-            'name'                  => 'Mariano',
-            'email'                 => 'mariano@g1.com',
-            'password'              => '123456',
-            'password_confirmation' => '123456',
-        ];
-
-        $u1 = $userManager->create($data);
-
-        $data = [
-            'password'              => 'gatogato',
+        $u1 = $this->userManager->create($this->validPayload('update-'.uniqid('', true).'@example.com'));
+        $updated = $this->userManager->update($u1, [
+            'password' => 'gatogato',
             'password_confirmation' => 'gatogato',
-        ];
-
-        $u1 = $userManager->update($u1, $data);
-        $this->assertTrue($u1 != null);
+        ]);
+        $this->assertNotNull($updated);
+        $this->assertTrue(\Hash::check('gatogato', $updated->fresh()->password));
     }
 
-    public function testActiveUser()
+    public function test_active_user_with_valid_token_activates_account(): void
     {
         $token = \Illuminate\Support\Str::random(40);
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $u1 = \STS\Models\User::factory()->create([
+        $u1 = User::factory()->create([
             'activation_token' => $token,
-            'active'           => false,
+            'active' => false,
         ]);
 
-        $user = $userManager->activeAccount($token);
+        $user = $this->userManager->activeAccount($token);
 
-        $this->assertTrue($user->id == $u1->id);
-        $this->assertTrue($user->active);
+        $this->assertSame($u1->id, $user->id);
+        $this->assertTrue((bool) $user->active);
+        $this->assertNull($user->fresh()->activation_token);
     }
 
-    public function testPasswordReset()
+    public function test_password_reset_and_change_password_flow(): void
     {
-        \Illuminate\Support\Facades\Queue::fake();
+        Queue::fake();
         config(['carpoolear.name_app' => 'TestApp', 'app.url' => 'http://localhost']);
 
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $u1 = \STS\Models\User::factory()->create();
+        $u1 = User::factory()->create();
 
-        $token = $userManager->resetPassword($u1->email);
+        $token = $this->userManager->resetPassword($u1->email);
+        $this->assertNotNull($token);
 
         $c = \DB::table('password_resets')->where('email', $u1->email)->first();
-        $this->assertTrue($c != null);
+        $this->assertNotNull($c);
 
-        $data = [
-            'password'              => 'asdasd',
+        $resp = $this->userManager->changePassword($c->token, [
+            'password' => 'asdasd',
             'password_confirmation' => 'asdasd',
-        ];
-        $resp = $userManager->changePassword($c->token, $data);
+        ]);
         $this->assertTrue($resp);
-
-        $data = [
-            'email'       => $u1->email,
-            'password'    => 'asdasd',
-            'device_id'   => 123456,
-            'device_type' => 'Android',
-            'app_version' => 1,
-        ];
-        $response = $this->call('POST', 'api/login', $data);
-        $this->assertTrue($response->status() == 200);
+        $this->assertTrue(\Hash::check('asdasd', $u1->fresh()->password));
     }
 
-    public function testIndex()
+    public function test_index_excludes_requesting_user(): void
     {
-        $userManager = \App::make(\STS\Services\Logic\UsersManager::class);
-        $u1 = \STS\Models\User::factory()->create();
-        $u2 = \STS\Models\User::factory()->create();
-        $u3 = \STS\Models\User::factory()->create();
+        $u1 = User::factory()->create();
+        User::factory()->create();
+        User::factory()->create();
 
-        $users = $userManager->index($u1, null);
-
-        $this->assertTrue($users->count() == 2);
+        $users = $this->userManager->index($u1, null);
+        $this->assertCount(2, $users);
+        $this->assertFalse($users->pluck('id')->contains($u1->id));
     }
 }
