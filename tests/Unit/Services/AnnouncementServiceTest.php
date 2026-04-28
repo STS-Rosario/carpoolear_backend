@@ -71,4 +71,13 @@ class AnnouncementServiceTest extends TestCase
         $this->assertTrue($service->canSendAnnouncement());
         $this->assertSame(10, Cache::get('announcement_rate_limit'));
     }
+
+    public function test_can_send_announcement_initializes_counter_when_cache_key_is_missing(): void
+    {
+        Cache::forget('announcement_rate_limit');
+        $service = new AnnouncementService;
+
+        $this->assertTrue($service->canSendAnnouncement());
+        $this->assertSame(1, Cache::get('announcement_rate_limit'));
+    }
 }
