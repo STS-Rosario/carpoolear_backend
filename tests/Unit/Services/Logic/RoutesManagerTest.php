@@ -152,6 +152,13 @@ class RoutesManagerTest extends TestCase
         $this->assertSame(6, (int) $rows->first()->importance);
     }
 
+    public function test_autocomplete_returns_empty_collection_when_no_match(): void
+    {
+        $rows = $this->manager()->autocomplete('NoSuchCity-'.uniqid('', true), 'AR', false);
+
+        $this->assertCount(0, $rows);
+    }
+
     public function test_create_route_with_osrm_fixture_syncs_near_nodes_and_marks_processed(): void
     {
         $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0, 'name' => 'RFrom']);
@@ -237,5 +244,32 @@ class RoutesManagerTest extends TestCase
         $attached = $route->nodes()->pluck('nodes_geo.id')->all();
         $this->assertCount(count(array_unique($attached)), $attached);
         $this->assertContains($near->id, $attached);
+    }
+
+    public function test_create_route_marks_processed_even_when_no_near_nodes_are_found(): void
+    {
+        $n1 = $this->makeNode(['lat' => -10.0, 'lng' => -10.0, 'name' => 'NFrom']);
+        $n2 = $this->makeNode(['lat' => -11.0, 'lng' => -11.0, 'name' => 'NTo']);
+
+        $route = new Route;
+        $route->forceFill([
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'processed' => false,
+        ])->save();
+
+        $fixture = $this->osrmFixtureWithLocations([
+            [120.0, 40.0],
+            [121.0, 41.0],
+            [122.0, 42.0],
+        ]);
+        $manager = new RoutesManagerWithFixture(new RoutesRep, $fixture);
+        $route->load(['origin', 'destiny']);
+
+        $manager->createRoute($route);
+
+        $route->refresh();
+        $this->assertTrue((bool) $route->processed);
+        $this->assertCount(0, $route->nodes()->pluck('nodes_geo.id')->all());
     }
 }
