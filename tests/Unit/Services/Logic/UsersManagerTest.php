@@ -235,6 +235,24 @@ class UsersManagerTest extends TestCase
         config(['carpoolear.banned_words_names' => []]);
     }
 
+    public function test_create_forces_email_notifications_to_true_even_when_payload_sets_false(): void
+    {
+        Event::fake([CreateEvent::class]);
+        $email = 'notif-force-'.uniqid('', true).'@example.com';
+
+        $user = $this->manager()->create([
+            'name' => 'Notifications Forced User',
+            'email' => $email,
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => false,
+        ]);
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertTrue((bool) $user->fresh()->emails_notifications);
+        Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
+    }
+
     public function test_create_returns_null_when_validation_fails(): void
     {
         Event::fake([CreateEvent::class]);
