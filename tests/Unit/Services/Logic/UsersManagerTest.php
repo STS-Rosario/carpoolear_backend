@@ -174,6 +174,19 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($validator->errors()->has('patente'));
     }
 
+    public function test_validator_admin_fails_when_car_description_exceeds_max_length(): void
+    {
+        $user = User::factory()->create();
+        $validator = $this->manager()->validator([
+            'name' => 'Admin touch',
+            'patente' => 'AA123BB',
+            'car_description' => str_repeat('x', 256),
+        ], $user->id, false, false, true);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('car_description'));
+    }
+
     public function test_validator_admin_does_not_add_car_rules_when_patente_is_missing(): void
     {
         $user = User::factory()->create();
