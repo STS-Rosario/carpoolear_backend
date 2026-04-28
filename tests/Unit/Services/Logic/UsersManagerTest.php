@@ -263,6 +263,25 @@ class UsersManagerTest extends TestCase
         ]));
     }
 
+    public function test_change_password_sets_validation_errors_when_confirmation_mismatches(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create();
+        $token = $this->manager()->resetPassword($user->email);
+        $this->assertNotNull($token);
+
+        $manager = $this->manager();
+        $result = $manager->changePassword($token, [
+            'email' => $user->email,
+            'password' => 'newsecret12',
+            'password_confirmation' => 'different-password',
+        ]);
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('password'));
+        $this->assertFalse(\Hash::check('newsecret12', $user->fresh()->password));
+    }
+
     public function test_mail_unsubscribe_turns_off_email_notifications(): void
     {
         $user = User::factory()->create([
