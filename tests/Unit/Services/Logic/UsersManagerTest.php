@@ -162,6 +162,18 @@ class UsersManagerTest extends TestCase
         $this->assertStringContainsString('nullable', implode('|', $rules['car_description']));
     }
 
+    public function test_validator_admin_fails_when_patente_exceeds_max_length(): void
+    {
+        $user = User::factory()->create();
+        $validator = $this->manager()->validator([
+            'name' => 'Admin touch',
+            'patente' => 'ABC12345678',
+        ], $user->id, false, false, true);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('patente'));
+    }
+
     public function test_validator_admin_does_not_add_car_rules_when_patente_is_missing(): void
     {
         $user = User::factory()->create();
