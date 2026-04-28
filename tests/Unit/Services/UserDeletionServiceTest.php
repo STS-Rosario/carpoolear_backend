@@ -30,4 +30,17 @@ class UserDeletionServiceTest extends TestCase
         $this->assertTrue($result);
         $this->assertNull(User::query()->find($user->id));
     }
+
+    public function test_delete_user_can_be_called_twice_for_same_user_instance(): void
+    {
+        $user = User::factory()->create();
+        $service = new UserDeletionService;
+
+        $first = $service->deleteUser($user);
+        $second = $service->deleteUser($user);
+
+        $this->assertTrue($first);
+        $this->assertTrue($second);
+        $this->assertNull(User::query()->find($user->id));
+    }
 }
