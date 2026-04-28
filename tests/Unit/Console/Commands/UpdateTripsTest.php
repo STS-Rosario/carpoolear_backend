@@ -5,6 +5,7 @@ namespace Tests\Unit\Console\Commands;
 use Mockery;
 use STS\Console\Commands\updateTrips;
 use STS\Models\NodeGeo;
+use STS\Models\Trip;
 use STS\Repository\RoutesRepository;
 use STS\Services\Logic\RoutesManager;
 use Tests\TestCase;
@@ -48,5 +49,22 @@ class UpdateTripsTest extends TestCase
 
         $this->assertSame('node:updateTrips', $command->getName());
         $this->assertStringContainsString('create and assign routes to old trips', $command->getDescription());
+    }
+
+    public function test_handle_skips_trip_without_points_and_keeps_route_id_null(): void
+    {
+        Trip::factory()->create([
+            'trip_date' => '2018-01-10 08:00:00',
+            'route_id' => null,
+        ]);
+
+        $this->app->instance(RoutesManager::class, Mockery::mock(RoutesManager::class));
+        $this->app->instance(RoutesRepository::class, Mockery::mock(RoutesRepository::class));
+
+        $this->artisan('node:updateTrips')
+            ->expectsOutputToContain('No point')
+            ->assertExitCode(0);
+
+        $this->assertNull(Trip::query()->first()->route_id);
     }
 }
