@@ -259,6 +259,33 @@ class SocialManagerTest extends TestCase
         $this->assertSame('Ya tienes asociado un perfil', $manager->getErrors()['error']);
     }
 
+    public function test_link_account_fails_when_provider_user_id_is_already_linked(): void
+    {
+        $existingOwner = User::factory()->create();
+        $user = User::factory()->create();
+        $pid = 'taken-pid-'.substr(uniqid('', true), 0, 8);
+        SocialAccount::create([
+            'user_id' => $existingOwner->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', $userData));
+
+        $this->assertNull($manager->linkAccount($user));
+        $this->assertSame('Ya tienes asociado un perfil', $manager->getErrors()['error']);
+    }
+
     public function test_update_profile_updates_when_account_matches_user(): void
     {
         $user = User::factory()->create(['name' => 'Before']);
