@@ -180,6 +180,18 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($validator->errors()->has('name'));
     }
 
+    public function test_validator_social_create_fails_when_emails_notifications_is_not_boolean(): void
+    {
+        $validator = $this->manager()->validator([
+            'name' => 'Social User',
+            'email' => 'social-bool-'.uniqid('', true).'@example.com',
+            'emails_notifications' => ['invalid'],
+        ], null, true, false, false);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('emails_notifications'));
+    }
+
     public function test_validator_social_create_allows_empty_email_string_when_key_is_present(): void
     {
         $validator = $this->manager()->validator([
