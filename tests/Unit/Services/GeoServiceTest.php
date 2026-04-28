@@ -41,4 +41,15 @@ class GeoServiceTest extends TestCase
 
         $this->assertTrue($service->arePointsInPaidRegions([]));
     }
+
+    public function test_are_points_in_paid_routes_returns_false_when_one_point_is_outside_paid_regions(): void
+    {
+        $service = new GeoService;
+
+        // First point is near Buenos Aires polygon, second point is clearly outside any configured region.
+        $this->assertFalse($service->arePointsInPaidRoutes(
+            [-34.60, -58.40],
+            [0.0, 0.0]
+        ));
+    }
 }
