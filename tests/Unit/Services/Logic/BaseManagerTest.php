@@ -53,4 +53,23 @@ class BaseManagerTest extends TestCase
 
         $this->assertSame($errors, $manager->getErrors());
     }
+
+    public function test_set_errors_can_reset_value_back_to_null(): void
+    {
+        $manager = new BaseManager;
+        $manager->setErrors(['error' => 'temporary']);
+
+        $manager->setErrors(null);
+
+        $this->assertNull($manager->getErrors());
+    }
+
+    public function test_set_errors_preserves_boolean_false_value(): void
+    {
+        $manager = new BaseManager;
+
+        $manager->setErrors(false);
+
+        $this->assertFalse($manager->getErrors());
+    }
 }
