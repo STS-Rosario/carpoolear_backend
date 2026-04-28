@@ -135,6 +135,45 @@ class SocialManagerTest extends TestCase
         $this->assertTrue($result->is($user));
     }
 
+    public function test_login_or_create_populates_missing_image_for_existing_user(): void
+    {
+        $user = User::factory()->create(['image' => null]);
+        $pid = 'fb-img-'.substr(uniqid('', true), 0, 10);
+
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'image' => 'data://text/plain;base64,'.base64_encode('fake-image-bytes'),
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, $friends, $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldNotReceive('create');
+        $friends->shouldNotReceive('make');
+        $files->shouldReceive('createFromData')
+            ->once()
+            ->with('fake-image-bytes', 'jpg', 'image/profile/')
+            ->andReturn('social/avatar.jpg');
+
+        $result = $manager->loginOrCreate(['token' => 'ignored']);
+
+        $this->assertTrue($result->is($user->fresh()));
+        $this->assertSame('social/avatar.jpg', $result->fresh()->image);
+    }
+
     public function test_login_or_create_creates_user_and_social_when_no_account(): void
     {
         $pid = 'fb-new-'.substr(uniqid('', true), 0, 12);
@@ -267,6 +306,52 @@ class SocialManagerTest extends TestCase
 
         $out = $manager->updateProfile($user->fresh());
         $this->assertSame('After', $out->name);
+    }
+
+    public function test_update_profile_propagates_errors_when_user_update_fails(): void
+    {
+        $user = User::factory()->create(['name' => 'Before']);
+        $pid = 'upd-fail-'.substr(uniqid('', true), 0, 8);
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => 'After',
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, , $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $files->shouldNotReceive('createFromData');
+
+        $filter = Mockery::mock(UserEditablePropertiesService::class);
+        $filter->shouldReceive('filterForUser')
+            ->once()
+            ->with(Mockery::type('array'), false)
+            ->andReturn(['name' => 'After']);
+        $this->app->instance(UserEditablePropertiesService::class, $filter);
+
+        $users->shouldReceive('update')
+            ->once()
+            ->andReturn(null);
+        $users->shouldReceive('getErrors')
+            ->once()
+            ->andReturn(['error' => 'update_failed']);
+
+        $out = $manager->updateProfile($user->fresh());
+
+        $this->assertNull($out);
+        $this->assertSame('update_failed', $manager->getErrors()['error']);
     }
 
     public function test_make_friends_calls_friends_manager_for_each_resolved_friend(): void
