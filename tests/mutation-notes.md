@@ -109,3 +109,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `a54deebcf1014a06`, `490aec5db92a5b6e`, `e705f32825014ed3`, `f07be5a076a1191f`, `cbefb735437de83c`
   - Cause: new-route branch in `create` did not assert `processed=false`, route persistence, and syncing both endpoint nodes.
   - Fix: strengthened `test_create_creates_and_syncs_routes_from_points_json_address_ids` with route `processed` and `route_nodes` assertions.
+
+- `b06214e1744b47ae`, `778fc72ecde2c4b5`, `e86bce3766a81131`, `4cd0f45423a259c2`, `1a556c3e6c5d37a6`, `852234564b8b2945`, `8c6e8823c8e66b93`
+  - Cause: `update` path did not assert old-points threshold (`count >= 2`) and old-route lat/lng mapping used for sellado checks.
+  - Fix: added `test_update_skips_new_payment_when_old_route_already_required_sellado`.

@@ -651,4 +651,55 @@ class TripRepositoryTest extends TestCase
         $this->assertCount(1, $trip->routes);
         $this->assertSame($existingRoute->id, (int) $trip->routes->first()->id);
     }
+
+    public function test_update_skips_new_payment_when_old_route_already_required_sellado(): void
+    {
+        // Mutation intent: preserve old-points count guard and lat/lng mapping for old-route sellado check.
+        // Kills: b06214e1744b47ae, 778fc72ecde2c4b5, e86bce3766a81131, 4cd0f45423a259c2,
+        //        1a556c3e6c5d37a6, 852234564b8b2945, 8c6e8823c8e66b93.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 1);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->twice()->andReturn(true, true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')->never();
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
+
+        $user = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]); // force threshold
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => false,
+        ]);
+
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 701, 'ciudad' => 'OldA']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 702, 'ciudad' => 'OldB']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.61, 'lng' => -58.41, 'json_address' => ['id' => 703, 'ciudad' => 'NewA']],
+                ['lat' => -34.58, 'lng' => -58.38, 'json_address' => ['id' => 704, 'ciudad' => 'NewB']],
+            ],
+        ]);
+
+        $updated->refresh();
+        $this->assertSame(Trip::STATE_READY, $updated->state);
+        $this->assertFalse((bool) $updated->needs_sellado);
+        $this->assertNull($updated->payment_id);
+    }
 }
