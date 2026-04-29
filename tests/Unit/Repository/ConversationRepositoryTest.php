@@ -7,6 +7,7 @@ use STS\Models\Message;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\ConversationRepository;
+use STS\Repository\FriendsRepository;
 use Tests\TestCase;
 
 class ConversationRepositoryTest extends TestCase
@@ -46,6 +47,13 @@ class ConversationRepositoryTest extends TestCase
         $this->assertNull($repo->getConversationFromId($conversation->id, $stranger));
     }
 
+    public function test_get_conversation_from_id_returns_null_for_missing_conversation(): void
+    {
+        $repo = new ConversationRepository;
+
+        $this->assertNull($repo->getConversationFromId(999999999));
+    }
+
     public function test_get_conversations_by_trip_accepts_trip_instance_or_int_id(): void
     {
         $trip = Trip::factory()->create();
@@ -61,6 +69,39 @@ class ConversationRepositoryTest extends TestCase
         $this->assertEqualsCanonicalizing([$a->id, $b->id], $byModel->pluck('id')->all());
     }
 
+    public function test_get_conversation_by_trip_id_returns_trip_conversation_without_user_filter(): void
+    {
+        $trip = Trip::factory()->create();
+        $conversation = Conversation::factory()->create(['trip_id' => $trip->id]);
+
+        $repo = new ConversationRepository;
+        $found = $repo->getConversationByTripId($trip->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($conversation));
+    }
+
+    public function test_get_conversation_by_trip_id_requires_membership_when_user_provided(): void
+    {
+        $trip = Trip::factory()->create();
+        $member = User::factory()->create();
+        $stranger = User::factory()->create();
+        $conversation = Conversation::factory()->create(['trip_id' => $trip->id]);
+        $conversation->users()->attach($member->id, ['read' => false]);
+
+        $repo = new ConversationRepository;
+        $this->assertNotNull($repo->getConversationByTripId($trip->id, $member));
+        $this->assertNull($repo->getConversationByTripId($trip->id, $stranger));
+    }
+
+    public function test_get_conversation_by_trip_id_returns_null_when_trip_has_no_conversation(): void
+    {
+        $trip = Trip::factory()->create();
+        $repo = new ConversationRepository;
+
+        $this->assertNull($repo->getConversationByTripId($trip->id));
+    }
+
     public function test_users_add_user_remove_user(): void
     {
         $u1 = User::factory()->create();
@@ -73,6 +114,7 @@ class ConversationRepositoryTest extends TestCase
 
         $conversation = $conversation->fresh();
         $this->assertCount(2, $repo->users($conversation));
+        $this->assertTrue((bool) $conversation->users()->where('users.id', $u2->id)->first()->pivot->read);
 
         $repo->removeUser($conversation, $u2);
         $this->assertCount(1, $repo->users($conversation->fresh()));
@@ -103,6 +145,24 @@ class ConversationRepositoryTest extends TestCase
 
         $this->assertNotNull($found);
         $this->assertTrue($found->is($conversation));
+    }
+
+    public function test_match_user_ignores_non_private_and_deleted_conversations(): void
+    {
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+
+        $tripConversation = Conversation::factory()->create(['type' => Conversation::TYPE_TRIP_CONVERSATION]);
+        $tripConversation->users()->attach($u1->id, ['read' => true]);
+        $tripConversation->users()->attach($u2->id, ['read' => true]);
+
+        $deletedPrivate = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $deletedPrivate->users()->attach($u1->id, ['read' => true]);
+        $deletedPrivate->users()->attach($u2->id, ['read' => true]);
+        $deletedPrivate->delete();
+
+        $repo = new ConversationRepository;
+        $this->assertNull($repo->matchUser($u1->id, $u2->id));
     }
 
     public function test_update_trip_id(): void
@@ -144,5 +204,46 @@ class ConversationRepositoryTest extends TestCase
         $repo = new ConversationRepository;
         $page = $repo->getConversationsFromUser($user, 1, 1);
         $this->assertCount(1, $page);
+    }
+
+    public function test_user_list_excludes_self_and_filters_with_search_text(): void
+    {
+        $owner = User::factory()->create(['name' => 'Owner Name']);
+        $alice = User::factory()->create(['name' => 'Alice Match']);
+        $bob = User::factory()->create(['name' => 'Bob Miss']);
+        $conversation = Conversation::factory()->create();
+        $conversation->users()->attach($owner->id, ['read' => false]);
+        $conversation->users()->attach($alice->id, ['read' => false]);
+        $conversation->users()->attach($bob->id, ['read' => false]);
+
+        Message::query()->create([
+            'user_id' => $owner->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'hello',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $repo = new ConversationRepository;
+        $users = $repo->userList($owner, null, 'Alice');
+
+        $this->assertCount(1, $users);
+        $this->assertSame($alice->id, $users->first()->id);
+    }
+
+    public function test_users_to_chat_applies_who_and_search_filters_and_excludes_self(): void
+    {
+        $owner = User::factory()->create(['name' => 'Owner']);
+        $friendA = User::factory()->create(['name' => 'Alice Candidate']);
+        $friendB = User::factory()->create(['name' => 'Bruno Candidate']);
+        (new FriendsRepository)->add($friendA, $owner, User::FRIEND_ACCEPTED);
+        (new FriendsRepository)->add($friendB, $owner, User::FRIEND_ACCEPTED);
+
+        $repo = new ConversationRepository;
+        $users = $repo->usersToChat($owner->id, $friendA->id, 'Alice');
+
+        $this->assertCount(1, $users);
+        $this->assertSame($friendA->id, $users->first()->id);
+        $this->assertNotSame($owner->id, $users->first()->id);
+        $this->assertTrue($users->first()->relationLoaded('accounts'));
     }
 }

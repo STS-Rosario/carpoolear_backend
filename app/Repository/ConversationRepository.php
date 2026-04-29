@@ -2,9 +2,9 @@
 
 namespace STS\Repository;
 
-use STS\Models\User;
-use STS\Models\Trip;
 use STS\Models\Conversation;
+use STS\Models\Trip;
+use STS\Models\User;
 
 class ConversationRepository
 {
@@ -35,7 +35,7 @@ class ConversationRepository
         return make_pagination($userConversations, $pageNumber, $pageSize);
     }
 
-    public function getConversationFromId($conversation_id, User $user = null)
+    public function getConversationFromId($conversation_id, ?User $user = null)
     {
         $conversation = Conversation::where('id', $conversation_id)->first();
         if ($conversation == null) {
@@ -50,14 +50,19 @@ class ConversationRepository
         return $conversation;
     }
 
-    public function getConversationByTripId($tripId, User $user = null)
+    public function getConversationByTripId($tripId, ?User $user = null)
     {
         $conversation = Conversation::where('trip_id', $tripId)->first();
+        if ($conversation == null) {
+            return;
+        }
         if ($user) {
-            $conversation->users()->where('id', $user->id);
+            if ($conversation->users()->where('id', $user->id)->count() == 0) {
+                return;
+            }
         }
 
-        return $conversation->first();
+        return $conversation;
     }
 
     public function getConversationsByTrip($trip)
@@ -95,26 +100,27 @@ class ConversationRepository
 
         \Log::info('estamos aca');
         /*
-        
+
         select * from `conversations` where exists (
-            select * from `users` inner join `conversations_users` on `users`.`id` = `conversations_users`.`user_id` where `conversations_users`.`conversation_id` = `conversations`.`id` and `id` = '228229') 
-            
+            select * from `users` inner join `conversations_users` on `users`.`id` = `conversations_users`.`user_id` where `conversations_users`.`conversation_id` = `conversations`.`id` and `id` = '228229')
+
             and exists (select * from `users` inner join `conversations_users` on `users`.`id` = `conversations_users`.`user_id` where `conversations_users`.`conversation_id` = `conversations`.`id` and `id` = '215497')
 
         and `type` = '0' and `conversations`.`deleted_at` is null limit 1
         */
-        
+
         $query = Conversation::query();
         // leftJoin('t1 as staff_table', 'staff_table.id','=','t2.s_id')
         $query->join('conversations_users as c1', 'conversations.id', '=', 'c1.conversation_id');
         $query->join('conversations_users as c2', 'conversations.id', '=', 'c2.conversation_id');
-    
+
         $query->where('c1.user_id', $user1ID);
         $query->where('c2.user_id', $user2ID);
-    
+
         $query->where('conversations.type', Conversation::TYPE_PRIVATE_CONVERSATION);
         $query->whereNull('conversations.deleted_at');
         $query->select('conversations.*');
+
         return $query->first();
     }
 
@@ -130,24 +136,25 @@ class ConversationRepository
         return $u->pivot->read;
     }
 
-    public function updateTripId (Conversation $conversation, $tripId)
+    public function updateTripId(Conversation $conversation, $tripId)
     {
         $conversation->trip_id = $tripId;
         $conversation->save();
+
         return $conversation;
     }
 
     public function userList($user, $who = null, $search_text = null)
     {
         $userConversations = $user->conversations()->has('messages')
-        ->orderBy('updated_at', 'desc')
-        ->with('users');
+            ->orderBy('updated_at', 'desc')
+            ->with('users');
 
         $conversations = $userConversations->get();
 
         $users = [];
-        foreach ($conversations as  $conversation) {
-            foreach ($conversation->users as  $userc) {
+        foreach ($conversations as $conversation) {
+            foreach ($conversation->users as $userc) {
                 if ($userc->id !== $user->id) {
                     if (preg_match("/$search_text/i", $userc->name)) {
                         $users[] = $userc;
