@@ -35,6 +35,19 @@ class SubscriptionsRepositoryTest extends TestCase
         return $node->fresh();
     }
 
+    private function trig(float $lat, float $lng): array
+    {
+        $latd = deg2rad($lat);
+        $lngd = deg2rad($lng);
+
+        return [
+            'sin_lat' => sin($latd),
+            'sin_lng' => sin($lngd),
+            'cos_lat' => cos($latd),
+            'cos_lng' => cos($lngd),
+        ];
+    }
+
     public function test_create_update_show_delete_round_trip(): void
     {
         $user = User::factory()->create();
@@ -68,6 +81,18 @@ class SubscriptionsRepositoryTest extends TestCase
         $active = $this->repo()->list($user->fresh(), true);
         $this->assertCount(1, $active);
         $this->assertTrue((bool) $active->first()->state);
+    }
+
+    public function test_list_treats_zero_string_as_state_filter_and_not_null(): void
+    {
+        $user = User::factory()->create();
+        Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
+        $inactive = Subscription::factory()->create(['user_id' => $user->id, 'state' => false]);
+
+        $rows = $this->repo()->list($user->fresh(), '0');
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->is($inactive));
     }
 
     public function test_search_public_trip_matches_path_state_and_passenger_flag(): void
@@ -106,6 +131,111 @@ class SubscriptionsRepositoryTest extends TestCase
 
         $this->assertCount(1, $rows);
         $this->assertTrue($rows->first()->is($match));
+    }
+
+    public function test_search_public_applies_date_window_state_and_recent_creation_filters(): void
+    {
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+        $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
+        $subscriber = User::factory()->create();
+        $tripDate = Carbon::now('America/Argentina/Buenos_Aires')->addDay()->setTime(15, 0);
+        $path = '.'.$n1->id.'.'.$n2->id.'.';
+
+        $matching = Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'trip_date' => $tripDate->copy()->setTime(10, 0),
+            'state' => true,
+            'is_passenger' => false,
+            'created_at' => Carbon::now()->subMonths(2),
+        ]);
+
+        // Same-day upper bound check.
+        Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'trip_date' => $tripDate->copy()->addDay(),
+            'state' => true,
+            'is_passenger' => false,
+            'created_at' => Carbon::now()->subMonths(2),
+        ]);
+
+        // State filter check.
+        Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'trip_date' => $tripDate->copy()->setTime(11, 0),
+            'state' => false,
+            'is_passenger' => false,
+            'created_at' => Carbon::now()->subMonths(2),
+        ]);
+
+        // Recent creation filter check.
+        Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'trip_date' => $tripDate->copy()->setTime(12, 0),
+            'state' => true,
+            'is_passenger' => false,
+            'created_at' => Carbon::now()->subMonths(7),
+        ]);
+
+        $trip = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'path' => $path,
+            'trip_date' => $tripDate,
+            'is_passenger' => false,
+        ]);
+
+        $rows = $this->repo()->search(User::factory()->create(), $trip);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->is($matching));
+    }
+
+    public function test_search_public_uses_now_when_trip_day_is_today(): void
+    {
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+        $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
+        $subscriber = User::factory()->create();
+        $path = '.'.$n1->id.'.'.$n2->id.'.';
+        $now = Carbon::now('America/Argentina/Buenos_Aires');
+
+        Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'trip_date' => $now->copy()->subMinutes(5),
+            'state' => true,
+            'is_passenger' => false,
+            'created_at' => Carbon::now()->subDay(),
+        ]);
+
+        $future = Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'trip_date' => $now->copy()->addMinutes(20),
+            'state' => true,
+            'is_passenger' => false,
+            'created_at' => Carbon::now()->subDay(),
+        ]);
+
+        $trip = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'path' => $path,
+            'trip_date' => $now->copy()->setTime(23, 0),
+            'is_passenger' => false,
+        ]);
+
+        $rows = $this->repo()->search(User::factory()->create(), $trip);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->is($future));
     }
 
     public function test_search_friends_trip_only_includes_subscriptions_from_friends(): void
@@ -149,6 +279,148 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertTrue($rows->first()->is($friendSub));
     }
 
+    public function test_search_fof_trip_includes_friend_and_relative_friend_subscriptions(): void
+    {
+        $n1 = $this->makeNode();
+        $n2 = $this->makeNode();
+        $path = '.'.$n1->id.'.'.$n2->id.'.';
+
+        $viewer = User::factory()->create();
+        $friend = User::factory()->create();
+        $relativeFriend = User::factory()->create();
+        $bridge = User::factory()->create();
+        $stranger = User::factory()->create();
+        $friendsRepo = new FriendsRepository;
+        $friendsRepo->add($viewer, $friend, User::FRIEND_ACCEPTED);
+        $friendsRepo->add($relativeFriend, $bridge, User::FRIEND_ACCEPTED);
+        $friendsRepo->add($bridge, $viewer, User::FRIEND_ACCEPTED);
+
+        $friendSub = Subscription::factory()->create([
+            'user_id' => $friend->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+        ]);
+        $fofSub = Subscription::factory()->create([
+            'user_id' => $relativeFriend->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+        ]);
+        Subscription::factory()->create([
+            'user_id' => $stranger->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+        ]);
+
+        $trip = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'path' => $path,
+            'trip_date' => Carbon::now()->addDays(2),
+            'is_passenger' => false,
+        ]);
+
+        $rows = $this->repo()->search($viewer, $trip);
+
+        $this->assertCount(2, $rows);
+        $ids = $rows->pluck('id')->all();
+        $this->assertContains($friendSub->id, $ids);
+        $this->assertContains($fofSub->id, $ids);
+    }
+
+    public function test_search_without_path_uses_distance_filters_for_start_and_end_points(): void
+    {
+        $viewer = User::factory()->create();
+        $nearFrom = ['lat' => -34.0000, 'lng' => -58.0000];
+        $nearTo = ['lat' => -34.0010, 'lng' => -58.0010];
+        $farFrom = ['lat' => -35.0000, 'lng' => -59.0000];
+        $farTo = ['lat' => -36.0000, 'lng' => -60.0000];
+        $nearFromTrig = $this->trig($nearFrom['lat'], $nearFrom['lng']);
+        $nearToTrig = $this->trig($nearTo['lat'], $nearTo['lng']);
+        $farFromTrig = $this->trig($farFrom['lat'], $farFrom['lng']);
+        $farToTrig = $this->trig($farTo['lat'], $farTo['lng']);
+
+        $match = Subscription::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+            'from_address' => 'near',
+            'to_address' => 'near',
+            'from_radio' => 500000,
+            'to_radio' => 500000,
+            'from_sin_lat' => $nearFromTrig['sin_lat'],
+            'from_sin_lng' => $nearFromTrig['sin_lng'],
+            'from_cos_lat' => $nearFromTrig['cos_lat'],
+            'from_cos_lng' => $nearFromTrig['cos_lng'],
+            'to_sin_lat' => $nearToTrig['sin_lat'],
+            'to_sin_lng' => $nearToTrig['sin_lng'],
+            'to_cos_lat' => $nearToTrig['cos_lat'],
+            'to_cos_lng' => $nearToTrig['cos_lng'],
+        ]);
+
+        Subscription::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+            'from_address' => 'far',
+            'to_address' => 'near',
+            'from_radio' => 1000,
+            'to_radio' => 500000,
+            'from_sin_lat' => $farFromTrig['sin_lat'],
+            'from_sin_lng' => $farFromTrig['sin_lng'],
+            'from_cos_lat' => $farFromTrig['cos_lat'],
+            'from_cos_lng' => $farFromTrig['cos_lng'],
+            'to_sin_lat' => $nearToTrig['sin_lat'],
+            'to_sin_lng' => $nearToTrig['sin_lng'],
+            'to_cos_lat' => $nearToTrig['cos_lat'],
+            'to_cos_lng' => $nearToTrig['cos_lng'],
+        ]);
+
+        Subscription::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+            'from_address' => 'near',
+            'to_address' => 'far',
+            'from_radio' => 500000,
+            'to_radio' => 1000,
+            'from_sin_lat' => $nearFromTrig['sin_lat'],
+            'from_sin_lng' => $nearFromTrig['sin_lng'],
+            'from_cos_lat' => $nearFromTrig['cos_lat'],
+            'from_cos_lng' => $nearFromTrig['cos_lng'],
+            'to_sin_lat' => $farToTrig['sin_lat'],
+            'to_sin_lng' => $farToTrig['sin_lng'],
+            'to_cos_lat' => $farToTrig['cos_lat'],
+            'to_cos_lng' => $farToTrig['cos_lng'],
+        ]);
+
+        $trip = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'path' => '',
+            'trip_date' => Carbon::now()->addDays(2),
+            'is_passenger' => false,
+        ]);
+        $trip->setRelation('points', collect([
+            (object) $nearFromTrig,
+            (object) $nearToTrig,
+        ]));
+
+        $rows = $this->repo()->search($viewer, $trip);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->is($match));
+    }
+
     public function test_get_potential_node_returns_node_inside_bounding_box(): void
     {
         $n1 = $this->makeNode(['lat' => -30.0, 'lng' => -55.0]);
@@ -159,5 +431,19 @@ class SubscriptionsRepositoryTest extends TestCase
 
         $this->assertNotNull($found);
         $this->assertContains($found->id, [$n1->id, $n2->id, $inside->id]);
+    }
+
+    public function test_get_potential_node_uses_both_lat_and_lng_bounds_with_equality_edges(): void
+    {
+        $n1 = $this->makeNode(['lat' => -30.0, 'lng' => -55.0]);
+        $n2 = $this->makeNode(['lat' => -30.0, 'lng' => -56.0]);
+        $edge = $this->makeNode(['lat' => -30.0, 'lng' => -55.5, 'name' => 'EdgeLatEqual']);
+        $outsideLng = $this->makeNode(['lat' => -30.0, 'lng' => -57.0, 'name' => 'OutsideLng']);
+
+        $found = $this->repo()->getPotentialNode($n1, $n2);
+
+        $this->assertNotNull($found);
+        $this->assertContains($found->id, [$n1->id, $n2->id, $edge->id]);
+        $this->assertNotSame($outsideLng->id, $found->id);
     }
 }
