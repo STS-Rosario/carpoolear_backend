@@ -229,3 +229,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `9da9f1812a4bfbc4`, `bfe5bc3acbce77a9`, `e3c3b4d9ae2338e3`, `3184aa4f26380035`, `097f523e9d0f7093`, `22d996ef6e87bf03`, `5f57d5854dd7bc75`, `7c55a80c84bc5322`, `e0d15319559d5e25`, `e2ff81a4c1c064d6`, `e49aa53b4d20f00f`, `0274e8fcd524cd8b`, `137bd3e03ec40d42`, `14ab95c39ad03b82`, `d0aebab113b2de06`, `81542e43b09b523e`
   - Cause: `getTripInfo()` OSRM-success path lacked explicit assertions for coord-string assembly (`lng,lat` + `;` delimiters), cache-miss logging payload, strict `'route'` status gate, and early-returning `storeTripInfoSuccess(...)` with numeric distance/duration casts.
   - Fix: added `test_get_trip_info_builds_osrm_coords_and_returns_osrm_success_payload` with a 3-point payload, OSRM fake response, URL assertion for exact coords path, and response assertions.
+
+- `2796ba07e4ff899c`, `b28740ad124f48d1`, `c851ab7077b33764`, `69aa2299d2e8a744`, `690c463c384bb84d`, `fda989c9593662e6`, `86466b659c77ba3d`, `f0b108ab86099fb5`, `e4d3403098efeccc`
+  - Cause: `getTripInfo()` mapbox fallback path was missing direct assertions for `isEnabled()` gate, fallback log payload (`hashed_points`, `osrm_status`), non-null metrics guard, and early return through `storeTripInfoSuccess(...)` using mapbox distance/duration values.
+  - Fix: added `test_get_trip_info_uses_mapbox_fallback_when_osrm_has_no_route` with OSRM `NoRoute` response, enabled mapbox mock returning metrics, and success-response assertions.

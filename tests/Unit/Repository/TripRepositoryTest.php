@@ -418,6 +418,54 @@ class TripRepositoryTest extends TestCase
         });
     }
 
+    public function test_get_trip_info_uses_mapbox_fallback_when_osrm_has_no_route(): void
+    {
+        // Mutation intent: preserve mapbox fallback gate/log/null-check and early return via storeTripInfoSuccess.
+        // Kills: 2796ba07e4ff899c, b28740ad124f48d1, c851ab7077b33764, 69aa2299d2e8a744, 690c463c384bb84d,
+        //        fda989c9593662e6, 86466b659c77ba3d, f0b108ab86099fb5, e4d3403098efeccc.
+        Config::set('carpoolear.trip_route_cache_bypass', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $points = [
+            ['lat' => -31.100001, 'lng' => -61.200002],
+            ['lat' => -31.300003, 'lng' => -61.400004],
+        ];
+        $expectedDistance = 23456.7;
+        $expectedDuration = 890.1;
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'NoRoute',
+                'message' => 'No route found',
+                'routes' => [],
+            ], 200),
+        ]);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->once()->andReturn(true);
+        $mapboxService->shouldReceive('drivingDistanceAndDuration')->once()->with($points)->andReturn([
+            'distance' => $expectedDistance,
+            'duration' => $expectedDuration,
+        ]);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertTrue($result['status']);
+        $this->assertSame($expectedDistance, (float) $result['data']['distance']);
+        $this->assertSame($expectedDuration, (float) $result['data']['duration']);
+        $this->assertSame('Route found', $result['message']);
+    }
+
     public function test_get_trip_by_trip_passenger_returns_passenger_by_primary_key(): void
     {
         $trip = Trip::factory()->create();
