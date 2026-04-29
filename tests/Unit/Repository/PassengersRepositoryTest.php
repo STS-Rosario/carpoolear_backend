@@ -281,6 +281,15 @@ class PassengersRepositoryTest extends TestCase
         $this->assertCount(0, $this->repo()->getPendingRequests($trip->id, $driver, []));
     }
 
+    public function test_get_pending_requests_for_trip_returns_empty_when_trip_has_no_passenger_rows(): void
+    {
+        // Mutation intent: `Passenger::where('trip_id', $tripId)` returns zero rows before `STATE_PENDING` filter (~25–39).
+        $trip = Trip::factory()->create(['trip_date' => Carbon::now()->addDay()]);
+        $driver = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->getPendingRequests($trip->id, $driver, []));
+    }
+
     public function test_get_pending_payment_requests_returns_empty_when_user_has_no_waiting_payment_rows(): void
     {
         // Mutation intent: empty listing when passenger has no STATE_WAITING_PAYMENT rows on future trips (~49–63).
@@ -415,6 +424,14 @@ class PassengersRepositoryTest extends TestCase
         ]);
         $this->assertFalse($repo->userHasActiveRequest($trip->id, $user->id));
         $this->assertTrue($repo->isUserRequestRejected($trip->id, $user->id));
+    }
+
+    public function test_trips_with_transactions_returns_empty_when_user_has_no_qualifying_rows(): void
+    {
+        // Mutation intent: join + filters yield zero `trips` rows (~180–206).
+        $user = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->tripsWithTransactions($user));
     }
 
     public function test_trips_with_transactions_returns_distinct_past_trips_with_payment_status(): void

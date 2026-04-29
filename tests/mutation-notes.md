@@ -182,6 +182,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: trip-level test always inserted a pending passenger.
   - Fix: added `test_get_pending_requests_for_trip_returns_empty_when_no_pending_rows`.
 
+- `PassengersRepository.php` `getPendingRequests` (`~25–39`) with concrete `$tripId`: **zero** `trip_passengers` rows for that trip (stricter than “no pending” when only accepted rows exist).
+  - Cause: empty path always went through “accepted passenger but not pending” rather than an empty relation.
+  - Fix: added `test_get_pending_requests_for_trip_returns_empty_when_trip_has_no_passenger_rows`.
+
+- `PassengersRepository.php` `tripsWithTransactions` (`~180–206`): user with no past trips joined via passengers carrying `payment_status`.
+  - Cause: distinct-hit tests always seeded matching passenger+trio rows first.
+  - Fix: added `test_trips_with_transactions_returns_empty_when_user_has_no_qualifying_rows`.
+
 - `PassengersRepository.php` `getPendingPaymentRequests` (`~49–63`): user with zero `WAITING_PAYMENT` passenger rows on qualifying trips.
   - Cause: listing tests always created a waiting-payment row first.
   - Fix: added `test_get_pending_payment_requests_returns_empty_when_user_has_no_waiting_payment_rows`.
