@@ -269,3 +269,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `TripRepository::addPoints` **error handling** (`~623–631`): `f715fdf844c80168` and PHP 8 `Error` paths (invalid JSON → `null->ciudad`, missing `ciudad` in array).
   - Cause: `catch (Exception $ex)` never caught typical PHP 8 failures (`Error` / undefined array key), so the empty-string fallback was effectively untestable and brittle in production.
   - Fix: broadened catch to `catch (\Throwable $ex)` and added `test_add_points_sets_empty_address_when_json_string_is_invalid` plus `test_add_points_sets_empty_address_when_array_json_address_omits_ciudad`.
+
+- `TripRepository::unhideTrips` (`~982–987`): future `trip_date`, sentinel `deleted_at`, and `update()` return value.
+  - Cause: only the happy hide→unhide path was covered; removing `trip_date` / exact `deleted_at` filters or ignoring `update()`’s affected-row count could regress silently.
+  - Fix: added `test_unhide_trips_does_not_restore_when_trip_date_is_before_now`, `test_unhide_trips_does_not_restore_regular_soft_delete_without_sentinel_timestamp`, and `test_unhide_trips_returns_number_of_restored_sentinel_hidden_trips`.

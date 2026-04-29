@@ -962,6 +962,64 @@ class TripRepositoryTest extends TestCase
         $this->assertNull($future->deleted_at);
     }
 
+    public function test_unhide_trips_does_not_restore_when_trip_date_is_before_now(): void
+    {
+        // Mutation intent: preserve `where('trip_date', '>=', Carbon::Now())` in unhideTrips (sentinel hide alone is not enough).
+        $user = User::factory()->create();
+        $pastSentinel = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->subMonth(),
+            'weekly_schedule' => 0,
+        ]);
+        $pastSentinel->forceFill(['deleted_at' => '2000-01-01 00:00:00'])->saveQuietly();
+
+        $affected = $this->repo()->unhideTrips($user);
+
+        $this->assertSame(0, (int) $affected);
+        $pastSentinel->refresh();
+        $this->assertNotNull($pastSentinel->deleted_at);
+    }
+
+    public function test_unhide_trips_does_not_restore_regular_soft_delete_without_sentinel_timestamp(): void
+    {
+        // Mutation intent: preserve exact `where('deleted_at', '2000-01-01 00:00:00')` match for hideTrips sentinel pattern.
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addWeek(),
+            'weekly_schedule' => 0,
+        ]);
+        $trip->delete();
+
+        $affected = $this->repo()->unhideTrips($user);
+
+        $this->assertSame(0, (int) $affected);
+        $this->assertSoftDeleted('trips', ['id' => $trip->id]);
+    }
+
+    public function test_unhide_trips_returns_number_of_restored_sentinel_hidden_trips(): void
+    {
+        // Mutation intent: preserve chained query + update return value when multiple rows match unhide criteria.
+        $user = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addDays(3),
+            'weekly_schedule' => 0,
+        ]);
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addDays(5),
+            'weekly_schedule' => 0,
+        ]);
+
+        $this->repo()->hideTrips($user);
+
+        $affected = $this->repo()->unhideTrips($user);
+
+        $this->assertSame(2, (int) $affected);
+        $this->assertSame(0, (int) Trip::onlyTrashed()->where('user_id', $user->id)->count());
+    }
+
     public function test_hide_trips_only_soft_deletes_active_scope_trips_via_filter_active_trips(): void
     {
         // Mutation intent: preserve `filterActiveTrips` inside hideTrips so past non-weekly trips are not mass-updated.
