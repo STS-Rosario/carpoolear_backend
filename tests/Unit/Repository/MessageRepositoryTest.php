@@ -187,4 +187,95 @@ class MessageRepositoryTest extends TestCase
             ->where('user_id', $user->id)
             ->value('read'));
     }
+
+    public function test_mark_messages_updates_user_message_read_updated_at(): void
+    {
+        // Mutation intent: preserve `'updated_at' => Carbon::Now()` in DB::table(...)->update([...]) (RemoveArrayItem on updated_at cluster).
+        Carbon::setTestNow(Carbon::parse('2024-05-01 10:00:00'));
+
+        $user = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+
+        $m = $this->makeMessage($conversation, $sender, 'x');
+        $m->users()->attach($user->id, ['read' => false]);
+
+        Carbon::setTestNow(Carbon::parse('2024-06-01 12:00:00'));
+
+        $this->repo()->markMessages($user, $conversation->id);
+
+        Carbon::setTestNow();
+
+        $this->assertSame(
+            '2024-06-01 12:00:00',
+            Carbon::parse(
+                (string) DB::table('user_message_read')
+                    ->where('message_id', $m->id)
+                    ->where('user_id', $user->id)
+                    ->value('updated_at')
+            )->format('Y-m-d H:i:s')
+        );
+    }
+
+    public function test_change_message_read_state_persists_read_flag_in_user_message_read(): void
+    {
+        // Mutation intent: preserve updateExistingPivot payload `['read' => $read_state]` (RemoveArrayItem / FalseToTrue clusters).
+        $conversation = Conversation::factory()->create();
+        $sender = User::factory()->create();
+        $reader = User::factory()->create();
+        $message = $this->makeMessage($conversation, $sender);
+        $message->users()->attach($reader->id, ['read' => false]);
+
+        $this->repo()->changeMessageReadState($message, $reader, true);
+
+        $this->assertSame(
+            1,
+            (int) DB::table('user_message_read')
+                ->where('message_id', $message->id)
+                ->where('user_id', $reader->id)
+                ->value('read')
+        );
+    }
+
+    public function test_create_message_read_state_inserts_read_into_user_message_read(): void
+    {
+        // Mutation intent: preserve attach pivot array `['read' => $read_state]` on message users relation.
+        $conversation = Conversation::factory()->create();
+        $sender = User::factory()->create();
+        $reader = User::factory()->create();
+        $message = $this->makeMessage($conversation, $sender);
+
+        $this->repo()->createMessageReadState($message, $reader, true);
+
+        $this->assertSame(
+            1,
+            (int) DB::table('user_message_read')
+                ->where('message_id', $message->id)
+                ->where('user_id', $reader->id)
+                ->value('read')
+        );
+    }
+
+    public function test_get_messages_unread_includes_conversation_when_pivot_read_is_loosely_zero(): void
+    {
+        // Mutation intent: preserve `$item->pivot->read == 0` — strict `=== 0` skips numeric-string pivots that still mean unread.
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $convUnread = Conversation::factory()->create();
+        $reader->conversations()->attach($convUnread->id, ['read' => false]);
+
+        DB::table('conversations_users')
+            ->where('user_id', $reader->id)
+            ->where('conversation_id', $convUnread->id)
+            ->update(['read' => '0']);
+
+        $reader = User::query()->findOrFail($reader->id);
+
+        $this->makeMessage($convUnread, $sender, 'ping', Carbon::parse('2019-02-01 08:00:00'));
+
+        $rows = $this->repo()->getMessagesUnread($reader, null);
+
+        $this->assertSame(1, $rows->count());
+    }
 }
