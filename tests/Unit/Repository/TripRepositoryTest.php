@@ -411,6 +411,11 @@ class TripRepositoryTest extends TestCase
             'trip_date' => Carbon::now()->subWeek(),
             'weekly_schedule' => 0,
         ]);
+        $olderPast = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->subWeeks(2),
+            'weekly_schedule' => 0,
+        ]);
         Trip::factory()->create([
             'user_id' => $user->id,
             'trip_date' => Carbon::now()->subWeek(),
@@ -424,8 +429,16 @@ class TripRepositoryTest extends TestCase
 
         $trips = $this->repo()->getOldTrips($user, $user->id, true);
 
-        $this->assertCount(1, $trips);
-        $this->assertSame($past->id, $trips->first()->id);
+        $this->assertCount(2, $trips);
+        $this->assertSame($olderPast->id, $trips->first()->id);
+        $this->assertSame($past->id, $trips->last()->id);
+        $this->assertTrue($trips->first()->relationLoaded('user'));
+        $this->assertTrue($trips->first()->relationLoaded('points'));
+        $this->assertTrue($trips->first()->relationLoaded('passengerAccepted'));
+        $this->assertTrue($trips->first()->relationLoaded('car'));
+        $this->assertTrue($trips->first()->passengerAccepted->every(
+            fn ($p) => $p->relationLoaded('user')
+        ));
     }
 
     public function test_search_filters_by_user_id_and_paginates(): void
