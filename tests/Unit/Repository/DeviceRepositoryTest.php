@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repository;
 
+use Mockery;
 use STS\Models\Device;
 use STS\Models\User;
 use STS\Repository\DeviceRepository;
@@ -120,5 +121,31 @@ class DeviceRepositoryTest extends TestCase
 
         $this->assertGreaterThanOrEqual(2, $deleted);
         $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_delete_devices_returns_zero_when_user_has_no_devices(): void
+    {
+        // Mutation intent: preserve `Device::where('user_id', …)->delete()` affect-rows (~35–37).
+        $user = User::factory()->create();
+
+        $deleted = (new DeviceRepository)->deleteDevices($user);
+
+        $this->assertSame(0, $deleted);
+    }
+
+    public function test_store_returns_false_when_save_fails(): void
+    {
+        $device = Mockery::mock(Device::class);
+        $device->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse((new DeviceRepository)->store($device));
+    }
+
+    public function test_update_returns_false_when_save_fails(): void
+    {
+        $device = Mockery::mock(Device::class);
+        $device->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse((new DeviceRepository)->update($device));
     }
 }

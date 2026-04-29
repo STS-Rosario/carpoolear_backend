@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use STS\Models\PhoneVerification;
 use STS\Models\User;
 use STS\Repository\PhoneVerificationRepository;
@@ -45,6 +46,71 @@ class PhoneVerificationRepositoryTest extends TestCase
         $missingId = (PhoneVerification::query()->max('id') ?? 0) + 999999;
 
         $this->assertNull($this->repo()->find($missingId));
+    }
+
+    public function test_create_returns_false_when_save_fails(): void
+    {
+        $row = Mockery::mock(PhoneVerification::class);
+        $row->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->create($row));
+    }
+
+    public function test_update_returns_false_when_save_fails(): void
+    {
+        $row = Mockery::mock(PhoneVerification::class);
+        $row->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->update($row));
+    }
+
+    public function test_get_latest_unverified_by_user_returns_null_when_no_unverified_rows(): void
+    {
+        // Mutation intent: preserve `where('verified', false)` + empty first() (~36–41).
+        $user = User::factory()->create();
+
+        $this->assertNull($this->repo()->getLatestUnverifiedByUser($user->id));
+
+        $phone = '+54911'.random_int(10000000, 99999999);
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => $phone,
+            'verified' => true,
+            'verified_at' => Carbon::now(),
+        ]);
+
+        $this->assertNull($this->repo()->getLatestUnverifiedByUser($user->id));
+    }
+
+    public function test_get_latest_by_user_returns_null_when_user_has_none(): void
+    {
+        // Mutation intent: preserve `where('user_id', …)->latest()->first()` miss (~47–51).
+        $user = User::factory()->create();
+
+        $this->assertNull($this->repo()->getLatestByUser($user->id));
+    }
+
+    public function test_get_by_user_returns_empty_when_none(): void
+    {
+        // Mutation intent: preserve empty `get()` (~68–72).
+        $user = User::factory()->create();
+
+        $rows = $this->repo()->getByUser($user->id);
+
+        $this->assertCount(0, $rows);
+    }
+
+    public function test_get_verification_stats_returns_zero_totals_when_user_has_no_attempts(): void
+    {
+        // Mutation intent: preserve COUNT/SUM aggregate shape when WHERE matches zero rows (~88–94).
+        $user = User::factory()->create();
+
+        $stats = $this->repo()->getVerificationStats($user->id);
+
+        $this->assertNotNull($stats);
+        $this->assertSame(0, (int) $stats->total_attempts);
+        $this->assertSame(0, (int) ($stats->successful_verifications ?? 0));
+        $this->assertSame(0, (int) ($stats->failed_attempts ?? 0));
     }
 
     public function test_get_latest_unverified_by_user_returns_newest_pending_only(): void

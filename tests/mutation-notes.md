@@ -380,6 +380,26 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: CRUD test only exercised `find` on a persisted id after create.
   - Fix: added `test_find_returns_null_when_phone_verification_missing`.
 
+- `PhoneVerificationRepository.php` `create` / `update` (`~12–22`): `return $phoneVerification->save()`.
+  - Cause: integration tests only asserted successful persists.
+  - Fix: added `test_create_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
+
+- `PhoneVerificationRepository.php` `getLatestUnverifiedByUser` (`~36–41`): no rows with `verified = false`.
+  - Cause: tests always seeded pending rows; empty branch was untested.
+  - Fix: added `test_get_latest_unverified_by_user_returns_null_when_no_unverified_rows`.
+
+- `PhoneVerificationRepository.php` `getLatestByUser` (`~47–51`): user with zero verification rows.
+  - Cause: ordering tests always created history first.
+  - Fix: added `test_get_latest_by_user_returns_null_when_user_has_none`.
+
+- `PhoneVerificationRepository.php` `getByUser` (`~68–72`): empty ordered collection.
+  - Cause: listing tests always inserted rows.
+  - Fix: added `test_get_by_user_returns_empty_when_none`.
+
+- `PhoneVerificationRepository.php` `getVerificationStats` (`~86–94`): `WHERE user_id` matches zero rows (SQL still returns one aggregate row with zeros/null SUMs).
+  - Cause: stats test only covered multi-row aggregates.
+  - Fix: added `test_get_verification_stats_returns_zero_totals_when_user_has_no_attempts`.
+
 ## DeviceRepository
 
 - `DeviceRepository.php` `getDeviceBy` (`~30–33`): `Device::where($key, $value)->first()` when no row matches.
@@ -389,6 +409,14 @@ This file tracks mutants killed during the current hardening session, with the r
 - `DeviceRepository.php` `getDevices` (`~25–28`): user with zero device rows.
   - Cause: tests always seeded devices before listing; dropping `where('user_id', …)` or swapping `get()` could survive without an empty-collection assertion.
   - Fix: added `test_get_devices_returns_empty_when_user_has_no_devices`.
+
+- `DeviceRepository.php` `deleteDevices` (`~35–37`): zero rows deleted when user has no devices.
+  - Cause: happy path only asserted delete count ≥ 2; omitting `where('user_id', …)` could still pass.
+  - Fix: added `test_delete_devices_returns_zero_when_user_has_no_devices`.
+
+- `DeviceRepository.php` `store` / `update` (`~10–22`): `return $device->save()`.
+  - Cause: integration tests only asserted successful persists.
+  - Fix: added `test_store_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
 
 ## UserRepository
 
