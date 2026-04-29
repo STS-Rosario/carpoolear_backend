@@ -94,6 +94,12 @@ class DeviceRepositoryTest extends TestCase
         $this->assertSame($token, $found->session_id);
     }
 
+    public function test_get_device_by_returns_null_when_no_row_matches(): void
+    {
+        // Mutation intent: preserve `Device::where($key, $value)->first()` empty result (~30–33).
+        $this->assertNull((new DeviceRepository)->getDeviceBy('session_id', 'missing-sess-'.uniqid('', true)));
+    }
+
     public function test_delete_devices_removes_all_for_user(): void
     {
         $user = User::factory()->create();

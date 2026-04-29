@@ -346,6 +346,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests always passed `$unread` explicitly and only exercised pagination when both values existed; mutating the default to true or the gate from AND to OR could still pass.
   - Fix: added `test_get_notifications_default_argument_uses_all_notifications_not_unread_only` and `test_get_notifications_does_not_paginate_when_only_page_size_or_page_is_provided`.
 
+## PhoneVerificationRepository
+
+- `PhoneVerificationRepository.php` `find` (`~28–31`): `PhoneVerification::find($id)` when no row exists.
+  - Cause: CRUD test only exercised `find` on a persisted id after create.
+  - Fix: added `test_find_returns_null_when_phone_verification_missing`.
+
+## DeviceRepository
+
+- `DeviceRepository.php` `getDeviceBy` (`~30–33`): `Device::where($key, $value)->first()` when no row matches.
+  - Cause: happy path asserted only a hit row; empty lookup could regress without a null assertion.
+  - Fix: added `test_get_device_by_returns_null_when_no_row_matches`.
+
 ## UserRepository
 
 - `UserRepository.php` `show` absent-user path (`~41–45`): `first()` may return null; `private_note` stripping must stay behind `if ($user)`.

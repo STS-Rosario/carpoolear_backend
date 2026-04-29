@@ -39,6 +39,14 @@ class PhoneVerificationRepositoryTest extends TestCase
         $this->assertNull(PhoneVerification::query()->find($row->id));
     }
 
+    public function test_find_returns_null_when_phone_verification_missing(): void
+    {
+        // Mutation intent: preserve `PhoneVerification::find($id)` absent-row behavior (~28–31).
+        $missingId = (PhoneVerification::query()->max('id') ?? 0) + 999999;
+
+        $this->assertNull($this->repo()->find($missingId));
+    }
+
     public function test_get_latest_unverified_by_user_returns_newest_pending_only(): void
     {
         $user = User::factory()->create();
