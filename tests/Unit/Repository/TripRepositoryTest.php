@@ -887,6 +887,67 @@ class TripRepositoryTest extends TestCase
         $this->assertSame(2, $ids->count());
     }
 
+    public function test_search_with_origin_or_destination_id_filters_using_routes_relation(): void
+    {
+        // Mutation intent: preserve origin-only and destination-only route whereHas filters.
+        // Kills: 43bb9e39680b0bca, 9e993977d9bc3a2f, acd6de4470f85e62, 09303e1e4d50988f.
+        $originTarget = 301;
+        $destinationTarget = 909;
+
+        $routeOriginMatch = Route::query()->create(['from_id' => $originTarget, 'to_id' => 700]);
+        $routeOriginMiss = Route::query()->create(['from_id' => 123, 'to_id' => 700]);
+        $routeDestinationMatch = Route::query()->create(['from_id' => 800, 'to_id' => $destinationTarget]);
+        $routeDestinationMiss = Route::query()->create(['from_id' => 800, 'to_id' => 404]);
+
+        $originMatchTrip = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $originMissTrip = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $destinationMatchTrip = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $destinationMissTrip = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $originMatchTrip->routes()->sync([$routeOriginMatch->id]);
+        $originMissTrip->routes()->sync([$routeOriginMiss->id]);
+        $destinationMatchTrip->routes()->sync([$routeDestinationMatch->id]);
+        $destinationMissTrip->routes()->sync([$routeDestinationMiss->id]);
+
+        $originPage = $this->repo()->search(null, [
+            'origin_id' => (string) $originTarget,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $originIds = collect($originPage->items())->pluck('id');
+        $this->assertTrue($originIds->contains($originMatchTrip->id));
+        $this->assertFalse($originIds->contains($originMissTrip->id));
+
+        $destinationPage = $this->repo()->search(null, [
+            'destination_id' => (string) $destinationTarget,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $destinationIds = collect($destinationPage->items())->pluck('id');
+        $this->assertTrue($destinationIds->contains($destinationMatchTrip->id));
+        $this->assertFalse($destinationIds->contains($destinationMissTrip->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

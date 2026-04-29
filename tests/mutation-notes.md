@@ -185,3 +185,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `d98c00d01c671152`, `34e9ab946097227e`, `5debf278b16d4de1`, `7a81862f468ba059`, `86ba949ffb10ff4b`
   - Cause: `search` branch combining `origin_id` and `destination_id` lacked direct assertions for integer casts and both path LIKE alternatives (adjacent and with intermediate stops).
   - Fix: added `test_search_with_origin_and_destination_ids_filters_by_path_patterns`.
+
+- `43bb9e39680b0bca`, `9e993977d9bc3a2f`, `acd6de4470f85e62`, `09303e1e4d50988f`
+  - Cause: `search` branch for origin-only/destination-only route filtering lacked direct assertions for `whereHas('routes')` constraints on `routes.from_id` and `routes.to_id`.
+  - Fix: added `test_search_with_origin_or_destination_id_filters_using_routes_relation`.
