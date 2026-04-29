@@ -85,3 +85,11 @@ This file tracks mutants killed during the current hardening session, with the r
 - `5656ee9b01173343`, `85d71c45fe613abd`, `18c59a50fd2ffaeb`, `7bfc0ab3a97dea41`, `7242bbee8560e5a1`, `853a1c66244b9770`, `37e68b0071fa371b`, `53c27d17ceefefc7`, `92a7cb8cf0ce32c2`, `7409a27f9aff2ae1`, `53d5810f9a02f52f`, `3aab526f6920f8c0`
   - Cause: friend visibility generation branches (FoF vs friends-only) and SQL inserts were weakly asserted.
   - Fix: added `test_generate_trip_friend_visibility_fof_and_friends_only_branches_insert_rows`.
+
+- `a7a74d3095388168`, `b06e7346ab0b7439`, `4be0f43c62497887`, `0213b9ad10d10530`, `5554cc2241bfb082`, `022258a4506e3501`, `a83b5da5b120f035`, `6938af9e22ede182`, `05e9c3d11001b524`, `a740b8f320284c77`, `9d95fa6e7a3a63ff`, `da58e72d61dacac0`, `4ac785b2268a41f5`, `4a534627977977e3`, `071ba109676bd985`
+  - Cause: max seat-price guard/cap logic in `create` was not covered across condition and arithmetic mutations.
+  - Fix: added `test_create_caps_seat_price_at_maximum_when_module_enabled`.
+
+- `c420b4523347fb9b`, `054956c69594930e`, `3bc7a0ac2cd873e1`, `4bc087b221ea14d1`, `330f86c4e850f0f9`, `d3a6deda630c0225`, `1301ca6a05995d26`, `9b0a406f82a305f3`, `989e733cfc9ee959`, `ebad617f35c5726b`, `e416ada5cc106318`, `85d42995c6d515f4`
+  - Cause: branch where cap assignment is skipped (disabled module/non-applicable path) was uncovered.
+  - Fix: added `test_create_keeps_seat_price_when_cap_not_required_or_module_disabled`.

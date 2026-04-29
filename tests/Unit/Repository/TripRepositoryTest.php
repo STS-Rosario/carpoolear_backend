@@ -4,11 +4,15 @@ namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
+use Mockery;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\TripRepository;
+use STS\Services\GeoService;
+use STS\Services\MapboxDirectionsRouteService;
+use STS\Services\MercadoPagoService;
 use Tests\TestCase;
 
 class TripRepositoryTest extends TestCase
@@ -33,6 +37,29 @@ class TripRepositoryTest extends TestCase
         $node->save();
 
         return $node->fresh();
+    }
+
+    private function makeTripRepoPartialForCreate(array $tripInfo, bool $routeNeedsPayment): TripRepository
+    {
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn($routeNeedsPayment);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+
+        $repo->shouldReceive('getTripInfo')->andReturn($tripInfo);
+        $repo->shouldReceive('addPoints')->andReturnNull();
+        $repo->shouldReceive('generateTripPath')->andReturnNull();
+        $repo->shouldReceive('generateTripFriendVisibility')->andReturnNull();
+
+        return $repo;
     }
 
     public function test_show_returns_null_for_soft_deleted_trip_when_user_not_admin(): void
@@ -354,5 +381,92 @@ class TripRepositoryTest extends TestCase
         $this->assertDatabaseHas('user_visibility_trip', ['user_id' => $friend->id, 'trip_id' => $friendsTrip->id]);
         $this->assertDatabaseMissing('user_visibility_trip', ['user_id' => $friendOfFriend->id, 'trip_id' => $friendsTrip->id]);
         $this->assertDatabaseMissing('user_visibility_trip', ['user_id' => $stranger->id, 'trip_id' => $fofTrip->id]);
+    }
+
+    public function test_create_caps_seat_price_at_maximum_when_module_enabled(): void
+    {
+        // Mutation intent: keep max-price guard, cap math and assignment in create().
+        // Kills: a7a74d3095388168, b06e7346ab0b7439, 4be0f43c62497887, 0213b9ad10d10530,
+        //        5554cc2241bfb082, 022258a4506e3501, a83b5da5b120f035, 6938af9e22ede182,
+        //        05e9c3d11001b524, a740b8f320284c77, 9d95fa6e7a3a63ff, da58e72d61dacac0,
+        //        4ac785b2268a41f5, 4a534627977977e3, 071ba109676bd985.
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $tripInfo = [
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 700,
+            ],
+        ];
+        $repo = $this->makeTripRepoPartialForCreate($tripInfo, false);
+        $user = User::factory()->create();
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 501, 'ciudad' => 'Origen']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertSame(500, (int) $trip->seat_price_cents);
+        $this->assertSame(700, (int) $trip->recommended_trip_price_cents);
+    }
+
+    public function test_create_keeps_seat_price_when_cap_not_required_or_module_disabled(): void
+    {
+        // Mutation intent: preserve branches that skip cap assignment when not applicable.
+        // Kills: c420b4523347fb9b, 054956c69594930e, 3bc7a0ac2cd873e1, 4bc087b221ea14d1,
+        //        330f86c4e850f0f9, d3a6deda630c0225, 1301ca6a05995d26, 9b0a406f82a305f3,
+        //        989e733cfc9ee959, ebad617f35c5726b, e416ada5cc106318, 85d42995c6d515f4.
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $tripInfo = [
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 650,
+            ],
+        ];
+        $repo = $this->makeTripRepoPartialForCreate($tripInfo, false);
+        $user = User::factory()->create();
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 501, 'ciudad' => 'Origen']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertSame(900, (int) $trip->seat_price_cents);
+        $this->assertSame(650, (int) $trip->recommended_trip_price_cents);
     }
 }
