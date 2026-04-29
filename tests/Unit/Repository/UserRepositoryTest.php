@@ -53,16 +53,25 @@ class UserRepositoryTest extends TestCase
 
         $this->assertNotNull($shown);
         $this->assertNull($shown->private_note);
+        // Mutation intent: preserve eager-load array in show().
+        $this->assertTrue($shown->relationLoaded('accounts'));
+        $this->assertTrue($shown->relationLoaded('donations'));
+        $this->assertTrue($shown->relationLoaded('referencesReceived'));
+        $this->assertTrue($shown->relationLoaded('cars'));
     }
 
     public function test_accept_terms_and_update_photo(): void
     {
         $user = User::factory()->create(['terms_and_conditions' => false]);
 
-        $this->repo()->acceptTerms($user);
+        $accepted = $this->repo()->acceptTerms($user);
+        $this->assertNotNull($accepted);
+        $this->assertSame($user->id, $accepted->id);
         $this->assertTrue($user->fresh()->terms_and_conditions);
 
-        $this->repo()->updatePhoto($user, 'avatar-99.png');
+        $updated = $this->repo()->updatePhoto($user, 'avatar-99.png');
+        $this->assertNotNull($updated);
+        $this->assertSame($user->id, $updated->id);
         $this->assertSame('avatar-99.png', $user->fresh()->image);
     }
 
