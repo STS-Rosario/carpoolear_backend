@@ -253,3 +253,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `697e7b3ac4ecb099`, `1abc2e931491d83c` (`shareTrip`, lines ~642–645 in `tests/coverage/20260428_2310.txt`).
   - Cause: `shareTrip` only had a happy-path / wrong-user check; dropping `filterActiveTrips` could still return true when the only matching trip was an expired one-off, and the weekly “never expires” branch was not asserted for a past `trip_date`.
   - Fix: added `test_share_trip_returns_false_when_only_match_is_expired_non_weekly_trip` and `test_share_trip_returns_true_for_weekly_schedule_trip_even_when_trip_date_is_past`.
+
+- Cluster `getTripInfo()` **cache HIT** (`TripRepository.php` ~683–702, UNCOVERED in `20260428_2310.txt`): e.g. `a33a8d54aa9eef26`, `269d6beb0aa03fa0`, `902589d676dfcf05`, `c0160af1be00eac3`, `e8647b8a3ea11433`.
+  - Cause: cache short-circuit returned `route_data` but the `Log::info('[trip_route|getTripInfo] cache HIT', …)` payload (null `expires_at`, nested `??` metrics, `route_cache_id`) and “no HTTP when cached” were not asserted.
+  - Fix: added `test_get_trip_info_cache_hit_logs_null_expires_and_sparse_route_data_fields` and `test_get_trip_info_cache_hit_logs_iso8601_expires_and_numeric_cached_metrics` with `Log::spy()` + `Http::assertNothingSent()`.

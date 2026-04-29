@@ -300,6 +300,124 @@ class TripRepositoryTest extends TestCase
         $this->assertEquals($routeData, $result);
     }
 
+    public function test_get_trip_info_cache_hit_logs_null_expires_and_sparse_route_data_fields(): void
+    {
+        // Mutation intent: preserve RouteCache validity query, `if ($cachedRoute)` early return, cache HIT
+        // `Log::info` payload (null-safe `expires_at`, `??` fields on nested route_data), and no OSRM HTTP.
+        // Kills (≈685–702 in 20260428_2310.txt): e.g. a33a8d54aa9eef26, 269d6beb0aa03fa0, 902589d676dfcf05,
+        //        be0bcc935d79b59d, c0160af1be00eac3, e8647b8a3ea11433.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = [
+            ['lat' => -39.101, 'lng' => -59.201],
+            ['lat' => -39.301, 'lng' => -59.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+
+        \DB::table('route_cache')->where('hashed_points', $hashedPoints)->delete();
+
+        $routeData = [
+            'status' => false,
+            'data' => null,
+            'message' => 'Sparse cache row',
+        ];
+
+        $row = RouteCache::query()->create([
+            'points' => $points,
+            'route_data' => $routeData,
+            'expires_at' => null,
+        ]);
+        $row->refresh();
+
+        Http::fake();
+
+        Log::spy();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertEquals($routeData, $result);
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints, $row, $routeData): bool {
+            return $message === '[trip_route|getTripInfo] cache HIT'
+                && $context['hashed_points'] === $hashedPoints
+                && $context['expires_at'] === null
+                && $context['cached_status'] === $routeData['status']
+                && $context['cached_message'] === $routeData['message']
+                && $context['cached_distance_m'] === null
+                && $context['cached_duration_s'] === null
+                && $context['route_cache_id'] === $row->id;
+        })->once();
+
+        Http::assertNothingSent();
+    }
+
+    public function test_get_trip_info_cache_hit_logs_iso8601_expires_and_numeric_cached_metrics(): void
+    {
+        // Mutation intent: preserve `expires_at?->toIso8601String()` and non-null cached_distance_m / cached_duration_s.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = [
+            ['lat' => -38.101, 'lng' => -58.201],
+            ['lat' => -38.301, 'lng' => -58.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+
+        \DB::table('route_cache')->where('hashed_points', $hashedPoints)->delete();
+
+        $expiresAt = now()->addDays(3)->startOfSecond();
+        $routeData = [
+            'status' => true,
+            'data' => ['distance' => 123.4, 'duration' => 56.7],
+            'message' => 'OK',
+        ];
+
+        $row = RouteCache::query()->create([
+            'points' => $points,
+            'route_data' => $routeData,
+            'expires_at' => $expiresAt,
+        ]);
+        $row->refresh();
+
+        Http::fake();
+
+        Log::spy();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+        $result = $repo->getTripInfo($points);
+
+        $this->assertEquals($routeData, $result);
+
+        $expectedExpires = $row->expires_at->toIso8601String();
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints, $row, $expectedExpires): bool {
+            if ($message !== '[trip_route|getTripInfo] cache HIT') {
+                return false;
+            }
+
+            return $context['hashed_points'] === $hashedPoints
+                && $context['expires_at'] === $expectedExpires
+                && $context['cached_status'] === true
+                && $context['cached_message'] === 'OK'
+                && (float) $context['cached_distance_m'] === 123.4
+                && (float) $context['cached_duration_s'] === 56.7
+                && $context['route_cache_id'] === $row->id;
+        })->once();
+
+        Http::assertNothingSent();
+    }
+
     public function test_get_trip_info_cache_bypass_ignores_cached_row_and_calls_osrm(): void
     {
         // Mutation intent: preserve cache-bypass else branch and hashed_points logging payload.
