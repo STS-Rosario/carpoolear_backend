@@ -492,6 +492,22 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `show` test only checked `private_note` nulling, so dropping relation keys from `with([...])` could survive. `acceptTerms`/`updatePhoto` effects were asserted via fresh model state, but method return contracts were not, allowing null-return mutations.
   - Fix: strengthened `test_show_nulls_private_note_and_loads_relations` with `relationLoaded` assertions for all four relations; strengthened `test_accept_terms_and_update_photo` with non-null return and identity (`$user->id`) checks for both methods.
 
+- `UserRepository.php` `searchUsers` (`~73–89`): truthy `$name` but every OR predicate misses.
+  - Cause: limit/order tests always asserted ≥1 hit when `$name` was non-empty.
+  - Fix: added `test_search_users_returns_empty_collection_when_no_matches`.
+
+- `UserRepository.php` `index` (`~92–111`): zero candidates after self-exclusion when no other rows exist.
+  - Cause: index tests always seeded additional strangers.
+  - Fix: added `test_index_returns_empty_when_only_self_exists`.
+
+- `UserRepository.php` `getNotifications` (`~178–185`): empty `notifications` / `unreadNotifications` relations (thin delegate).
+  - Cause: notification tests always inserted rows before listing.
+  - Fix: added `test_get_notifications_returns_empty_when_user_has_none`.
+
+- `UserRepository.php` `unansweredConversationOrRequestsByTrip` (`~192–210`): both aggregates zero (no pending requests on trip; no unanswered-by-driver conversations).
+  - Cause: aggregate test always asserted positive counts first.
+  - Fix: added `test_unanswered_conversation_or_requests_by_trip_returns_zero_when_none`.
+
 ## RoutesRepository
 
 - `RoutesRepository.php` (`tests/coverage/20260428_2310.txt` ~1122–1152): `getPotentialsNodes` lng max/min branch (`if ($n1->lng > $n2->lng)`), `autocomplete` log concat (`$name.' '.$country`), and `whereRaw(CONCAT(name, state, country) like ?)` filtering.

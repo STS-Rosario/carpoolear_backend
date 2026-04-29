@@ -136,6 +136,16 @@ class UserRepositoryTest extends TestCase
         $this->assertTrue($byPhone->pluck('id')->contains($uByPhone->id));
     }
 
+    public function test_search_users_returns_empty_collection_when_no_matches(): void
+    {
+        // Mutation intent: preserve OR query chain when every predicate misses (~76–87).
+        User::factory()->create(['name' => 'AliceKeep']);
+
+        $rows = $this->repo()->searchUsers('NoHitTokenZZ'.uniqid('', true));
+
+        $this->assertCount(0, $rows);
+    }
+
     public function test_search_users_orders_by_name_and_eager_loads_accounts_and_cars(): void
     {
         // Mutation intent: preserve with(['accounts', 'cars']) and orderBy('name').
@@ -169,6 +179,16 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse($ids->contains($friend->id));
         $this->assertTrue($ids->contains($stranger->id));
         $this->assertFalse($ids->contains($inactive->id));
+    }
+
+    public function test_index_returns_empty_when_only_self_exists(): void
+    {
+        // Mutation intent: `where('id', '<>', $user->id)` leaves zero rows (~94–96).
+        $self = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $rows = $this->repo()->index($self->fresh(), null);
+
+        $this->assertCount(0, $rows);
     }
 
     public function test_index_filters_by_search_text_and_sets_state_none(): void
@@ -303,6 +323,15 @@ class UserRepositoryTest extends TestCase
         $this->assertNull($unread->first()->read_at);
     }
 
+    public function test_get_notifications_returns_empty_when_user_has_none(): void
+    {
+        // Mutation intent: delegate paths `$user->notifications` / `$user->unreadNotifications` (~178–184).
+        $user = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->getNotifications($user->fresh(), false));
+        $this->assertCount(0, $this->repo()->getNotifications($user->fresh(), true));
+    }
+
     public function test_mark_notification_sets_read_at(): void
     {
         $user = User::factory()->create();
@@ -347,5 +376,14 @@ class UserRepositoryTest extends TestCase
 
         $after = $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id);
         $this->assertSame(1, $after);
+    }
+
+    public function test_unanswered_conversation_or_requests_by_trip_returns_zero_when_none(): void
+    {
+        // Mutation intent: both `count()` branches (~195–208) zero — no pending passenger rows, no qualifying conversations.
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
     }
 }
