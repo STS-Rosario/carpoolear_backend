@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use Illuminate\Pagination\LengthAwarePaginator;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
@@ -228,5 +229,33 @@ class TripSearchRepositoryTest extends TestCase
         $this->assertTrue($row->search_date->eq(Carbon::parse('2025-03-15 08:00:00')));
         $this->assertSame([], $row->fresh()->results_json);
         $this->assertFalse($row->is_passenger);
+    }
+
+    public function test_track_search_delegates_to_create_with_full_search_data_payload(): void
+    {
+        // Mutation intent: preserve `$this->create($searchData)` (~43) with all keys built in `trackSearch` (~31–41 RemoveArrayItem).
+        $user = User::factory()->create();
+        $origin = $this->makeNode();
+        $dest = $this->makeNode();
+        $paginator = new LengthAwarePaginator(collect([]), 0, 15, 1, ['path' => '/']);
+
+        $repo = Mockery::mock(TripSearchRepository::class)->makePartial();
+        $repo->shouldReceive('create')
+            ->once()
+            ->with(Mockery::on(function (array $data) use ($user, $origin, $dest): bool {
+                return $data['user_id'] === $user->id
+                    && $data['origin_id'] === $origin->id
+                    && $data['destination_id'] === $dest->id
+                    && $data['amount_trips'] === 0
+                    && $data['amount_trips_carpooleados'] === 0
+                    && $data['client_platform'] === TripSearch::PLATFORM_WEB
+                    && $data['is_passenger'] === false
+                    && $data['results_json'] === []
+                    && isset($data['search_date'])
+                    && $data['search_date'] instanceof Carbon;
+            }))
+            ->andReturnUsing(fn (array $data) => TripSearch::create($data));
+
+        $repo->trackSearch($user, $origin->id, $dest->id, $paginator, TripSearch::PLATFORM_WEB);
     }
 }

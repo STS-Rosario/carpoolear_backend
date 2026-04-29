@@ -170,6 +170,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests always passed paginator pages that included trip models whenever `total > 0`.
   - Fix: added `test_track_search_skips_carpooleado_scan_when_current_page_has_no_items`.
 
+- `TripSearchRepository.php` `trackSearch` (`~31–43`): must call `$this->create($searchData)` with the assembled payload (delegate path distinct from static `TripSearch::create` coverage alone).
+  - Cause: persistence tests exercised end-to-end rows but not an explicit expectation that `create` receives every `searchData` key produced inside `trackSearch`.
+  - Fix: added `test_track_search_delegates_to_create_with_full_search_data_payload` (partial repository mock + `create` expectation + `TripSearch::create` in callback).
+
 ## MessageRepository
 
 - Cluster `MessageRepository.php` (`tests/coverage/20260428_2310.txt` ~1080–1108): `changeMessageReadState` / `createMessageReadState` pivot payloads, `getMessagesUnread` `$item->pivot->read == 0`, `markMessages` bulk `update` keys.
