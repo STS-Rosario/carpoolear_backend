@@ -83,6 +83,34 @@ class TripRepositoryTest extends TestCase
         return $method->invoke($repo, $coords, $hashedPoints);
     }
 
+    /**
+     * @return array{status: bool, data: array|null, message: string}
+     */
+    private function invokeStoreTripInfoSuccess(
+        TripRepository $repo,
+        array $points,
+        string $hashedPoints,
+        float $distanceInMeters,
+        float $duration,
+        string $provider
+    ): array {
+        $method = new \ReflectionMethod(TripRepository::class, 'storeTripInfoSuccess');
+        $method->setAccessible(true);
+
+        return $method->invoke($repo, $points, $hashedPoints, $distanceInMeters, $duration, $provider);
+    }
+
+    /**
+     * @return array{status: bool, data: null, message: string, error_code: string}
+     */
+    private function invokeRoutingServiceUnavailableResponse(TripRepository $repo): array
+    {
+        $method = new \ReflectionMethod(TripRepository::class, 'routingServiceUnavailableResponse');
+        $method->setAccessible(true);
+
+        return $method->invoke($repo);
+    }
+
     public function test_show_returns_null_for_soft_deleted_trip_when_user_not_admin(): void
     {
         $user = User::factory()->create();
@@ -2912,5 +2940,197 @@ class TripRepositoryTest extends TestCase
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '1,1;2,2', 'hp-skip');
 
         $this->assertSame('route', $result['status']);
+    }
+
+    public function test_store_trip_info_success_caches_route_and_logs_ttl_when_cache_enabled(): void
+    {
+        // Mutation intent: preserve `if (! $cacheBypass)` branch, max(3600, ttl) cast, RouteCache::updateOrCreate
+        // keys, and info log payload including ttl_seconds.
+        // Kills (lines ~914–932): e.g. a13adcc10a2ff2b6, f7cdf43a06f617ce, 69479fd6cb8eb1c8, 5fe8b1a88e1272b8,
+        //        d534ed6b58996524.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+        Config::set('carpoolear.trip_route_cache_ttl_success_seconds', 7200);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 13);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $points = [
+            ['lat' => -27.111, 'lng' => -55.222],
+            ['lat' => -27.333, 'lng' => -55.444],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+        \DB::table('route_cache')->where('hashed_points', $hashedPoints)->delete();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        Log::spy();
+
+        $distanceM = 5000.0;
+        $durationS = 600.0;
+        $response = $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, $distanceM, $durationS, 'osrm');
+
+        $this->assertTrue($response['status']);
+        $this->assertSame($distanceM, (float) $response['data']['distance']);
+        $this->assertSame($durationS, (float) $response['data']['duration']);
+        $this->assertSame(750.0, (float) $response['data']['co2']);
+
+        $row = RouteCache::query()->where('hashed_points', $hashedPoints)->first();
+        $this->assertNotNull($row);
+        $this->assertEquals($points, $row->points);
+        $this->assertEquals($response, $row->route_data);
+        $this->assertGreaterThanOrEqual(now()->addSeconds(7190)->timestamp, $row->expires_at->timestamp);
+        $this->assertLessThanOrEqual(now()->addSeconds(7210)->timestamp, $row->expires_at->timestamp);
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints, $distanceM, $durationS): bool {
+            return $message === '[trip_route|getTripInfo] route OK — cached'
+                && $context['hashed_points'] === $hashedPoints
+                && $context['provider'] === 'osrm'
+                && $context['ttl_seconds'] === 7200
+                && $context['distance_m'] === $distanceM
+                && $context['duration_s'] === $durationS
+                && $context['route_needs_payment'] === false;
+        })->once();
+    }
+
+    public function test_store_trip_info_success_clamps_ttl_to_minimum_3600_seconds(): void
+    {
+        // Mutation intent: preserve max(3600, (int) ttl) so sub-hour configured TTL still caches for one hour.
+        // Kills (line ~915): e.g. e7b51dd635959c84, 3d7d37f38df57679, 0ea6d4865aad4ef6.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+        Config::set('carpoolear.trip_route_cache_ttl_success_seconds', 500);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 13);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $points = [
+            ['lat' => -26.101, 'lng' => -54.201],
+            ['lat' => -26.301, 'lng' => -54.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+        \DB::table('route_cache')->where('hashed_points', $hashedPoints)->delete();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        Log::spy();
+
+        $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, 1000.0, 60.0, 'mapbox');
+
+        $row = RouteCache::query()->where('hashed_points', $hashedPoints)->first();
+        $this->assertNotNull($row);
+        $this->assertGreaterThanOrEqual(now()->addSeconds(3590)->timestamp, $row->expires_at->timestamp);
+        $this->assertLessThanOrEqual(now()->addSeconds(3610)->timestamp, $row->expires_at->timestamp);
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+            return $message === '[trip_route|getTripInfo] route OK — cached'
+                && ($context['ttl_seconds'] ?? null) === 3600;
+        })->once();
+    }
+
+    public function test_store_trip_info_success_skips_cache_write_and_logs_bypass_when_cache_bypass_enabled(): void
+    {
+        // Mutation intent: preserve else-branch info log and absence of RouteCache::updateOrCreate when bypass is true.
+        // Kills: c51164942b9342ee, 91c93b9ba1bc1ca7, 13f50b320aa39fa5, 34396ae1a31d6d0b, 129a87893abf9b5b,
+        //        235970f651ee8726, 7c582ddd9778cadf, 98ec8f0825f66ac9.
+        Config::set('carpoolear.trip_route_cache_bypass', true);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 13);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $points = [
+            ['lat' => -25.101, 'lng' => -53.201],
+            ['lat' => -25.301, 'lng' => -53.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+        \DB::table('route_cache')->where('hashed_points', $hashedPoints)->delete();
+        $this->assertNull(RouteCache::query()->where('hashed_points', $hashedPoints)->first());
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(true);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        Log::spy();
+
+        $response = $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, 2000.0, 120.0, 'mapbox');
+
+        $this->assertTrue($response['status']);
+        $this->assertTrue($response['data']['route_needs_payment']);
+        $this->assertNull(RouteCache::query()->where('hashed_points', $hashedPoints)->first());
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+            return $message === '[trip_route|getTripInfo] route OK — cache write skipped (BYPASS)'
+                && $context['provider'] === 'mapbox'
+                && $context['route_needs_payment'] === true
+                && ! array_key_exists('ttl_seconds', $context);
+        })->once();
+    }
+
+    public function test_store_trip_info_success_computes_price_cents_tolls_sellado_and_max_cap(): void
+    {
+        // Mutation intent: preserve tolls/max-variance rounding, sellado cents ternary, and co2 = distance * 0.15.
+        // Kills (lines ~880–897): e.g. 7da4e055bdca64b5, 7fad2a2e5e10e63c, c2da84f13b1b0a35, 9a296326dd646b61.
+        Config::set('carpoolear.trip_route_cache_bypass', true);
+        Config::set('carpoolear.module_max_price_fuel_price', 1000);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 10);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 50);
+
+        $points = [
+            ['lat' => -24.101, 'lng' => -52.201],
+            ['lat' => -24.301, 'lng' => -52.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $distanceM = 1000.0;
+        $response = $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, $distanceM, 90.0, 'osrm');
+
+        $this->assertSame(150.0, (float) $response['data']['co2']);
+        $this->assertSame(11050, (int) $response['data']['recommended_trip_price_cents']);
+        $this->assertSame(12700, (int) $response['data']['maximum_trip_price_cents']);
+    }
+
+    public function test_routing_service_unavailable_response_returns_translated_error_payload(): void
+    {
+        // Mutation intent: preserve fail-response shape and trans-backed message for routingServiceUnavailableResponse().
+        // Kills (lines ~948–952): e.g. 16feca025c66f5a4, 4a7418dc825a7a6d, efcb09892c18b739, 68342f95e8d82f3f.
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $payload = $this->invokeRoutingServiceUnavailableResponse($repo);
+
+        $this->assertFalse($payload['status']);
+        $this->assertNull($payload['data']);
+        $this->assertSame(trans('errors.routing_service_unavailable'), $payload['message']);
+        $this->assertSame('routing_service_unavailable', $payload['error_code']);
     }
 }
