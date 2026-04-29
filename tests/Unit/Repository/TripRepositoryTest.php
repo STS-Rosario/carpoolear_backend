@@ -777,4 +777,70 @@ class TripRepositoryTest extends TestCase
         $updated3->refresh();
         $this->assertSame(240, (int) $updated3->seat_price_cents);
     }
+
+    public function test_update_replaces_points_persists_recommended_price_and_maps_payment_coords(): void
+    {
+        // Mutation intent: preserve recommended-price save, point replacement/path regeneration and lat/lng payment mapping.
+        // Kills: 504111811d143a35, adb294f1bb793f6c, 9a5ded833c49409e, efaf1746ee6762ca,
+        //        99996c05fe1ad1cc, 8e05f298d0ad73bd, d95e5bc6b1d33820, 48013067c3ce547d.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $oldPointsForSellado = null;
+        $newPointsForSellado = null;
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')
+            ->twice()
+            ->andReturnUsing(function (array $points) use (&$oldPointsForSellado, &$newPointsForSellado) {
+                if ($oldPointsForSellado === null) {
+                    $oldPointsForSellado = $points;
+                } else {
+                    $newPointsForSellado = $points;
+                }
+
+                return false;
+            });
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn([
+            'status' => true,
+            'data' => [
+                'recommended_trip_price_cents' => 654,
+            ],
+        ]);
+
+        $trip = Trip::factory()->create([
+            'recommended_trip_price_cents' => 100,
+            'state' => Trip::STATE_READY,
+        ]);
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 901, 'ciudad' => 'OldA']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 902, 'ciudad' => 'OldB']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.55, 'lng' => -58.35, 'json_address' => ['id' => 903, 'ciudad' => 'NewA']],
+                ['lat' => -34.54, 'lng' => -58.34, 'json_address' => ['id' => 904, 'ciudad' => 'NewB']],
+            ],
+        ]);
+
+        $updated->refresh();
+        $this->assertSame(654, (int) $updated->recommended_trip_price_cents);
+        $this->assertSame('.903.904.', $updated->path);
+        $this->assertCount(2, $updated->points);
+        $this->assertSame([903, 904], $updated->points->pluck('json_address.id')->values()->all());
+
+        $this->assertSame([[-34.6, -58.4], [-34.59, -58.39]], $oldPointsForSellado);
+        $this->assertSame([[-34.55, -58.35], [-34.54, -58.34]], $newPointsForSellado);
+    }
 }
