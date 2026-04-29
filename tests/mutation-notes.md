@@ -341,6 +341,8 @@ This file tracks mutants killed during the current hardening session, with the r
 - `UserRepository.php` `index` tail (`~113–126`): `allFriends()` pivot `state` branching into `$item->state` (`request` vs `friend` vs `none`).
   - Cause: existing index tests validated exclusions/search for `state === 'none'` and accepted friend absence, but never asserted the **`FRIEND_REQUEST` → `'request'`** decoration path.
   - Fix: added `test_index_sets_state_request_when_pending_friend_edge_exists` using `FriendsRepository::add($self, $peer, FRIEND_REQUEST)` (row must be uid1→uid2 from `$user` so `allFriends()` sees it) plus a name-scoped `index` query.
+  - Follow-up: **`FRIEND_ACCEPTED` → `'friend'`** (else branch when `$u` exists) was never asserted because full `addFriend` sync excludes peers from `index`; **`FriendsRepository::add($self, $peer, FRIEND_ACCEPTED)`** alone keeps the peer visible while `$user->allFriends()` still reports ACCEPTED.
+  - Fix: added `test_index_sets_state_friend_when_accepted_edge_uid1_only`.
 
 ## SubscriptionsRepository (getPotentialNode follow-up)
 

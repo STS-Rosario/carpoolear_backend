@@ -194,6 +194,32 @@ class UserRepositoryTest extends TestCase
         $this->assertSame('request', $rows->first()->state);
     }
 
+    public function test_index_sets_state_friend_when_accepted_edge_uid1_only(): void
+    {
+        // Mutation intent: preserve non-REQUEST pivot branch → `$item->state = 'friend'` (lines ~118–119).
+        // Bidirectional `addFriend` excludes peers via `whereDoesntHave('friends')`; a single uid1→uid2 ACCEPTED
+        // row lets `$user->allFriends()` match while the peer may still lack reverse `friends()` toward `$user`.
+        $suffix = substr(uniqid('', true), 0, 8);
+        $self = User::factory()->create([
+            'name' => 'IdxFrSelf'.$suffix,
+            'active' => true,
+            'banned' => false,
+        ]);
+        $peer = User::factory()->create([
+            'name' => 'IdxFrPeer'.$suffix,
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        (new FriendsRepository)->add($self, $peer, User::FRIEND_ACCEPTED);
+
+        $rows = $this->repo()->index($self->fresh(), 'IdxFrPeer'.$suffix);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($peer->id, $rows->first()->id);
+        $this->assertSame('friend', $rows->first()->state);
+    }
+
     public function test_add_friend_and_delete_friend_sync_bidirectional_pivot(): void
     {
         $a = User::factory()->create();
