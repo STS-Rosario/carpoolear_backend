@@ -588,6 +588,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: aggregate test always asserted positive counts first.
   - Fix: added `test_unanswered_conversation_or_requests_by_trip_returns_zero_when_none`.
 
+- `UserRepository.php` `acceptTerms` / `updatePhoto` (`~52–66`): must call `$user->save()` after mutating attributes.
+  - Cause: integration tests asserted persisted columns but not an explicit `save()` expectation on the model instance.
+  - Fix: added `test_accept_terms_invokes_save` and `test_update_photo_invokes_save` (`mock(User::class)->makePartial()` + `save()` expectation).
+
+- `UserRepository.php` `markNotification` (`~187–190`): thin delegate must call `$notification->readed()`.
+  - Cause: integration tests asserted DB/read_at side effects only on real notifications.
+  - Fix: added `test_mark_notification_invokes_readed` (`shouldReceive('readed')->once()` on a `DatabaseNotification` mock).
+
 ## RoutesRepository
 
 - `RoutesRepository.php` (`tests/coverage/20260428_2310.txt` ~1122–1152): `getPotentialsNodes` lng max/min branch (`if ($n1->lng > $n2->lng)`), `autocomplete` log concat (`$name.' '.$country`), and `whereRaw(CONCAT(name, state, country) like ?)` filtering.

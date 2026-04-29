@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Illuminate\Support\Facades\DB;
+use Mockery;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\Passenger;
@@ -83,6 +84,26 @@ class UserRepositoryTest extends TestCase
         $this->assertNotNull($updated);
         $this->assertSame($user->id, $updated->id);
         $this->assertSame('avatar-99.png', $user->fresh()->image);
+    }
+
+    public function test_accept_terms_invokes_save(): void
+    {
+        // Mutation intent: preserve `$user->save()` in acceptTerms (~54–55 RemoveMethodCall).
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('save')->once()->andReturn(true);
+
+        $this->repo()->acceptTerms($user);
+    }
+
+    public function test_update_photo_invokes_save(): void
+    {
+        // Mutation intent: preserve `$user->save()` in updatePhoto (~62–63 RemoveMethodCall).
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->shouldReceive('save')->once()->andReturn(true);
+
+        $out = $this->repo()->updatePhoto($user, 'mock-avatar.png');
+
+        $this->assertSame($user, $out);
     }
 
     public function test_get_user_by(): void
@@ -368,6 +389,15 @@ class UserRepositoryTest extends TestCase
         $this->repo()->markNotification($n);
 
         $this->assertNotNull($n->fresh()->read_at);
+    }
+
+    public function test_mark_notification_invokes_readed(): void
+    {
+        // Mutation intent: preserve `$notification->readed()` delegate (~187–190 RemoveMethodCall).
+        $n = Mockery::mock(DatabaseNotification::class);
+        $n->shouldReceive('readed')->once();
+
+        $this->repo()->markNotification($n);
     }
 
     public function test_unanswered_conversation_or_requests_by_trip(): void
