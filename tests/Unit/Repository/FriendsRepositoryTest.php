@@ -196,6 +196,22 @@ class FriendsRepositoryTest extends TestCase
         $this->assertSame($requesterForTarget->id, $pending->first()->id);
     }
 
+    public function test_get_pending_excludes_accepted_friends_who_share_target_edge(): void
+    {
+        // Mutation intent: preserve `$q->where('state', UserModel::FRIEND_REQUEST)` inside getPending (RemoveMethodCall on state filter).
+        $target = User::factory()->create();
+        $requester = User::factory()->create();
+        $alreadyAccepted = User::factory()->create();
+
+        $this->repo()->add($alreadyAccepted, $target, User::FRIEND_ACCEPTED);
+        $this->repo()->add($requester, $target, User::FRIEND_REQUEST);
+
+        $pending = $this->repo()->getPending($target);
+
+        $this->assertCount(1, $pending);
+        $this->assertSame($requester->id, $pending->first()->id);
+    }
+
     public function test_closest_friend_detects_shared_accepted_friend(): void
     {
         $u1 = User::factory()->create();

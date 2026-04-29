@@ -16,6 +16,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `getPending` lacked a negative case for requests to other targets.
   - Fix: added `test_get_pending_excludes_requests_sent_to_other_users`.
 
+- `getPending` `wherePivot`/`where('state', FRIEND_REQUEST)` guard (`FriendsRepository.php` ~53–55): stale report still showed `RemoveMethodCall` survivors on the state constraint vs friend-id constraint.
+  - Cause: negative coverage did not include a target user who already had an accepted friendship row while also receiving a pending request from someone else (both edges reference the same target user id).
+  - Fix: added `test_get_pending_excludes_accepted_friends_who_share_target_edge`.
+
 - `426d2e54daf776f2`, `5fc0007a1c0c885e` (`Line 115/118: RemoveMethodCall`)
   - Cause: FoF visibility cleanup loop in delete flow was not asserted.
   - Fix: added `test_delete_removes_visibility_for_friend_of_friend_trips`.
