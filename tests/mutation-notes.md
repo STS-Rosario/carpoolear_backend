@@ -24,6 +24,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: FoF visibility cleanup loop in delete flow was not asserted.
   - Fix: added `test_delete_removes_visibility_for_friend_of_friend_trips`.
 
+- `FriendsRepository.php` `get` (`~28–46`): empty friend list for `$state`, or search substring matching zero rows.
+  - Cause: listings always asserted hits (`by_id`, pagination, substring matches).
+  - Fix: added `test_get_returns_empty_when_user_has_no_friends_for_state` and `test_get_returns_empty_when_search_value_matches_no_friend_names`.
+
 ## SubscriptionsRepository
 
 - `f33f83c629152a9b` (`Line 35: EqualToIdentical`)

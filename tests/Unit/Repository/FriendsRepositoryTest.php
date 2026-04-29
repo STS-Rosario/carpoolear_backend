@@ -165,6 +165,28 @@ class FriendsRepositoryTest extends TestCase
         $this->assertCount(1, $page->items());
     }
 
+    public function test_get_returns_empty_when_user_has_no_friends_for_state(): void
+    {
+        // Mutation intent: preserve `allFriends($state)` + `make_pagination` empty collection (~33–46).
+        $lonely = User::factory()->create();
+
+        $rows = $this->repo()->get($lonely, null, User::FRIEND_ACCEPTED, []);
+
+        $this->assertCount(0, $rows);
+    }
+
+    public function test_get_returns_empty_when_search_value_matches_no_friend_names(): void
+    {
+        // Mutation intent: preserve nested name `like` filter (~38–44).
+        $u1 = User::factory()->create();
+        $f1 = User::factory()->create(['name' => 'VisibleBuddy']);
+        $this->repo()->add($u1, $f1, User::FRIEND_ACCEPTED);
+
+        $rows = $this->repo()->get($u1, null, User::FRIEND_ACCEPTED, ['value' => 'NoSuchSubstring']);
+
+        $this->assertCount(0, $rows);
+    }
+
     public function test_get_pending_returns_users_who_sent_request_to_target(): void
     {
         $requester = User::factory()->create();
