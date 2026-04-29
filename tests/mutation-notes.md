@@ -472,6 +472,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful persists.
   - Fix: added `test_create_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
 
+- `PhoneVerificationRepository.php` `delete` (`~78–81`): `return $phoneVerification->delete()`.
+  - Cause: round-trip test only asserted truthy delete on real rows.
+  - Fix: added `test_delete_returns_false_when_delete_fails`.
+
 - `PhoneVerificationRepository.php` `getLatestUnverifiedByUser` (`~36–41`): no rows with `verified = false`.
   - Cause: tests always seeded pending rows; empty branch was untested.
   - Fix: added `test_get_latest_unverified_by_user_returns_null_when_no_unverified_rows`.
@@ -505,6 +509,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `DeviceRepository.php` `store` / `update` (`~10–22`): `return $device->save()`.
   - Cause: integration tests only asserted successful persists.
   - Fix: added `test_store_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
+
+- `DeviceRepository.php` `delete` (`~15–18`): must invoke `$device->delete()` (void method — forwarding-only contract).
+  - Cause: removal tests used persisted rows only; omitting the call could survive without a mock expectation.
+  - Fix: added `test_delete_invokes_device_delete`.
 
 ## UserRepository
 

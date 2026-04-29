@@ -148,4 +148,13 @@ class DeviceRepositoryTest extends TestCase
 
         $this->assertFalse((new DeviceRepository)->update($device));
     }
+
+    public function test_delete_invokes_device_delete(): void
+    {
+        // Mutation intent: preserve `$device->delete()` call (~15–18 RemoveMethodCall).
+        $device = Mockery::mock(Device::class);
+        $device->shouldReceive('delete')->once();
+
+        (new DeviceRepository)->delete($device);
+    }
 }

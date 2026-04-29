@@ -64,6 +64,14 @@ class PhoneVerificationRepositoryTest extends TestCase
         $this->assertFalse($this->repo()->update($row));
     }
 
+    public function test_delete_returns_false_when_delete_fails(): void
+    {
+        $row = Mockery::mock(PhoneVerification::class);
+        $row->shouldReceive('delete')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->delete($row));
+    }
+
     public function test_get_latest_unverified_by_user_returns_null_when_no_unverified_rows(): void
     {
         // Mutation intent: preserve `where('verified', false)` + empty first() (~36–41).
