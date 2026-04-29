@@ -338,6 +338,22 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `test_find_and_find_by` only asserted a hit row; removing `where($key, $value)` or swapping `get()` could survive without an empty-query assertion.
   - Fix: added `test_find_by_returns_empty_collection_when_no_match`.
 
+- `RatingRepository.php` `getRating` (`~11–17`): `first()` when no row matches all three keys.
+  - Cause: happy path added noise rows but always included the expected triple; dropping one `where` could still pass.
+  - Fix: added `test_get_rating_returns_null_when_no_row_matches_triple`.
+
+- `RatingRepository.php` `update` (`~102–104`): `return $rateModel->save()`.
+  - Cause: only successful saves were asserted.
+  - Fix: added `test_update_returns_false_when_save_fails`.
+
+- `RatingRepository.php` `getPendingRatings` (`~60–67`): empty collection when user has no pending recent rows.
+  - Cause: listing tests always seeded at least one qualifying row.
+  - Fix: added `test_get_pending_ratings_returns_empty_when_user_has_no_candidates`.
+
+- `RatingRepository.php` `getRatings` (`~20–43`): zero rows for `user_id_to` / `available`, including paginated branch.
+  - Cause: filters always asserted non-empty lists.
+  - Fix: added `test_get_ratings_returns_empty_when_no_available_ratings_for_user` and `test_get_ratings_paginates_empty_when_no_rows_match`.
+
 ## FileRepository
 
 - Cluster `FileRepository.php` (`tests/coverage/20260428_2310.txt` ~1350+): `createFromFile` directory creation flags and `createFromData` generated-name branch (`$name` null).

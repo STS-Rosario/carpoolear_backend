@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use STS\Models\Rating;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -57,6 +58,18 @@ class RatingRepositoryTest extends TestCase
         $this->assertSame($passenger->id, (int) $found->user_id_from);
         $this->assertSame($driver->id, (int) $found->user_id_to);
         $this->assertSame($trip->id, (int) $found->trip_id);
+    }
+
+    public function test_get_rating_returns_null_when_no_row_matches_triple(): void
+    {
+        // Mutation intent: preserve chained where from/to/trip (~13–17).
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $this->seedRating($passenger, User::factory()->create(), $trip, ['voted_hash' => 'noise-other-to']);
+        $this->seedRating(User::factory()->create(), $driver, $trip, ['voted_hash' => 'noise-other-from']);
+
+        $this->assertNull((new RatingRepository)->getRating($passenger->id, $driver->id, $trip->id));
     }
 
     public function test_create_persists_pending_rating_shape(): void
@@ -118,6 +131,46 @@ class RatingRepositoryTest extends TestCase
         $this->assertTrue($repo->update($rating));
 
         $this->assertSame('Updated via repository.', $rating->fresh()->comment);
+    }
+
+    public function test_update_returns_false_when_save_fails(): void
+    {
+        $rating = Mockery::mock(Rating::class);
+        $rating->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse((new RatingRepository)->update($rating));
+    }
+
+    public function test_get_pending_ratings_returns_empty_when_user_has_no_candidates(): void
+    {
+        Carbon::setTestNow('2026-06-15 12:00:00');
+        $user = User::factory()->create();
+
+        $rows = (new RatingRepository)->getPendingRatings($user);
+
+        $this->assertCount(0, $rows);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_get_ratings_returns_empty_when_no_available_ratings_for_user(): void
+    {
+        // Mutation intent: preserve base query + available filter with zero hits (~24–43).
+        $driver = User::factory()->create();
+
+        $all = (new RatingRepository)->getRatings($driver, []);
+
+        $this->assertCount(0, $all);
+    }
+
+    public function test_get_ratings_paginates_empty_when_no_rows_match(): void
+    {
+        $driver = User::factory()->create();
+        $page = (new RatingRepository)->getRatings($driver, ['page' => 1, 'page_size' => 5]);
+
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $page);
+        $this->assertCount(0, $page);
+        $this->assertSame(0, $page->total());
     }
 
     public function test_get_pending_ratings_filters_by_user_voted_and_recency(): void
