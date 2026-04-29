@@ -54,6 +54,19 @@ class NotificationRepositoryTest extends TestCase
         $this->assertTrue($list->first()->is($unread));
     }
 
+    public function test_get_notifications_default_argument_uses_all_notifications_not_unread_only(): void
+    {
+        // Mutation intent: preserve default `$unread = false` in getNotifications signature.
+        $user = User::factory()->create();
+        $repo = new NotificationRepository;
+
+        $this->insert_notification($user, '2026-04-01 12:00:00', '2026-04-01 09:00:00');
+        $this->insert_notification($user, null, '2026-04-02 09:00:00');
+
+        $list = $repo->getNotifications($user);
+        $this->assertCount(2, $list);
+    }
+
     public function test_get_notifications_with_page_size_and_page_applies_skip_take(): void
     {
         $user = User::factory()->create();
@@ -66,6 +79,23 @@ class NotificationRepositoryTest extends TestCase
         $page = $repo->getNotifications($user, false, 1, 2);
         $this->assertCount(1, $page);
         $this->assertSame('2026-05-02 10:00:00', $page->first()->created_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_get_notifications_does_not_paginate_when_only_page_size_or_page_is_provided(): void
+    {
+        // Mutation intent: keep `$page_size && $page`; OR would incorrectly paginate with only one value.
+        $user = User::factory()->create();
+        $repo = new NotificationRepository;
+
+        $this->insert_notification($user, null, '2026-05-03 10:00:00');
+        $this->insert_notification($user, null, '2026-05-02 10:00:00');
+        $this->insert_notification($user, null, '2026-05-01 10:00:00');
+
+        $onlySize = $repo->getNotifications($user, false, 1, null);
+        $onlyPage = $repo->getNotifications($user, false, null, 2);
+
+        $this->assertCount(3, $onlySize);
+        $this->assertCount(3, $onlyPage);
     }
 
     public function test_mark_as_read_sets_read_at_on_notification(): void
