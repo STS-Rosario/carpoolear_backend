@@ -183,4 +183,32 @@ class RatingRepositoryTest extends TestCase
         $this->assertGreaterThanOrEqual(2, $rows->count());
         $this->assertSame($newer->id, $rows->first()->id);
     }
+
+    public function test_get_ratings_paginates_when_page_size_provided(): void
+    {
+        // Mutation intent: preserve make_pagination branch (~40–43) when page_size non-null (distinct from plain Collection).
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+
+        $rNewest = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'pag-a-'.uniqid('', true)]);
+        $rNewest->forceFill(['created_at' => Carbon::parse('2025-03-04 10:00:00')])->saveQuietly();
+        $rB = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'pag-b-'.uniqid('', true)]);
+        $rB->forceFill(['created_at' => Carbon::parse('2025-03-03 10:00:00')])->saveQuietly();
+        $rC = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'pag-c-'.uniqid('', true)]);
+        $rC->forceFill(['created_at' => Carbon::parse('2025-03-02 10:00:00')])->saveQuietly();
+        $rOldest = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'pag-d-'.uniqid('', true)]);
+        $rOldest->forceFill(['created_at' => Carbon::parse('2025-03-01 10:00:00')])->saveQuietly();
+
+        $page1 = $repo->getRatings($driver, ['page' => 1, 'page_size' => 2]);
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $page1);
+        $this->assertCount(2, $page1);
+        $this->assertSame(4, $page1->total());
+        $this->assertSame($rNewest->id, $page1->first()->id);
+
+        $page2 = $repo->getRatings($driver, ['page' => 2, 'page_size' => 2]);
+        $this->assertCount(2, $page2);
+        $this->assertSame([$rC->id, $rOldest->id], $page2->pluck('id')->all());
+    }
 }

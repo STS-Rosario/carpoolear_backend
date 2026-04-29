@@ -318,6 +318,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `getRating` had only a direct-hit case with no distractors; removing extra `where(...)` calls could still pass. `getRatings` did not assert descending `created_at`. Pending ratings did not include a same-user `voted=true` row or relation-loaded checks for `with(['from','to','trip'])`. `create` asserted only a subset of defaults, leaving empty-string/null payload items weakly guarded.
   - Fix: strengthened `test_get_rating_returns_row_for_from_to_trip` with mismatching noise rows; added `test_get_ratings_orders_by_created_at_desc`; strengthened `test_get_pending_ratings_filters_by_user_voted_and_recency` with a voted row and `relationLoaded` assertions; extended `test_create_persists_pending_rating_shape` with `comment`, `reply_comment`, `reply_comment_created_at`, and `rate_at` default assertions.
 
+- `getRatings` pagination via `make_pagination` (`RatingRepository.php` ~40–43): returning `paginate($pageSize)` vs bare `get()` when `page_size` set.
+  - Cause: `test_get_ratings_filters_available_and_value_when_page_size_null` intentionally kept `$pageSize == null`; omitting `paginate()` could survive without a `LengthAwarePaginator` contract check.
+  - Fix: added `test_get_ratings_paginates_when_page_size_provided`.
+
 ## FileRepository
 
 - Cluster `FileRepository.php` (`tests/coverage/20260428_2310.txt` ~1350+): `createFromFile` directory creation flags and `createFromData` generated-name branch (`$name` null).
