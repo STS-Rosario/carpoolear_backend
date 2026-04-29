@@ -140,4 +140,12 @@ class CarsRepositoryTest extends TestCase
 
         $this->assertFalse($this->repo()->update($car));
     }
+
+    public function test_delete_returns_false_when_delete_fails(): void
+    {
+        $car = Mockery::mock(Car::class);
+        $car->shouldReceive('delete')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->delete($car));
+    }
 }

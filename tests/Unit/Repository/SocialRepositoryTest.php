@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repository;
 
+use Mockery;
 use STS\Models\SocialAccount;
 use STS\Models\User;
 use STS\Repository\SocialRepository;
@@ -105,6 +106,15 @@ class SocialRepositoryTest extends TestCase
         (new SocialRepository)->delete($account);
 
         $this->assertNull(SocialAccount::query()->find($id));
+    }
+
+    public function test_delete_invokes_social_account_delete(): void
+    {
+        // Mutation intent: preserve `$account->delete()` forwarding (~54–57 RemoveMethodCall).
+        $account = Mockery::mock(SocialAccount::class);
+        $account->shouldReceive('delete')->once();
+
+        (new SocialRepository)->delete($account);
     }
 
     public function test_get_returns_all_accounts_or_filters_by_provider(): void

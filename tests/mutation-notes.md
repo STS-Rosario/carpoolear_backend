@@ -458,6 +458,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful persists; ignoring `save()`’s boolean could survive without a false-path assertion.
   - Fix: added `test_create_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
 
+- `CarsRepository.php` `delete` (`~25–27`): `return $car->delete()`.
+  - Cause: integration tests only asserted successful soft/removal paths on real rows.
+  - Fix: added `test_delete_returns_false_when_delete_fails`.
+
 ## PhoneVerificationRepository
 
 - `PhoneVerificationRepository.php` `find` (`~28–31`): `PhoneVerification::find($id)` when no row exists.
@@ -583,3 +587,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `SocialRepository.php` `get` (`~59–67`): empty `accounts()` relation or `where('provider', …)` miss.
   - Cause: `test_get_returns_all_accounts_or_filters_by_provider` always asserted non-empty collections for both branches.
   - Fix: added `test_get_returns_empty_when_user_has_no_accounts` and `test_get_returns_empty_when_provider_filter_matches_no_rows`.
+
+- `SocialRepository.php` `delete` (`~54–57`): must invoke `$account->delete()`.
+  - Cause: removal tests used real models only; dropping the call could survive without a mock expectation.
+  - Fix: added `test_delete_invokes_social_account_delete`.
