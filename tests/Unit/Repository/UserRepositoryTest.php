@@ -267,6 +267,14 @@ class UserRepositoryTest extends TestCase
         $this->assertDatabaseMissing('password_resets', ['token' => $token]);
     }
 
+    public function test_password_reset_token_lookups_return_null_when_missing(): void
+    {
+        // Mutation intent: preserve early-exit when no `password_resets` row (`getUserByResetToken` ~164–167)
+        // and empty `getLastPasswordReset` (~172–175).
+        $this->assertNull($this->repo()->getUserByResetToken('missing-token-'.uniqid('', true)));
+        $this->assertNull($this->repo()->getLastPasswordReset('missing-email-'.uniqid('', true).'@example.com'));
+    }
+
     public function test_get_notifications_respects_unread_flag(): void
     {
         $user = User::factory()->create();

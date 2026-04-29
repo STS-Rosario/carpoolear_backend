@@ -340,6 +340,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: friendship existence was asserted via relations only; pivot `origin` was never checked against the `$provider` argument.
   - Fix: strengthened `test_add_friend_and_delete_friend_sync_bidirectional_pivot` with `assertDatabaseHas('friends', …)` for both directions.
 
+- `UserRepository.php` password-reset lookups (`getUserByResetToken` ~162–167, `getLastPasswordReset` ~170–175): missing-token / unknown-email paths.
+  - Cause: happy-path round-trip asserted resolution only; removing the `if ($pr)` guard or returning a dummy model could survive without explicit absence checks.
+  - Fix: added `test_password_reset_token_lookups_return_null_when_missing`.
+
 - `UserRepository.php` (`tests/coverage/20260428_2310.txt` ~1464–1474): `show()` eager-load list (`accounts`, `donations`, `referencesReceived`, `cars`) and `acceptTerms`/`updatePhoto` return values (`AlwaysReturnNull`).
   - Cause: `show` test only checked `private_note` nulling, so dropping relation keys from `with([...])` could survive. `acceptTerms`/`updatePhoto` effects were asserted via fresh model state, but method return contracts were not, allowing null-return mutations.
   - Fix: strengthened `test_show_nulls_private_note_and_loads_relations` with `relationLoaded` assertions for all four relations; strengthened `test_accept_terms_and_update_photo` with non-null return and identity (`$user->id`) checks for both methods.
