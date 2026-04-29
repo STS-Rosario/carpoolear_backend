@@ -129,4 +129,27 @@ class SocialRepositoryTest extends TestCase
         $this->assertCount(1, $googleOnly);
         $this->assertSame('google', $googleOnly->first()->provider);
     }
+
+    public function test_get_returns_empty_when_user_has_no_accounts(): void
+    {
+        // Mutation intent: preserve `$user->accounts()->get()` empty collection (~59–67).
+        $user = User::factory()->create();
+
+        $this->assertCount(0, (new SocialRepository)->get($user->fresh()));
+    }
+
+    public function test_get_returns_empty_when_provider_filter_matches_no_rows(): void
+    {
+        // Mutation intent: preserve `where('provider', $provider)` miss path (~62–64).
+        $user = User::factory()->create();
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => 'fb-only',
+            'provider' => 'facebook',
+        ]);
+
+        $rows = (new SocialRepository)->get($user->fresh(), 'linkedin');
+
+        $this->assertCount(0, $rows);
+    }
 }

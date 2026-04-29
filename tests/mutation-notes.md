@@ -425,3 +425,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `SocialRepository.php` `find` (`~29–38`): no row for `(provider, provider_user_id)` under repository default provider.
   - Cause: `test_find_with_explicit_provider_overrides_default` covered wrong-provider mismatch; an unknown subject id with an otherwise-correct default provider had no dedicated empty-lookup assertion.
   - Fix: added `test_find_returns_null_when_no_account_matches_subject`.
+
+- `SocialRepository.php` `get` (`~59–67`): empty `accounts()` relation or `where('provider', …)` miss.
+  - Cause: `test_get_returns_all_accounts_or_filters_by_provider` always asserted non-empty collections for both branches.
+  - Fix: added `test_get_returns_empty_when_user_has_no_accounts` and `test_get_returns_empty_when_provider_filter_matches_no_rows`.
