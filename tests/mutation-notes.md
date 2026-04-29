@@ -84,6 +84,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `usersToChat` had many relation/filter/search branches without direct coverage.
   - Fix: added `test_users_to_chat_applies_who_and_search_filters_and_excludes_self`.
 
+- `usersToChat` admin disjunct (`ConversationRepository.php` ~171–173 `where('is_admin', true)` among trip/passenger ORs).
+  - Cause: chat tests only exercised accepted-friend edges; dropping the admin clause still passed because friends satisfied the query.
+  - Fix: added `test_users_to_chat_includes_admin_matching_search_without_friend_edge`.
+
 ## TripSearchRepository
 
 - Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.

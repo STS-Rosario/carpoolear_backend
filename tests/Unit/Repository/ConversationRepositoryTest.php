@@ -291,4 +291,19 @@ class ConversationRepositoryTest extends TestCase
         $this->assertNotSame($owner->id, $users->first()->id);
         $this->assertTrue($users->first()->relationLoaded('accounts'));
     }
+
+    public function test_users_to_chat_includes_admin_matching_search_without_friend_edge(): void
+    {
+        // Mutation intent: preserve top-level `orWhere('is_admin', true)` in usersToChat candidate query (~171–176).
+        $owner = User::factory()->create(['name' => 'Owner NonAdmin']);
+        $needle = 'AdminChatNeedle'.substr(uniqid('', true), 0, 8);
+        $admin = User::factory()->create(['name' => $needle.' FullName']);
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $repo = new ConversationRepository;
+        $users = $repo->usersToChat($owner->id, null, 'AdminChatNeedle');
+
+        $this->assertTrue($users->pluck('id')->contains($admin->id));
+        $this->assertFalse($users->pluck('id')->contains($owner->id));
+    }
 }
