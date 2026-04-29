@@ -678,6 +678,46 @@ class TripRepositoryTest extends TestCase
         $this->assertSame($lateMatch->id, $items->last()->id);
     }
 
+    public function test_search_default_branch_filters_active_unless_history_and_orders_by_trip_date(): void
+    {
+        // Mutation intent: preserve default history guard, filterActiveTrips call and date ordering in search().
+        // Kills: e730140a0b60256a, 6ccb38ae02344061, be6f1f4ef1b631d6, e3727bfc495d0726.
+        $future = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'weekly_schedule' => 0,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $weeklyPast = Trip::factory()->create([
+            'trip_date' => Carbon::now()->subDays(3),
+            'weekly_schedule' => Trip::DAY_MONDAY,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $pastNonWeekly = Trip::factory()->create([
+            'trip_date' => Carbon::now()->subDays(2),
+            'weekly_schedule' => 0,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $defaultPage = $this->repo()->search(null, ['page' => 1, 'page_size' => 20]);
+        $defaultItems = collect($defaultPage->items())->values();
+        $defaultIds = $defaultItems->pluck('id');
+        $this->assertTrue($defaultIds->contains($future->id));
+        $this->assertTrue($defaultIds->contains($weeklyPast->id));
+        $this->assertFalse($defaultIds->contains($pastNonWeekly->id));
+        $this->assertSame($weeklyPast->id, $defaultItems->first()->id);
+        $this->assertSame($future->id, $defaultItems->last()->id);
+
+        $historyPage = $this->repo()->search(null, ['history' => true, 'page' => 1, 'page_size' => 20]);
+        $historyIds = collect($historyPage->items())->pluck('id');
+        $this->assertTrue($historyIds->contains($pastNonWeekly->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

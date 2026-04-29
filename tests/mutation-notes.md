@@ -165,3 +165,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `48d9371fc12ff975`, `766b751ecf371bed`, `c03ae62dc7ac4fa3`
   - Cause: weekly-schedule search branch lacked explicit assertions for bitwise `whereRaw` filtering and ordering.
   - Fix: added `test_search_weekly_schedule_uses_bitwise_filter_and_orders_by_trip_date`.
+
+- `e730140a0b60256a`, `6ccb38ae02344061`, `be6f1f4ef1b631d6`, `e3727bfc495d0726`
+  - Cause: default `search` branch (`history` absent) lacked explicit assertions for active-trip filtering and its ordering side-effect.
+  - Fix: added `test_search_default_branch_filters_active_unless_history_and_orders_by_trip_date`.
