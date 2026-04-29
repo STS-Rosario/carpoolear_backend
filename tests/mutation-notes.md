@@ -105,3 +105,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `c3ab61b50d2e29e6`, `4e2796064a396e48`, `2de3deecc5bf329b`, `52810aad74f43a6a`, `7afd019bd08af694`
   - Cause: existing-route branch in `create` (including processed-route event dispatch and trip route sync) lacked a direct assertion.
   - Fix: added `test_create_reuses_processed_route_and_dispatches_create_event`.
+
+- `a54deebcf1014a06`, `490aec5db92a5b6e`, `e705f32825014ed3`, `f07be5a076a1191f`, `cbefb735437de83c`
+  - Cause: new-route branch in `create` did not assert `processed=false`, route persistence, and syncing both endpoint nodes.
+  - Fix: strengthened `test_create_creates_and_syncs_routes_from_points_json_address_ids` with route `processed` and `route_nodes` assertions.

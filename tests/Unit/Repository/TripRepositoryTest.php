@@ -550,7 +550,8 @@ class TripRepositoryTest extends TestCase
         // Mutation intent: keep route-loop iteration and endpoint extraction from points in create().
         // Kills: 0080679657fc2dd9, e0b1a2010fa804e9, 26405b9a722298d8, 0e7b59bfbe29fe09,
         //        ab3144e108c0e760, 74b84d645bbeaaa3, 79ecceb2aeec68e0, e478c1e7b52a8b76,
-        //        a62aa6e9192c3220, d7148f2bcf5c0dd0.
+        //        a62aa6e9192c3220, d7148f2bcf5c0dd0, a54deebcf1014a06, 490aec5db92a5b6e,
+        //        e705f32825014ed3, f07be5a076a1191f, cbefb735437de83c.
         Config::set('carpoolear.module_max_price_enabled', false);
         Config::set('carpoolear.module_trip_creation_payment_enabled', false);
 
@@ -589,6 +590,13 @@ class TripRepositoryTest extends TestCase
         $this->assertCount(1, $trip->routes);
         $this->assertSame($from->id, (int) $trip->routes->first()->from_id);
         $this->assertSame($to->id, (int) $trip->routes->first()->to_id);
+
+        $createdRoute = Route::query()->where('from_id', $from->id)->where('to_id', $to->id)->first();
+        $this->assertNotNull($createdRoute);
+        $this->assertFalse((bool) $createdRoute->processed);
+        $this->assertCount(2, $createdRoute->nodes);
+        $this->assertTrue($createdRoute->nodes->pluck('id')->contains($from->id));
+        $this->assertTrue($createdRoute->nodes->pluck('id')->contains($to->id));
     }
 
     public function test_create_reuses_processed_route_and_dispatches_create_event(): void
