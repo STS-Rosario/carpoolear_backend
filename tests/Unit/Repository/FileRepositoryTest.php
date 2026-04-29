@@ -56,6 +56,23 @@ class FileRepositoryTest extends TestCase
         $this->assertStringEndsWith('.txt', $newName);
     }
 
+    public function test_create_from_file_creates_nested_folder_recursively(): void
+    {
+        // Mutation intent: preserve makeDirectory(..., 0777, true, true) for missing nested target folders.
+        $tmp = sys_get_temp_dir().'/file-repo-'.uniqid('', true).'.txt';
+        File::put($tmp, 'payload-nested');
+        $folder = $this->testing_folder().'a/b/c/';
+        $folderPath = public_path($folder);
+        if (File::isDirectory($folderPath)) {
+            File::deleteDirectory($folderPath);
+        }
+
+        $newName = (new FileRepository)->createFromFile($tmp, $folder);
+
+        $this->assertTrue(File::isDirectory($folderPath));
+        $this->assertTrue(File::exists($folderPath.$newName));
+    }
+
     public function test_create_from_data_writes_named_jpeg_using_gd_path(): void
     {
         if (! function_exists('imagecreatetruecolor')) {
@@ -77,6 +94,26 @@ class FileRepositoryTest extends TestCase
         $this->assertSame('unit-thumb.jpg', $name);
         $this->assertTrue(File::exists($this->testing_folder_path().$name));
         $this->assertGreaterThan(0, File::size($this->testing_folder_path().$name));
+    }
+
+    public function test_create_from_data_generates_filename_when_name_is_null(): void
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            $this->markTestSkipped('GD extension not available.');
+        }
+
+        $image = imagecreatetruecolor(2, 2);
+        ob_start();
+        imagejpeg($image, null, 90);
+        $binary = ob_get_clean();
+        imagedestroy($image);
+
+        $name = (new FileRepository)->createFromData($binary, 'jpg', $this->testing_folder(), null);
+
+        // Mutation intent: keep generated-name branch (microtime/date concatenation) and non-empty return.
+        $this->assertStringEndsWith('.jpg', $name);
+        $this->assertNotSame('.jpg', $name);
+        $this->assertTrue(File::exists($this->testing_folder_path().$name));
     }
 
     public function test_delete_removes_file_under_folder(): void
