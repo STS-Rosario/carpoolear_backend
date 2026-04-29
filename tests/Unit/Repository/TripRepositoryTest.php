@@ -556,6 +556,87 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($withIds->contains($old->id));
     }
 
+    public function test_search_applies_from_to_and_strict_date_ordering_paths(): void
+    {
+        // Mutation intent: preserve from/to date inner guards, where clauses and orderBy calls (including strict date path).
+        // Kills: f72a863783d0d92e, 6fdd97778d011e84, a36ebef18814d78d, 444bd49df625259c,
+        //        b80f5f470cf3e9c3, 656042282cff9c7f.
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $older = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->subDays(5),
+        ]);
+        $withinEarly = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->subDays(1),
+        ]);
+        $withinLate = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->addHours(2),
+        ]);
+        $future = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->addDays(3),
+        ]);
+
+        $fromOnly = $this->repo()->search($admin, [
+            'from_date' => Carbon::now()->subDays(2)->format('Y-m-d'),
+            'page' => 1,
+            'page_size' => 50,
+        ]);
+        $fromIds = collect($fromOnly->items())->pluck('id');
+        $this->assertFalse($fromIds->contains($older->id));
+        $this->assertTrue($fromIds->contains($withinEarly->id));
+        $this->assertTrue($fromIds->contains($future->id));
+
+        $toOnly = $this->repo()->search($admin, [
+            'to_date' => Carbon::now()->addDay()->format('Y-m-d'),
+            'page' => 1,
+            'page_size' => 50,
+        ]);
+        $toIds = collect($toOnly->items())->pluck('id');
+        $this->assertTrue($toIds->contains($older->id));
+        $this->assertTrue($toIds->contains($withinLate->id));
+        $this->assertFalse($toIds->contains($future->id));
+
+        $strictDate = Carbon::now()->subDays(1)->format('Y-m-d');
+        $strictEarly = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::parse($strictDate.' 08:00:00'),
+        ]);
+        $strictLate = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::parse($strictDate.' 19:00:00'),
+        ]);
+
+        $strictPage = $this->repo()->search($admin, [
+            'date' => $strictDate,
+            'strict' => true,
+            'page' => 1,
+            'page_size' => 50,
+        ]);
+        $strictItems = collect($strictPage->items())->values();
+        $strictIds = $strictItems->pluck('id');
+        $this->assertTrue($strictIds->contains($strictEarly->id));
+        $this->assertTrue($strictIds->contains($strictLate->id));
+        $this->assertTrue($strictItems->search(fn ($t) => $t->id === $strictEarly->id) <
+            $strictItems->search(fn ($t) => $t->id === $strictLate->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

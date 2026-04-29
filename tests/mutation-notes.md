@@ -157,3 +157,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `41b3ff3a3b90d001`, `812d135b57a68dc6`, `adb8efe4d6d7b5c5`, `fe67f74c929986cf`, `45c5a98301e1e6bc`, `e38c3f8f43a330bb`, `8415cdc00871d360`
   - Cause: initial `search` branch lacked direct assertions for routes eager-load baseline, `is_passenger` filter application, admin trashed gating, and single-bound date-range branching.
   - Fix: added `test_search_applies_is_passenger_filter_and_keeps_routes_eager_loaded` and `test_search_with_admin_flag_controls_trashed_and_supports_single_date_bounds`.
+
+- `f72a863783d0d92e`, `6fdd97778d011e84`, `a36ebef18814d78d`, `444bd49df625259c`, `b80f5f470cf3e9c3`, `656042282cff9c7f`
+  - Cause: `search` date-window internals lacked direct assertions for from/to inner guards and ordering calls, plus strict-date ordering branch.
+  - Fix: added `test_search_applies_from_to_and_strict_date_ordering_paths`.
