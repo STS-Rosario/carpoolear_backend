@@ -69,6 +69,24 @@ class MessageRepositoryTest extends TestCase
         $this->assertFalse($this->repo()->delete($message));
     }
 
+    public function test_store_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $message->save()` (~13–16 RemoveMethodCall).
+        $message = Mockery::mock(Message::class);
+        $message->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->store($message));
+    }
+
+    public function test_delete_invokes_delete(): void
+    {
+        // Mutation intent: preserve `return $message->delete()` (~18–21 RemoveMethodCall).
+        $message = Mockery::mock(Message::class);
+        $message->shouldReceive('delete')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->delete($message));
+    }
+
     public function test_delete_removes_message(): void
     {
         $sender = User::factory()->create();

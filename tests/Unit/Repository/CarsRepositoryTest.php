@@ -166,4 +166,13 @@ class CarsRepositoryTest extends TestCase
 
         $this->assertTrue($this->repo()->update($car));
     }
+
+    public function test_delete_invokes_delete(): void
+    {
+        // Mutation intent: preserve `return $car->delete()` (~25–27 RemoveMethodCall).
+        $car = Mockery::mock(Car::class);
+        $car->shouldReceive('delete')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->delete($car));
+    }
 }

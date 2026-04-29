@@ -176,6 +176,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful paths.
   - Fix: added `test_store_returns_false_when_save_fails` and `test_delete_returns_false_when_delete_fails`.
 
+- `MessageRepository.php` `store` / `delete`: successful-path `save()` / `delete()` invoke.
+  - Cause: false-path mocks existed without complementary successful expectations.
+  - Fix: added `test_store_invokes_save` and `test_delete_invokes_delete`.
+
 - `MessageRepository.php` `getMessages` (`~23–34`): conversation with zero message rows.
   - Cause: pagination tests always seeded messages first.
   - Fix: added `test_get_messages_returns_empty_when_conversation_has_no_messages`.
@@ -442,6 +446,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: only successful saves were asserted.
   - Fix: added `test_update_returns_false_when_save_fails`.
 
+- `RatingRepository.php` `update`: successful-path `save()` invoke.
+  - Cause: integration + false-path tests left successful `save()` droppable without a mock expectation.
+  - Fix: added `test_update_invokes_save`.
+
 - `RatingRepository.php` `getPendingRatings` (`~60–67`): empty collection when user has no pending recent rows.
   - Cause: listing tests always seeded at least one qualifying row.
   - Fix: added `test_get_pending_ratings_returns_empty_when_user_has_no_candidates`.
@@ -510,6 +518,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: false-path mocks existed; explicit successful `save()` expectations were missing for RemoveMethodCall clusters.
   - Fix: added `test_create_invokes_save` and `test_update_invokes_save`.
 
+- `CarsRepository.php` `delete`: successful-path `delete()` invoke.
+  - Cause: only false-path and integration deletes were covered.
+  - Fix: added `test_delete_invokes_delete`.
+
 ## PhoneVerificationRepository
 
 - `PhoneVerificationRepository.php` `find` (`~28–31`): `PhoneVerification::find($id)` when no row exists.
@@ -527,6 +539,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `PhoneVerificationRepository.php` `delete` (`~78–81`): `return $phoneVerification->delete()`.
   - Cause: round-trip test only asserted truthy delete on real rows.
   - Fix: added `test_delete_returns_false_when_delete_fails`.
+
+- `PhoneVerificationRepository.php` `delete`: successful-path `delete()` invoke.
+  - Cause: false-path-only mock left successful `delete()` removable without expectation conflict.
+  - Fix: added `test_delete_invokes_delete`.
 
 - `PhoneVerificationRepository.php` `getLatestUnverifiedByUser` (`~36–41`): no rows with `verified = false`.
   - Cause: tests always seeded pending rows; empty branch was untested.

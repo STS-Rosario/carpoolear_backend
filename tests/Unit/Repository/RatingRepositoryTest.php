@@ -141,6 +141,15 @@ class RatingRepositoryTest extends TestCase
         $this->assertFalse((new RatingRepository)->update($rating));
     }
 
+    public function test_update_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $rateModel->save()` (~102–104 RemoveMethodCall).
+        $rating = Mockery::mock(Rating::class);
+        $rating->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue((new RatingRepository)->update($rating));
+    }
+
     public function test_get_pending_ratings_returns_empty_when_user_has_no_candidates(): void
     {
         Carbon::setTestNow('2026-06-15 12:00:00');
