@@ -174,6 +174,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: persistence tests exercised end-to-end rows but not an explicit expectation that `create` receives every `searchData` key produced inside `trackSearch`.
   - Fix: added `test_track_search_delegates_to_create_with_full_search_data_payload` (partial repository mock + `create` expectation + `TripSearch::create` in callback).
 
+- `TripSearchRepository.php` `trackSearch` default args (`tests/coverage/20260428_2310.txt` ~20393–20423): `FalseToTrue` / `DecrementInteger` / `IncrementInteger` on `$clientPlatform = 0` and `$isPassenger = false` when omitted (`04bb992cfddae78b`, `96a25bf38851235d`, `cf380555cf0aa34f`).
+  - Cause: `test_track_search_null_user_and_null_search_date` asserted model fields but not persisted `client_platform` / `is_passenger`, so default-parameter mutants could survive.
+  - Fix: extended that test with `assertDatabaseHas('trip_searches', …, 'client_platform' => 0, 'is_passenger' => 0)`.
+
+- `TripSearchRepository.php` `trackSearch` (`tests/coverage/20260428_2310.txt` ~20429–20463): `GreaterToGreaterOrEqual` / `DecrementInteger` / `IncrementInteger` on `$trips->count() > 0` (`560f96995275eed4`, `080c4253f39866ce`, `cfe735486a748594`).
+  - Cause: carpooleado branch was only proven with multi-item pages or empty pages; a **single-item** page must still enter the filter so `> 1` or other comparator mutations drop carpooleado counts incorrectly.
+  - Fix: added `test_track_search_counts_carpooleados_when_current_page_has_exactly_one_trip`.
+
 ## MessageRepository
 
 - Cluster `MessageRepository.php` (`tests/coverage/20260428_2310.txt` ~1080–1108): `changeMessageReadState` / `createMessageReadState` pivot payloads, `getMessagesUnread` `$item->pivot->read == 0`, `markMessages` bulk `update` keys.

@@ -3,8 +3,8 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
-use Mockery;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Mockery;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\Trip;
@@ -116,6 +116,13 @@ class TripSearchRepositoryTest extends TestCase
         $this->assertSame(0, $row->amount_trips_carpooleados);
         $this->assertNotNull($row->search_date);
         $this->assertTrue($row->search_date->isSameDay(Carbon::now()));
+        $this->assertDatabaseHas('trip_searches', [
+            'id' => $row->id,
+            'origin_id' => $origin->id,
+            'destination_id' => $dest->id,
+            'client_platform' => 0,
+            'is_passenger' => 0,
+        ]);
     }
 
     public function test_track_search_falls_back_to_count_when_total_returns_null(): void
@@ -196,6 +203,28 @@ class TripSearchRepositoryTest extends TestCase
         $row = $this->repo()->trackSearch($user, $origin->id, $dest->id, $paginator);
 
         $this->assertSame(2, $row->amount_trips_carpooleados);
+    }
+
+    public function test_track_search_counts_carpooleados_when_current_page_has_exactly_one_trip(): void
+    {
+        // Mutation intent: `$trips->count() > 0` must stay strict `> 0` (not `> 1` / `>= 0`) so a single-item page still runs the filter.
+        $user = User::factory()->create();
+        $origin = $this->makeNode();
+        $dest = $this->makeNode();
+
+        $full = Trip::factory()->create(['total_seats' => 1, 'user_id' => $user->id]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $full->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+
+        $items = collect([$full->fresh()]);
+        $paginator = new LengthAwarePaginator($items, 1, 15, 1, ['path' => '/trips']);
+
+        $row = $this->repo()->trackSearch($user, $origin->id, $dest->id, $paginator);
+
+        $this->assertSame(1, $row->amount_trips);
+        $this->assertSame(1, $row->amount_trips_carpooleados);
     }
 
     public function test_track_search_persists_search_payload_columns_for_array_remove_mutants(): void
