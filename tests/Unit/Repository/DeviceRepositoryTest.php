@@ -157,4 +157,22 @@ class DeviceRepositoryTest extends TestCase
 
         (new DeviceRepository)->delete($device);
     }
+
+    public function test_store_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $device->save()` (~10–13 RemoveMethodCall).
+        $device = Mockery::mock(Device::class);
+        $device->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue((new DeviceRepository)->store($device));
+    }
+
+    public function test_update_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $device->save()` (~18–22 RemoveMethodCall).
+        $device = Mockery::mock(Device::class);
+        $device->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue((new DeviceRepository)->update($device));
+    }
 }

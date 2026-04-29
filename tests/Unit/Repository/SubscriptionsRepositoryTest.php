@@ -102,6 +102,33 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertFalse($this->repo()->delete($model));
     }
 
+    public function test_create_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $model->save()` (~13–16 RemoveMethodCall).
+        $model = Mockery::mock(Subscription::class);
+        $model->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->create($model));
+    }
+
+    public function test_update_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $model->save()` (~18–21 RemoveMethodCall).
+        $model = Mockery::mock(Subscription::class);
+        $model->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->update($model));
+    }
+
+    public function test_delete_invokes_delete(): void
+    {
+        // Mutation intent: preserve `return $model->delete()` (~28–31 RemoveMethodCall).
+        $model = Mockery::mock(Subscription::class);
+        $model->shouldReceive('delete')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->delete($model));
+    }
+
     public function test_list_returns_all_or_filters_by_state(): void
     {
         $user = User::factory()->create();

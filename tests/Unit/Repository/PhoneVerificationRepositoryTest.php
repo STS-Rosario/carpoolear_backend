@@ -72,6 +72,24 @@ class PhoneVerificationRepositoryTest extends TestCase
         $this->assertFalse($this->repo()->delete($row));
     }
 
+    public function test_create_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $phoneVerification->save()` (~12–15 RemoveMethodCall).
+        $row = Mockery::mock(PhoneVerification::class);
+        $row->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->create($row));
+    }
+
+    public function test_update_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $phoneVerification->save()` (~18–22 RemoveMethodCall).
+        $row = Mockery::mock(PhoneVerification::class);
+        $row->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->update($row));
+    }
+
     public function test_get_latest_unverified_by_user_returns_null_when_no_unverified_rows(): void
     {
         // Mutation intent: preserve `where('verified', false)` + empty first() (~36–41).

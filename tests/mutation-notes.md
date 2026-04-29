@@ -54,6 +54,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful persists/removals.
   - Fix: added `test_create_returns_false_when_save_fails`, `test_update_returns_false_when_save_fails`, `test_delete_returns_false_when_delete_fails`.
 
+- `SubscriptionsRepository.php` `create` / `update` / `delete`: successful-path forwarding (`save()` / `delete()`).
+  - Cause: false-path mocks existed; explicit invoke expectations on successful returns were missing for RemoveMethodCall clusters.
+  - Fix: added `test_create_invokes_save`, `test_update_invokes_save`, `test_delete_invokes_delete`.
+
 - `SubscriptionsRepository.php` `list` (`~33–39`): user with zero subscriptions (`$active == null`), or `where('state', true)` when user only has inactive rows.
   - Cause: list tests always seeded matching subscription rows before querying.
   - Fix: added `test_list_returns_empty_when_user_has_no_subscriptions` and `test_list_returns_empty_when_active_filter_matches_no_rows`.
@@ -516,6 +520,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful persists.
   - Fix: added `test_create_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
 
+- `PhoneVerificationRepository.php` `create` / `update`: must invoke `$phoneVerification->save()` on truthy path.
+  - Cause: false-path-only mocks left successful `save()` removable without an expectation conflict.
+  - Fix: added `test_create_invokes_save` and `test_update_invokes_save`.
+
 - `PhoneVerificationRepository.php` `delete` (`~78–81`): `return $phoneVerification->delete()`.
   - Cause: round-trip test only asserted truthy delete on real rows.
   - Fix: added `test_delete_returns_false_when_delete_fails`.
@@ -557,6 +565,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `DeviceRepository.php` `store` / `update` (`~10–22`): `return $device->save()`.
   - Cause: integration tests only asserted successful persists.
   - Fix: added `test_store_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
+
+- `DeviceRepository.php` `store` / `update`: successful-path `save()` invoke.
+  - Cause: false-path mocks existed without complementary successful `save()` expectations.
+  - Fix: added `test_store_invokes_save` and `test_update_invokes_save`.
 
 - `DeviceRepository.php` `delete` (`~15–18`): must invoke `$device->delete()` (void method — forwarding-only contract).
   - Cause: removal tests used persisted rows only; omitting the call could survive without a mock expectation.
