@@ -469,6 +469,93 @@ class TripRepositoryTest extends TestCase
         $this->assertSame(1, $ids->count());
     }
 
+    public function test_search_applies_is_passenger_filter_and_keeps_routes_eager_loaded(): void
+    {
+        // Mutation intent: preserve base routes eager load and is_passenger filter in search().
+        // Kills: 41b3ff3a3b90d001, 812d135b57a68dc6.
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $match = Trip::factory()->create([
+            'is_passenger' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Trip::factory()->create([
+            'is_passenger' => 0,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $page = $this->repo()->search($admin, [
+            'is_passenger' => 'true',
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+
+        $items = collect($page->items());
+        $this->assertSame(1, $items->count());
+        $this->assertSame($match->id, $items->first()->id);
+        $this->assertTrue($items->first()->relationLoaded('routes'));
+    }
+
+    public function test_search_with_admin_flag_controls_trashed_and_supports_single_date_bounds(): void
+    {
+        // Mutation intent: preserve admin-withTrashed gate and from/to date OR-branch handling.
+        // Kills: adb8efe4d6d7b5c5, fe67f74c929986cf, 45c5a98301e1e6bc, e38c3f8f43a330bb, 8415cdc00871d360.
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $trashed = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->subHours(2),
+        ]);
+        $trashed->delete();
+
+        $future = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->addHours(3),
+        ]);
+        $old = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'trip_date' => Carbon::now()->subDays(4),
+        ]);
+
+        $fromDate = Carbon::now()->subDay()->format('Y-m-d');
+        $toDate = Carbon::now()->subHour()->format('Y-m-d');
+
+        $withoutAdminFlag = $this->repo()->search($admin, [
+            'from_date' => $fromDate,
+            'page' => 1,
+            'page_size' => 20,
+        ]);
+        $withoutIds = collect($withoutAdminFlag->items())->pluck('id');
+        $this->assertFalse($withoutIds->contains($trashed->id));
+        $this->assertTrue($withoutIds->contains($future->id));
+
+        $withAdminFlag = $this->repo()->search($admin, [
+            'is_admin' => 'true',
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'page' => 1,
+            'page_size' => 20,
+        ]);
+        $withIds = collect($withAdminFlag->items())->pluck('id');
+        $this->assertTrue($withIds->contains($trashed->id));
+        $this->assertFalse($withIds->contains($future->id));
+        $this->assertFalse($withIds->contains($old->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

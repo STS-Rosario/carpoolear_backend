@@ -153,3 +153,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `4c662dd5460a827f`, `4fe1e9c3638b2f2c`, `a4f5ce2fdb113d99`, `f77fb9baf44caaf2`, `7075ee4766e78c24`, `20bacc8888508a5f`, `128d4a1954c7ce68`, `018e7fafd1bdebbe`, `fb53d9c82bbdf334`
   - Cause: `getOldTrips` lacked direct assertions for driver filter/order/select and eager-loaded relation set parity with `getTrips`.
   - Fix: strengthened `test_get_old_trips_excludes_weekly_schedule_and_past_only` with ordering and eager-load assertions.
+
+- `41b3ff3a3b90d001`, `812d135b57a68dc6`, `adb8efe4d6d7b5c5`, `fe67f74c929986cf`, `45c5a98301e1e6bc`, `e38c3f8f43a330bb`, `8415cdc00871d360`
+  - Cause: initial `search` branch lacked direct assertions for routes eager-load baseline, `is_passenger` filter application, admin trashed gating, and single-bound date-range branching.
+  - Fix: added `test_search_applies_is_passenger_filter_and_keeps_routes_eager_loaded` and `test_search_with_admin_flag_controls_trashed_and_supports_single_date_bounds`.
