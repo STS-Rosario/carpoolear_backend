@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use STS\Models\User;
 use STS\Repository\NotificationRepository;
 use STS\Services\Notifications\BaseNotification;
@@ -124,6 +125,19 @@ class NotificationRepositoryTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_mark_as_read_invokes_save_when_notification_provided(): void
+    {
+        // Mutation intent: preserve `$notification->save()` after setting `read_at` (~25–27 RemoveMethodCall).
+        Carbon::setTestNow('2026-10-01 11:00:00');
+
+        $n = Mockery::mock(DatabaseNotification::class)->makePartial();
+        $n->shouldReceive('save')->once()->andReturn(true);
+
+        (new NotificationRepository)->markAsRead($n);
+
+        Carbon::setTestNow();
+    }
+
     public function test_delete_sets_deleted_at(): void
     {
         Carbon::setTestNow('2026-07-01 08:00:00');
@@ -136,6 +150,19 @@ class NotificationRepositoryTest extends TestCase
         $n = $n->fresh();
         $this->assertNotNull($n->deleted_at);
         $this->assertSame('2026-07-01 08:00:00', Carbon::parse($n->deleted_at)->format('Y-m-d H:i:s'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_delete_invokes_save_after_setting_deleted_at(): void
+    {
+        // Mutation intent: preserve `$notification->save()` after `deleted_at` assignment (~33–37 RemoveMethodCall).
+        Carbon::setTestNow('2026-11-02 10:00:00');
+
+        $n = Mockery::mock(DatabaseNotification::class)->makePartial();
+        $n->shouldReceive('save')->once()->andReturn(true);
+
+        (new NotificationRepository)->delete($n);
 
         Carbon::setTestNow();
     }

@@ -448,6 +448,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests covered another user’s notification id but not a non-existent id for the same user.
   - Fix: added `test_find_returns_null_when_notification_id_does_not_exist`.
 
+- `NotificationRepository.php` `markAsRead` (`~23–31`): `$notification` branch must call `$notification->save()` after assigning `read_at`.
+  - Cause: integration tests asserted DB state only on real rows; dropping `save()` could survive without a mock expectation.
+  - Fix: added `test_mark_as_read_invokes_save_when_notification_provided`.
+
+- `NotificationRepository.php` `delete` (`~33–37`): must call `$notification->save()` after assigning `deleted_at`.
+  - Cause: integration tests asserted persisted timestamps only; omitting `save()` could survive without a mock expectation.
+  - Fix: added `test_delete_invokes_save_after_setting_deleted_at`.
+
 ## CarsRepository
 
 - `CarsRepository.php` `index` (`~30–33`): `$user->cars` when the user has zero vehicle rows.
