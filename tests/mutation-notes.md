@@ -136,6 +136,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful paths on real models.
   - Fix: added `test_store_returns_false_when_save_fails` and `test_delete_returns_false_when_delete_fails`.
 
+- `ConversationRepository.php` `store` / `delete`: successful-path `save()` / `delete()` invoke.
+  - Cause: false-path mocks existed without complementary successful expectations.
+  - Fix: added `test_store_invokes_save` and `test_delete_invokes_delete`.
+
 - `ConversationRepository.php` `getConversationsByTrip` (`~68–73`): zero rows for `trip_id`.
   - Cause: tests always created conversation rows before listing by trip.
   - Fix: added `test_get_conversations_by_trip_returns_empty_when_trip_has_no_conversations`.

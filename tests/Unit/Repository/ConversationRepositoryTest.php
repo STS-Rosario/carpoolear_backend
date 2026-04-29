@@ -44,6 +44,24 @@ class ConversationRepositoryTest extends TestCase
         $this->assertFalse((new ConversationRepository)->delete($conversation));
     }
 
+    public function test_store_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $conversation->save()` (~11–14 RemoveMethodCall).
+        $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue((new ConversationRepository)->store($conversation));
+    }
+
+    public function test_delete_invokes_delete(): void
+    {
+        // Mutation intent: preserve `return $conversation->delete()` (~16–19 RemoveMethodCall).
+        $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('delete')->once()->andReturn(true);
+
+        $this->assertTrue((new ConversationRepository)->delete($conversation));
+    }
+
     public function test_get_conversation_from_id_without_user_returns_model(): void
     {
         $conversation = Conversation::factory()->create();
