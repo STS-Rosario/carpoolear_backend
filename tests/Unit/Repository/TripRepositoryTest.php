@@ -541,4 +541,50 @@ class TripRepositoryTest extends TestCase
         $this->assertSame('pref_123', $trip->payment_id);
         $this->assertTrue((bool) $trip->needs_sellado);
     }
+
+    public function test_create_creates_and_syncs_routes_from_points_json_address_ids(): void
+    {
+        // Mutation intent: keep route-loop iteration and endpoint extraction from points in create().
+        // Kills: 0080679657fc2dd9, e0b1a2010fa804e9, 26405b9a722298d8, 0e7b59bfbe29fe09,
+        //        ab3144e108c0e760, 74b84d645bbeaaa3, 79ecceb2aeec68e0, e478c1e7b52a8b76,
+        //        a62aa6e9192c3220, d7148f2bcf5c0dd0.
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 650,
+            ],
+        ], false);
+
+        $from = $this->makeNode(['name' => 'RouteFrom', 'lat' => -34.60, 'lng' => -58.40]);
+        $to = $this->makeNode(['name' => 'RouteTo', 'lat' => -34.50, 'lng' => -58.30]);
+        $user = User::factory()->create();
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 2,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => $from->id, 'ciudad' => 'Origen']],
+                ['lat' => -34.5, 'lng' => -58.3, 'json_address' => ['id' => $to->id, 'ciudad' => 'Destino']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertCount(1, $trip->routes);
+        $this->assertSame($from->id, (int) $trip->routes->first()->from_id);
+        $this->assertSame($to->id, (int) $trip->routes->first()->to_id);
+    }
 }

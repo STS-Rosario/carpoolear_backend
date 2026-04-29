@@ -97,3 +97,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `97d4c2cdee6ca23d`, `e53a5df21a05bb4e`, `360811401013af7d`, `4123fa9d994e5a5b`, `1a6d2f2a81d01d31`, `2b10aa7ab3776cd5`, `41ad6e0ea218715e`, `ebbc4167c595fae9`, `d25ccf133496e175`
   - Cause: payment-trigger branch in `create` (route requires payment + threshold reached) was not directly asserted.
   - Fix: added `test_create_sets_awaiting_payment_and_preference_when_route_requires_sellado`.
+
+- `0080679657fc2dd9`, `e0b1a2010fa804e9`, `26405b9a722298d8`, `0e7b59bfbe29fe09`, `ab3144e108c0e760`, `74b84d645bbeaaa3`, `79ecceb2aeec68e0`, `e478c1e7b52a8b76`, `a62aa6e9192c3220`, `d7148f2bcf5c0dd0`
+  - Cause: route loop and endpoint extraction/cast logic in `create` had no direct route-creation assertion.
+  - Fix: added `test_create_creates_and_syncs_routes_from_points_json_address_ids`.
