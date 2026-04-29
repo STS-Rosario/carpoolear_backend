@@ -365,6 +365,59 @@ class TripRepositoryTest extends TestCase
         })->once();
     }
 
+    public function test_get_trip_info_builds_osrm_coords_and_returns_osrm_success_payload(): void
+    {
+        // Mutation intent: preserve OSRM miss log, coords concat loop and osrm-route success early return path.
+        // Kills: 9da9f1812a4bfbc4, bfe5bc3acbce77a9, e3c3b4d9ae2338e3, 3184aa4f26380035, 097f523e9d0f7093,
+        //        22d996ef6e87bf03, 5f57d5854dd7bc75, 7c55a80c84bc5322, e0d15319559d5e25, e2ff81a4c1c064d6,
+        //        e49aa53b4d20f00f, 0274e8fcd524cd8b, 137bd3e03ec40d42, 14ab95c39ad03b82,
+        //        d0aebab113b2de06, 81542e43b09b523e.
+        Config::set('carpoolear.trip_route_cache_bypass', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $points = [
+            ['lat' => -32.111111, 'lng' => -60.222222],
+            ['lat' => -32.333333, 'lng' => -60.444444],
+            ['lat' => -32.555555, 'lng' => -60.666666],
+        ];
+        $expectedCoords = '-60.222222,-32.111111;-60.444444,-32.333333;-60.666666,-32.555555';
+        $expectedDistance = 45678.9;
+        $expectedDuration = 1234.5;
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [[
+                    'distance' => $expectedDistance,
+                    'duration' => $expectedDuration,
+                ]],
+            ], 200),
+        ]);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->andReturn(false);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertTrue($result['status']);
+        $this->assertSame($expectedDistance, (float) $result['data']['distance']);
+        $this->assertSame($expectedDuration, (float) $result['data']['duration']);
+        $this->assertSame('Route found', $result['message']);
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($expectedCoords): bool {
+            return str_contains($request->url(), '/route/v1/driving/'.$expectedCoords.'?overview=false&alternatives=true&steps=true');
+        });
+    }
+
     public function test_get_trip_by_trip_passenger_returns_passenger_by_primary_key(): void
     {
         $trip = Trip::factory()->create();
