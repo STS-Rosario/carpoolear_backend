@@ -843,4 +843,109 @@ class TripRepositoryTest extends TestCase
         $this->assertSame([[-34.6, -58.4], [-34.59, -58.39]], $oldPointsForSellado);
         $this->assertSame([[-34.55, -58.35], [-34.54, -58.34]], $newPointsForSellado);
     }
+
+    public function test_update_triggers_new_sellado_payment_on_non_paid_to_paid_transition(): void
+    {
+        // Mutation intent: preserve strict gate condition for non-paid->paid transition and threshold boundary.
+        // Kills: 961cc23104e94a97, 879b7f380fb694b8, 447b75ab63a85945, 189953df07063235,
+        //        c29223e821b10dea, ba5bfa4ac32943cd.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->twice()->andReturn(false, true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')->never();
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
+
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'state' => Trip::STATE_READY,
+            'payment_id' => 'existing_pref',
+            'needs_sellado' => false,
+        ]);
+        Trip::factory()->create(['user_id' => $user->id]); // count == threshold boundary (2)
+
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1001, 'ciudad' => 'OldA']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 1002, 'ciudad' => 'OldB']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.50, 'lng' => -58.30, 'json_address' => ['id' => 1003, 'ciudad' => 'NewA']],
+                ['lat' => -34.49, 'lng' => -58.29, 'json_address' => ['id' => 1004, 'ciudad' => 'NewB']],
+            ],
+        ]);
+
+        $updated->refresh();
+        $this->assertSame(Trip::STATE_AWAITING_PAYMENT, $updated->state);
+        $this->assertSame('existing_pref', $updated->payment_id);
+        $this->assertTrue((bool) $updated->needs_sellado);
+    }
+
+    public function test_update_does_not_trigger_sellado_when_module_disabled_even_if_route_changes_to_paid(): void
+    {
+        // Mutation intent: prevent relaxed boolean OR gates in update sellado trigger condition.
+        // Kills: 36c540d16cc674f5, 681e7bcd48bf7b7f, b50e9041e39aac2e, 77b52754499d420c, 59c98589c9da49eb.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->twice()->andReturn(false, true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')->never();
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
+
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'state' => Trip::STATE_READY,
+            'payment_id' => null,
+            'needs_sellado' => false,
+        ]);
+        Trip::factory()->create(['user_id' => $user->id]); // count == threshold boundary (2)
+
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1101, 'ciudad' => 'OldA']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 1102, 'ciudad' => 'OldB']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.50, 'lng' => -58.30, 'json_address' => ['id' => 1103, 'ciudad' => 'NewA']],
+                ['lat' => -34.49, 'lng' => -58.29, 'json_address' => ['id' => 1104, 'ciudad' => 'NewB']],
+            ],
+        ]);
+
+        $updated->refresh();
+        $this->assertSame(Trip::STATE_READY, $updated->state);
+        $this->assertNull($updated->payment_id);
+        $this->assertFalse((bool) $updated->needs_sellado);
+    }
 }
