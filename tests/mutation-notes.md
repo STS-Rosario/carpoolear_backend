@@ -54,6 +54,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: list tests always seeded matching subscription rows before querying.
   - Fix: added `test_list_returns_empty_when_user_has_no_subscriptions` and `test_list_returns_empty_when_active_filter_matches_no_rows`.
 
+- `SubscriptionsRepository.php` `list` (`~33–39`): **`false` filter vs null/unfiltered branch**.
+  - Cause: PHP loose `$active == null` is true for boolean `false`, so `list($user, false)` incorrectly returned every subscription (same as `$active === null`). Assertions only covered `null`, `true`, and string `'0'`.
+  - Fix: guard with `$active === null`; added `test_list_filters_by_false_when_explicit_bool_false`.
+
 - `d67ef5e7ca5b898b` (`Line 49: IfNegated`)
   - Cause: branch that clamps `from` to current time (today searches) was untested.
   - Fix: added `test_search_public_uses_now_when_trip_day_is_today`.

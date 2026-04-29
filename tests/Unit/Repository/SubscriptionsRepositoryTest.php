@@ -116,6 +116,20 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertTrue((bool) $active->first()->state);
     }
 
+    public function test_list_filters_by_false_when_explicit_bool_false(): void
+    {
+        // Mutation intent: inactive subscriptions must use where-state=false (~33–39); loose `$active == null` wrongly treats false like null.
+        $user = User::factory()->create();
+        Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
+        $inactive = Subscription::factory()->create(['user_id' => $user->id, 'state' => false]);
+
+        $rows = $this->repo()->list($user->fresh(), false);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->is($inactive));
+        $this->assertFalse((bool) $rows->first()->state);
+    }
+
     public function test_list_treats_zero_string_as_state_filter_and_not_null(): void
     {
         // Mutation intent: keep null-check behavior distinct from strict-identity changes.

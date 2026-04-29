@@ -32,11 +32,11 @@ class SubscriptionsRepository
 
     public function list(UserModel $user, $active = null)
     {
-        if ($active == null) {
+        if ($active === null) {
             return $user->subscriptions;
-        } else {
-            return $user->subscriptions()->where('state', $active)->get();
         }
+
+        return $user->subscriptions()->where('state', $active)->get();
     }
 
     public function search($user, $trip)
