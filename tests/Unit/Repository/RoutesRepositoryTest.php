@@ -63,6 +63,21 @@ class RoutesRepositoryTest extends TestCase
         $this->assertFalse($ids->contains($outsideLng->id));
     }
 
+    public function test_get_potentials_nodes_handles_reversed_lat_order_and_keeps_bounds(): void
+    {
+        // Mutation intent: preserve lat max/min assignment branch when n1->lat < n2->lat (~19–25).
+        $n1 = $this->makeNode(['lat' => -36.0, 'lng' => -58.0, 'name' => 'SouthEndpoint']);
+        $n2 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0, 'name' => 'NorthEndpoint']);
+        $insideLatEdge = $this->makeNode(['lat' => -36.3, 'lng' => -58.0, 'name' => 'LatEdgeIn']);
+        $outsideLat = $this->makeNode(['lat' => -37.6, 'lng' => -58.0, 'name' => 'LatOut']);
+
+        $rows = $this->repo()->getPotentialsNodes($n1, $n2);
+
+        $ids = $rows->pluck('id');
+        $this->assertTrue($ids->contains($insideLatEdge->id));
+        $this->assertFalse($ids->contains($outsideLat->id));
+    }
+
     public function test_autocomplete_returns_empty_when_no_rows_match(): void
     {
         // Mutation intent: preserve whereRaw + optional country filter when CONCAT yields zero hits (~41–55).

@@ -590,6 +590,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: bounding-box test primarily exercised one ordering shape; reversed-lng branch comparators were under-asserted. Autocomplete tests matched mostly by name and country, so state/country concat and exact log message construction could mutate without failure.
   - Fix: added `test_get_potentials_nodes_handles_reversed_lng_order_and_keeps_bounds` and `test_autocomplete_matches_state_country_concat_and_logs_query_context` (state-token search + `Log::shouldReceive('info')->with($needle.' AR')`).
 
+- `RoutesRepository.php` `getPotentialsNodes` (`~19–25`): lat max/min branch when `$n1->lat < $n2->lat` (else path vs northern-first ordering).
+  - Cause: bbox integration tests mostly lat-descended endpoints (`n1` north of `n2`), so swapping lat assignment without an assertion near the expanded lat floor could survive.
+  - Fix: added `test_get_potentials_nodes_handles_reversed_lat_order_and_keeps_bounds` (southern endpoint first + node just inside vs clearly outside `minLat - latDiff`).
+
 - `RoutesRepository.php` `autocomplete` (`~41–55`): zero-row result set for `CONCAT(...) LIKE` + country filter.
   - Cause: every autocomplete test asserted at least one hit; removing `whereRaw`, `where('country', …)`, `orderBy`, or `limit` could survive without an empty-collection assertion.
   - Fix: added `test_autocomplete_returns_empty_when_no_rows_match`.
