@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
 use STS\Events\Trip\Create as CreateEvent;
@@ -257,6 +258,59 @@ class TripRepositoryTest extends TestCase
         $result = $repo->getTripInfo($points);
 
         $this->assertEquals($routeData, $result);
+    }
+
+    public function test_get_trip_info_cache_bypass_ignores_cached_row_and_calls_osrm(): void
+    {
+        // Mutation intent: preserve cache-bypass else branch and hashed_points logging payload.
+        // Kills: f77d59641a69cb82, 9a8cdb4e5cd63213.
+        Config::set('carpoolear.trip_route_cache_bypass', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $points = [
+            ['lat' => -33.101, 'lng' => -60.201],
+            ['lat' => -33.202, 'lng' => -60.302],
+        ];
+
+        RouteCache::query()->create([
+            'points' => $points,
+            'route_data' => [
+                'status' => true,
+                'data' => ['distance' => 1.0, 'duration' => 1.0],
+                'message' => 'cached',
+            ],
+            'expires_at' => now()->addDay(),
+        ]);
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [[
+                    'distance' => 12345.0,
+                    'duration' => 678.0,
+                ]],
+            ], 200),
+        ]);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->andReturn(false);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertTrue($result['status']);
+        $this->assertSame(12345.0, (float) $result['data']['distance']);
+        $this->assertSame(678.0, (float) $result['data']['duration']);
+        $this->assertSame('Route found', $result['message']);
     }
 
     public function test_get_trip_by_trip_passenger_returns_passenger_by_primary_key(): void

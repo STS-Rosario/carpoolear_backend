@@ -217,3 +217,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `0e3418e2b45fa6dc`, `8436b725741c95e3`, `0b111388692a64e7`
   - Cause: `getTripInfo()` route-cache short circuit (`if (! $cacheBypass)`, RouteCache lookup, `if ($cachedRoute)` early return) had no integration-level coverage; mutations skipped caching or skipped returning cached `route_data`.
   - Fix: added `test_get_trip_info_returns_cached_route_data_when_route_cache_row_valid`.
+
+- `f77d59641a69cb82`, `9a8cdb4e5cd63213`
+  - Cause: cache-bypass else branch in `getTripInfo()` (`cache BYPASS enabled` log payload) was unexercised, so mutations removing the log call or the `hashed_points` payload item survived.
+  - Fix: added `test_get_trip_info_cache_bypass_ignores_cached_row_and_calls_osrm` to force bypass on, seed cache, and assert OSRM-faked result is used instead of cached data.
