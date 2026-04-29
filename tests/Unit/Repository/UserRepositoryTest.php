@@ -94,6 +94,12 @@ class UserRepositoryTest extends TestCase
         $this->assertTrue($found->is($user));
     }
 
+    public function test_get_user_by_returns_null_when_no_match(): void
+    {
+        // Mutation intent: preserve `User::where($key, $value)->first()` absent-row behavior (~68–71).
+        $this->assertNull($this->repo()->getUserBy('email', 'missing-getuserby-'.uniqid('', true).'@example.com'));
+    }
+
     public function test_search_users_null_returns_null_and_limits_matches(): void
     {
         $this->assertNull($this->repo()->searchUsers(null));

@@ -358,7 +358,15 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: happy path asserted only a hit row; empty lookup could regress without a null assertion.
   - Fix: added `test_get_device_by_returns_null_when_no_row_matches`.
 
+- `DeviceRepository.php` `getDevices` (`~25–28`): user with zero device rows.
+  - Cause: tests always seeded devices before listing; dropping `where('user_id', …)` or swapping `get()` could survive without an empty-collection assertion.
+  - Fix: added `test_get_devices_returns_empty_when_user_has_no_devices`.
+
 ## UserRepository
+
+- `UserRepository.php` `getUserBy` (`~68–71`): `User::where($key, $value)->first()` when no row matches.
+  - Cause: only happy-path email lookup was asserted.
+  - Fix: added `test_get_user_by_returns_null_when_no_match`.
 
 - `UserRepository.php` `show` absent-user path (`~41–45`): `first()` may return null; `private_note` stripping must stay behind `if ($user)`.
   - Cause: tests always loaded an existing id, so skipping the reset body could mutate without failing.

@@ -82,6 +82,15 @@ class DeviceRepositoryTest extends TestCase
         }
     }
 
+    public function test_get_devices_returns_empty_when_user_has_no_devices(): void
+    {
+        // Mutation intent: preserve `Device::where('user_id', …)->get()` empty collection (~25–28).
+        $user = User::factory()->create();
+        $devices = (new DeviceRepository)->getDevices($user);
+
+        $this->assertCount(0, $devices);
+    }
+
     public function test_get_device_by_returns_first_match(): void
     {
         $user = User::factory()->create();
