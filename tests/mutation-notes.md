@@ -92,6 +92,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: earlier tests covered friends + admin only; removing the trips block or the passenger→trip→driver join still passed.
   - Fix: added `test_users_to_chat_includes_driver_with_public_trip_without_friend_edge` and `test_users_to_chat_includes_accepted_passenger_on_seekers_trip_without_friend_edge`.
 
+- `usersToChat` FoF nested `trips` filter (`ConversationRepository.php` ~178–188) vs inner `passengerAccepted` (`~189–191`).
+  - Cause: PUBLIC/driver Passenger branches didn’t force FoF graph traversal (`user.friends.friends`) nor trip-row qualification solely via `passengerAccepted` without PUBLIC/`trips`-closure redundancy where overlapping outer passenger existed.
+  - Fix: added `test_users_to_chat_includes_fof_trip_driver_via_friend_of_friend_without_direct_friendship` (FoF trip + bridge friendship + asserted non-direct friends edge) and `test_users_to_chat_includes_trip_driver_when_seeker_is_accepted_passenger_via_trips_closure` (`PRIVACY_FRIENDS` trip + viewer passenger targets inner closure distinctness).
+
 ## TripSearchRepository
 
 - Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.

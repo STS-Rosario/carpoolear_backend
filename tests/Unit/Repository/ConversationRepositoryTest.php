@@ -352,4 +352,54 @@ class ConversationRepositoryTest extends TestCase
 
         $this->assertTrue($users->pluck('id')->contains($passengerUser->id));
     }
+
+    public function test_users_to_chat_includes_fof_trip_driver_via_friend_of_friend_without_direct_friendship(): void
+    {
+        // Mutation intent: exercise FoF nested `trips` block (~178–188): driver FoF trip + `user.friends.friends` path.
+        $viewer = User::factory()->create(['name' => 'FoF Viewer Seek']);
+        $bridge = User::factory()->create();
+        $needle = 'FoFDrvChat'.substr(uniqid('', true), 0, 8);
+        $driver = User::factory()->create(['name' => $needle.' Host']);
+
+        $friends = new FriendsRepository;
+        $friends->add($driver, $bridge, User::FRIEND_ACCEPTED);
+        $friends->add($bridge, $viewer, User::FRIEND_ACCEPTED);
+
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $this->assertFalse($viewer->fresh()->friends()->where('users.id', $driver->id)->exists());
+
+        $repo = new ConversationRepository;
+        $users = $repo->usersToChat($viewer->id, null, 'FoFDrvChat');
+
+        $this->assertTrue($users->pluck('id')->contains($driver->id));
+    }
+
+    public function test_users_to_chat_includes_trip_driver_when_seeker_is_accepted_passenger_via_trips_closure(): void
+    {
+        // Mutation intent: `orWhereHas('passengerAccepted')` on trip (~189–191); distinguish from outer `passenger.trip.user` branch.
+        $viewer = User::factory()->create(['name' => 'Ex Passenger Seek']);
+        $needle = 'DrvForPassJoin'.substr(uniqid('', true), 0, 8);
+        $driver = User::factory()->create(['name' => $needle.' Captain']);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $viewer->id,
+        ]);
+
+        $repo = new ConversationRepository;
+        $users = $repo->usersToChat($viewer->id, null, 'DrvForPassJoin');
+
+        $this->assertTrue($users->pluck('id')->contains($driver->id));
+    }
 }
