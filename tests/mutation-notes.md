@@ -137,3 +137,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `f1e3920c718877f8`, `461b2b2b2014b253`, `81ebf36ce14d0d8e`
   - Cause: `generateTripPath` did not have a direct negative/zero node-id filter assertion, leaving `id > 0` threshold mutations unprotected.
   - Fix: added `test_generate_trip_path_ignores_zero_or_negative_node_ids`.
+
+- `b73f090484a0f6cf`, `cdd40d6198be223e`, `88d43ec2386c79f0`, `a9916da59882f03d`, `2e4c80cf0156b94a`, `5282c105ca53e94c`, `da0260725194a1cd`
+  - Cause: `show` relation eager-loading for admin/non-admin branches lacked explicit assertions, so relation list mutations survived.
+  - Fix: strengthened `test_show_includes_soft_deleted_trip_for_admin` and added `test_show_for_non_admin_eager_loads_user_and_points_only`.

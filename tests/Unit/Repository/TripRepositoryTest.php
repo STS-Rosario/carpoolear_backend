@@ -92,6 +92,26 @@ class TripRepositoryTest extends TestCase
         $this->assertNotNull($found);
         $this->assertSame($trip->id, $found->id);
         $this->assertNotNull($found->deleted_at);
+        $this->assertTrue($found->relationLoaded('user'));
+        $this->assertTrue($found->relationLoaded('points'));
+        $this->assertTrue($found->relationLoaded('car'));
+        $this->assertTrue($found->relationLoaded('passenger'));
+        $this->assertTrue($found->relationLoaded('ratings'));
+    }
+
+    public function test_show_for_non_admin_eager_loads_user_and_points_only(): void
+    {
+        // Mutation intent: preserve non-admin show eager-loading of both user and points.
+        // Kills: 5282c105ca53e94c, da0260725194a1cd.
+        $user = User::factory()->create();
+        $user->forceFill(['is_admin' => false])->saveQuietly();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+
+        $found = $this->repo()->show($user, $trip->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->relationLoaded('user'));
+        $this->assertTrue($found->relationLoaded('points'));
     }
 
     public function test_index_applies_equality_and_operator_criteria(): void
