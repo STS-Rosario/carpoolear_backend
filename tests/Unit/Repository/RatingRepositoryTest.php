@@ -98,6 +98,14 @@ class RatingRepositoryTest extends TestCase
         $this->assertTrue($rating->is($byHash->first()));
     }
 
+    public function test_find_by_returns_empty_collection_when_no_match(): void
+    {
+        // Mutation intent: preserve `RatingModel::where($key, $value)->get()` empty set (~75–78).
+        $rows = (new RatingRepository)->findBy('voted_hash', 'missing-hash-'.uniqid('', true));
+
+        $this->assertCount(0, $rows);
+    }
+
     public function test_update_persists_changes(): void
     {
         $driver = User::factory()->create();

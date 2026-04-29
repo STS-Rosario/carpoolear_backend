@@ -326,6 +326,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests always resolved valid ids; replacing `find` with `first()` or dropping the lookup could survive without an explicit null guard.
   - Fix: added `test_find_returns_null_when_rating_id_missing`.
 
+- `RatingRepository.php` `findBy` (`~75–78`): empty result set from `where(...)->get()`.
+  - Cause: `test_find_and_find_by` only asserted a hit row; removing `where($key, $value)` or swapping `get()` could survive without an empty-query assertion.
+  - Fix: added `test_find_by_returns_empty_collection_when_no_match`.
+
 ## FileRepository
 
 - Cluster `FileRepository.php` (`tests/coverage/20260428_2310.txt` ~1350+): `createFromFile` directory creation flags and `createFromData` generated-name branch (`$name` null).
