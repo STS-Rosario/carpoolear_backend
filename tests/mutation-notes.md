@@ -336,6 +336,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: prior test used one mixed token and membership-style assertions, which could let some concat/OR variants survive. Relation eager-loading and strict alphabetical ordering were not asserted directly.
   - Fix: strengthened `test_search_users_matches_name_email_doc_or_phone` with strict per-field searches and one-result expectations; added `test_search_users_orders_by_name_and_eager_loads_accounts_and_cars`.
 
+## UserRepository (`index` map branch)
+
+- `UserRepository.php` `index` tail (`~113–126`): `allFriends()` pivot `state` branching into `$item->state` (`request` vs `friend` vs `none`).
+  - Cause: existing index tests validated exclusions/search for `state === 'none'` and accepted friend absence, but never asserted the **`FRIEND_REQUEST` → `'request'`** decoration path.
+  - Fix: added `test_index_sets_state_request_when_pending_friend_edge_exists` using `FriendsRepository::add($self, $peer, FRIEND_REQUEST)` (row must be uid1→uid2 from `$user` so `allFriends()` sees it) plus a name-scoped `index` query.
+
 ## SubscriptionsRepository (getPotentialNode follow-up)
 
 - `SubscriptionsRepository.php` line ~169 (`getPotentialNode`): `whereBetween('lng', ...)` before `first()` result selection.

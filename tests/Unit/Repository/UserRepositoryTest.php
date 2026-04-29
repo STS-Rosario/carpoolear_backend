@@ -7,6 +7,7 @@ use STS\Models\Message;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Repository\FriendsRepository;
 use STS\Repository\UserRepository;
 use STS\Services\Notifications\Models\DatabaseNotification;
 use Tests\TestCase;
@@ -166,6 +167,31 @@ class UserRepositoryTest extends TestCase
         $this->assertCount(1, $rows);
         $this->assertSame($match->id, $rows->first()->id);
         $this->assertSame('none', $rows->first()->state);
+    }
+
+    public function test_index_sets_state_request_when_pending_friend_edge_exists(): void
+    {
+        // Mutation intent: preserve map branch `$u->pivot->state == User::FRIEND_REQUEST` → `$item->state = 'request'`.
+        $suffix = substr(uniqid('', true), 0, 8);
+        $self = User::factory()->create([
+            'name' => 'IdxReqSelf'.$suffix,
+            'active' => true,
+            'banned' => false,
+        ]);
+        $pendingPeer = User::factory()->create([
+            'name' => 'IdxReqPending'.$suffix,
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        // `allFriends()` is uid1→uid2; index reads `$user->allFriends()` so the REQUEST row must have uid1=$self.
+        (new FriendsRepository)->add($self, $pendingPeer, User::FRIEND_REQUEST);
+
+        $rows = $this->repo()->index($self->fresh(), 'IdxReqPending'.$suffix);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($pendingPeer->id, $rows->first()->id);
+        $this->assertSame('request', $rows->first()->state);
     }
 
     public function test_add_friend_and_delete_friend_sync_bidirectional_pivot(): void
