@@ -93,3 +93,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `c420b4523347fb9b`, `054956c69594930e`, `3bc7a0ac2cd873e1`, `4bc087b221ea14d1`, `330f86c4e850f0f9`, `d3a6deda630c0225`, `1301ca6a05995d26`, `9b0a406f82a305f3`, `989e733cfc9ee959`, `ebad617f35c5726b`, `e416ada5cc106318`, `85d42995c6d515f4`
   - Cause: branch where cap assignment is skipped (disabled module/non-applicable path) was uncovered.
   - Fix: added `test_create_keeps_seat_price_when_cap_not_required_or_module_disabled`.
+
+- `97d4c2cdee6ca23d`, `e53a5df21a05bb4e`, `360811401013af7d`, `4123fa9d994e5a5b`, `1a6d2f2a81d01d31`, `2b10aa7ab3776cd5`, `41ad6e0ea218715e`, `ebbc4167c595fae9`, `d25ccf133496e175`
+  - Cause: payment-trigger branch in `create` (route requires payment + threshold reached) was not directly asserted.
+  - Fix: added `test_create_sets_awaiting_payment_and_preference_when_route_requires_sellado`.
