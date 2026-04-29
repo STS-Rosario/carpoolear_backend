@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use Illuminate\Support\Facades\DB;
 use STS\Models\Conversation;
 use STS\Models\Message;
@@ -52,6 +53,22 @@ class MessageRepositoryTest extends TestCase
         ]);
     }
 
+    public function test_store_returns_false_when_save_fails(): void
+    {
+        $message = Mockery::mock(Message::class);
+        $message->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->store($message));
+    }
+
+    public function test_delete_returns_false_when_delete_fails(): void
+    {
+        $message = Mockery::mock(Message::class);
+        $message->shouldReceive('delete')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->delete($message));
+    }
+
     public function test_delete_removes_message(): void
     {
         $sender = User::factory()->create();
@@ -62,6 +79,16 @@ class MessageRepositoryTest extends TestCase
         $this->assertTrue((bool) $this->repo()->delete($message));
 
         $this->assertNull(Message::query()->find($id));
+    }
+
+    public function test_get_messages_returns_empty_when_conversation_has_no_messages(): void
+    {
+        // Mutation intent: preserve relation query + take when zero rows (~23–34).
+        $conversation = Conversation::factory()->create();
+
+        $batch = $this->repo()->getMessages($conversation, null, 10);
+
+        $this->assertCount(0, $batch);
     }
 
     public function test_get_messages_orders_newest_first_and_respects_page_size(): void
@@ -114,6 +141,19 @@ class MessageRepositoryTest extends TestCase
         $this->assertSame($unread->id, $rows->first()->id);
     }
 
+    public function test_get_unread_messages_returns_empty_when_no_unread_for_user(): void
+    {
+        // Mutation intent: preserve whereHas users read=false (~37–42).
+        $conversation = Conversation::factory()->create();
+        $sender = User::factory()->create();
+        $reader = User::factory()->create();
+
+        $onlyRead = $this->makeMessage($conversation, $sender, 'seen');
+        $onlyRead->users()->attach($reader->id, ['read' => true]);
+
+        $this->assertCount(0, $this->repo()->getUnreadMessages($conversation, $reader));
+    }
+
     public function test_change_message_read_state_updates_pivot(): void
     {
         $conversation = Conversation::factory()->create();
@@ -163,6 +203,26 @@ class MessageRepositoryTest extends TestCase
         $afterTs = $this->repo()->getMessagesUnread($reader, $since);
         $this->assertCount(1, $afterTs);
         $this->assertSame($mNew->id, $afterTs->first()->id);
+    }
+
+    public function test_get_messages_unread_returns_empty_when_user_has_no_conversations(): void
+    {
+        // Mutation intent: `$conversations_id` stays empty (~62–78).
+        $reader = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->getMessagesUnread($reader, null));
+    }
+
+    public function test_get_messages_unread_returns_empty_when_all_conversations_marked_read(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => true]);
+        $this->makeMessage($conv, $sender, 'ignored');
+
+        $this->assertCount(0, $this->repo()->getMessagesUnread($reader->fresh(), null));
     }
 
     public function test_mark_messages_sets_read_for_matching_pivot_rows(): void

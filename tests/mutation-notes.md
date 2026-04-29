@@ -116,6 +116,22 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: survivor mutants removed pivot `read` keys or dropped `updated_at` from the bulk update without assertions on raw `user_message_read` / `conversations_users` rows; loose `== 0` vs `=== 0` was not distinguished when `read` is stored as `'0'`.
   - Fix: added `test_mark_messages_updates_user_message_read_updated_at`, `test_change_message_read_state_persists_read_flag_in_user_message_read`, `test_create_message_read_state_inserts_read_into_user_message_read`, `test_get_messages_unread_includes_conversation_when_pivot_read_is_loosely_zero`.
 
+- `MessageRepository.php` `store` / `delete` (`~13–20`): `return $message->save()` / `return $message->delete()`.
+  - Cause: integration tests only asserted successful paths.
+  - Fix: added `test_store_returns_false_when_save_fails` and `test_delete_returns_false_when_delete_fails`.
+
+- `MessageRepository.php` `getMessages` (`~23–34`): conversation with zero message rows.
+  - Cause: pagination tests always seeded messages first.
+  - Fix: added `test_get_messages_returns_empty_when_conversation_has_no_messages`.
+
+- `MessageRepository.php` `getUnreadMessages` (`~37–42`): `whereHas` unread pivot yields zero messages.
+  - Cause: unread path always paired an unread row with a hit.
+  - Fix: added `test_get_unread_messages_returns_empty_when_no_unread_for_user`.
+
+- `MessageRepository.php` `getMessagesUnread` (`~55–80`): no unread conversation memberships (`$conversations_id` empty) or only read pivots.
+  - Cause: tests always attached at least one unread conversation before asserting messages.
+  - Fix: added `test_get_messages_unread_returns_empty_when_user_has_no_conversations` and `test_get_messages_unread_returns_empty_when_all_conversations_marked_read`.
+
 ## PassengersRepository
 
 - Cluster `PassengersRepository.php` (`tests/coverage/20260428_2310.txt` ~1166–1259): `newRequest` create payload keys; `cancelRequest` `==` vs constants (`EqualToIdentical`); `getPendingRequests` / `getPendingPaymentRequests` trip joins + `trips.deleted_at`; `userHasActiveRequest` `whereIn` states.
