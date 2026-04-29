@@ -231,6 +231,63 @@ class TripRepositoryTest extends TestCase
         $this->assertCount(0, $trip->fresh()->points);
     }
 
+    public function test_add_points_uses_explicit_address_when_provided(): void
+    {
+        // Mutation intent: preserve `isset($point['address'])` branch so address is taken from payload directly.
+        $trip = Trip::factory()->create();
+        $repo = $this->repo();
+
+        $repo->addPoints($trip, [[
+            'lat' => -10.01,
+            'lng' => -20.02,
+            'address' => 'Calle explícita 123',
+            'json_address' => ['id' => 77, 'ciudad' => 'Ignorada'],
+        ]]);
+
+        $saved = $trip->fresh()->points->first();
+        $this->assertSame('Calle explícita 123', $saved->address);
+    }
+
+    public function test_add_points_reads_ciudad_from_json_encoded_string_json_address(): void
+    {
+        // Mutation intent: preserve non-array `json_address` branch (`json_decode` + object `ciudad`) in addPoints().
+        $trip = Trip::factory()->create();
+        $repo = $this->repo();
+
+        $repo->addPoints($trip, [[
+            'lat' => -11.11,
+            'lng' => -21.21,
+            'json_address' => json_encode(['id' => 88, 'ciudad' => 'DesdeJsonString']),
+        ]]);
+
+        $saved = $trip->fresh()->points->first();
+        $this->assertSame('DesdeJsonString', $saved->address);
+        $payload = is_string($saved->json_address)
+            ? json_decode($saved->json_address, true, 512, JSON_THROW_ON_ERROR)
+            : $saved->json_address;
+        $this->assertSame(88, (int) ($payload['id'] ?? 0));
+        $this->assertSame('DesdeJsonString', $payload['ciudad'] ?? '');
+    }
+
+    public function test_delete_points_removes_all_rows_for_trip_in_trips_points(): void
+    {
+        // Mutation intent: preserve `$trip->points()->delete()` mass delete for the trip’s points.
+        $trip = Trip::factory()->create();
+        $repo = $this->repo();
+
+        $repo->addPoints($trip, [
+            ['lat' => -12.0, 'lng' => -22.0, 'json_address' => ['id' => 1, 'ciudad' => 'A']],
+            ['lat' => -13.0, 'lng' => -23.0, 'json_address' => ['id' => 2, 'ciudad' => 'B']],
+        ]);
+
+        $this->assertSame(2, (int) \DB::table('trips_points')->where('trip_id', $trip->id)->count());
+
+        $repo->deletePoints($trip);
+
+        $this->assertCount(0, $trip->fresh()->points);
+        $this->assertSame(0, (int) \DB::table('trips_points')->where('trip_id', $trip->id)->count());
+    }
+
     public function test_generate_trip_path_ignores_zero_or_negative_node_ids(): void
     {
         // Mutation intent: keep strict > 0 node-id filter in generateTripPath().

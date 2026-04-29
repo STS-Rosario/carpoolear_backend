@@ -261,3 +261,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `getTripInfo()` **expired RouteCache** (`TripRepository.php` ~683–687 `orWhere('expires_at', '>', now())`) and `simplePrice` zero-distance boundary (`~661–663`).
   - Cause: no test proved a past `expires_at` row is ignored (would wrongly return stale `route_data` if the inner OR / comparator mutates); `simplePrice` only covered a positive distance.
   - Fix: added `test_get_trip_info_skips_expired_route_cache_and_logs_cache_miss_before_osrm` (stale row + OSRM success + `cache MISS` log + `Http::recorded()`) and `test_simple_price_returns_zero_for_zero_distance`.
+
+- `TripRepository::addPoints` / `deletePoints` (`~616–658`): e.g. `f715fdf844c80168` (catch empty address) adjacent branches in report; explicit `address` and string `json_address` paths were only exercised via array `json_address` in factories.
+  - Cause: `isset($point['address'])` short-circuit, `json_decode` string branch for `ciudad`, and `$trip->points()->delete()` wiping `trips_points` had no direct assertions beyond the combined add/generate/delete flow.
+  - Fix: added `test_add_points_uses_explicit_address_when_provided`, `test_add_points_reads_ciudad_from_json_encoded_string_json_address`, and `test_delete_points_removes_all_rows_for_trip_in_trips_points`.
