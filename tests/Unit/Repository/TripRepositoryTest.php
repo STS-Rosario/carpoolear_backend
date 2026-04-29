@@ -637,6 +637,47 @@ class TripRepositoryTest extends TestCase
             $strictItems->search(fn ($t) => $t->id === $strictLate->id));
     }
 
+    public function test_search_weekly_schedule_uses_bitwise_filter_and_orders_by_trip_date(): void
+    {
+        // Mutation intent: preserve weekly-schedule bitwise whereRaw and ordering branch in search().
+        // Kills: 48d9371fc12ff975, 766b751ecf371bed, c03ae62dc7ac4fa3.
+        $earlyMatch = Trip::factory()->create([
+            'weekly_schedule' => Trip::DAY_MONDAY | Trip::DAY_WEDNESDAY,
+            'trip_date' => Carbon::now()->subDays(2),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $lateMatch = Trip::factory()->create([
+            'weekly_schedule' => Trip::DAY_MONDAY,
+            'trip_date' => Carbon::now()->addDays(2),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        Trip::factory()->create([
+            'weekly_schedule' => Trip::DAY_FRIDAY,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $page = $this->repo()->search(null, [
+            'weekly_schedule' => (string) Trip::DAY_MONDAY,
+            'page' => 1,
+            'page_size' => 20,
+        ]);
+
+        $items = collect($page->items())->values();
+        $ids = $items->pluck('id');
+        $this->assertTrue($ids->contains($earlyMatch->id));
+        $this->assertTrue($ids->contains($lateMatch->id));
+        $this->assertSame(2, $ids->count());
+        $this->assertSame($earlyMatch->id, $items->first()->id);
+        $this->assertSame($lateMatch->id, $items->last()->id);
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

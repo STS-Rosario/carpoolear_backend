@@ -161,3 +161,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `f72a863783d0d92e`, `6fdd97778d011e84`, `a36ebef18814d78d`, `444bd49df625259c`, `b80f5f470cf3e9c3`, `656042282cff9c7f`
   - Cause: `search` date-window internals lacked direct assertions for from/to inner guards and ordering calls, plus strict-date ordering branch.
   - Fix: added `test_search_applies_from_to_and_strict_date_ordering_paths`.
+
+- `48d9371fc12ff975`, `766b751ecf371bed`, `c03ae62dc7ac4fa3`
+  - Cause: weekly-schedule search branch lacked explicit assertions for bitwise `whereRaw` filtering and ordering.
+  - Fix: added `test_search_weekly_schedule_uses_bitwise_filter_and_orders_by_trip_date`.
