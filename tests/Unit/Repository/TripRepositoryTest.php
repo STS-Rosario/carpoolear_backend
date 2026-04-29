@@ -595,6 +595,17 @@ class TripRepositoryTest extends TestCase
         $this->assertSame($trip->id, $found->trip_id);
     }
 
+    public function test_get_trip_by_trip_passenger_returns_null_when_id_not_found(): void
+    {
+        // Mutation intent: preserve Passenger::where('id', ...)->first() null path for unknown ids.
+        $missingId = 999999001;
+        $this->assertNull(Passenger::query()->where('id', $missingId)->first());
+
+        $found = $this->repo()->getTripByTripPassenger($missingId);
+
+        $this->assertNull($found);
+    }
+
     public function test_sellado_viaje_reflects_trip_count_and_threshold(): void
     {
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
@@ -612,6 +623,23 @@ class TripRepositoryTest extends TestCase
         Trip::factory()->create(['user_id' => $user->id]);
         $info2 = $this->repo()->selladoViaje($user);
         $this->assertTrue($info2['user_over_free_limit']);
+    }
+
+    public function test_sellado_viaje_reflects_payment_module_disabled(): void
+    {
+        // Mutation intent: preserve config passthrough for `module_trip_creation_payment_enabled` when false.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 5);
+
+        $user = User::factory()->create();
+        Trip::factory()->count(10)->create(['user_id' => $user->id]);
+
+        $info = $this->repo()->selladoViaje($user);
+
+        $this->assertFalse($info['trip_creation_payment_enabled']);
+        $this->assertSame(5, $info['free_trips_amount']);
+        $this->assertSame(10, $info['trips_created_by_user_amount']);
+        $this->assertTrue($info['user_over_free_limit']);
     }
 
     public function test_get_recent_trips_filters_by_created_at_window(): void
@@ -645,6 +673,42 @@ class TripRepositoryTest extends TestCase
 
         $future->refresh();
         $this->assertNull($future->deleted_at);
+    }
+
+    public function test_hide_trips_only_soft_deletes_active_scope_trips_via_filter_active_trips(): void
+    {
+        // Mutation intent: preserve `filterActiveTrips` inside hideTrips so past non-weekly trips are not mass-updated.
+        // Kills: e64f2d875a0b1026 (RemoveMethodCall on filterActiveTrips).
+        $user = User::factory()->create();
+        $future = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addWeek(),
+            'weekly_schedule' => 0,
+        ]);
+        $pastNonWeekly = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->subMonth(),
+            'weekly_schedule' => 0,
+        ]);
+        $pastWeekly = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->subMonth(),
+            'weekly_schedule' => 1,
+        ]);
+
+        $affected = $this->repo()->hideTrips($user);
+
+        $this->assertSame(2, (int) $affected);
+
+        $future->refresh();
+        $pastNonWeekly->refresh();
+        $pastWeekly->refresh();
+
+        $this->assertNotNull($future->deleted_at);
+        $this->assertStringStartsWith('2000-01-01', (string) $future->deleted_at);
+        $this->assertNull($pastNonWeekly->deleted_at);
+        $this->assertNotNull($pastWeekly->deleted_at);
+        $this->assertStringStartsWith('2000-01-01', (string) $pastWeekly->deleted_at);
     }
 
     public function test_share_trip_true_when_other_is_accepted_passenger_on_active_driver_trip(): void
@@ -3128,9 +3192,12 @@ class TripRepositoryTest extends TestCase
 
         $payload = $this->invokeRoutingServiceUnavailableResponse($repo);
 
-        $this->assertFalse($payload['status']);
-        $this->assertNull($payload['data']);
-        $this->assertSame(trans('errors.routing_service_unavailable'), $payload['message']);
-        $this->assertSame('routing_service_unavailable', $payload['error_code']);
+        $expected = [
+            'status' => false,
+            'data' => null,
+            'message' => trans('errors.routing_service_unavailable'),
+            'error_code' => 'routing_service_unavailable',
+        ];
+        $this->assertEquals($expected, $payload);
     }
 }
