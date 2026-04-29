@@ -131,6 +131,35 @@ class TripRepositoryTest extends TestCase
         $this->assertSame(5, (int) $largeOnly->first()->total_seats);
     }
 
+    public function test_index_supports_raw_expression_keys_containing_parenthesis(): void
+    {
+        // Mutation intent: preserve DB::raw branch when criteria key contains '('.
+        // Kills: 016f0f4690481e55.
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        Trip::factory()->create(['user_id' => $u1->id, 'total_seats' => 1]);
+        Trip::factory()->create(['user_id' => $u2->id, 'total_seats' => 4]);
+
+        $rows = $this->repo()->index([
+            ['key' => 'YEAR(trip_date)', 'op' => '>', 'value' => 2000],
+        ]);
+
+        $this->assertGreaterThanOrEqual(2, $rows->count());
+    }
+
+    public function test_index_applies_withs_only_when_requested(): void
+    {
+        // Mutation intent: preserve withs guard and eager-load call in index().
+        // Kills: af11e441e24a3bdf, 3389b1d9a73e51d3.
+        $trip = Trip::factory()->create();
+
+        $withoutWiths = $this->repo()->index([['key' => 'id', 'value' => $trip->id]]);
+        $this->assertFalse($withoutWiths->first()->relationLoaded('user'));
+
+        $withUser = $this->repo()->index([['key' => 'id', 'value' => $trip->id]], ['user']);
+        $this->assertTrue($withUser->first()->relationLoaded('user'));
+    }
+
     public function test_delete_soft_deletes_trip(): void
     {
         $trip = Trip::factory()->create();
