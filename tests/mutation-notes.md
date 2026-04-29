@@ -169,3 +169,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `e730140a0b60256a`, `6ccb38ae02344061`, `be6f1f4ef1b631d6`, `e3727bfc495d0726`
   - Cause: default `search` branch (`history` absent) lacked explicit assertions for active-trip filtering and its ordering side-effect.
   - Fix: added `test_search_default_branch_filters_active_unless_history_and_orders_by_trip_date`.
+
+- `ffe21dba8f63af4a`, `4474a4cffd3d8291`, `503862ec6c4c74f2`
+  - Cause: sellado visibility guard in `search` lacked direct assertions for null-user bypass and owner-specific visibility of unpaid/non-ready trips.
+  - Fix: added `test_search_with_null_user_does_not_apply_owner_sellado_visibility_guard` and `test_search_user_scope_keeps_owner_unpaid_trip_and_hides_other_unpaid_trip`.

@@ -718,6 +718,52 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($historyIds->contains($pastNonWeekly->id));
     }
 
+    public function test_search_with_null_user_does_not_apply_owner_sellado_visibility_guard(): void
+    {
+        // Mutation intent: preserve `if ($user)` guard before unpaid-sellado visibility filter.
+        // Kills: ffe21dba8f63af4a.
+        $restricted = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+            'needs_sellado' => 1,
+        ]);
+
+        $page = $this->repo()->search(null, ['page' => 1, 'page_size' => 20]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertTrue($ids->contains($restricted->id));
+    }
+
+    public function test_search_user_scope_keeps_owner_unpaid_trip_and_hides_other_unpaid_trip(): void
+    {
+        // Mutation intent: preserve unpaid-sellado owner visibility where-clause and owner predicate.
+        // Kills: 4474a4cffd3d8291, 503862ec6c4c74f2.
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+
+        $ownRestricted = Trip::factory()->create([
+            'user_id' => $viewer->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+            'needs_sellado' => 1,
+        ]);
+        $otherRestricted = Trip::factory()->create([
+            'user_id' => $other->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+            'needs_sellado' => 1,
+        ]);
+
+        $page = $this->repo()->search($viewer, ['page' => 1, 'page_size' => 20]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertTrue($ids->contains($ownRestricted->id));
+        $this->assertFalse($ids->contains($otherRestricted->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().
