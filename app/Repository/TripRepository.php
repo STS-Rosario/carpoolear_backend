@@ -627,7 +627,7 @@ class TripRepository
                         $json = json_decode($point['json_address']);
                         $p->address = $json->ciudad;
                     }
-                } catch (Exception $ex) {
+                } catch (\Throwable $ex) {
                     $p->address = '';
                 }
             }

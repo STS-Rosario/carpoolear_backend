@@ -265,3 +265,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `TripRepository::addPoints` / `deletePoints` (`~616–658`): e.g. `f715fdf844c80168` (catch empty address) adjacent branches in report; explicit `address` and string `json_address` paths were only exercised via array `json_address` in factories.
   - Cause: `isset($point['address'])` short-circuit, `json_decode` string branch for `ciudad`, and `$trip->points()->delete()` wiping `trips_points` had no direct assertions beyond the combined add/generate/delete flow.
   - Fix: added `test_add_points_uses_explicit_address_when_provided`, `test_add_points_reads_ciudad_from_json_encoded_string_json_address`, and `test_delete_points_removes_all_rows_for_trip_in_trips_points`.
+
+- `TripRepository::addPoints` **error handling** (`~623–631`): `f715fdf844c80168` and PHP 8 `Error` paths (invalid JSON → `null->ciudad`, missing `ciudad` in array).
+  - Cause: `catch (Exception $ex)` never caught typical PHP 8 failures (`Error` / undefined array key), so the empty-string fallback was effectively untestable and brittle in production.
+  - Fix: broadened catch to `catch (\Throwable $ex)` and added `test_add_points_sets_empty_address_when_json_string_is_invalid` plus `test_add_points_sets_empty_address_when_array_json_address_omits_ciudad`.

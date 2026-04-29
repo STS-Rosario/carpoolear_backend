@@ -269,6 +269,40 @@ class TripRepositoryTest extends TestCase
         $this->assertSame('DesdeJsonString', $payload['ciudad'] ?? '');
     }
 
+    public function test_add_points_sets_empty_address_when_json_string_is_invalid(): void
+    {
+        // Mutation intent: preserve try/catch fallback to empty address when json_decode yields non-object
+        // or property access fails (PHP 8 throws Error, not Exception).
+        // Kills: f715fdf844c80168 (EmptyStringToNotEmpty on catch assignment).
+        $trip = Trip::factory()->create();
+        $repo = $this->repo();
+
+        $repo->addPoints($trip, [[
+            'lat' => -14.02,
+            'lng' => -24.02,
+            'json_address' => '{"broken":',
+        ]]);
+
+        $saved = $trip->fresh()->points->first();
+        $this->assertSame('', $saved->address);
+    }
+
+    public function test_add_points_sets_empty_address_when_array_json_address_omits_ciudad(): void
+    {
+        // Mutation intent: preserve catch when array branch reads missing `ciudad` key (undefined index → Throwable).
+        $trip = Trip::factory()->create();
+        $repo = $this->repo();
+
+        $repo->addPoints($trip, [[
+            'lat' => -15.03,
+            'lng' => -25.03,
+            'json_address' => ['id' => 42],
+        ]]);
+
+        $saved = $trip->fresh()->points->first();
+        $this->assertSame('', $saved->address);
+    }
+
     public function test_delete_points_removes_all_rows_for_trip_in_trips_points(): void
     {
         // Mutation intent: preserve `$trip->points()->delete()` mass delete for the trip’s points.
