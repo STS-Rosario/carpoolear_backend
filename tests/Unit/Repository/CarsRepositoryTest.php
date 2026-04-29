@@ -90,6 +90,16 @@ class CarsRepositoryTest extends TestCase
         $this->assertTrue($cars->first()->is($car));
     }
 
+    public function test_index_returns_empty_when_user_has_no_cars(): void
+    {
+        // Mutation intent: preserve `$user->cars` empty relation (~30–33).
+        $user = User::factory()->create();
+
+        $cars = $this->repo()->index($user->fresh());
+
+        $this->assertCount(0, $cars);
+    }
+
     public function test_get_user_car_returns_first_row_for_user(): void
     {
         $u1 = User::factory()->create();

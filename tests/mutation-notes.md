@@ -346,6 +346,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests always passed `$unread` explicitly and only exercised pagination when both values existed; mutating the default to true or the gate from AND to OR could still pass.
   - Fix: added `test_get_notifications_default_argument_uses_all_notifications_not_unread_only` and `test_get_notifications_does_not_paginate_when_only_page_size_or_page_is_provided`.
 
+## CarsRepository
+
+- `CarsRepository.php` `index` (`~30–33`): `$user->cars` when the user has zero vehicle rows.
+  - Cause: tests always created a car before `index`; empty relation could regress without an assertion (similar to `DeviceRepository::getDevices`).
+  - Fix: added `test_index_returns_empty_when_user_has_no_cars`.
+
 ## PhoneVerificationRepository
 
 - `PhoneVerificationRepository.php` `find` (`~28–31`): `PhoneVerification::find($id)` when no row exists.
