@@ -322,6 +322,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `test_get_ratings_filters_available_and_value_when_page_size_null` intentionally kept `$pageSize == null`; omitting `paginate()` could survive without a `LengthAwarePaginator` contract check.
   - Fix: added `test_get_ratings_paginates_when_page_size_provided`.
 
+- `RatingRepository.php` `find` (`~70–73`): `RatingModel::find($id)` when no row exists.
+  - Cause: tests always resolved valid ids; replacing `find` with `first()` or dropping the lookup could survive without an explicit null guard.
+  - Fix: added `test_find_returns_null_when_rating_id_missing`.
+
 ## FileRepository
 
 - Cluster `FileRepository.php` (`tests/coverage/20260428_2310.txt` ~1350+): `createFromFile` directory creation flags and `createFromData` generated-name branch (`$name` null).

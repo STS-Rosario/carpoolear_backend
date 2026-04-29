@@ -211,4 +211,12 @@ class RatingRepositoryTest extends TestCase
         $this->assertCount(2, $page2);
         $this->assertSame([$rC->id, $rOldest->id], $page2->pluck('id')->all());
     }
+
+    public function test_find_returns_null_when_rating_id_missing(): void
+    {
+        // Mutation intent: preserve `RatingModel::find($id)` absent-row behavior (~71–73).
+        $missingId = (Rating::query()->max('id') ?? 0) + 999999;
+
+        $this->assertNull((new RatingRepository)->find($missingId));
+    }
 }
