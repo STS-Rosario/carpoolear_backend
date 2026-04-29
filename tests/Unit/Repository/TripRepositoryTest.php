@@ -729,6 +729,43 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($this->repo()->shareTrip($driver, User::factory()->create()));
     }
 
+    public function test_share_trip_returns_false_when_only_match_is_expired_non_weekly_trip(): void
+    {
+        // Mutation intent: preserve `filterActiveTrips` in shareTrip so inactive one-off trips never match.
+        // Kills: 697e7b3ac4ecb099 (RemoveMethodCall on filterActiveTrips); lines ~642–645 cluster in 20260428_2310.txt.
+        $driver = User::factory()->create();
+        $other = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subMonth(),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $other->id,
+        ]);
+
+        $this->assertFalse($this->repo()->shareTrip($driver, $other));
+    }
+
+    public function test_share_trip_returns_true_for_weekly_schedule_trip_even_when_trip_date_is_past(): void
+    {
+        // Mutation intent: preserve `trip_date >= now OR weekly_schedule > 0` branch so recurring trips stay shareable.
+        $driver = User::factory()->create();
+        $other = User::factory()->create();
+        $weeklyTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subWeek(),
+            'weekly_schedule' => 1,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $weeklyTrip->id,
+            'user_id' => $other->id,
+        ]);
+
+        $this->assertTrue($this->repo()->shareTrip($driver, $other));
+    }
+
     public function test_get_trips_driver_returns_future_trips_for_user(): void
     {
         $user = User::factory()->create();
