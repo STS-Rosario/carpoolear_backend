@@ -311,16 +311,34 @@ class TripRepositoryTest extends TestCase
             'trip_date' => Carbon::now()->addDay(),
             'weekly_schedule' => 0,
         ]);
+        $later = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addDays(2),
+            'weekly_schedule' => 0,
+        ]);
         Trip::factory()->create([
             'user_id' => $user->id,
             'trip_date' => Carbon::now()->subDay(),
             'weekly_schedule' => 0,
         ]);
+        Trip::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'weekly_schedule' => 0,
+        ]);
 
         $trips = $this->repo()->getTrips($user, $user->id, true);
 
-        $this->assertCount(1, $trips);
+        $this->assertCount(2, $trips);
         $this->assertSame($active->id, $trips->first()->id);
+        $this->assertSame($later->id, $trips->last()->id);
+        $this->assertTrue($trips->first()->relationLoaded('user'));
+        $this->assertTrue($trips->first()->relationLoaded('points'));
+        $this->assertTrue($trips->first()->relationLoaded('passengerAccepted'));
+        $this->assertTrue($trips->first()->relationLoaded('car'));
+        $this->assertTrue($trips->first()->passengerAccepted->every(
+            fn ($p) => $p->relationLoaded('user')
+        ));
     }
 
     public function test_get_trips_passenger_returns_trips_where_user_accepted(): void
@@ -331,15 +349,58 @@ class TripRepositoryTest extends TestCase
             'user_id' => $driver->id,
             'trip_date' => Carbon::now()->addDay(),
         ]);
+        $laterAccepted = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        $deletedAccepted = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(3),
+        ]);
+        $deletedAccepted->delete();
+        $requestedNotAccepted = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(4),
+        ]);
+        $otherPassengerTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(5),
+        ]);
+
         Passenger::factory()->aceptado()->create([
             'trip_id' => $trip->id,
             'user_id' => $passenger->id,
         ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $laterAccepted->id,
+            'user_id' => $passenger->id,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $deletedAccepted->id,
+            'user_id' => $passenger->id,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $requestedNotAccepted->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $otherPassengerTrip->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
 
         $trips = $this->repo()->getTrips($passenger, $passenger->id, false);
 
-        $this->assertCount(1, $trips);
+        $this->assertCount(2, $trips);
         $this->assertSame($trip->id, $trips->first()->id);
+        $this->assertSame($laterAccepted->id, $trips->last()->id);
+        $this->assertTrue($trips->first()->relationLoaded('user'));
+        $this->assertTrue($trips->first()->relationLoaded('points'));
+        $this->assertTrue($trips->first()->relationLoaded('passengerAccepted'));
+        $this->assertTrue($trips->first()->relationLoaded('car'));
+        $this->assertTrue($trips->first()->passengerAccepted->every(
+            fn ($p) => $p->relationLoaded('user')
+        ));
     }
 
     public function test_get_old_trips_excludes_weekly_schedule_and_past_only(): void
