@@ -133,3 +133,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `45f27ca691ab564d`, `5bdf31da7f173533`, `2c4d45590fbb4491`, `2095960def72d398`, `f9febe68e921584f`, `05f9966842a91f2c`, `5e5980987ced1592`, `2ff5b8a00050b688`, `2b73a9ae7652cdd8`
   - Cause: `update` branch for routes that no longer need sellado lacked assertions for strict elseif gating and payment-state reset behavior (`needs_sellado`, payment states list, reset/save flow).
   - Fix: added `test_update_clears_payment_state_when_route_no_longer_needs_sellado`.
+
+- `f1e3920c718877f8`, `461b2b2b2014b253`, `81ebf36ce14d0d8e`
+  - Cause: `generateTripPath` did not have a direct negative/zero node-id filter assertion, leaving `id > 0` threshold mutations unprotected.
+  - Fix: added `test_generate_trip_path_ignores_zero_or_negative_node_ids`.

@@ -139,6 +139,26 @@ class TripRepositoryTest extends TestCase
         $this->assertCount(0, $trip->fresh()->points);
     }
 
+    public function test_generate_trip_path_ignores_zero_or_negative_node_ids(): void
+    {
+        // Mutation intent: keep strict > 0 node-id filter in generateTripPath().
+        // Kills: f1e3920c718877f8, 461b2b2b2014b253, 81ebf36ce14d0d8e.
+        $trip = Trip::factory()->create();
+        $repo = $this->repo();
+
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => -5, 'ciudad' => 'Neg']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 0, 'ciudad' => 'Zero']],
+            ['lat' => -34.58, 'lng' => -58.38, 'json_address' => ['id' => 2, 'ciudad' => 'Two']],
+            ['lat' => -34.57, 'lng' => -58.37, 'json_address' => ['id' => 1, 'ciudad' => 'One']],
+        ]);
+
+        $path = $repo->generateTripPath($trip);
+
+        $this->assertSame('.2.1.', $path);
+        $this->assertSame('.2.1.', $trip->fresh()->path);
+    }
+
     public function test_simple_price_uses_fuel_config(): void
     {
         Config::set('carpoolear.fuel_price', 2000);
