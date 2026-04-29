@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repository;
 
+use Illuminate\Support\Facades\DB;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\Passenger;
@@ -299,6 +300,29 @@ class UserRepositoryTest extends TestCase
         // and empty `getLastPasswordReset` (~172–175).
         $this->assertNull($this->repo()->getUserByResetToken('missing-token-'.uniqid('', true)));
         $this->assertNull($this->repo()->getLastPasswordReset('missing-email-'.uniqid('', true).'@example.com'));
+    }
+
+    public function test_delete_reset_token_leaves_table_unchanged_when_no_rows_match(): void
+    {
+        // Mutation intent: preserve `where($key, $value)->delete()` zero-match path (~157–159).
+        $before = DB::table('password_resets')->count();
+
+        $this->repo()->deleteResetToken('token', 'noSuchTok'.uniqid('', true));
+
+        $this->assertSame($before, DB::table('password_resets')->count());
+    }
+
+    public function test_get_user_by_reset_token_returns_null_when_email_missing_from_users(): void
+    {
+        // Mutation intent: `User::where('email', $pr->email)->first()` miss (~164–167).
+        $token = 'orph-email-tok-'.uniqid('', true);
+        DB::table('password_resets')->insert([
+            'email' => 'ghost-'.uniqid('', true).'@example.com',
+            'token' => $token,
+            'created_at' => now(),
+        ]);
+
+        $this->assertNull($this->repo()->getUserByResetToken($token));
     }
 
     public function test_get_notifications_respects_unread_flag(): void

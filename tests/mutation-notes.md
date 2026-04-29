@@ -540,6 +540,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: happy-path round-trip asserted resolution only; removing the `if ($pr)` guard or returning a dummy model could survive without explicit absence checks.
   - Fix: added `test_password_reset_token_lookups_return_null_when_missing`.
 
+- `UserRepository.php` `deleteResetToken` (`~157–159`): `delete()` affecting zero rows.
+  - Cause: tests always deleted an inserted reset row first.
+  - Fix: added `test_delete_reset_token_leaves_table_unchanged_when_no_rows_match`.
+
+- `UserRepository.php` `getUserByResetToken` (`~164–167`): reset row exists but **`users`** has no row with that email (orphaned reset row).
+  - Cause: resolution checks assumed every `password_resets` email mapped to an existing user.
+  - Fix: added `test_get_user_by_reset_token_returns_null_when_email_missing_from_users`.
+
 - `UserRepository.php` (`tests/coverage/20260428_2310.txt` ~1464–1474): `show()` eager-load list (`accounts`, `donations`, `referencesReceived`, `cars`) and `acceptTerms`/`updatePhoto` return values (`AlwaysReturnNull`).
   - Cause: `show` test only checked `private_note` nulling, so dropping relation keys from `with([...])` could survive. `acceptTerms`/`updatePhoto` effects were asserted via fresh model state, but method return contracts were not, allowing null-return mutations.
   - Fix: strengthened `test_show_nulls_private_note_and_loads_relations` with `relationLoaded` assertions for all four relations; strengthened `test_accept_terms_and_update_photo` with non-null return and identity (`$user->id`) checks for both methods.
