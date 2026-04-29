@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\Passenger;
@@ -25,6 +26,22 @@ class ConversationRepositoryTest extends TestCase
 
         $this->assertTrue((bool) $repo->delete($conversation));
         $this->assertTrue($conversation->fresh()->trashed());
+    }
+
+    public function test_store_returns_false_when_save_fails(): void
+    {
+        $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse((new ConversationRepository)->store($conversation));
+    }
+
+    public function test_delete_returns_false_when_delete_fails(): void
+    {
+        $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('delete')->once()->andReturn(false);
+
+        $this->assertFalse((new ConversationRepository)->delete($conversation));
     }
 
     public function test_get_conversation_from_id_without_user_returns_model(): void
@@ -71,6 +88,16 @@ class ConversationRepositoryTest extends TestCase
         $this->assertCount(2, $byModel);
         $this->assertCount(2, $byId);
         $this->assertEqualsCanonicalizing([$a->id, $b->id], $byModel->pluck('id')->all());
+    }
+
+    public function test_get_conversations_by_trip_returns_empty_when_trip_has_no_conversations(): void
+    {
+        // Mutation intent: preserve `Conversation::where('trip_id', …)->get()` empty set (~68–73).
+        $trip = Trip::factory()->create();
+
+        $rows = (new ConversationRepository)->getConversationsByTrip($trip);
+
+        $this->assertCount(0, $rows);
     }
 
     public function test_get_conversation_by_trip_id_returns_trip_conversation_without_user_filter(): void
@@ -157,6 +184,15 @@ class ConversationRepositoryTest extends TestCase
         $this->assertTrue($found->is($conversation));
     }
 
+    public function test_match_user_returns_null_when_users_have_no_shared_conversation(): void
+    {
+        // Mutation intent: `join` + `first()` miss (~112–124).
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+
+        $this->assertNull((new ConversationRepository)->matchUser($u1->id, $u2->id));
+    }
+
     public function test_match_user_ignores_non_private_and_deleted_conversations(): void
     {
         // Mutation intent: keep private-only, non-deleted constraints in manual join query.
@@ -216,6 +252,24 @@ class ConversationRepositoryTest extends TestCase
         $repo = new ConversationRepository;
         $page = $repo->getConversationsFromUser($user, 1, 1);
         $this->assertCount(1, $page);
+    }
+
+    public function test_get_conversations_from_user_returns_empty_when_no_conversations_with_messages(): void
+    {
+        // Mutation intent: preserve `has('messages')` excluding silent threads (~23–35).
+        $user = User::factory()->create();
+        $silent = Conversation::factory()->create();
+        $silent->users()->attach($user->id, ['read' => false]);
+
+        $repo = new ConversationRepository;
+
+        $page = $repo->getConversationsFromUser($user, 1, 10);
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $page);
+        $this->assertCount(0, $page);
+        $this->assertSame(0, $page->total());
+
+        $plain = $repo->getConversationsFromUser($user, 1, null);
+        $this->assertCount(0, $plain);
     }
 
     public function test_user_list_excludes_self_and_filters_with_search_text(): void

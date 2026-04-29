@@ -112,6 +112,22 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: PUBLIC/driver Passenger branches didn’t force FoF graph traversal (`user.friends.friends`) nor trip-row qualification solely via `passengerAccepted` without PUBLIC/`trips`-closure redundancy where overlapping outer passenger existed.
   - Fix: added `test_users_to_chat_includes_fof_trip_driver_via_friend_of_friend_without_direct_friendship` (FoF trip + bridge friendship + asserted non-direct friends edge) and `test_users_to_chat_includes_trip_driver_when_seeker_is_accepted_passenger_via_trips_closure` (`PRIVACY_FRIENDS` trip + viewer passenger targets inner closure distinctness).
 
+- `ConversationRepository.php` `store` / `delete` (`~11–18`): `return $conversation->save()` / `return $conversation->delete()`.
+  - Cause: integration tests only asserted successful paths on real models.
+  - Fix: added `test_store_returns_false_when_save_fails` and `test_delete_returns_false_when_delete_fails`.
+
+- `ConversationRepository.php` `getConversationsByTrip` (`~68–73`): zero rows for `trip_id`.
+  - Cause: tests always created conversation rows before listing by trip.
+  - Fix: added `test_get_conversations_by_trip_returns_empty_when_trip_has_no_conversations`.
+
+- `ConversationRepository.php` `matchUser` (`~112–124`): `first()` when users share no qualifying conversation row.
+  - Cause: negative tests relied on wrong type/deleted rows, not on absence of any shared membership.
+  - Fix: added `test_match_user_returns_null_when_users_have_no_shared_conversation`.
+
+- `ConversationRepository.php` `getConversationsFromUser` (`~23–35`): `has('messages')` excludes conversations without messages; empty paginator vs `get()`.
+  - Cause: listing tests always inserted messages before calling `getConversationsFromUser`.
+  - Fix: added `test_get_conversations_from_user_returns_empty_when_no_conversations_with_messages`.
+
 ## TripSearchRepository
 
 - Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.
