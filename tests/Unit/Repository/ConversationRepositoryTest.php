@@ -157,6 +157,33 @@ class ConversationRepositoryTest extends TestCase
         $this->assertCount(1, $repo->users($conversation->fresh()));
     }
 
+    public function test_add_user_invokes_attach_with_read_true_payload(): void
+    {
+        // Mutation intent: preserve `$conversation->users()->attach($userID, ['read' => true])` (~83–86 RemoveMethodCall).
+        $conversation = Mockery::mock(Conversation::class)->makePartial();
+        $relation = Mockery::mock();
+        $relation->shouldReceive('attach')->once()->with(99, ['read' => true]);
+
+        $conversation->shouldReceive('users')->once()->andReturn($relation);
+
+        (new ConversationRepository)->addUser($conversation, 99);
+    }
+
+    public function test_remove_user_invokes_detach(): void
+    {
+        // Mutation intent: preserve `$conversation->users()->detach($user->id)` (~88–91 RemoveMethodCall).
+        $conversation = Mockery::mock(Conversation::class)->makePartial();
+        $relation = Mockery::mock();
+        $relation->shouldReceive('detach')->once()->with(5);
+
+        $conversation->shouldReceive('users')->once()->andReturn($relation);
+
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->id = 5;
+
+        (new ConversationRepository)->removeUser($conversation, $user);
+    }
+
     public function test_change_and_get_conversation_read_state(): void
     {
         $user = User::factory()->create();

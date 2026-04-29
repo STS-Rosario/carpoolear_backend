@@ -144,6 +144,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests asserted persisted trips only on factory rows.
   - Fix: added `test_update_trip_id_invokes_save` (`mock(Conversation::class)->makePartial()` + `save()` expectation).
 
+- `ConversationRepository.php` `addUser` / `removeUser` (`~83–91`): must forward to `users()->attach(..., ['read' => true])` / `detach(...)`.
+  - Cause: pivot outcomes were asserted via DB membership only; omitting `attach`/`detach` could survive without relation expectations.
+  - Fix: added `test_add_user_invokes_attach_with_read_true_payload` and `test_remove_user_invokes_detach` (mock conversation `users()` relation).
+
 ## TripSearchRepository
 
 - Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.
