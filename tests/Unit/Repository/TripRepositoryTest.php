@@ -702,4 +702,79 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse((bool) $updated->needs_sellado);
         $this->assertNull($updated->payment_id);
     }
+
+    public function test_update_caps_price_with_payload_total_seats_and_rounding_rules(): void
+    {
+        // Mutation intent: preserve update cap guards/coalesce and max-seat rounding/comparison behavior.
+        // Kills: 829b7c5c1cd18c62, 973452f72b559beb, d4c9e20293c2c15c, 36118027b79c2e79,
+        //        13792bbf188a3fc8, e99dba43208657df, ac0c7cb7c8c84488, a8347453eee474e0,
+        //        013110593ed7a715, 67c5f5cedbe5f96e, c7aac5f5db44cfc4, 1669a15c00663974,
+        //        1103c83ab827cb26, 0f09716a552e0cc8, a03e507eb14a99f0, 27d3cb8394955dee.
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(
+            ['status' => true, 'data' => ['maximum_trip_price_cents' => 1003, 'recommended_trip_price_cents' => 777]],
+            ['status' => true, 'data' => ['maximum_trip_price_cents' => 1001, 'recommended_trip_price_cents' => 778]],
+            ['status' => true, 'data' => ['maximum_trip_price_cents' => 1003, 'recommended_trip_price_cents' => 779]],
+        );
+
+        $trip = Trip::factory()->create([
+            'total_seats' => 1,
+            'seat_price_cents' => 900,
+            'state' => Trip::STATE_READY,
+        ]);
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 801, 'ciudad' => 'A']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 802, 'ciudad' => 'B']],
+        ]);
+
+        // 1003 / (3 + 1) = 250.75 -> round = 251; must use payload total_seats (3), not trip->total_seats (1).
+        $updated1 = $repo->update($trip, [
+            'total_seats' => 3,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.61, 'lng' => -58.41, 'json_address' => ['id' => 803, 'ciudad' => 'C']],
+                ['lat' => -34.58, 'lng' => -58.38, 'json_address' => ['id' => 804, 'ciudad' => 'D']],
+            ],
+        ]);
+        $updated1->refresh();
+        $this->assertSame(251, (int) $updated1->seat_price_cents);
+
+        // 1001 / (3 + 1) = 250.25 -> round = 250 (different from ceil=251).
+        $updated2 = $repo->update($trip->fresh(), [
+            'total_seats' => 3,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.62, 'lng' => -58.42, 'json_address' => ['id' => 805, 'ciudad' => 'E']],
+                ['lat' => -34.57, 'lng' => -58.37, 'json_address' => ['id' => 806, 'ciudad' => 'F']],
+            ],
+        ]);
+        $updated2->refresh();
+        $this->assertSame(250, (int) $updated2->seat_price_cents);
+
+        // Below cap should remain unchanged (protects `>` branch against <= mutation).
+        $updated3 = $repo->update($trip->fresh(), [
+            'total_seats' => 3,
+            'seat_price_cents' => 240,
+            'points' => [
+                ['lat' => -34.63, 'lng' => -58.43, 'json_address' => ['id' => 807, 'ciudad' => 'G']],
+                ['lat' => -34.56, 'lng' => -58.36, 'json_address' => ['id' => 808, 'ciudad' => 'H']],
+            ],
+        ]);
+        $updated3->refresh();
+        $this->assertSame(240, (int) $updated3->seat_price_cents);
+    }
 }
