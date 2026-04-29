@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repository;
 
+use Illuminate\Support\Facades\Log;
 use STS\Models\NodeGeo;
 use STS\Models\Route;
 use STS\Repository\RoutesRepository;
@@ -47,6 +48,21 @@ class RoutesRepositoryTest extends TestCase
         $this->assertTrue($ids->contains($n2->id));
     }
 
+    public function test_get_potentials_nodes_handles_reversed_lng_order_and_keeps_bounds(): void
+    {
+        // Mutation intent: preserve lng max/min assignment branch when n1->lng > n2->lng.
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -55.0]);
+        $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -60.0]);
+        $insideLngEdge = $this->makeNode(['lat' => -34.5, 'lng' => -61.8, 'name' => 'LngEdgeIn']);
+        $outsideLng = $this->makeNode(['lat' => -34.5, 'lng' => -62.3, 'name' => 'LngOut']);
+
+        $rows = $this->repo()->getPotentialsNodes($n1, $n2);
+
+        $ids = $rows->pluck('id');
+        $this->assertTrue($ids->contains($insideLngEdge->id));
+        $this->assertFalse($ids->contains($outsideLng->id));
+    }
+
     public function test_autocomplete_filters_by_country_when_not_multicountry(): void
     {
         $suffix = substr(uniqid('', true), 0, 8);
@@ -86,6 +102,30 @@ class RoutesRepositoryTest extends TestCase
         $rows = $this->repo()->autocomplete($needle, 'AR', false);
         $this->assertCount(5, $rows);
         $this->assertSame(6, (int) $rows->first()->importance);
+    }
+
+    public function test_autocomplete_matches_state_country_concat_and_logs_query_context(): void
+    {
+        // Mutation intent: guard whereRaw(CONCAT(name, state, country) like ?) and Log::info($name.' '.$country).
+        $suffix = substr(uniqid('', true), 0, 8);
+        $match = $this->makeNode([
+            'name' => 'Road '.$suffix,
+            'state' => 'StateNeedle'.$suffix,
+            'country' => 'AR',
+        ]);
+        $this->makeNode([
+            'name' => 'Road '.$suffix,
+            'state' => 'OtherState'.$suffix,
+            'country' => 'AR',
+        ]);
+
+        $needle = 'StateNeedle'.$suffix;
+        Log::shouldReceive('info')->once()->with($needle.' AR');
+
+        $rows = $this->repo()->autocomplete($needle, 'AR', false);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($match->id, $rows->first()->id);
     }
 
     public function test_save_route_syncs_nodes_and_marks_processed(): void
