@@ -85,6 +85,8 @@ class SubscriptionsRepositoryTest extends TestCase
 
     public function test_list_treats_zero_string_as_state_filter_and_not_null(): void
     {
+        // Mutation intent: keep null-check behavior distinct from strict-identity changes.
+        // Kills: f33f83c629152a9b (Line 35 EqualToIdentical).
         $user = User::factory()->create();
         Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
         $inactive = Subscription::factory()->create(['user_id' => $user->id, 'state' => false]);
@@ -135,6 +137,9 @@ class SubscriptionsRepositoryTest extends TestCase
 
     public function test_search_public_applies_date_window_state_and_recent_creation_filters(): void
     {
+        // Mutation intent: preserve date-window bounds, active-state filter and recency gate.
+        // Kills: 4b6a25e18d53c80a, 39c82e8a6e59b89c, bfcdfc59b0de38cd, fead23a67492db61,
+        //        5bd3e5b021c99599, 67480eeb42185937, ceaea2c03b3fff6c.
         $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
         $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
         $subscriber = User::factory()->create();
@@ -199,6 +204,8 @@ class SubscriptionsRepositoryTest extends TestCase
 
     public function test_search_public_uses_now_when_trip_day_is_today(): void
     {
+        // Mutation intent: keep lower date boundary clamped to "now" when searching today.
+        // Kills: d67ef5e7ca5b898b (Line 49 IfNegated).
         $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
         $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
         $subscriber = User::factory()->create();
@@ -281,6 +288,8 @@ class SubscriptionsRepositoryTest extends TestCase
 
     public function test_search_fof_trip_includes_friend_and_relative_friend_subscriptions(): void
     {
+        // Mutation intent: enforce both whereIn/orWhereIn branches for FoF visibility.
+        // Kills: dfa3484f97c01a8b, 415c311b42d7720d, 0d971ac0fb11da7f, 7d76960a48011f57.
         $n1 = $this->makeNode();
         $n2 = $this->makeNode();
         $path = '.'.$n1->id.'.'.$n2->id.'.';
@@ -337,6 +346,8 @@ class SubscriptionsRepositoryTest extends TestCase
 
     public function test_search_without_path_uses_distance_filters_for_start_and_end_points(): void
     {
+        // Mutation intent: execute no-path branch and keep both distance checks ("from" and "to").
+        // Kills: 1b76ab8186c84b27, bbc0392c2ec13fe3 and protects path-filter mutations via else branch coverage.
         $viewer = User::factory()->create();
         $nearFrom = ['lat' => -34.0000, 'lng' => -58.0000];
         $nearTo = ['lat' => -34.0010, 'lng' => -58.0010];
@@ -435,6 +446,10 @@ class SubscriptionsRepositoryTest extends TestCase
 
     public function test_get_potential_node_uses_both_lat_and_lng_bounds_with_equality_edges(): void
     {
+        // Mutation intent: preserve bbox initialization/comparators and the lng whereBetween clause.
+        // Kills: 6cd9a519574e6be6, 1c9b426fe8498e14, 29420b1c5f9927bd, 6779b2d5561945a0,
+        //        ad2cfd333cf4b208, bd146720a5417793, 78ce6027d2a4770a, d4fa360dd48008e5,
+        //        8c5efeb3827d98d5, 486b69dbdf41772e, 9c8bff4b8cc4c12b.
         $n1 = $this->makeNode(['lat' => -30.0, 'lng' => -55.0]);
         $n2 = $this->makeNode(['lat' => -30.0, 'lng' => -56.0]);
         $edge = $this->makeNode(['lat' => -30.0, 'lng' => -55.5, 'name' => 'EdgeLatEqual']);

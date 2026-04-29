@@ -37,6 +37,8 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_get_conversation_from_id_with_user_requires_membership(): void
     {
+        // Mutation intent: keep membership authorization checks and comparison semantics.
+        // Kills: 347e5c2ad04e5254, 7f4a6ce0dc5cee48, a583a4a54f8550a2.
         $member = User::factory()->create();
         $stranger = User::factory()->create();
         $conversation = Conversation::factory()->create();
@@ -83,6 +85,8 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_get_conversation_by_trip_id_requires_membership_when_user_provided(): void
     {
+        // Mutation intent: keep user-guard branch and prevent query no-op on membership filtering.
+        // Kills: 1e93b573f4f99f69, b5acc029b60ed07a.
         $trip = Trip::factory()->create();
         $member = User::factory()->create();
         $stranger = User::factory()->create();
@@ -96,6 +100,8 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_get_conversation_by_trip_id_returns_null_when_trip_has_no_conversation(): void
     {
+        // Mutation intent: preserve early return when no conversation exists for a trip.
+        // Kills: 65cb6b079b80c6c0 (RemoveEarlyReturn variant raised in focused mutation run).
         $trip = Trip::factory()->create();
         $repo = new ConversationRepository;
 
@@ -104,6 +110,8 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_users_add_user_remove_user(): void
     {
+        // Mutation intent: verify pivot payload on attach is preserved ("read" => true).
+        // Kills: c34eaf14310d5be2, 81b051d962da551e.
         $u1 = User::factory()->create();
         $u2 = User::factory()->create();
         $conversation = Conversation::factory()->create();
@@ -149,6 +157,8 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_match_user_ignores_non_private_and_deleted_conversations(): void
     {
+        // Mutation intent: keep private-only, non-deleted constraints in manual join query.
+        // Kills: fb1a852cff8663e3, 0c16e14d843483fe, db2999b2618a91ca.
         $u1 = User::factory()->create();
         $u2 = User::factory()->create();
 
@@ -208,6 +218,8 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_user_list_excludes_self_and_filters_with_search_text(): void
     {
+        // Mutation intent: enforce both nested foreach traversal and search/self-exclusion conditions.
+        // Kills: 8fa06f6a1fb7d09f, 11abb847856a06ed, e4c6534df6af4cfa, 4b765ce76aaa9ed8, 888e85411dbe27c8.
         $owner = User::factory()->create(['name' => 'Owner Name']);
         $alice = User::factory()->create(['name' => 'Alice Match']);
         $bob = User::factory()->create(['name' => 'Bob Miss']);
@@ -232,6 +244,14 @@ class ConversationRepositoryTest extends TestCase
 
     public function test_users_to_chat_applies_who_and_search_filters_and_excludes_self(): void
     {
+        // Mutation intent: keep chat-candidate relation constraints and terminal filters/search.
+        // Kills: 923ae30fd029094d, f7d2b59d8b2e231a, fe6d365b386ce4cc, 40233c5b50f76832,
+        //        b2e48349c3634d25, 9e7efa4b183e404a, 5714c44fc3ef4640, fb0ef168746086c7,
+        //        5494f1022932dc3c, e5486689d57934f9, 8902979f79da0810, a99a6f0833779d83,
+        //        bc364170017908f5, 5ec2840d296300e1, f202a89ff2505006, 2fed3ea59a4ffe41,
+        //        dee6a17eeeedff27, b7ac732f83368cf0, bf63b36154353e13, 736991285f167c75,
+        //        0d19c6b2898b2003, b5672d9eed073752, 46b4eb3f95ab633a, ab6806f4c7906aa3,
+        //        a6ef62b9af37fbd3, 9967a653cd968aa7.
         $owner = User::factory()->create(['name' => 'Owner']);
         $friendA = User::factory()->create(['name' => 'Alice Candidate']);
         $friendB = User::factory()->create(['name' => 'Bruno Candidate']);

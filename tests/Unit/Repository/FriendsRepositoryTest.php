@@ -53,6 +53,8 @@ class FriendsRepositoryTest extends TestCase
 
     public function test_add_accepts_numeric_string_friend_state_from_request_payloads(): void
     {
+        // Mutation intent: keep loose accepted-state comparison for payload coercion ("1" vs 1).
+        // Kills: 56370d7f8538bd76 (Line 17 EqualToIdentical).
         $viewer = User::factory()->create();
         $driver = User::factory()->create();
         $trip = Trip::factory()->create([
@@ -132,6 +134,8 @@ class FriendsRepositoryTest extends TestCase
 
     public function test_get_search_matches_substring_in_middle_of_name(): void
     {
+        // Mutation intent: keep full "%value%" wildcard semantics in name search.
+        // Kills: a98a28c1baf267eb, 008590db7b9f84cf (Line 41 concat mutations).
         $u1 = User::factory()->create();
         $middleMatch = User::factory()->create(['name' => 'AlphaZetaOmega']);
         $suffixOnly = User::factory()->create(['name' => 'OmegaZeta']);
@@ -176,6 +180,8 @@ class FriendsRepositoryTest extends TestCase
 
     public function test_get_pending_excludes_requests_sent_to_other_users(): void
     {
+        // Mutation intent: enforce pending-query relation filters for the target user only.
+        // Kills: 1592288398f6cf6e (Line 53 RemoveMethodCall).
         $requesterForTarget = User::factory()->create();
         $requesterForOther = User::factory()->create();
         $target = User::factory()->create();
@@ -225,6 +231,8 @@ class FriendsRepositoryTest extends TestCase
 
     public function test_delete_removes_visibility_for_friend_of_friend_trips(): void
     {
+        // Mutation intent: ensure FoF cleanup iterates and deletes related visibility rows.
+        // Kills: 426d2e54daf776f2 (Line 115 RemoveMethodCall), 5fc0007a1c0c885e (Line 118 RemoveMethodCall).
         $viewer = User::factory()->create();
         $middle = User::factory()->create();
         $driver = User::factory()->create();
