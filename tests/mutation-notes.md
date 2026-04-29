@@ -193,3 +193,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `118c42b7eff9cc5c`, `25abd04f763b5a85`, `2f94cd00d41ddd88`, `10d289a5ac31750f`, `e770bddfccf0a6de`, `3518385e3e63f800`, `c9ab669d96c569d8`, `b353ad2c4f16d77d`
   - Cause: final `search` eager-load bundle lacked direct relation-loaded assertions on returned items (including nested `user.accounts`).
   - Fix: added `test_search_eager_loads_full_relation_bundle_on_results`.
+
+- `437c5d733842c7e5`, `b9cdaac4a7dbccbc`, `6e1934bfbec86451`, `60ea7ce4b478ef76`, `ec24c222f23d095b`, `e2221c4cb194b0fe`, `8b730257b8331ca9`, `bb32ca2e812ac2ff`, `4b04e2ea570750c1`, `c3690705b6358360`
+  - Cause: `search` geo fallback (`origin_lat`/`origin_lng`, `destination_lat`/`destination_lng`) lacked assertions for both-coordinate guards, default vs custom radius behavior, and actual location filter application.
+  - Fix: added `test_search_origin_geo_filter_requires_both_coords_and_uses_default_radius` and `test_search_geo_filters_use_custom_radius_for_origin_and_destination`.

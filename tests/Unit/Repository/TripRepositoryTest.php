@@ -979,6 +979,220 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($item->user->relationLoaded('accounts'));
     }
 
+    public function test_search_origin_geo_filter_requires_both_coords_and_uses_default_radius(): void
+    {
+        // Mutation intent: preserve origin_lat+origin_lng guard and whereLocation origin filter call.
+        // Kills: 437c5d733842c7e5, ec24c222f23d095b.
+        $owner = User::factory()->create();
+        $baseLat = 0.0;
+        $baseLng = 0.0;
+        $deltaFor1000_5m = (1000.5 / 6371000.0) * (180.0 / M_PI);
+
+        $insideDefault = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $insideDefault->points()->create([
+            'address' => 'origin-near',
+            'json_address' => ['id' => 1, 'ciudad' => 'Near'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+        $insideDefault->points()->create([
+            'address' => 'destination',
+            'json_address' => ['id' => 2, 'ciudad' => 'Dest'],
+            'lat' => 1.0,
+            'lng' => 1.0,
+        ]);
+
+        $outsideDefault = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $outsideDefault->points()->create([
+            'address' => 'origin-1000.5m',
+            'json_address' => ['id' => 3, 'ciudad' => 'Edge'],
+            'lat' => $deltaFor1000_5m,
+            'lng' => $baseLng,
+        ]);
+        $outsideDefault->points()->create([
+            'address' => 'destination',
+            'json_address' => ['id' => 4, 'ciudad' => 'Dest'],
+            'lat' => 1.0,
+            'lng' => 1.0,
+        ]);
+
+        $withBothCoords = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'origin_lat' => $baseLat,
+            'origin_lng' => $baseLng,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $withBothIds = collect($withBothCoords->items())->pluck('id');
+        $this->assertTrue($withBothIds->contains($insideDefault->id));
+        $this->assertFalse($withBothIds->contains($outsideDefault->id));
+
+        $withMissingLng = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'origin_lat' => $baseLat,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $withMissingLngIds = collect($withMissingLng->items())->pluck('id');
+        $this->assertTrue($withMissingLngIds->contains($insideDefault->id));
+        $this->assertTrue($withMissingLngIds->contains($outsideDefault->id));
+    }
+
+    public function test_search_geo_filters_use_custom_radius_for_origin_and_destination(): void
+    {
+        // Mutation intent: preserve origin/destination radio override and whereLocation calls.
+        // Kills: 60ea7ce4b478ef76, 4b04e2ea570750c1, c3690705b6358360, e2221c4cb194b0fe.
+        $owner = User::factory()->create();
+        $baseLat = 0.0;
+        $baseLng = 0.0;
+        $deltaFor3000m = (3000.0 / 6371000.0) * (180.0 / M_PI);
+
+        $originNear = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $originNear->points()->create([
+            'address' => 'origin-near',
+            'json_address' => ['id' => 10, 'ciudad' => 'Near'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+        $originNear->points()->create([
+            'address' => 'destination',
+            'json_address' => ['id' => 11, 'ciudad' => 'Dest'],
+            'lat' => 5.0,
+            'lng' => 5.0,
+        ]);
+
+        $originFar = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $originFar->points()->create([
+            'address' => 'origin-far',
+            'json_address' => ['id' => 12, 'ciudad' => 'Far'],
+            'lat' => $deltaFor3000m,
+            'lng' => $baseLng,
+        ]);
+        $originFar->points()->create([
+            'address' => 'destination',
+            'json_address' => ['id' => 13, 'ciudad' => 'Dest'],
+            'lat' => 5.0,
+            'lng' => 5.0,
+        ]);
+
+        $originDefault = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'origin_lat' => $baseLat,
+            'origin_lng' => $baseLng,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $originDefaultIds = collect($originDefault->items())->pluck('id');
+        $this->assertFalse($originDefaultIds->contains($originFar->id));
+
+        $originWide = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'origin_lat' => $baseLat,
+            'origin_lng' => $baseLng,
+            'origin_radio' => 5000,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $originWideIds = collect($originWide->items())->pluck('id');
+        $this->assertTrue($originWideIds->contains($originFar->id));
+
+        $destinationNear = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $destinationNear->points()->create([
+            'address' => 'origin',
+            'json_address' => ['id' => 14, 'ciudad' => 'Origin'],
+            'lat' => -5.0,
+            'lng' => -5.0,
+        ]);
+        $destinationNear->points()->create([
+            'address' => 'destination-near',
+            'json_address' => ['id' => 15, 'ciudad' => 'DestNear'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+
+        $destinationFar = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $destinationFar->points()->create([
+            'address' => 'origin',
+            'json_address' => ['id' => 16, 'ciudad' => 'Origin'],
+            'lat' => -5.0,
+            'lng' => -5.0,
+        ]);
+        $destinationFar->points()->create([
+            'address' => 'destination-far',
+            'json_address' => ['id' => 17, 'ciudad' => 'DestFar'],
+            'lat' => $deltaFor3000m,
+            'lng' => $baseLng,
+        ]);
+
+        $destinationDefault = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'destination_lat' => $baseLat,
+            'destination_lng' => $baseLng,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $destinationDefaultIds = collect($destinationDefault->items())->pluck('id');
+        $this->assertTrue($destinationDefaultIds->contains($destinationNear->id));
+        $this->assertFalse($destinationDefaultIds->contains($destinationFar->id));
+
+        $destinationWide = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'destination_lat' => $baseLat,
+            'destination_lng' => $baseLng,
+            'destination_radio' => 5000,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $destinationWideIds = collect($destinationWide->items())->pluck('id');
+        $this->assertTrue($destinationWideIds->contains($destinationFar->id));
+
+        $destinationMissingLng = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'destination_lat' => $baseLat,
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $destinationMissingLngIds = collect($destinationMissingLng->items())->pluck('id');
+        $this->assertTrue($destinationMissingLngIds->contains($destinationNear->id));
+        $this->assertTrue($destinationMissingLngIds->contains($destinationFar->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().
