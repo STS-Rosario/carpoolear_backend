@@ -502,6 +502,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: integration tests only asserted successful soft/removal paths on real rows.
   - Fix: added `test_delete_returns_false_when_delete_fails`.
 
+- `CarsRepository.php` `create` / `update` (`~10–18`): must invoke `$car->save()` on success path.
+  - Cause: false-path mocks existed; explicit successful `save()` expectations were missing for RemoveMethodCall clusters.
+  - Fix: added `test_create_invokes_save` and `test_update_invokes_save`.
+
 ## PhoneVerificationRepository
 
 - `PhoneVerificationRepository.php` `find` (`~28–31`): `PhoneVerification::find($id)` when no row exists.
@@ -625,6 +629,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `RoutesRepository.php` `autocomplete` (`~41–55`): zero-row result set for `CONCAT(...) LIKE` + country filter.
   - Cause: every autocomplete test asserted at least one hit; removing `whereRaw`, `where('country', …)`, `orderBy`, or `limit` could survive without an empty-collection assertion.
   - Fix: added `test_autocomplete_returns_empty_when_no_rows_match`.
+
+- `RoutesRepository.php` `saveRoute` (`~58–67`): must call `$route->nodes()->sync($nodeIds)` then `$route->save()` after setting `processed`.
+  - Cause: integration tests asserted pivots + DB `processed` only on persisted routes.
+  - Fix: added `test_save_route_invokes_sync_then_save` (partial `Route` mock + `sync`/`save` expectations).
 
 ## UserRepository (searchUsers follow-up)
 

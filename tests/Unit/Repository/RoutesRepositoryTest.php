@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use STS\Models\NodeGeo;
 use STS\Models\Route;
 use STS\Repository\RoutesRepository;
@@ -173,5 +174,21 @@ class RoutesRepositoryTest extends TestCase
             [$a->id, $b->id, $c->id],
             $route->nodes()->pluck('nodes_geo.id')->all()
         );
+    }
+
+    public function test_save_route_invokes_sync_then_save(): void
+    {
+        // Mutation intent: preserve `$route->nodes()->sync(...)` then `$route->save()` (~58–67 RemoveMethodCall).
+        $a = $this->makeNode(['name' => 'SyncMockA']);
+        $b = $this->makeNode(['name' => 'SyncMockB']);
+
+        $relation = Mockery::mock();
+        $relation->shouldReceive('sync')->once()->with([$a->id, $b->id]);
+
+        $route = Mockery::mock(Route::class)->makePartial();
+        $route->shouldReceive('nodes')->once()->andReturn($relation);
+        $route->shouldReceive('save')->once()->andReturn(true);
+
+        $this->repo()->saveRoute($route, [$a, $b]);
     }
 }

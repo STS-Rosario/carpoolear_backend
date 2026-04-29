@@ -148,4 +148,22 @@ class CarsRepositoryTest extends TestCase
 
         $this->assertFalse($this->repo()->delete($car));
     }
+
+    public function test_create_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $car->save()` (~10–13 RemoveMethodCall).
+        $car = Mockery::mock(Car::class);
+        $car->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->create($car));
+    }
+
+    public function test_update_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $car->save()` (~15–18 RemoveMethodCall).
+        $car = Mockery::mock(Car::class);
+        $car->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->update($car));
+    }
 }
