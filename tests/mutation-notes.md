@@ -30,6 +30,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: list behavior around `"0"` state coercion was untested.
   - Fix: added `test_list_treats_zero_string_as_state_filter_and_not_null`.
 
+- `SubscriptionsRepository.php` `show` (`~23–26`): missing subscription id.
+  - Cause: CRUD round-trip only exercised `show` on persisted ids; omitting `find` could regress without a null expectation.
+  - Fix: added `test_show_returns_null_when_subscription_missing`.
+
 - `d67ef5e7ca5b898b` (`Line 49: IfNegated`)
   - Cause: branch that clamps `from` to current time (today searches) was untested.
   - Fix: added `test_search_public_uses_now_when_trip_day_is_today`.

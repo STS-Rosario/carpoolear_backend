@@ -69,6 +69,14 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertNull(Subscription::query()->find($sub->id));
     }
 
+    public function test_show_returns_null_when_subscription_missing(): void
+    {
+        // Mutation intent: preserve `SubscriptionModel::find($id)` absent-row behavior (~23–26).
+        $missingId = (Subscription::query()->max('id') ?? 0) + 999999;
+
+        $this->assertNull($this->repo()->show($missingId));
+    }
+
     public function test_list_returns_all_or_filters_by_state(): void
     {
         $user = User::factory()->create();
