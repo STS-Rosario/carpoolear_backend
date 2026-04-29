@@ -407,3 +407,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `SocialRepository.php` `create` provider resolution (`tests/coverage/20260428_2310.txt` ~43–45): `if (is_null($provider)) { $provider = $this->provider; }`.
   - Cause: tests only covered default-provider creation (`null` third argument); passing an explicit provider could regress without asserting persisted `provider`.
   - Fix: added `test_create_respects_explicit_provider_over_repository_default`.
+
+- `SocialRepository.php` `find` (`~29–38`): no row for `(provider, provider_user_id)` under repository default provider.
+  - Cause: `test_find_with_explicit_provider_overrides_default` covered wrong-provider mismatch; an unknown subject id with an otherwise-correct default provider had no dedicated empty-lookup assertion.
+  - Fix: added `test_find_returns_null_when_no_account_matches_subject`.

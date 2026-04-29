@@ -40,6 +40,14 @@ class SocialRepositoryTest extends TestCase
         $this->assertSame('pid-abc', $found->provider_user_id);
     }
 
+    public function test_find_returns_null_when_no_account_matches_subject(): void
+    {
+        // Mutation intent: preserve `SocialAccount::whereProvider(...)->whereProviderUserId(...)->first()` empty row (~34–38).
+        $repo = new SocialRepository('facebook');
+
+        $this->assertNull($repo->find('missing-subject-'.uniqid('', true), null));
+    }
+
     public function test_find_with_explicit_provider_overrides_default(): void
     {
         $user = User::factory()->create();
