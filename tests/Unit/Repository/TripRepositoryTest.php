@@ -4,9 +4,12 @@ namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Mockery;
+use STS\Events\Trip\Create as CreateEvent;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
+use STS\Models\Route;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\TripRepository;
@@ -586,5 +589,58 @@ class TripRepositoryTest extends TestCase
         $this->assertCount(1, $trip->routes);
         $this->assertSame($from->id, (int) $trip->routes->first()->from_id);
         $this->assertSame($to->id, (int) $trip->routes->first()->to_id);
+    }
+
+    public function test_create_reuses_processed_route_and_dispatches_create_event(): void
+    {
+        // Mutation intent: preserve existing-route branch, processed event trigger and trip_routes sync.
+        // Kills: c3ab61b50d2e29e6, 4e2796064a396e48, 2de3deecc5bf329b, 52810aad74f43a6a, 7afd019bd08af694.
+        Event::fake();
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 650,
+            ],
+        ], false);
+
+        $from = $this->makeNode(['name' => 'ExistingRouteFrom', 'lat' => -34.41, 'lng' => -58.21]);
+        $to = $this->makeNode(['name' => 'ExistingRouteTo', 'lat' => -34.42, 'lng' => -58.22]);
+        $existingRoute = new Route;
+        $existingRoute->from_id = $from->id;
+        $existingRoute->to_id = $to->id;
+        $existingRoute->processed = true;
+        $existingRoute->save();
+        $existingRoute->nodes()->sync([$from->id, $to->id]);
+
+        $user = User::factory()->create();
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 2,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'points' => [
+                ['lat' => -34.41, 'lng' => -58.21, 'json_address' => ['id' => $from->id, 'ciudad' => 'Origen']],
+                ['lat' => -34.42, 'lng' => -58.22, 'json_address' => ['id' => $to->id, 'ciudad' => 'Destino']],
+            ],
+        ]);
+
+        Event::assertDispatched(CreateEvent::class);
+        $this->assertSame(1, Route::query()->where('from_id', $from->id)->where('to_id', $to->id)->count());
+
+        $trip->refresh();
+        $this->assertCount(1, $trip->routes);
+        $this->assertSame($existingRoute->id, (int) $trip->routes->first()->id);
     }
 }
