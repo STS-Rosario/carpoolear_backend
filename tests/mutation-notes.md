@@ -516,6 +516,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: stats test only covered multi-row aggregates.
   - Fix: added `test_get_verification_stats_returns_zero_totals_when_user_has_no_attempts`.
 
+- `PhoneVerificationRepository.php` `isPhoneVerifiedByAnotherUser` (`~57–62`): no row for `phone_number`, or rows exist but none with `verified = true`.
+  - Cause: conflict test always seeded a verified row before asserting lookup (excluding owner vs stranger).
+  - Fix: added `test_is_phone_verified_by_another_user_returns_null_when_phone_unknown` and `test_is_phone_verified_by_another_user_returns_null_when_only_unverified_rows_exist`.
+
 ## DeviceRepository
 
 - `DeviceRepository.php` `getDeviceBy` (`~30–33`): `Device::where($key, $value)->first()` when no row matches.

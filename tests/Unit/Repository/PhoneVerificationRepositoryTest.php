@@ -194,6 +194,31 @@ class PhoneVerificationRepositoryTest extends TestCase
         $this->assertSame($u1->id, $conflict->user_id);
     }
 
+    public function test_is_phone_verified_by_another_user_returns_null_when_phone_unknown(): void
+    {
+        // Mutation intent: preserve `where('phone_number', …)` miss (~57–62).
+        $viewer = User::factory()->create();
+        $unknown = '+54999'.random_int(10000000, 99999999);
+
+        $this->assertNull($this->repo()->isPhoneVerifiedByAnotherUser($unknown, $viewer->id));
+    }
+
+    public function test_is_phone_verified_by_another_user_returns_null_when_only_unverified_rows_exist(): void
+    {
+        // Mutation intent: preserve `where('verified', true)` (~59–61).
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        $phone = '+54911'.random_int(10000000, 99999999);
+
+        PhoneVerification::create([
+            'user_id' => $u1->id,
+            'phone_number' => $phone,
+            'verified' => false,
+        ]);
+
+        $this->assertNull($this->repo()->isPhoneVerifiedByAnotherUser($phone, $u2->id));
+    }
+
     public function test_get_by_user_orders_newest_first(): void
     {
         $user = User::factory()->create();
