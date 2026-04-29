@@ -4,6 +4,7 @@ namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
+use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -15,6 +16,23 @@ class TripRepositoryTest extends TestCase
     private function repo(): TripRepository
     {
         return $this->app->make(TripRepository::class);
+    }
+
+    private function makeNode(array $overrides = []): NodeGeo
+    {
+        $node = new NodeGeo;
+        $node->forceFill(array_merge([
+            'name' => 'TripN'.substr(uniqid('', true), 0, 6),
+            'lat' => -34.5,
+            'lng' => -58.5,
+            'type' => 'city',
+            'state' => 'BA',
+            'country' => 'AR',
+            'importance' => 1,
+        ], $overrides));
+        $node->save();
+
+        return $node->fresh();
     }
 
     public function test_show_returns_null_for_soft_deleted_trip_when_user_not_admin(): void
@@ -273,5 +291,68 @@ class TripRepositoryTest extends TestCase
         $ids = collect($page->items())->pluck('id');
         $this->assertTrue($ids->contains($visible->id));
         $this->assertSame(1, $ids->count());
+    }
+
+    public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
+    {
+        // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().
+        // Kills: 47a4022bfb577c5a, a50255ec77726d09, 33b99591f429010d, 7ab8d1032746dbfa,
+        //        c971ded4c0583849, dd8743ead8f87fde, 14701d7b0afa6c43, 9e6cb9312e8e70ea,
+        //        e0900113fa619282, fce18506ce2a3b67, 2f31f58e34bc7f68, bbdfa6dd5309dc76,
+        //        b687fb0c758f9ff7, 1294a7e0b757765f, 13bffdc93611a1bd, 2561f9ba60928e7c,
+        //        aa1ba96b77874b63, bb988e6606ef287b, 64854536d7731d76, 926f5eb76fa1c5d2,
+        //        ee8770e106619a2a, 86a3522102bd856b, 4abda33c3ccae2f5, 0280f49e5e9aa5f6,
+        //        168a1c682d274fec, 9332ef5aa60d7c7b, 726f02044afec66a, 74f70ee8c58fdc8d.
+        $point = ['lat' => -34.60, 'lng' => -58.40];
+        $inside = $this->makeNode(['lat' => -34.58, 'lng' => -58.33, 'name' => 'TripInside']);
+        $outsideLat = $this->makeNode(['lat' => -34.80, 'lng' => -58.33, 'name' => 'TripOutsideLat']);
+        $outsideLng = $this->makeNode(['lat' => -34.58, 'lng' => -58.15, 'name' => 'TripOutsideLng']);
+
+        $method = new \ReflectionMethod(TripRepository::class, 'getPotentialNode');
+        $method->setAccessible(true);
+
+        $found = $method->invoke($this->repo(), $point);
+
+        $this->assertNotNull($found);
+        $this->assertSame($inside->id, $found->id);
+        $this->assertNotSame($outsideLat->id, $found->id);
+        $this->assertNotSame($outsideLng->id, $found->id);
+    }
+
+    public function test_generate_trip_friend_visibility_fof_and_friends_only_branches_insert_rows(): void
+    {
+        // Mutation intent: keep privacy branching and SQL insert calls in generateTripFriendVisibility().
+        // Kills: 5656ee9b01173343, 85d71c45fe613abd, 18c59a50fd2ffaeb, 7bfc0ab3a97dea41,
+        //        7242bbee8560e5a1, 853a1c66244b9770, 37e68b0071fa371b, 53c27d17ceefefc7,
+        //        92a7cb8cf0ce32c2, 7409a27f9aff2ae1, 53d5810f9a02f52f, 3aab526f6920f8c0.
+        $driver = User::factory()->create();
+        $friend = User::factory()->create();
+        $friendOfFriend = User::factory()->create();
+        $stranger = User::factory()->create();
+
+        $driver->allFriends()->attach($friend->id, ['state' => User::FRIEND_ACCEPTED]);
+        $friend->allFriends()->attach($friendOfFriend->id, ['state' => User::FRIEND_ACCEPTED]);
+        $driver->allFriends()->attach($stranger->id, ['state' => User::FRIEND_REQUEST]);
+
+        $fofTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $friendsTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $repo = $this->repo();
+        $repo->generateTripFriendVisibility($fofTrip);
+        $repo->generateTripFriendVisibility($friendsTrip);
+
+        $this->assertDatabaseHas('user_visibility_trip', ['user_id' => $friend->id, 'trip_id' => $fofTrip->id]);
+        $this->assertDatabaseHas('user_visibility_trip', ['user_id' => $friendOfFriend->id, 'trip_id' => $fofTrip->id]);
+        $this->assertDatabaseHas('user_visibility_trip', ['user_id' => $friend->id, 'trip_id' => $friendsTrip->id]);
+        $this->assertDatabaseMissing('user_visibility_trip', ['user_id' => $friendOfFriend->id, 'trip_id' => $friendsTrip->id]);
+        $this->assertDatabaseMissing('user_visibility_trip', ['user_id' => $stranger->id, 'trip_id' => $fofTrip->id]);
     }
 }
