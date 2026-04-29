@@ -127,4 +127,18 @@ class FileRepositoryTest extends TestCase
 
         $this->assertFileDoesNotExist($this->testing_folder_path().$filename);
     }
+
+    public function test_delete_does_not_throw_when_file_missing(): void
+    {
+        // Mutation intent: `File::delete` on missing target (~85–88); guard stable behavior for double-delete / race paths.
+        File::ensureDirectoryExists($this->testing_folder_path());
+        $name = 'definitely-missing-'.uniqid('', true).'.txt';
+        $full = $this->testing_folder_path().$name;
+
+        $this->assertFileDoesNotExist($full);
+
+        (new FileRepository)->delete($name, $this->testing_folder());
+
+        $this->assertFileDoesNotExist($full);
+    }
 }

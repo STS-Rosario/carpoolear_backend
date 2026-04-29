@@ -155,6 +155,22 @@ class TripSearchRepositoryTest extends TestCase
         $this->assertSame(0, $row->amount_trips_carpooleados);
     }
 
+    public function test_track_search_skips_carpooleado_scan_when_current_page_has_no_items(): void
+    {
+        // Mutation intent: `$trips->count()` is current-page item count on LengthAwarePaginator (~25–29), distinct from `total()` (~20).
+        // Empty page with positive total must not run the filter callback branch (would wrongly increment carpooleados if tied to total).
+        $user = User::factory()->create();
+        $origin = $this->makeNode();
+        $dest = $this->makeNode();
+
+        $paginator = new LengthAwarePaginator(collect([]), 5, 15, 2, ['path' => '/trips']);
+
+        $row = $this->repo()->trackSearch($user, $origin->id, $dest->id, $paginator);
+
+        $this->assertSame(5, $row->amount_trips);
+        $this->assertSame(0, $row->amount_trips_carpooleados);
+    }
+
     public function test_track_search_counts_each_full_trip_as_carpooleado(): void
     {
         // Mutation intent: preserve `$trip->seats_available <= 0` filter over all items when `$trips->count() > 0`.
