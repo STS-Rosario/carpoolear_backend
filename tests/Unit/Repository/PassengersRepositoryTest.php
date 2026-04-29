@@ -235,6 +235,60 @@ class PassengersRepositoryTest extends TestCase
         $this->assertTrue($this->repo()->userHasActiveRequest($trip->id, $user->id));
     }
 
+    public function test_get_passengers_returns_empty_when_trip_has_no_accepted_passengers(): void
+    {
+        // Mutation intent: preserve `whereIn('request_state', [ACCEPTED])` vs pending-only rows (~13–20).
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $rows = $this->repo()->getPassengers($trip->id, $driver, []);
+
+        $this->assertCount(0, $rows);
+    }
+
+    public function test_get_passengers_paginates_empty_when_no_accepted_passengers(): void
+    {
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $page = $this->repo()->getPassengers($trip->id, $driver, ['page' => 1, 'page_size' => 10]);
+
+        $this->assertInstanceOf(\Illuminate\Pagination\LengthAwarePaginator::class, $page);
+        $this->assertCount(0, $page);
+        $this->assertSame(0, $page->total());
+    }
+
+    public function test_get_pending_requests_for_trip_returns_empty_when_no_pending_rows(): void
+    {
+        // Mutation intent: preserve `where('request_state', PENDING)` on scoped trip (~25–39).
+        $trip = Trip::factory()->create(['trip_date' => Carbon::now()->addDay()]);
+        $driver = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+
+        $this->assertCount(0, $this->repo()->getPendingRequests($trip->id, $driver, []));
+    }
+
+    public function test_get_pending_payment_requests_returns_empty_when_user_has_no_waiting_payment_rows(): void
+    {
+        // Mutation intent: empty listing when passenger has no STATE_WAITING_PAYMENT rows on future trips (~49–63).
+        $passenger = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->getPendingPaymentRequests(null, $passenger, []));
+    }
+
     public function test_get_passengers_only_accepted_and_paginates(): void
     {
         $trip = Trip::factory()->create();

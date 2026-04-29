@@ -122,6 +122,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: create-array RemoveArrayItem mutants had only scalar asserts on the returned model; cancel-branch mutants compared ints strictly vs `'0'` / `'3'` request payloads from callers coerced to string; listing helpers lacked explicit exclusion proof when the joined trip is soft-deleted; `WAITING_PAYMENT` was not asserted separately inside `userHasActiveRequest` coverage.
   - Fix: strengthened `test_new_request_creates_pending_passenger_row` with `assertDatabaseHas`; added `test_cancel_request_matches_reason_via_loose_equality_for_string_literals`, `test_get_pending_requests_without_trip_id_excludes_soft_deleted_trips`, `test_get_pending_payment_requests_excludes_soft_deleted_trips`, `test_user_has_active_request_includes_waiting_payment_state`.
 
+- `PassengersRepository.php` `getPassengers` (`~11–20`): trip rows exist but none in `STATE_ACCEPTED`; non-paginated and paginated branches.
+  - Cause: tests always seeded accepted passengers before listing; dropping `whereIn('request_state', …)` could survive without a zero-hit assertion.
+  - Fix: added `test_get_passengers_returns_empty_when_trip_has_no_accepted_passengers` and `test_get_passengers_paginates_empty_when_no_accepted_passengers`.
+
+- `PassengersRepository.php` `getPendingRequests` (`~23–45`) with concrete `$tripId`: no rows in `STATE_PENDING`.
+  - Cause: trip-level test always inserted a pending passenger.
+  - Fix: added `test_get_pending_requests_for_trip_returns_empty_when_no_pending_rows`.
+
+- `PassengersRepository.php` `getPendingPaymentRequests` (`~49–63`): user with zero `WAITING_PAYMENT` passenger rows on qualifying trips.
+  - Cause: listing tests always created a waiting-payment row first.
+  - Fix: added `test_get_pending_payment_requests_returns_empty_when_user_has_no_waiting_payment_rows`.
+
 ## TripRepository (current batch)
 
 - `47a4022bfb577c5a`, `a50255ec77726d09`, `33b99591f429010d`, `7ab8d1032746dbfa`, `c971ded4c0583849`, `dd8743ead8f87fde`, `14701d7b0afa6c43`, `9e6cb9312e8e70ea`, `e0900113fa619282`, `fce18506ce2a3b67`, `2f31f58e34bc7f68`, `bbdfa6dd5309dc76`, `b687fb0c758f9ff7`, `1294a7e0b757765f`, `13bffdc93611a1bd`, `2561f9ba60928e7c`, `aa1ba96b77874b63`, `bb988e6606ef287b`, `64854536d7731d76`, `926f5eb76fa1c5d2`, `ee8770e106619a2a`, `86a3522102bd856b`, `4abda33c3ccae2f5`, `0280f49e5e9aa5f6`, `168a1c682d274fec`, `9332ef5aa60d7c7b`, `726f02044afec66a`, `74f70ee8c58fdc8d`
