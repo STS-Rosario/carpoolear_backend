@@ -76,6 +76,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `usersToChat` had many relation/filter/search branches without direct coverage.
   - Fix: added `test_users_to_chat_applies_who_and_search_filters_and_excludes_self`.
 
+## TripSearchRepository
+
+- Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.
+  - Cause: only LengthAwarePaginator + single carpooleado was exercised; `total()` must exist on `$trips` (calling `$trips->total()` throws before `??` on a bare Collection — branch matters when `total()` returns `null`). Persisted columns were not asserted in one combined DB shape check for RemoveArrayItem clusters on payload keys.
+  - Fix: added `test_track_search_falls_back_to_count_when_total_returns_null` (anonymous `$trips` stub with `total()` returning `null`), `test_track_search_counts_each_full_trip_as_carpooleado`, `test_track_search_persists_search_payload_columns_for_array_remove_mutants`.
+
 ## TripRepository (current batch)
 
 - `47a4022bfb577c5a`, `a50255ec77726d09`, `33b99591f429010d`, `7ab8d1032746dbfa`, `c971ded4c0583849`, `dd8743ead8f87fde`, `14701d7b0afa6c43`, `9e6cb9312e8e70ea`, `e0900113fa619282`, `fce18506ce2a3b67`, `2f31f58e34bc7f68`, `bbdfa6dd5309dc76`, `b687fb0c758f9ff7`, `1294a7e0b757765f`, `13bffdc93611a1bd`, `2561f9ba60928e7c`, `aa1ba96b77874b63`, `bb988e6606ef287b`, `64854536d7731d76`, `926f5eb76fa1c5d2`, `ee8770e106619a2a`, `86a3522102bd856b`, `4abda33c3ccae2f5`, `0280f49e5e9aa5f6`, `168a1c682d274fec`, `9332ef5aa60d7c7b`, `726f02044afec66a`, `74f70ee8c58fdc8d`
