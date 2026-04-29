@@ -948,6 +948,37 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($destinationIds->contains($destinationMissTrip->id));
     }
 
+    public function test_search_eager_loads_full_relation_bundle_on_results(): void
+    {
+        // Mutation intent: preserve final search eager-load bundle before pagination.
+        // Kills: 118c42b7eff9cc5c, 25abd04f763b5a85, 2f94cd00d41ddd88, 10d289a5ac31750f,
+        //        e770bddfccf0a6de, 3518385e3e63f800, c9ab669d96c569d8, b353ad2c4f16d77d.
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $page = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $item = collect($page->items())->firstWhere('id', $trip->id);
+
+        $this->assertNotNull($item);
+        $this->assertTrue($item->relationLoaded('user'));
+        $this->assertTrue($item->relationLoaded('points'));
+        $this->assertTrue($item->relationLoaded('passenger'));
+        $this->assertTrue($item->relationLoaded('passengerAccepted'));
+        $this->assertTrue($item->relationLoaded('car'));
+        $this->assertTrue($item->relationLoaded('ratings'));
+        $this->assertTrue($item->user->relationLoaded('accounts'));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().
