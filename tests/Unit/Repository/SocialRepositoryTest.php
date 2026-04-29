@@ -70,6 +70,20 @@ class SocialRepositoryTest extends TestCase
         ]);
     }
 
+    public function test_create_respects_explicit_provider_over_repository_default(): void
+    {
+        // Mutation intent: preserve `if (is_null($provider)) { $provider = $this->provider; }` so explicit third argument wins.
+        $user = User::factory()->create();
+        $repo = new SocialRepository('twitter');
+        $repo->create($user, 'oauth-subject-99', 'linkedin');
+
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider_user_id' => 'oauth-subject-99',
+            'provider' => 'linkedin',
+        ]);
+    }
+
     public function test_delete_removes_social_account(): void
     {
         $user = User::factory()->create();

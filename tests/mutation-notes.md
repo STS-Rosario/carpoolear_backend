@@ -337,3 +337,9 @@ This file tracks mutants killed during the current hardening session, with the r
 - `SubscriptionsRepository.php` line ~169 (`getPotentialNode`): `whereBetween('lng', ...)` before `first()` result selection.
   - Cause: prior bbox tests allowed multiple in-lat-range nodes and accepted several ids, so dropping the lng filter could still return an allowed row and pass nondeterministically.
   - Fix: added `test_get_potential_node_requires_lng_where_between_before_first_result` using non-persisted bbox endpoints plus controlled insert order (`outsideFirst` then `insideSecond`) to ensure removing lng filtering changes the selected first row.
+
+## SocialRepository
+
+- `SocialRepository.php` `create` provider resolution (`tests/coverage/20260428_2310.txt` ~43–45): `if (is_null($provider)) { $provider = $this->provider; }`.
+  - Cause: tests only covered default-provider creation (`null` third argument); passing an explicit provider could regress without asserting persisted `provider`.
+  - Fix: added `test_create_respects_explicit_provider_over_repository_default`.
