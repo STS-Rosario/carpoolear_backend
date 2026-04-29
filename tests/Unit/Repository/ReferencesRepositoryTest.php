@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repository;
 
+use Mockery;
 use STS\Models\References;
 use STS\Models\User;
 use STS\Repository\ReferencesRepository;
@@ -60,5 +61,13 @@ class ReferencesRepositoryTest extends TestCase
             ->where('user_id_from', $from->id)
             ->where('user_id_to', $to->id)
             ->count());
+    }
+
+    public function test_create_returns_false_when_save_fails(): void
+    {
+        $reference = Mockery::mock(References::class);
+        $reference->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->create($reference));
     }
 }

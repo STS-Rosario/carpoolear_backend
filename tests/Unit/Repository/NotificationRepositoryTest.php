@@ -25,6 +25,16 @@ class NotificationRepositoryTest extends TestCase
         return DatabaseNotification::query()->findOrFail($id);
     }
 
+    public function test_get_notifications_returns_empty_when_user_has_none(): void
+    {
+        $user = User::factory()->create();
+        $repo = new NotificationRepository;
+
+        $list = $repo->getNotifications($user, false);
+
+        $this->assertCount(0, $list);
+    }
+
     public function test_get_notifications_returns_non_deleted_ordered_newest_first(): void
     {
         $user = User::factory()->create();
@@ -144,5 +154,13 @@ class NotificationRepositoryTest extends TestCase
         $this->assertTrue($found->is($mine));
 
         $this->assertNull($repo->find($user, $theirs->id));
+    }
+
+    public function test_find_returns_null_when_notification_id_does_not_exist(): void
+    {
+        $user = User::factory()->create();
+        $repo = new NotificationRepository;
+
+        $this->assertNull($repo->find($user, 4_294_967_295));
     }
 }
