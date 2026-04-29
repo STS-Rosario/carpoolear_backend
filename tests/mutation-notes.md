@@ -177,3 +177,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `4a586973694e66f8`, `e0723334fdd539f6`, `e8e8ec49e4a53995`, `73e03ed3b8f621e0`, `a75ddf8beaf6a200`
   - Cause: non-admin privacy gate in `search` lacked direct assertions for guard shape (`$user && !$user->is_admin`) and nested visibility block execution.
   - Fix: added `test_search_non_admin_applies_privacy_visibility_filter_but_admin_bypasses_it`.
+
+- `92a2e80bb1a380af`, `94aeb181cd5cc635`, `e92743782077c92f`, `4150b4f8c0e25d3c`
+  - Cause: nested non-admin search clauses lacked direct assertions for state visibility (`ready/paid/null/owner`) and owner/public-or-visible privacy constraints.
+  - Fix: added `test_search_non_admin_applies_state_and_owner_visibility_subclauses`.

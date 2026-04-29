@@ -811,6 +811,43 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($adminIds->contains($privateHidden->id));
     }
 
+    public function test_search_non_admin_applies_state_and_owner_visibility_subclauses(): void
+    {
+        // Mutation intent: preserve non-admin nested where clauses for state/public-owner visibility.
+        // Kills: 92a2e80bb1a380af, 94aeb181cd5cc635, e92743782077c92f, 4150b4f8c0e25d3c.
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+
+        $ownAwaiting = Trip::factory()->create([
+            'user_id' => $viewer->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+            'needs_sellado' => 1,
+        ]);
+        $otherAwaiting = Trip::factory()->create([
+            'user_id' => $other->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+            'needs_sellado' => 1,
+        ]);
+        $otherReadyPublic = Trip::factory()->create([
+            'user_id' => $other->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $page = $this->repo()->search($viewer, ['page' => 1, 'page_size' => 30]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertTrue($ids->contains($ownAwaiting->id));
+        $this->assertTrue($ids->contains($otherReadyPublic->id));
+        $this->assertFalse($ids->contains($otherAwaiting->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().
