@@ -466,6 +466,80 @@ class TripRepositoryTest extends TestCase
         $this->assertSame('Route found', $result['message']);
     }
 
+    public function test_get_trip_info_returns_service_unavailable_when_osrm_unreachable_and_mapbox_disabled(): void
+    {
+        // Mutation intent: preserve osrm_unreachable guard, warning payload, and early return.
+        // Kills: cdde5206d4d0f164, 7e288ac045dd5f87, 06d907bc19d86874, 7bcb0158c95f44a1, 57b3e4498ff0bac9.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = [
+            ['lat' => -30.101, 'lng' => -62.201],
+            ['lat' => -30.301, 'lng' => -62.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+
+        Http::fake(fn () => throw new \Exception('network down'));
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->once()->andReturn(false);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertFalse($result['status']);
+        $this->assertNull($result['data']);
+        $this->assertSame('routing_service_unavailable', $result['error_code']);
+        $this->assertNull(RouteCache::query()->where('hashed_points', $hashedPoints)->first());
+    }
+
+    public function test_get_trip_info_returns_not_found_and_caches_fail_response_when_osrm_no_route(): void
+    {
+        // Mutation intent: preserve no-route payload extraction/logging, fail-response keys, cache write guard, and final return.
+        // Kills: db13cb03931665f6, 4cc47adb0ded1625, 15552aeb3d878093, 9188cb912a5be281, e7b00afbc4bb9ab5,
+        //        35a723d86c7d9376, aa533d56f6cc8a53, d542d1791f5a8c7b, 5b6bb0d6f3a36824, 457e70cf0c157238,
+        //        285eb582a566b4ed, aae7e5e2ed38919d, c6671c30c3dafa0c, c84eefdde872a417, 5e089672117921a5,
+        //        1063db96223433cd, 39072298f6adf7ed, fff5a713866a13a8.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = [
+            ['lat' => -29.101, 'lng' => -63.201],
+            ['lat' => -29.301, 'lng' => -63.401],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'NoRoute',
+                'message' => 'No route found',
+                'routes' => [],
+            ], 200),
+        ]);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->once()->andReturn(false);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertFalse($result['status']);
+        $this->assertNull($result['data']);
+        $this->assertSame('Route not found', $result['message']);
+
+        $cacheRow = RouteCache::query()->where('hashed_points', $hashedPoints)->first();
+        $this->assertNotNull($cacheRow);
+        $this->assertSame('Route not found', $cacheRow->route_data['message']);
+        $this->assertFalse($cacheRow->route_data['status']);
+        $this->assertNull($cacheRow->route_data['data']);
+    }
+
     public function test_get_trip_by_trip_passenger_returns_passenger_by_primary_key(): void
     {
         $trip = Trip::factory()->create();
