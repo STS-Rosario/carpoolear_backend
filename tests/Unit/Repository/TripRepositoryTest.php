@@ -1737,6 +1737,155 @@ class TripRepositoryTest extends TestCase
         $this->assertSame($existingRoute->id, (int) $trip->routes->first()->id);
     }
 
+    public function test_create_route_loop_uses_previous_point_for_origin_and_accepts_node_id_one(): void
+    {
+        // Mutation intent: preserve strict > 0 checks for both origin and destination ids.
+        // Kills: c309cdbc3f4a1d6b, 9ebb4531e7d1c291, 72b0034215a62708,
+        //        654b282c1061f652, d93487fbf87ab0b8, f8bfa1bb6d26b1d1, 8f105c8052bfe1e9,
+        //        a2036bb2730c0857, 0ffcd91ecaffadb6.
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 500,
+            ],
+        ]);
+        $repo->shouldReceive('generateTripFriendVisibility')->once()->andReturnNull();
+
+        $user = User::factory()->create();
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'points' => [
+                ['lat' => 11.0, 'lng' => -58.4, 'json_address' => ['id' => 1, 'ciudad' => 'OrigenUno']],
+                ['lat' => 22.0, 'lng' => -58.3, 'json_address' => ['id' => 2, 'ciudad' => 'DestinoDos']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertCount(1, $trip->routes);
+        $this->assertSame(1, (int) $trip->routes->first()->from_id);
+        $this->assertSame(2, (int) $trip->routes->first()->to_id);
+    }
+
+    public function test_create_route_loop_uses_previous_point_when_resolving_potential_nodes(): void
+    {
+        // Mutation intent: preserve getPotentialNode($points[$i-1]) for origin resolution.
+        // Kills: 7941bcae741806f0.
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 500,
+            ],
+        ], false);
+
+        $originNode = $this->makeNode(['lat' => 11.0, 'lng' => -58.4]);
+        $destinationNode = $this->makeNode(['lat' => 22.0, 'lng' => -58.3]);
+
+        $user = User::factory()->create();
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'points' => [
+                ['lat' => 11.0, 'lng' => -58.4, 'json_address' => ['ciudad' => 'OrigenSinId']],
+                ['lat' => 22.0, 'lng' => -58.3, 'json_address' => ['ciudad' => 'DestinoSinId']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertCount(1, $trip->routes);
+        $this->assertSame((int) $originNode->id, (int) $trip->routes->first()->from_id);
+        $this->assertSame((int) $destinationNode->id, (int) $trip->routes->first()->to_id);
+    }
+
+    public function test_create_skips_route_sync_when_any_potential_node_id_is_non_positive(): void
+    {
+        // Mutation intent: preserve routeIds sync guard and always-call friend visibility at end of create().
+        // Kills: 5a014e97c5e72b29, 7afd019bd08af694, 85adb24d944efdf5.
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 500,
+            ],
+        ]);
+        $repo->shouldReceive('generateTripFriendVisibility')->once()->andReturnNull();
+
+        $user = User::factory()->create();
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'points' => [
+                ['lat' => 33.0, 'lng' => -58.4, 'json_address' => ['id' => 0, 'ciudad' => 'OrigenCero']],
+                ['lat' => 44.0, 'lng' => -58.3, 'json_address' => ['id' => 2, 'ciudad' => 'DestinoDos']],
+            ],
+        ]);
+
+        $this->assertCount(0, $trip->fresh()->routes);
+    }
+
     public function test_update_skips_new_payment_when_old_route_already_required_sellado(): void
     {
         // Mutation intent: preserve old-points count guard and lat/lng mapping for old-route sellado check.

@@ -205,3 +205,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `a1d5890d79807969`, `5cb6dc93314238e7`, `27d40032f441d215`, `d1fa14096c6e2d91`, `c96024f8aad13239`, `954ce6330e6a1642`, `f4095bba926c6437`, `4331f3683f0507a0`, `468df71dbde57f7a`, `e0d241320e3c07b1`, `bf1febad9ce7477e`, `9c8d7d9c44d50c6e`, `ea40d19b1507a512`, `717fd9c6370fabda`, `99f4e9993a3b4be2`, `80142f3737eeaa25`
   - Cause: `whereLocation` numeric boundary logic lacked tests that pin both default radius behavior (implicit 1000m) and minimum-radius enforcement when callers pass a smaller value.
   - Fix: added `test_where_location_default_distance_keeps_1000m_boundary_behavior` and `test_where_location_enforces_minimum_radius_of_1000_even_if_lower_is_passed`.
+
+- `7941bcae741806f0`, `c309cdbc3f4a1d6b`, `9ebb4531e7d1c291`, `72b0034215a62708`, `654b282c1061f652`, `d93487fbf87ab0b8`, `f8bfa1bb6d26b1d1`, `8f105c8052bfe1e9`, `a2036bb2730c0857`, `0ffcd91ecaffadb6`, `5a014e97c5e72b29`, `7afd019bd08af694`, `85adb24d944efdf5`
+  - Cause: `create` route-loop coverage lacked edge assertions for `getPotentialNode($points[$i-1])`, strict positive id guards (`> 0`), conditional `routes()->sync($routeIds)`, and the unconditional final `generateTripFriendVisibility($trip)` call.
+  - Fix: added `test_create_route_loop_uses_previous_point_for_origin_and_accepts_node_id_one`, `test_create_route_loop_uses_previous_point_when_resolving_potential_nodes`, and `test_create_skips_route_sync_when_any_potential_node_id_is_non_positive`.
