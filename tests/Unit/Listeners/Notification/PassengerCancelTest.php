@@ -2,71 +2,64 @@
 
 namespace Tests\Unit\Listeners\Notification;
 
-use Mockery;
-use PHPUnit\Framework\Attributes\PreserveGlobalState;
-use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Listeners\Notification\PassengerCancel;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Notifications\CancelPassengerNotification;
+use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
 class PassengerCancelTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
-    #[RunInSeparateProcess]
-
-    #[PreserveGlobalState(false)]
     public function test_handle_sets_driver_flag_true_when_canceled_by_driver_and_notifies(): void
     {
         $trip = Trip::factory()->create();
         $from = User::factory()->create();
         $to = User::factory()->create();
 
-        $notificationMock = Mockery::mock('overload:STS\\Notifications\\CancelPassengerNotification');
-        $notificationMock->shouldReceive('setAttribute')->once()->with('trip', $trip);
-        $notificationMock->shouldReceive('setAttribute')->once()->with('from', $from);
-        $notificationMock->shouldReceive('setAttribute')->once()->with('is_driver', true);
-        $notificationMock->shouldReceive('setAttribute')->once()->with('canceledState', Passenger::CANCELED_DRIVER);
-        $notificationMock->shouldReceive('notify')->once()->with($to);
+        $this->mock(NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(3)
+            ->withArgs(function ($notification, $users, $channel) use ($trip, $from, $to) {
+                return $notification instanceof CancelPassengerNotification
+                    && $notification->getAttribute('trip')->is($trip)
+                    && $notification->getAttribute('from')->is($from)
+                    && $notification->getAttribute('is_driver') === true
+                    && $notification->getAttribute('canceledState') === Passenger::CANCELED_DRIVER
+                    && $users instanceof User
+                    && $users->is($to)
+                    && is_string($channel);
+            });
 
         $listener = new PassengerCancel;
         $listener->handle(new CancelEvent($trip, $from, $to, Passenger::CANCELED_DRIVER));
-
-        $this->assertTrue(true);
     }
 
-    #[RunInSeparateProcess]
-
-    #[PreserveGlobalState(false)]
     public function test_handle_sets_driver_flag_false_for_non_driver_state_and_skips_when_to_null(): void
     {
         $trip = Trip::factory()->create();
         $from = User::factory()->create();
         $to = User::factory()->create();
 
-        $notificationMock = Mockery::mock('overload:STS\\Notifications\\CancelPassengerNotification');
-        $notificationMock->shouldReceive('setAttribute')->once()->with('trip', $trip);
-        $notificationMock->shouldReceive('setAttribute')->once()->with('from', $from);
-        $notificationMock->shouldReceive('setAttribute')->once()->with('is_driver', false);
-        $notificationMock->shouldReceive('setAttribute')->once()->with('canceledState', Passenger::CANCELED_PASSENGER);
-        $notificationMock->shouldReceive('notify')->once()->with($to);
+        $mock = $this->mock(NotificationServices::class);
+        $mock->shouldReceive('send')
+            ->times(3)
+            ->withArgs(function ($notification, $users, $channel) use ($trip, $from, $to) {
+                return $notification instanceof CancelPassengerNotification
+                    && $notification->getAttribute('trip')->is($trip)
+                    && $notification->getAttribute('from')->is($from)
+                    && $notification->getAttribute('is_driver') === false
+                    && $notification->getAttribute('canceledState') === Passenger::CANCELED_PASSENGER
+                    && $users instanceof User
+                    && $users->is($to)
+                    && is_string($channel);
+            });
 
         $listener = new PassengerCancel;
         $listener->handle(new CancelEvent($trip, $from, $to, Passenger::CANCELED_PASSENGER));
 
-        $notificationMockNull = Mockery::mock('overload:STS\\Notifications\\CancelPassengerNotification');
-        $notificationMockNull->shouldNotReceive('setAttribute');
-        $notificationMockNull->shouldNotReceive('notify');
-
         $listener->handle(new CancelEvent($trip, $from, null, Passenger::CANCELED_PASSENGER));
-
-        $this->assertTrue(true);
     }
 }

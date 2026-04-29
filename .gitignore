@@ -34,3 +34,4 @@ storage/firebase*.json
 .gitconfig
 .lesshst
 storage/logs/*
+tests/coverage/*

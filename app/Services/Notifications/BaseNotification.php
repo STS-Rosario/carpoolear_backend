@@ -19,7 +19,7 @@ class BaseNotification
     public function __construct()
     {
         $this->type = get_class($this);
-        $this->manager = new NotificationServices;
+        $this->manager = app(NotificationServices::class);
     }
 
     public function getType()
@@ -30,8 +30,8 @@ class BaseNotification
     /**
      * Set a value tu notification.
      *
-     * @param $key string  Name of attribute
-     * @param $value string|Model  Value of attribute
+     * @param  $key  string  Name of attribute
+     * @param  $value  string|Model  Value of attribute
      */
     public function setAttribute($key, $value)
     {

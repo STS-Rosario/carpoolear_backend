@@ -24,7 +24,9 @@
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
-        "phpunit/phpunit": "^11.0.1"
+        "pestphp/pest": "^3.8.6",
+        "pestphp/pest-plugin-laravel": "^3.2",
+        "phpunit/phpunit": "11.5.50"
     },
     "autoload": {
         "psr-4": {
@@ -45,8 +47,8 @@
     },
     "scripts": {
         "test": "php artisan test",
-        "test:coverage": "php artisan test --coverage",
-        "test:coverage:ci": "php artisan test --coverage --min=5",
+        "test:coverage": "php -d memory_limit=512M artisan test --coverage",
+        "test:coverage:ci": "php -d memory_limit=512M artisan test --coverage --min=50",
         "setup-git-hooks": "@php -r \"if (file_exists('.git')) { passthru('git config core.hooksPath .githooks'); }\"",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
