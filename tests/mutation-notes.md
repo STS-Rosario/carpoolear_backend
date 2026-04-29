@@ -38,6 +38,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: CRUD round-trip only exercised `show` on persisted ids; omitting `find` could regress without a null expectation.
   - Fix: added `test_show_returns_null_when_subscription_missing`.
 
+- `SubscriptionsRepository.php` `create` / `update` / `delete` (`~13–30`): `return $model->save()` / `return $model->delete()`.
+  - Cause: integration tests only asserted successful persists/removals.
+  - Fix: added `test_create_returns_false_when_save_fails`, `test_update_returns_false_when_save_fails`, `test_delete_returns_false_when_delete_fails`.
+
+- `SubscriptionsRepository.php` `list` (`~33–39`): user with zero subscriptions (`$active == null`), or `where('state', true)` when user only has inactive rows.
+  - Cause: list tests always seeded matching subscription rows before querying.
+  - Fix: added `test_list_returns_empty_when_user_has_no_subscriptions` and `test_list_returns_empty_when_active_filter_matches_no_rows`.
+
 - `d67ef5e7ca5b898b` (`Line 49: IfNegated`)
   - Cause: branch that clamps `from` to current time (today searches) was untested.
   - Fix: added `test_search_public_uses_now_when_trip_day_is_today`.

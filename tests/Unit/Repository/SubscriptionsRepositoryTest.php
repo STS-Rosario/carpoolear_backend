@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Mockery;
 use STS\Models\NodeGeo;
 use STS\Models\Subscription;
 use STS\Models\Trip;
@@ -77,6 +78,30 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertNull($this->repo()->show($missingId));
     }
 
+    public function test_create_returns_false_when_save_fails(): void
+    {
+        $model = Mockery::mock(Subscription::class);
+        $model->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->create($model));
+    }
+
+    public function test_update_returns_false_when_save_fails(): void
+    {
+        $model = Mockery::mock(Subscription::class);
+        $model->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->update($model));
+    }
+
+    public function test_delete_returns_false_when_delete_fails(): void
+    {
+        $model = Mockery::mock(Subscription::class);
+        $model->shouldReceive('delete')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->delete($model));
+    }
+
     public function test_list_returns_all_or_filters_by_state(): void
     {
         $user = User::factory()->create();
@@ -103,6 +128,23 @@ class SubscriptionsRepositoryTest extends TestCase
 
         $this->assertCount(1, $rows);
         $this->assertTrue($rows->first()->is($inactive));
+    }
+
+    public function test_list_returns_empty_when_user_has_no_subscriptions(): void
+    {
+        // Mutation intent: `$active == null` branch uses `$user->subscriptions` relation (~33–36).
+        $user = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->list($user->fresh(), null));
+    }
+
+    public function test_list_returns_empty_when_active_filter_matches_no_rows(): void
+    {
+        // Mutation intent: `where('state', $active)` miss (~37–38).
+        $user = User::factory()->create();
+        Subscription::factory()->create(['user_id' => $user->id, 'state' => false]);
+
+        $this->assertCount(0, $this->repo()->list($user->fresh(), true));
     }
 
     public function test_search_public_trip_matches_path_state_and_passenger_flag(): void
