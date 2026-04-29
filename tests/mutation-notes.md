@@ -257,3 +257,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - Cluster `getTripInfo()` **cache HIT** (`TripRepository.php` ~683–702, UNCOVERED in `20260428_2310.txt`): e.g. `a33a8d54aa9eef26`, `269d6beb0aa03fa0`, `902589d676dfcf05`, `c0160af1be00eac3`, `e8647b8a3ea11433`.
   - Cause: cache short-circuit returned `route_data` but the `Log::info('[trip_route|getTripInfo] cache HIT', …)` payload (null `expires_at`, nested `??` metrics, `route_cache_id`) and “no HTTP when cached” were not asserted.
   - Fix: added `test_get_trip_info_cache_hit_logs_null_expires_and_sparse_route_data_fields` and `test_get_trip_info_cache_hit_logs_iso8601_expires_and_numeric_cached_metrics` with `Log::spy()` + `Http::assertNothingSent()`.
+
+- `getTripInfo()` **expired RouteCache** (`TripRepository.php` ~683–687 `orWhere('expires_at', '>', now())`) and `simplePrice` zero-distance boundary (`~661–663`).
+  - Cause: no test proved a past `expires_at` row is ignored (would wrongly return stale `route_data` if the inner OR / comparator mutates); `simplePrice` only covered a positive distance.
+  - Fix: added `test_get_trip_info_skips_expired_route_cache_and_logs_cache_miss_before_osrm` (stale row + OSRM success + `cache MISS` log + `Http::recorded()`) and `test_simple_price_returns_zero_for_zero_distance`.

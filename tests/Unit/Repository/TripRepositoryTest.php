@@ -260,6 +260,16 @@ class TripRepositoryTest extends TestCase
         $this->assertEqualsWithDelta(10000.0, (float) $price, 0.0001);
     }
 
+    public function test_simple_price_returns_zero_for_zero_distance(): void
+    {
+        // Mutation intent: preserve `distance * fuel_price / 1000` with zero distance boundary.
+        Config::set('carpoolear.fuel_price', 999);
+
+        $price = $this->repo()->simplePrice(0);
+
+        $this->assertSame(0.0, (float) $price);
+    }
+
     public function test_get_trip_info_returns_cached_route_data_when_route_cache_row_valid(): void
     {
         // Mutation intent: preserve `if (! $cacheBypass)` cache lookup and early return on RouteCache hit.
@@ -416,6 +426,74 @@ class TripRepositoryTest extends TestCase
         })->once();
 
         Http::assertNothingSent();
+    }
+
+    public function test_get_trip_info_skips_expired_route_cache_and_logs_cache_miss_before_osrm(): void
+    {
+        // Mutation intent: preserve RouteCache expiry guard (`whereNull` OR `expires_at > now`) so stale rows
+        // never hit the early return; flow must reach cache MISS + OSRM + storeTripInfoSuccess.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $points = [
+            ['lat' => -37.505, 'lng' => -57.606],
+            ['lat' => -37.606, 'lng' => -57.707],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+
+        \DB::table('route_cache')->where('hashed_points', $hashedPoints)->delete();
+
+        RouteCache::query()->create([
+            'points' => $points,
+            'route_data' => [
+                'status' => true,
+                'data' => ['distance' => 1.0, 'duration' => 1.0],
+                'message' => 'stale-expired-row',
+            ],
+            'expires_at' => now()->subDay(),
+        ]);
+
+        $expectedDistance = 88888.0;
+        $expectedDuration = 222.0;
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [[
+                    'distance' => $expectedDistance,
+                    'duration' => $expectedDuration,
+                ]],
+            ], 200),
+        ]);
+
+        Log::spy();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->andReturn(false);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertTrue($result['status']);
+        $this->assertSame($expectedDistance, (float) $result['data']['distance']);
+        $this->assertSame($expectedDuration, (float) $result['data']['duration']);
+        $this->assertSame('Route found', $result['message']);
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints): bool {
+            return $message === '[trip_route|getTripInfo] cache MISS — calling OSRM'
+                && ($context['hashed_points'] ?? null) === $hashedPoints;
+        })->once();
+
+        $this->assertGreaterThanOrEqual(1, count(Http::recorded()));
     }
 
     public function test_get_trip_info_cache_bypass_ignores_cached_row_and_calls_osrm(): void
