@@ -70,4 +70,13 @@ class ReferencesRepositoryTest extends TestCase
 
         $this->assertFalse($this->repo()->create($reference));
     }
+
+    public function test_create_invokes_save(): void
+    {
+        // Mutation intent: preserve `return $reference->save()` (~9–11 RemoveMethodCall).
+        $reference = Mockery::mock(References::class);
+        $reference->shouldReceive('save')->once()->andReturn(true);
+
+        $this->assertTrue($this->repo()->create($reference));
+    }
 }

@@ -36,6 +36,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: pending tests always seeded a request row before listing.
   - Fix: added `test_get_pending_returns_empty_when_no_incoming_requests`.
 
+- `FriendsRepository.php` `add` (`~14–19`): must call `$user1->allFriends()->attach($user2->id, ['state' => $state])` (pending path skips `generateFriendTripVisibility`).
+  - Cause: integration tests asserted pivot/visibility rows only on persisted users.
+  - Fix: added `test_add_pending_invokes_all_friends_attach_with_state_payload` (mock `User` + `attach` expectation).
+
 ## SubscriptionsRepository
 
 - `f33f83c629152a9b` (`Line 35: EqualToIdentical`)
@@ -457,6 +461,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `ReferencesRepository.php` `create` (`~9–11`): `return $reference->save()`.
   - Cause: integration tests only asserted successful persists; removing the return or ignoring `save()`’s boolean could survive without a false-path assertion.
   - Fix: added `test_create_returns_false_when_save_fails` (mocked `References` with `save` → `false`).
+
+- `ReferencesRepository.php` `create` (`~9–11`): must invoke `$reference->save()` on success path.
+  - Cause: DB-backed tests persist via `save()` but did not assert an explicit `save()` expectation on the model instance.
+  - Fix: added `test_create_invokes_save` (`save()` → `true` mock).
 
 ## NotificationRepository
 

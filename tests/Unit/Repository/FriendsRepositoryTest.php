@@ -4,6 +4,7 @@ namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Mockery;
 use STS\Models\Trip;
 use STS\Models\TripVisibility;
 use STS\Models\User;
@@ -317,5 +318,20 @@ class FriendsRepositoryTest extends TestCase
             'user_id' => $viewer->id,
             'trip_id' => $fofTrip->id,
         ]);
+    }
+
+    public function test_add_pending_invokes_all_friends_attach_with_state_payload(): void
+    {
+        // Mutation intent: preserve `$user1->allFriends()->attach($user2->id, ['state' => $state])` (~16 RemoveMethodCall); pending skips visibility (~17–19).
+        $u1 = Mockery::mock(User::class)->makePartial();
+        $u2 = Mockery::mock(User::class)->makePartial();
+        $u2->id = 901;
+
+        $relation = Mockery::mock();
+        $relation->shouldReceive('attach')->once()->with(901, ['state' => User::FRIEND_REQUEST]);
+
+        $u1->shouldReceive('allFriends')->once()->withNoArgs()->andReturn($relation);
+
+        $this->repo()->add($u1, $u2, User::FRIEND_REQUEST);
     }
 }
