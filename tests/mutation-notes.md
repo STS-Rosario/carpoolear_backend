@@ -197,3 +197,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `437c5d733842c7e5`, `b9cdaac4a7dbccbc`, `6e1934bfbec86451`, `60ea7ce4b478ef76`, `ec24c222f23d095b`, `e2221c4cb194b0fe`, `8b730257b8331ca9`, `bb32ca2e812ac2ff`, `4b04e2ea570750c1`, `c3690705b6358360`
   - Cause: `search` geo fallback (`origin_lat`/`origin_lng`, `destination_lat`/`destination_lng`) lacked assertions for both-coordinate guards, default vs custom radius behavior, and actual location filter application.
   - Fix: added `test_search_origin_geo_filter_requires_both_coords_and_uses_default_radius` and `test_search_geo_filters_use_custom_radius_for_origin_and_destination`.
+
+- `5756b28e7b58afd3`, `24c2b1265c4701e0`, `3893054afa515eff`, `e0ff1b10b2e2196c`, `ee58a9bd230d3983`, `615998a13b0f52b3`, `cea9620ede65aaa8`
+  - Cause: private `whereLocation` internals lacked direct behavioral checks for origin/destination point selectors (`min(id)` / `max(id)`), enclosing `whereHas`, and spherical distance raw filter application.
+  - Fix: added `test_where_location_origin_filters_using_first_point_only` and `test_where_location_destination_filters_using_last_point_only`.

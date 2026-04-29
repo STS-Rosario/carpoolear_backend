@@ -1193,6 +1193,124 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($destinationMissingLngIds->contains($destinationFar->id));
     }
 
+    public function test_where_location_origin_filters_using_first_point_only(): void
+    {
+        // Mutation intent: preserve whereLocation whereHas + origin min-point selector + distance raw clause.
+        // Kills: 5756b28e7b58afd3, 24c2b1265c4701e0, 3893054afa515eff, 615998a13b0f52b3, cea9620ede65aaa8.
+        $owner = User::factory()->create();
+        $baseLat = 0.0;
+        $baseLng = 0.0;
+        $deltaFor3000m = (3000.0 / 6371000.0) * (180.0 / M_PI);
+
+        $originNearFirst = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $originNearFirst->points()->create([
+            'address' => 'first-near',
+            'json_address' => ['id' => 20, 'ciudad' => 'Near'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+        $originNearFirst->points()->create([
+            'address' => 'second-far',
+            'json_address' => ['id' => 21, 'ciudad' => 'Far'],
+            'lat' => $deltaFor3000m,
+            'lng' => $baseLng,
+        ]);
+
+        $originFarFirst = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $originFarFirst->points()->create([
+            'address' => 'first-far',
+            'json_address' => ['id' => 22, 'ciudad' => 'Far'],
+            'lat' => $deltaFor3000m,
+            'lng' => $baseLng,
+        ]);
+        $originFarFirst->points()->create([
+            'address' => 'second-near',
+            'json_address' => ['id' => 23, 'ciudad' => 'Near'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+
+        $query = Trip::query()->whereIn('id', [$originNearFirst->id, $originFarFirst->id]);
+        $method = new \ReflectionMethod(TripRepository::class, 'whereLocation');
+        $method->setAccessible(true);
+        $method->invoke($this->repo(), $query, $baseLat, $baseLng, 'origin', 1000.0);
+
+        $ids = $query->pluck('id');
+        $this->assertTrue($ids->contains($originNearFirst->id));
+        $this->assertFalse($ids->contains($originFarFirst->id));
+    }
+
+    public function test_where_location_destination_filters_using_last_point_only(): void
+    {
+        // Mutation intent: preserve destination max-point selector branch in whereLocation.
+        // Kills: e0ff1b10b2e2196c, ee58a9bd230d3983.
+        $owner = User::factory()->create();
+        $baseLat = 0.0;
+        $baseLng = 0.0;
+        $deltaFor3000m = (3000.0 / 6371000.0) * (180.0 / M_PI);
+
+        $destinationNearLast = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $destinationNearLast->points()->create([
+            'address' => 'first-far',
+            'json_address' => ['id' => 24, 'ciudad' => 'Far'],
+            'lat' => $deltaFor3000m,
+            'lng' => $baseLng,
+        ]);
+        $destinationNearLast->points()->create([
+            'address' => 'last-near',
+            'json_address' => ['id' => 25, 'ciudad' => 'Near'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+
+        $destinationFarLast = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $destinationFarLast->points()->create([
+            'address' => 'first-near',
+            'json_address' => ['id' => 26, 'ciudad' => 'Near'],
+            'lat' => $baseLat,
+            'lng' => $baseLng,
+        ]);
+        $destinationFarLast->points()->create([
+            'address' => 'last-far',
+            'json_address' => ['id' => 27, 'ciudad' => 'Far'],
+            'lat' => $deltaFor3000m,
+            'lng' => $baseLng,
+        ]);
+
+        $query = Trip::query()->whereIn('id', [$destinationNearLast->id, $destinationFarLast->id]);
+        $method = new \ReflectionMethod(TripRepository::class, 'whereLocation');
+        $method->setAccessible(true);
+        $method->invoke($this->repo(), $query, $baseLat, $baseLng, 'destination', 1000.0);
+
+        $ids = $query->pluck('id');
+        $this->assertTrue($ids->contains($destinationNearLast->id));
+        $this->assertFalse($ids->contains($destinationFarLast->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().
