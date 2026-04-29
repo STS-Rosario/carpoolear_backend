@@ -320,6 +320,14 @@ This file tracks mutants killed during the current hardening session, with the r
 
 ## UserRepository
 
+- `UserRepository.php` `show` absent-user path (`~41–45`): `first()` may return null; `private_note` stripping must stay behind `if ($user)`.
+  - Cause: tests always loaded an existing id, so skipping the reset body could mutate without failing.
+  - Fix: added `test_show_returns_null_when_user_not_found`.
+
+- `UserRepository.php` `addFriend` pivot payload (`~131–136`): both `attach` calls carry `origin` + `state`; mutations could drop columns or change `$provider` handling.
+  - Cause: friendship existence was asserted via relations only; pivot `origin` was never checked against the `$provider` argument.
+  - Fix: strengthened `test_add_friend_and_delete_friend_sync_bidirectional_pivot` with `assertDatabaseHas('friends', …)` for both directions.
+
 - `UserRepository.php` (`tests/coverage/20260428_2310.txt` ~1464–1474): `show()` eager-load list (`accounts`, `donations`, `referencesReceived`, `cars`) and `acceptTerms`/`updatePhoto` return values (`AlwaysReturnNull`).
   - Cause: `show` test only checked `private_note` nulling, so dropping relation keys from `with([...])` could survive. `acceptTerms`/`updatePhoto` effects were asserted via fresh model state, but method return contracts were not, allowing null-return mutations.
   - Fix: strengthened `test_show_nulls_private_note_and_loads_relations` with `relationLoaded` assertions for all four relations; strengthened `test_accept_terms_and_update_photo` with non-null return and identity (`$user->id`) checks for both methods.

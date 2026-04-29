@@ -61,6 +61,14 @@ class UserRepositoryTest extends TestCase
         $this->assertTrue($shown->relationLoaded('cars'));
     }
 
+    public function test_show_returns_null_when_user_not_found(): void
+    {
+        // Mutation intent: keep `$user` null guard before `private_note` reset (~lines 43–45).
+        $missingId = (User::query()->max('id') ?? 0) + 999999;
+
+        $this->assertNull($this->repo()->show($missingId));
+    }
+
     public function test_accept_terms_and_update_photo(): void
     {
         $user = User::factory()->create(['terms_and_conditions' => false]);
@@ -226,10 +234,13 @@ class UserRepositoryTest extends TestCase
         $b = User::factory()->create();
         $repo = $this->repo();
 
-        $repo->addFriend($a, $b, 'unit');
+        $provider = 'unit'.substr(uniqid('', true), 0, 8);
+        $repo->addFriend($a, $b, $provider);
 
         $this->assertTrue($a->friends()->where('users.id', $b->id)->exists());
         $this->assertTrue($b->friends()->where('users.id', $a->id)->exists());
+        $this->assertDatabaseHas('friends', ['uid1' => $a->id, 'uid2' => $b->id, 'origin' => $provider]);
+        $this->assertDatabaseHas('friends', ['uid1' => $b->id, 'uid2' => $a->id, 'origin' => $provider]);
 
         $repo->deleteFriend($a, $b);
 
