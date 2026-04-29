@@ -224,6 +224,19 @@ class ConversationRepositoryTest extends TestCase
         $this->assertSame($trip->id, $updated->fresh()->trip_id);
     }
 
+    public function test_update_trip_id_invokes_save(): void
+    {
+        // Mutation intent: preserve `$conversation->save()` after `trip_id` assignment (~139–144 RemoveMethodCall).
+        $trip = Trip::factory()->create();
+        $conversation = Mockery::mock(Conversation::class)->makePartial();
+        $conversation->shouldReceive('save')->once()->andReturn(true);
+
+        $repo = new ConversationRepository;
+        $out = $repo->updateTripId($conversation, $trip->id);
+
+        $this->assertSame($conversation, $out);
+    }
+
     public function test_get_conversations_from_user_requires_messages_and_paginates(): void
     {
         $user = User::factory()->create();

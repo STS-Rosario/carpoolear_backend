@@ -277,6 +277,27 @@ class MessageRepositoryTest extends TestCase
         );
     }
 
+    public function test_mark_messages_completes_when_no_message_ids_match_unread_pivot(): void
+    {
+        // Mutation intent: empty `pluck('id')` after `whereHas` unread=false (~83–98); bulk update must not assume non-empty ids.
+        $user = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $m = $this->makeMessage($conversation, $sender, 'already-read');
+        $m->users()->attach($user->id, ['read' => true]);
+
+        Carbon::setTestNow(Carbon::parse('2025-03-10 09:00:00'));
+
+        $this->repo()->markMessages($user, $conversation->id);
+
+        Carbon::setTestNow();
+
+        $this->assertSame(1, (int) DB::table('user_message_read')
+            ->where('message_id', $m->id)
+            ->where('user_id', $user->id)
+            ->value('read'));
+    }
+
     public function test_change_message_read_state_persists_read_flag_in_user_message_read(): void
     {
         // Mutation intent: preserve updateExistingPivot payload `['read' => $read_state]` (RemoveArrayItem / FalseToTrue clusters).

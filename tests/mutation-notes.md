@@ -136,6 +136,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: listing tests always inserted messages before calling `getConversationsFromUser`.
   - Fix: added `test_get_conversations_from_user_returns_empty_when_no_conversations_with_messages`.
 
+- `ConversationRepository.php` `updateTripId` (`~139–144`): must call `$conversation->save()` after assigning `trip_id`.
+  - Cause: integration tests asserted persisted trips only on factory rows.
+  - Fix: added `test_update_trip_id_invokes_save` (`mock(Conversation::class)->makePartial()` + `save()` expectation).
+
 ## TripSearchRepository
 
 - Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.
@@ -167,6 +171,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `MessageRepository.php` `getMessagesUnread` (`~55–80`): no unread conversation memberships (`$conversations_id` empty) or only read pivots.
   - Cause: tests always attached at least one unread conversation before asserting messages.
   - Fix: added `test_get_messages_unread_returns_empty_when_user_has_no_conversations` and `test_get_messages_unread_returns_empty_when_all_conversations_marked_read`.
+
+- `MessageRepository.php` `markMessages` (`~83–98`): `whereHas` unread=false yields empty `pluck('id')`; bulk update runs with empty id list / zero matching pivots.
+  - Cause: tests always seeded at least one unread pivot before calling `markMessages`.
+  - Fix: added `test_mark_messages_completes_when_no_message_ids_match_unread_pivot` (messages only attached with `read => true`).
 
 ## PassengersRepository
 
