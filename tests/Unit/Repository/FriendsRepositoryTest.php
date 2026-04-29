@@ -187,6 +187,27 @@ class FriendsRepositoryTest extends TestCase
         $this->assertCount(0, $rows);
     }
 
+    public function test_get_returns_empty_when_friend_user_filter_misses(): void
+    {
+        // Mutation intent: preserve optional `where('id', $user2->id)` when peer is not in `$state` friend list (~34–36).
+        $u1 = User::factory()->create();
+        $friend = User::factory()->create();
+        $notFriend = User::factory()->create();
+        $this->repo()->add($u1, $friend, User::FRIEND_ACCEPTED);
+
+        $rows = $this->repo()->get($u1->fresh(), $notFriend->fresh(), User::FRIEND_ACCEPTED, []);
+
+        $this->assertCount(0, $rows);
+    }
+
+    public function test_get_pending_returns_empty_when_no_incoming_requests(): void
+    {
+        // Mutation intent: preserve `whereHas('allFriends', …)` zero hits (~50–57).
+        $target = User::factory()->create();
+
+        $this->assertCount(0, $this->repo()->getPending($target));
+    }
+
     public function test_get_pending_returns_users_who_sent_request_to_target(): void
     {
         $requester = User::factory()->create();

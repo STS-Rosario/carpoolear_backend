@@ -28,6 +28,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: listings always asserted hits (`by_id`, pagination, substring matches).
   - Fix: added `test_get_returns_empty_when_user_has_no_friends_for_state` and `test_get_returns_empty_when_search_value_matches_no_friend_names`.
 
+- `FriendsRepository.php` `get` (`~34–36`): optional `$user2` id filter when that user is not an accepted friend of `$user1`.
+  - Cause: `by_id` hits always used `$f1` that was attached in-setup; no miss-path assertion.
+  - Fix: added `test_get_returns_empty_when_friend_user_filter_misses`.
+
+- `FriendsRepository.php` `getPending` (`~50–57`): target user with zero incoming `FRIEND_REQUEST` edges.
+  - Cause: pending tests always seeded a request row before listing.
+  - Fix: added `test_get_pending_returns_empty_when_no_incoming_requests`.
+
 ## SubscriptionsRepository
 
 - `f33f83c629152a9b` (`Line 35: EqualToIdentical`)
