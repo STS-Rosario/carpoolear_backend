@@ -14,6 +14,7 @@ use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
 use STS\Models\Route;
 use STS\Models\Trip;
+use STS\Models\TripVisibility;
 use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Services\GeoService;
@@ -762,6 +763,52 @@ class TripRepositoryTest extends TestCase
 
         $this->assertTrue($ids->contains($ownRestricted->id));
         $this->assertFalse($ids->contains($otherRestricted->id));
+    }
+
+    public function test_search_non_admin_applies_privacy_visibility_filter_but_admin_bypasses_it(): void
+    {
+        // Mutation intent: preserve non-admin gate and nested privacy filter block in search().
+        // Kills: 4a586973694e66f8, e0723334fdd539f6, e8e8ec49e4a53995, 73e03ed3b8f621e0, a75ddf8beaf6a200.
+        $viewer = User::factory()->create();
+        $owner = User::factory()->create();
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $publicTrip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $privateHidden = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $privateVisible = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        TripVisibility::query()->create([
+            'user_id' => $viewer->id,
+            'trip_id' => $privateVisible->id,
+        ]);
+
+        $viewerPage = $this->repo()->search($viewer, ['page' => 1, 'page_size' => 30]);
+        $viewerIds = collect($viewerPage->items())->pluck('id');
+        $this->assertTrue($viewerIds->contains($publicTrip->id));
+        $this->assertTrue($viewerIds->contains($privateVisible->id));
+        $this->assertFalse($viewerIds->contains($privateHidden->id));
+
+        $adminPage = $this->repo()->search($admin, ['is_admin' => 'true', 'page' => 1, 'page_size' => 30]);
+        $adminIds = collect($adminPage->items())->pluck('id');
+        $this->assertTrue($adminIds->contains($privateHidden->id));
     }
 
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void

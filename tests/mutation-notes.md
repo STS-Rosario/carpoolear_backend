@@ -173,3 +173,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `ffe21dba8f63af4a`, `4474a4cffd3d8291`, `503862ec6c4c74f2`
   - Cause: sellado visibility guard in `search` lacked direct assertions for null-user bypass and owner-specific visibility of unpaid/non-ready trips.
   - Fix: added `test_search_with_null_user_does_not_apply_owner_sellado_visibility_guard` and `test_search_user_scope_keeps_owner_unpaid_trip_and_hides_other_unpaid_trip`.
+
+- `4a586973694e66f8`, `e0723334fdd539f6`, `e8e8ec49e4a53995`, `73e03ed3b8f621e0`, `a75ddf8beaf6a200`
+  - Cause: non-admin privacy gate in `search` lacked direct assertions for guard shape (`$user && !$user->is_admin`) and nested visibility block execution.
+  - Fix: added `test_search_non_admin_applies_privacy_visibility_filter_but_admin_bypasses_it`.
