@@ -88,6 +88,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: chat tests only exercised accepted-friend edges; dropping the admin clause still passed because friends satisfied the query.
   - Fix: added `test_users_to_chat_includes_admin_matching_search_without_friend_edge`.
 
+- `usersToChat` public-trip and shared-ride OR branches (`ConversationRepository.php` ~176–195): `orWhereHas('trips', … PRIVACY_PUBLIC …)` and `orWhereHas('passenger.trip.user', …)`.
+  - Cause: earlier tests covered friends + admin only; removing the trips block or the passenger→trip→driver join still passed.
+  - Fix: added `test_users_to_chat_includes_driver_with_public_trip_without_friend_edge` and `test_users_to_chat_includes_accepted_passenger_on_seekers_trip_without_friend_edge`.
+
 ## TripSearchRepository
 
 - Cluster `TripSearchRepository.php` `trackSearch` (stale report ~1050–1078 in `tests/coverage/20260428_2310.txt`): `total() ?? count()`, `$trips->count() > 0` + `seats_available <= 0` filter, `$searchData` keys / `create()` return.

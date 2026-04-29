@@ -2,8 +2,10 @@
 
 namespace Tests\Unit\Repository;
 
+use Carbon\Carbon;
 use STS\Models\Conversation;
 use STS\Models\Message;
+use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\ConversationRepository;
@@ -305,5 +307,49 @@ class ConversationRepositoryTest extends TestCase
 
         $this->assertTrue($users->pluck('id')->contains($admin->id));
         $this->assertFalse($users->pluck('id')->contains($owner->id));
+    }
+
+    public function test_users_to_chat_includes_driver_with_public_trip_without_friend_edge(): void
+    {
+        // Mutation intent: exercise `orWhereHas('trips', …)` public-trip disjunct (~176–177).
+        $owner = User::factory()->create(['name' => 'Seeker PublicTrip']);
+        $needle = 'PubTripDrv'.substr(uniqid('', true), 0, 8);
+        $driver = User::factory()->create(['name' => $needle.' Name']);
+
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $repo = new ConversationRepository;
+        $users = $repo->usersToChat($owner->id, null, 'PubTripDrv');
+
+        $this->assertTrue($users->pluck('id')->contains($driver->id));
+        $this->assertFalse($users->pluck('id')->contains($owner->id));
+    }
+
+    public function test_users_to_chat_includes_accepted_passenger_on_seekers_trip_without_friend_edge(): void
+    {
+        // Mutation intent: exercise trailing `orWhereHas('passenger.trip.user', …)` (~193–195).
+        $owner = User::factory()->create(['name' => 'Driver Seeker']);
+        $needle = 'PassTripChat'.substr(uniqid('', true), 0, 8);
+        $passengerUser = User::factory()->create(['name' => $needle.' Pax']);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $repo = new ConversationRepository;
+        $users = $repo->usersToChat($owner->id, null, 'PassTripChat');
+
+        $this->assertTrue($users->pluck('id')->contains($passengerUser->id));
     }
 }
