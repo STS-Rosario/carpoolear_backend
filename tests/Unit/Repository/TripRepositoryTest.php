@@ -1311,6 +1311,103 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($ids->contains($destinationFarLast->id));
     }
 
+    public function test_where_location_default_distance_keeps_1000m_boundary_behavior(): void
+    {
+        // Mutation intent: preserve default distance parameter (1000.0) and resulting distance threshold.
+        // Kills: a1d5890d79807969, 5cb6dc93314238e7.
+        $owner = User::factory()->create();
+        $baseLat = 0.0;
+        $baseLng = 0.0;
+        $deltaFor999_5m = (999.5 / 6371000.0) * (180.0 / M_PI);
+        $deltaFor1000_5m = (1000.5 / 6371000.0) * (180.0 / M_PI);
+
+        $near = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $near->points()->create([
+            'address' => 'near',
+            'json_address' => ['id' => 30, 'ciudad' => 'Near'],
+            'lat' => $deltaFor999_5m,
+            'lng' => $baseLng,
+        ]);
+
+        $far = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $far->points()->create([
+            'address' => 'far',
+            'json_address' => ['id' => 31, 'ciudad' => 'Far'],
+            'lat' => $deltaFor1000_5m,
+            'lng' => $baseLng,
+        ]);
+
+        $query = Trip::query()->whereIn('id', [$near->id, $far->id]);
+        $method = new \ReflectionMethod(TripRepository::class, 'whereLocation');
+        $method->setAccessible(true);
+        $method->invoke($this->repo(), $query, $baseLat, $baseLng, 'origin');
+
+        $ids = $query->pluck('id');
+        $this->assertTrue($ids->contains($near->id));
+        $this->assertFalse($ids->contains($far->id));
+    }
+
+    public function test_where_location_enforces_minimum_radius_of_1000_even_if_lower_is_passed(): void
+    {
+        // Mutation intent: preserve max($distance, 1000.0) and cos(distance/1000/6371) expression.
+        // Kills: f4095bba926c6437, 4331f3683f0507a0, 468df71dbde57f7a, e0d241320e3c07b1,
+        //        bf1febad9ce7477e, 9c8d7d9c44d50c6e, ea40d19b1507a512, 717fd9c6370fabda, 99f4e9993a3b4be2.
+        $owner = User::factory()->create();
+        $baseLat = 0.0;
+        $baseLng = 0.0;
+        $deltaFor999_5m = (999.5 / 6371000.0) * (180.0 / M_PI);
+        $deltaFor1000_5m = (1000.5 / 6371000.0) * (180.0 / M_PI);
+
+        $near = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $near->points()->create([
+            'address' => 'near',
+            'json_address' => ['id' => 32, 'ciudad' => 'Near'],
+            'lat' => $deltaFor999_5m,
+            'lng' => $baseLng,
+        ]);
+
+        $far = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $far->points()->create([
+            'address' => 'far',
+            'json_address' => ['id' => 33, 'ciudad' => 'Far'],
+            'lat' => $deltaFor1000_5m,
+            'lng' => $baseLng,
+        ]);
+
+        $query = Trip::query()->whereIn('id', [$near->id, $far->id]);
+        $method = new \ReflectionMethod(TripRepository::class, 'whereLocation');
+        $method->setAccessible(true);
+        $method->invoke($this->repo(), $query, $baseLat, $baseLng, 'origin', 200.0);
+
+        $ids = $query->pluck('id');
+        $this->assertTrue($ids->contains($near->id));
+        $this->assertFalse($ids->contains($far->id));
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

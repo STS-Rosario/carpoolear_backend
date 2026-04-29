@@ -201,3 +201,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `5756b28e7b58afd3`, `24c2b1265c4701e0`, `3893054afa515eff`, `e0ff1b10b2e2196c`, `ee58a9bd230d3983`, `615998a13b0f52b3`, `cea9620ede65aaa8`
   - Cause: private `whereLocation` internals lacked direct behavioral checks for origin/destination point selectors (`min(id)` / `max(id)`), enclosing `whereHas`, and spherical distance raw filter application.
   - Fix: added `test_where_location_origin_filters_using_first_point_only` and `test_where_location_destination_filters_using_last_point_only`.
+
+- `a1d5890d79807969`, `5cb6dc93314238e7`, `27d40032f441d215`, `d1fa14096c6e2d91`, `c96024f8aad13239`, `954ce6330e6a1642`, `f4095bba926c6437`, `4331f3683f0507a0`, `468df71dbde57f7a`, `e0d241320e3c07b1`, `bf1febad9ce7477e`, `9c8d7d9c44d50c6e`, `ea40d19b1507a512`, `717fd9c6370fabda`, `99f4e9993a3b4be2`, `80142f3737eeaa25`
+  - Cause: `whereLocation` numeric boundary logic lacked tests that pin both default radius behavior (implicit 1000m) and minimum-radius enforcement when callers pass a smaller value.
+  - Fix: added `test_where_location_default_distance_keeps_1000m_boundary_behavior` and `test_where_location_enforces_minimum_radius_of_1000_even_if_lower_is_passed`.
