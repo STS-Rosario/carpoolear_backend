@@ -461,4 +461,28 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertContains($found->id, [$n1->id, $n2->id, $edge->id]);
         $this->assertNotSame($outsideLng->id, $found->id);
     }
+
+    public function test_get_potential_node_requires_lng_where_between_before_first_result(): void
+    {
+        // Mutation intent: kill line 169 RemoveMethodCall by forcing first() to differ when lng filter is removed.
+        $bboxA = (object) ['lat' => -30.0, 'lng' => -56.0];
+        $bboxB = (object) ['lat' => -30.0, 'lng' => -55.0];
+
+        $outsideFirst = $this->makeNode([
+            'lat' => -30.0,
+            'lng' => -70.0,
+            'name' => 'OutsideFirstByLng',
+        ]);
+        $insideSecond = $this->makeNode([
+            'lat' => -30.0,
+            'lng' => -55.5,
+            'name' => 'InsideSecond',
+        ]);
+
+        $found = $this->repo()->getPotentialNode($bboxA, $bboxB);
+
+        $this->assertNotNull($found);
+        $this->assertSame($insideSecond->id, $found->id);
+        $this->assertNotSame($outsideFirst->id, $found->id);
+    }
 }

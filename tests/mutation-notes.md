@@ -327,3 +327,9 @@ This file tracks mutants killed during the current hardening session, with the r
 - `UserRepository.php` `searchUsers` (`tests/coverage/20260428_2310.txt` stale cluster ~1477–1527): OR filters on `name` / `email` / `nro_doc` / `mobile_phone`, plus `with(['accounts','cars'])` and `orderBy('name')`.
   - Cause: prior test used one mixed token and membership-style assertions, which could let some concat/OR variants survive. Relation eager-loading and strict alphabetical ordering were not asserted directly.
   - Fix: strengthened `test_search_users_matches_name_email_doc_or_phone` with strict per-field searches and one-result expectations; added `test_search_users_orders_by_name_and_eager_loads_accounts_and_cars`.
+
+## SubscriptionsRepository (getPotentialNode follow-up)
+
+- `SubscriptionsRepository.php` line ~169 (`getPotentialNode`): `whereBetween('lng', ...)` before `first()` result selection.
+  - Cause: prior bbox tests allowed multiple in-lat-range nodes and accepted several ids, so dropping the lng filter could still return an allowed row and pass nondeterministically.
+  - Fix: added `test_get_potential_node_requires_lng_where_between_before_first_result` using non-persisted bbox endpoints plus controlled insert order (`outsideFirst` then `insideSecond`) to ensure removing lng filtering changes the selected first row.
