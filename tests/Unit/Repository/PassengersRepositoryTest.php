@@ -28,6 +28,14 @@ class PassengersRepositoryTest extends TestCase
         $this->assertSame(Passenger::TYPE_PASAJERO, (int) $p->passenger_type);
         $this->assertSame($trip->id, $p->trip_id);
         $this->assertSame($user->id, $p->user_id);
+
+        $this->assertDatabaseHas('trip_passengers', [
+            'id' => $p->id,
+            'trip_id' => $trip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
     }
 
     public function test_accept_request_updates_pending_passenger(): void
@@ -144,6 +152,87 @@ class PassengersRepositoryTest extends TestCase
 
         $this->assertSame(Passenger::STATE_CANCELED, (int) $row->fresh()->request_state);
         $this->assertSame(Passenger::CANCELED_DRIVER, (int) $row->fresh()->canceled_state);
+    }
+
+    public function test_cancel_request_matches_reason_via_loose_equality_for_string_literals(): void
+    {
+        // Mutation intent: preserve `$canceledState == Passenger::...` branches (`EqualToIdentical` would reject `'0'` / `'3'` vs ints).
+        $tripPending = Trip::factory()->create();
+        $passengerPending = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $tripPending->id,
+            'user_id' => $passengerPending->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $rowPending = $this->repo()->cancelRequest($tripPending->id, $passengerPending, (string) Passenger::CANCELED_REQUEST);
+        $this->assertSame(Passenger::STATE_CANCELED, (int) $rowPending->fresh()->request_state);
+        $this->assertSame(Passenger::CANCELED_REQUEST, (int) $rowPending->fresh()->canceled_state);
+
+        $tripPay = Trip::factory()->create();
+        $passengerPay = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $tripPay->id,
+            'user_id' => $passengerPay->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $rowPay = $this->repo()->cancelRequest($tripPay->id, $passengerPay, (string) Passenger::CANCELED_PASSENGER_WHILE_PAYING);
+        $this->assertSame(Passenger::STATE_CANCELED, (int) $rowPay->fresh()->request_state);
+        $this->assertSame(Passenger::CANCELED_PASSENGER_WHILE_PAYING, (int) $rowPay->fresh()->canceled_state);
+    }
+
+    public function test_get_pending_requests_without_trip_id_excludes_soft_deleted_trips(): void
+    {
+        // Mutation intent: preserve `join('trips')` + `whereNull('trips.deleted_at')` when `$tripId` is falsy (RemoveMethodCall cluster).
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+        $trip->delete();
+
+        $this->assertCount(0, $this->repo()->getPendingRequests(null, $driver, []));
+    }
+
+    public function test_get_pending_payment_requests_excludes_soft_deleted_trips(): void
+    {
+        // Mutation intent: preserve trip join + soft-delete guard for passenger pending-payment listings.
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+        $trip->delete();
+
+        $this->assertCount(0, $this->repo()->getPendingPaymentRequests(null, $passenger, []));
+    }
+
+    public function test_user_has_active_request_includes_waiting_payment_state(): void
+    {
+        // Mutation intent: preserve `whereIn('request_state', [WAITING_PAYMENT, ACCEPTED, PENDING])`.
+        $trip = Trip::factory()->create();
+        $user = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+
+        $this->assertTrue($this->repo()->userHasActiveRequest($trip->id, $user->id));
     }
 
     public function test_get_passengers_only_accepted_and_paginates(): void
