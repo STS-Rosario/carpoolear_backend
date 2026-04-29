@@ -45,6 +45,9 @@ class RatingRepositoryTest extends TestCase
         $passenger = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $driver->id]);
         $expected = $this->seedRating($passenger, $driver, $trip);
+        // Noise rows to keep where('user_id_to') and where('trip_id') mandatory.
+        $this->seedRating($passenger, User::factory()->create(), $trip, ['voted_hash' => 'noise-to']);
+        $this->seedRating($passenger, $driver, Trip::factory()->create(['user_id' => $driver->id]), ['voted_hash' => 'noise-trip']);
 
         $repo = new RatingRepository;
         $found = $repo->getRating($passenger->id, $driver->id, $trip->id);
@@ -74,6 +77,10 @@ class RatingRepositoryTest extends TestCase
         $this->assertSame('hash-abc', $row->voted_hash);
         $this->assertSame(1, (int) $row->user_to_type);
         $this->assertSame(2, (int) $row->user_to_state);
+        $this->assertSame('', $row->comment);
+        $this->assertSame('', $row->reply_comment);
+        $this->assertNull($row->reply_comment_created_at);
+        $this->assertNull($row->rate_at);
     }
 
     public function test_find_and_find_by(): void
@@ -116,10 +123,16 @@ class RatingRepositoryTest extends TestCase
         $recent = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r1-'.uniqid('', true));
         $old = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r2-'.uniqid('', true));
         $old->forceFill(['created_at' => '2026-05-01 00:00:00'])->saveQuietly();
+        // Must be excluded by where('voted', false).
+        $voted = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r3-'.uniqid('', true));
+        $voted->forceFill(['voted' => true])->saveQuietly();
 
         $listed = $repo->getPendingRatings($user);
         $this->assertCount(1, $listed);
         $this->assertTrue($listed->first()->is($recent));
+        $this->assertTrue($listed->first()->relationLoaded('from'));
+        $this->assertTrue($listed->first()->relationLoaded('to'));
+        $this->assertTrue($listed->first()->relationLoaded('trip'));
 
         Carbon::setTestNow();
     }
@@ -152,5 +165,22 @@ class RatingRepositoryTest extends TestCase
 
         $allAvailable = $repo->getRatings($driver, []);
         $this->assertCount(2, $allAvailable);
+    }
+
+    public function test_get_ratings_orders_by_created_at_desc(): void
+    {
+        // Mutation intent: preserve orderBy('created_at', 'desc').
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $older = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'ord-old']);
+        $newer = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'ord-new']);
+        $older->forceFill(['created_at' => Carbon::parse('2025-01-01 10:00:00')])->saveQuietly();
+        $newer->forceFill(['created_at' => Carbon::parse('2025-01-02 10:00:00')])->saveQuietly();
+
+        $rows = (new RatingRepository)->getRatings($driver, []);
+
+        $this->assertGreaterThanOrEqual(2, $rows->count());
+        $this->assertSame($newer->id, $rows->first()->id);
     }
 }

@@ -291,3 +291,9 @@ This file tracks mutants killed during the current hardening session, with the r
 - `TripRepository::unhideTrips` (`~982–987`): future `trip_date`, sentinel `deleted_at`, and `update()` return value.
   - Cause: only the happy hide→unhide path was covered; removing `trip_date` / exact `deleted_at` filters or ignoring `update()`’s affected-row count could regress silently.
   - Fix: added `test_unhide_trips_does_not_restore_when_trip_date_is_before_now`, `test_unhide_trips_does_not_restore_regular_soft_delete_without_sentinel_timestamp`, and `test_unhide_trips_returns_number_of_restored_sentinel_hidden_trips`.
+
+## RatingRepository
+
+- Cluster `RatingRepository.php` (`tests/coverage/20260428_2310.txt` ~1278–1334): `getRating` chained filters (`user_id_to`, `trip_id`), `getRatings` ordering, `getPendingRatings` voted/eager-load constraints, and create payload defaults.
+  - Cause: `getRating` had only a direct-hit case with no distractors; removing extra `where(...)` calls could still pass. `getRatings` did not assert descending `created_at`. Pending ratings did not include a same-user `voted=true` row or relation-loaded checks for `with(['from','to','trip'])`. `create` asserted only a subset of defaults, leaving empty-string/null payload items weakly guarded.
+  - Fix: strengthened `test_get_rating_returns_row_for_from_to_trip` with mismatching noise rows; added `test_get_ratings_orders_by_created_at_desc`; strengthened `test_get_pending_ratings_filters_by_user_voted_and_recency` with a voted row and `relationLoaded` assertions; extended `test_create_persists_pending_rating_shape` with `comment`, `reply_comment`, `reply_comment_created_at`, and `rate_at` default assertions.
