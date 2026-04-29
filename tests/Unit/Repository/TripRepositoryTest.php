@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
 use STS\Events\Trip\Create as CreateEvent;
@@ -311,6 +312,57 @@ class TripRepositoryTest extends TestCase
         $this->assertSame(12345.0, (float) $result['data']['distance']);
         $this->assertSame(678.0, (float) $result['data']['duration']);
         $this->assertSame('Route found', $result['message']);
+    }
+
+    public function test_get_trip_info_logs_request_context_for_long_non_array_input_with_cache_hit(): void
+    {
+        // Mutation intent: preserve pointsCount ternary/cast and full debug context payload including preview truncation.
+        // Kills: 1563863da77829c1, e8acd9d34035f62d, 976b2426fae950ee, 0f03d952d318404e, 00e5848889b379f9,
+        //        629c3eabdd90f6e4, 4776f4d8b8e5da4e, 8163c34d58696ce0, f7416879bad499f9, a27c8a6a3e231537,
+        //        f91ebeb3882f4f02, 386c3bf9c3745cc5, d08504b5179cd931, e54932e12ac46657, e1f9e3574376ac69,
+        //        01452804cdceb277, 249c2e1dde111f8c, b06e80e99f13f1f9, 26b9e34b96b5aa3f, 640a19d6532cb984,
+        //        504e4f0fb10d4d2c, 8c763f6d0e3389a7, 0a5fdf2be6214c2e, a079723bb3746a71.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = str_repeat('x', 450);
+        $cacheKey = json_encode($points);
+        $hashedPoints = hash('sha256', $cacheKey);
+        $expectedPreview = substr($cacheKey, 0, 400).'…';
+        $routeData = [
+            'status' => true,
+            'data' => ['distance' => 77.0, 'duration' => 88.0],
+            'message' => 'cached-from-string',
+        ];
+
+        \DB::table('route_cache')->insert([
+            'points' => json_encode([]),
+            'route_data' => json_encode($routeData),
+            'expires_at' => now()->addDay(),
+            'hashed_points' => $hashedPoints,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Log::spy();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertEquals($routeData, $result);
+        Log::shouldHaveReceived('debug')->withArgs(function (string $message, array $context) use ($points, $hashedPoints, $cacheKey, $expectedPreview): bool {
+            return $message === '[trip_route|getTripInfo] request context'
+                && $context['points_count'] === 0
+                && $context['hashed_points'] === $hashedPoints
+                && $context['cache_key_length'] === strlen($cacheKey)
+                && $context['cache_key_preview'] === $expectedPreview
+                && $context['points'] === $points;
+        })->once();
     }
 
     public function test_get_trip_by_trip_passenger_returns_passenger_by_primary_key(): void

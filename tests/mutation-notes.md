@@ -221,3 +221,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `f77d59641a69cb82`, `9a8cdb4e5cd63213`
   - Cause: cache-bypass else branch in `getTripInfo()` (`cache BYPASS enabled` log payload) was unexercised, so mutations removing the log call or the `hashed_points` payload item survived.
   - Fix: added `test_get_trip_info_cache_bypass_ignores_cached_row_and_calls_osrm` to force bypass on, seed cache, and assert OSRM-faked result is used instead of cached data.
+
+- `1563863da77829c1`, `e8acd9d34035f62d`, `976b2426fae950ee`, `0f03d952d318404e`, `00e5848889b379f9`, `629c3eabdd90f6e4`, `4776f4d8b8e5da4e`, `8163c34d58696ce0`, `f7416879bad499f9`, `a27c8a6a3e231537`, `f91ebeb3882f4f02`, `386c3bf9c3745cc5`, `d08504b5179cd931`, `e54932e12ac46657`, `e1f9e3574376ac69`, `01452804cdceb277`, `249c2e1dde111f8c`, `b06e80e99f13f1f9`, `26b9e34b96b5aa3f`, `640a19d6532cb984`, `504e4f0fb10d4d2c`, `8c763f6d0e3389a7`, `0a5fdf2be6214c2e`, `a079723bb3746a71`
+  - Cause: `getTripInfo()` request-context logging had no strict assertions for non-array input handling (`points_count`, casted bypass flag) and full debug payload integrity (`hashed_points`, `cache_key_length`, preview truncation/substring behavior, original `points` value).
+  - Fix: added `test_get_trip_info_logs_request_context_for_long_non_array_input_with_cache_hit` with a long non-array input, cache-hit short-circuit, and exact `Log::debug` context assertions.
