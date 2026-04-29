@@ -129,3 +129,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `a38f3aa02684a67a`, `8f0f4900b81196c4`, `3922f273b08381d3`
   - Cause: `update` path with previously completed sellado payment lacked direct assertions for the `selladoAlreadyPaid` branch persistence (`needs_sellado=true` + save) without creating a new preference.
   - Fix: added `test_update_marks_sellado_needed_without_new_preference_when_completed_payment_exists`.
+
+- `45f27ca691ab564d`, `5bdf31da7f173533`, `2c4d45590fbb4491`, `2095960def72d398`, `f9febe68e921584f`, `05f9966842a91f2c`, `5e5980987ced1592`, `2ff5b8a00050b688`, `2b73a9ae7652cdd8`
+  - Cause: `update` branch for routes that no longer need sellado lacked assertions for strict elseif gating and payment-state reset behavior (`needs_sellado`, payment states list, reset/save flow).
+  - Fix: added `test_update_clears_payment_state_when_route_no_longer_needs_sellado`.
