@@ -63,6 +63,16 @@ class RoutesRepositoryTest extends TestCase
         $this->assertFalse($ids->contains($outsideLng->id));
     }
 
+    public function test_autocomplete_returns_empty_when_no_rows_match(): void
+    {
+        // Mutation intent: preserve whereRaw + optional country filter when CONCAT yields zero hits (~41–55).
+        $needle = 'Nomatch'.substr(uniqid('', true), 0, 12);
+
+        $rows = $this->repo()->autocomplete($needle, 'AR', false);
+
+        $this->assertCount(0, $rows);
+    }
+
     public function test_autocomplete_filters_by_country_when_not_multicountry(): void
     {
         $suffix = substr(uniqid('', true), 0, 8);

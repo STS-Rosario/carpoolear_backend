@@ -370,6 +370,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests always created a car before `index`; empty relation could regress without an assertion (similar to `DeviceRepository::getDevices`).
   - Fix: added `test_index_returns_empty_when_user_has_no_cars`.
 
+- `CarsRepository.php` `create` / `update` (`~10–17`): `return $car->save()`.
+  - Cause: integration tests only asserted successful persists; ignoring `save()`’s boolean could survive without a false-path assertion.
+  - Fix: added `test_create_returns_false_when_save_fails` and `test_update_returns_false_when_save_fails`.
+
 ## PhoneVerificationRepository
 
 - `PhoneVerificationRepository.php` `find` (`~28–31`): `PhoneVerification::find($id)` when no row exists.
@@ -413,6 +417,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `RoutesRepository.php` (`tests/coverage/20260428_2310.txt` ~1122–1152): `getPotentialsNodes` lng max/min branch (`if ($n1->lng > $n2->lng)`), `autocomplete` log concat (`$name.' '.$country`), and `whereRaw(CONCAT(name, state, country) like ?)` filtering.
   - Cause: bounding-box test primarily exercised one ordering shape; reversed-lng branch comparators were under-asserted. Autocomplete tests matched mostly by name and country, so state/country concat and exact log message construction could mutate without failure.
   - Fix: added `test_get_potentials_nodes_handles_reversed_lng_order_and_keeps_bounds` and `test_autocomplete_matches_state_country_concat_and_logs_query_context` (state-token search + `Log::shouldReceive('info')->with($needle.' AR')`).
+
+- `RoutesRepository.php` `autocomplete` (`~41–55`): zero-row result set for `CONCAT(...) LIKE` + country filter.
+  - Cause: every autocomplete test asserted at least one hit; removing `whereRaw`, `where('country', …)`, `orderBy`, or `limit` could survive without an empty-collection assertion.
+  - Fix: added `test_autocomplete_returns_empty_when_no_rows_match`.
 
 ## UserRepository (searchUsers follow-up)
 

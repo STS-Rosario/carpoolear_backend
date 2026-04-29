@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Repository;
 
+use Mockery;
 use STS\Models\Car;
 use STS\Models\User;
 use STS\Repository\CarsRepository;
@@ -122,5 +123,21 @@ class CarsRepositoryTest extends TestCase
         $user = User::factory()->create();
 
         $this->assertNull($this->repo()->getUserCar($user->id));
+    }
+
+    public function test_create_returns_false_when_save_fails(): void
+    {
+        $car = Mockery::mock(Car::class);
+        $car->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->create($car));
+    }
+
+    public function test_update_returns_false_when_save_fails(): void
+    {
+        $car = Mockery::mock(Car::class);
+        $car->shouldReceive('save')->once()->andReturn(false);
+
+        $this->assertFalse($this->repo()->update($car));
     }
 }
