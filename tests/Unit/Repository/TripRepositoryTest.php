@@ -13,6 +13,7 @@ use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
 use STS\Models\Route;
+use STS\Models\RouteCache;
 use STS\Models\Trip;
 use STS\Models\TripVisibility;
 use STS\Models\User;
@@ -216,6 +217,46 @@ class TripRepositoryTest extends TestCase
         $price = $this->repo()->simplePrice(5000);
 
         $this->assertEqualsWithDelta(10000.0, (float) $price, 0.0001);
+    }
+
+    public function test_get_trip_info_returns_cached_route_data_when_route_cache_row_valid(): void
+    {
+        // Mutation intent: preserve `if (! $cacheBypass)` cache lookup and early return on RouteCache hit.
+        // Kills: 0e3418e2b45fa6dc, 8436b725741c95e3, 0b111388692a64e7.
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = [
+            ['lat' => -41.123456, 'lng' => -62.987654],
+            ['lat' => -41.223456, 'lng' => -62.887654],
+        ];
+
+        $routeData = [
+            'status' => true,
+            'data' => [
+                'distance' => 5000.0,
+                'duration' => 900.0,
+                'recommended_trip_price_cents' => 4321,
+            ],
+            'message' => 'Route found',
+        ];
+
+        RouteCache::query()->create([
+            'points' => $points,
+            'route_data' => $routeData,
+            'expires_at' => now()->addDay(),
+        ]);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points);
+
+        $this->assertEquals($routeData, $result);
     }
 
     public function test_get_trip_by_trip_passenger_returns_passenger_by_primary_key(): void

@@ -213,3 +213,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `244dbf47a10aaaf2`, `bd13423c0006dea7`
   - Cause: `update()` did not have assertions for (a) keeping `$oldRouteNeedsPayment` false when fewer than two stored stops mean the flag is never recomputed, and (b) entering the `if ($points)` block so prior stops are loaded and `doStopsRequireSellado` runs twice (old route then new route) when enough stored stops exist.
   - Fix: added `test_update_preserves_false_old_route_payment_flag_when_stored_points_are_single_stop` and `test_update_consults_old_route_sellado_when_points_payload_present_and_two_or_more_stored_stops`.
+
+- `0e3418e2b45fa6dc`, `8436b725741c95e3`, `0b111388692a64e7`
+  - Cause: `getTripInfo()` route-cache short circuit (`if (! $cacheBypass)`, RouteCache lookup, `if ($cachedRoute)` early return) had no integration-level coverage; mutations skipped caching or skipped returning cached `route_data`.
+  - Fix: added `test_get_trip_info_returns_cached_route_data_when_route_cache_row_valid`.
