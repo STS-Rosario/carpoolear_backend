@@ -51,6 +51,24 @@ class FriendsRepositoryTest extends TestCase
         ]);
     }
 
+    public function test_add_accepts_numeric_string_friend_state_from_request_payloads(): void
+    {
+        $viewer = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+        ]);
+
+        $this->repo()->add($viewer, $driver, (string) User::FRIEND_ACCEPTED);
+
+        $this->assertDatabaseHas('user_visibility_trip', [
+            'user_id' => $viewer->id,
+            'trip_id' => $trip->id,
+        ]);
+    }
+
     public function test_add_accepted_inserts_visibility_for_friend_of_friends_trips(): void
     {
         $viewer = User::factory()->create();
@@ -112,6 +130,25 @@ class FriendsRepositoryTest extends TestCase
         $this->assertSame($f1->id, $search->first()->id);
     }
 
+    public function test_get_search_matches_substring_in_middle_of_name(): void
+    {
+        $u1 = User::factory()->create();
+        $middleMatch = User::factory()->create(['name' => 'AlphaZetaOmega']);
+        $suffixOnly = User::factory()->create(['name' => 'OmegaZeta']);
+        $prefixOnly = User::factory()->create(['name' => 'ZetaOmega']);
+
+        $this->repo()->add($u1, $middleMatch, User::FRIEND_ACCEPTED);
+        $this->repo()->add($u1, $suffixOnly, User::FRIEND_ACCEPTED);
+        $this->repo()->add($u1, $prefixOnly, User::FRIEND_ACCEPTED);
+
+        $search = $this->repo()->get($u1, null, User::FRIEND_ACCEPTED, ['value' => 'ZetaO']);
+
+        $this->assertCount(2, $search);
+        $this->assertTrue($search->pluck('id')->contains($middleMatch->id));
+        $this->assertTrue($search->pluck('id')->contains($prefixOnly->id));
+        $this->assertFalse($search->pluck('id')->contains($suffixOnly->id));
+    }
+
     public function test_get_paginates_when_page_size_provided(): void
     {
         $u1 = User::factory()->create();
@@ -135,6 +172,22 @@ class FriendsRepositoryTest extends TestCase
 
         $this->assertCount(1, $pending);
         $this->assertSame($requester->id, $pending->first()->id);
+    }
+
+    public function test_get_pending_excludes_requests_sent_to_other_users(): void
+    {
+        $requesterForTarget = User::factory()->create();
+        $requesterForOther = User::factory()->create();
+        $target = User::factory()->create();
+        $otherTarget = User::factory()->create();
+
+        $this->repo()->add($requesterForTarget, $target, User::FRIEND_REQUEST);
+        $this->repo()->add($requesterForOther, $otherTarget, User::FRIEND_REQUEST);
+
+        $pending = $this->repo()->getPending($target);
+
+        $this->assertCount(1, $pending);
+        $this->assertSame($requesterForTarget->id, $pending->first()->id);
     }
 
     public function test_closest_friend_detects_shared_accepted_friend(): void
@@ -168,5 +221,34 @@ class FriendsRepositoryTest extends TestCase
         $this->repo()->delete($viewer, $driver);
 
         $this->assertSame(0, DB::table('user_visibility_trip')->where('user_id', $viewer->id)->where('trip_id', $trip->id)->count());
+    }
+
+    public function test_delete_removes_visibility_for_friend_of_friend_trips(): void
+    {
+        $viewer = User::factory()->create();
+        $middle = User::factory()->create();
+        $driver = User::factory()->create();
+
+        $this->repo()->add($middle, $driver, User::FRIEND_ACCEPTED);
+
+        $fofTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+        ]);
+
+        $this->repo()->add($viewer, $middle, User::FRIEND_ACCEPTED);
+
+        $this->assertDatabaseHas('user_visibility_trip', [
+            'user_id' => $viewer->id,
+            'trip_id' => $fofTrip->id,
+        ]);
+
+        $this->repo()->delete($viewer, $middle);
+
+        $this->assertDatabaseMissing('user_visibility_trip', [
+            'user_id' => $viewer->id,
+            'trip_id' => $fofTrip->id,
+        ]);
     }
 }
