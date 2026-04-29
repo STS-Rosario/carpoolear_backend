@@ -99,14 +99,43 @@ class UserRepositoryTest extends TestCase
 
     public function test_search_users_matches_name_email_doc_or_phone(): void
     {
-        $u1 = User::factory()->create(['name' => 'AlphaUniqueDoc', 'nro_doc' => 'DOC991122']);
-        $u2 = User::factory()->create(['email' => 'beta-unique-991122@example.com']);
-        $u3 = User::factory()->create(['mobile_phone' => '+5491199112233']);
+        $uByName = User::factory()->create(['name' => 'AlphaNeedleName']);
+        $uByEmail = User::factory()->create(['email' => 'needle-email-777@example.com']);
+        $uByDoc = User::factory()->create(['nro_doc' => 'DOC-NEEDLE-777']);
+        $uByPhone = User::factory()->create(['mobile_phone' => '+54911-NEEDLE-777']);
 
-        $byDoc = $this->repo()->searchUsers('991122');
-        $this->assertTrue($byDoc->pluck('id')->contains($u1->id));
-        $this->assertTrue($byDoc->pluck('id')->contains($u2->id));
-        $this->assertTrue($byDoc->pluck('id')->contains($u3->id));
+        // Mutation intent: preserve each OR where in searchUsers(name/email/nro_doc/mobile_phone).
+        $byName = $this->repo()->searchUsers('NeedleName');
+        $this->assertCount(1, $byName);
+        $this->assertSame($uByName->id, $byName->first()->id);
+
+        $byEmail = $this->repo()->searchUsers('needle-email-777');
+        $this->assertCount(1, $byEmail);
+        $this->assertSame($uByEmail->id, $byEmail->first()->id);
+
+        $byDoc = $this->repo()->searchUsers('DOC-NEEDLE-777');
+        $this->assertCount(1, $byDoc);
+        $this->assertSame($uByDoc->id, $byDoc->first()->id);
+
+        $byPhone = $this->repo()->searchUsers('NEEDLE-777');
+        $this->assertTrue($byPhone->pluck('id')->contains($uByPhone->id));
+    }
+
+    public function test_search_users_orders_by_name_and_eager_loads_accounts_and_cars(): void
+    {
+        // Mutation intent: preserve with(['accounts', 'cars']) and orderBy('name').
+        $a = User::factory()->create(['name' => 'A SearchOrder']);
+        $z = User::factory()->create(['name' => 'Z SearchOrder']);
+
+        $rows = $this->repo()->searchUsers('SearchOrder');
+
+        $this->assertGreaterThanOrEqual(2, $rows->count());
+        $this->assertSame($a->id, $rows->first()->id);
+        $this->assertTrue($rows->first()->relationLoaded('accounts'));
+        $this->assertTrue($rows->first()->relationLoaded('cars'));
+        $this->assertTrue($rows->last()->relationLoaded('accounts'));
+        $this->assertTrue($rows->last()->relationLoaded('cars'));
+        $this->assertSame($z->id, $rows->last()->id);
     }
 
     public function test_index_excludes_self_banned_inactive_and_accepted_friends(): void

@@ -321,3 +321,9 @@ This file tracks mutants killed during the current hardening session, with the r
 - `RoutesRepository.php` (`tests/coverage/20260428_2310.txt` ~1122–1152): `getPotentialsNodes` lng max/min branch (`if ($n1->lng > $n2->lng)`), `autocomplete` log concat (`$name.' '.$country`), and `whereRaw(CONCAT(name, state, country) like ?)` filtering.
   - Cause: bounding-box test primarily exercised one ordering shape; reversed-lng branch comparators were under-asserted. Autocomplete tests matched mostly by name and country, so state/country concat and exact log message construction could mutate without failure.
   - Fix: added `test_get_potentials_nodes_handles_reversed_lng_order_and_keeps_bounds` and `test_autocomplete_matches_state_country_concat_and_logs_query_context` (state-token search + `Log::shouldReceive('info')->with($needle.' AR')`).
+
+## UserRepository (searchUsers follow-up)
+
+- `UserRepository.php` `searchUsers` (`tests/coverage/20260428_2310.txt` stale cluster ~1477–1527): OR filters on `name` / `email` / `nro_doc` / `mobile_phone`, plus `with(['accounts','cars'])` and `orderBy('name')`.
+  - Cause: prior test used one mixed token and membership-style assertions, which could let some concat/OR variants survive. Relation eager-loading and strict alphabetical ordering were not asserted directly.
+  - Fix: strengthened `test_search_users_matches_name_email_doc_or_phone` with strict per-field searches and one-result expectations; added `test_search_users_orders_by_name_and_eager_loads_accounts_and_cars`.
