@@ -209,3 +209,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `7941bcae741806f0`, `c309cdbc3f4a1d6b`, `9ebb4531e7d1c291`, `72b0034215a62708`, `654b282c1061f652`, `d93487fbf87ab0b8`, `f8bfa1bb6d26b1d1`, `8f105c8052bfe1e9`, `a2036bb2730c0857`, `0ffcd91ecaffadb6`, `5a014e97c5e72b29`, `7afd019bd08af694`, `85adb24d944efdf5`
   - Cause: `create` route-loop coverage lacked edge assertions for `getPotentialNode($points[$i-1])`, strict positive id guards (`> 0`), conditional `routes()->sync($routeIds)`, and the unconditional final `generateTripFriendVisibility($trip)` call.
   - Fix: added `test_create_route_loop_uses_previous_point_for_origin_and_accepts_node_id_one`, `test_create_route_loop_uses_previous_point_when_resolving_potential_nodes`, and `test_create_skips_route_sync_when_any_potential_node_id_is_non_positive`.
+
+- `244dbf47a10aaaf2`, `bd13423c0006dea7`
+  - Cause: `update()` did not have assertions for (a) keeping `$oldRouteNeedsPayment` false when fewer than two stored stops mean the flag is never recomputed, and (b) entering the `if ($points)` block so prior stops are loaded and `doStopsRequireSellado` runs twice (old route then new route) when enough stored stops exist.
+  - Fix: added `test_update_preserves_false_old_route_payment_flag_when_stored_points_are_single_stop` and `test_update_consults_old_route_sellado_when_points_payload_present_and_two_or_more_stored_stops`.

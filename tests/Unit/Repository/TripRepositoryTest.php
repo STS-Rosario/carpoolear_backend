@@ -1886,6 +1886,91 @@ class TripRepositoryTest extends TestCase
         $this->assertCount(0, $trip->fresh()->routes);
     }
 
+    public function test_update_preserves_false_old_route_payment_flag_when_stored_points_are_single_stop(): void
+    {
+        // Mutation intent: keep `$oldRouteNeedsPayment = false` when oldPoints exist but count < 2 (never overwritten).
+        // Kills: 244dbf47a10aaaf2.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 1);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')->never();
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
+
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'state' => Trip::STATE_READY,
+            'payment_id' => 'existing_pref',
+            'needs_sellado' => false,
+        ]);
+
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1401, 'ciudad' => 'Only']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.50, 'lng' => -58.30, 'json_address' => ['id' => 1402, 'ciudad' => 'NewA']],
+                ['lat' => -34.49, 'lng' => -58.29, 'json_address' => ['id' => 1403, 'ciudad' => 'NewB']],
+            ],
+        ]);
+
+        $updated->refresh();
+        $this->assertSame(Trip::STATE_AWAITING_PAYMENT, $updated->state);
+        $this->assertSame('existing_pref', $updated->payment_id);
+        $this->assertTrue((bool) $updated->needs_sellado);
+    }
+
+    public function test_update_consults_old_route_sellado_when_points_payload_present_and_two_or_more_stored_stops(): void
+    {
+        // Mutation intent: preserve `if ($points)` block that loads prior points before updating.
+        // Kills: bd13423c0006dea7.
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->twice()->andReturn(false, false);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
+
+        $trip = Trip::factory()->create(['state' => Trip::STATE_READY]);
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1501, 'ciudad' => 'OldA']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 1502, 'ciudad' => 'OldB']],
+        ]);
+
+        $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.55, 'lng' => -58.35, 'json_address' => ['id' => 1503, 'ciudad' => 'NewA']],
+                ['lat' => -34.54, 'lng' => -58.34, 'json_address' => ['id' => 1504, 'ciudad' => 'NewB']],
+            ],
+        ]);
+    }
+
     public function test_update_skips_new_payment_when_old_route_already_required_sellado(): void
     {
         // Mutation intent: preserve old-points count guard and lat/lng mapping for old-route sellado check.
