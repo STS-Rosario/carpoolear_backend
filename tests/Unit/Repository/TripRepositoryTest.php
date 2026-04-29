@@ -72,6 +72,17 @@ class TripRepositoryTest extends TestCase
         return $repo;
     }
 
+    /**
+     * @return array{status: 'route', payload: array}|array{status: 'osrm_no_route', payload: array}|array{status: 'osrm_unreachable'}
+     */
+    private function invokeRequestOsrmForTripInfoCoords(TripRepository $repo, string $coords, string $hashedPoints): array
+    {
+        $method = new \ReflectionMethod(TripRepository::class, 'requestOsrmForTripInfoCoords');
+        $method->setAccessible(true);
+
+        return $method->invoke($repo, $coords, $hashedPoints);
+    }
+
     public function test_show_returns_null_for_soft_deleted_trip_when_user_not_admin(): void
     {
         $user = User::factory()->create();
@@ -2718,5 +2729,188 @@ class TripRepositoryTest extends TestCase
             $this->assertNull($updated->payment_id);
             $this->assertSame(Trip::STATE_READY, $updated->state);
         }
+    }
+
+    public function test_request_osrm_for_trip_info_coords_retries_fallback_base_after_primary_server_error(): void
+    {
+        // Mutation intent: preserve primary/fallback URL list (cast/rtrim/filter/unique/values), empty-base skip,
+        // upstream path concat, server-error warning+continue, and Ok-route early return on the next base.
+        // Kills (report 20260428_2310, TripRepository ~796–859): e.g. 72265ff1791736f6, f6b19801eab80bfa,
+        //        51a2c0ff375f8dea, 30aa14234c8db9f1, e993418967687bfd, fabd9cf8b0cca90e.
+        Config::set('carpoolear.osrm_router_base_url', 'https://primary.test/');
+        Config::set('carpoolear.osrm_router_fallback_base_url', 'https://fallback.test/');
+
+        $coords = '-1,-2;-3,-4';
+        $expectedPath = '/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true';
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) use ($expectedPath) {
+            if (str_contains($request->url(), 'primary.test')) {
+                return Http::response('unavailable', 503);
+            }
+            if (str_contains($request->url(), 'fallback.test')) {
+                $parts = parse_url($request->url());
+                $pathQuery = ($parts['path'] ?? '').(isset($parts['query']) ? '?'.$parts['query'] : '');
+                if ($pathQuery !== $expectedPath) {
+                    return Http::response(['error' => 'wrong path'], 500);
+                }
+
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 10.0, 'duration' => 20.0]],
+                ], 200);
+            }
+
+            return Http::response('unexpected host', 500);
+        });
+
+        Log::spy();
+
+        $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), $coords, 'hp-fallback');
+
+        $this->assertSame('route', $result['status']);
+        $this->assertSame('Ok', $result['payload']['code']);
+        $this->assertSame(10.0, (float) $result['payload']['routes'][0]['distance']);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
+            return $message === '[trip_route|getTripInfo] OSRM HTTP server error'
+                && $context['base'] === 'https://primary.test'
+                && $context['hashed_points'] === 'hp-fallback'
+                && $context['http_status'] === 503;
+        })->once();
+    }
+
+    public function test_request_osrm_for_trip_info_coords_exception_log_truncates_long_coords_preview(): void
+    {
+        // Mutation intent: preserve Throwable catch branch, warning payload (base, hashed_points, message, exception),
+        // and coords_preview truncation for inputs longer than 120 chars.
+        // Kills (lines ~812–820): e.g. 51a2c0ff375f8dea, ccc455b262c0c774, ab79c53630730ce2.
+        Config::set('carpoolear.osrm_router_base_url', 'https://only.test');
+        Config::set('carpoolear.osrm_router_fallback_base_url', null);
+
+        $longCoords = str_repeat('9', 121);
+        $expectedPreview = substr($longCoords, 0, 120).'…';
+
+        Http::fake(function () {
+            throw new \RuntimeException('dns failed');
+        });
+
+        Log::spy();
+
+        $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), $longCoords, 'hp-exc');
+
+        $this->assertSame('osrm_unreachable', $result['status']);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context) use ($expectedPreview, $longCoords): bool {
+            return $message === '[trip_route|getTripInfo] OSRM request exception'
+                && $context['hashed_points'] === 'hp-exc'
+                && $context['base'] === 'https://only.test'
+                && $context['coords_preview'] === $expectedPreview
+                && $context['coords_preview'] !== $longCoords
+                && $context['message'] === 'dns failed'
+                && $context['exception'] === \RuntimeException::class;
+        })->once();
+    }
+
+    public function test_request_osrm_for_trip_info_coords_server_error_log_truncates_long_body_preview(): void
+    {
+        // Mutation intent: preserve server-error branch body_preview truncation (500 chars + ellipsis) and http_status wiring.
+        // Kills (lines ~826–836): e.g. 7609f53a3c60a9f5, a1e004a075b2b395.
+        Config::set('carpoolear.osrm_router_base_url', 'https://err.test');
+        Config::set('carpoolear.osrm_router_fallback_base_url', null);
+
+        $body = str_repeat('Z', 600);
+        $expectedPreview = substr($body, 0, 500).'…';
+
+        Http::fake(['*' => Http::response($body, 502)]);
+
+        Log::spy();
+
+        $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '0,0;1,1', 'hp-body');
+
+        $this->assertSame('osrm_unreachable', $result['status']);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context) use ($expectedPreview): bool {
+            return $message === '[trip_route|getTripInfo] OSRM HTTP server error'
+                && ($context['body_preview'] ?? null) === $expectedPreview
+                && $context['http_status'] === 502;
+        })->once();
+    }
+
+    public function test_request_osrm_for_trip_info_coords_logs_debug_summary_and_returns_osrm_no_route_for_ok_without_routes(): void
+    {
+        // Mutation intent: preserve debug summary keys (payload_is_array, osrm_code/message coalesce) and final
+        // osrm_no_route return when last JSON payload is array but success route gate fails.
+        // Kills (lines ~840–864): e.g. dfbab4538c8e66af, 39ec0f52a2653f5e, 7cf34f81cfbcb581.
+        Config::set('carpoolear.osrm_router_base_url', 'https://okempty.test');
+        Config::set('carpoolear.osrm_router_fallback_base_url', null);
+
+        Http::fake(['*' => Http::response([
+            'code' => 'Ok',
+            'routes' => [],
+        ], 200)]);
+
+        Log::spy();
+
+        $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '9,9;8,8', 'hp-dbg');
+
+        $this->assertSame('osrm_no_route', $result['status']);
+        $this->assertSame('Ok', $result['payload']['code']);
+        $this->assertSame([], $result['payload']['routes']);
+
+        Log::shouldHaveReceived('debug')->withArgs(function (string $message, array $context): bool {
+            return $message === '[trip_route|getTripInfo] OSRM raw response summary'
+                && ($context['payload_is_array'] ?? null) === true
+                && ($context['osrm_code'] ?? null) === 'Ok'
+                && ($context['osrm_message'] ?? null) === null
+                && ($context['http_status'] ?? null) === 200
+                && ($context['base'] ?? '') === 'https://okempty.test'
+                && ($context['hashed_points'] ?? '') === 'hp-dbg';
+        })->once();
+    }
+
+    public function test_request_osrm_for_trip_info_coords_skips_non_array_json_and_returns_unreachable(): void
+    {
+        // Mutation intent: preserve non-array payload guard (continue without lastPayload) and debug summary for scalar JSON.
+        // Kills (lines ~849–867): e.g. f7bdf64c50887553, c76f7a03acee781a.
+        Config::set('carpoolear.osrm_router_base_url', 'https://scalar.test');
+        Config::set('carpoolear.osrm_router_fallback_base_url', null);
+
+        Http::fake(['*' => Http::response('"just-a-string"', 200, ['Content-Type' => 'application/json'])]);
+
+        Log::spy();
+
+        $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '2,2', 'hp-str');
+
+        $this->assertSame('osrm_unreachable', $result['status']);
+
+        Log::shouldHaveReceived('debug')->withArgs(function (string $message, array $context): bool {
+            return $message === '[trip_route|getTripInfo] OSRM raw response summary'
+                && $context['payload_is_array'] === false
+                && $context['osrm_code'] === null
+                && $context['osrm_message'] === null;
+        })->once();
+    }
+
+    public function test_request_osrm_for_trip_info_coords_skips_empty_primary_base_and_uses_fallback(): void
+    {
+        // Mutation intent: preserve array_filter removal of empty primary so loop still reaches a non-empty fallback base.
+        // Kills (lines ~800–807): e.g. 8221b8c1988dceea, ae3dbf7954ba3af3.
+        Config::set('carpoolear.osrm_router_base_url', '');
+        Config::set('carpoolear.osrm_router_fallback_base_url', 'https://fbonly.test/');
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            if (str_contains($request->url(), 'fbonly.test')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 1.0, 'duration' => 2.0]],
+                ], 200);
+            }
+
+            return Http::response('unexpected', 500);
+        });
+
+        $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '1,1;2,2', 'hp-skip');
+
+        $this->assertSame('route', $result['status']);
     }
 }
