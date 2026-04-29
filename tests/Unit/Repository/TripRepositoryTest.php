@@ -848,6 +848,45 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($ids->contains($otherAwaiting->id));
     }
 
+    public function test_search_with_origin_and_destination_ids_filters_by_path_patterns(): void
+    {
+        // Mutation intent: preserve origin+destination branch and both path LIKE patterns.
+        // Kills: d98c00d01c671152, 34e9ab946097227e, 5debf278b16d4de1, 7a81862f468ba059, 86ba949ffb10ff4b.
+        $direct = Trip::factory()->create([
+            'path' => '.10.20.',
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        $withStops = Trip::factory()->create([
+            'path' => '.10.15.18.20.',
+            'trip_date' => Carbon::now()->addDays(2),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        Trip::factory()->create([
+            'path' => '.20.10.',
+            'trip_date' => Carbon::now()->addDays(3),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $page = $this->repo()->search(null, [
+            'origin_id' => '10',
+            'destination_id' => '20',
+            'page' => 1,
+            'page_size' => 30,
+        ]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertTrue($ids->contains($direct->id));
+        $this->assertTrue($ids->contains($withStops->id));
+        $this->assertSame(2, $ids->count());
+    }
+
     public function test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges(): void
     {
         // Mutation intent: keep +/- delta math and bbox comparator setup in getPotentialNode().

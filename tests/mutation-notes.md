@@ -181,3 +181,7 @@ This file tracks mutants killed during the current hardening session, with the r
 - `92a2e80bb1a380af`, `94aeb181cd5cc635`, `e92743782077c92f`, `4150b4f8c0e25d3c`
   - Cause: nested non-admin search clauses lacked direct assertions for state visibility (`ready/paid/null/owner`) and owner/public-or-visible privacy constraints.
   - Fix: added `test_search_non_admin_applies_state_and_owner_visibility_subclauses`.
+
+- `d98c00d01c671152`, `34e9ab946097227e`, `5debf278b16d4de1`, `7a81862f468ba059`, `86ba949ffb10ff4b`
+  - Cause: `search` branch combining `origin_id` and `destination_id` lacked direct assertions for integer casts and both path LIKE alternatives (adjacent and with intermediate stops).
+  - Fix: added `test_search_with_origin_and_destination_ids_filters_by_path_patterns`.
