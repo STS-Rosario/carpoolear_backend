@@ -242,6 +242,31 @@ class ConversationRepositoryTest extends TestCase
         $this->assertSame($alice->id, $users->first()->id);
     }
 
+    public function test_user_list_null_search_text_includes_every_other_participant(): void
+    {
+        // Mutation intent: preserve `preg_match("/$search_text/i", ...)` — null builds '//i', which matches any name in PHP.
+        $owner = User::factory()->create(['name' => 'Owner NullSearch']);
+        $alice = User::factory()->create(['name' => 'Alice NullSearch']);
+        $bob = User::factory()->create(['name' => 'Bob NullSearch']);
+        $conversation = Conversation::factory()->create();
+        $conversation->users()->attach($owner->id, ['read' => false]);
+        $conversation->users()->attach($alice->id, ['read' => false]);
+        $conversation->users()->attach($bob->id, ['read' => false]);
+
+        Message::query()->create([
+            'user_id' => $owner->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'hello-null-search',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $repo = new ConversationRepository;
+        $users = $repo->userList($owner, null, null);
+
+        $this->assertCount(2, $users);
+        $this->assertEqualsCanonicalizing([$alice->id, $bob->id], $users->pluck('id')->all());
+    }
+
     public function test_users_to_chat_applies_who_and_search_filters_and_excludes_self(): void
     {
         // Mutation intent: keep chat-candidate relation constraints and terminal filters/search.

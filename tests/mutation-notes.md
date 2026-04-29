@@ -72,6 +72,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `userList` nested iteration and search/self filters were uncovered.
   - Fix: added `test_user_list_excludes_self_and_filters_with_search_text`.
 
+- `userList` `$search_text === null` (`ConversationRepository.php` ~159): `preg_match` pattern becomes `//i` (matches every subject); removing inner search predicate otherwise collapses to weak/no assertions when only one peer existed.
+  - Cause: previous coverage always passed a concrete substring; null-search semantics were undocumented and easy to break silently.
+  - Fix: added `test_user_list_null_search_text_includes_every_other_participant`.
+
 - `923ae30fd029094d`, `f7d2b59d8b2e231a`, `fe6d365b386ce4cc`, `40233c5b50f76832`, `b2e48349c3634d25`, `9e7efa4b183e404a`, `5714c44fc3ef4640`, `fb0ef168746086c7`, `5494f1022932dc3c`, `e5486689d57934f9`, `8902979f79da0810`, `a99a6f0833779d83`, `bc364170017908f5`, `5ec2840d296300e1`, `f202a89ff2505006`, `2fed3ea59a4ffe41`, `dee6a17eeeedff27`, `b7ac732f83368cf0`, `bf63b36154353e13`, `736991285f167c75`, `0d19c6b2898b2003`, `b5672d9eed073752`, `46b4eb3f95ab633a`, `ab6806f4c7906aa3`, `a6ef62b9af37fbd3`, `9967a653cd968aa7`
   - Cause: `usersToChat` had many relation/filter/search branches without direct coverage.
   - Fix: added `test_users_to_chat_applies_who_and_search_filters_and_excludes_self`.
