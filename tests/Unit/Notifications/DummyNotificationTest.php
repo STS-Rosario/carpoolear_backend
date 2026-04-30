@@ -3,10 +3,22 @@
 namespace Tests\Unit\Notifications;
 
 use STS\Notifications\DummyNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\MailChannel;
 use Tests\TestCase;
 
 class DummyNotificationTest extends TestCase
 {
+    public function test_via_contains_database_and_mail_channels(): void
+    {
+        $notification = new DummyNotification;
+
+        $this->assertSame([
+            DatabaseChannel::class,
+            MailChannel::class,
+        ], $notification->getVia());
+    }
+
     public function test_to_email_returns_expected_static_payload(): void
     {
         $notification = new DummyNotification;
