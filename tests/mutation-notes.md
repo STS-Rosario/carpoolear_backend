@@ -1256,6 +1256,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Notifications\SupportTicketReplyNotificationTest` now asserts exact `getVia()` channels (`DatabaseChannel`, `PushChannel`) and verifies `toPush()` includes the static logo image for both with/without ticket scenarios.
   - Mutant IDs: `bd55567746b8aae9`, `0a5247b11be9c61b`, `3f6015fb16429054`.
 
+## `FriendAcceptNotification` (`app/Notifications/FriendAcceptNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~6511 and UNTESTED/UNCOVERED ~66381–66441).
+  - Cause: prior tests checked title/url and sender behavior but did not pin channel list and email metadata, so `RemoveArrayItem` mutants on channels and email fields (`name_app`, `domain`) survived.
+  - Fix: `Tests\Unit\Notifications\FriendAcceptNotificationTest` now asserts exact `getVia()` channels and verifies `toEmail()` includes config-driven `name_app` and `domain` in addition to profile URL.
+  - Mutant IDs: `2403bac287a55b68`, `c8f296031ecea1b6`, `8dfe7844f79c7a49`, `2eace53dd9439fe9`, `e1bcca36528f8b94`.
+
+- **Push image contract** (`toPush().image`; report UNTESTED ~66441).
+  - Cause: push tests validated message/url/extras but not image field, allowing `RemoveArrayItem` to survive.
+  - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
+  - Mutant IDs: `0be549ff8070d6b3`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
