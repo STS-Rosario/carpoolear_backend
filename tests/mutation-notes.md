@@ -2275,3 +2275,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - empty `donations` array when only pending donations exist
     - `total_donated = 0` fallback
   - Mutant IDs: `8b0aaaae3c8c357a`, `1c83942d0a8b9644`, `b8a17a9df28260ea`.
+
+## ReferencesController (`app/Http/Controllers/Api/v1/ReferencesController.php`)
+
+- **Auth middleware and guest-branch contract** (`__construct` line 18 and `create()` line 26 in `tests/coverage/20260428_2310.txt`).
+  - Cause: reference endpoint tests covered standard authenticated/validation behavior, but they did not explicitly pin constructor middleware registration or the explicit guest-guard branch inside `create()` when middleware is not present.
+  - Fix: extended `tests/Feature/Http/ReferencesApiTest.php` with:
+    - `test_constructor_registers_logged_middleware`
+    - `test_create_without_authenticated_user_returns_user_not_logged_when_middleware_is_bypassed`
+    These validate that protection exists both at route middleware level and in controller-level guard behavior.
+  - Mutant IDs: `90b971ed534c165d`, `5d2065e545df76ba`.
