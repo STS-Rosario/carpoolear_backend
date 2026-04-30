@@ -37,18 +37,27 @@ class SubscriptionsApiTest extends TestCase
 
     public function test_subscription_endpoints_require_authentication(): void
     {
+        $unauthorized = ['message' => 'Unauthorized.'];
+
         $this->getJson('api/subscriptions')
             ->assertUnauthorized()
-            ->assertJson(['message' => 'Unauthorized.']);
+            ->assertJson($unauthorized);
+
+        $this->getJson('api/subscriptions/1')
+            ->assertUnauthorized()
+            ->assertJson($unauthorized);
 
         $this->postJson('api/subscriptions', $this->validSubscriptionPayload())
-            ->assertUnauthorized();
+            ->assertUnauthorized()
+            ->assertJson($unauthorized);
 
         $this->putJson('api/subscriptions/1', $this->validSubscriptionPayload())
-            ->assertUnauthorized();
+            ->assertUnauthorized()
+            ->assertJson($unauthorized);
 
         $this->deleteJson('api/subscriptions/1')
-            ->assertUnauthorized();
+            ->assertUnauthorized()
+            ->assertJson($unauthorized);
     }
 
     public function test_create_returns_persisted_subscription_in_data_wrapper(): void
@@ -86,6 +95,27 @@ class SubscriptionsApiTest extends TestCase
             ->assertJsonStructure(['message', 'errors']);
     }
 
+    public function test_show_returns_unprocessable_when_subscription_belongs_to_another_user(): void
+    {
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $owner->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($other, 'api');
+
+        $this->getJson("api/subscriptions/{$subscription->id}")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not found model.');
+    }
+
     public function test_show_returns_owned_subscription(): void
     {
         Carbon::setTestNow('2027-03-01 10:00:00');
@@ -105,6 +135,55 @@ class SubscriptionsApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.id', $subscription->id)
             ->assertJsonPath('data.user_id', $user->id);
+    }
+
+    public function test_update_returns_unprocessable_when_subscription_not_owned(): void
+    {
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $owner->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($other, 'api');
+
+        $this->putJson("api/subscriptions/{$subscription->id}", $this->validSubscriptionPayload())
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not update model.');
+    }
+
+    public function test_update_returns_unprocessable_when_validation_fails(): void
+    {
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($user, 'api');
+
+        $this->putJson("api/subscriptions/{$subscription->id}", [
+            'trip_date' => 'not-a-date',
+            'from_address' => 'X',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_address' => 'Y',
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['message', 'errors']);
     }
 
     public function test_update_returns_updated_subscription(): void
@@ -159,6 +238,42 @@ class SubscriptionsApiTest extends TestCase
         $this->assertIsArray($rows);
         $ids = array_map(static fn ($row) => (int) ($row['id'] ?? 0), $rows);
         $this->assertContains($active->id, $ids);
+    }
+
+    public function test_create_duplicate_geometry_returns_unprocessable(): void
+    {
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $this->actingAs($user, 'api');
+
+        $payload = $this->validSubscriptionPayload();
+
+        $this->postJson('api/subscriptions', $payload)->assertOk();
+
+        $this->postJson('api/subscriptions', $payload)
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not create new model.');
+    }
+
+    public function test_delete_returns_unprocessable_when_subscription_not_owned(): void
+    {
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $owner->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($other, 'api');
+
+        $this->deleteJson("api/subscriptions/{$subscription->id}")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not delete subscription.');
     }
 
     public function test_delete_returns_ok_payload_and_removes_subscription(): void
