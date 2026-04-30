@@ -35,6 +35,27 @@ class ModuleLimitedRequestListenerTest extends TestCase
         Event::assertNotDispatched(AutoCancel::class);
     }
 
+    public function test_handle_does_nothing_when_module_enabled_config_key_is_absent(): void
+    {
+        $carpoolear = config('carpoolear');
+        unset($carpoolear['module_user_request_limited_enabled']);
+        config(['carpoolear' => $carpoolear]);
+
+        Event::fake([AutoCancel::class]);
+
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'to_town' => 'SharedTown',
+            'trip_date' => Carbon::parse('2030-06-01 10:00:00'),
+        ]);
+
+        (new ModuleLimitedRequest)->handle(new PassengerAccepted($trip, $driver, $passenger));
+
+        Event::assertNotDispatched(AutoCancel::class);
+    }
+
     public function test_handle_dispatches_auto_cancel_and_marks_other_pending_request_when_module_enabled_and_destinations_align(): void
     {
         config([
