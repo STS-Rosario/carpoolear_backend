@@ -124,7 +124,7 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_get_rate_with_hash_can_throw_when_collection_filters_return_null(): void
+    public function test_get_rate_with_hash_returns_pending_rating_within_interval(): void
     {
         Carbon::setTestNow('2026-11-07 10:00:00');
         $passenger = User::factory()->create();
@@ -132,10 +132,28 @@ class RatingManagerTest extends TestCase
         $trip = Trip::factory()->create(['user_id' => $driver->id]);
         $repo = new RatingRepository;
         $hash = 'gr-hash-'.uniqid('', true);
-        $created = $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, $hash);
+        $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, $hash);
 
-        $this->expectException(\ErrorException::class);
-        $this->manager()->getRate($hash, $driver->id, $trip->id);
+        $rate = $this->manager()->getRate($hash, $driver->id, $trip->id);
+
+        $this->assertInstanceOf(Rating::class, $rate);
+        $this->assertFalse((bool) $rate->voted);
+        $this->assertSame($hash, $rate->voted_hash);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_get_rate_with_hash_returns_null_when_no_row_matches(): void
+    {
+        Carbon::setTestNow('2026-11-07 11:00:00');
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+        $hash = 'gr-hash-'.uniqid('', true);
+        $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, $hash);
+
+        $this->assertNull($this->manager()->getRate($hash, $driver->id + 99_999, $trip->id));
 
         Carbon::setTestNow();
     }
