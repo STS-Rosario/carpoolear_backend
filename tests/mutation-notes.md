@@ -946,6 +946,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: owner path re-loads the trip after toggling `deleted_at` via `TripRepository::show`, which excludes soft-deleted rows for non-admins, so the owner HTTP path can end in `422` even when the toggle partially applied; nothing asserted the admin/`withTrashed` path that the manager comment implies.
   - Fix: `test_change_visibility_returns_trip_payload_for_admin` exercises `POST api/trips/{id}/change-visibility` as an admin on another user’s trip and expects `200` + `data.id` (stable contract without relying on the broken non-admin reload sequence).
 
+## TripsManager (`app/Services/Logic/TripsManager.php`)
+
+- **Create guard branches for validation-driver and anti-abuse bans** (`create()` around lines 83–133 in `tests/coverage/20260428_2310.txt` run block near line ~80647+).
+  - Cause: existing unit coverage validated generic payload rules and ownership flows, but did not assert behavior for unverified-driver blocking, trip-creation-rate banning, banned-word detection, and banned-phone detection in descriptions.
+  - Fix: added four behavior-focused tests to `tests/Unit/Services/Logic/TripsManagerTest.php`:
+    - `test_create_rejects_unverified_driver_when_module_requires_verified_drivers`
+    - `test_create_bans_user_when_recent_trip_count_exceeds_configured_limit`
+    - `test_create_bans_user_when_description_contains_banned_word`
+    - `test_create_bans_user_when_description_contains_banned_phone_number`
+    These assert returned value is `null`, expected error key is present, and user `banned` flag is persisted where applicable.
+  - Mutant IDs: `10bb520fad95156f`, `195d15d517b7037c`, `d27ffc92fc7b4fa1`, `f13ecdb24c6b8aa5`, `2ff05e119970faa8`, `d8984b3b8a3a4eea`, `d2a14d75dc40d147`, `f1084ce00aef1976`, `552a2156ee3eeecb`, `b2334a321abf4e68`, `ca9d8eb6b6eada28`, `a9e85e7891fa7387`, `3dc93c4a97352729`, `dfb9b95a36adea10`, `800cf9698d48795b`, `8531cd887492e062`, `8a31e47c9b7eceac`, `28bf9f0f130dd24f`, `386a8b3f7e758c84`, `d324fa40184aaf4e`, `ba3583b3010be717`, `c33e035696ba6aee`, `c6ff11f8c0939452`, `09cbf51ce4825c43`, `a3f4261e8c0b514e`, `e7bb4586925d6a12`, `4408d4e64c3e5cba`, `52728829102133bc`, `6c8c8f8d207f928b`, `e18fbccf91d73b51`, `1b74ae5fc340fdc0`, `834fbc6332b68148`.
+
 ## ExceptionWithErrors (`app/Http/ExceptionWithErrors.php`) — supporting fix for trip update denial
 
 - **`render()` string `$errors` from `trans('errors.tripowner')` etc.** (`render()` ~29–36; uncovered when `TripController::update` throws after `TripsManager::update` returns falsy with a **string** error bag).
