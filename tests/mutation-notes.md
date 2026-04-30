@@ -1940,3 +1940,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_mass_assignment_persists_all_review_and_payment_fields`
     These assert both the full fillable list and real `create()` persistence for payment/review/manual-start fields.
   - Mutant IDs: `84f43907322f962b`, `4705b6263166b099`, `3cb08e07de73c1cc`, `6e62d8422a8d839c`, `7d8adabe27659fe4`, `4ba4552021d52953`, `79835424ac10bb8f`, `e58dad87422beaa7`, `f2aa4b472624b662`, `794c4a564fba43ee`, `0a81e52988778478`, `e6bc411f37c6bdec`, `3dbd099e62abc909`.
+
+## Donation (`app/Models/Donation.php`)
+
+- **Mass-assignment contract for donation rows** (`$fillable` lines 12–16 in `tests/coverage/20260428_2310.txt`).
+  - Cause: model tests validated casts and selected persistence behavior, but they didn’t pin the full fillable list; `RemoveArrayItem` mutants on `$fillable` survived.
+  - Fix: added to `tests/Unit/Models/DonationTest.php`:
+    - `test_fillable_contains_expected_mass_assignable_attributes`
+    - `test_mass_assignment_persists_all_fillable_fields`
+    These assert the exact fillable contract and verify all fillable keys persist through `create()`.
+  - Mutant IDs: `d8af4dcd72dfc2b2`, `d771b8f164b719b9`, `1f5f76febfc98389`, `89a4678326e89709`, `70d3001e0fbc3550`.
