@@ -1443,6 +1443,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_create_qr_order_for_manual_validation_rejects_amount_below_provider_minimum` asserts an `InvalidArgumentException` for amounts below 1500 cents.
   - Mutant IDs: `9f2505c62c6495e6`, `11ba1d7bda32fe6a`, `c08b8c5f4036d0c8`, `51fa88af658de6ee`, `b5ae2dcba3ec93e8`.
 
+## `AnnouncementService` (`app/Services/AnnouncementService.php`)
+
+- **Default options and success stats contract** (`sendAnnouncement()` defaults/stats; report RUN ~7470 with UNTESTED mutations around ~20–31 and ~47).
+  - Cause: tests covered only a subset of announcement flows, so defaults (`title`, batch/delay, retries/rate-limit) and response stats could be mutated without breaking assertions.
+  - Fix: `Tests\Unit\Services\AnnouncementServiceTest::test_send_announcement_passes_default_options_to_send_to_user` uses a service subclass override of `sendToUser` to assert default options passed through and exact success stats envelope (`total/processed/successful/failed/skipped`).
+  - Mutant IDs: `6aeac9a9d266229a`, `eb2f0587467b34aa`, `06fd7b745d8ec685`, `31f2c8e4debe2dba`, `a2b7698aef0acf9e`, `82c82fc5176a8483`, `d734d3b5a4e623db`, `daa2b8b9af52eb3a`, `cef7b03ba6060103`, `f588e39a0a595776`, `a1c5affa0a37c53e`, `e5ef7f7bec95c325`, `9b74f7681e68d27d`, `8518be05b62b4bbd`, `b189983beee3f2a9`, `bc996d596cc7d709`, `96a98668a1e05ee3`, `b285bef5eb64a260`, `3b45a75c4623f1d3`, `81d065c7555ad9c7`, `de4e5bc29a27407e`, `534ce82dc24b5c27`, `a25c5b860c895bba`, `febe4ec6cd3b54df`, `84694a55a759d426`, `3cdeae016beaa16b`, `b5ffce87a3506ee7`, `277c8fdd83118718`.
+
+- **Active-only filtering and device-activity skip behavior** (`sendAnnouncement()` active_only gate + `sendToUser()` device_activity_days gate; report UNTESTED around ~34–38 and ~102–114).
+  - Cause: guard branches for recent connections and recent device activity were not directly asserted, so branch/comparison mutants could survive.
+  - Fix: `test_send_announcement_with_active_only_excludes_users_without_recent_connection` and `test_send_to_user_skips_when_only_stale_devices_exist_and_activity_filter_is_enabled` assert only recent users are processed and stale devices trigger the documented skip result.
+  - Mutant IDs: `9870e81bb72d3621`, `425657d4c5a64367`, `a88ef40224d776c6`, `3755f7152a2d15b2`, `b350714ef7733c8e`, `e18e4e5b2a22e662`, `502685e33a249aa9`, `7a80b40cd13c1095`, `a923c148b89166fa`, `28c51f9998a4c9ec`, `540a5422b957720a`, `231278fcc0eb080e`, `3006a1f7a2470bd8`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
