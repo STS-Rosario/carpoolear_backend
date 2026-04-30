@@ -2295,3 +2295,21 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_query_string_participates_in_cache_key`
     These ensure boundary correctness (`> 4096` only) and prevent cache collisions across different query strings.
   - Mutant IDs: `5111317cfc3f97d3`, `b2ddabce106d3ee4`, `bbee9e628c995f42`, `deaf6e334992589f`, `cc27b4b6e7ed5581`, `c799ef935ec62b93`, `5a6e7966157a659d`, `d7c8083d03bebf49`, `44e6628a9cab4887`, `c62f2e9a1954f748`, `62d43b0c36680083`, `58748f2ba654608e`.
+
+## ConversationController (`app/Http/Controllers/Api/v1/ConversationController.php`)
+
+- **Constructor middleware, pagination defaults, identity gates, and unread/search/delete/show/send contracts** (`__construct`, `index()`, `create()`/`send()`, `show()`, `deleteUser()`, `userList()`, `getMessagesUnread()`, plus existing `multiSend` coverage around lines 27–195 in `tests/coverage/20260428_2310.txt`).
+  - Cause: conversation feature tests exercised several flows, but many branches stayed weakly pinned at the HTTP contract level (middleware registration, default `page`/`page_size`, admin-only bypass vs strict identity enforcement, successful `show`/`send` payloads, plain-text `OK` delete responses, `user-list` filtering via `value`, and whether `conversation_id`/`timestamp` query parameters actually affect behavior). Logical-operator mutants on the shared identity guard (`!is_admin && !canPerformRestrictedActions`) survived without an admin success-path under enforcement.
+  - Fix: extended `tests/Feature/Http/ConversationApiTest.php` with:
+    - `test_constructor_registers_logged_middleware`
+    - `test_index_uses_default_page_and_page_size_and_accepts_explicit_page`
+    - `test_show_returns_ok_when_conversation_is_accessible`
+    - `test_admin_without_validated_identity_can_still_open_conversation_when_enforcement_is_strict`
+    - `test_admin_without_validated_identity_can_send_messages_when_enforcement_is_strict`
+    - `test_identity_validated_user_can_send_messages_via_http_api`
+    - `test_delete_user_returns_plain_ok_payload_on_success`
+    - `test_user_list_search_value_filters_peers_by_name`
+    - `test_unread_messages_respects_timestamp_query_boundary`
+    - `test_unread_messages_with_conversation_id_marks_conversation_as_read_for_user`
+    Existing `test_multi_send_succeeds_when_identity_validation_allows_user` continues to pin the successful `multi-send` JSON shape (`['message' => true]`).
+  - Mutant IDs: `ae65aca91b89758e`, `eae7416a82b35da3`, `bdbb35c39fbd42fb`, `e62084d9fed7e1ff`, `282a71fcea6ca78d`, `4077a0ba656f3a88`, `a8ea5a67cd76a4c1`, `49f2c1b7fcf2d28f`, `44009e160032fa4e`, `b4b7441766a827e9`, `1b123e8036cc075e`, `85c6ee6a1c4bca1e`, `2289fe28a4796f4d`, `bc0fcc60167a7204`, `7fb0b1c1da8fafcb`, `4692811d22c99576`, `bec5b8f34414f565`, `dce53330aaefca72`, `05e5da7db6c50028`, `264ed159e86dc54f`, `b153b926d6d1c8ec`, `296509720161c9f7`, `efd93216c156e862`, `76b05c7fbfe10d63`, `366ebb83c2f39699`, `a143b6768b1e5ab4`.
