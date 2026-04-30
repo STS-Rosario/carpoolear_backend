@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\Logic;
 
+use Mockery;
 use STS\Models\Car;
 use STS\Models\User;
 use STS\Repository\CarsRepository;
@@ -10,6 +11,12 @@ use Tests\TestCase;
 
 class CarsManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function manager(): CarsManager
     {
         return new CarsManager(new CarsRepository);
@@ -68,6 +75,7 @@ class CarsManagerTest extends TestCase
         $errors = $manager->getErrors();
         $this->assertIsArray($errors);
         $this->assertSame('user_already_has_car', $errors['error']);
+        $this->assertSame('User already has a car. Please update the existing one instead.', $errors['message']);
     }
 
     public function test_create_persists_car_when_valid(): void
@@ -153,6 +161,29 @@ class CarsManagerTest extends TestCase
         $this->assertFalse($v->fails());
     }
 
+    public function test_validator_update_rejects_patente_used_by_same_user_other_car(): void
+    {
+        $user = User::factory()->create();
+        $target = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OWN111',
+            'description' => 'Target',
+        ]);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OWN222',
+            'description' => 'Other car',
+        ]);
+
+        $v = $this->manager()->validator([
+            'patente' => 'OWN222',
+            'description' => 'Updated',
+        ], $user->id, $target->id);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('patente'));
+    }
+
     public function test_update_allows_patente_used_by_another_user(): void
     {
         $user = User::factory()->create();
@@ -187,6 +218,42 @@ class CarsManagerTest extends TestCase
         $this->assertSame('car_not_found', $manager->getErrors()['error']);
     }
 
+    public function test_update_returns_validation_errors_for_invalid_payload(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'VAL123',
+            'description' => 'Before',
+        ]);
+        $manager = $this->manager();
+
+        $result = $manager->update($user, $car->id, [
+            'patente' => 'TOOLONGPATX',
+            'description' => '',
+        ]);
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('patente'));
+        $this->assertTrue($manager->getErrors()->has('description'));
+    }
+
+    public function test_show_accepts_equivalent_scalar_ids_for_owner_check(): void
+    {
+        $persisted = User::factory()->create();
+        $viewer = new User;
+        $viewer->id = (string) $persisted->id;
+        $car = Car::factory()->create([
+            'user_id' => $persisted->id,
+            'patente' => 'EQ1234',
+            'description' => 'Equivalent owner id',
+        ]);
+
+        $found = $this->manager()->show($viewer, $car->id);
+        $this->assertNotNull($found);
+        $this->assertSame($car->id, $found->id);
+    }
+
     public function test_delete_removes_car_for_owner(): void
     {
         $user = User::factory()->create();
@@ -209,6 +276,24 @@ class CarsManagerTest extends TestCase
 
         $this->assertNull($manager->delete($user, 999_999_999));
         $this->assertSame('car_not_found', $manager->getErrors()['error']);
+    }
+
+    public function test_delete_returns_null_with_can_delete_car_when_repository_delete_fails(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'FAIL01',
+            'description' => 'Cannot delete',
+        ]);
+
+        $repo = Mockery::mock(CarsRepository::class);
+        $repo->shouldReceive('show')->once()->with($car->id)->andReturn($car);
+        $repo->shouldReceive('delete')->once()->with(Mockery::on(fn ($m) => $m->id === $car->id))->andReturn(false);
+
+        $manager = new CarsManager($repo);
+        $this->assertNull($manager->delete($user, $car->id));
+        $this->assertSame('can_delete_car', $manager->getErrors()['error']);
     }
 
     public function test_index_delegates_to_repository(): void
