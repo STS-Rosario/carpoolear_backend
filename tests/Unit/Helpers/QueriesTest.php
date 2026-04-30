@@ -2,15 +2,12 @@
 
 namespace Tests\Unit\Helpers;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use STS\Models\User;
 use Tests\TestCase;
 
 class QueriesTest extends TestCase
 {
-    use DatabaseTransactions;
-
     public function test_match_array_keeps_arrays_and_wraps_scalars(): void
     {
         $items = ['a', 'b'];

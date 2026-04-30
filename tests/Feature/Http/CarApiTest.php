@@ -2,15 +2,12 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Car;
 use STS\Models\User;
 use Tests\TestCase;
 
 class CarApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     public function test_car_routes_require_authentication(): void
     {
         $this->getJson('api/cars')->assertUnauthorized()->assertJson(['message' => 'Unauthorized.']);

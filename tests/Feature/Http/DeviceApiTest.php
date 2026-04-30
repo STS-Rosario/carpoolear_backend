@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery as m;
 use STS\Http\Controllers\Api\v1\DeviceController;
 use STS\Models\User;
@@ -13,8 +12,6 @@ use Tymon\JWTAuth\Token;
 
 class DeviceApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $deviceLogic;
 
     protected function setUp(): void

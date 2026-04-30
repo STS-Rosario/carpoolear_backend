@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use STS\Repository\TripRepository;
@@ -13,8 +12,6 @@ use Tests\TestCase;
 
 class TripPricingCalculationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Mockery::close();

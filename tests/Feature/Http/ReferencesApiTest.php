@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery;
 use STS\Http\Controllers\Api\v1\ReferencesController;
 use STS\Models\References;
@@ -12,8 +11,6 @@ use Tests\TestCase;
 
 class ReferencesApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Mockery::close();

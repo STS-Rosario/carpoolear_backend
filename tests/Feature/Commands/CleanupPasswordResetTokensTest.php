@@ -2,16 +2,13 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use Tests\TestCase;
 
 class CleanupPasswordResetTokensTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testDeletesExpiredTokens()
+    public function test_deletes_expired_tokens()
     {
         DB::table('password_resets')->insert([
             'email' => 'old@example.com',
@@ -31,7 +28,7 @@ class CleanupPasswordResetTokensTest extends TestCase
         $this->assertDatabaseHas('password_resets', ['email' => 'recent@example.com']);
     }
 
-    public function testKeepsAllTokensWhenNoneExpired()
+    public function test_keeps_all_tokens_when_none_expired()
     {
         DB::table('password_resets')->insert([
             'email' => 'fresh@example.com',
@@ -44,7 +41,7 @@ class CleanupPasswordResetTokensTest extends TestCase
         $this->assertDatabaseHas('password_resets', ['email' => 'fresh@example.com']);
     }
 
-    public function testCustomHoursOption()
+    public function test_custom_hours_option()
     {
         DB::table('password_resets')->insert([
             'email' => 'test@example.com',

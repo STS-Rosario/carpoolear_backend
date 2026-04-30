@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Request;
 use Mockery;
 use STS\Helpers\IdentityValidationHelper;
@@ -16,8 +15,6 @@ use Tests\TestCase;
 
 class ConversationApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $conversationManager;
 
     protected $messageRepository;

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
 use STS\Models\CampaignMilestone;
@@ -11,8 +10,6 @@ use Tests\TestCase;
 
 class CampaignApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private function newCampaign(bool $visible = true, array $overrides = []): Campaign
     {
         $campaign = Campaign::query()->create(array_merge([

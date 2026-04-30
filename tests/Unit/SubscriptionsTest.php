@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Subscription;
 use STS\Models\Trip;
 use STS\Models\TripPoint;
@@ -14,8 +13,6 @@ use Tests\TestCase;
 
 class SubscriptionsTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private SubscriptionsManager $subscriptionsManager;
 
     private SubscriptionsRepository $subscriptionsRepository;

@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\Trip;
@@ -15,8 +14,6 @@ use Tests\TestCase;
 
 class RatingTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private RatingManager $ratingManager;
 
     private RatingRepository $ratingRepository;

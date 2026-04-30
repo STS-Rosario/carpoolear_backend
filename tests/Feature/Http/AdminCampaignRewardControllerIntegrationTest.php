@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
@@ -12,8 +11,6 @@ use Tests\TestCase;
 
 class AdminCampaignRewardControllerIntegrationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private function adminUser(): User
     {
         $user = User::factory()->create();

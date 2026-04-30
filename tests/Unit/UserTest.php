@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use STS\Events\User\Create as CreateEvent;
@@ -12,8 +11,6 @@ use Tests\TestCase;
 
 class UserTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private UsersManager $userManager;
 
     protected function setUp(): void

@@ -3,15 +3,12 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Subscription;
 use STS\Models\User;
 use Tests\TestCase;
 
 class SubscriptionsApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Carbon::setTestNow();

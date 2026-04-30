@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Contracts\WebpayNormalFlowClient;
 use STS\Models\Passenger;
 use STS\Models\Trip;
@@ -12,8 +11,6 @@ use Tests\TestCase;
 
 class PaymentControllerWebTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private FakeWebpayNormalFlowClient $webpay;
 
     protected function setUp(): void

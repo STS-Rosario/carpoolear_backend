@@ -2,23 +2,20 @@
 
 namespace Tests\Feature\Http;
 
-use Tests\TestCase;
 use Mockery as m;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 
 class FriendApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $friendsLogic;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->friendsLogic = $this->mock(\STS\Services\Logic\FriendsManager::class);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         m::close();
         parent::tearDown();
@@ -29,7 +26,7 @@ class FriendApiTest extends TestCase
         return json_decode($response->getContent());
     }
 
-    public function testRequest()
+    public function test_request()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -41,7 +38,7 @@ class FriendApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testAccept()
+    public function test_accept()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -53,7 +50,7 @@ class FriendApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testReject()
+    public function test_reject()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -65,7 +62,7 @@ class FriendApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testDelete()
+    public function test_delete()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -77,7 +74,7 @@ class FriendApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testIndex()
+    public function test_index()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -92,7 +89,7 @@ class FriendApiTest extends TestCase
         $this->assertTrue($friends->data[0]->id == $u1->id);
     }
 
-    public function testPendings()
+    public function test_pendings()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();

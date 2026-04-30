@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
 use STS\Events\Friend\Accept as AcceptEvent;
 use STS\Events\Friend\Cancel as CancelEvent;
@@ -14,8 +13,6 @@ use Tests\TestCase;
 
 class FriendsTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private FriendsManager $friends;
 
     protected function setUp(): void

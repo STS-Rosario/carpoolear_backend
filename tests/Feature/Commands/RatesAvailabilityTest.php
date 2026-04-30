@@ -2,18 +2,15 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Trip;
-use STS\Models\Rating;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Rating;
+use STS\Models\Trip;
+use STS\Models\User;
+use Tests\TestCase;
 
 class RatesAvailabilityTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testMakesOldVotedRatingsAvailable()
+    public function test_makes_old_voted_ratings_available()
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
@@ -34,7 +31,7 @@ class RatesAvailabilityTest extends TestCase
         $this->assertEquals(1, $rating->available);
     }
 
-    public function testDoesNotMakeRecentOneWayRatingAvailable()
+    public function test_does_not_make_recent_one_way_rating_available()
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
@@ -56,7 +53,7 @@ class RatesAvailabilityTest extends TestCase
         $this->assertEquals(0, $rating->available);
     }
 
-    public function testMakesMutualRecentRatingsAvailable()
+    public function test_makes_mutual_recent_ratings_available()
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
@@ -92,7 +89,7 @@ class RatesAvailabilityTest extends TestCase
         $this->assertEquals(1, $ratingBtoA->available);
     }
 
-    public function testDoesNotAffectUnvotedRatings()
+    public function test_does_not_affect_unvoted_ratings()
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();

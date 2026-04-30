@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use STS\Events\Passenger\Accept as AcceptEvent;
@@ -19,8 +18,6 @@ use Tests\TestCase;
 
 class PassengersTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private PassengersManager $passengerManager;
 
     private PassengersRepository $passengerRepository;

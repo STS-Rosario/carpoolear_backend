@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Mail;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -14,8 +13,6 @@ use Tests\TestCase;
 
 class NotificationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private NotificationManager $manager;
 
     protected function setUp(): void

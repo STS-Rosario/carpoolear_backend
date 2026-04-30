@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Car;
 use STS\Models\User;
 use STS\Services\Logic\CarsManager;
@@ -10,8 +9,6 @@ use Tests\TestCase;
 
 class CarsTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private CarsManager $carManager;
 
     protected function setUp(): void

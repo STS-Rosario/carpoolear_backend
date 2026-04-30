@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Models\ActiveUsersPerMonth;
@@ -15,8 +14,6 @@ use Tests\TestCase;
 
 class DataApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     public function test_trips_endpoint_returns_ok_with_trips_envelope(): void
     {
         $this->getJson('api/data/trips')

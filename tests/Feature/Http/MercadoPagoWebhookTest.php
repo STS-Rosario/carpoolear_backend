@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -16,8 +15,6 @@ use Tests\TestCase;
 
 class MercadoPagoWebhookTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         MercadoPagoConfig::setHttpClient(new MPDefaultHttpClient);

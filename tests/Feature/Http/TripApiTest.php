@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery as m;
@@ -15,8 +14,6 @@ use Tests\TestCase;
 
 class TripApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $tripsLogic;
 
     protected function setUp(): void

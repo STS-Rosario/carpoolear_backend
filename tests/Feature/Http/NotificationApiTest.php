@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Mockery;
@@ -15,8 +14,6 @@ use Tests\TestCase;
 
 class NotificationApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Mockery::close();

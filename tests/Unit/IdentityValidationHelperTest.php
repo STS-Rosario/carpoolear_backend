@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Models\User;
@@ -11,8 +10,6 @@ use Tests\TestCase;
 
 class IdentityValidationHelperTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Carbon::setTestNow();

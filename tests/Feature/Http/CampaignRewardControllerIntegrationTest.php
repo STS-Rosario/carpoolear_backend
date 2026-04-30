@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Log;
 use MercadoPago\Resources\Preference;
 use Mockery;
@@ -15,8 +14,6 @@ use Tests\TestCase;
 
 class CampaignRewardControllerIntegrationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private function bearerTokenForUser(User $user): string
     {
         return $this->postJson('/api/login', [

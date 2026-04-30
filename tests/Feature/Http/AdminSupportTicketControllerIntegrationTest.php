@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
@@ -17,8 +16,6 @@ use Tests\TestCase;
 
 class AdminSupportTicketControllerIntegrationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private function adminUser(): User
     {
         $user = User::factory()->create();

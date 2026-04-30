@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Event;
 use STS\Events\MessageSend;
 use STS\Models\Conversation;
@@ -16,8 +15,6 @@ use Tests\TestCase;
 
 class MessagesTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private ConversationsManager $conversationManager;
 
     private MessageRepository $messageRepository;

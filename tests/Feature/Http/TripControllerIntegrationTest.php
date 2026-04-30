@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use STS\Helpers\IdentityValidationHelper;
@@ -17,8 +16,6 @@ use Tests\TestCase;
 
 class TripControllerIntegrationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function setUp(): void
     {
         parent::setUp();

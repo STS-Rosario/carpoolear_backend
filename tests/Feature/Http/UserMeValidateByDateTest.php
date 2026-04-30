@@ -2,15 +2,12 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use STS\Models\User;
 use Tests\TestCase;
 
 class UserMeValidateByDateTest extends TestCase
 {
-    use DatabaseTransactions;
-
     public function test_sets_validate_by_for_pre_cutoff_user_on_first_me(): void
     {
         config([

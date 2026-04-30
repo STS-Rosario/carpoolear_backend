@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Request;
 use Mockery as m;
 use STS\Http\Controllers\Api\v1\PassengerController;
@@ -11,8 +10,6 @@ use Tests\TestCase;
 
 class PassengerApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $logic;
 
     protected function setUp(): void

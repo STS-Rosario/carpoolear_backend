@@ -2,18 +2,15 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Trip;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Trip;
+use STS\Models\User;
+use Tests\TestCase;
 
 class CleanTripVisibilityTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testDeletesVisibilityForPastTrips()
+    public function test_deletes_visibility_for_past_trips()
     {
         $user = User::factory()->create();
 
@@ -51,7 +48,7 @@ class CleanTripVisibilityTest extends TestCase
         ]);
     }
 
-    public function testDeletesVisibilityForPublicTrips()
+    public function test_deletes_visibility_for_public_trips()
     {
         $user = User::factory()->create();
 
@@ -89,7 +86,7 @@ class CleanTripVisibilityTest extends TestCase
         ]);
     }
 
-    public function testRunsSuccessfullyWithNoVisibilityRecords()
+    public function test_runs_successfully_with_no_visibility_records()
     {
         $this->artisan('trip:visibilityclean')->assertSuccessful();
     }

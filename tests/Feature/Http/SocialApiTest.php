@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Mockery;
 use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Models\SocialAccount;
@@ -13,8 +12,6 @@ use Tests\TestCase;
 
 class SocialApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Mockery::close();

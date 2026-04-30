@@ -5,12 +5,9 @@ namespace Tests\Feature\Http;
 use Illuminate\Http\UploadedFile;
 use STS\Models\User;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 
 class DriverDocsApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -22,7 +19,7 @@ class DriverDocsApiTest extends TestCase
         $file = UploadedFile::fake()->image('doc.jpg', 100, 100)->size(500);
         $data = [
             'name' => 'Driver User',
-            'email' => 'driver' . time() . '@example.com',
+            'email' => 'driver'.time().'@example.com',
             'password' => '123456',
             'password_confirmation' => '123456',
             'driver_data_docs' => [$file],
@@ -39,7 +36,7 @@ class DriverDocsApiTest extends TestCase
         $docs = json_decode($user->driver_data_docs, true);
         $this->assertIsArray($docs);
         $this->assertCount(1, $docs);
-        $storedPath = base_path('public/image/docs/' . $docs[0]);
+        $storedPath = base_path('public/image/docs/'.$docs[0]);
         $this->assertFileExists($storedPath);
     }
 
@@ -48,7 +45,7 @@ class DriverDocsApiTest extends TestCase
         $file = UploadedFile::fake()->create('document.exe', 100, 'application/octet-stream');
         $data = [
             'name' => 'Driver User',
-            'email' => 'driver' . time() . '@example.com',
+            'email' => 'driver'.time().'@example.com',
             'password' => '123456',
             'password_confirmation' => '123456',
             'driver_data_docs' => [$file],
@@ -66,7 +63,7 @@ class DriverDocsApiTest extends TestCase
         $file = UploadedFile::fake()->image('large.jpg', 1000, 1000)->size(1024 * 11);
         $data = [
             'name' => 'Driver User',
-            'email' => 'driver' . time() . '@example.com',
+            'email' => 'driver'.time().'@example.com',
             'password' => '123456',
             'password_confirmation' => '123456',
             'driver_data_docs' => [$file],
@@ -88,7 +85,7 @@ class DriverDocsApiTest extends TestCase
         $file = \STS\Services\HeicToJpegConverter::createValidHeicFile();
         $data = [
             'name' => 'Driver User',
-            'email' => 'driver' . time() . '@example.com',
+            'email' => 'driver'.time().'@example.com',
             'password' => '123456',
             'password_confirmation' => '123456',
             'driver_data_docs' => [$file],

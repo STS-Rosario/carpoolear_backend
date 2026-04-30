@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -16,8 +15,6 @@ use Tests\TestCase;
 
 class TripsTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function setUp(): void
     {
         parent::setUp();

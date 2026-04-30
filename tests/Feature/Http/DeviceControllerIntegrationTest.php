@@ -2,15 +2,12 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use STS\Models\Device;
 use STS\Models\User;
 use Tests\TestCase;
 
 class DeviceControllerIntegrationTest extends TestCase
 {
-    use DatabaseTransactions;
-
     private function bearerTokenForUser(User $user): string
     {
         return $this->postJson('api/login', [

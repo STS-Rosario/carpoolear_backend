@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use MercadoPago\Resources\Preference;
@@ -16,8 +15,6 @@ use Tests\TestCase;
 
 class ManualIdentityValidationApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Mockery::close();

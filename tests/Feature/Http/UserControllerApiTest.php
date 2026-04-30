@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Mockery;
 use STS\Http\Controllers\Api\v1\UserController;
@@ -16,8 +15,6 @@ use Tests\TestCase;
 
 class UserControllerApiTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function tearDown(): void
     {
         Mockery::close();
