@@ -141,4 +141,14 @@ class FileRepositoryTest extends TestCase
 
         $this->assertFileDoesNotExist($full);
     }
+
+    public function test_resolve_upload_folder_in_testing_starts_under_sys_temp_namespace(): void
+    {
+        // Mutation intent: testing branch concatenates `sys_get_temp_dir()`, `carpoolear-test-uploads`, and normalized folder (~18–23 Concat*/UnwrapRtrim mutants).
+        $repo = new FileRepository;
+        $resolved = $repo->resolveUploadFolder($this->testing_folder());
+
+        $expectedPrefix = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'carpoolear-test-uploads'.DIRECTORY_SEPARATOR;
+        $this->assertStringStartsWith($expectedPrefix, $resolved);
+    }
 }
