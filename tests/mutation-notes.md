@@ -994,6 +994,28 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: delete and its 404 guard were never hit from HTTP.
   - Fix: `test_destroy_returns_no_content_and_deletes_reward` expects `204` and `assertDatabaseMissing`. `test_destroy_returns_not_found_when_reward_belongs_to_another_campaign` expects `404` and asserts the reward row still exists.
 
+## Admin `SupportTicketController` (`app/Http/Controllers/Api/Admin/SupportTicketController.php`)
+
+- **`index()` envelope + ordering** (`~18–22`; report `tests/coverage/20260428_2310.txt` ~59827–59835, e.g. `9d3651e520d7189d` `RemoveArrayItem` on `'data'`).
+  - Cause: admin ticket list was not asserted; mutants could return an empty JSON object or drop the `data` key.
+  - Fix: `Tests\Feature\Http\AdminSupportTicketControllerIntegrationTest::test_index_returns_data_ordered_newest_first` asserts `GET api/admin/support/tickets` returns `data` as an array and that the higher-id ticket appears first among the seeded pair.
+
+- **`show()` eager loads** (`~25–29`; report ~59839–59881, e.g. `aa4c55e5d90a050b`, `3ef64ff37c323ae7`, `5b3b9f73d77200a1`, `1c467e38c9f6a645` `RemoveArrayItem` on `with([...])` / response `data`).
+  - Cause: stripping a nested `with()` branch or the whole payload could survive without a contract test on nested relations.
+  - Fix: `test_show_includes_user_ticket_attachments_and_reply_attachments` seeds a ticket-level attachment, a user reply, and a reply-level attachment; `GET api/admin/support/tickets/{id}` asserts `user.id` / `user.email`, ticket `attachments`, and `replies.*.attachments` surface the expected `original_name` values.
+
+- **`reply()` validation, `SupportTicketReply::create`, attachment loop, response** (`~32–70`; report ~59887–60051, e.g. `67b8684f8dfd6d9e`, `e49582df2cba57ae`, `f71aabd1807c7e25`, `6ddd7ff6d47a02dc`, `da24df0b7a9585f8`, `26e14ef8ac070bac`, `c6b33c0f5464dcc6`, `9d2d600f74edf46d` on `report($e)`).
+  - Cause: admin reply was only partially covered; mutants could weaken validation rules, flip `is_admin`, skip attachment persistence, or drop the success envelope.
+  - Fix: `test_reply_without_message_is_unprocessable` omits `message_markdown` and expects `422`. `test_reply_with_image_persists_attachment_for_reply` uses `Storage::fake('public')`, posts a valid image, and `assertDatabaseHas` on `support_ticket_attachments` with `reply_id` and `is_admin` true on the new `support_ticket_replies` row (via the service storing the upload).
+
+- **`updateStatus()` / `updatePriority()` / `updateInternalNote()`** (`~96–137`; report ~60067–60206, e.g. `10fe199bf4bf6524`, `8d7b3c75b1b98379`, `8f891f4186aee827`, `b3f1a4e2092b11bc`, `a1b7bfd6454b7ffc`, `e9a7be5c6120a487`, `4ad422844e6b1e11`, `7109965abd9450da`, `a2c0a36fc0adbe61`, `1bc7f9a96169e7fc`, `854dba9f4519b46f`, `7aba04c592b5b987`).
+  - Cause: PATCH/PUT admin maintenance endpoints had no dedicated assertions on validation, the `Cerrado` closed metadata branch, `save()`, or JSON envelopes.
+  - Fix: `test_update_status_sets_closed_metadata_only_for_cerrado` / `test_update_status_rejects_values_outside_allowed_set`; `test_update_priority_persists_and_returns_ticket_payload` / `test_update_priority_rejects_invalid_value`; `test_update_internal_note_persists_text_and_can_clear` (including clearing via `null`).
+
+- **`applyActionStatus()` (resolve/close)** (`~140–168`; report ~60211–60304, e.g. `7563b7d1c8848bb1`, `5ec5806006fa85bc`, `7a06a05a2836862e`, `4f93546086820a9a`, `d4677d261dbb99d5`, `e625744d77fc3548`).
+  - Cause: optional `message_markdown` reply branch and status transitions were not isolated from other admin flows in a single focused suite.
+  - Fix: `test_resolve_without_message_updates_status_without_extra_reply` asserts `Resuelto` without incrementing reply count; `test_close_with_message_creates_admin_reply_and_closed_fields` asserts a new admin reply row, `Cerrado`, and `closed_at` / `closed_by`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
