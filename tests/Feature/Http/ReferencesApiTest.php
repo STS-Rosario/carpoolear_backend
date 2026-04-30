@@ -3,13 +3,33 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Mockery;
+use STS\Http\Controllers\Api\v1\ReferencesController;
 use STS\Models\References;
 use STS\Models\User;
+use STS\Services\Logic\ReferencesManager;
 use Tests\TestCase;
 
 class ReferencesApiTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    public function test_constructor_registers_logged_middleware(): void
+    {
+        $controller = new ReferencesController(Mockery::mock(ReferencesManager::class));
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+
+        $this->assertNotNull($logged);
+    }
 
     public function test_create_requires_authentication(): void
     {
@@ -19,6 +39,18 @@ class ReferencesApiTest extends TestCase
         ])
             ->assertUnauthorized()
             ->assertJson(['message' => 'Unauthorized.']);
+    }
+
+    public function test_create_without_authenticated_user_returns_user_not_logged_when_middleware_is_bypassed(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->postJson('api/references', [
+            'comment' => 'Great experience.',
+            'user_id_to' => 1,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'User not logged.');
     }
 
     public function test_create_returns_reference_payload_when_valid(): void
