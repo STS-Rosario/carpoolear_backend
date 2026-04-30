@@ -171,6 +171,47 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
             ->assertJsonPath('donations_count', 1);
     }
 
+    public function test_show_load_count_excludes_pending_donations(): void
+    {
+        $this->actingAs($this->adminUser(), 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $campaign = $this->makeCampaign();
+        $reward = CampaignReward::create([
+            'campaign_id' => $campaign->id,
+            'title' => 'Mixed donations',
+            'description' => 'D',
+            'donation_amount_cents' => 1500,
+            'quantity_available' => null,
+            'is_active' => true,
+        ]);
+
+        CampaignDonation::create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => $reward->id,
+            'payment_id' => 'paid-1',
+            'amount_cents' => 1500,
+            'name' => null,
+            'comment' => null,
+            'user_id' => null,
+            'status' => 'paid',
+        ]);
+        CampaignDonation::create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => $reward->id,
+            'payment_id' => null,
+            'amount_cents' => 1500,
+            'name' => null,
+            'comment' => null,
+            'user_id' => null,
+            'status' => 'pending',
+        ]);
+
+        $this->getJson($this->rewardMemberUrl($campaign, $reward))
+            ->assertOk()
+            ->assertJsonPath('donations_count', 1);
+    }
+
     public function test_show_returns_not_found_when_reward_belongs_to_another_campaign(): void
     {
         $this->actingAs($this->adminUser(), 'api');
