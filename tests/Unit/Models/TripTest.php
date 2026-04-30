@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Repository\FriendsRepository;
 use Tests\TestCase;
 
 class TripTest extends TestCase
@@ -129,5 +130,69 @@ class TripTest extends TestCase
         $trip->delete();
 
         $this->assertTrue($trip->fresh()->trashed());
+    }
+
+    public function test_check_friendship_allows_driver_to_see_own_trip(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+        ]);
+
+        $this->assertTrue($trip->fresh()->checkFriendship($driver));
+    }
+
+    public function test_check_friendship_public_trip_allows_any_user(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+        ]);
+
+        $this->assertTrue($trip->fresh()->checkFriendship($stranger));
+    }
+
+    public function test_check_friendship_friends_only_matches_accepted_friend_edge(): void
+    {
+        $friends = new FriendsRepository;
+        $driver = User::factory()->create();
+        $friend = User::factory()->create();
+        $stranger = User::factory()->create();
+        $friends->add($driver, $friend, User::FRIEND_ACCEPTED);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FRIENDS,
+        ]);
+
+        $trip = $trip->fresh();
+        $this->assertTrue($trip->checkFriendship($friend));
+        $this->assertFalse($trip->checkFriendship($stranger));
+    }
+
+    public function test_check_friendship_fof_allows_friend_of_friend_without_direct_friendship(): void
+    {
+        $friends = new FriendsRepository;
+        $driver = User::factory()->create();
+        $bridge = User::factory()->create();
+        $friendOfFriend = User::factory()->create();
+        $outsider = User::factory()->create();
+
+        // Pivot direction matters: `friends()` is uid1 → uid2. FoF visibility tests use
+        // bridge→driver then viewer→bridge so `friends.friends` reaches the conductor.
+        $friends->add($bridge, $driver, User::FRIEND_ACCEPTED);
+        $friends->add($friendOfFriend, $bridge, User::FRIEND_ACCEPTED);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+        ]);
+
+        $trip = $trip->fresh();
+        $this->assertTrue($trip->checkFriendship($friendOfFriend));
+        $this->assertFalse($trip->checkFriendship($outsider));
     }
 }
