@@ -1050,6 +1050,20 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: failure and permanent-failure paths were not exercised; stripping `Log::error`, rethrow, or `failed()` channel logging could survive.
   - Fix: `test_handle_rethrows_after_logging_when_mail_fails` makes `Mail::send` throw and expects `Log::error` with the exception message plus a rethrown `RuntimeException`. `test_failed_logs_permanent_failure_and_optional_email_channel` calls `failed()` with `log_emails` true and expects `Log::error` plus `email_logs` `critical` with a non-empty `stack_trace`.
 
+## `SendDeleteAccountRequestEmail` (`app/Jobs/SendDeleteAccountRequestEmail.php`)
+
+- **Public queue contract (`$tries`, `$backoff`, `$timeout`)** (`~18–20`; report `tests/coverage/20260428_2310.txt` ~61859–62003, e.g. `284a59845f5c8988`, `29134191d95c5bb4` `RemoveArrayItem` on backoff entries).
+  - Cause: nothing invoked the job body; only queue pushes from account-delete flows were covered indirectly, so retry metadata mutants stayed UNCOVERED.
+  - Fix: `Tests\Unit\Jobs\SendDeleteAccountRequestEmailTest::test_job_exposes_retry_and_timeout_settings` asserts `3`, `[60, 300, 900]`, and `30`.
+
+- **`handle()` logging + `DeleteAccountRequestNotification`** (`~37–73`; report ~62015–62185, e.g. `3673e288fb7e2f34` `FalseToTrue` on `log_emails`, `6772304b906e7571` / `24b2e43e22820204` `RemoveMethodCall` on `Log::info` / `Mail::send`, `70c7460f8acccb61` / `72706fac5c64878f` `IfNegated` on `email_logs`, `d319341e339f64e0` / `b08d800737e931b7` on `array_merge` / channel `info`, `e5f437421ef30893` / `e33f84f1f5b56116` on success logging).
+  - Cause: no synchronous execution of `handle()` under test; mutants could drop log keys, skip mail, or strip `admin_url` from the `email_logs` payload.
+  - Fix: `test_handle_sends_delete_account_request_notification` uses `Mail::fake()` and `Mail::assertSent(DeleteAccountRequestNotification::class, …)` on admin address + `adminUrl`. `test_handle_logs_to_email_logs_when_enabled` asserts ordered `Log::info` plus two `email_logs` `info` calls (`DELETE_ACCOUNT_REQUEST_EMAIL_SENDING` with merged `admin_url`, then `DELETE_ACCOUNT_REQUEST_EMAIL_SUCCESS`).
+
+- **`handle()` catch + `failed()`** (`~75–121`; report ~62197–62257+, e.g. `97ed30b28316b5bb` through `3a7eb30e949576ac` on `errorData`, `b6d5b2d9c69dae05` on `Log::error`, channel `error`/`critical` mutants).
+  - Cause: failure paths were never hit from tests.
+  - Fix: `test_handle_rethrows_after_logging_when_mail_fails` expects `Log::error` with `admin_email` + message and a rethrown exception. `test_failed_logs_permanent_failure_and_optional_email_channel` calls `failed()` with `log_emails` true and expects `Log::error` plus `email_logs` `critical` with non-empty `stack_trace`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
