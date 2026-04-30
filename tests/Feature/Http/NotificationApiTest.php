@@ -4,14 +4,39 @@ namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Mockery;
+use STS\Http\Controllers\Api\v1\NotificationController;
 use STS\Models\User;
 use STS\Notifications\DummyNotification;
+use STS\Services\Logic\NotificationManager;
 use Tests\TestCase;
 
 class NotificationApiTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    public function test_constructor_registers_logged_middleware(): void
+    {
+        $controller = new NotificationController(
+            Request::create('/api/notifications', 'GET'),
+            Mockery::mock(NotificationManager::class)
+        );
+
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+
+        $this->assertNotNull($logged);
+    }
 
     public function test_notifications_require_authentication(): void
     {
