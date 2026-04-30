@@ -104,7 +104,11 @@ class SendDeleteAccountRequestEmailTest extends TestCase
         Log::shouldReceive('info')->once()->with('Sending delete account request email', Mockery::type('array'));
         Log::shouldReceive('error')->once()->with('Failed to send delete account request email', Mockery::on(function (array $context) use ($adminEmail) {
             return $context['admin_email'] === $adminEmail
-                && $context['error'] === 'smtp unavailable';
+                && $context['error'] === 'smtp unavailable'
+                && array_key_exists('error_code', $context)
+                && array_key_exists('attempt', $context)
+                && array_key_exists('timestamp', $context)
+                && $context['timestamp'] !== '';
         }));
 
         $job = new SendDeleteAccountRequestEmail($adminEmail, 'https://x');
@@ -112,6 +116,74 @@ class SendDeleteAccountRequestEmailTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('smtp unavailable');
 
+        $job->handle();
+    }
+
+    public function test_handle_when_log_emails_key_is_absent_does_not_touch_email_logs_channel(): void
+    {
+        Mail::fake();
+        $carpoolear = config('carpoolear');
+        unset($carpoolear['log_emails']);
+        config(['carpoolear' => $carpoolear]);
+
+        Log::shouldReceive('info')->twice();
+        Log::shouldReceive('channel')->never();
+
+        $job = new SendDeleteAccountRequestEmail('ops@example.com', 'https://admin.example/pending');
+        $job->handle();
+
+        Mail::assertSent(DeleteAccountRequestNotification::class);
+    }
+
+    public function test_handle_when_mail_fails_with_email_logging_merges_stack_trace_on_channel_error(): void
+    {
+        config(['carpoolear.log_emails' => true]);
+
+        $adminEmail = 'ops@example.com';
+
+        Mail::shouldReceive('to')
+            ->once()
+            ->with($adminEmail)
+            ->andReturnSelf();
+        Mail::shouldReceive('send')
+            ->once()
+            ->andThrow(new \RuntimeException('smtp down'));
+
+        $emailChannel = Mockery::mock();
+        $emailChannel->shouldReceive('info')
+            ->once()
+            ->with('DELETE_ACCOUNT_REQUEST_EMAIL_SENDING', Mockery::type('array'));
+        $emailChannel->shouldReceive('error')
+            ->once()
+            ->with('DELETE_ACCOUNT_REQUEST_EMAIL_FAILED', Mockery::on(function (array $context) use ($adminEmail) {
+                return $context['admin_email'] === $adminEmail
+                    && $context['error'] === 'smtp down'
+                    && array_key_exists('stack_trace', $context)
+                    && strlen((string) $context['stack_trace']) > 0;
+            }));
+
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('Sending delete account request email', Mockery::type('array'));
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+        Log::shouldReceive('error')
+            ->once()
+            ->ordered()
+            ->with('Failed to send delete account request email', Mockery::type('array'));
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+
+        $job = new SendDeleteAccountRequestEmail($adminEmail, 'https://x');
+
+        $this->expectException(\RuntimeException::class);
         $job->handle();
     }
 
@@ -134,7 +206,10 @@ class SendDeleteAccountRequestEmailTest extends TestCase
             ->once()
             ->with('Delete account request email job failed permanently', Mockery::on(function (array $context) use ($adminEmail) {
                 return $context['admin_email'] === $adminEmail
-                    && $context['error'] === 'queue exhausted';
+                    && $context['error'] === 'queue exhausted'
+                    && array_key_exists('attempts', $context)
+                    && array_key_exists('timestamp', $context)
+                    && $context['timestamp'] !== '';
             }));
         Log::shouldReceive('channel')
             ->once()
