@@ -3,9 +3,15 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Request;
+use Mockery;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Http\Controllers\Api\v1\ConversationController;
 use STS\Models\Conversation;
+use STS\Models\Message;
 use STS\Models\User;
+use STS\Services\Logic\ConversationsManager;
+use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class ConversationApiTest extends TestCase
@@ -24,6 +30,27 @@ class ConversationApiTest extends TestCase
         $this->conversationManager = $this->app->make(\STS\Services\Logic\ConversationsManager::class);
         $this->messageRepository = $this->app->make(\STS\Repository\MessageRepository::class);
         $this->conversationRepository = $this->app->make(\STS\Repository\ConversationRepository::class);
+    }
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    public function test_constructor_registers_logged_middleware(): void
+    {
+        $controller = new ConversationController(
+            Mockery::mock(Request::class),
+            Mockery::mock(ConversationsManager::class),
+            Mockery::mock(UsersManager::class),
+        );
+
+        $logged = collect($controller->getMiddleware())->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+
+        $this->assertNotNull($logged);
     }
 
     protected function parseJson($response)
@@ -331,5 +358,189 @@ class ConversationApiTest extends TestCase
             ->getJson('api/conversations/unread?conversation_id=1&timestamp=2020-01-01T00:00:00Z')
             ->assertOk()
             ->assertJsonStructure(['data']);
+    }
+
+    public function test_index_uses_default_page_and_page_size_and_accepts_explicit_page(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/conversations')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.current_page', 1);
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/conversations?page=3')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.current_page', 3);
+    }
+
+    public function test_show_returns_ok_when_conversation_is_accessible(): void
+    {
+        $user = User::factory()->create();
+        $peer = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $user);
+        $this->conversationRepository->addUser($conversation, $peer);
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/conversations/show/'.$conversation->id)
+            ->assertOk()
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_admin_without_validated_identity_can_still_open_conversation_when_enforcement_is_strict(): void
+    {
+        $this->enableStrictNewUserIdentityEnforcement();
+
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'identity_validated' => false,
+            'validate_by_date' => null,
+        ]);
+        $peer = User::factory()->create();
+
+        $this->actingAs($admin, 'api')
+            ->postJson('api/conversations', ['to' => $peer->id])
+            ->assertOk()
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_admin_without_validated_identity_can_send_messages_when_enforcement_is_strict(): void
+    {
+        $this->enableStrictNewUserIdentityEnforcement();
+
+        $admin = User::factory()->create([
+            'is_admin' => true,
+            'identity_validated' => false,
+            'validate_by_date' => null,
+        ]);
+        $peer = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $admin);
+        $this->conversationRepository->addUser($conversation, $peer);
+
+        $this->actingAs($admin, 'api')
+            ->postJson('api/conversations/'.$conversation->id.'/send', ['message' => 'Hello peer'])
+            ->assertOk()
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_identity_validated_user_can_send_messages_via_http_api(): void
+    {
+        $this->enableStrictNewUserIdentityEnforcement();
+
+        $sender = User::factory()->create([
+            'is_admin' => false,
+            'identity_validated' => true,
+        ]);
+        $peer = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $sender);
+        $this->conversationRepository->addUser($conversation, $peer);
+
+        $this->actingAs($sender, 'api')
+            ->postJson('api/conversations/'.$conversation->id.'/send', ['message' => 'Validated send'])
+            ->assertOk()
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_delete_user_returns_plain_ok_payload_on_success(): void
+    {
+        $owner = User::factory()->create(['is_admin' => true]);
+        $member = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $owner);
+        $this->conversationRepository->addUser($conversation, $member);
+
+        $response = $this->actingAs($owner, 'api')
+            ->deleteJson('api/conversations/'.$conversation->id.'/users/'.$member->id);
+
+        $response->assertOk();
+        $this->assertSame('OK', $response->json());
+    }
+
+    public function test_user_list_search_value_filters_peers_by_name(): void
+    {
+        $needle = 'RareSearchToken314';
+
+        $viewer = User::factory()->create();
+        $matchingPeer = User::factory()->create(['name' => 'Alice '.$needle]);
+        $otherPeer = User::factory()->create(['name' => 'Bob Someone Else']);
+
+        $convA = Conversation::factory()->create();
+        $this->conversationRepository->addUser($convA, $viewer);
+        $this->conversationRepository->addUser($convA, $matchingPeer);
+        $this->conversationManager->send($viewer, $convA->id, 'seed thread a');
+
+        $convB = Conversation::factory()->create();
+        $this->conversationRepository->addUser($convB, $viewer);
+        $this->conversationRepository->addUser($convB, $otherPeer);
+        $this->conversationManager->send($viewer, $convB->id, 'seed thread b');
+
+        $allPeers = $this->actingAs($viewer, 'api')
+            ->getJson('api/conversations/user-list')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertGreaterThanOrEqual(2, count($allPeers));
+
+        $filtered = $this->actingAs($viewer, 'api')
+            ->getJson('api/conversations/user-list?value='.rawurlencode($needle))
+            ->assertOk()
+            ->json('data');
+
+        $this->assertCount(1, $filtered);
+        $this->assertSame($matchingPeer->id, $filtered[0]['id']);
+    }
+
+    public function test_unread_messages_respects_timestamp_query_boundary(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $reader);
+        $this->conversationRepository->addUser($conversation, $sender);
+        $reader->conversations()->updateExistingPivot($conversation->id, ['read' => false]);
+
+        $this->conversationManager->send($sender, $conversation->id, 'Unread ping');
+
+        Message::query()->where('conversation_id', $conversation->id)->update([
+            'created_at' => '2020-06-15 12:00:00',
+        ]);
+
+        $included = $this->actingAs($reader, 'api')
+            ->getJson('api/conversations/unread?timestamp=2020-06-01%2000:00:00')
+            ->assertOk()
+            ->json('data');
+        $this->assertNotEmpty($included);
+
+        $excluded = $this->actingAs($reader, 'api')
+            ->getJson('api/conversations/unread?timestamp=2021-01-01%2000:00:00')
+            ->assertOk()
+            ->json('data');
+        $this->assertSame([], $excluded);
+    }
+
+    public function test_unread_messages_with_conversation_id_marks_conversation_as_read_for_user(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $reader);
+        $this->conversationRepository->addUser($conversation, $sender);
+        $reader->conversations()->updateExistingPivot($conversation->id, ['read' => false]);
+
+        $this->conversationManager->send($sender, $conversation->id, 'Ping');
+
+        $this->actingAs($reader, 'api')
+            ->getJson('api/conversations/unread?conversation_id='.$conversation->id)
+            ->assertOk();
+
+        $reader->load('conversations');
+        $pivotRead = $reader->conversations->firstWhere('id', $conversation->id)?->pivot?->read;
+        $this->assertNotNull($pivotRead);
+        $this->assertTrue((bool) $pivotRead);
     }
 }
