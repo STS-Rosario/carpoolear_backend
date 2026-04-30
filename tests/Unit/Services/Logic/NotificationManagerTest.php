@@ -159,6 +159,50 @@ class NotificationManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_get_notifications_returns_read_and_unread_rows_when_not_marking(): void
+    {
+        Carbon::setTestNow('2026-06-03 08:00:00');
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'first');
+        Carbon::setTestNow('2026-06-03 09:00:00');
+        $this->sendDummy($user, 'second');
+
+        $manager = $this->manager();
+        $manager->getNotifications($user, ['mark' => true]);
+
+        Carbon::setTestNow('2026-06-03 10:00:00');
+        $this->sendDummy($user, 'third');
+        $rows = $manager->getNotifications($user, []);
+
+        $this->assertCount(3, $rows);
+        $this->assertContains(true, array_column($rows, 'readed'));
+        $this->assertContains(false, array_column($rows, 'readed'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_paginated_get_notifications_returns_read_and_unread_rows(): void
+    {
+        Carbon::setTestNow('2026-06-04 08:00:00');
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'first');
+        Carbon::setTestNow('2026-06-04 09:00:00');
+        $this->sendDummy($user, 'second');
+
+        $manager = $this->manager();
+        $manager->getNotifications($user, ['mark' => true]);
+
+        Carbon::setTestNow('2026-06-04 10:00:00');
+        $this->sendDummy($user, 'third');
+        $page = $manager->getNotifications($user, ['page' => '1', 'page_size' => '3']);
+
+        $this->assertCount(3, $page);
+        $this->assertContains(true, array_column($page, 'readed'));
+        $this->assertContains(false, array_column($page, 'readed'));
+
+        Carbon::setTestNow();
+    }
+
     public function test_delete_soft_deletes_notification_owned_by_user(): void
     {
         Carbon::setTestNow('2026-07-01 10:00:00');
