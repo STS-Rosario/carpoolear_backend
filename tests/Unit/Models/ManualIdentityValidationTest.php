@@ -102,4 +102,58 @@ class ManualIdentityValidationTest extends TestCase
     {
         $this->assertSame('manual_identity_validations', (new ManualIdentityValidation)->getTable());
     }
+
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'user_id',
+            'submitted_at',
+            'front_image_path',
+            'back_image_path',
+            'selfie_image_path',
+            'payment_id',
+            'paid',
+            'paid_at',
+            'review_status',
+            'reviewed_by',
+            'reviewed_at',
+            'review_note',
+            'manual_validation_started_at',
+        ], (new ManualIdentityValidation)->getFillable());
+    }
+
+    public function test_mass_assignment_persists_all_review_and_payment_fields(): void
+    {
+        $user = User::factory()->create();
+        $reviewer = User::factory()->create();
+
+        $row = ManualIdentityValidation::query()->create([
+            'user_id' => $user->id,
+            'submitted_at' => '2026-07-01 10:00:00',
+            'front_image_path' => 'manual/front.jpg',
+            'back_image_path' => 'manual/back.jpg',
+            'selfie_image_path' => 'manual/selfie.jpg',
+            'payment_id' => 'pay_123',
+            'paid' => true,
+            'paid_at' => '2026-07-01 10:05:00',
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_APPROVED,
+            'reviewed_by' => $reviewer->id,
+            'reviewed_at' => '2026-07-01 10:10:00',
+            'review_note' => 'Looks good',
+            'manual_validation_started_at' => '2026-07-01 09:59:00',
+        ])->fresh();
+
+        $this->assertSame($user->id, (int) $row->user_id);
+        $this->assertSame('manual/front.jpg', $row->front_image_path);
+        $this->assertSame('manual/back.jpg', $row->back_image_path);
+        $this->assertSame('manual/selfie.jpg', $row->selfie_image_path);
+        $this->assertSame('pay_123', $row->payment_id);
+        $this->assertTrue((bool) $row->paid);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_APPROVED, $row->review_status);
+        $this->assertSame($reviewer->id, (int) $row->reviewed_by);
+        $this->assertSame('Looks good', $row->review_note);
+        $this->assertNotNull($row->paid_at);
+        $this->assertNotNull($row->reviewed_at);
+        $this->assertNotNull($row->manual_validation_started_at);
+    }
 }
