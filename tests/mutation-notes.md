@@ -1064,6 +1064,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: failure paths were never hit from tests.
   - Fix: `test_handle_rethrows_after_logging_when_mail_fails` expects `Log::error` with `admin_email` + message and a rethrown exception. `test_failed_logs_permanent_failure_and_optional_email_channel` calls `failed()` with `log_emails` true and expects `Log::error` plus `email_logs` `critical` with non-empty `stack_trace`.
 
+## `Friend\Cancel` event (`app/Events/Friend/Cancel.php`)
+
+- **`broadcastOn()` return type** (`broadcastOn()` ~32–35; report `tests/coverage/20260428_2310.txt` ~5679–5680 and UNCOVERED ~62440, mutant ID `34c7f4237f84875a` `AlwaysReturnNull` on `return []`).
+  - Cause: the event was never constructed under test; mutating `broadcastOn()` to always return `null` stayed equivalent to “no failing assertion” for callers that never invoked it.
+  - Fix: `Tests\Unit\Events\Friend\CancelEventTest::test_broadcast_on_returns_empty_channel_array` asserts `broadcastOn()` is an array and equals `[]` (Laravel’s broadcasting contract expects a channel list, not `null`). `test_constructor_exposes_from_and_to_payload` pins the public `from` / `to` payload so constructor regressions fail the suite.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
