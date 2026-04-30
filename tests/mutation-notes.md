@@ -1292,6 +1292,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
   - Mutant IDs: `0818175ba270b6b3`.
 
+## `SubscriptionMatchNotification` (`app/Notifications/SubscriptionMatchNotification.php`)
+
+- **Channels + email metadata envelope** (`via` list and `toEmail()` metadata keys; report RUN ~6624 and UNTESTED/UNCOVERED ~66606–66700).
+  - Cause: previous tests covered title/message/url/extras basics but did not pin the channel list and email metadata keys, so `RemoveArrayItem` mutants on channels and `name_app`/`domain` survived.
+  - Fix: `Tests\Unit\Notifications\SubscriptionMatchNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` in email payload.
+  - Mutant IDs: `bb64a15df2c695c9`, `d868da8aaf64e741`, `e3981954c7d3801b`, `475a5ec9346bdfa1`, `16ff6ea87b7f88cd`.
+
+- **Push URL/image contract** (`toPush()` concat around trip id and image key; report UNTESTED ~66642, ~66678, ~66689, ~66700).
+  - Cause: tests validated fallback `/trips/` path but not positive `/trips/{id}` and image key, leaving concat and `RemoveArrayItem` mutants under-constrained.
+  - Fix: same test class now asserts exact `/trips/{tripId}` when trip exists and always checks static logo `image`.
+  - Mutant IDs: `f5d2e8602d41ff8d`, `0b61cbd3b87fd470`, `4f512b122933595c`, `aad9ebde1ddeee92`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
