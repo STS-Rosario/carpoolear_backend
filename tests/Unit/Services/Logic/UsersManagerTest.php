@@ -1003,12 +1003,23 @@ class UsersManagerTest extends TestCase
     public function test_reset_password_queues_email_for_known_user(): void
     {
         Queue::fake();
+        config(['app.url' => 'https://carpoolear.test']);
         $user = User::factory()->create();
 
         $token = $this->manager()->resetPassword($user->email);
 
         $this->assertIsString($token);
-        Queue::assertPushed(SendPasswordResetEmail::class);
+        $this->assertSame(40, strlen($token));
+        Queue::assertPushed(SendPasswordResetEmail::class, function ($job) use ($token) {
+            $reflection = new \ReflectionClass($job);
+            $urlProperty = $reflection->getProperty('url');
+            $urlProperty->setAccessible(true);
+            $tokenProperty = $reflection->getProperty('token');
+            $tokenProperty->setAccessible(true);
+
+            return $urlProperty->getValue($job) === 'https://carpoolear.test/app/reset-password/'.$token
+                && $tokenProperty->getValue($job) === $token;
+        });
     }
 
     public function test_reset_password_sets_error_for_unknown_email(): void
