@@ -1170,6 +1170,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Listeners\Conversation\RemoveUserConversationListenerTest` uses a lightweight `stdClass` trip payload with a mocked `Conversation` plus a mocked `ConversationRepository`: no `conversation` ⇒ `removeUser` is never called; when the cancel `from` user is the trip owner, the **passenger** (`to`) is removed; when `from` is a third user (not the owner), **`from`** is removed—pinning both sides of the ternary and the equality check without relying on repository internals.
   - Mutant IDs: `bd7c2ab94c3c4c8b` (`TernaryNegated` ~32), `e5430e16ec1b974f` / `e7e1a2f0b702b383` (`EqualToNotEqual` / `EqualToIdentical` on the owner check ~32).
 
+## `Dates` helpers (`app/Helpers/Dates.php`)
+
+- **`parse_date` / `date_to_string` / `parse_boolean` return values** (`parse_date()` ~5–8, `date_to_string()` ~10–13, `parse_boolean()` ~15–18; report `tests/coverage/20260428_2310.txt` ~5966–5969 and UNTESTED ~63878–63904).
+  - Cause: global helpers were never invoked from tests, so `AlwaysReturnNull` mutants on each `return` stayed green.
+  - Fix: `Tests\Unit\Helpers\DatesHelperTest` (plain `PHPUnit\Framework\TestCase`, composer autoload only) asserts `parse_date` yields a `Carbon` instance for default and custom formats, `date_to_string` honors default and overridden formats, and `parse_boolean` matches `FILTER_VALIDATE_BOOLEAN` semantics for booleans and common string/integer inputs.
+  - Mutant IDs: `34562addc83b7af7` (`parse_date` ~7), `7b45cc5826adac98` (`date_to_string` ~12), `d0d36613e717f4a0` (`parse_boolean` ~17).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
