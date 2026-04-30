@@ -2255,3 +2255,14 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_qr_order_failure_keeps_existing_unpaid_request`
     These assert stable behavior at API/data-contract level and prevent destructive rollback regressions for existing requests.
   - Mutant IDs: `dd32c96b7620c345`, `848a5d48b63521b2`, `d67ac69ffb71e256`, `57ee8d4446b8cbc4`, `480e452bc085c461`.
+
+## WhatsAppWebhookController (`app/Http/Controllers/Api/v1/WhatsAppWebhookController.php`)
+
+- **Webhook logging context contract** (`handle()` and `handleVerification()` log payloads around lines 17-22 and 49-52 in `tests/coverage/20260428_2310.txt`).
+  - Cause: webhook tests already covered verification/security/processing behavior, but did not assert the structured logging context emitted for incoming requests and verification attempts, so log-context array-item/method-call mutants survived.
+  - Fix: extended `tests/Feature/Http/WhatsAppWebhookTest.php` by strengthening verification tests with `Log::spy()` assertions for:
+    - `WhatsApp webhook received` context keys (`method`, `data`, `content`, `headers`, `content_type`)
+    - `WhatsApp webhook verification request` context values (`mode`, `token`, `challenge`)
+    - `WhatsApp webhook verification failed` warning context (`expected_token`, `received_token`)
+    This keeps tests behavior-first while pinning observability contract expected by operations.
+  - Mutant IDs: `49eebc7c84d6a236`, `06d6907f546f56a4`, `1b40a41c8f85e23f`, `1835063fccada1d5`, `06c87480f0ae499d`, `00cc2d10fdb45309`, `e810a7aa4cb25da5`, `031ee8a0189f41b5`, `ac9e662cc78045cf`, `f7ef799c8e053c9e`, `5450748d740c0825`, `bb4339f9078f8fcb`, `848d20df777e8041`.
