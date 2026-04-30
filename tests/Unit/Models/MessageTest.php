@@ -10,6 +10,18 @@ use Tests\TestCase;
 
 class MessageTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'id',
+            'user_id',
+            'text',
+            'estado',
+            'conversation_id',
+            'time',
+        ], (new Message)->getFillable());
+    }
+
     public function test_from_and_conversation_relationships(): void
     {
         $author = User::factory()->create();
