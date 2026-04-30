@@ -2225,3 +2225,12 @@ This file tracks mutants killed during the current hardening session, with the r
     - strengthened `test_success_without_payment_identifiers_leaves_payment_id_null` with log-context assertions
     These keep tests behavior-focused (redirect URL/query + persisted/logged outcomes) while killing concatenation/coalesce/context mutants.
   - Mutant IDs: `a3c24651d8fb4374`, `de9375a6b8210028`, `d80ff039b708d77b`, `e3f3167aabd3bc7b`, `55666010f31015f2`, `163f75c53fc19539`, `75a030a9cf982577`, `639feeeb046cfce5`, `69bf21bfd77cab86`, `28ee521144e5d306`, `245ec9777748af44`, `cfd7b7544a4f999e`, `843875a989a61907`, `278a09704c38443e`.
+
+## RoutesController (`app/Http/Controllers/Api/v1/RoutesController.php`)
+
+- **Constructor middleware scope contract** (`__construct` lines 14-15 in `tests/coverage/20260428_2310.txt`).
+  - Cause: autocomplete endpoint tests already asserted public behavior, filtering, default-country, and response envelopes, but constructor middleware registrations were not pinned explicitly, allowing constructor mutants to survive.
+  - Fix: extended `tests/Feature/Http/RoutesApiTest.php` with `test_constructor_registers_expected_logged_middleware_scopes`, asserting:
+    - `logged` middleware `except` list is exactly `['autocomplete']`
+    - `logged.optional` middleware `only` list is exactly `['autocomplete']`
+  - Mutant IDs: `3287c71431a84354`, `f3df9f4d30bca0e3`, `d2d0058f294666c0`.
