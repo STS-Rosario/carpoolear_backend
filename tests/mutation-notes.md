@@ -1061,6 +1061,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: delete and its 404 guard were never hit from HTTP.
   - Fix: `test_destroy_returns_no_content_and_deletes_reward` expects `204` and `assertDatabaseMissing`. `test_destroy_returns_not_found_when_reward_belongs_to_another_campaign` expects `404` and asserts the reward row still exists.
 
+- **Strict JSON contract hardening for guard/create/update responses** (same controller block, report IDs unchanged from `~59300–59816`).
+  - Cause: branch coverage existed, but some assertions were permissive (`assertJsonPath`) and still allowed payload drift (e.g., missing `error` key or changed core fields) without failing.
+  - Fix: tightened `tests/Feature/Http/AdminCampaignRewardControllerIntegrationTest.php` by:
+    - using `assertExactJson(['error' => 'Reward does not belong to this campaign'])` for `show`/`update`/`destroy` cross-campaign 404 responses,
+    - strengthening `store` and `update` success assertions to require stable business fields (`campaign_id`, `description`, `id`) and absence of `error`.
+    This keeps tests behavior-oriented while making response contracts mutation-resistant.
+  - Mutant IDs: `6a835fc5484329a0`, `1993bdddeaa98eaf`, `d4d9e47a4ab3a101`, `d8d46738ddbe459b`, `415fd1792029856e`, `d5d7cde3cd19d1e8`, `7790e3b0ababd517`, `6822b6e75d0c1a08`, `afe04f9a620678a0`, `e006ad10e72ad353`, `b3bb137141d42371`, `cc157c525225c290`, `9d20639622e63338`, `782fb93fc79d6479`, `fc61eea589e1627c`, `2ab8189f64d97d43`, `a0bd0778cb9464d9`, `ece8e9c1e1059b69`, `229725aecd7e18dc`, `86e3104be426e79c`, `b20ab62b4956ac1a`, `7613bfef78f9df43`, `a283b10c2fb4d69f`, `3f66f1c03c6aea0f`, `ec50838926b5e431`, `4b8f1e3e85c8788d`, `157579626cca21a2`, `8a30e972f1dd787d`, `21cef6ff2272d9d2`, `d9f6030578e53e31`, `9dd9946587b8f952`, `eba3fa6d6fc1f241`, `abf59f97e30971ca`, `76ceca2628d45fe6`, `182e15e779d7a982`, `74605903923821c7`, `cb9c718d1d5ff9ba`, `0b751a289a87a5fa`, `de83d3cd6b134d66`, `d6b74aa99521e47e`, `b08c7be1df1784ce`, `6087cdd9593c95e1`, `4a877b855792fcf7`.
+
 ## Admin `SupportTicketController` (`app/Http/Controllers/Api/Admin/SupportTicketController.php`)
 
 - **`index()` envelope + ordering** (`~18–22`; report `tests/coverage/20260428_2310.txt` ~59827–59835, e.g. `9d3651e520d7189d` `RemoveArrayItem` on `'data'`).

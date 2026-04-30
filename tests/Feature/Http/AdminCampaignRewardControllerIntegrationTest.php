@@ -116,9 +116,12 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
         ])
             ->assertCreated()
             ->assertJsonPath('title', 'New reward')
+            ->assertJsonPath('description', 'Full text')
             ->assertJsonPath('donation_amount_cents', 3200)
             ->assertJsonPath('quantity_available', 10)
-            ->assertJsonPath('is_active', true);
+            ->assertJsonPath('is_active', true)
+            ->assertJsonPath('campaign_id', $campaign->id)
+            ->assertJsonMissingPath('error');
 
         $this->assertDatabaseHas('campaign_rewards', [
             'campaign_id' => $campaign->id,
@@ -189,7 +192,7 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
 
         $this->getJson($this->rewardMemberUrl($campaignA, $rewardOnB))
             ->assertNotFound()
-            ->assertJsonPath('error', 'Reward does not belong to this campaign');
+            ->assertExactJson(['error' => 'Reward does not belong to this campaign']);
     }
 
     public function test_update_persists_changes_for_matching_campaign(): void
@@ -212,6 +215,8 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
             'is_active' => false,
         ])
             ->assertOk()
+            ->assertJsonPath('id', $reward->id)
+            ->assertJsonPath('campaign_id', $campaign->id)
             ->assertJsonPath('title', 'Renamed')
             ->assertJsonPath('is_active', false)
             ->assertJsonPath('donation_amount_cents', 900);
@@ -241,7 +246,7 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
 
         $this->putJson($this->rewardMemberUrl($campaignA, $rewardOnB), ['title' => 'Hijack'])
             ->assertNotFound()
-            ->assertJsonPath('error', 'Reward does not belong to this campaign');
+            ->assertExactJson(['error' => 'Reward does not belong to this campaign']);
 
         $this->assertDatabaseHas('campaign_rewards', [
             'id' => $rewardOnB->id,
@@ -288,7 +293,7 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
 
         $this->deleteJson($this->rewardMemberUrl($campaignA, $rewardOnB))
             ->assertNotFound()
-            ->assertJsonPath('error', 'Reward does not belong to this campaign');
+            ->assertExactJson(['error' => 'Reward does not belong to this campaign']);
 
         $this->assertDatabaseHas('campaign_rewards', ['id' => $rewardOnB->id]);
     }
