@@ -2234,3 +2234,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `logged` middleware `except` list is exactly `['autocomplete']`
     - `logged.optional` middleware `only` list is exactly `['autocomplete']`
   - Mutant IDs: `3287c71431a84354`, `f3df9f4d30bca0e3`, `d2d0058f294666c0`.
+
+## AuthController (`app/Http/Controllers/Api/v1/AuthController.php`)
+
+- **Auth middleware and client-config contract** (`__construct` + `_getConfig()` lines 28-64 in `tests/coverage/20260428_2310.txt`).
+  - Cause: authentication endpoint behavior was covered, but two contract surfaces were still under-specified: constructor middleware scope for protected actions, and full client-config mapping/exclusion semantics (including cordova/non-cordova banner field switching and excluded backend-only keys).
+  - Fix: extended `tests/Feature/Http/AuthControllerApiTest.php` with:
+    - `test_constructor_registers_logged_middleware_for_logout_and_retoken_only`
+    - `test_get_config_uses_non_cordova_banner_values_by_default`
+    - expanded existing config assertions to require excluded keys are absent and all banner variants map correctly in both cordova and non-cordova requests
+  - Mutant IDs: `e00e4f81a6bf2df1`, `ce0bb53f780c5983`, `5728fb0b63843b2c`, `8422e52f9a6d765d`, `ab57889e92d7181a`, `105749d67085b274`, `66a6aae3113a9baa`, `3dce1227c281770f`, `e2d3566354cd7ddf`, `b597844b620c8476`, `d3d9fbf2530e71cf`, `cc584ed88ab9b5ae`, `10b2403cbd7c606c`, `920c1f9d950cd09e`, `2e770b2c01379af6`, `a4352971bfe9085b`, `8dab81b550357160`, `6bada9b3a1fef48a`, `e62e4d0819fbaf19`, `b259ec617983065e`, `ba566582f26e8cca`.
