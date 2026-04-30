@@ -1194,6 +1194,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_to_email_and_to_string_use_trip_destination_when_present` now also asserts push URL is exactly `/trips/{tripId}` (and email URL includes `{tripId}` under configured base URL).
   - Mutant IDs: `e0356e0f67ac7b8c`, `89b9f7e715196eb0`, `88f6049c673ca384`.
 
+## `AutoCancelRequestIfRequestLimitedNotification` (`app/Notifications/AutoCancelRequestIfRequestLimitedNotification.php`)
+
+- **Channels + payload metadata contract** (`via` list and `toEmail()` / `toPush()` envelope keys; report UNTESTED/UNCOVERED ~67585–67679).
+  - Cause: existing tests validated destination text and fallback path, but did not pin channel entries and metadata keys, so `RemoveArrayItem` mutants on channels and payload metadata survived.
+  - Fix: `Tests\Unit\Notifications\AutoCancelRequestIfRequestLimitedNotificationTest` now asserts exact `getVia()` channels, verifies `toEmail()` includes `name_app` and `domain`, and checks `toPush()` includes the fixed image key.
+  - Mutant IDs: `3a0e29f299bf4eec`, `ed078bf12bc1e6e2`, `eb5973d5ba5e4600`, `e18a40ea1acabdd8`, `93c82203871a1c63`, `2200e75909509e85`.
+
+- **Trip URL composition when trip exists** (`toPush()`/`toEmail()` URL concat around trip id; report UNTESTED ~67621, ~67657, ~67668).
+  - Cause: no positive assertion for `/trips/{id}` left concat mutants (`ConcatRemoveRight` / `ConcatSwitchSides`) and empty-suffix mutation under-constrained.
+  - Fix: `test_to_email_and_to_string_use_trip_destination_when_present` now asserts both email URL and push URL include the exact trip id under configured base URL.
+  - Mutant IDs: `d6773c261f189342`, `6d6c1c4dd9b09a75`, `9c9e70bb13c4c552`.
+
 ## `FriendRequestNotification` (`app/Notifications/FriendRequestNotification.php`)
 
 - **Delivery channels and envelope keys** (`via` list and payload metadata in `toEmail()` / `toPush()`; report RUN ~6307 and UNTESTED/UNCOVERED ~65887–65947).
