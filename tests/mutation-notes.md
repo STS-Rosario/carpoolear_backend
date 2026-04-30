@@ -1659,6 +1659,18 @@ This file tracks mutants killed during the current hardening session, with the r
 
 - **Error paths** (`show` / `create` validation / duplicate car): `GET api/cars/{id}` for another user’s car or a missing id → `422` + `Could not found car.`; invalid body → `422`; second `POST` when `CarsManager` rejects duplicate ownership → `422`—these pin the existing `if (! $car)` / `if (! $result)` branches without coupling to internal error arrays beyond status and message.
 
+## `CarsManager` (`app/Services/Logic/CarsManager.php`)
+
+- **Duplicate-car error payload and scoped update uniqueness contract** (`create()` duplicate branch and `validator()` update rule composition; report `RUN` ~8323 survivors around lines 33/44).
+  - Cause: tests asserted duplicate rejection but not the full error payload (`message` key), and did not explicitly assert update uniqueness still rejects a patente used by another car of the same user.
+  - Fix: added assertions for duplicate error `message`, plus `test_validator_update_rejects_patente_used_by_same_user_other_car` to pin per-user scoped uniqueness during updates.
+  - Mutant IDs: `bb0bf37a102a9f89`, `0ac9d6aa317d9728`.
+
+- **Update/show/delete failure and ownership scalar-equivalence behavior** (`update()` validation-fail branch, `show()` owner comparison, `delete()` repo-fail / not-found branches; report survivors around lines 71/82/91/107/112).
+  - Cause: prior tests covered happy paths and simple missing-id cases, but did not pin validation errors on update failures, value-based owner checks across scalar id types, or repository delete failure returning `can_delete_car`.
+  - Fix: added tests for invalid update payload error propagation, owner check with equivalent `string`/`int` ids, and delete failure branch using a mocked repository that returns `false` from `delete()`.
+  - Mutant IDs: `5c54c12ce1eae4e1`, `9e8b317e2ab7ec4f`, `a2323900408e799f`, `7eb659a30afcc28b`, `c4270b5c44a4b906`, `27d9a0e7423de0fe`.
+
 ## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
 
 - **Constructor middleware** (`__construct()` ~24–25; report ~42192–42216, e.g. `8ed44639c8d9f9bc` / `e0d9f7290643afcb` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except(['login'])`, `75cd57e29108ce0c` on `logged.optional` `only('login')`).
