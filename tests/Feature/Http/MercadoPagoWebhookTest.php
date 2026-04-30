@@ -156,6 +156,20 @@ class MercadoPagoWebhookTest extends TestCase
             ->assertJson(['error' => 'Invalid request']);
     }
 
+    public function test_payment_created_missing_query_data_id_is_rejected_even_with_signature_headers(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $headers = $this->paymentCreatedSignatureHeaders('123', 'req-missing-query-data-id', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago', [
+            'action' => 'payment.created',
+            'data_id' => '123',
+        ], $headers)
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid request']);
+    }
+
     public function test_payment_created_when_provider_returns_no_payment_returns_server_error(): void
     {
         config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
@@ -168,6 +182,21 @@ class MercadoPagoWebhookTest extends TestCase
         $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
             'action' => 'payment.created',
             'data_id' => (string) $paymentId,
+        ], $headers)
+            ->assertStatus(500)
+            ->assertJson(['error' => 'Could not fetch payment']);
+    }
+
+    public function test_payment_created_with_valid_signature_but_missing_body_data_id_returns_fetch_error(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $queryDataId = 884423;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $queryDataId, 'req-missing-body-id', 'wh-secret-test');
+
+        // Controller reads payment id from body data_id, so with body missing it tries fetching null and fails.
+        $this->postJson('/webhooks/mercadopago?data_id='.$queryDataId, [
+            'action' => 'payment.created',
         ], $headers)
             ->assertStatus(500)
             ->assertJson(['error' => 'Could not fetch payment']);
@@ -433,5 +462,46 @@ class MercadoPagoWebhookTest extends TestCase
         ]);
 
         $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
+    }
+
+    public function test_payment_created_for_trip_sellado_persists_mercadopago_metadata_fields(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => 0,
+            'state' => Trip::STATE_PENDING_PAYMENT,
+        ]);
+
+        $paymentId = 55001134;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $paymentId, 'req-sellado-metadata', 'wh-secret-test');
+
+        $external = $this->hashedSelladoExternalReference($trip->id);
+        $this->stubMercadoPagoPayments([
+            $paymentId => $this->mercadoPagoPaymentPayload($external, $paymentId),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
+            'action' => 'payment.created',
+            'data_id' => (string) $paymentId,
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $attempt = PaymentAttempt::query()->where('payment_id', $paymentId)->firstOrFail();
+        $this->assertSame(PaymentAttempt::STATUS_COMPLETED, $attempt->payment_status);
+        $this->assertIsArray($attempt->payment_data);
+        $this->assertArrayHasKey('status', $attempt->payment_data);
+        $this->assertArrayHasKey('status_detail', $attempt->payment_data);
+        $this->assertArrayHasKey('amount', $attempt->payment_data);
+        $this->assertArrayHasKey('currency_id', $attempt->payment_data);
+        $this->assertArrayHasKey('payment_method_id', $attempt->payment_data);
+        $this->assertArrayHasKey('payment_type_id', $attempt->payment_data);
+        $this->assertArrayHasKey('external_reference', $attempt->payment_data);
+        $this->assertArrayHasKey('date_created', $attempt->payment_data);
+        $this->assertArrayHasKey('date_approved', $attempt->payment_data);
+        $this->assertArrayHasKey('date_last_updated', $attempt->payment_data);
     }
 }
