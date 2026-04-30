@@ -868,3 +868,31 @@ This file tracks mutants killed during the current hardening session, with the r
 - **`update()` / `friends()`** (~75–106; report ~42456–42516, e.g. `94b8ad80efa2fb1c` on `installProvider`, `b633099397824454` / `070c51a99d42a529` on `if (! $ret)` for `updateProfile`, parallel cluster for `makeFriends`).
   - Cause: authenticated paths were not covered under HTTP; unknown provider classes only raised `BindingResolutionException`, which was not caught (only `\ReflectionException`), so behaviour differed from the intended “provider not supported” handling.
   - Fix: tests assert `200` and JSON primitive `"OK"` for `update`/`friends` when the token matches the linked account; `catch (\ReflectionException|BindingResolutionException $e)` on `login` returns `401` JSON, and the same exception types on `update`/`friends` map to `ExceptionWithErrors('provider not supported')`. `TestSocialProvider::getUserData` forwards `description` when present so `updateProfile` can change an allowlisted field observable in the DB.
+
+## RatingController (`app/Http/Controllers/Api/v1/RatingController.php`)
+
+- **Constructor middleware** (`__construct()` ~20–21; report ~42528–42576, e.g. `f39fad06752f81dc` / `0ff64d9344f5582f` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except([…])`, `d8e60e9f65d2233a` / `ad679d17dd3062d8` / `3db96a5488df3840` on `logged.optional` `only([…])`).
+  - Cause: `tests/Feature/Http/RatingApiTest.php` mocked `RatingManager`, so unauthenticated requests never hit real `UserLoggin` / `AuthOptional` stacks; stripping `middleware('logged')` or `logged.optional` stayed green.
+  - Fix: integration-style `RatingApiTest` calls `GET api/users/ratings?page_size=10` and `POST api/trips/{id}/reply/{user}` without auth → `401` + `Unauthorized.`; optional-auth routes are exercised with real `RatingManager` + DB.
+
+- **`ratings()`** (~26–44; report ~42588, e.g. `d59dc33ce1bb6f08` `AlwaysReturnNull` on `paginator`).
+  - Cause: mocked HTTP tests never asserted the Fractal paginated envelope for real `getRatings` + `RatingTransformer` output.
+  - Fix: authenticated listing with `page_size` and a persisted `rating` row (`available = 1`, `user_id_to` = viewer) asserts a non-empty `data` array containing that rating’s `id`; `GET api/users/{id}/ratings?page_size=10` pins the “view another user’s ratings” branch (`UsersManager::show` + `getRatings`).
+
+- **`pendingRate()`** (~47–63; report ~42600, e.g. `59d2813374437302` `AlwaysReturnNull` on `collection`).
+  - Cause: guest path called `getPendingRatings($hash)` (expects a `User`), so hash-based pending mail links could not be covered reliably; `AlwaysReturnNull` on `collection()` was never tied to a real JSON body.
+  - Fix: controller now calls `getPendingRatingsByHash($hash)` for guests; tests assert `GET api/users/ratings/pending` without auth → `422` `Hash not provided`, and `?hash=…` returns `200` with `data` containing the pending row.
+
+- **`rate()` guest branch** (~66–86; report ~42612 `e0d0322692c526e3` `IfNegated` on `if ($me)`, plus ~42624–42636 `c4f5dbf6825f35cc` / `29c868d3c3af57c7` on the success JSON).
+  - Cause: guest flow passed `$me` and the hash into `rateUser` in the wrong slots (`rateUser($me, $hash, …)`), so the hash never reached `getRate` as intended and the `if ($me)` branch vs `hash` branch was effectively untested under HTTP.
+  - Fix: guest requests use `rateUser($hash, $userId, $tripId, $request->all())` (hash + rated user id + trip); tests assert `POST …/rate/{userId}?hash=…` → `200` + `{"data":"ok"}` and DB `voted`, and `POST` without hash → `422` `Hash not provided`.
+
+- **`replay()`** (~89–101; report ~42648–42659, e.g. `915162bec6d4f9fd` `RemoveArrayItem`, `a39fcb3ea49ea6bf` `AlwaysReturnNull` on `['data' => 'ok']`).
+  - Cause: mocked tests never asserted the literal success envelope or the authenticated-only gate beyond middleware.
+  - Fix: `POST api/trips/{trip}/reply/{voter}` as the rated user persists `reply_comment` and returns exact `{"data":"ok"}`; a row that already has `reply_comment_created_at` → `422` `Could not replay user.`.
+
+## RatingManager (`app/Services/Logic/RatingManager.php`) — supporting fixes for rating HTTP flow
+
+- **`getRate()` hash path** (~36–55): in-memory `Collection::where('user_to_id', …)` used a **non-existent column name** (schema is `user_id_to`), so guest/hash resolution never matched a row; the path also risked reading `$rate->voted` when `$rate` was null.
+  - Cause: behaviour could not match production DB; HTTP tests for guest rating stayed red until the query matched `user_id_to` and null was handled before property access.
+  - Fix: resolve hash + trip + rated user via `Rating::query()->where('voted_hash', …)->where('user_id_to', …)` and early `return null` when no row exists; `Tests\Unit\Services\Logic\RatingManagerTest` now expects a returned `Rating` for a valid hash (replacing the old “throws on null” expectation) and adds `test_get_rate_with_hash_returns_null_when_no_row_matches`.
