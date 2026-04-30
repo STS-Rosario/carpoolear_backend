@@ -170,4 +170,26 @@ class BadgeResourceTest extends TestCase
         $response->assertJsonPath('data.image_path', null);
         $response->assertJsonPath('data.rules.type', 'carpoolear_member');
     }
+
+    public function test_destroy_returns_no_content_and_removes_badge(): void
+    {
+        $this->actingAs($this->admin(), 'api');
+        $this->withoutMiddleware(\STS\Http\Middleware\UserAdmin::class);
+
+        $slug = 'resource-delete-'.uniqid();
+        $created = $this->postJson('api/admin/badges', [
+            'title' => 'To remove',
+            'slug' => $slug,
+            'rules' => [
+                'type' => 'monthly_donor',
+            ],
+        ])->assertCreated();
+
+        $id = (int) $created->json('data.id');
+
+        $this->deleteJson("api/admin/badges/{$id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('badges', ['id' => $id]);
+    }
 }
