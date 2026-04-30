@@ -6,16 +6,44 @@ use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Queue;
+use Mockery;
+use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
+use STS\Services\Logic\DeviceManager;
+use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class AuthControllerApiTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->withoutMiddleware(ThrottleRequests::class);
+    }
+
+    public function test_constructor_registers_logged_middleware_for_logout_and_retoken_only(): void
+    {
+        $controller = new AuthController(
+            Mockery::mock(UsersManager::class),
+            Mockery::mock(DeviceManager::class)
+        );
+
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+
+        $this->assertNotNull($logged);
+
+        $loggedOptions = is_array($logged) ? ($logged['options'] ?? []) : ($logged->options ?? []);
+        $this->assertSame(['logout', 'retoken'], $loggedOptions['only'] ?? []);
     }
 
     public function test_get_config_returns_public_client_configuration_json(): void
@@ -35,6 +63,14 @@ class AuthControllerApiTest extends TestCase
         $this->assertArrayHasKey('identity_validation_manual_qr_enabled', $response->json());
         $this->assertIsBool($response->json('identity_validation_manual_qr_enabled'));
         $this->assertArrayNotHasKey('qr_payment_pos_external_id', $response->json());
+        $this->assertArrayNotHasKey('donation_month_days', $response->json());
+        $this->assertArrayNotHasKey('donation_trips_count', $response->json());
+        $this->assertArrayNotHasKey('donation_trips_offset', $response->json());
+        $this->assertArrayNotHasKey('donation_trips_rated', $response->json());
+        $this->assertArrayNotHasKey('donation_ammount_needed', $response->json());
+        $this->assertArrayNotHasKey('banner_url', $response->json());
+        $this->assertArrayNotHasKey('banner_image', $response->json());
+        $this->assertArrayNotHasKey('identity_validation_new_users_date', $response->json());
     }
 
     public function test_get_config_uses_cordova_banner_urls_when_old_webview_headers_present(): void
@@ -42,6 +78,12 @@ class AuthControllerApiTest extends TestCase
         config([
             'carpoolear.banner_url' => 'https://banners.example/app',
             'carpoolear.banner_url_cordova' => 'https://banners.example/cordova',
+            'carpoolear.banner_url_mobile' => 'https://banners.example/app-mobile',
+            'carpoolear.banner_url_cordova_mobile' => 'https://banners.example/cordova-mobile',
+            'carpoolear.banner_image' => 'app-image.png',
+            'carpoolear.banner_image_cordova' => 'cordova-image.png',
+            'carpoolear.banner_image_mobile' => 'app-image-mobile.png',
+            'carpoolear.banner_image_cordova_mobile' => 'cordova-image-mobile.png',
         ]);
 
         // OldCordovaAppHelper reads superglobals (same as production PHP SAPI), not only the Request bag.
@@ -69,6 +111,31 @@ class AuthControllerApiTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('banner.url', 'https://banners.example/cordova');
+        $response->assertJsonPath('banner.url_mobile', 'https://banners.example/cordova-mobile');
+        $response->assertJsonPath('banner.image', 'cordova-image.png');
+        $response->assertJsonPath('banner.image_mobile', 'cordova-image-mobile.png');
+    }
+
+    public function test_get_config_uses_non_cordova_banner_values_by_default(): void
+    {
+        config([
+            'carpoolear.banner_url' => 'https://banners.example/app',
+            'carpoolear.banner_url_cordova' => 'https://banners.example/cordova',
+            'carpoolear.banner_url_mobile' => 'https://banners.example/app-mobile',
+            'carpoolear.banner_url_cordova_mobile' => 'https://banners.example/cordova-mobile',
+            'carpoolear.banner_image' => 'app-image.png',
+            'carpoolear.banner_image_cordova' => 'cordova-image.png',
+            'carpoolear.banner_image_mobile' => 'app-image-mobile.png',
+            'carpoolear.banner_image_cordova_mobile' => 'cordova-image-mobile.png',
+        ]);
+
+        $response = $this->getJson('api/config');
+
+        $response->assertOk();
+        $response->assertJsonPath('banner.url', 'https://banners.example/app');
+        $response->assertJsonPath('banner.url_mobile', 'https://banners.example/app-mobile');
+        $response->assertJsonPath('banner.image', 'app-image.png');
+        $response->assertJsonPath('banner.image_mobile', 'app-image-mobile.png');
     }
 
     public function test_login_with_invalid_credentials_returns_401(): void
