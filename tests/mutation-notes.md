@@ -1419,6 +1419,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now sets config and asserts `name_app` and `domain` along with reset URL/token behavior.
   - Mutant IDs: `eeb54f354e08d6d2`, `0ee36a74ac31f8dc`.
 
+## `DummyNotification` (`app/Notifications/DummyNotification.php`)
+
+- **Channel list contract** (`via` array; report RUN ~7003 and UNCOVERED ~67561–67573).
+  - Cause: tests asserted email/text/extras behavior but did not pin the `via` array, so `RemoveArrayItem` mutants on `DatabaseChannel`/`MailChannel` survived.
+  - Fix: `Tests\Unit\Notifications\DummyNotificationTest` now asserts `getVia()` is exactly `[DatabaseChannel::class, MailChannel::class]`.
+  - Mutant IDs: `277a17cb78db227a`, `df82baf8af57be87`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
