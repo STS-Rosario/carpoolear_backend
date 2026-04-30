@@ -2101,3 +2101,10 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_transform_includes_trip_and_return_trip_when_coordinate_module_enabled`
     These lock base keys, private/default title-image behavior, unread semantics, latest message payload, users list entries, and trip/return-trip inclusion when module flag is enabled.
   - Mutant IDs: `1bff9f4c33d95847`, `7d86d46daf119c1e`, `04c6003ade4ff494`, `18a2853d33969c42`, `9634249b331912cf`, `bbe6a65c62442d51`, `623fde324ee1910a`, `9166e2d879a54b64`, `a64bf4216f140712`, `343c1be62c09328a`, `69679d2c5b405ea4`, `62d3e3f626af1c7f`, `f4be77fb4e28f855`, `db73e38e56838cf4`, `e618124bede2c973`, `b8672564974faa24`, `ec7e276cd739bdc6`, `645160071fc14cba`, `5a4fc49dcda742e6`, `6d247296a0c87862`.
+
+## ProfileTransformer (`app/Transformers/ProfileTransformer.php`)
+
+- **Public profile payload contract in `transform()`** (base profile array fields around lines 43–57 in `tests/coverage/20260428_2310.txt`).
+  - Cause: there was no dedicated unit test for this transformer, so key-removal mutants on core profile fields and the `last_connection` fallback branch were surviving.
+  - Fix: added `tests/Unit/Transformers/ProfileTransformerTest.php::test_transform_includes_expected_public_profile_fields_and_last_connection_fallback`, asserting the presence of core profile keys and verifying `last_connection` resolves to an empty string when the user has never connected.
+  - Mutant IDs: `93bf7bc74a8d372f`, `01f14caad8ec05d5`, `166d2a5782b0c888`, `dc6976eb912202bf`, `646a8b375e9c11f9`, `e22168c633911689`, `2b60c39b8d5362ee`, `632b28b79e49e06a`, `5476b8b5f9d5f664`, `3d7303ee8a32d0c0`, `f683d338367d62ea`, `82a1aa4734e72d42`, `b18acae443c04556`.
