@@ -2108,3 +2108,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: there was no dedicated unit test for this transformer, so key-removal mutants on core profile fields and the `last_connection` fallback branch were surviving.
   - Fix: added `tests/Unit/Transformers/ProfileTransformerTest.php::test_transform_includes_expected_public_profile_fields_and_last_connection_fallback`, asserting the presence of core profile keys and verifying `last_connection` resolves to an empty string when the user has never connected.
   - Mutant IDs: `93bf7bc74a8d372f`, `01f14caad8ec05d5`, `166d2a5782b0c888`, `dc6976eb912202bf`, `646a8b375e9c11f9`, `e22168c633911689`, `2b60c39b8d5362ee`, `632b28b79e49e06a`, `5476b8b5f9d5f664`, `3d7303ee8a32d0c0`, `f683d338367d62ea`, `82a1aa4734e72d42`, `b18acae443c04556`.
+
+## UpdateConnection Middleware (`app/Http/Middleware/UpdateConnection.php`)
+
+- **Constructor environment guard and exception logging contract** (`__construct` line 30 and `handle` catch block line 56 in `tests/coverage/20260428_2310.txt`).
+  - Cause: middleware tests exercised request flow but did not explicitly assert that testing environment leaves JWT auth unset, and did not lock the warning log message emitted when token parsing fails.
+  - Fix: extended `tests/Unit/Http/Middleware/UpdateConnectionTest.php` to assert `auth` remains unset in testing mode and to verify `Log::warning('UpdateConnection middleware error: ' . $e->getMessage())` is called when authentication throws.
+  - Mutant IDs: `5abf9eb0d21e9109`, `2213389f1c611fec`, `df189085c1ff367d`, `421b23a92718772f`, `bfdd8393e5ea397e`, `30a4d363c9f8da8f`.
