@@ -1013,6 +1013,14 @@ This file tracks mutants killed during the current hardening session, with the r
     These assert no passenger row/event side effects and stable error contracts.
   - Mutant IDs: `58facf184867f3de`, `3e5b706169bcaed5`, `9601f6da87958d26`, `dcaea794ad350599`, `63b7d0f13a2601ca`, `0dd7b68e0d44b83a`, `871c66f6cbd5414c`, `908299bb7890ab93`.
 
+- **`sendFullTripMessage` feature gate + full-trip threshold** (`sendFullTripMessage()` around lines 211–217; report block around `tests/coverage/20260428_2310.txt` ~83935+).
+  - Cause: tests previously covered accept/reject/cancel request flows but did not assert the dedicated full-trip message policy: only when the module is enabled, driver allows it, and accepted passengers fill available seats.
+  - Fix: added tests:
+    - `test_send_full_trip_message_calls_conversation_manager_when_module_enabled_and_trip_is_full`
+    - `test_send_full_trip_message_skips_when_module_is_disabled`
+    These assert observable collaboration (`ConversationsManager::sendFullTripMessage`) based on business inputs, without coupling to logging internals.
+  - Mutant IDs: `6222763e6a15d9f7`, `af606a10894ff5b0`, `80ad96c91d90fbed`, `afa23086c3c6e70b`, `afa98494a36f520d`, `244faed767135a9d`, `4e7ba0f85c442a27`, `6ea51e480cb02561`, `d84c1528473a624a`, `059139180cf4a6d0`, `853b4666b99a9d9e`, `efe258ed7bf6af1a`.
+
 ## CampaignRewardController (`app/Http/Controllers/Api/v1/CampaignRewardController.php`)
 
 - **Reward must match campaign** (`purchase()` ~23–24; report `tests/coverage/20260428_2310.txt` ~50767–50827, e.g. `ed58202f2968321d` `IfNegated`, `18ae731ddd647c45` `NotIdenticalToIdentical`, `7a8b5e2c4ebef271` `RemoveEarlyReturn`, `03fe0485e559dd70` `RemoveArrayItem` on the 404 payload).
