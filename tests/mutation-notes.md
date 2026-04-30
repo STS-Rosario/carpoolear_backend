@@ -2129,3 +2129,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: coverage already validated auth fallback and optional/required authorization behavior, but it did not lock the exact informational log message emitted on JWT parsing failures, allowing concat/remove log-string mutants to survive.
   - Fix: extended `tests/Unit/Http/Middleware/UserLogginTest.php` with `test_jwt_exception_logs_class_and_request_url_context`, asserting the exact `Log::info('JWT Exception: ' . get_class($e) . ' - ' . 'Request URL: ' . $request->url())` output for a runtime exception and concrete request URL.
   - Mutant IDs: `e7fba8795b7902d5`, `ec615cab738e8463`, `bb0b5b9c28a2e29d`, `9bc4c527081a531f`, `0fc09670cbb53529`, `cf94dae7ab6fee7e`, `8cadadf104983c48`, `dc6bb974da4481b3`, `05bf7c2ef0a3b3ea`, `344fa3677c75ab36`, `ddfed16f5f2f8419`, `bf1f1aa5f2c8237b`, `c837e2cfccf1a8a0`.
+
+## BadgeRequest (`app/Http/Requests/BadgeRequest.php`)
+
+- **Authorization null-safety and validation contract coverage** (`authorize()` line 15, `rules()` lines 28-47, and `messages()` lines 60-62 in `tests/coverage/20260428_2310.txt`).
+  - Cause: request behavior was exercised mostly through endpoint flows, but there was no explicit assertion that guest authorization returns `false` without null dereference, and rule/message contracts were not pinned strongly enough for broad array-item removal mutants.
+  - Fix: extended `tests/Feature/Http/BadgeRequestTest.php` with:
+    - `test_authorize_returns_false_for_guest_without_throwing`
+    - `test_rules_and_messages_define_expected_badge_validation_contract`
+    These assert guest-safe authorization and required constraints/messages for title, slug uniqueness, nested rules fields, and conditional donation/campaign requirements.
+  - Mutant IDs: `46b3666037d1a573`, `49401084e47404b8`, `c66e7dea1a45a98e`, `4614cf484cdac84f`, `91c4e9ee97c562e9`, `1ce397bac54a90eb`, `47a043ad6b9eece1`, `c1c0a81ec831e85c`, `81a96d30474ba74e`, `0a11fea040f5fe13`, `1f45a33587aab506`, `33286cc7869ae27f`, `ceb266e38b3565e6`, `b16a60c3b72eac6a`, `cb7e80e0a6602801`, `fc433ce8c5ef0c17`, `3e8b6d18b9a76fa9`, `b1378beaf156dc8f`, `63bb76da69855cf9`, `094ff44a9a20a224`, `8b6684f25e6febb9`, `082fa9144f43f6d7`, `6f345c79b114d6cc`, `7b2260b53d622a18`, `b7000c6a85158cef`, `542f2099a168d0fb`.
