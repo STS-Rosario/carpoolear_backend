@@ -281,6 +281,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: listing tests always created a waiting-payment row first.
   - Fix: added `test_get_pending_payment_requests_returns_empty_when_user_has_no_waiting_payment_rows`.
 
+- `PassengersRepository.php` `getPendingRequests` / `getPendingPaymentRequests` eager loads (`~38`, `~56`): `$passengers->with('user')`.
+  - Cause: counts and ids stayed correct without eager loading, so `RemoveMethodCall` on `with('user')` survived under default lazy loading.
+  - Fix: added `test_get_pending_requests_for_trip_eager_loads_user_relation` and `test_get_pending_payment_requests_eager_loads_user_relation`.
+
+- `PassengersRepository.php` `changeRequestState` (`~87–99`): `where('user_id', $userId)` plus criteria loop over pending/waiting branches (`~91–93`).
+  - Cause: single-passenger trips masked removal of the user-id constraint or criteria application when another pending passenger existed on the same trip.
+  - Fix: added `test_accept_request_targets_only_requested_passenger_on_shared_trip`.
+
+- `PassengersRepository.php` `tripsWithTransactions` (`~196–206`): `distinct()` and `with(['user','passenger.trip.user'])`.
+  - Cause: happy-path fixtures used one passenger per trip, so duplicate trip ids from the passenger join and shallow relation graphs did not fail without explicit assertions.
+  - Fix: added `test_trips_with_transactions_returns_one_row_per_trip_when_multiple_passengers_have_payment_status` and `test_trips_with_transactions_eager_loads_declared_closure_relations`.
+
 ## TripRepository (current batch)
 
 - `47a4022bfb577c5a`, `a50255ec77726d09`, `33b99591f429010d`, `7ab8d1032746dbfa`, `c971ded4c0583849`, `dd8743ead8f87fde`, `14701d7b0afa6c43`, `9e6cb9312e8e70ea`, `e0900113fa619282`, `fce18506ce2a3b67`, `2f31f58e34bc7f68`, `bbdfa6dd5309dc76`, `b687fb0c758f9ff7`, `1294a7e0b757765f`, `13bffdc93611a1bd`, `2561f9ba60928e7c`, `aa1ba96b77874b63`, `bb988e6606ef287b`, `64854536d7731d76`, `926f5eb76fa1c5d2`, `ee8770e106619a2a`, `86a3522102bd856b`, `4abda33c3ccae2f5`, `0280f49e5e9aa5f6`, `168a1c682d274fec`, `9332ef5aa60d7c7b`, `726f02044afec66a`, `74f70ee8c58fdc8d`
@@ -506,6 +518,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: happy path added noise rows but always included the expected triple; dropping one `where` could still pass.
   - Fix: added `test_get_rating_returns_null_when_no_row_matches_triple`.
 
+- `RatingRepository.php` `getRating` (`~13–17`): `where('trip_id', $trip_id)` when the same `user_id_from` / `user_id_to` pair has multiple ratings.
+  - Cause: distractor rows used mismatched peers or trips, but two legitimate ratings for the same pair across different trips still let a dropped trip filter survive (`first()` ambiguity).
+  - Fix: added `test_get_rating_matches_trip_id_when_pair_rates_multiple_trips`.
+
 - `RatingRepository.php` `update` (`~102–104`): `return $rateModel->save()`.
   - Cause: only successful saves were asserted.
   - Fix: added `test_update_returns_false_when_save_fails`.
@@ -531,6 +547,17 @@ This file tracks mutants killed during the current hardening session, with the r
 - `FileRepository.php` `delete` (`~85–88`): missing file path under normalized folder.
   - Cause: tests only deleted existing files; idempotent delete behavior was not asserted.
   - Fix: added `test_delete_does_not_throw_when_file_missing`.
+
+- `FileRepository.php` `uploadsFolder` testing branch (`~18–23`): `rtrim(sys_get_temp_dir(), …)` + `carpoolear-test-uploads` + normalized tail.
+  - Cause: file IO tests proved writes under the resolved folder but did not assert the **prefix** of that folder; concat/rtrim mutants could alter the testing sandbox path without failing shallow assertions.
+  - Fix: added `test_resolve_upload_folder_in_testing_starts_under_sys_temp_namespace`.
+
+## AppServiceProvider
+
+- `AppServiceProvider.php` `register()` (`~18–19`): `bind(Social::class, SocialManager::class)` and `singleton(WebpayNormalFlowClient::class, TransbankSdkWebpayNormalFlowClient::class)`.
+  - Cause: bindings were not asserted directly; `RemoveMethodCall` on either registration can survive until the container returns unexpected implementations or non-singleton behavior.
+  - Fix: added `Tests\Unit\Providers\AppServiceProviderBindingsTest` (`test_binds_social_contract_to_social_manager`, `test_registers_webpay_normal_flow_client_singleton`).
+  - Mutant operators (Infection log): `RemoveMethodCall` (~lines 18–19).
 
 ## ReferencesRepository
 
