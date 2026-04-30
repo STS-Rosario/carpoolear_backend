@@ -1950,3 +1950,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_mass_assignment_persists_all_fillable_fields`
     These assert the exact fillable contract and verify all fillable keys persist through `create()`.
   - Mutant IDs: `d8af4dcd72dfc2b2`, `d771b8f164b719b9`, `1f5f76febfc98389`, `89a4678326e89709`, `70d3001e0fbc3550`.
+
+## Badge (`app/Models/Badge.php`)
+
+- **Mass-assignment contract for badge definition fields** (`$fillable` lines 11–16 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing tests covered casts and relationships, but they didn’t pin the complete fillable contract; `RemoveArrayItem` mutants on badge attributes survived.
+  - Fix: added to `tests/Unit/Models/BadgeTest.php`:
+    - `test_fillable_contains_expected_mass_assignable_attributes`
+    - `test_mass_assignment_persists_all_fillable_fields`
+    These lock the explicit fillable list and verify all badge definition fields persist via `create()`.
+  - Mutant IDs: `e2fa699671b0aa92`, `baf6bc9ab402982a`, `3cf19009af3ecf9a`, `7a66c0e065209a7c`, `dcbe52a12ffd3217`, `644369ccdea1202f`.
