@@ -104,6 +104,30 @@ class PreventMessageEmailTest extends TestCase
         $this->assertFalse($result);
     }
 
+    public function test_handle_returns_false_when_read_state_is_string_one_under_loose_comparison(): void
+    {
+        $conversation = Mockery::mock(Conversation::class);
+        $user = Mockery::mock(User::class);
+
+        $repo = Mockery::mock(ConversationRepository::class);
+        $repo->shouldReceive('getConversationReadState')
+            ->once()
+            ->with($conversation, $user)
+            ->andReturn('1');
+
+        $messages = (object) ['conversation' => $conversation];
+        $notification = $this->newNewMessageNotification($messages);
+
+        $listener = new PreventMessageEmail($repo);
+        $result = $listener->handle(new NotificationSending(
+            $notification,
+            $user,
+            new MailChannel
+        ));
+
+        $this->assertFalse($result, 'Loose != must treat string "1" like integer 1 so email stays suppressed');
+    }
+
     public static function channelWithNonOneReadStateProvider(): array
     {
         return [
