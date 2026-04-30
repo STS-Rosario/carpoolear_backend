@@ -2,6 +2,7 @@
 
 namespace STS\Services\Logic;
 
+use STS\Contracts\Logic\Social;
 use STS\Contracts\SocialProvider;
 use STS\Models\User as UserModel;
 use STS\Repository\FileRepository;
@@ -9,7 +10,7 @@ use STS\Repository\SocialRepository;
 use STS\Services\UserEditablePropertiesService;
 use Validator;
 
-class SocialManager extends BaseManager
+class SocialManager extends BaseManager implements Social
 {
     protected $friendsRepo;
 
