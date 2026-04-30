@@ -2,93 +2,126 @@
 
 namespace Tests\Feature\Http;
 
-use Tests\TestCase;
-use Mockery as m;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Car;
+use STS\Models\User;
+use Tests\TestCase;
 
 class CarApiTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected $carsLogic;
-
-    public function setUp(): void
+    public function test_car_routes_require_authentication(): void
     {
-        parent::setUp();
-        $this->carsLogic = $this->mock(\STS\Services\Logic\CarsManager::class);
+        $this->getJson('api/cars')->assertUnauthorized()->assertJson(['message' => 'Unauthorized.']);
+        $this->postJson('api/cars', [])->assertUnauthorized()->assertJson(['message' => 'Unauthorized.']);
+        $this->putJson('api/cars/1', [])->assertUnauthorized()->assertJson(['message' => 'Unauthorized.']);
+        $this->deleteJson('api/cars/1')->assertUnauthorized()->assertJson(['message' => 'Unauthorized.']);
     }
 
-    public function tearDown(): void
+    public function test_index_returns_empty_json_array_when_user_has_no_cars(): void
     {
-        m::close();
-        parent::tearDown();
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/cars')
+            ->assertOk()
+            ->assertJson([]);
     }
 
-    protected function parseJson($response)
+    public function test_index_returns_json_array_of_user_cars(): void
     {
-        return json_decode($response->getContent());
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'IDX1',
+            'description' => 'Listed car',
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/cars');
+        $response->assertOk();
+        $payload = $response->json();
+        $this->assertIsArray($payload);
+        $this->assertCount(1, $payload);
+        $this->assertSame('IDX1', $payload[0]['patente']);
     }
 
-    public function testCreate()
+    public function test_create_show_update_delete_lifecycle(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
 
-        $this->carsLogic->shouldReceive('create')->once()->andReturn($car);
+        $create = $this->postJson('api/cars', [
+            'patente' => 'CR1',
+            'description' => 'Compact',
+        ]);
+        $create->assertOk();
+        $create->assertJsonStructure(['data' => ['id', 'patente', 'description', 'user_id', 'trips_count']]);
+        $create->assertJsonPath('data.patente', 'CR1');
+        $create->assertJsonPath('data.description', 'Compact');
 
-        $response = $this->call('POST', 'api/cars/');
-        $this->assertTrue($response->status() == 200);
+        $carId = (int) $create->json('data.id');
+
+        $this->getJson('api/cars/'.$carId)
+            ->assertOk()
+            ->assertJsonPath('data.id', $carId)
+            ->assertJsonPath('data.patente', 'CR1');
+
+        $this->putJson('api/cars/'.$carId, [
+            'patente' => 'CR1U',
+            'description' => 'Updated compact',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.patente', 'CR1U')
+            ->assertJsonPath('data.description', 'Updated compact');
+
+        $this->deleteJson('api/cars/'.$carId)
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertNull(Car::find($carId));
     }
 
-    public function testUpdate()
+    public function test_show_returns_unprocessable_when_car_missing_or_not_owned(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        $owner = User::factory()->create(['active' => true, 'banned' => false]);
+        $other = User::factory()->create(['active' => true, 'banned' => false]);
+        $car = Car::factory()->create(['user_id' => $owner->id, 'patente' => 'OWN1']);
 
-        $this->carsLogic->shouldReceive('update')->once()->andReturn($car);
+        $this->actingAs($other, 'api');
+        $this->getJson('api/cars/'.$car->id)
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not found car.');
 
-        $response = $this->call('PUT', 'api/cars/'.$car->id);
-        $this->assertTrue($response->status() == 200);
+        $this->actingAs($owner, 'api');
+        $this->getJson('api/cars/999999999')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not found car.');
     }
 
-    public function testDelete()
+    public function test_create_returns_unprocessable_when_validation_fails(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
 
-        $this->carsLogic->shouldReceive('delete')->once()->andReturn(true);
-
-        $response = $this->call('DELETE', 'api/cars/'.$car->id);
-        $this->assertTrue($response->status() == 200);
+        $this->postJson('api/cars', [
+            'patente' => '',
+            'description' => '',
+        ])->assertStatus(422);
     }
 
-    public function testShow()
+    public function test_create_returns_unprocessable_when_user_already_has_a_car(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        Car::factory()->create(['user_id' => $user->id, 'patente' => 'HAS1']);
 
-        $this->carsLogic->shouldReceive('show')->once()->andReturn($car);
+        $this->actingAs($user, 'api');
 
-        $response = $this->call('GET', 'api/cars/'.$car->id);
-        $this->assertTrue($response->status() == 200);
-
-        $response = $this->parseJson($response);
-        $this->assertTrue($car->id == $response->data->id);
-    }
-
-    public function testIndex()
-    {
-        $u1 = \STS\Models\User::factory()->create();
-        $car = \STS\Models\Car::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
-
-        $this->carsLogic->shouldReceive('index')->once()->andReturn([$car]);
-
-        $response = $this->call('GET', 'api/cars/');
-        $this->assertTrue($response->status() == 200);
+        $this->postJson('api/cars', [
+            'patente' => 'HAS2',
+            'description' => 'Second car attempt',
+        ])->assertStatus(422);
     }
 }
