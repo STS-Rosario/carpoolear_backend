@@ -2464,3 +2464,59 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: admin ticket integration tests exercised ordering, one reply-with-file path, and a subset of transitions, but many surviving mutants stripped `'data'` wrappers, dropped `with([...])` relation loading keys, skipped reply creation/save/transition/notification side effects, omitted reopen persistence, inverted `Cerrado`-only closed metadata, weakened internal-note null coalescing, or broke the `empty(message_markdown)` vs non-empty branches inside `applyActionStatus()` without failing observable assertions.
   - Fix: extended `tests/Feature/Http/AdminSupportTicketControllerIntegrationTest.php` with HTTP-level contracts (top-level keys are exactly `data` where applicable), `reopen` clearing `closed_at` / `closed_by` and setting `En revision`, explicit empty `attachments` handling, non-`Cerrado` status updates leaving closure fields unset, resolve/close with and without optional messages (reply row count + closed metadata), internal note update with an omitted body key clearing like `null`, and a delivery failure simulation by mocking `NotificationServices::send` to throw while expecting `ExceptionHandler::report` once—proving the reply still persists and returns `200` with a fresh ticket payload.
   - Mutant IDs: `9d3651e520d7189d`, `aa4c55e5d90a050b`, `3ef64ff37c323ae7`, `5b3b9f73d77200a1`, `1c467e38c9f6a645`, `67b8684f8dfd6d9e`, `e49582df2cba57ae`, `f71aabd1807c7e25`, `6ddd7ff6d47a02dc`, `80dad30d3c14daf7`, `c6d584f07c2b24b5`, `da24df0b7a9585f8`, `8a620337b4a785ed`, `26e14ef8ac070bac`, `c6b33c0f5464dcc6`, `46b0e5d9de2531f4`, `5a2f5e019d58d05f`, `7bef2533b37b5fff`, `9d2d600f74edf46d`, `18c31aecc8dc0464`, `10fe199bf4bf6524`, `8d7b3c75b1b98379`, `8f891f4186aee827`, `b3f1a4e2092b11bc`, `a1b7bfd6454b7ffc`, `e9a7be5c6120a487`, `4ad422844e6b1e11`, `7109965abd9450da`, `a2c0a36fc0adbe61`, `1bc7f9a96169e7fc`, `854dba9f4519b46f`, `7aba04c592b5b987`, `7563b7d1c8848bb1`, `5ec5806006fa85bc`, `7a06a05a2836862e`, `4f93546086820a9a`, `d4677d261dbb99d5`, `e625744d77fc3548`, `c6f89d26e7f6bfef`, `522a60b215247360`, `db8d0477e0dcc437`, `e0a52ff4e7bced9f`.
+
+## Eloquent models & transformers (Pest mutation report 2026-04-30)
+
+Re-run Pest mutation / Infection to capture fresh hashes; below records **mutator + location** from the report you pasted until IDs are regenerated.
+
+### `app/Models/Trip.php`
+
+- **`Trip.php#L281` @ `Collection::whereId` runtime + FoF branch**
+  - Cause: `relativeFriends()` returns an `Illuminate\Support\Collection`, so `->whereId($user->id)` was invalid and FoF checks never evaluated `! is_null($fof)`.
+  - Fix: use `->where('id', $user->id)->first()` on that collection; added `TripTest` cases for self, public, friends-only, and FoF (pivot direction aligned with `FriendsRepositoryTest::test_add_accepted_inserts_visibility_for_friend_of_friends_trips`).
+  - Mutant IDs: *(re-run tool — targets survivors on `checkFriendship` lines ~283–293 and FoF OR wiring).*
+
+### `tests/Unit/Models/CarTest.php` → `Car.php#L14` @ `AlwaysReturnNull`
+
+- Cause: `newFactory()` returning `null` would break `Car::factory()` but was not asserted directly.
+- Fix: `test_new_factory_resolves_car_factory_instance` (reflection invokes `newFactory()` and expects `CarFactory`).
+
+### `tests/Unit/Models/ConversationTest.php` → `Conversation.php#L16` @ `AlwaysReturnNull`, `#L33` @ `AlwaysReturnEmptyArray`, `#L34` @ `RemoveArrayItem`
+
+- Cause: factory hook and `casts()` body were not pinned; emptying `casts()` or dropping `deleted_at` could slip without a focused assertion.
+- Fix: `test_new_factory_resolves_conversation_factory_instance`, `test_casts_method_declares_deleted_at_entry`.
+
+### `tests/Unit/Models/PassengerTest.php` → `Passenger.php#L66` @ `RemoveArrayItem`
+
+- Cause: `casts()` merges `trip_id` / `payment_info`; removing one entry could regress without a shape assertion beyond attribute behavior.
+- Fix: `test_casts_method_declares_trip_id_integer_and_payment_info_array`.
+
+### `tests/Unit/Models/TripVisibilityTest.php` → `TripVisibility.php#L21` @ `RemoveMethodCall`
+
+- Cause: deleting only one composite row requires both `user_id` and `trip_id` constraints in `setKeysForSaveQuery`; dropping one `where` could delete every row for the user.
+- Fix: `test_delete_scopes_to_both_user_id_and_trip_id_columns`.
+
+### `tests/Unit/Models/CampaignMilestoneTest.php` → `CampaignMilestone.php#L45` @ `RemoveIntegerCast` / integer nudges
+
+- Cause: fractional progress relied on `(int)` truncation; returning a float could still satisfy loose assertions.
+- Fix: `assertIsInt` on `progress_percentage` in `test_progress_percentage_returns_truncated_integer_value`.
+
+### `tests/Unit/Transformers/MessageTransformerTest.php` → `MessageTransformer.php#L31` @ `EqualToIdentical`
+
+- Cause: `==` between viewer id and `message->user_id` must tolerate numeric string ids; strict `===` would skip `no_of_read`.
+- Fix: `test_transform_treats_numeric_string_message_user_id_as_author_for_no_of_read` (`mergeCasts(['user_id' => 'string'])` + `forceFill`).
+
+### `tests/Unit/Transformers/TripTransformerTest.php` → `TripTransformer.php` @ `RemoveBooleanCast` (L54), `EqualToIdentical` (L71/L73), `ElseIfNegated` / loop mutants (L78–86)
+
+- Cause: `sellado_pending` needed a real boolean type; owner `user_id` comparisons and admin/pending branches and passenger mutation side-effects were under-specified.
+- Fix: `assertIsBool` on `sellado_pending`; `test_transform_owner_branch_matches_numeric_string_trip_user_id`; `test_transform_mutates_pending_passenger_rows_with_request_metadata`; `test_transform_admin_with_pending_request_gets_send_flag_without_owner_inner_branch`.
+
+### `tests/Unit/Transformers/ConversationsTransformerTest.php` → `ConversationsTransformer.php` (config gate L31, empty image L52/L63, user rows L83–85)
+
+- Cause: module flag, default-branch titles/images, and per-user serialization needed observable assertions.
+- Fix: tests for disabled `module_coordinate_by_message`, null peer `image` → `''`, non-private title branch, and `users[]` last_connection / identity fields.
+
+### `tests/Unit/Transformers/ProfileTransformerTest.php` → `ProfileTransformer.php` (boolean casts, self/admin gates)
+
+- Cause: `identity_validated` cast to bool and self/admin-only fields were not asserted strictly enough.
+- Fix: `test_transform_identity_validated_is_strict_boolean`, `test_transform_includes_private_fields_when_viewing_own_profile`, `test_transform_includes_sensitive_fields_for_admin_viewing_other_user`.
