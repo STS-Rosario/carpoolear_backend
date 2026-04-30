@@ -1108,6 +1108,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Listeners\Notification\PreventMessageEmailTest` drives `NotificationSending` with real `MailChannel` / `DatabaseChannel` / `PushChannel` instances (matching production, where `NotificationServices` passes resolved channel objects into `Event::until`). A mocked `ConversationRepository` pins `getConversationReadState` outcomes: push + non–`NewMessageNotification` paths never touch the repo; for `NewMessageNotification`, read state `1` must yield `false` (suppress) and `0` or `2` must yield `true` (allow), for both mail and database channels—covering the `!= 1` boundary and integer nudge mutants.
   - Mutant IDs: `f96f9f4eb07ba994` (`IfNegated` ~33), `6a160972e4574022` (`BooleanOrToBooleanAnd` ~33), `e0523fb6597c91de` / `b5fa16f884ff5a81` (`InstanceOfToTrue` ~33), `3cb13c2d765a61a6` / `cf1b6a15749fadc3` (`InstanceOfToFalse` ~33), `8e16e6789d8cb177` (`InstanceOfToFalse` ~34), `4a11957c5f554cbd` / `4c3862694fb2eb56` / `aae3cc0c3f08c0ca` / `b28974c76ebfe0dc` (`NotEqualToEqual`, `NotEqualToNotIdentical`, `DecrementInteger`, `IncrementInteger` on ~39).
 
+## `UpdateTrip` listener (`app/Listeners/Notification/UpdateTrip.php`)
+
+- **`handle()` accepted-passenger gate + notification wiring** (`handle()` ~27–38; report `tests/coverage/20260428_2310.txt` ~5840–5849 and UNTESTED ~63019–63067).
+  - Cause: the listener was never run under test, so mutants could weaken `$passengers->count() > 0`, drop `setAttribute('trip'|'from', …)`, or skip `notify` without detection.
+  - Fix: `Tests\Unit\Listeners\Notification\UpdateTripListenerTest` seeds real `Trip` / `User` / `Passenger` rows: no rows or only `STATE_PENDING` ⇒ `NotificationServices::send` is never called; one `STATE_ACCEPTED` passenger (not the driver) ⇒ three `send` calls (database + mail + push) with `UpdateTripNotification` carrying the same trip, `from` equal to the trip owner, and recipient equal to that passenger; two accepted passengers ⇒ six sends covering the `foreach` body twice.
+  - Mutant IDs: `c35498373335844e` (`GreaterToGreaterOrEqual` on `> 0`), `ba754a723395b405` / `368dfce652c0e144` (`DecrementInteger` / `IncrementInteger` on the `> 0` comparison), `7d189dcfeb84a8e9` / `59f4a02f4c247015` (`RemoveMethodCall` on `setAttribute('trip')` / `setAttribute('from')`).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
