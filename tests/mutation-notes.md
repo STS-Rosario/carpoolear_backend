@@ -740,6 +740,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added tests for duplicate rejection with empty optional geometry/date, owner acceptance with equivalent scalar ids (`string`/`int`), `model_not_found` on non-owner delete, and `cant_delete_model` when repository `delete` returns false.
   - Mutant IDs: `adfe249adfab4a15`, `d38088d2611a5bba`, `8c85ef77b044b41f`, `cdcb164e95818106`, `6b9b37a01feef1df`, `dcf6376cdd1086de`, `ab290f84bfd422fe`, `8b86db852cdfcf98`, `b357d2d567671f6e`, `dfe39af01c8fc3b0`, `912d4c066b4d3438`, `f07c24817044966d`, `d45b4dfdecbbc811`, `86253f3d47dba1c8`, `5dac330ffb095910`, `1c607efe448a33ff`, `26e1a4e11aab3650`, `71a7ddce4abc6863`, `62d54fe498c12de8`, `f585e6912cde6e63`, `86294367b1d5921e`, `3932860febfe07e3`, `f44c648d53d644c0`, `5aee697ace1e889a`, `929e73e5e9ae4e1a`, `daea7864f1de4247`, `df112dd7ff33f72c`, `eae229a29c598138`, `b7a057dd14f2f1ad`, `e5384086ab326d36`, `0ca492edc392fd1b`, `91130cb815625280`.
 
+## `ConversationsManager` (`app/Services/Logic/ConversationsManager.php`)
+
+- **Conversation defaults and trip-id normalization/update behavior** (`createConversation()`, `findOrCreatePrivateConversation()`, `updateTripId()`, and admin trip getter path; report `RUN` ~8080 with survivors around lines 48, 70, 92, 102, 141).
+  - Cause: tests covered basic create/send flows but did not pin the default empty title, the invalid-trip-id fallback to `null`, nor the branch that updates an existing private conversation with a valid `trip_id`; admin path for `getConversationByTrip` was also not asserted.
+  - Fix: added tests asserting empty title on created conversations, null trip assignment when trip does not exist, trip-id update on existing private conversation, and successful `getConversationByTrip` retrieval for admin users.
+  - Mutant IDs: `450e137638727d58`, `ee97f4c53340e271`, `06b393cf1bd1bd4b`, `1428dc7499739c47`, `035873ed92193a90`, `0b749ff3c9b55d2d`.
+
 ## ManualIdentityValidationController (`app/Http/Controllers/Api/v1/ManualIdentityValidationController.php`)
 
 - `dd32c96b7620c345` (`Line 19: RemoveMethodCall`, report ~44383)
