@@ -2,11 +2,20 @@
 
 namespace Tests\Feature\Http;
 
+use Mockery;
+use STS\Http\Controllers\Api\v1\RoutesController;
 use STS\Models\NodeGeo;
+use STS\Services\Logic\RoutesManager;
 use Tests\TestCase;
 
 class RoutesApiTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function seedNode(string $nameSubstring, string $country, int $importance = 5): NodeGeo
     {
         $node = new NodeGeo;
@@ -26,6 +35,28 @@ class RoutesApiTest extends TestCase
     private function autocompleteUrl(array $query): string
     {
         return 'api/trips/autocomplete?'.http_build_query($query);
+    }
+
+    public function test_constructor_registers_expected_logged_middleware_scopes(): void
+    {
+        $controller = new RoutesController(Mockery::mock(RoutesManager::class));
+
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+        $loggedOptional = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged.optional';
+        });
+
+        $this->assertNotNull($logged);
+        $this->assertNotNull($loggedOptional);
+
+        $loggedOptions = is_array($logged) ? ($logged['options'] ?? []) : ($logged->options ?? []);
+        $optionalOptions = is_array($loggedOptional) ? ($loggedOptional['options'] ?? []) : ($loggedOptional->options ?? []);
+
+        $this->assertSame(['autocomplete'], $loggedOptions['except'] ?? []);
+        $this->assertSame(['autocomplete'], $optionalOptions['only'] ?? []);
     }
 
     public function test_autocomplete_is_reachable_without_authentication(): void
