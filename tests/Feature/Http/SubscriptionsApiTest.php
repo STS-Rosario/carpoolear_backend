@@ -2,95 +2,184 @@
 
 namespace Tests\Feature\Http;
 
-use Tests\TestCase;
-use Mockery as m;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Subscription;
+use STS\Models\User;
+use Tests\TestCase;
 
 class SubscriptionsApiTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected $subscriptionsLogic;
-
-    public function setUp(): void
+    protected function tearDown(): void
     {
-        parent::setUp();
-        $this->subscriptionsLogic = $this->mock(\STS\Services\Logic\SubscriptionsManager::class);
-    }
-
-    public function tearDown(): void
-    {
-        m::close();
+        Carbon::setTestNow();
         parent::tearDown();
     }
 
-    protected function parseJson($response)
+    /**
+     * @return array<string, mixed>
+     */
+    private function validSubscriptionPayload(array $overrides = []): array
     {
-        return json_decode($response->getContent());
+        return array_merge([
+            'trip_date' => '2027-06-15 14:00:00',
+            'from_address' => 'Origin St',
+            'from_lat' => -34.6,
+            'from_lng' => -58.4,
+            'to_address' => 'Dest Ave',
+            'to_lat' => -34.7,
+            'to_lng' => -58.5,
+            'is_passenger' => 'false',
+        ], $overrides);
     }
 
-    public function testCreate()
+    public function test_subscription_endpoints_require_authentication(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        $this->getJson('api/subscriptions')
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthorized.']);
 
-        $this->subscriptionsLogic->shouldReceive('create')->once()->andReturn($model);
+        $this->postJson('api/subscriptions', $this->validSubscriptionPayload())
+            ->assertUnauthorized();
 
-        $response = $this->call('POST', 'api/subscriptions/');
-        $this->assertTrue($response->status() == 200);
+        $this->putJson('api/subscriptions/1', $this->validSubscriptionPayload())
+            ->assertUnauthorized();
+
+        $this->deleteJson('api/subscriptions/1')
+            ->assertUnauthorized();
     }
 
-    public function testUpdate()
+    public function test_create_returns_persisted_subscription_in_data_wrapper(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $this->actingAs($user, 'api');
 
-        $this->subscriptionsLogic->shouldReceive('update')->once()->andReturn($model);
+        $payload = $this->validSubscriptionPayload();
 
-        $response = $this->call('PUT', 'api/subscriptions/'.$model->id);
-        $this->assertTrue($response->status() == 200);
+        $response = $this->postJson('api/subscriptions', $payload);
+
+        $response->assertOk()
+            ->assertJsonStructure(['data' => ['id', 'user_id', 'from_address', 'to_address']])
+            ->assertJsonPath('data.user_id', $user->id)
+            ->assertJsonFragment([
+                'from_address' => 'Origin St',
+                'to_address' => 'Dest Ave',
+            ]);
+
+        $this->assertDatabaseHas('subscriptions', [
+            'id' => $response->json('data.id'),
+            'user_id' => $user->id,
+        ]);
     }
 
-    public function testDelete()
+    public function test_create_with_invalid_payload_returns_unprocessable(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $this->actingAs($user, 'api');
 
-        $this->subscriptionsLogic->shouldReceive('delete')->once()->andReturn(true);
-
-        $response = $this->call('DELETE', 'api/subscriptions/'.$model->id);
-        $this->assertTrue($response->status() == 200);
+        $this->postJson('api/subscriptions', ['trip_date' => 'not-a-date'])
+            ->assertUnprocessable()
+            ->assertJsonStructure(['message', 'errors']);
     }
 
-    public function testShow()
+    public function test_show_returns_owned_subscription(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($user, 'api');
 
-        $this->subscriptionsLogic->shouldReceive('show')->once()->andReturn($model);
-
-        $response = $this->call('GET', 'api/subscriptions/'.$model->id);
-        $this->assertTrue($response->status() == 200);
-
-        $response = $this->parseJson($response);
-        $this->assertTrue($model->id == $response->data->id);
+        $this->getJson("api/subscriptions/{$subscription->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $subscription->id)
+            ->assertJsonPath('data.user_id', $user->id);
     }
 
-    public function testIndex()
+    public function test_update_returns_updated_subscription(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $model = \STS\Models\Subscription::factory()->create(['user_id' => $u1->id]);
-        $this->actingAs($u1, 'api');
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($user, 'api');
 
-        $this->subscriptionsLogic->shouldReceive('index')->once()->andReturn([$model]);
+        $payload = $this->validSubscriptionPayload([
+            'trip_date' => '2027-08-20 09:00:00',
+            'from_address' => 'Updated origin',
+        ]);
 
-        $response = $this->call('GET', 'api/subscriptions/');
-        // $response = $this->parseJson($response);
-        // console_log($response);
-        $this->assertTrue($response->status() == 200);
+        $response = $this->putJson("api/subscriptions/{$subscription->id}", $payload);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $subscription->id)
+            ->assertJsonFragment(['from_address' => 'Updated origin']);
+
+        $this->assertSame(
+            '2027-08-20 09:00:00',
+            $subscription->fresh()->trip_date->format('Y-m-d H:i:s')
+        );
+    }
+
+    public function test_index_returns_active_subscriptions_for_user(): void
+    {
+        $user = User::factory()->create();
+        $active = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'state' => true,
+        ]);
+        Subscription::factory()->create([
+            'user_id' => $user->id,
+            'state' => false,
+        ]);
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/subscriptions');
+
+        $response->assertOk();
+        $rows = $response->json('data');
+        $this->assertIsArray($rows);
+        $ids = array_map(static fn ($row) => (int) ($row['id'] ?? 0), $rows);
+        $this->assertContains($active->id, $ids);
+    }
+
+    public function test_delete_returns_ok_payload_and_removes_subscription(): void
+    {
+        Carbon::setTestNow('2027-03-01 10:00:00');
+        $user = User::factory()->create();
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'state' => true,
+            'trip_date' => '2027-06-10 12:00:00',
+            'from_lat' => -10.0,
+            'from_lng' => -20.0,
+            'to_lat' => -11.0,
+            'to_lng' => -21.0,
+        ]);
+        $this->actingAs($user, 'api');
+
+        $this->deleteJson("api/subscriptions/{$subscription->id}")
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertNull(Subscription::query()->find($subscription->id));
     }
 }
