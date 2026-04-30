@@ -775,3 +775,23 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_data_web_returns_aggregate_dashboard_sections` hits `/data-web` with minimal trip/point/passenger/active-user fixtures and `assertJsonStructure` on every top-level section the API promises.
 
 - **Follow-up:** `moreData()` (~207–253; report tail e.g. `422ac4184ade764a`, `2893731f1a287107`, `349bdb6c87db171d`, …) is not registered in `routes/api.php` / `routes/web.php` in this codebase, so it remains unreachable until a route or an explicit caller is added (or a dedicated unit test resolves the controller).
+
+## MercadoPagoWebhookController (`app/Http/Controllers/Api/v1/MercadoPagoWebhookController.php`)
+
+- **UNTESTED logging / constructor** (`handle()` ~31–47, `MercadoPagoConfig::setAccessToken`; report ~34350–34471, e.g. `a30885fa661110a0` / `72d3cbc178e0a2b9` `RemoveMethodCall`, `RemoveArrayItem` on the `Log::info` context arrays).
+  - Cause: nothing hit `POST /webhooks/mercadopago`, so dropping logging or mutating log payloads never failed CI.
+  - Fix: `Tests\Feature\Http\MercadoPagoWebhookTest` exercises the webhook route end-to-end; primary assertions target HTTP contracts (status + JSON), which pulls execution through `handle()` including the structured log call sites.
+
+- **`payment.created` routing and verification** (~50–77; report ~34483–34783, e.g. `ce98aa85a01e0795` `RemoveEarlyReturn` on `order.processed`, `7524f29376f0d3ca` / `50e85c3812ed8f02` on `verifyMercadoPagoRequest`, `9f29cdb0064871ad` / `d41550cf99f2f008` on `400` payloads, `f9dd2a3f69450b38` on `getMercadoPagoPayment` null path, `9b4c6f3f2a03582d` on missing `data_id`).
+  - Cause: no HTTP tests built valid `x-signature` / `x-request-id` / `data_id` manifests or simulated MP payment payloads, so negated guards and `RemoveArrayItem` on error JSON survived as UNCOVERED.
+  - Fix: tests compute the same HMAC manifest as production (`id:{data_id};request-id:{x-request-id};ts:{ts};`), assert `400` for bad/missing verification, `500` with `Could not fetch payment` when the SDK layer throws (simulated via a stub `MPHttpClient`), and `200` `{"status":"success"}` for ignored actions (`action` ≠ `payment.created` / `order.processed`).
+
+- **External reference branching** (~81–103; report ~34819–35035, e.g. `8361b02d89db3110` on `manual_validation:` / `manual_validation_`, `19d2a0007d479ab0` on `?? ''`, `c2c465d9100008fc` / `fa47f0a08a26a0ea` on `parseExternalReference`, `f86a23389af3be5d` on error JSON).
+  - Cause: `payment.created` flow never reached `handleManualValidationPayment`, unknown-reference `400`, or trip sellado handling under test.
+  - Fix: stubbed MP `GET /v1/payments/{id}` JSON returns `external_reference` for `manual_validation:{id}` (Checkout Pro), for an unknown string (`Unknown payment type`), and for a **hashed** `Sellado de Viaje ID: {tripId}` reference (plain text cannot be used because any `:` triggers the hash parser in `parseExternalReference`); DB assertions cover manual validation `paid` / `payment_id` and trip `payment_attempts` + `state`.
+
+- **`order.processed` (QR / Orders API)** (`handleOrderProcessed()` ~458–506; report continues after `payment.created` cluster, e.g. `494c3d3e9d7dd3f7`-style branches on verification with `$isOrderWebhook = true`, payload `data.external_reference`, `processed` + `accredited`, and early `success` when not paid).
+  - Cause: QR path was never executed with a valid signature and realistic body.
+  - Fix: `orderProcessedSignatureHeaders()` uses `webhook_secret_qr_payment` and query `data.id` (lower-cased for the manifest, matching `verifyMercadoPagoRequest(..., true)`); `test_order_processed_for_manual_validation_qr_prefix_marks_paid_when_accredited` vs `test_order_processed_before_accredited_does_not_mark_manual_validation_paid` pin the paid / ignored outcomes.
+
+- **Production fix (logging robustness):** `getMercadoPagoPayment()` catch previously called `$e->getApiResponse()` on every `Exception`, which fatals on generic errors (including test doubles). Guard with `method_exists($e, 'getApiResponse')` so non-MP exceptions still log and return `null` → `500` `Could not fetch payment` as intended.
