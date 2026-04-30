@@ -1407,6 +1407,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now sets config and asserts `name_app` and `domain` in addition to activation URL behavior.
   - Mutant IDs: `9b540537bce228fa`, `84a60d616e6af51f`.
 
+## `ResetPasswordNotification` (`app/Notifications/ResetPasswordNotification.php`)
+
+- **Mail-only channel and `force_email` contract** (`via` + `force_email`; report RUN ~6979 and UNTESTED/UNCOVERED ~67513–67549).
+  - Cause: tests asserted `force_email` and reset URL behavior, but did not pin the explicit mail-only channel list, so channel-array removal mutants could survive.
+  - Fix: `Tests\Unit\Notifications\ResetPasswordNotificationTest` now asserts `getVia()` is exactly `[MailChannel::class]` and keeps `force_email === true` as a public contract.
+  - Mutant IDs: `5be5c053131c8881`, `6bf9aec5eb95a4dc`.
+
+- **Email metadata payload contract** (`toEmail()` `name_app`/`domain`; report UNTESTED ~67537, ~67549).
+  - Cause: token/url/title fallback were asserted, but metadata fields were not pinned.
+  - Fix: same test class now sets config and asserts `name_app` and `domain` along with reset URL/token behavior.
+  - Mutant IDs: `eeb54f354e08d6d2`, `0ee36a74ac31f8dc`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
