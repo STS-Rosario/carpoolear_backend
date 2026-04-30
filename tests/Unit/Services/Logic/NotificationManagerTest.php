@@ -188,18 +188,18 @@ class NotificationManagerTest extends TestCase
 
         $result = $this->manager()->delete($other, $id);
 
-        $this->assertNull($result);
+        $this->assertFalse($result);
         $this->assertCount(1, $this->manager()->getNotifications($owner, []));
 
         Carbon::setTestNow();
     }
 
-    public function test_delete_returns_null_when_notification_does_not_exist(): void
+    public function test_delete_returns_false_when_notification_does_not_exist(): void
     {
         $user = User::factory()->create();
 
         $result = $this->manager()->delete($user, 999999);
 
-        $this->assertNull($result);
+        $this->assertFalse($result);
     }
 }
