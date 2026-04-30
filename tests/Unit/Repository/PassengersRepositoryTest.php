@@ -494,4 +494,121 @@ class PassengersRepositoryTest extends TestCase
 
         $this->assertNull($this->repo()->acceptRequest($trip->id, $user->id, $driver, []));
     }
+
+    public function test_get_pending_requests_for_trip_eager_loads_user_relation(): void
+    {
+        // Mutation intent: preserve `$passengers->with('user')` (~38 RemoveMethodCall); lazy-loading hides regressions when queries are disabled under strict modes.
+        $trip = Trip::factory()->create(['trip_date' => Carbon::now()->addDay()]);
+        $driver = User::factory()->create();
+        $peer = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $peer->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $rows = $this->repo()->getPendingRequests($trip->id, $driver, []);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->relationLoaded('user'));
+        $this->assertSame($peer->id, $rows->first()->user->id);
+    }
+
+    public function test_get_pending_payment_requests_eager_loads_user_relation(): void
+    {
+        // Mutation intent: preserve `$passengers->with('user')` (~56 RemoveMethodCall cluster with join filters).
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+
+        $rows = $this->repo()->getPendingPaymentRequests(null, $passenger, []);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows->first()->relationLoaded('user'));
+        $this->assertSame($passenger->id, (int) $rows->first()->user_id);
+        $this->assertSame($passenger->id, $rows->first()->user->id);
+    }
+
+    public function test_accept_request_targets_only_requested_passenger_on_shared_trip(): void
+    {
+        // Mutation intent: `changeRequestState` must keep `where('user_id', $userId)` (~89 RemoveMethodCall); dropping it accepts the wrong pending row.
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $alice->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $bob->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->repo()->acceptRequest($trip->id, $alice->id, $driver, []);
+
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $alice->id)->value('request_state'));
+        $this->assertSame(Passenger::STATE_PENDING, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $bob->id)->value('request_state'));
+    }
+
+    public function test_trips_with_transactions_returns_one_row_per_trip_when_multiple_passengers_have_payment_status(): void
+    {
+        // Mutation intent: preserve `distinct()` (~198) when the join emits duplicate trip ids for multiple paying passengers.
+        $driver = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        foreach ([User::factory()->create(), User::factory()->create()] as $u) {
+            $p = Passenger::factory()->aceptado()->create([
+                'trip_id' => $pastTrip->id,
+                'user_id' => $u->id,
+            ]);
+            $p->forceFill(['payment_status' => 'ok'])->saveQuietly();
+        }
+
+        $trips = $this->repo()->tripsWithTransactions($driver);
+
+        $this->assertCount(1, $trips);
+        $this->assertSame($pastTrip->id, $trips->first()->id);
+    }
+
+    public function test_trips_with_transactions_eager_loads_declared_closure_relations(): void
+    {
+        // Mutation intent: `with(['user','passenger.trip.user'])` (~200–203 RemoveArrayItem / RemoveMethodCall) — nested graphs must preload without extra queries.
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $p = Passenger::factory()->aceptado()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $passenger->id,
+        ]);
+        $p->forceFill(['payment_status' => 'done'])->saveQuietly();
+
+        $trips = $this->repo()->tripsWithTransactions($driver);
+        $tripRow = $trips->first();
+
+        $this->assertTrue($tripRow->relationLoaded('user'));
+        $this->assertTrue($tripRow->relationLoaded('passenger'));
+        foreach ($tripRow->passenger as $passRow) {
+            $this->assertTrue($passRow->relationLoaded('trip'));
+            $this->assertNotNull($passRow->trip);
+            $this->assertTrue($passRow->trip->relationLoaded('user'));
+        }
+    }
 }
