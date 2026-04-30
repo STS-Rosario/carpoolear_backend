@@ -2,11 +2,10 @@
 
 namespace Tests\Feature\Http;
 
-use Tests\TestCase;
-use Mockery as m;
-use STS\Models\Trip;
-use STS\Models\Passenger;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Mockery as m;
+use STS\Models\Passenger;
+use Tests\TestCase;
 
 class PassengerApiTest extends TestCase
 {
@@ -14,13 +13,13 @@ class PassengerApiTest extends TestCase
 
     protected $logic;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
         $this->logic = $this->mock(\STS\Services\Logic\PassengersManager::class);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         m::close();
         parent::tearDown();
@@ -31,20 +30,20 @@ class PassengerApiTest extends TestCase
         return json_decode($response->getContent());
     }
 
-    public function testGetPassengers()
+    public function test_get_passengers()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
         $trip = \STS\Models\Trip::factory()->create(['user_id' => $u1->id]);
         $this->actingAs($u1, 'api');
 
-        $this->logic->shouldReceive('index')->once()->andReturn(Passenger::all());
+        $this->logic->shouldReceive('getPassengers')->once()->andReturn(Passenger::all());
 
         $response = $this->call('GET', 'api/trips/'.$trip->id.'/passengers');
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testGetPending()
+    public function test_get_pending()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -57,7 +56,7 @@ class PassengerApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testPostRequest()
+    public function test_post_request()
     {
         $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $u2 = \STS\Models\User::factory()->create(['identity_validated' => true]);
@@ -70,7 +69,7 @@ class PassengerApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testPostAccept()
+    public function test_post_accept()
     {
         $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $u2 = \STS\Models\User::factory()->create(['identity_validated' => true]);
@@ -83,7 +82,7 @@ class PassengerApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testPostCancel()
+    public function test_post_cancel()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -96,7 +95,7 @@ class PassengerApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
     }
 
-    public function testPostReject()
+    public function test_post_reject()
     {
         $u1 = \STS\Models\User::factory()->create(['identity_validated' => true]);
         $u2 = \STS\Models\User::factory()->create(['identity_validated' => true]);
