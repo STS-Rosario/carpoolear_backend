@@ -1347,6 +1347,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Notifications\PendingRateNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` in email payload.
   - Mutant IDs: `11cee4fb3f0b0c2d`, `dea0f3f85ca80f3f`, `f1d94ffb399e8a59`, `768c5247f780bdc7`, `7ce14e22c467b772`.
 
+## `RequestRemainderNotification` (`app/Notifications/RequestRemainderNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~7057 and UNTESTED/UNCOVERED ~67690–67750).
+  - Cause: existing tests covered title/url and message flow, but did not pin channel list and email metadata (`name_app`, `domain`), so `RemoveArrayItem` mutants survived.
+  - Fix: `Tests\Unit\Notifications\RequestRemainderNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` in email payload.
+  - Mutant IDs: `523e1a8313d09d7d`, `03c6d0248e7114fe`, `65f4cb260c1838db`, `fc6a1cfe780a0b55`, `9f5dc5a4f0ae2ad7`.
+
+- **Push image contract** (`toPush().image`; report UNTESTED ~67750).
+  - Cause: push assertions validated message/url/extras id but not the image field.
+  - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
+  - Mutant IDs: `b7b0eb54270a7495`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
