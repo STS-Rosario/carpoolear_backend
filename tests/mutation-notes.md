@@ -2195,3 +2195,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: endpoint tests already validated authenticated behavior and response envelopes, but they did not explicitly pin constructor middleware registration, so removing `$this->middleware('logged')` survived as an untested constructor mutation.
   - Fix: extended `tests/Feature/Http/NotificationApiTest.php` with `test_constructor_registers_logged_middleware`, asserting the controller middleware stack contains `logged`.
   - Mutant IDs: `779c872fc3be09d4`.
+
+## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
+
+- **Constructor middleware and provider-installation contract** (`__construct` + `installProvider`/`login` path, lines 24-43 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing social API tests validated some endpoint behavior, but they did not pin constructor middleware scope lists nor verify that mixed-case provider segments are normalized/resolved to the expected provider class.
+  - Fix: extended `tests/Feature/Http/SocialApiTest.php` with:
+    - `test_constructor_registers_expected_logged_middleware_scopes`
+    - `test_social_endpoints_accept_mixed_case_provider_name`
+    These assert middleware `except/only` contracts and prove `login`, `update`, and `friends` still work when the route provider is `TeSt` (normalization + provider binding/token wiring path).
+  - Mutant IDs: `e0d9f7290643afcb`, `75cd57e29108ce0c`, `b65d1ac227139ef0`, `5c4a89dd27031ba2`, `dd496ec2320aa540`, `41aebc3060761bf6`, `4446cdc073ef2881`, `7586dfbef95032c2`, `b3d33ab7486e366e`, `05192135a87e3514`, `1060cde5f4429478`, `7bb040fbfa160916`, `6a606c0269b28fd4`.
