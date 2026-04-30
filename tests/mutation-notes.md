@@ -1170,6 +1170,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Notifications\FriendCancelNotificationTest` now asserts exact `getVia()` channels, and verifies `toEmail()` includes config-driven `name_app` + `domain`, while `toPush()` always includes the fixed brand image URL; existing tests still cover sender/fallback message and `extras.id`.
   - Mutant IDs: `dc22e279bbb1a657`, `57c15e556f707cf0`, `b72a4557ca331e10`, `0273b8fef0ebf5ca`, `f060ccf0e34e1c8d`, `782596ce139c1a28`.
 
+## `RequestPassengerNotification` (`app/Notifications/RequestPassengerNotification.php`)
+
+- **Delivery channels and payload envelope** (`via` list + `toEmail()`/`toPush()` payload shape; report RUN ~6226 and UNTESTED/UNCOVERED ~65687–65771).
+  - Cause: previous tests validated message text and trip id routing but did not fully pin channel list and required payload keys, allowing `RemoveArrayItem` mutants on channels and metadata fields to survive.
+  - Fix: `Tests\Unit\Notifications\RequestPassengerNotificationTest` now asserts exact `getVia()` channels and verifies `toEmail()` includes `name_app` and `domain`, while `toPush()` includes the fixed logo `image`.
+  - Mutant IDs: `96fda5e0de894ecb`, `aa10c386e7448549`, `508e7f5952894bad`, `186184f1d9f3342a`, `d9da02b01a9401dd`, `32aa21874083a771`.
+
+- **Trip URL fallback when `trip` is absent** (`toEmail()` url composition; report UNTESTED ~65735).
+  - Cause: the missing-trip path in URL composition (`.../app/trips/` + empty suffix) was not asserted, so ternary/string mutants could pass.
+  - Fix: added `test_to_email_uses_empty_trip_suffix_when_trip_is_missing` to assert the exact public URL when no trip is attached.
+  - Mutant IDs: `7c2d83d842eb8d8a`, `5d195dab59226852`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
