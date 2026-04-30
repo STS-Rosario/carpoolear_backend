@@ -755,3 +755,23 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_qr_order_returns_unprocessable_when_qr_flow_disabled`, `test_qr_order_returns_unprocessable_when_pos_external_id_missing`, `test_qr_order_returns_unprocessable_when_cost_not_positive`, `test_qr_order_returns_payload_from_payment_provider` (mock `createQrOrderForManualValidation` return shape), `test_qr_order_rolls_back_new_row_when_qr_data_missing`.
 
 - **Follow-up:** `storeIdentityImage()` private HEIC path (~263–274) and any remaining `submit` edge mutants in `tests/coverage/20260428_2310.txt` after the blocks above.
+
+## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
+
+- **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
+  - Cause: no HTTP or feature coverage executed `DataController`, so mutating those literals or the `LIMIT ?` bind positions never broke the suite.
+  - Fix: `Tests\Feature\Http\DataApiTest` drives real SQL through `GET api/data/trips|seats|users|monthlyusers` and `GET /data-web`, exercising the bound limits on frequency and ranking queries indirectly (aggregate + seeded rows).
+
+- **`trips()` / `seats()` / `users()` success JSON** (lines ~30, ~58, ~78; report ~33840–33900, e.g. `6335327c8ec74547`, `578355ca413649bd`, `14502503e2561085` `RemoveArrayItem` on `['trips'|'seats'|'users' => …]`, plus integer nudge mutants on the same `return response()->json` lines).
+  - Cause: endpoints were never called under test; stripping the outer key or tweaking numeric fields in the payload could survive.
+  - Fix: envelope checks (`assertJsonStructure`) plus behavioral assertions on grouped keys (`key`, month parts, counts, seat totals, passenger `state` / `estado`).
+
+- **`monthlyUsers()` mapped rows** (lines ~93–97, ~101; report ~33948–34044, e.g. `cf8b6d1d65b568a6`, `a093e341a72fae00`, `7b79b6d7134d5250`, `2b398079e05822ce`, `d9652c8cd57f13b4`, `773db4fb059904a0` `RemoveArrayItem` on the `map` payload, and `742eb16c0427a15d` / `399a3bdea5957c38` on `sprintf` padding).
+  - Cause: `ActiveUsersPerMonth` serialization was not asserted; mutants could drop `key`/`año`/`mes`/`cantidad`/`saved_at` or break zero-padding in `sprintf('%04d-%02d', …)` without failing tests.
+  - Fix: `test_monthly_users_endpoint_returns_active_user_series_shape` seeds one row and asserts the public month key, numeric year/month/value, and presence of `saved_at`.
+
+- **`data()` aggregate payload** (lines ~185–200, ~203; report ~34056–34238, e.g. `cb3657aa2fabe07d` through `7025ba8eee6799b2` on the large `response()->json([…])` and error envelope).
+  - Cause: `data()` is only wired as `GET /data-web` in `routes/web.php`; it was not exercised, so `RemoveArrayItem` mutants on `usuarios`, `viajes`, `frecuencia_*`, `usuarios_activos`, etc. stayed UNCOVERED.
+  - Fix: `test_data_web_returns_aggregate_dashboard_sections` hits `/data-web` with minimal trip/point/passenger/active-user fixtures and `assertJsonStructure` on every top-level section the API promises.
+
+- **Follow-up:** `moreData()` (~207–253; report tail e.g. `422ac4184ade764a`, `2893731f1a287107`, `349bdb6c87db171d`, …) is not registered in `routes/api.php` / `routes/web.php` in this codebase, so it remains unreachable until a route or an explicit caller is added (or a dedicated unit test resolves the controller).
