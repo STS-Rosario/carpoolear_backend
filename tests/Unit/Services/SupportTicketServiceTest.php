@@ -13,6 +13,36 @@ use Tests\TestCase;
 
 class SupportTicketServiceTest extends TestCase
 {
+    public function test_store_reply_attachments_continues_after_invalid_item_and_processes_next_file(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $user->id,
+            'type' => 'bug',
+            'subject' => 'App issue',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+        $reply = SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'is_admin' => false,
+            'message_markdown' => 'details',
+        ]);
+
+        $validFile = UploadedFile::fake()->create('proof.pdf', 15, 'application/pdf');
+
+        $service = new SupportTicketService;
+        $service->storeReplyAttachments(
+            ['not-a-file', $validFile],
+            $user->id,
+            $reply->id
+        );
+
+        $this->assertSame(1, SupportTicketAttachment::query()->where('reply_id', $reply->id)->count());
+    }
+
     public function test_store_reply_attachments_with_empty_array_creates_no_records(): void
     {
         Storage::fake('public');
@@ -57,7 +87,62 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame($user->id, (int) $attachment->user_id);
         $this->assertNull($attachment->ticket_id);
         $this->assertSame('evidence.png', $attachment->original_name);
-        $this->assertStringContainsString('support/', $attachment->path);
+        $this->assertMatchesRegularExpression(
+            '#^support/\d{4}/\d{2}/[A-Z0-9]{26}_[A-Za-z0-9]{20}\.png$#',
+            $attachment->path
+        );
+        $this->assertSame('image/png', $attachment->mime);
+        $this->assertSame(20480, (int) $attachment->size_bytes);
+        Storage::disk('public')->assertExists($attachment->path);
+    }
+
+    public function test_store_reply_attachments_uses_fallback_mime_and_integer_size_when_mime_is_missing(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $user->id,
+            'type' => 'bug',
+            'subject' => 'App issue',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+        $reply = SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'is_admin' => false,
+            'message_markdown' => 'details',
+        ]);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'st-attachment-');
+        file_put_contents($tempPath, 'manual attachment payload');
+        $file = new class($tempPath) extends UploadedFile
+        {
+            public function __construct(string $path)
+            {
+                parent::__construct($path, 'evidence.bin', null, null, true);
+            }
+
+            public function getMimeType(): ?string
+            {
+                return null;
+            }
+
+            public function getSize(): int|false
+            {
+                return 3210;
+            }
+        };
+
+        $service = new SupportTicketService;
+        $service->storeReplyAttachments([$file], $user->id, $reply->id);
+        @unlink($tempPath);
+
+        $attachment = SupportTicketAttachment::query()->where('reply_id', $reply->id)->first();
+        $this->assertNotNull($attachment);
+        $this->assertSame('application/octet-stream', $attachment->mime);
+        $this->assertSame(3210, (int) $attachment->size_bytes);
+        $this->assertSame('evidence.bin', $attachment->original_name);
         Storage::disk('public')->assertExists($attachment->path);
     }
 
