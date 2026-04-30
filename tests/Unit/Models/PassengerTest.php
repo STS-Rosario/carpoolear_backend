@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Models;
 
+use ReflectionMethod;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -101,5 +102,17 @@ class PassengerTest extends TestCase
     public function test_table_name_is_trip_passengers(): void
     {
         $this->assertSame('trip_passengers', (new Passenger)->getTable());
+    }
+
+    public function test_casts_method_declares_trip_id_integer_and_payment_info_array(): void
+    {
+        $method = new ReflectionMethod(Passenger::class, 'casts');
+        $method->setAccessible(true);
+        $casts = $method->invoke(new Passenger);
+
+        $this->assertSame([
+            'trip_id' => 'integer',
+            'payment_info' => 'array',
+        ], $casts);
     }
 }
