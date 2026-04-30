@@ -1194,6 +1194,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_to_email_and_to_string_use_trip_destination_when_present` now also asserts push URL is exactly `/trips/{tripId}` (and email URL includes `{tripId}` under configured base URL).
   - Mutant IDs: `e0356e0f67ac7b8c`, `89b9f7e715196eb0`, `88f6049c673ca384`.
 
+## `FriendRequestNotification` (`app/Notifications/FriendRequestNotification.php`)
+
+- **Delivery channels and envelope keys** (`via` list and payload metadata in `toEmail()` / `toPush()`; report RUN ~6307 and UNTESTED/UNCOVERED ~65887–65947).
+  - Cause: previous tests covered title/message/url and sender id, but did not pin channel list and metadata keys, so `RemoveArrayItem` mutants on `via` channels and payload fields (`name_app`, `domain`, `image`) could survive.
+  - Fix: `Tests\Unit\Notifications\FriendRequestNotificationTest` now asserts exact `getVia()` channels and verifies config-driven email metadata plus push image key while preserving existing behavioral assertions.
+  - Mutant IDs: `daa7f4b4aaf97a99`, `20d83a74818297d7`, `e369cc1abcd9bd8d`, `3a70fab404df5b1b`, `e005b4fca5093951`, `e4edf96664a26b6d`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
