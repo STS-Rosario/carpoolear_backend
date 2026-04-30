@@ -1088,6 +1088,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: same as sibling `Friend\*` events—no test called `broadcastOn()`, so `AlwaysReturnNull` was not killed.
   - Fix: `Tests\Unit\Events\Friend\AcceptEventTest::test_broadcast_on_returns_empty_channel_array` and `test_constructor_exposes_from_and_to_payload` assert `[]` (not `null`) and stable `from` / `to` assignment.
 
+## `MessageSend` event (`app/Events/MessageSend.php`)
+
+- **`broadcastOn()` return type** (`broadcastOn()` ~34–37; report `tests/coverage/20260428_2310.txt` ~5691–5692 and UNCOVERED ~62484, mutant ID `86c79f8f89d41e72` `AlwaysReturnNull` on `return []`).
+  - Cause: the event was not exercised in tests, so mutating `broadcastOn()` to always return `null` did not fail anything.
+  - Fix: `Tests\Unit\Events\MessageSendEventTest::test_broadcast_on_returns_empty_channel_array` requires an array channel list (`[]`, not `null`). `test_constructor_exposes_from_to_and_message_payload` asserts `from`, `to`, and `message` are the values passed to the constructor (opaque payloads, no DB).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
