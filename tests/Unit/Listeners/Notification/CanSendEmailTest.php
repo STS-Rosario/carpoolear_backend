@@ -4,6 +4,7 @@ namespace Tests\Unit\Listeners\Notification;
 
 use STS\Events\Notification\NotificationSending;
 use STS\Listeners\Notification\CanSendEmail;
+use STS\Services\Notifications\Channels\DatabaseChannel;
 use STS\Services\Notifications\Channels\MailChannel;
 use Tests\TestCase;
 
@@ -36,5 +37,15 @@ class CanSendEmailTest extends TestCase
             new MailChannel
         );
         $this->assertNull($listener->handle($optedIn));
+    }
+
+    public function test_handle_returns_null_for_non_mail_channels_without_touching_user_preferences(): void
+    {
+        $listener = new CanSendEmail;
+        $user = (object) []; // no emails_notifications property — must not be read for non-mail channels
+        $notification = (object) ['force_email' => false];
+        $event = new NotificationSending($notification, $user, new DatabaseChannel);
+
+        $this->assertNull($listener->handle($event));
     }
 }
