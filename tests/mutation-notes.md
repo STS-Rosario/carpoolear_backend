@@ -2037,3 +2037,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: model tests validated relationships and datetime casts, but did not explicitly lock the full fillable declaration, so `RemoveArrayItem` mutants across ticket payload fields survived.
   - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/SupportTicketTest.php` to assert the exact fillable list.
   - Mutant IDs: `1c5cc342ddd2b4cc`, `7542a5b58ca81c64`, `f457848fdffb4f47`, `cc4c97676e5970e3`, `1d33b4f1f133b2d6`, `d51c8be37ae42354`, `7b418d1b8c69f3f0`, `4cfc97a7905d4304`, `79d3e757f71a0780`, `1637ecc874f295ca`, `2d17d19743770972`, `9f67c557f0246b48`, `a2d5e9deb9e5d0e9`.
+
+## PassengerTransformer (`app/Transformers/PassengerTransformer.php`)
+
+- **Passenger payload contract in `transform()`** (array keys at lines 25–28 and return at line 34 in `tests/coverage/20260428_2310.txt`).
+  - Cause: there was no focused unit test for this transformer, so key-removal and null-return mutants in `transform()` survived.
+  - Fix: added `tests/Unit/Transformers/PassengerTransformerTest.php::test_transform_returns_expected_passenger_payload_shape`, asserting the transformed payload contains required keys (`id`, `trip_id`, `created_at`, `state`, `user`) with stable values and a user sub-payload.
+  - Mutant IDs: `4a27e9f36375c300`, `2047476c705a5366`, `08367f4976415441`, `307556ea0c6ee397`, `ab49ab8a531783e8`.
