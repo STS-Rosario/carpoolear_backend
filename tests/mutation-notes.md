@@ -2533,6 +2533,10 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
   - **Cause:** With `ExceptionWithErrors` ignoring custom status, disabled identity/manual/QR and missing POS behaved like generic **422**; cost-threshold mutants could still match **422**; Mercado Pago was never asserted as skipped. Invalid `request_id` used **404** in the controller but tests expected **422**.
   - **Fix:** After `ExceptionWithErrors` fix, `tests/Feature/Http/ManualIdentityValidationApiTest.php` asserts `503` for disabled preference/QR gates, `assertNotFound()` for unknown or foreign `request_id`, and `MercadoPagoService` spies assert `createPaymentPreferenceForManualValidation` / `createQrOrderForManualValidation` are not invoked when guards short-circuit.
 
+- **Mutant IDs (user report ~`storeIdentityImage` L267–L270):** `DecrementInteger`/`IncrementInteger`, `ConcatRemove*`, `RemoveMethodCall`, `RemoveEarlyReturn`.
+  - **Cause:** The **`HeicToJpegConverter::convert` → `null` → `$file->store(...)`** path was only covered by a skipped HEIC integration test, so mutants on concatenation or **`store`** could survive.
+  - **Fix:** `test_submit_stores_uploads_via_disk_store_when_heic_converter_returns_null` mocks **`HeicToJpegConverter`** to return **`null`** for each image and asserts **`Storage::disk('local')->assertExists`** on **`front_image_path`**.
+
 ## TripController (`app/Http/Controllers/Api/v1/TripController.php`)
 
 - **Mutant IDs (user report):** `L259:FalseToTrue`, `L260:RemoveEarlyReturn` (and related `errorsContainCode` cluster).
@@ -2544,3 +2548,27 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 - **Mutant IDs (user report):** `L98:RemoveMethodCall`, `L99–L100:RemoveArrayItem`, `L104:FalseToTrue` / integer / `RemoveArrayItem` on the catch / response block.
   - **Cause:** `catch (\Exception $e)` does not catch `TypeError` (e.g. invalid `changes` element passed into `processChange(array $change)`), so failures surfaced as **500** instead of the intended **200** + `Log::error` + `Processing failed` JSON — mutants removing logging or response fields could slip or behave inconsistently.
   - **Fix:** `catch (\Throwable $e)` so PHP **7+** engine errors during payload handling match the Meta-friendly contract. `tests/Feature/Http/WhatsAppWebhookTest.php` adds `test_post_logs_error_and_returns_processing_failed_json_when_change_payload_is_invalid` (signed POST, `changes: [null]`, asserts **200**, JSON body, and `Log::error` with message `Error processing WhatsApp webhook`).
+
+## OsrmProxyController (`app/Http/Controllers/Api/v1/OsrmProxyController.php`)
+
+- **Mutant IDs (user report):** `L29:RemoveEarlyReturn`, `L30–L31:RemoveArrayItem`, `L68:RemoveIntegerCast`, `L70:MaxToMin`, `L110–L111:RemoveMethodCall` on catch logging.
+  - **Cause:** Public route regex already restricts to `driving/…`, so `str_starts_with('driving/')` and the **400** JSON envelope were not hit from HTTP alone; `max(60, $ttlSeconds)` and upstream **try/catch** logging were not asserted; integer cast on config TTL was invisible if only “happy” TTL values were used.
+  - **Fix:** `tests/Feature/Http/OsrmProxyApiTest.php` — `test_route_rejects_non_driving_profile_when_invoked_directly` on the controller; `test_cache_store_uses_minimum_sixty_second_ttl_when_success_ttl_config_below_sixty` with `Cache::spy()` and expiry window; `test_logs_upstream_exception_and_uses_fallback_base` with `Http::fake` throwing `ConnectionException` on the primary base and asserting `Log::warning('[osrm_proxy] upstream exception', …)` plus a successful fallback response.
+
+## SupportTicketController (`app/Http/Controllers/Api/v1/SupportTicketController.php`)
+
+- **Mutant IDs (user report):** `L16–L19:RemoveArrayItem`, `L32–L45`, `L100–L116`, `L133–L155` clusters (`RemoveArrayItem`, `RemoveMethodCall`, `IfNegated`, `RemoveEarlyReturn`, etc.).
+  - **Cause:** Feature coverage centred on one large integration flow; `index` ordering/ownership, `show` **404** JSON, `reply` guard for **Resuelto**/**Cerrado**, and `close` + optional closing reply were not pinned, so priority/`foreach`/`applyUserReplyTransition` mutants could survive.
+  - **Fix:** `tests/Feature/Http/SupportTicketApiTest.php` adds `test_index_lists_only_current_user_tickets_newest_first`, `test_show_returns_404_for_unknown_ticket_id`, `test_reply_returns_422_when_ticket_is_resolved`, and `test_close_persists_status_and_optional_closing_message` (asserts `SupportTicketReply` row for the closing markdown).
+
+## PhoneVerificationController (`app/Http/Controllers/Api/v1/PhoneVerificationController.php`)
+
+- **Mutant IDs (user report):** `L17`, `L27–L30`, `L35–L53`, `L65–L73`, `L86–L105` (`RemoveArrayItem`, `RemoveMethodCall`, `AlwaysReturnNull`, `IfNegated` / `IdenticalToNotIdentical`, etc.).
+  - **Cause:** Controller is not wired in `routes/api.php` in this repo snapshot; mutation still targeted the class, and there was no HTTP or direct test of **`send`/`verify`/`resend`/`status`** wiring to `PhoneVerificationManager` + `ExceptionWithErrors` + logging.
+  - **Fix:** `tests/Unit/Http/PhoneVerificationControllerTest.php` instantiates the controller with a **`Mockery` mock** `PhoneVerificationManager` and an authenticated user: success JSON for `send`, `ExceptionWithErrors` + **`Log::error`** for failed `send`, `ExceptionWithErrors` for failed `verify`/`resend`, and JSON passthrough for `status`.
+
+## MercadoPagoOAuthController + MercadoPagoOAuthService
+
+- **Mutant IDs (user report):** `MercadoPagoOAuthController.php` `L32–L121` (`IfNegated`, `BooleanOrToBooleanAnd`, `RemoveNot`, `RemoveEarlyReturn`, `RemoveIntegerCast`, `CoalesceRemoveLeft`, `RemoveMethodCall`, `RemoveArrayItem`, etc.).
+  - **Cause:** No feature tests hit the callback branches; `Http::` fakes were easy to mis-order with a blanket `Http::fake()` in `setUp`; `exchangeCodeForToken` / `getUserMe` returned **`$response->json()` typed as `array` but could be `null`**, producing **500** instead of the intended redirect + logs.
+  - **Fix:** `tests/Feature/Http/MercadoPagoOAuthCallbackTest.php` covers **`error` query**, missing **`code`/`state`**, missing/invalid **cache state**, missing **user**, token JSON **without `access_token`**, failed **token HTTP**, **name_mismatch** + **`MercadoPagoRejectedValidation`**, **dni_mismatch**, and **success** identity update. **`MercadoPagoOAuthService`**: coerce non-array JSON to **`[]`** before return so the controller’s existing guards always run.
