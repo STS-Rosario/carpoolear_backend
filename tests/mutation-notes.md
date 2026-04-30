@@ -1960,3 +1960,15 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_mass_assignment_persists_all_fillable_fields`
     These lock the explicit fillable list and verify all badge definition fields persist via `create()`.
   - Mutant IDs: `e2fa699671b0aa92`, `baf6bc9ab402982a`, `3cf19009af3ecf9a`, `7a66c0e065209a7c`, `dcbe52a12ffd3217`, `644369ccdea1202f`.
+
+## Rating (`app/Models/Rating.php`)
+
+- **Factory and constants contract for rating model** (`newFactory()` line 15 and constants lines 17/19/21 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing relationship/cast tests did not directly pin the factory override contract, leaving `AlwaysReturnNull` on `newFactory()` under-constrained.
+  - Fix: added `test_model_uses_rating_factory` in `tests/Unit/Models/RatingTest.php`, invoking `newFactory()` via reflection and asserting it returns `Database\Factories\RatingFactory`.
+  - Mutant IDs: `cd9f456db729ff8e`.
+
+- **Mass-assignment contract for rating payload fields** (`$fillable` lines 26–37 in `tests/coverage/20260428_2310.txt`).
+  - Cause: tests created ratings through factories but did not lock the explicit fillable list, so `RemoveArrayItem` mutants on rating fields survived.
+  - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/RatingTest.php` to assert the full fillable list.
+  - Mutant IDs: `d1f82b51ff3b844c`, `d40f1893aa197f2c`, `3ca7432a86d5423a`, `7296c5e8f4ef9143`, `c0c0f8639e284fb0`, `b87bd2670900102f`, `f903d44decd8f705`, `a1dd123907df6982`, `25052a0138f3b66b`, `46aca11abc0af2f4`, `b9fdb174c2df2bcd`, `50abbf7f635b94e3`.
