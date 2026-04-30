@@ -715,3 +715,31 @@ This file tracks mutants killed during the current hardening session, with the r
 - `SocialRepository.php` `delete` (`~54–57`): must invoke `$account->delete()`.
   - Cause: removal tests used real models only; dropping the call could survive without a mock expectation.
   - Fix: added `test_delete_invokes_social_account_delete`.
+
+## AuthController (`app/Http/Controllers/Api/v1/AuthController.php`)
+
+- `dcf236f763f5aae1` (`Line 265: AlwaysReturnNull`, report `tests/coverage/20260428_2310.txt` ~44266)
+  - Cause: `log()` always returned `true`, but no test asserted the return value, so replacing the body with `return null` still left the suite green.
+  - Fix: `Tests\Unit\Http\Controllers\Api\v1\AuthControllerTest::test_log_returns_true` resolves the controller from the container and asserts the return value is truthy.
+
+## SubscriptionController (`app/Http/Controllers/Api/v1/SubscriptionController.php`)
+
+- Constructor `logged` middleware plus `create` / `update` / `delete` / `show` / `index` JSON envelopes (report ~44277–44378; e.g. `5d29aa8234bb5792` `RemoveMethodCall`, `0210d42bec609bd0` / `3d136cad6b2c42dd` on `Line 30`, `d7f5005e2e783a35` / `889a361f5f558540` on `Line 42`, `37d088fcab7e2292` / `9f81ffbda5a22c2f` on `Line 53`, `84645031db77ee06` / `b736079953f89cd7` on `Line 72`, and branch mutants on the `if (! $model)` / `if (! $result)` guards).
+  - Cause: `Tests\Feature\Http\SubscriptionsApiTest` mocked `SubscriptionsManager`, so the controller still ran but responses were not tied to real persistence; weak assertions (`status == 200` only) let `RemoveArrayItem`, `AlwaysReturnNull`, and negated-condition mutants survive.
+  - Fix: rewrote that feature file to use real auth + real manager/DB: `assertUnauthorized` for guests (kills dropped `middleware('logged')`), `assertExactJson` / `assertJsonPath` / `assertJsonStructure` on success payloads, `assertUnprocessable` on validation failure, and DB assertions for create/delete.
+
+## ManualIdentityValidationController (`app/Http/Controllers/Api/v1/ManualIdentityValidationController.php`)
+
+- `dd32c96b7620c345` (`Line 19: RemoveMethodCall`, report ~44383)
+  - Cause: nothing hit the manual-identity user routes without a token; removing `$this->middleware('logged')` could expose endpoints to guests without a failing test.
+  - Fix: `ManualIdentityValidationApiTest::test_manual_identity_cost_and_status_require_authentication` asserts `401` + `Unauthorized.` on both `GET api/users/manual-identity-validation-cost` and `GET api/users/manual-identity-validation` when unauthenticated.
+
+- **Cost endpoint** `cost()` lines ~27–35 (report ~44395–44599; includes e.g. `436487b92f5c0e6c` `IfNegated`, `87488e9f0331ec65` `FalseToTrue`, `bac665cff310dd2e` `RemoveNot`, `53ee18c2f699605f` / `8e047db978a94613` `DecrementInteger`/`IncrementInteger` on `cost_cents`, `a80290c9e2c5db24` `RemoveArrayItem`, `d3d3e7d3ceae9c1e` `RemoveEarlyReturn`, and the parallel cluster on the manual-enabled guard through `b8b6e851760e3066` `AlwaysReturnNull` on the final return).
+  - Cause: only `submit()` was covered; `cost()` config gates and exact JSON bodies were never executed under test, so mutants on `config()` checks, early returns, and `['cost_cents' => …]` survived as UNCOVERED.
+  - Fix: `test_cost_returns_zero_when_identity_validation_disabled`, `test_cost_returns_zero_when_manual_validation_disabled`, and `test_cost_returns_configured_amount_when_manual_flow_enabled` drive the three outcomes and use `assertExactJson(['cost_cents' => …])` so wrong branches, wrong integers, stripped keys, or `null` responses fail.
+
+- **Status endpoint** disabled / empty payload (`status()` lines ~43–68; report ~44611–44680+, e.g. `25095fd113b85a30` `IfNegated`, `bf7c63de56fd7efc` `FalseToTrue`, `4820bc3b581b8231` `RemoveNot`, `da49fea0f768fefa` `RemoveEarlyReturn`, `59ebab625a619a16` / `ed9e8bd5caed1773` / `bbd0c0fc13c12029` / `25b4dfd0df447673` / … `RemoveArrayItem` on the empty-state JSON, plus `AlwaysReturnNull` variants on the same returns).
+  - Cause: no HTTP test asserted the “feature off” or “no submission” JSON contract; mutants could flip conditions, drop keys, or return `null` without detection.
+  - Fix: `expectedEmptyStatusPayload()` mirrors the public API shape; `test_status_returns_empty_contract_when_identity_validation_disabled` and `test_status_returns_empty_contract_when_user_has_no_submission` assert that exact payload; `test_status_returns_latest_submission_summary` asserts observable fields when a row exists (kills mutants on the populated branch and serialization).
+
+- **Follow-up (still UNCOVERED in a focused mutate run):** `storeIdentityImage()` private path (~263–274) and Mercado Pago / `submit` branches remain for a later pass (`tests/coverage/20260428_2310.txt` tail of `ManualIdentityValidationController.php` entries).
