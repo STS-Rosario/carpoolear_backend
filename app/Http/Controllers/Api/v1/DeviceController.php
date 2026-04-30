@@ -1,9 +1,9 @@
 <?php
 
 namespace STS\Http\Controllers\Api\v1;
- 
+
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller; 
+use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
@@ -53,7 +53,7 @@ class DeviceController extends Controller
     public function delete($id, Request $request)
     {
         $user = auth()->user();
-        $this->deviceLogic->delete($user, $id);
+        $this->deviceLogic->delete((int) $id, $user);
 
         return response()->json('OK');
     }
@@ -64,7 +64,7 @@ class DeviceController extends Controller
 
         return response()->json([
             'data' => $this->deviceLogic->getDevices($user),
-            'count' => $this->deviceLogic->getActiveDevicesCount($user)
+            'count' => $this->deviceLogic->getActiveDevicesCount($user),
         ]);
     }
 
@@ -72,11 +72,11 @@ class DeviceController extends Controller
     {
         $user = auth()->user();
         $session_id = JWTAuth::getToken()->get();
-        
+
         if ($this->deviceLogic->logoutDevice($session_id, $user)) {
             return response()->json(['message' => 'Device logged out successfully']);
         }
-        
+
         throw new ExceptionWithErrors('Device not found', ['device_not_found']);
     }
 }
