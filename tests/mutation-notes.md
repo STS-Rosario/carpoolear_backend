@@ -2044,3 +2044,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: there was no focused unit test for this transformer, so key-removal and null-return mutants in `transform()` survived.
   - Fix: added `tests/Unit/Transformers/PassengerTransformerTest.php::test_transform_returns_expected_passenger_payload_shape`, asserting the transformed payload contains required keys (`id`, `trip_id`, `created_at`, `state`, `user`) with stable values and a user sub-payload.
   - Mutant IDs: `4a27e9f36375c300`, `2047476c705a5366`, `08367f4976415441`, `307556ea0c6ee397`, `ab49ab8a531783e8`.
+
+## RatingTransformer (`app/Transformers/RatingTransformer.php`)
+
+- **Rating payload contract in `transform()`** (array keys/values lines 28–38 and conditional `to` branch line 40 in `tests/coverage/20260428_2310.txt`).
+  - Cause: transformer behavior was only covered indirectly, leaving payload-field removals and the `if (!$rate->rate_at)` branch under-constrained.
+  - Fix: added `tests/Unit/Transformers/RatingTransformerTest.php` with:
+    - `test_transform_includes_expected_payload_keys_when_rate_is_pending`
+    - `test_transform_omits_to_when_rate_at_exists_and_formats_dates`
+    These assert full payload keys/values, `rate_at` + `reply_comment_created_at` formatting/null handling, and `to` inclusion only for pending ratings.
+  - Mutant IDs: `ec4fe966f38dcc88`, `e16b37588faabc41`, `089759411ab99c2f`, `6cce00491a56c9cc`, `3963df43610199bd`, `973f066d09fc7aa9`, `d2a8cdaf38e3c572`, `9722101c3241732c`, `63b86ee963fb7ab8`, `5c846dac41cda869`, `1f6831546c45b4c1`.
