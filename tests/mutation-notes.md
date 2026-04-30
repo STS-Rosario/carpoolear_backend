@@ -2064,3 +2064,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_transform_adds_no_of_read_for_message_author`
     These assert required base keys/values, and that `no_of_read` appears only when transformer user matches message author.
   - Mutant IDs: `a86f8bf4ab90ac60`, `1c641cc363f3ce37`, `d7c079f0f86a82b0`, `6a459b0d9dc4b8ff`, `4ac8c7e17d3c77f2`, `a1974f7b9327064f`, `86a6a7056fb024cf`, `3e55fb8bf11f8540`.
+
+## TripUserTransformer (`app/Transformers/TripUserTransformer.php`)
+
+- **Trip user payload contract in `transform()`** (array fields lines 25–48 in `tests/coverage/20260428_2310.txt`).
+  - Cause: this transformer lacked direct unit coverage, so many `RemoveArrayItem` mutants and the `driver_data_docs` ternary mutation survived.
+  - Fix: added `tests/Unit/Transformers/TripUserTransformerTest.php` with:
+    - `test_transform_returns_expected_trip_user_payload_shape_and_values`
+    - `test_transform_returns_null_for_optional_docs_and_identity_date_when_absent`
+    These lock all expected payload keys and verify `driver_data_docs` decode/null handling plus `identity_validated_at` formatting/null behavior.
+  - Mutant IDs: `6b4c2129bdee5bdb`, `630941ae4c9fb587`, `0aef54721b2445f2`, `dcb26dce8a1eeba8`, `55fb4e465dc28ded`, `4032ce2922799e52`, `b72c720db7b0e256`, `5ec9a6f8cd9a8f72`, `d0c7811d901486dc`, `521b80ca3b9b7a37`, `d59fdaeb6fe4b18d`, `59138cb8eedc6cad`, `54c587a8ee643243`, `981a79af722a07c1`, `4b0659e6c35f8457`, `fab396d7ccafe33a`, `0b64db3801e1b4ce`, `ea5b57bd3203ff7c`, `79f456b16e351ccf`, `b739490af7e8c5b4`, `d28ffc98e36abeb0`, `4e83574ff8b35971`, `518b5320f1b209af`, `4a9a04c061b95633`.
