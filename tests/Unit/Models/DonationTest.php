@@ -8,6 +8,17 @@ use Tests\TestCase;
 
 class DonationTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'user_id',
+            'month',
+            'has_donated',
+            'has_denied',
+            'ammount',
+        ], (new Donation)->getFillable());
+    }
+
     public function test_boolean_casts_for_has_donated_and_has_denied(): void
     {
         $user = User::factory()->create();
@@ -41,6 +52,25 @@ class DonationTest extends TestCase
         $this->assertSame($user->id, $donation->user_id);
         $this->assertSame(1_234, (int) $donation->ammount);
         $this->assertStringContainsString('2026-02-15', (string) $donation->month);
+    }
+
+    public function test_mass_assignment_persists_all_fillable_fields(): void
+    {
+        $user = User::factory()->create();
+
+        $donation = Donation::query()->create([
+            'user_id' => $user->id,
+            'month' => '2026-03-01 00:00:00',
+            'has_donated' => true,
+            'has_denied' => false,
+            'ammount' => 987,
+        ])->fresh();
+
+        $this->assertSame($user->id, (int) $donation->user_id);
+        $this->assertTrue((bool) $donation->has_donated);
+        $this->assertFalse((bool) $donation->has_denied);
+        $this->assertSame(987, (int) $donation->ammount);
+        $this->assertStringContainsString('2026-03-01', (string) $donation->month);
     }
 
     public function test_query_scoped_to_user_id(): void
