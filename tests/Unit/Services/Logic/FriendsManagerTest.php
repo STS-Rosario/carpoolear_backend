@@ -62,6 +62,20 @@ class FriendsManagerTest extends TestCase
         $this->assertTrue($this->manager()->getPendings($bob)->pluck('id')->contains($alice->id));
     }
 
+    public function test_request_clears_stale_reverse_pending_before_creating_new_request(): void
+    {
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+
+        $this->manager()->request($bob, $alice);
+        $this->assertTrue($this->manager()->getPendings($alice)->pluck('id')->contains($bob->id));
+
+        $this->assertTrue($this->manager()->request($alice, $bob));
+
+        $this->assertFalse($this->manager()->getPendings($alice)->pluck('id')->contains($bob->id));
+        $this->assertTrue($this->manager()->getPendings($bob)->pluck('id')->contains($alice->id));
+    }
+
     public function test_request_fails_when_already_accepted_friends(): void
     {
         $a = User::factory()->create();
@@ -86,6 +100,24 @@ class FriendsManagerTest extends TestCase
         $this->assertTrue($this->manager()->areFriend($alice, $bob));
     }
 
+    public function test_accept_clears_pending_rows_in_both_directions(): void
+    {
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+        $manager = $this->manager();
+
+        $manager->request($alice, $bob);
+        $manager->request($bob, $alice);
+        $this->assertNotEmpty($manager->getPendings($alice));
+        $this->assertNotEmpty($manager->getPendings($bob));
+
+        $this->assertTrue($manager->accept($bob, $alice));
+
+        $this->assertEmpty($manager->getPendings($alice));
+        $this->assertEmpty($manager->getPendings($bob));
+        $this->assertTrue($manager->areFriend($alice, $bob));
+    }
+
     public function test_accept_fails_without_pending_request(): void
     {
         $a = User::factory()->create();
@@ -107,6 +139,18 @@ class FriendsManagerTest extends TestCase
 
         Event::assertDispatched(RejectEvent::class);
         $this->assertFalse($this->manager()->areFriend($alice, $bob));
+    }
+
+    public function test_reject_removes_pending_request_for_pair(): void
+    {
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+        $manager = $this->manager();
+        $manager->request($alice, $bob);
+
+        $this->assertTrue($manager->getPendings($bob)->pluck('id')->contains($alice->id));
+        $this->assertTrue($manager->reject($bob, $alice));
+        $this->assertFalse($manager->getPendings($bob)->pluck('id')->contains($alice->id));
     }
 
     public function test_reject_fails_without_pending_request(): void
@@ -164,6 +208,23 @@ class FriendsManagerTest extends TestCase
         $this->assertTrue($this->manager()->areFriend($a, $b));
         $this->assertTrue($this->manager()->areFriend($b, $a));
         $this->assertFalse($this->manager()->getPendings($b)->pluck('id')->contains($a->id));
+    }
+
+    public function test_make_removes_pending_rows_in_both_directions_before_accepting(): void
+    {
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $manager = $this->manager();
+
+        $manager->request($a, $b);
+        $manager->request($b, $a);
+        $this->assertNotEmpty($manager->getPendings($a));
+        $this->assertNotEmpty($manager->getPendings($b));
+
+        $this->assertTrue($manager->make($a, $b));
+        $this->assertEmpty($manager->getPendings($a));
+        $this->assertEmpty($manager->getPendings($b));
+        $this->assertTrue($manager->areFriend($a, $b));
     }
 
     public function test_get_pendings_returns_requesters_for_target_user(): void
