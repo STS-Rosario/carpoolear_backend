@@ -2188,3 +2188,10 @@ This file tracks mutants killed during the current hardening session, with the r
     - `logged` middleware `except` list is exactly `['create', 'registerDonation', 'bankData', 'terms']`
     - `logged.optional` middleware `only` list is exactly `['create', 'registerDonation', 'bankData', 'terms']`
   - Mutant IDs: `f0f1a167bb1bb670`, `bc1f67bdac8db97c`, `bfc6379d103427a6`, `7074fd4b08aae966`, `6c46e9fb0ae93495`, `2d434692685868f1`, `402079dca80a6b71`, `322ff04769b7aaf2`.
+
+## NotificationController (`app/Http/Controllers/Api/v1/NotificationController.php`)
+
+- **Authentication middleware registration contract** (`__construct` line 18 in `tests/coverage/20260428_2310.txt`).
+  - Cause: endpoint tests already validated authenticated behavior and response envelopes, but they did not explicitly pin constructor middleware registration, so removing `$this->middleware('logged')` survived as an untested constructor mutation.
+  - Fix: extended `tests/Feature/Http/NotificationApiTest.php` with `test_constructor_registers_logged_middleware`, asserting the controller middleware stack contains `logged`.
+  - Mutant IDs: `779c872fc3be09d4`.
