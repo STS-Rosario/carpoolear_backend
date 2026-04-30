@@ -11,6 +11,7 @@ use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
+use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
@@ -486,5 +487,66 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $fresh = $ticket->fresh();
         $this->assertNotNull($fresh->closed_at);
         $this->assertSame($admin->id, (int) $fresh->closed_by);
+    }
+
+    public function test_reply_rejects_attachment_with_disallowed_mime(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $bad = UploadedFile::fake()->create('doc.pdf', 100, 'application/pdf');
+
+        $this->withHeaders(['Accept' => 'application/json'])
+            ->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
+                'message_markdown' => 'See attached.',
+                'attachments' => [$bad],
+            ])
+            ->assertUnprocessable();
+    }
+
+    public function test_reply_invokes_notification_services_with_ticket_from_and_ticket_owner(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->mock(NotificationServices::class, function ($mock) use ($ticket, $admin, $owner) {
+            $mock->shouldReceive('send')
+                ->twice()
+                ->withArgs(function ($notification, $users, $channel) use ($ticket, $admin, $owner) {
+                    if (! $notification instanceof SupportTicketReplyNotification) {
+                        return false;
+                    }
+                    $t = $notification->getAttribute('ticket');
+                    $from = $notification->getAttribute('from');
+                    if ($t === null || $from === null) {
+                        return false;
+                    }
+                    if ((int) $t->id !== (int) $ticket->id || (int) $from->id !== (int) $admin->id) {
+                        return false;
+                    }
+                    if (! $users instanceof User || (int) $users->id !== (int) $owner->id) {
+                        return false;
+                    }
+
+                    return in_array($channel, [
+                        \STS\Services\Notifications\Channels\DatabaseChannel::class,
+                        \STS\Services\Notifications\Channels\PushChannel::class,
+                    ], true);
+                });
+        });
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Hello owner.',
+        ])->assertOk();
     }
 }
