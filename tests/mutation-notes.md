@@ -2612,3 +2612,63 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 - **Mutant IDs (user report):** `transbank` / `transbankResponse` (`IfNegated`, `ConcatRemove*`, switch branches, etc.).
   - **Cause:** Earlier mutation runs predated **`Tests\Support\Webpay\FakeWebpayNormalFlowClient`**-based coverage.
   - **Fix:** **`tests/Feature/Http/PaymentControllerWebTest.php`** already pins plain-text missing **`tp_id`**, empty body for unknown passenger, **`initTransaction`** arguments (amount, buy order, return/final URLs), approved vs declined **`responseCode`** persistence, missing passenger on callback, null gateway output, and final view text.
+
+## `SendDeleteAccountRequestEmail` (`app/Jobs/SendDeleteAccountRequestEmail.php`)
+
+- **Mutant IDs (user report):** ~`L39` **`FalseToTrue`** on `config('carpoolear.log_emails', false)`; catch block ~`L79–L81` **`RemoveArrayItem`**; `failed()` ~`L104` **`FalseToTrue`**; ~`L109–L110` **`RemoveArrayItem`**.
+  - **Cause:** Success-path tests set **`log_emails`** explicitly; error / **`failed()`** payloads were only partially asserted, so mutants could flip the default flag, drop **`error_code` / `attempt` / `attempts` / `timestamp`**, or omit **`stack_trace`** merges on **`email_logs`** without failing.
+  - **Fix:** **`tests/Unit/Jobs/SendDeleteAccountRequestEmailTest.php`** — **`test_handle_when_log_emails_key_is_absent_does_not_touch_email_logs_channel`** (unset **`log_emails`** on **`carpoolear`**, **`Log::channel` `never()`**); **`test_handle_when_mail_fails_with_email_logging_merges_stack_trace_on_channel_error`**; stricter **`Mockery::on`** on catch and **`failed()`** logs for **`attempt` / `attempts` / `timestamp` / `stack_trace`**.
+
+## `CanSendEmail` (`app/Listeners/Notification/CanSendEmail.php`)
+
+- **Mutant IDs (user report):** ~`L28` **`InstanceOfToTrue`** (and related **`IfNegated`** survivors).
+  - **Cause:** Tests only exercised **`MailChannel`**; if **`instanceof MailChannel`** were widened to always true, non-mail channels would read **`$event->user->emails_notifications`** and break or mis-gate.
+  - **Fix:** **`tests/Unit/Listeners/Notification/CanSendEmailTest.php`** — **`test_handle_returns_null_for_non_mail_channels_without_touching_user_preferences`** uses **`DatabaseChannel`** and a user object **without** **`emails_notifications`**.
+
+## `ResetPasswordHandler` (`app/Listeners/Notification/ResetPasswordHandler.php`)
+
+- **Mutant IDs (user report):** ~`L33` **`RemoveMethodCall`** on **`Log::info('ResetPasswordHandler')`**.
+  - **Cause:** Tests asserted **`UserRepository::show`** and **`NotificationServices::send`** but not the diagnostic log line before the **`if ($user)`** branch.
+  - **Fix:** **`tests/Unit/Listeners/Notification/ResetPasswordHandlerTest.php`** expects **`Log::info('ResetPasswordHandler')`** in both the found-user and missing-user paths.
+
+## `TripRequestNotAnswer` (`app/Listeners/Notification/TripRequestNotAnswer.php`)
+
+- **Mutant IDs (user report):** ~`L31` **`IfNegated`**; ~`L33–L34` **`RemoveMethodCall`** on **`setAttribute` / `notify`**.
+  - **Cause:** No unit coverage for **`$to`** null vs non-null branches on **`RequestNotAnswer`**.
+  - **Fix:** **`tests/Unit/Listeners/Notification/TripRequestNotAnswerListenerTest.php`** — **`shouldNotReceive('send')`** when **`$to` is `null`**; **`send`** twice (channels on **`RequestNotAnswerNotification`**) with **`trip`** set when a user is targeted.
+
+## `PreventMessageEmail` (`app/Listeners/Notification/PreventMessageEmail.php`)
+
+- **Mutant IDs (user report):** ~`L39` **`NotEqualToNotIdentical`** (`!= 1` vs **`!== 1`**).
+  - **Cause:** Read state was always an **integer** `1` in tests; **`!== 1`** would treat **`'1'`** as unread and wrongly allow mail/database sends.
+  - **Fix:** **`tests/Unit/Listeners/Notification/PreventMessageEmailTest.php`** — **`test_handle_returns_false_when_read_state_is_string_one_under_loose_comparison`**.
+
+## `removeUserConversation` (`app/Listeners/Conversation/removeUserConversation.php`)
+
+- **Mutant IDs (user report):** ~`L32` **`EqualToIdentical`** (`==` vs **`===`** for **`trip->user_id`** vs **`from->id`**).
+  - **Cause:** Tests used matching integer ids only; strict identity could diverge when Eloquent / JSON delivers a **numeric string** on one side.
+  - **Fix:** **`tests/Unit/Listeners/Conversation/RemoveUserConversationListenerTest.php`** — **`test_handle_uses_loose_equality_so_numeric_string_trip_owner_id_matches_driver`**.
+
+## `ModuleLimitedRequest` (`app/Listeners/Request/ModuleLimitedRequest.php`)
+
+- **Mutant IDs (user report):** ~`L34` **`FalseToTrue`** on **`config(..., false)`**; ~`L37` **`RemoveIntegerCast` / `DecrementInteger` / `IncrementInteger`** (hour window).
+  - **Cause:** Disabled path was covered by setting **`false`**, not by **omitting** the config key (mutation can flip only the **default** argument). Hour-window edge cases already exist; this adds an absence check for the **enabled** flag.
+  - **Fix:** **`tests/Unit/Listeners/Request/ModuleLimitedRequestListenerTest.php`** — **`test_handle_does_nothing_when_module_enabled_config_key_is_absent`**.
+
+## `Queries` helper (`app/Helpers/Queries.php`)
+
+- **Mutant IDs (user report):** ~`L10–L15` **`IfNegated` / `IncrementInteger`** on **`make_pagination`** page number defaults.
+  - **Cause:** **`! $pageNumber`** behaviour for **`0`** was not distinguished from **`null`** / missing.
+  - **Fix:** **`tests/Unit/Helpers/QueriesTest.php`** — **`test_make_pagination_treats_page_number_zero_as_first_page`**.
+
+## `Dates` helper (`app/Helpers/Dates.php`)
+
+- **Mutant IDs (user report):** ~`L7`, `L12`, `L17` **`AlwaysReturnNull`**.
+  - **Cause:** Functions already had format tests; explicit **`assertNotNull`** on return values pins non-null contracts for **`parse_date`**, **`date_to_string`**, **`parse_boolean`**.
+  - **Fix:** **`tests/Unit/Helpers/DatesTest.php`**.
+
+## `AutoCancelPassengerRequestIfRequestLimitedNotification` (`app/Notifications/AutoCancelPassengerRequestIfRequestLimitedNotification.php`)
+
+- **Mutant IDs (user report):** ~`L30` **`EmptyStringToNotEmpty`** on URL concatenation / destination fallback.
+  - **Cause:** **`toEmail`** with and without a **`trip`** was not asserted for stable **`url`** / title content when **`$trip` is `null`**.
+  - **Fix:** **`tests/Unit/Notifications/AutoCancelPassengerRequestIfRequestLimitedNotificationTest.php`** — asserts **`/app/trips/{id}`** when present and **`…/trips/`** suffix when missing, plus non-empty title with unknown destination.
