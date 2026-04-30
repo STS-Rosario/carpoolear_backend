@@ -101,4 +101,80 @@ class ConversationsTransformerTest extends TestCase
         $this->assertSame($returnTrip->id, $payload['return_trip']['id']);
         $this->assertSame('Trip chat', $payload['title']);
     }
+
+    public function test_transform_skips_trip_payload_when_coordinate_module_disabled_even_with_trip_id(): void
+    {
+        config(['carpoolear.module_coordinate_by_message' => false]);
+
+        $viewer = User::factory()->create();
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'title' => 'Trip chat',
+            'trip_id' => $trip->id,
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertArrayNotHasKey('trip', $payload);
+        $this->assertArrayNotHasKey('return_trip', $payload);
+    }
+
+    public function test_transform_private_peer_without_image_uses_empty_string_not_null(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create([
+            'name' => 'No Image Peer',
+            'image' => null,
+        ]);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Private',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertSame('', $payload['image']);
+    }
+
+    public function test_transform_default_branch_keeps_conversation_title_for_non_private_types(): void
+    {
+        $viewer = User::factory()->create();
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'title' => 'Trip room title',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertSame('Trip room title', $payload['title']);
+        $this->assertSame('', $payload['image']);
+        $this->assertNull($payload['other_user_identity_validated_at']);
+    }
+
+    public function test_transform_users_list_includes_identity_and_last_connection_fields(): void
+    {
+        $viewer = User::factory()->create([
+            'last_connection' => Carbon::parse('2026-04-30 08:00:00'),
+            'identity_validated_at' => Carbon::parse('2026-04-29 09:00:00'),
+        ]);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Chat',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $viewerRow = collect($payload['users'])->firstWhere('id', $viewer->id);
+        $this->assertNotNull($viewerRow);
+        $this->assertSame('2026-04-30 08:00:00', $viewerRow['last_connection']);
+        $this->assertSame('2026-04-29 09:00:00', $viewerRow['identity_validated_at']);
+    }
 }
