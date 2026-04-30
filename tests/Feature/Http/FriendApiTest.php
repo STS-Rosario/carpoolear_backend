@@ -80,7 +80,9 @@ class FriendApiTest extends TestCase
         $u2 = \STS\Models\User::factory()->create();
         $this->actingAs($u1, 'api');
 
-        $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn(\STS\Models\User::all());
+        $this->friendsLogic->shouldReceive('getFriends')->once()->andReturn(
+            new \Illuminate\Database\Eloquent\Collection([$u1])
+        );
 
         $response = $this->call('GET', 'api/friends/');
         $this->assertTrue($response->status() == 200);
@@ -95,7 +97,9 @@ class FriendApiTest extends TestCase
         $u2 = \STS\Models\User::factory()->create();
         $this->actingAs($u1, 'api');
 
-        $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn(\STS\Models\User::all());
+        $this->friendsLogic->shouldReceive('getPendings')->once()->andReturn(
+            new \Illuminate\Database\Eloquent\Collection([$u1, $u2])
+        );
 
         $response = $this->call('GET', 'api/friends/pedings');
         $this->assertTrue($response->status() == 200);

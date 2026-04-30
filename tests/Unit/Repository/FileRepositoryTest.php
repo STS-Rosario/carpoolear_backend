@@ -148,7 +148,7 @@ class FileRepositoryTest extends TestCase
         $repo = new FileRepository;
         $resolved = $repo->resolveUploadFolder($this->testing_folder());
 
-        $expectedPrefix = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'carpoolear-test-uploads'.DIRECTORY_SEPARATOR;
+        $expectedPrefix = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'carpoolear-test-uploads-'.getmypid().DIRECTORY_SEPARATOR;
         $this->assertStringStartsWith($expectedPrefix, $resolved);
     }
 }

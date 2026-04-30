@@ -17,9 +17,9 @@ abstract class TestCase extends BaseTestCase
     protected bool $dropViews = true;
 
     /**
-     * Same as RefreshDatabase::beginDatabaseTransaction() without resetting migrated state when
-     * PDO reports no transaction (common with mysql drivers during teardown). Resetting forces a
-     * db:wipe + migrate before every test and invites deadlocks / corrupted catalogs under load.
+     * Same as RefreshDatabase::beginDatabaseTransaction(), including marking the schema stale when
+     * PDO reports no transaction at teardown (so the next test re-runs migrate:fresh). Without that
+     * branch, a lost transaction can leave committed rows from the previous test and break isolation.
      */
     public function beginDatabaseTransaction(): void
     {
@@ -51,6 +51,11 @@ abstract class TestCase extends BaseTestCase
                 $dispatcher = $connection->getEventDispatcher();
 
                 $connection->unsetEventDispatcher();
+
+                if ($connection->getPdo() && ! $connection->getPdo()->inTransaction()) {
+                    RefreshDatabaseState::$migrated = false;
+                }
+
                 $connection->rollBack();
                 $connection->setEventDispatcher($dispatcher);
                 $connection->disconnect();

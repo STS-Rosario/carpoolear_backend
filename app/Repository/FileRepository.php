@@ -18,7 +18,9 @@ class FileRepository
         if (app()->environment('testing')) {
             // Use the system temp dir so CI / local runs are not blocked by permissions on
             // `storage/framework/testing` (often root-owned or non-writable in sandboxes).
-            $base = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'carpoolear-test-uploads';
+            // Suffix with PID so a root-owned or permission-broken shared folder from another
+            // process cannot block this PHP run (see FileRepositoryTest / FileTest).
+            $base = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'carpoolear-test-uploads-'.getmypid();
 
             return $this->nomalize($base.DIRECTORY_SEPARATOR.trim($normalized, '/'));
         }
