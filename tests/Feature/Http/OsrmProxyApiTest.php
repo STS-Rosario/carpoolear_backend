@@ -34,6 +34,29 @@ class OsrmProxyApiTest extends TestCase
             ]);
     }
 
+    public function test_accepts_path_with_exactly_4096_characters(): void
+    {
+        $path = 'driving/'.str_repeat('0', 4088);
+        $this->assertSame(4096, strlen($path));
+
+        config([
+            'carpoolear.osrm_router_base_url' => 'https://osrm-proxy-test.example',
+            'carpoolear.osrm_router_fallback_base_url' => null,
+        ]);
+
+        Http::fake([
+            'https://osrm-proxy-test.example/*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [['distance' => 10, 'duration' => 1]],
+                'waypoints' => [],
+            ], 200),
+        ]);
+
+        $this->getJson('api/osrm/route/v1/'.$path)
+            ->assertOk()
+            ->assertJsonPath('code', 'Ok');
+    }
+
     public function test_returns_no_route_envelope_when_upstream_unreachable(): void
     {
         config([
@@ -89,6 +112,29 @@ class OsrmProxyApiTest extends TestCase
             ->assertJsonPath('routes.0.distance', 12_345);
 
         Http::assertSentCount(1);
+    }
+
+    public function test_query_string_participates_in_cache_key(): void
+    {
+        config([
+            'carpoolear.osrm_router_base_url' => 'https://osrm-proxy-test.example',
+            'carpoolear.osrm_router_fallback_base_url' => null,
+        ]);
+
+        Http::fake([
+            'https://osrm-proxy-test.example/*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [['distance' => 111, 'duration' => 11]],
+                'waypoints' => [],
+            ], 200),
+        ]);
+
+        $base = 'api/osrm/route/v1/driving/-1.1,-1.1;-2.2,-2.2';
+        $this->getJson($base.'?overview=false')->assertOk()->assertHeader('X-OSRM-Proxy-Cache', 'MISS');
+        $this->getJson($base.'?overview=full')->assertOk()->assertHeader('X-OSRM-Proxy-Cache', 'MISS');
+        $this->getJson($base.'?overview=false')->assertOk()->assertHeader('X-OSRM-Proxy-Cache', 'HIT');
+
+        Http::assertSentCount(2);
     }
 
     public function test_retries_fallback_base_when_primary_returns_unsuccessful_http(): void
