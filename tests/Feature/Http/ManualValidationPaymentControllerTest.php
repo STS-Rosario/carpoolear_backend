@@ -136,6 +136,26 @@ class ManualValidationPaymentControllerTest extends TestCase
         $this->assertNull($fresh->paid_at);
     }
 
+    public function test_non_success_result_is_urlencoded_in_redirect_query(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $row = ManualIdentityValidation::query()->create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $rawResult = 'declined by bank/issuer';
+        $response = $this->get(
+            'api/mercadopago/manual-validation-success?request_id='.$row->id.'&result='.urlencode($rawResult)
+        );
+
+        $response->assertRedirect();
+        $location = (string) $response->headers->get('Location');
+        $this->assertStringContainsString('payment_result='.urlencode($rawResult), $location);
+        $this->assertStringNotContainsString('payment_success=1', $location);
+    }
+
     public function test_unknown_request_id_does_not_persist_changes_but_redirect_includes_request_id(): void
     {
         $missingId = (int) (ManualIdentityValidation::query()->max('id') ?? 0) + 50_000;
@@ -154,6 +174,8 @@ class ManualValidationPaymentControllerTest extends TestCase
 
     public function test_success_without_payment_identifiers_leaves_payment_id_null(): void
     {
+        Log::spy();
+
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         $row = ManualIdentityValidation::query()->create([
             'user_id' => $user->id,
@@ -169,5 +191,35 @@ class ManualValidationPaymentControllerTest extends TestCase
         $fresh = $row->fresh();
         $this->assertTrue((bool) $fresh->paid);
         $this->assertNull($fresh->payment_id);
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($row, $user): bool {
+            return $message === 'Manual identity validation payment success'
+                && (string) $context['request_id'] === (string) $row->id
+                && (int) $context['user_id'] === (int) $user->id
+                && array_key_exists('payment_id', $context)
+                && $context['payment_id'] === null;
+        });
+    }
+
+    public function test_success_without_new_payment_identifier_logs_existing_payment_id_context(): void
+    {
+        Log::spy();
+
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $row = ManualIdentityValidation::query()->create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            'payment_id' => 'previous-mp-id',
+        ]);
+
+        $this->get('api/mercadopago/manual-validation-success?request_id='.$row->id)->assertRedirect();
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($row, $user): bool {
+            return $message === 'Manual identity validation payment success'
+                && (string) $context['request_id'] === (string) $row->id
+                && (int) $context['user_id'] === (int) $user->id
+                && (string) $context['payment_id'] === 'previous-mp-id';
+        });
     }
 }
