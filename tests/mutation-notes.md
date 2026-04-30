@@ -2359,3 +2359,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_logout_returns_success_payload_when_session_matches` / `test_logout_returns_unprocessable_when_device_not_found`
     - `test_index` asserting the combined `{ data, count }` list envelope
   - Mutant IDs: `538849ec537c2470`, `641927f586b9fbc7`, `e7edfaf5d240b687`, `75889472ea4f5c89`, `a31b6c655290afd5`, `a53a7014a555fcaf`, `f1d3c1510b79dbc0`.
+
+## CampaignRewardController (`app/Http/Controllers/Api/v1/CampaignRewardController.php`) — strict JSON + logging contracts
+
+- **`purchase()` early-return payloads, success envelope, Mercado Pago catch logging** (`purchase()` lines ~23–77 in `tests/coverage/20260428_2310.txt`).
+  - Cause: branch coverage existed via `CampaignRewardControllerIntegrationTest`, but assertions still allowed extra JSON keys and did not observe `Log::info` / `Log::error`, so mutants could strip array items from HTTP payloads, remove logging calls, or weaken catch-context arrays without failing CI when Pest mutation runs included this file.
+  - Fix: tightened `tests/Feature/Http/CampaignRewardControllerIntegrationTest.php`:
+    - `404` / inactive / sold-out / `500` paths now use `assertExactJson([...])` so only the documented `error` bodies are accepted.
+    - Happy path uses `assertExactJson` for `message` + `data.url` + `data.sandbox_url`, and `Log::spy()` asserts `Preference created` with a non-null `preference` context.
+    - Preference failure path uses `assertExactJson` for the generic error string and `Log::spy()` asserts the error log message substring plus `campaign_id`, `reward_id`, and exception text in context.
+  - Mutant IDs: `ed58202f2968321d`, `18ae731ddd647c45`, `e61645dae855cb13`, `87c0458c9deb3f5b`, `03fe0485e559dd70`, `7a8b5e2c4ebef271`, `25d1ac8530d7eb1d`, `d0fc5cc987eb6e53`, `4d22b05a35c458e8`, `3c0255e0130d098d`, `b7874dd7f217144a`, `6cb7cfefc0569bcb`, `b5cf69a2993e8fea`, `806f7c4258581c01`, `e7f71b4dcdb3efde`, `e1e6cc14e34bcfb8`, `980a086a8060292b`, `e21b61e9aa2fb3db`, `942cffd37fe68dfb`, `bf230acd583e5a9a`, `07a8b51ade4b0831`, `26581ee42f3b7f6a`, `be4b0f83d861bb43`, `97b622a5caccb7af`, `2b63eb344ad90c0b`, `357ff8cd100de9c0`, `c07d6d64bf3192fc`, `b68e7b0c0626b774`, `30eedcd128fb8bda`, `e17232f628a92f50`, `8e39be8d489325af`, `e8fb30d38845a2d8`, `6854d3b50def33d0`, `10e186d7166873a9`, `2462fac2b5eec24a`, `e5915c5d5cd038ea`, `b92921755cd7e92f`, `4e124ed8c5530765`, `85dbb56933c9568c`, `d7f5b7031c7f085d`, `e55afc6aa036d6f9`.
