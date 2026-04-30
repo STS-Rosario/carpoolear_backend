@@ -242,6 +242,25 @@ class MercadoPagoWebhookTest extends TestCase
             ->assertJson(['error' => 'Invalid external reference']);
     }
 
+    public function test_payment_created_with_malformed_hashed_reference_format_returns_invalid_external_reference(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $paymentId = 66110024;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $paymentId, 'req-bad-format-ref', 'wh-secret-test');
+
+        $this->stubMercadoPagoPayments([
+            $paymentId => $this->mercadoPagoPaymentPayload('hash:encoded:extra', $paymentId),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
+            'action' => 'payment.created',
+            'data_id' => (string) $paymentId,
+        ], $headers)
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid external reference']);
+    }
+
     public function test_order_processed_for_manual_validation_qr_prefix_marks_paid_when_accredited(): void
     {
         config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
@@ -321,6 +340,45 @@ class MercadoPagoWebhookTest extends TestCase
         ], $headers)
             ->assertStatus(400)
             ->assertJson(['error' => 'Invalid payload']);
+    }
+
+    public function test_order_processed_with_invalid_signature_is_rejected(): void
+    {
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        $orderId = 'ord-invalid-signature';
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
+            'action' => 'order.processed',
+            'data' => [
+                'external_reference' => 'manual_validation_123',
+                'status' => 'processed',
+                'status_detail' => 'accredited',
+            ],
+        ], [
+            'x-request-id' => 'req-invalid-signature',
+            'x-signature' => 'ts=1,v1=invalid-hmac',
+        ])
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid request']);
+    }
+
+    public function test_order_processed_missing_data_id_query_is_rejected_as_invalid_request(): void
+    {
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        // Signature is generated for a valid id, but request omits data.id query param.
+        $headers = $this->orderProcessedSignatureHeaders('order-id-that-will-be-missing', 'req-missing-data-id', 'wh-secret-qr-test');
+
+        $this->postJson('/webhooks/mercadopago', [
+            'action' => 'order.processed',
+            'data' => [
+                'external_reference' => 'manual_validation_123',
+                'status' => 'processed',
+                'status_detail' => 'accredited',
+            ],
+        ], $headers)
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid request']);
     }
 
     public function test_order_processed_with_non_manual_external_reference_is_acknowledged_without_side_effects(): void
