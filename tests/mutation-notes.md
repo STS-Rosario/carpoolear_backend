@@ -1930,3 +1930,13 @@ This file tracks mutants killed during the current hardening session, with the r
 - **`index()` list envelope** (`index()` ~67–72; report ~44361–44372 `b736079953f89cd7` `RemoveArrayItem`, `84645031db77ee06` `AlwaysReturnNull` on `['data' => $models]`).
   - Cause: index was only asserted for inclusion of an active row, not as an explicit `{ data: … }` envelope when the list is empty.
   - Fix: authenticated `GET api/subscriptions` remains `200` with a `data` array (`test_index_returns_active_subscriptions_for_user`); unauthenticated access is rejected by the strengthened auth test.
+
+## ManualIdentityValidation (`app/Models/ManualIdentityValidation.php`)
+
+- **Mass-assignment contract for manual validation lifecycle fields** (`$fillable` lines 17–29 in `tests/coverage/20260428_2310.txt`).
+  - Cause: model tests covered relations/casts/helpers but didn’t pin the exact fillable surface; removing any fillable key could survive if tests only touched a subset of attributes.
+  - Fix: added to `tests/Unit/Models/ManualIdentityValidationTest.php`:
+    - `test_fillable_contains_expected_mass_assignable_attributes`
+    - `test_mass_assignment_persists_all_review_and_payment_fields`
+    These assert both the full fillable list and real `create()` persistence for payment/review/manual-start fields.
+  - Mutant IDs: `84f43907322f962b`, `4705b6263166b099`, `3cb08e07de73c1cc`, `6e62d8422a8d839c`, `7d8adabe27659fe4`, `4ba4552021d52953`, `79835424ac10bb8f`, `e58dad87422beaa7`, `f2aa4b472624b662`, `794c4a564fba43ee`, `0a81e52988778478`, `e6bc411f37c6bdec`, `3dbd099e62abc909`.
