@@ -1135,6 +1135,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the listener was never invoked from tests, so removing the `Log::info` call left the suite unchanged.
   - Fix: `Tests\Unit\Listeners\TestJobListenerTest::test_handle_logs_when_user_create_event_is_processed` calls `handle()` with a real `STS\Events\User\Create` payload and asserts `Log::info` ran once with the fixed message (queue/listener wiring remains unchanged).
 
+## `CreateRatingDeleteTrip` listener (`app/Listeners/Ratings/CreateRatingDeleteTrip.php`)
+
+- **`handle()` accepted-passenger gate, rating row, and delete-trip notification** (`handle()` ~31–46; report `tests/coverage/20260428_2310.txt` ~5887–5899 and UNTESTED ~63168–63266).
+  - Cause: nothing exercised `handle()` after a trip delete, so mutants could change `$passengers->count() > 0`, nudge `Str::random(40)`, drop `RatingRepository::create`, or strip `DeleteTripNotification` `setAttribute` / `notify` calls without failing CI.
+  - Fix: `Tests\Unit\Listeners\Ratings\CreateRatingDeleteTripListenerTest` uses a mocked `RatingRepository` plus `NotificationServices`: pending-only passengers leave `create` and `send` uncalled; one or two `STATE_ACCEPTED` passengers (not the driver) assert `create` with passenger→driver ids, trip id, `Passenger::TYPE_CONDUCTOR`, `Passenger::STATE_ACCEPTED`, and a 40-character hash, and three `send` invocations per passenger with `DeleteTripNotification` carrying the trip, owner as `from`, and a 40-char `hash`.
+  - Mutant IDs: `74f05dc5aa0b13e8` (`GreaterToGreaterOrEqual` on `> 0`), `6ab70a2b5915437a` / `4e1e20b437dcc725` (`DecrementInteger` / `IncrementInteger` on that comparison), `372d7bdf3c838ec8` / `2c95141ca503b1e0` (`DecrementInteger` / `IncrementInteger` on `Str::random(40)`), `fc82d10befeead8f` / `0b04659f7c2820f1` / `57399622bc3b96b7` / `6f19fd7e497198ef` (`RemoveMethodCall` on `setAttribute('trip'|'from'|'hash')` and `notify`).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
