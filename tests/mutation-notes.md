@@ -1989,3 +1989,10 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_casts_include_points_route_data_and_expires_at`
     These assert the exact fillable list and required casts (`points`, `route_data`, `expires_at`).
   - Mutant IDs: `337fe7413e2924ba`, `0357ec5a936b9e17`, `a203dddbdb2afa94`, `ae712c541080994a`, `4d3d9d3cb51614c1`, `4b787bf9379b0f5d`, `47ba9c07ca364dfe`.
+
+## DeleteAccountRequest (`app/Models/DeleteAccountRequest.php`)
+
+- **Mass-assignment contract for delete-request lifecycle fields** (`$fillable` lines 16–19 in `tests/coverage/20260428_2310.txt`).
+  - Cause: tests already pinned action constants and datetime casts, but they did not explicitly lock the full fillable list, so `RemoveArrayItem` mutants on request payload fields survived.
+  - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/DeleteAccountRequestTest.php` to assert the complete fillable contract.
+  - Mutant IDs: `4e426c4b533f019c`, `99d2660358954bb2`, `741510b11a90a082`, `80be6b480e417b75`.
