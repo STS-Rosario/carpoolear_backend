@@ -38,7 +38,7 @@ return [
         // Incoming Webhook URL for forbidden profile edit attempts (e.g. is_admin, banned, etc.)
         'forbidden_edit_webhook_url' => env('SLACK_FORBIDDEN_EDIT_WEBHOOK_URL'),
     ],
-    
+
     'mercadopago' => [
         'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
         'qr_payment_access_token' => env('MERCADO_PAGO_QR_PAYMENT_ACCESS_TOKEN'),
@@ -60,5 +60,12 @@ return [
         'app_secret' => env('WHATSAPP_APP_SECRET'),
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
+    ],
+
+    'transbank' => [
+        'webpay_plus' => [
+            'commerce_code' => env('TRANSBANK_WEBPAY_PLUS_COMMERCE_CODE'),
+            'api_key' => env('TRANSBANK_WEBPAY_PLUS_API_KEY'),
+        ],
     ],
 ];
