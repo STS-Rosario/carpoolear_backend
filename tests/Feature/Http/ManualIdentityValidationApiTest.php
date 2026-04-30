@@ -7,6 +7,8 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use MercadoPago\Resources\Preference;
+use Mockery;
+use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
 use STS\Services\MercadoPagoService;
@@ -16,6 +18,12 @@ class ManualIdentityValidationApiTest extends TestCase
 {
     use DatabaseTransactions;
 
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -24,6 +32,17 @@ class ManualIdentityValidationApiTest extends TestCase
             'carpoolear.identity_validation_enabled' => true,
             'carpoolear.identity_validation_manual_enabled' => true,
         ]);
+    }
+
+    public function test_constructor_registers_logged_middleware(): void
+    {
+        $controller = new ManualIdentityValidationController;
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+
+        $this->assertNotNull($logged);
     }
 
     /**
@@ -402,6 +421,36 @@ class ManualIdentityValidationApiTest extends TestCase
         $this->assertSame(0, ManualIdentityValidation::where('user_id', $user->id)->count());
     }
 
+    public function test_preference_failure_keeps_existing_unpaid_request(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 500,
+        ]);
+
+        $user = User::factory()->create();
+        $existing = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->mock(MercadoPagoService::class, function ($mock) use ($existing) {
+            $mock->shouldReceive('createPaymentPreferenceForManualValidation')
+                ->once()
+                ->withArgs(fn (int $requestId): bool => $requestId === $existing->id)
+                ->andThrow(new \RuntimeException('Mercado Pago unavailable'));
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference')
+            ->assertStatus(500);
+
+        $this->assertDatabaseHas('manual_identity_validations', ['id' => $existing->id]);
+        $this->assertSame(1, ManualIdentityValidation::where('user_id', $user->id)->count());
+    }
+
     public function test_qr_order_returns_unprocessable_when_qr_flow_disabled(): void
     {
         config([
@@ -566,6 +615,38 @@ class ManualIdentityValidationApiTest extends TestCase
             ->assertJsonPath('message', 'Failed to create QR order.');
 
         $this->assertSame(0, ManualIdentityValidation::where('user_id', $user->id)->count());
+    }
+
+    public function test_qr_order_failure_keeps_existing_unpaid_request(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.identity_validation_manual_qr_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 2_000,
+            'carpoolear.qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+        $existing = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->mock(MercadoPagoService::class, function ($mock) use ($existing) {
+            $mock->shouldReceive('createQrOrderForManualValidation')
+                ->once()
+                ->withArgs(fn (int $requestId): bool => $requestId === $existing->id)
+                ->andThrow(new \RuntimeException('Mercado Pago unavailable'));
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertStatus(500);
+
+        $this->assertDatabaseHas('manual_identity_validations', ['id' => $existing->id]);
+        $this->assertSame(1, ManualIdentityValidation::where('user_id', $user->id)->count());
     }
 
     protected function createPaidValidationRequest(User $user): ManualIdentityValidation
