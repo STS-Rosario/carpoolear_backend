@@ -1036,6 +1036,20 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no end-to-end coverage for null/invalid gateway payloads, success vs declined `responseCode`, or missing passenger, so guard and `view()` data mutants survived.
   - Fix: same test class drives `POST /transbank-respuesta` with a fake gateway payload: `assertViewHas` for `Transbank ouput empty.` when the client returns `null`; success (`responseCode == 0`) asserts `Passenger` state `STATE_ACCEPTED`, `payment_status` `ok`, and voucher `transbank` view data; decline (`-1`) asserts persisted `payment_status` prefix `error:-1:` and the Spanish copy; unknown `buyOrder` asserts `Operación no encontrada`. `GET /transbank-final` asserts the success blade message.
 
+## `SendPasswordResetEmail` (`app/Jobs/SendPasswordResetEmail.php`)
+
+- **Public queue contract (`$tries`, `$backoff`, `$timeout`)** (`~19–21`; report `tests/coverage/20260428_2310.txt` ~61097–61241, e.g. `f9e4a26bc8ccf1f1`, `671183cb081f3b2f`, `a97b7bd6cd0acedb` `RemoveArrayItem` on backoff elements).
+  - Cause: only `Queue::assertPushed` existed from password-reset HTTP tests; nothing executed the job class body, so integer/array mutants on retry metadata never failed CI.
+  - Fix: `Tests\Unit\Jobs\SendPasswordResetEmailTest::test_job_exposes_retry_and_timeout_settings` instantiates the job and asserts `3`, `[60, 300, 900]`, and `30`.
+
+- **`handle()` logging + mail** (`~44–88`; report ~61253–61555, e.g. `1852deb5736b67a4` `FalseToTrue` on `log_emails`, `5dea70580896df65` / `b842307513ce3f0d` `RemoveMethodCall` on `Log::info` / `Mail::send`, `57236eb0f8acc0b6` / `fd65cf8322b5fd73` `IfNegated` on the `email_logs` branch, `3a7da4ccd46ce8c5` / `394d9637b800a7c1` on `array_merge` / `substr` token masking, `e47e26da3d6ffe79` on success `Log::info`).
+  - Cause: `handle()` was never run under test; mutants could drop log context keys, skip `Mail::send`, invert `log_emails`, or strip token redaction without detection.
+  - Fix: `test_handle_sends_reset_password_mailable` uses `Mail::fake()` and `Mail::assertSent(ResetPassword::class, …)` with recipient + constructor fields. `test_handle_logs_to_email_logs_when_enabled` enables `carpoolear.log_emails`, expects ordered `Log::info` envelopes and two `email_logs` `info` calls including truncated token prefix/suffix.
+
+- **`handle()` catch + `failed()`** (`~90–137`; report ~61568+ tail, e.g. `RemoveMethodCall` on `Log::error`, channel `critical`, `RemoveArrayItem` on merged failure payloads).
+  - Cause: failure and permanent-failure paths were not exercised; stripping `Log::error`, rethrow, or `failed()` channel logging could survive.
+  - Fix: `test_handle_rethrows_after_logging_when_mail_fails` makes `Mail::send` throw and expects `Log::error` with the exception message plus a rethrown `RuntimeException`. `test_failed_logs_permanent_failure_and_optional_email_channel` calls `failed()` with `log_emails` true and expects `Log::error` plus `email_logs` `critical` with a non-empty `stack_trace`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
