@@ -1129,6 +1129,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Listeners\Notification\TripRequestRemainderListenerTest::test_handle_skips_notification_when_trip_has_no_driver` passes a plain trip payload with `user` missing/`null` and asserts `NotificationServices::send` is never called. `test_handle_notifies_trip_owner_on_all_channels` uses a factory `Trip` tied to a `User` and expects three channel sends with `RequestRemainderNotification` carrying that trip and the owner as recipient.
   - Mutant IDs: `f0f6004bd73e4246` (`IfNegated` ~31), `b02208cda2b2ec89` (`setAttribute` `trip`), `b9abadcd0aeece93` (`notify`).
 
+## `TestJob` listener (`app/Listeners/TestJob.php`)
+
+- **`handle()` observability** (`handle()` ~30–33; report `tests/coverage/20260428_2310.txt` ~5884–5885 and UNTESTED ~63157, mutant ID `1dfe9f1cb37bd1be` `RemoveMethodCall` on `\Log::info('create handler')`).
+  - Cause: the listener was never invoked from tests, so removing the `Log::info` call left the suite unchanged.
+  - Fix: `Tests\Unit\Listeners\TestJobListenerTest::test_handle_logs_when_user_create_event_is_processed` calls `handle()` with a real `STS\Events\User\Create` payload and asserts `Log::info` ran once with the fixed message (queue/listener wiring remains unchanged).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
