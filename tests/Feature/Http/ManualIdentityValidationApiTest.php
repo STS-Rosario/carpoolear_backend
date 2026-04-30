@@ -10,6 +10,7 @@ use Mockery;
 use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
+use STS\Services\HeicToJpegConverter;
 use STS\Services\MercadoPagoService;
 use Tests\TestCase;
 
@@ -865,5 +866,33 @@ class ManualIdentityValidationApiTest extends TestCase
         $this->assertStringEndsWith('.jpg', $validationRequest->front_image_path);
 
         @unlink($front->getRealPath());
+    }
+
+    public function test_submit_stores_uploads_via_disk_store_when_heic_converter_returns_null(): void
+    {
+        $this->mock(HeicToJpegConverter::class, function ($mock) {
+            $mock->shouldReceive('convert')->times(3)->andReturn(null);
+        });
+
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+
+        $front = UploadedFile::fake()->image('front.jpg', 80, 80)->size(400);
+        $back = UploadedFile::fake()->image('back.jpg', 80, 80)->size(400);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 80, 80)->size(400);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])->assertStatus(201);
+
+        $validationRequest->refresh();
+        $this->assertNotNull($validationRequest->front_image_path);
+        $this->assertNotNull($validationRequest->back_image_path);
+        $this->assertNotNull($validationRequest->selfie_image_path);
+        $this->assertNotNull($validationRequest->submitted_at);
+        Storage::disk('local')->assertExists($validationRequest->front_image_path);
     }
 }
