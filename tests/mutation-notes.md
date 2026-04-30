@@ -2266,3 +2266,12 @@ This file tracks mutants killed during the current hardening session, with the r
     - `WhatsApp webhook verification failed` warning context (`expected_token`, `received_token`)
     This keeps tests behavior-first while pinning observability contract expected by operations.
   - Mutant IDs: `49eebc7c84d6a236`, `06d6907f546f56a4`, `1b40a41c8f85e23f`, `1835063fccada1d5`, `06c87480f0ae499d`, `00cc2d10fdb45309`, `e810a7aa4cb25da5`, `031ee8a0189f41b5`, `ac9e662cc78045cf`, `f7ef799c8e053c9e`, `5450748d740c0825`, `bb4339f9078f8fcb`, `848d20df777e8041`.
+
+## CampaignController (`app/Http/Controllers/Api/v1/CampaignController.php`)
+
+- **Public campaign payload contract for donation totals** (`showBySlug()` line 31 in `tests/coverage/20260428_2310.txt`).
+  - Cause: campaign tests covered not-found/visibility and relation filtering/order, but they did not explicitly pin fallback behavior when there are no paid donations and `total_donated` can be null.
+  - Fix: extended `tests/Feature/Http/CampaignApiTest.php` with `test_show_by_slug_defaults_total_donated_to_zero_when_campaign_has_no_paid_donations`, asserting the API returns:
+    - empty `donations` array when only pending donations exist
+    - `total_donated = 0` fallback
+  - Mutant IDs: `8b0aaaae3c8c357a`, `1c83942d0a8b9644`, `b8a17a9df28260ea`.
