@@ -330,4 +330,118 @@ class RatingManagerTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_active_ratings_processes_only_trips_matching_mail_send_is_passenger_and_date_filters(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-11-20 10:00:00');
+
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+
+        $eligibleTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-11-01 08:00:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $eligibleTrip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $mailAlreadySentTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-11-01 08:00:00',
+            'mail_send' => true,
+            'is_passenger' => false,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $mailAlreadySentTrip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $passengerTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-11-01 08:00:00',
+            'mail_send' => false,
+            'is_passenger' => true,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $passengerTrip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $futureTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-12-01 08:00:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $futureTrip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $this->manager()->activeRatings('2026-11-15 12:00:00');
+
+        $this->assertSame(2, Rating::query()->where('trip_id', $eligibleTrip->id)->count());
+        $this->assertSame(1, (int) $eligibleTrip->fresh()->mail_send);
+
+        $this->assertSame(0, Rating::query()->where('trip_id', $mailAlreadySentTrip->id)->count());
+        $this->assertSame(0, Rating::query()->where('trip_id', $passengerTrip->id)->count());
+        $this->assertSame(0, Rating::query()->where('trip_id', $futureTrip->id)->count());
+
+        Event::assertDispatched(PendingRateEvent::class, 2);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_active_ratings_deduplicates_same_passenger_and_excludes_canceled_request_type(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-11-21 10:00:00');
+
+        $driver = User::factory()->create();
+        $samePassenger = User::factory()->create();
+        $excludedPassenger = User::factory()->create();
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-11-01 08:00:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $samePassenger->id,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $samePassenger->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_DRIVER,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $excludedPassenger->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_REQUEST,
+        ]);
+
+        $this->manager()->activeRatings('2026-11-15 12:00:00');
+
+        $ratings = Rating::query()->where('trip_id', $trip->id)->get();
+        $this->assertCount(2, $ratings);
+        $this->assertTrue($ratings->contains(fn ($row) => (int) $row->user_id_from === $driver->id && (int) $row->user_id_to === $samePassenger->id));
+        $this->assertTrue($ratings->contains(fn ($row) => (int) $row->user_id_from === $samePassenger->id && (int) $row->user_id_to === $driver->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_to === $excludedPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_from === $excludedPassenger->id));
+
+        Event::assertDispatched(PendingRateEvent::class, 2);
+        $this->assertSame(1, (int) $trip->fresh()->mail_send);
+
+        Carbon::setTestNow();
+    }
 }
