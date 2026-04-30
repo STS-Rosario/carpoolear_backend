@@ -1359,6 +1359,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
   - Mutant IDs: `b7b0eb54270a7495`.
 
+## `AcceptPassengerNotification` (`app/Notifications/AcceptPassengerNotification.php`)
+
+- **Channels + email/push metadata contract** (`via` list, `toEmail()` metadata, and `toPush().image`; report RUN ~6814 and UNTESTED/UNCOVERED ~67075–67231).
+  - Cause: previous tests validated message/url and `getExtras()` branching, but did not pin channel list plus metadata keys (`name_app`, `domain`, `image`), so `RemoveArrayItem` mutants on those payloads survived.
+  - Fix: `Tests\Unit\Notifications\AcceptPassengerNotificationTest` now asserts exact `getVia()` channels, config-driven email metadata keys, and static push image in both present and fallback flows.
+  - Mutant IDs: `4a12efbfa910faad`, `470e4f7fd1bba29e`, `10585b418562ac66`, `a645d18f25efcf9d`, `9ff998c76c09454b`, `c0d7babbc2413be8`.
+
+- **`getExtras()` waiting-payment branch guard semantics** (`getExtras()` ~48–53; report UNTESTED ~67159–67219).
+  - Cause: this method has compound guards (`is_object($to) && isset($to->id)`, request lookup, and waiting-payment state checks) where weak assertions can miss operator/equality mutants.
+  - Fix: existing branch tests are kept behavior-first and explicit: no matching token request => `type=trip`; token user with `STATE_WAITING_PAYMENT` => `type=my-trips` and correct `trip_id`, which exercises object/id guard, state gate, and id propagation through the public payload.
+  - Mutant IDs: `a5dbb5bd35d432b9`, `fdfb561b3809b6b1`, `f12e359ff30e9720`, `0dbb922329f39783`, `07d8ea2961b27a1d`, `0c0994b3db973a35`, `7ef3481701a3fa15`, `4caac72f000a9181`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
