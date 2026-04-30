@@ -3,6 +3,7 @@
 namespace Tests\Unit\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use STS\Http\Middleware\UserLoggin;
 use STS\Models\User;
@@ -212,5 +213,25 @@ class UserLogginTest extends TestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('jwt-user-ok', $response->getContent());
+    }
+
+    public function test_jwt_exception_logs_class_and_request_url_context(): void
+    {
+        Log::spy();
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parseToken->authenticate')->andThrow(new \RuntimeException('Token invalid'));
+
+        $middleware = new UserLoggin($jwt);
+        $response = $middleware->handle(
+            Request::create('https://api.example/protected/path?foo=bar', 'GET'),
+            fn () => response('no', 200)
+        );
+
+        Log::shouldHaveReceived('info')
+            ->once()
+            ->with('JWT Exception: RuntimeException - Request URL: https://api.example/protected/path');
+        $this->assertSame(401, $response->getStatusCode());
+        $this->assertSame(['message' => 'Unauthorized.'], $response->getData(true));
     }
 }
