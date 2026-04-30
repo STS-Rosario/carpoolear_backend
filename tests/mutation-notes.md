@@ -926,6 +926,34 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `render()` assumed `$errors` was always an array or `MessageBag`; calling `toArray()` on a translation string fatals, masking the intended `422`.
   - Fix: normalize scalar/string errors to a minimal `['error' => […]]` array before building the JSON response so `test_update_returns_unprocessable_when_user_does_not_own_trip` (and similar controllers) receive consistent `422` envelopes.
 
+## DeviceController (`app/Http/Controllers/Api/v1/DeviceController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~22; report `tests/coverage/20260428_2310.txt` ~50681 `538849ec537c2470` `RemoveMethodCall`).
+  - Cause: `DeviceApiTest` mocked `DeviceManager`, so stripping `middleware('logged')` never failed CI on `api/devices*`.
+  - Fix: `Tests\Feature\Http\DeviceControllerIntegrationTest::test_device_endpoints_require_authentication` hits `GET|POST|PUT|DELETE /api/devices` and `POST /api/devices/logout` without auth and expects `401` + `Unauthorized.` on each.
+
+- **`register` / `update` success JSON** (`~34`, `~47`; report ~50693–50705, e.g. `641927f586b9fbc7`, `e7edfaf5d240b687` `RemoveArrayItem`).
+  - Cause: mocks returned loose arrays without asserting `['data' => …]` or stable keys tied to persistence.
+  - Fix: real `POST /api/devices` and `PUT /api/devices/{id}` with a JWT from `api/login` (same pattern as `AuthControllerApiTest`); `test_register_returns_device_payload_for_valid_body_and_jwt` and `test_update_returns_device_payload_when_row_belongs_to_user` assert `200`, `data.id` / `device_id` / `user_id`, and `assertDatabaseHas` on `users_devices` where applicable.
+
+- **`register` / `update` failure path** (`~33`, `~46`; `IfNegated` already marked killed in the excerpted report block, but HTTP error envelopes were not pinned).
+  - Cause: validation failures and cross-user updates did not assert `422` + `Bad request exceptions`.
+  - Fix: `test_register_returns_unprocessable_when_validation_fails` omits `device_id`; `test_update_returns_unprocessable_when_device_belongs_to_another_user` uses a second logged-in user.
+
+- **`index()` list + count** (`~65–67`; report ~50665–50667 show mixed killed/UNTESTED in the same RUN snapshot—integration still lacked HTTP assertions on both keys).
+  - Cause: mocked `getDevices` / `getActiveDevicesCount` never asserted the literal `count` field alongside `data`.
+  - Fix: `test_index_returns_devices_and_active_count` registers (same JWT session updates one row, then a second `POST` refreshes it) and asserts `count` and `data` length stay consistent with `DeviceManager::getActiveDevicesCount` (notifications-enabled rows).
+
+- **`delete()` response** (`~58`; report ~50717 `75889472ea4f5c89` `AlwaysReturnNull`).
+  - Cause: nothing asserted the `200` JSON primitive body returned after `delete()`.
+  - Fix: `test_delete_returns_ok_string_for_owner_but_does_not_remove_owned_device` and `test_delete_as_non_owner_removes_device_and_returns_ok` assert `200` and exercise `DeviceManager::delete` semantics over HTTP (owner call keeps the row; non-owner id match deletes—see manager unit tests).
+
+- **`logout()` success vs failure** (`~76–80`; report ~50729–50756, e.g. `a31b6c655290afd5`, `a53a7014a555fcaf`, `f1d3c1510b79dbc0`).
+  - Cause: no HTTP test hit `POST /api/devices/logout` with a real `DeviceManager::logoutDevice` outcome; success/failure JSON mutants stayed UNCOVERED.
+  - Fix: `test_logout_returns_success_when_device_registered_for_same_session` registers with the same bearer token then posts logout and expects `Device logged out successfully` plus zero rows for the user; `test_logout_returns_unprocessable_when_session_has_no_registered_device` expects `422` + `Device not found`.
+
+- **Production fix:** `delete()` called `DeviceManager::delete($user, $id)` with arguments reversed versus the manager signature `delete($session_id, $user)` and `is_int($session_id)` branching. The controller now calls `delete((int) $id, $user)` so route ids resolve by primary key instead of misrouting the `User` instance through the `session_id` branch.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
