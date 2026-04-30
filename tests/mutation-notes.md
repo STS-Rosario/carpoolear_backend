@@ -2285,3 +2285,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_create_without_authenticated_user_returns_user_not_logged_when_middleware_is_bypassed`
     These validate that protection exists both at route middleware level and in controller-level guard behavior.
   - Mutant IDs: `90b971ed534c165d`, `5d2065e545df76ba`.
+
+## OsrmProxyController (`app/Http/Controllers/Api/v1/OsrmProxyController.php`)
+
+- **Path-length boundary and cache-key query contract** (`route()` line 21 and cache key composition around line 36 in `tests/coverage/20260428_2310.txt`).
+  - Cause: OSRM proxy tests already covered over-limit path rejection, upstream fallback, and basic cache hit/miss; however, they did not pin the exact 4096-character boundary behavior or guarantee that query-string variants produce distinct cache keys.
+  - Fix: extended `tests/Feature/Http/OsrmProxyApiTest.php` with:
+    - `test_accepts_path_with_exactly_4096_characters`
+    - `test_query_string_participates_in_cache_key`
+    These ensure boundary correctness (`> 4096` only) and prevent cache collisions across different query strings.
+  - Mutant IDs: `5111317cfc3f97d3`, `b2ddabce106d3ee4`, `bbee9e628c995f42`, `deaf6e334992589f`, `cc27b4b6e7ed5581`, `c799ef935ec62b93`, `5a6e7966157a659d`, `d7c8083d03bebf49`, `44e6628a9cab4887`, `c62f2e9a1954f748`, `62d43b0c36680083`, `58748f2ba654608e`.
