@@ -1304,6 +1304,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts exact `/trips/{tripId}` when trip exists and always checks static logo `image`.
   - Mutant IDs: `f5d2e8602d41ff8d`, `0b61cbd3b87fd470`, `4f512b122933595c`, `aad9ebde1ddeee92`.
 
+## `HourLeftNotification` (`app/Notifications/HourLeftNotification.php`)
+
+- **Channels + email metadata envelope** (`via` list and `toEmail()` metadata keys; report RUN ~6658 and UNTESTED/UNCOVERED ~66711–66805).
+  - Cause: previous tests validated destination messaging and basic URL behavior but did not pin channel list and email metadata (`name_app`, `domain`), so `RemoveArrayItem` mutants survived.
+  - Fix: `Tests\Unit\Notifications\HourLeftNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` in email payload.
+  - Mutant IDs: `4d9b507f82168236`, `5fd76c5a557088de`, `a4d7a8a2ced57e3c`, `0804806fa83891da`, `825484effd55b24d`.
+
+- **Push URL/image contract** (`toPush()` concat around trip id and image key; report UNTESTED ~66747, ~66783, ~66794, ~66805).
+  - Cause: tests asserted fallback `/trips/` and extras id but not positive `/trips/{id}` path nor image key, leaving concat and `RemoveArrayItem` mutants under-constrained.
+  - Fix: same test class now asserts exact `/trips/{tripId}` when trip exists and always asserts static logo `image`.
+  - Mutant IDs: `9b83aa339112ae21`, `2ed1f2778123fa5e`, `958b0222ec5f27ab`, `ecbd1c7fec372f06`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
