@@ -2520,3 +2520,27 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 
 - Cause: `identity_validated` cast to bool and self/admin-only fields were not asserted strictly enough.
 - Fix: `test_transform_identity_validated_is_strict_boolean`, `test_transform_includes_private_fields_when_viewing_own_profile`, `test_transform_includes_sensitive_fields_for_admin_viewing_other_user`.
+
+## ExceptionWithErrors (`app/Http/ExceptionWithErrors.php`)
+
+- **Mutant IDs (Infection-style):** constructor / `render()` previously ignored the third argument (callers passed `503` / `404` but responses stayed **422**).
+  - **Cause:** `render()` always used status **422**; toggling flag conditions or the literal status in controllers did not change observable HTTP output, so `FalseToTrue` / integer nudges on companion lines survived in downstream controller reports.
+  - **Fix:** `__construct($message, $errors = null, int $httpStatus = 422)` stores `$httpStatus` and both JSON branches use it; removed redundant child `$message` property in favour of `parent::__construct`. Unit coverage: `test_render_uses_custom_http_status_for_message_only_payload`, `test_render_uses_custom_http_status_for_errors_payload` in `tests/Unit/Http/ExceptionWithErrorsTest.php`.
+
+## ManualIdentityValidationController (`app/Http/Controllers/Api/v1/ManualIdentityValidationController.php`)
+
+- **Mutant IDs (user report):** `L88:FalseToTrue`, `L89:IncrementInteger` / `L89:DecrementInteger`, `L91:FalseToTrue`, and QR guard lines `L451–L485` (`FalseToTrue` / integer mutants); submit invalid-request lines (`L694–L715` style) for **404** vs **422**.
+  - **Cause:** With `ExceptionWithErrors` ignoring custom status, disabled identity/manual/QR and missing POS behaved like generic **422**; cost-threshold mutants could still match **422**; Mercado Pago was never asserted as skipped. Invalid `request_id` used **404** in the controller but tests expected **422**.
+  - **Fix:** After `ExceptionWithErrors` fix, `tests/Feature/Http/ManualIdentityValidationApiTest.php` asserts `503` for disabled preference/QR gates, `assertNotFound()` for unknown or foreign `request_id`, and `MercadoPagoService` spies assert `createPaymentPreferenceForManualValidation` / `createQrOrderForManualValidation` are not invoked when guards short-circuit.
+
+## TripController (`app/Http/Controllers/Api/v1/TripController.php`)
+
+- **Mutant IDs (user report):** `L259:FalseToTrue`, `L260:RemoveEarlyReturn` (and related `errorsContainCode` cluster).
+  - **Cause:** `errorsContainCode()` and `messageForTripWriteErrors()` were only exercised indirectly; mutants on `null` handling, `error` key shape, or `in_array` strictness could survive without direct assertions on the private helpers (feature tests mocked `TripsManager` but did not pin every branch of the error codec).
+  - **Fix:** `tests/Unit/Http/TripControllerErrorsContainCodeTest.php` uses reflection to assert `null` / missing `error` / scalar vs list `error` / `MessageBag` / negative code match, plus default vs translated message when `routing_service_unavailable` is present.
+
+## WhatsAppWebhookController (`app/Http/Controllers/Api/v1/WhatsAppWebhookController.php`)
+
+- **Mutant IDs (user report):** `L98:RemoveMethodCall`, `L99–L100:RemoveArrayItem`, `L104:FalseToTrue` / integer / `RemoveArrayItem` on the catch / response block.
+  - **Cause:** `catch (\Exception $e)` does not catch `TypeError` (e.g. invalid `changes` element passed into `processChange(array $change)`), so failures surfaced as **500** instead of the intended **200** + `Log::error` + `Processing failed` JSON — mutants removing logging or response fields could slip or behave inconsistently.
+  - **Fix:** `catch (\Throwable $e)` so PHP **7+** engine errors during payload handling match the Meta-friendly contract. `tests/Feature/Http/WhatsAppWebhookTest.php` adds `test_post_logs_error_and_returns_processing_failed_json_when_change_payload_is_invalid` (signed POST, `changes: [null]`, asserts **200**, JSON body, and `Log::error` with message `Error processing WhatsApp webhook`).
