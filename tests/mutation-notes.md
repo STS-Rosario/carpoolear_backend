@@ -850,3 +850,21 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `GET api/cars` with no cars → `[]`; with one persisted car for the user → non-empty JSON array and `patente` matches (separate tests avoid ordering the “empty index” call before inserts on the same authenticated `User` instance, which can leave a stale empty `cars` relation in memory).
 
 - **Error paths** (`show` / `create` validation / duplicate car): `GET api/cars/{id}` for another user’s car or a missing id → `422` + `Could not found car.`; invalid body → `422`; second `POST` when `CarsManager` rejects duplicate ownership → `422`—these pin the existing `if (! $car)` / `if (! $result)` branches without coupling to internal error arrays beyond status and message.
+
+## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
+
+- **Constructor middleware** (`__construct()` ~24–25; report ~42192–42216, e.g. `8ed44639c8d9f9bc` / `e0d9f7290643afcb` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except(['login'])`, `75cd57e29108ce0c` on `logged.optional` `only('login')`).
+  - Cause: nothing hit `PUT api/social/update/{provider}` or `POST api/social/friends/{provider}` without auth, so removing `logged` or `logged.optional` never failed CI.
+  - Fix: `Tests\Feature\Http\SocialApiTest` asserts `401` + `Unauthorized.` on `PUT api/social/update/test` and `POST api/social/friends/test` when unauthenticated.
+
+- **`installProvider()` + container resolution** (~30–47; report ~42228–42360, e.g. `b65d1ac227139ef0` / `5c4a89dd27031ba2` on `strtolower`/`ucfirst`, concat mutants on the `STS\Services\Social\{Provider}SocialProvider` FQCN, `1060cde5f4429478` / `7bb040fbfa160916` on `App::when` / `App::bind`, `6a606c0269b28fd4` on `App::make`).
+  - Cause: `STS\Contracts\Logic\Social` was never registered, and `App::bind('\STS\Contracts\SocialProvider', …)` used a string key that did not line up with the `SocialProvider::class` typehint Laravel uses when building `SocialManager`, so resolving the social stack failed and the `catch` returned `401` “provider not supported” for every request—including a valid test provider.
+  - Fix: `AppServiceProvider` binds `STS\Contracts\Logic\Social` → `SocialManager`; the controller uses `SocialProvider::class` / `Social::class` for `bind`/`make`. `STS\Services\Social\TestSocialProvider` (URL segment `test`) supplies deterministic JSON-backed `access_token` payloads for HTTP tests without calling external OAuth APIs.
+
+- **`login()` success and banned paths** (~48–68; report ~42360+ UNCOVERED, e.g. `fc9cbe71b582465b` / `db2a525be24a4094` on `if (! $user)`, `7724908c37db66f5` on `banned`, `4ba3273c61fea728` / `d6feaa8bdd68de97` on `['token' => …]`).
+  - Cause: no end-to-end test exercised `POST api/social/login/{provider}` with a resolvable provider and linked account; the banned branch passed a scalar as `ExceptionWithErrors`’ second argument (not a usable errors payload).
+  - Fix: feature tests create a `SocialAccount` for provider `test`, call `POST api/social/login/test` with a JSON `access_token`, assert a JWT-shaped `token` key for an active user, and assert `422` + `User banned.` + structured `errors` for a banned user. `gerErrors()` typos on `update`/`friends` were corrected to `getErrors()`.
+
+- **`update()` / `friends()`** (~75–106; report ~42456–42516, e.g. `94b8ad80efa2fb1c` on `installProvider`, `b633099397824454` / `070c51a99d42a529` on `if (! $ret)` for `updateProfile`, parallel cluster for `makeFriends`).
+  - Cause: authenticated paths were not covered under HTTP; unknown provider classes only raised `BindingResolutionException`, which was not caught (only `\ReflectionException`), so behaviour differed from the intended “provider not supported” handling.
+  - Fix: tests assert `200` and JSON primitive `"OK"` for `update`/`friends` when the token matches the linked account; `catch (\ReflectionException|BindingResolutionException $e)` on `login` returns `401` JSON, and the same exception types on `update`/`friends` map to `ExceptionWithErrors('provider not supported')`. `TestSocialProvider::getUserData` forwards `description` when present so `updateProfile` can change an allowlisted field observable in the DB.
