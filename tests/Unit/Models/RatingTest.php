@@ -10,6 +10,33 @@ use Tests\TestCase;
 
 class RatingTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'trip_id',
+            'user_id_from',
+            'user_id_to',
+            'rating',
+            'comment',
+            'reply_comment',
+            'reply_comment_created_at',
+            'user_to_type',
+            'user_to_state',
+            'voted',
+            'voted_hash',
+            'rate_at',
+        ], (new Rating)->getFillable());
+    }
+
+    public function test_model_uses_rating_factory(): void
+    {
+        $factory = (new \ReflectionClass(Rating::class))
+            ->getMethod('newFactory')
+            ->invoke(null);
+
+        $this->assertInstanceOf(\Database\Factories\RatingFactory::class, $factory);
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */
