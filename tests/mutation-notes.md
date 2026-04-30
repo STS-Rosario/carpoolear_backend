@@ -2081,3 +2081,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: trip transformation was only asserted indirectly, leaving many `RemoveArrayItem` mutants on base payload fields and `trip_date` ternary handling under-constrained.
   - Fix: added `tests/Unit/Transformers/TripTransformerTest.php` (especially `test_transform_returns_expected_base_trip_payload_without_user_context`) to pin complete base keys and representative values, including `trip_date`, pricing, defaults (`request`, `passenger`), plus explicit sellado/deletion branch assertions.
   - Mutant IDs: `26c7093cfe4d8355`, `12d5c8912c3a7bfe`, `536d3e5120a825e7`, `57de05aa62fac8e6`, `fe8bf2edd2d99542`, `970d3a18d8068c8a`, `c58d869df9fcd804`, `135cabb35db0a282`, `922c2f6a4fd4e54f`, `69f832be4bf08f20`, `3ea8d121305adaf1`, `479c8e359779948c`, `6046711db3ef202f`, `1707d560f17146aa`, `826d3459090dd99c`, `f932dba9d1f61aad`.
+
+- **Sellado and viewer-context branching contracts** (`sellado_pending` expression and owner/pending-user branches around lines 54–74 in `tests/coverage/20260428_2310.txt`).
+  - Cause: prior tests did not enforce the "needs_sellado AND non-ready" requirement or directly pin owner/pending viewer behavior (`allPassengerRequest`, passenger list population, and `request = send`).
+  - Fix: extended `tests/Unit/Transformers/TripTransformerTest.php` with:
+    - `test_transform_requires_needs_sellado_and_non_ready_state_for_pending_flag`
+    - `test_transform_includes_owner_context_passenger_data_and_counts`
+    - `test_transform_sets_request_send_for_pending_non_owner_user`
+    These assert strict sellado gating and the expected outputs for owner vs pending non-owner contexts.
+  - Mutant IDs: `2431910d6343b79e`, `f82e1a66752274a7`, `1d4a47989b788128`, `f54e9e28e7cb11ff`, `2d31580e8b250f56`, `281b1f741c398a06`, `d0c132cf4e070451`, `fd8dbb72f8890b62`, `618c0a8c658f98d7`, `9beb79d07fa17f23`, `66801009e9f66115`, `5b41550ce4872e60`, `35468e9c438a5ff0`, `512186accc06e6ef`, `42e400d04d2b92ca`, `c1534e6f96e28f4d`, `1e22c7c635a4cb8e`, `cc208bf1fe967964`, `9423ee3638dbe762`, `ec6efb69b9236070`, `ee056a616eccf621`, `665209308a5f971b`, `ac1cc08d286b980d`, `407c9d0beab0077f`, `dd841ade4f818e74`, `562a5bbaf3254396`, `caf69dd79c0c1280`, `27a5ae842a597c81`, `28b85e64519a4764`.
