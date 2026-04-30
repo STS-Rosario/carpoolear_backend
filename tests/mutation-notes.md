@@ -1177,6 +1177,23 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Helpers\DatesHelperTest` (plain `PHPUnit\Framework\TestCase`, composer autoload only) asserts `parse_date` yields a `Carbon` instance for default and custom formats, `date_to_string` honors default and overridden formats, and `parse_boolean` matches `FILTER_VALIDATE_BOOLEAN` semantics for booleans and common string/integer inputs.
   - Mutant IDs: `34562addc83b7af7` (`parse_date` ~7), `7b45cc5826adac98` (`date_to_string` ~12), `d0d36613e717f4a0` (`parse_boolean` ~17).
 
+## `Queries` helpers (`app/Helpers/Queries.php`)
+
+- **`match_array` scalar/array contract** (`match_array()` ~5–8; report UNTESTED ~65213–65237).
+  - Cause: helper was only used indirectly, so mutants could invert the ternary, drop the wrapped scalar element, or return null without a direct failure.
+  - Fix: `Tests\Unit\Helpers\QueriesTest::test_match_array_keeps_arrays_and_wraps_scalars` asserts arrays are preserved and scalar input is wrapped as a one-item array.
+  - Mutant IDs: `7d3c776dcf75f9fb`, `5446cf7fc9701b8f`, `56a09c36274f34e7`.
+
+- **`make_pagination` default page + null-size behavior** (`make_pagination()` ~10–23; report UNTESTED/UNCOVERED ~65249–65357).
+  - Cause: prior coverage only exercised one happy path and the null-size path once, leaving defaults (`$pageNumber`, `$pageSize`) and branching under-asserted.
+  - Fix: tests assert paginated metadata for explicit page/size, implicit first page when page is omitted, and full collection return when `pageSize` is null.
+  - Mutant IDs: `77545dd59c2e3a1d`, `32f8e0b230b37983`, `f2edd3082cce9a74`, `ee9938632436ab79`, `305f7314d2bcf2af`, `51cdc5d5ef65d4bf`, `a92eb851ecdfdca7`, `0c5999fe8ba56177`, `d02df906b2a441dc`, `18bab9b912252d5a`.
+
+- **Query-log helpers** (`start_log_query()` / `stop_log_query()` / `get_query()` ~40–61; report UNCOVERED ~65443–65593).
+  - Cause: helper trio had no direct assertions, so mutants could remove DB log toggles, break default-index selection, or change returned query+bindings string concatenation undetected.
+  - Fix: tests execute real queries with logging enabled, assert `get_query()` returns latest/default and indexed entries with serialized bindings, then confirm `stop_log_query()` prevents later query capture.
+  - Mutant IDs: `5583578a1672f7fe`, `1d61bbf8f6ae5be0`, `0b3f2006b446c90a`, `07b0165921fc1387`, `d593cc1897745b4e`, `5b3b2a1ed2038d59`, `103545b1dbbb78e8`, `b832d935011ee03f`, `cd679eeeb69abba2`, `d81cf3272b76c748`, `3c1ae3aa0cb7c3e8`, `20812a3f768098d0`, `1c8cb4223cb340f0`, `e4662202e9725faa`.
+
 ## `OldCordovaAppHelper` (`app/Helpers/OldCordovaAppHelper.php`)
 
 - **`isOldCordovaApp()` UA / WebView detection** (`isOldCordovaApp()` ~12–24; report `tests/coverage/20260428_2310.txt` ~5971–5985 and UNTESTED ~63914–63926).
