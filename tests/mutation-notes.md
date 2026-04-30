@@ -1268,6 +1268,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
   - Mutant IDs: `0be549ff8070d6b3`.
 
+## `CancelPassengerNotification` (`app/Notifications/CancelPassengerNotification.php`)
+
+- **Channels + email metadata envelope** (`via` list and `toEmail()` metadata keys; report RUN ~6546 and UNTESTED/UNCOVERED ~66452–66524).
+  - Cause: existing tests covered driver/passenger message branching and URL behavior, but did not pin channel list and email metadata fields, so `RemoveArrayItem` mutants on channels and email metadata survived.
+  - Fix: `Tests\Unit\Notifications\CancelPassengerNotificationTest` now asserts exact `getVia()` channels and verifies `toEmail()` includes config-driven `name_app` and `domain` alongside title/url checks.
+  - Mutant IDs: `1f9f8edb3d9f96ce`, `cb56ed4e464947d3`, `b901505cce66e7cd`, `ad547466f2b58ab9`, `f321351eb1bebca4`, `291cdef137ba14cd`.
+
+- **Push image contract** (`toPush().image`; report UNTESTED ~66524).
+  - Cause: push assertions focused on message/url/extras and missed image key.
+  - Fix: same test class now asserts push payload always includes the static logo `image` for both trip-present and trip-missing flows.
+  - Mutant IDs: `ba25913889089719`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
