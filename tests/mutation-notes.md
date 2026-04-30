@@ -2572,3 +2572,43 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 - **Mutant IDs (user report):** `MercadoPagoOAuthController.php` `L32–L121` (`IfNegated`, `BooleanOrToBooleanAnd`, `RemoveNot`, `RemoveEarlyReturn`, `RemoveIntegerCast`, `CoalesceRemoveLeft`, `RemoveMethodCall`, `RemoveArrayItem`, etc.).
   - **Cause:** No feature tests hit the callback branches; `Http::` fakes were easy to mis-order with a blanket `Http::fake()` in `setUp`; `exchangeCodeForToken` / `getUserMe` returned **`$response->json()` typed as `array` but could be `null`**, producing **500** instead of the intended redirect + logs.
   - **Fix:** `tests/Feature/Http/MercadoPagoOAuthCallbackTest.php` covers **`error` query**, missing **`code`/`state`**, missing/invalid **cache state**, missing **user**, token JSON **without `access_token`**, failed **token HTTP**, **name_mismatch** + **`MercadoPagoRejectedValidation`**, **dni_mismatch**, and **success** identity update. **`MercadoPagoOAuthService`**: coerce non-array JSON to **`[]`** before return so the controller’s existing guards always run.
+
+## Admin `UserController` (`app/Http/Controllers/Api/Admin/UserController.php`)
+
+- **Mutant IDs (user report):** `clearIdentityValidation` response line ~`L128–L130` clusters (`RemoveArrayItem` on `fresh([...])`, etc.).
+  - **Cause:** `Model::fresh(array $with)` treats the argument as **relationship names to eager load**, not columns. Passing `['id','name',...]` made Laravel resolve a non-existent **`id`** relation and return **500**, so integration tests could not assert the JSON contract and mutants around the payload survived.
+  - **Fix:** return `$user->fresh()->only([...])` so the response is a plain attribute subset without bogus eager loads. **`tests/Feature/Http/AdminUserControllerIntegrationTest.php`** (`test_clear_identity_validation_clears_identity_columns`) asserts **200**, message, and cleared identity fields.
+
+- **Mutant IDs (user report):** `index` ~`L45–L67` (`UnwrapTrim`, `RemoveArrayItem` on allowed sort keys, `IfNegated` on direction, `per_page` clamp, etc.).
+  - **Cause:** Admin listing filters (`trim` on `name`, email `LIKE`, `sort` whitelist, `direction`, `min(100, per_page)`) lacked HTTP-level assertions; mutants could change string handling or pagination caps without failing tests.
+  - **Fix:** same integration test file — whitespace-only `name`, email substring hit, invalid `sort` + valid `direction`, `per_page` clamp to **100**, plus **`delete`**, **`accountDeleteUpdate`**, **`banAndAnonymize`** (sparse `nro_doc`) paths as already added in the hardening session.
+
+## Admin `SupportTicketController` (`app/Http/Controllers/Api/Admin/SupportTicketController.php`) — follow-up
+
+- **Mutant IDs (user report):** `reply` ~`L36–L37`, `L49`, `L61–L62` (`RemoveArrayItem` on validation keys, `RemoveMethodCall` on notification wiring).
+  - **Cause:** `attachments.*` mime validation was only covered for **happy** image uploads; **`NotificationServices::send`** was mocked only for the **throwing** path, so removing **`setAttribute('ticket'| 'from')`** or widening validation could still return **200** in some runs.
+  - **Fix:** **`tests/Feature/Http/AdminSupportTicketControllerIntegrationTest.php`** — `test_reply_rejects_attachment_with_disallowed_mime` (**PDF** → **422**, multipart **`post`** with **`Accept: application/json`** so validation returns JSON instead of a **302** redirect); `test_reply_invokes_notification_services_with_ticket_from_and_ticket_owner` expects **`send`** twice (database + push channels) with a **`SupportTicketReplyNotification`** carrying **`ticket`**, **`from`**, and the ticket **owner** as the notifiable.
+
+## Admin `CampaignRewardController` (`app/Http/Controllers/Api/Admin/CampaignRewardController.php`)
+
+- **Mutant IDs (user report):** `index` / `show` ~`L15–L17`, `L43–L45` (`RemoveArrayItem` on `where('status','paid')`, `RemoveMethodCall` on `loadCount`, wrong-campaign guard).
+  - **Cause:** Only the **public** purchase flow was covered under a similarly named integration test; admin **`withCount` / `loadCount`** paid-only constraints and **404** for mismatched `campaign_id` were not asserted over HTTP.
+  - **Fix:** **`tests/Feature/Http/AdminCampaignRewardControllerIntegrationTest.php`** already covered **`index`** paid-only **`withCount`** and **`show`** **404** across campaigns; added **`test_show_load_count_excludes_pending_donations`** so **`loadCount(['donations' => fn ($q) => $q->where('status','paid')])`** cannot regress to counting **`pending`** rows on **`show`**.
+
+## Admin `MercadoPagoRejectedValidationController` (`app/Http/Controllers/Api/Admin/MercadoPagoRejectedValidationController.php`)
+
+- **Mutant IDs (user report):** `index` ~`L22–L33` (`RemoveArrayItem` on mapped keys), `review` / identity side-effects.
+  - **Cause:** No admin HTTP test asserted the **`['data' => …]`** envelope, column mapping (`user_name`, `user_nro_doc`, booleans), ordering, or **`review` `approve`** updating the user’s **`identity_*`** fields.
+  - **Fix:** **`tests/Feature/Http/AdminMercadoPagoRejectedValidationControllerIntegrationTest.php`** — index **newest-first** + shape; **show** payload includes **`mp_payload`**; **`POST …/review`** with **`action=approve`** sets **`review_status`** and validates **`identity_validated` / `identity_validation_type`**.
+
+## `SendPasswordResetEmail` (`app/Jobs/SendPasswordResetEmail.php`)
+
+- **Mutant IDs (user report):** ~`L46`, `L62`, `L79–L97`, `L120` (`FalseToTrue` on `log_emails`, `UnwrapSubstr` on token preview, `RemoveArrayItem` on log context, catch / `failed()` logging).
+  - **Cause:** Job logic was not exercised with assertions on **`Mail`**, **`ResetPassword`** constructor arguments, or **`Log::info` / `Log::error`** payloads; mutants could drop logging context or change the **`substr`** preview without failing unrelated tests.
+  - **Fix:** **`tests/Unit/Jobs/SendPasswordResetEmailTest.php`** — **`Mail::fake()`** + **`handle()`** + **`Mail::assertSent`** (token, URL, app name, domain, user); ordered **`Log`** expectations and **`email_logs`** channel when **`carpoolear.log_emails`** is true; **`handle_rethrows…`** and **`failed_logs_permanent_failure…`** cover catch / **`failed()`** logging (including **`email_logs` `critical`** with **`stack_trace`**).
+
+## `PaymentController` (`app/Http/Controllers/PaymentController.php`)
+
+- **Mutant IDs (user report):** `transbank` / `transbankResponse` (`IfNegated`, `ConcatRemove*`, switch branches, etc.).
+  - **Cause:** Earlier mutation runs predated **`Tests\Support\Webpay\FakeWebpayNormalFlowClient`**-based coverage.
+  - **Fix:** **`tests/Feature/Http/PaymentControllerWebTest.php`** already pins plain-text missing **`tp_id`**, empty body for unknown passenger, **`initTransaction`** arguments (amount, buy order, return/final URLs), approved vs declined **`responseCode`** persistence, missing passenger on callback, null gateway output, and final view text.
