@@ -26,6 +26,7 @@ class ConversationsManagerTest extends TestCase
         $this->assertNotNull($conv->id);
         $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, (int) $conv->type);
         $this->assertSame($trip->id, (int) $conv->trip_id);
+        $this->assertSame('', $conv->title);
     }
 
     public function test_find_or_create_private_conversation_creates_row_for_admin_pair(): void
@@ -40,6 +41,34 @@ class ConversationsManagerTest extends TestCase
 
         $again = $this->manager()->findOrCreatePrivateConversation($other, $admin);
         $this->assertTrue($again->is($conv));
+    }
+
+    public function test_find_or_create_private_conversation_drops_invalid_trip_id_when_creating(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $other = User::factory()->create();
+
+        $conversation = $this->manager()->findOrCreatePrivateConversation($admin, $other, 999999999);
+
+        $this->assertNotNull($conversation);
+        $this->assertNull($conversation->trip_id);
+        $this->assertSame(Conversation::TYPE_PRIVATE_CONVERSATION, (int) $conversation->type);
+    }
+
+    public function test_find_or_create_private_conversation_updates_trip_id_on_existing_conversation(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $other = User::factory()->create();
+        $trip = Trip::factory()->create();
+
+        $conversation = $this->manager()->findOrCreatePrivateConversation($admin, $other);
+        $this->assertNotNull($conversation);
+        $this->assertNull($conversation->trip_id);
+
+        $updated = $this->manager()->findOrCreatePrivateConversation($admin, $other, $trip->id);
+
+        $this->assertTrue($updated->is($conversation));
+        $this->assertSame($trip->id, (int) $updated->fresh()->trip_id);
     }
 
     public function test_show_delegates_to_repository_membership(): void
@@ -181,6 +210,23 @@ class ConversationsManagerTest extends TestCase
         $conversation->users()->attach($user->id, ['read' => true]);
 
         $found = $this->manager()->getConversationByTrip($user, $trip->id);
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($conversation));
+    }
+
+    public function test_get_conversation_by_trip_returns_trip_thread_for_admin_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $conversation->users()->attach($owner->id, ['read' => true]);
+
+        $found = $this->manager()->getConversationByTrip($admin, $trip->id);
+
         $this->assertNotNull($found);
         $this->assertTrue($found->is($conversation));
     }
