@@ -60,9 +60,11 @@ class NotificationManager
     {
         $notification = $this->repo->find($user, $id);
         if ($notification) {
-            return $this->repo->delete($notification);
-        } else {
-            return;
+            $this->repo->delete($notification);
+
+            return true;
         }
+
+        return false;
     }
 }
