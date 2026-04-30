@@ -458,4 +458,128 @@ class SocialManagerTest extends TestCase
         $this->assertNull($manager->makeFriends($user));
         $this->assertSame('No tiene asociado ningun perfil', $manager->getErrors()['error']);
     }
+
+    public function test_constructor_sets_default_provider_in_social_repository(): void
+    {
+        $provider = Mockery::mock(SocialProvider::class);
+        $provider->shouldReceive('getProviderName')->atLeast()->once()->andReturn('facebook');
+
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once()->with('facebook');
+
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        new SocialManager($provider, $users, $friends, $files, $social);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_validator_update_also_keeps_name_max_rule(): void
+    {
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', []));
+        $user = User::factory()->create();
+
+        $rules = $manager->validator(['name' => 'x'], $user->id)->getRules();
+
+        $this->assertArrayHasKey('name', $rules);
+        $this->assertContains('max:255', $rules['name']);
+    }
+
+    public function test_login_or_create_does_not_replace_existing_image_even_when_provider_sends_image(): void
+    {
+        $user = User::factory()->create(['image' => 'already-set.jpg']);
+        $pid = 'fb-'.substr(uniqid('', true), 0, 10);
+
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'image' => 'data://text/plain;base64,'.base64_encode('new-image-bytes'),
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, $friends, $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldNotReceive('create');
+        $friends->shouldNotReceive('make');
+        $files->shouldNotReceive('createFromData');
+
+        $result = $manager->loginOrCreate(['token' => 'ignored']);
+        $this->assertSame('already-set.jpg', $result->fresh()->image);
+    }
+
+    public function test_make_friends_accepts_equivalent_string_and_integer_user_ids(): void
+    {
+        $user = User::factory()->create();
+        $friend = User::factory()->create();
+
+        $provider = new FakeSocialProvider('facebook', ['provider_user_id' => 'pid-self'], ['friend-pid']);
+        $social = Mockery::mock(SocialRepository::class);
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->with('pid-self')->once()->andReturn((object) [
+            'user' => (object) ['id' => (string) $user->id],
+        ]);
+        $social->shouldReceive('find')->with('friend-pid')->once()->andReturn((object) [
+            'user' => $friend,
+            'user_id' => $friend->id,
+        ]);
+
+        $users->shouldReceive('show')->once()->with(null, $friend->id)->andReturn($friend);
+        $friends->shouldReceive('make')->once()->withArgs(function ($u, $f) use ($user, $friend) {
+            return $u->is($user) && $f->is($friend);
+        })->andReturn(true);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $this->assertTrue($manager->makeFriends($user));
+    }
+
+    public function test_update_profile_accepts_equivalent_string_and_integer_user_ids(): void
+    {
+        $user = User::factory()->create(['name' => 'Before']);
+        $provider = new FakeSocialProvider('facebook', [
+            'provider_user_id' => 'pid-upd',
+            'name' => 'After',
+            'email' => $user->email,
+        ]);
+
+        $social = Mockery::mock(SocialRepository::class);
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->with('pid-upd')->once()->andReturn((object) [
+            'user' => (object) ['id' => (string) $user->id],
+        ]);
+
+        $filter = Mockery::mock(UserEditablePropertiesService::class);
+        $filter->shouldReceive('filterForUser')->once()->andReturn(['name' => 'After']);
+        $this->app->instance(UserEditablePropertiesService::class, $filter);
+
+        $users->shouldReceive('update')->once()->andReturn($user->forceFill(['name' => 'After']));
+        $users->shouldNotReceive('getErrors');
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $updated = $manager->updateProfile($user);
+
+        $this->assertInstanceOf(User::class, $updated);
+        $this->assertSame('After', $updated->name);
+    }
 }
