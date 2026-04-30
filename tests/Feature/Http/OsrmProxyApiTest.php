@@ -2,8 +2,13 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Mockery;
+use STS\Http\Controllers\Api\v1\OsrmProxyController;
 use Tests\TestCase;
 
 class OsrmProxyApiTest extends TestCase
@@ -181,5 +186,90 @@ class OsrmProxyApiTest extends TestCase
             ->assertJsonPath('message', 'Routing service unavailable')
             ->assertHeader('X-OSRM-Proxy-Cache', 'MISS')
             ->assertHeader('X-OSRM-Proxy-Error', 'upstream_failed');
+    }
+
+    public function test_route_rejects_non_driving_profile_when_invoked_directly(): void
+    {
+        $controller = app(OsrmProxyController::class);
+        $response = $controller->route(Request::create('/', 'GET'), 'walking/-1.0,-1.0;-2.0,-2.0');
+
+        $this->assertSame(400, $response->getStatusCode());
+        $this->assertSame([
+            'code' => 'InvalidUrl',
+            'message' => 'Only driving profile is supported',
+        ], $response->getData(true));
+    }
+
+    public function test_cache_store_uses_minimum_sixty_second_ttl_when_success_ttl_config_below_sixty(): void
+    {
+        config([
+            'carpoolear.osrm_router_base_url' => 'https://osrm-ttl-min.test',
+            'carpoolear.osrm_router_fallback_base_url' => null,
+            'carpoolear.osrm_proxy_cache_ttl_success_seconds' => 30,
+        ]);
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [['distance' => 1, 'duration' => 1]],
+                'waypoints' => [],
+            ], 200),
+        ]);
+
+        Cache::spy();
+
+        $this->getJson('api/osrm/route/v1/driving/-7.0,-7.0;-8.0,-8.0')
+            ->assertOk()
+            ->assertHeader('X-OSRM-Proxy-Cache', 'MISS');
+
+        Cache::shouldHaveReceived('put')->with(
+            Mockery::type('string'),
+            Mockery::type('array'),
+            Mockery::on(function ($expiry): bool {
+                if (! $expiry instanceof \DateTimeInterface) {
+                    return false;
+                }
+                $at = \Carbon\Carbon::parse($expiry);
+
+                return $at->between(now()->addSeconds(55), now()->addSeconds(70), true);
+            })
+        );
+    }
+
+    public function test_logs_upstream_exception_and_uses_fallback_base(): void
+    {
+        config([
+            'carpoolear.osrm_router_base_url' => 'https://primary-throws.test',
+            'carpoolear.osrm_router_fallback_base_url' => 'https://fallback-ok.test',
+        ]);
+
+        Http::fake(function (\Illuminate\Http\Client\Request $request) {
+            if (str_contains($request->url(), 'primary-throws.test')) {
+                throw new ConnectionException('simulated connection failure');
+            }
+
+            return Http::response([
+                'code' => 'Ok',
+                'routes' => [['distance' => 55, 'duration' => 5]],
+                'waypoints' => [],
+            ], 200);
+        });
+
+        Log::spy();
+
+        $this->getJson('api/osrm/route/v1/driving/-9.0,-9.0;-10.0,-10.0')
+            ->assertOk()
+            ->assertJsonPath('code', 'Ok')
+            ->assertJsonPath('routes.0.distance', 55);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
+            return $message === '[osrm_proxy] upstream exception'
+                && str_contains((string) ($context['message'] ?? ''), 'simulated connection failure')
+                && str_contains((string) ($context['base'] ?? ''), 'primary-throws.test');
+        });
+
+        Http::assertSent(function (\Illuminate\Http\Client\Request $request): bool {
+            return str_contains($request->url(), 'fallback-ok.test');
+        });
     }
 }
