@@ -1115,6 +1115,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Listeners\Notification\UpdateTripListenerTest` seeds real `Trip` / `User` / `Passenger` rows: no rows or only `STATE_PENDING` ⇒ `NotificationServices::send` is never called; one `STATE_ACCEPTED` passenger (not the driver) ⇒ three `send` calls (database + mail + push) with `UpdateTripNotification` carrying the same trip, `from` equal to the trip owner, and recipient equal to that passenger; two accepted passengers ⇒ six sends covering the `foreach` body twice.
   - Mutant IDs: `c35498373335844e` (`GreaterToGreaterOrEqual` on `> 0`), `ba754a723395b405` / `368dfce652c0e144` (`DecrementInteger` / `IncrementInteger` on the `> 0` comparison), `7d189dcfeb84a8e9` / `59f4a02f4c247015` (`RemoveMethodCall` on `setAttribute('trip')` / `setAttribute('from')`).
 
+## `PendingRate` listener (`app/Listeners/Notification/PendingRate.php`)
+
+- **`handle()` wires `PendingRateNotification` into `NotificationServices`** (`handle()` ~27–37; report `tests/coverage/20260428_2310.txt` ~5851–5854 and UNTESTED ~63081–63108).
+  - Cause: the listener was never executed under test, so `RemoveMethodCall` mutants could drop `setAttribute('trip', …)`, `setAttribute('hash', …)`, or `notify($to)` without failing the suite.
+  - Fix: `Tests\Unit\Listeners\Notification\PendingRateListenerTest::test_handle_builds_pending_rate_notification_and_notifies_recipient_on_all_channels` mocks `NotificationServices`, dispatches a real `STS\Events\Rating\PendingRate` with factory `User` + `Trip` + a string `hash`, and asserts three `send` calls (database + mail + push) with `PendingRateNotification` carrying that trip and hash and the event recipient as `$users`.
+  - Mutant IDs: `a878a11ca9e96d09` (`setAttribute` `trip`), `3cb34b6012258665` (`setAttribute` `hash`), `1eca2d1f700d872c` (`notify`).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
