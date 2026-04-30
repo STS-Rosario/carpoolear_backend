@@ -9,6 +9,22 @@ use Tests\TestCase;
 
 class TripVisibilityTest extends TestCase
 {
+    public function test_model_uses_non_incrementing_and_no_timestamps(): void
+    {
+        $model = new TripVisibility;
+
+        $this->assertFalse($model->getIncrementing());
+        $this->assertFalse($model->usesTimestamps());
+    }
+
+    public function test_fillable_contains_user_id_and_trip_id(): void
+    {
+        $this->assertSame([
+            'user_id',
+            'trip_id',
+        ], (new TripVisibility)->getFillable());
+    }
+
     public function test_belongs_to_trip_and_user(): void
     {
         $owner = User::factory()->create();
