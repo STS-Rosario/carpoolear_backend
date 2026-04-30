@@ -842,6 +842,38 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `user-list` was only hit without `value`; `unread` was never hit with optional filters, so `has()` / assignment mutants stayed green.
   - Fix: `test_user_list_accepts_optional_value_query_without_error` compares `200` + `data` shape with and without `value`; `test_unread_messages_endpoint_accepts_conversation_id_and_timestamp_query` hits `GET api/conversations/unread` with both query parameters and asserts `200` + `data` envelope.
 
+## PassengerController (`app/Http/Controllers/Api/v1/PassengerController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~20; report `tests/coverage/20260428_2310.txt` ~49356 `99765534718a204c` `RemoveMethodCall`).
+  - Cause: `PassengerApiTest` replaced `PassengersManager` with a mock, so HTTP never exercised `UserLoggin`; removing `middleware('logged')` stayed green.
+  - Fix: `Tests\Feature\Http\PassengerControllerIntegrationTest::test_passenger_routes_return_unauthorized_when_not_authenticated` calls representative `GET|POST` routes under `api/trips/*` and `api/users/*` without auth and expects `401` + `Unauthorized.` on each.
+
+- **Fractal `collection()` return paths** (`passengers` / `requests` / `allRequests` / `paymentPendingRequest` ~31, ~41, ~51, ~61; report ~49368–49404, e.g. `87f3f32db60063dd`, `3ec8d83b55c408eb`, `800fc41ddd54d626`, `a790ca8efc70b65e` `AlwaysReturnNull`).
+  - Cause: mocked manager short-circuited the real `PassengersManager` + `Controller::collection` stack, so mutants that dropped the Fractal payload never failed CI.
+  - Fix: integration tests drive `GET …/passengers`, `GET …/{tripId}/requests`, `GET api/trips/requests`, and `GET api/users/payment-pending` with real fixtures and assert `200` + `assertJsonStructure(['data'])` (and stable `data.0.user.id` where a row is seeded).
+
+- **`newRequest` / `cancelRequest` / `acceptRequest` success JSON** (`~78`, `~97`, `~114`; report ~49416–49488, e.g. `b67fa1eb7088c51c` / `de2bb2b3329b5b03`, `67369af9ba1a9a08` / `ea2ee31f5e559369`, `6df6e9778221a468` / `5c1e19460b74b25d` `RemoveArrayItem` / `AlwaysReturnNull`).
+  - Cause: `PassengerApiTest` had the manager return loose `true`, so the controller never serialized a real `Passenger` model inside `['data' => …]` and success-envelope mutants survived.
+  - Fix: `test_new_request_returns_data_when_identity_allows_and_trip_is_open`, `test_cancel_request_returns_data_envelope_when_passenger_cancels_pending`, and `test_accept_request_returns_data_when_driver_has_capacity` assert `assertJsonStructure(['data' => ['id', …]])` / `request_state` on real DB-backed flows.
+
+- **`transactions()` raw return** (`~83`; report ~49440 `0c7777480869bf16` `AlwaysReturnNull`).
+  - Cause: no HTTP test hit `GET api/trips/transactions` with the real repository join used by `PassengersManager::transactions`.
+  - Fix: `test_transactions_returns_json_list_for_user_with_past_trip_payment_rows` seeds a past trip with a passenger row carrying `payment_status` and asserts the response includes that status (public contract, not internal loop structure).
+
+- **`payRequest` falsy guard** (`~125–129`; report ~49500–49536, e.g. `cd6ca4fcfdbf6e8c` `IfNegated`, `8b89fbc2c9829f03` `RemoveNot`, `5054583901d74363` / `1a9eab978ec7bc36` on the error/success JSON).
+  - Cause: nothing asserted `POST …/pay` when the passenger was not in `WAITING_PAYMENT`, so inverting `if (! $request)` or stripping the `response()->json(['data' => …])` envelope stayed green; the API message is the same string as accept/reject failures (`Could not accept request.`) by current controller text.
+  - Fix: `test_pay_request_returns_unprocessable_when_passenger_not_waiting_payment` expects `422`, `Could not accept request.`, and `errors.error` = `not_valid_request`.
+
+- **`rejectRequest` success JSON** (`~146`; report ~49548–49559, e.g. `abc2dea14648139f`, `247856e595e1a91e`).
+  - Cause: same mock `true` shortcut as accept; failure-path parity with `payRequest` / accept was not exercised from HTTP for reject success.
+  - Fix: `test_reject_request_returns_data_when_driver_rejects_pending` asserts `200` and `data.request_state` = `STATE_REJECTED`.
+
+- **Identity gates on `newRequest` / `acceptRequest` / `rejectRequest`** (`~67`, `~103`, `~135`; not always listed as separate IDs in the excerpted report block but coupled to the same uncovered controller surface as Conversation).
+  - Cause: integration coverage did not combine `IdentityValidationHelper::canPerformRestrictedActions` with real HTTP when enforcement config matches production-style “new users must validate”.
+  - Fix: `enableStrictNewUserIdentityEnforcement()` + `test_new_request_returns_unprocessable_when_identity_required_and_user_not_validated`, `test_accept_request_returns_unprocessable_when_identity_required_and_driver_not_validated`, and `test_reject_request_returns_unprocessable_when_identity_required_and_driver_not_validated` assert `422` + `IdentityValidationHelper::identityValidationRequiredMessage()`.
+
+- **Production fix:** `passengers()` called `PassengersManager::index`, which does not exist on the real manager (only the mock defined `index`). The controller now calls `getPassengers`, and `PassengerApiTest` expects `getPassengers` on the mock so unauthenticated integration tests and authenticated listing hit the same contract the app ships.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
