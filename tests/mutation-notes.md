@@ -760,6 +760,24 @@ This file tracks mutants killed during the current hardening session, with the r
 
 - **Follow-up:** `storeIdentityImage()` private HEIC path (~263–274) and any remaining `submit` mutants tied only to `ImageUploadValidator` / converter internals in `tests/coverage/20260428_2310.txt` after the blocks above.
 
+## WhatsAppWebhookController (`app/Http/Controllers/Api/v1/WhatsAppWebhookController.php`)
+
+- **`handle()` method dispatch** (`handle()` ~26–36; report ~46498–46570, e.g. `1e5e78cdd24ec709` `IfNegated`, `ebe3a073ed645068` `IdenticalToNotIdentical` on `POST`, `aaa1b89e65682d70` `RemoveEarlyReturn`, `a9e967a8ff399c5b` / `f928ee2d6a01c23e` / `d2e72a6b102674f1` / `7566fb0fd6d5d983` on the `405` JSON).
+  - Cause: only a shallow smoke hit `GET /webhooks/whatsapp` with a bad token; nothing exercised `POST`, successful `GET` verification, or non-GET/POST verbs, so flipped method checks or a removed `405` body stayed green.
+  - Fix: `Tests\Feature\Http\WhatsAppWebhookTest` calls `DELETE /webhooks/whatsapp` and asserts `405` + exact `{"error":"Method not allowed"}`; covers `POST` and successful `GET` verification paths below.
+
+- **Webhook verification** (`handleVerification()` ~55–70; report ~46630–46690, e.g. `80ebab32112820a9` `IdenticalToNotIdentical` on `subscribe` / token match, `dfa5728ba31778a6` `RemoveMethodCall` on success logging, `dea33ba39096a17f` `RemoveEarlyReturn` on the plaintext challenge response).
+  - Cause: no test pinned `hub_mode === 'subscribe'` together with `config('services.whatsapp.verify_token')` or the `403` / `Forbidden` failure body when the mode or token is wrong.
+  - Fix: `test_get_verification_returns_plaintext_challenge_when_mode_and_token_match` sets a known verify token and asserts `200`, `Content-Type: text/plain`, and the echoed `hub_challenge`; `test_get_verification_returns_forbidden_when_verify_token_mismatches` and `test_get_verification_returns_forbidden_when_mode_is_not_subscribe` assert `403` for bad token and non-subscribe mode.
+
+- **Signature verification and POST success envelope** (`verifyWebhookSignature()` / `handleEventNotification()` ~86–104; report ~46763–46967, e.g. `89397f3d1f0b721d` / `ce33c900f53c11b8` on `if (! $this->verifyWebhookSignature)`, `691e7425ff8dc2be` / `e1351f0fc59972db` on missing `app_secret`, `790b01cdceaac48b` / `5fda9522e9d25e6f` / `1b8eef6f1477a238` on the `sha256=` HMAC prefix, `8254fbf63334ce66` / `0d706ad5c6c64853` on `['success' => true]`).
+  - Cause: POSTs never ran with/without `X-Hub-Signature-256` or a configured `app_secret`, so negated checks, skipped HMAC, or wrong JSON keys could survive mutation.
+  - Fix: raw-body `Illuminate\Http\Request::call` + `hash_hmac('sha256', $body, $secret)` for a valid `X-Hub-Signature-256`; `test_post_without_signature_returns_unauthorized` when `app_secret` is set; `test_post_with_app_secret_rejects_wrong_signature`; `test_post_with_app_secret_accepts_valid_hmac_and_returns_success_json`; `test_post_when_app_secret_not_configured_accepts_request_with_any_non_empty_signature` covers the “secret unset → verify returns true” branch **after** a non-empty signature header (the controller still rejects completely missing signatures).
+
+- **Payload shape: `object`, entries, and `switch ($field)`** (`processWebhookPayload()` / `processChange()` ~139–186; report ~47159–47447, e.g. `0c776f69c228ff9e` / `950c48ebc950f3ae` / `a691c401be347346` on the `whatsapp_business_account` guard, `083cbe04ef570add` / `ce773cef7d86a992` on `entry` iteration, `123e9ea2b4915f9e` / `9012b2724fd9403b` on `messages` / `message_status`, `5667a82fcad7dd22` / `6fd3f6c99750fea6` on the default / unhandled field branch).
+  - Cause: no POST carried a realistic `entry` / `changes` tree, so mutants on `isset($payload['object'])`, `!== 'whatsapp_business_account'`, `foreach` bodies, or `switch` arms were never exercised under HTTP.
+  - Fix: `test_post_with_wrong_object_type_still_returns_success_so_meta_does_not_retry` asserts unknown `object` values still return HTTP `200` and `{"success":true}` (matches production’s non-throwing handler); `test_post_processes_messages_message_status_and_unknown_change_fields` sends one entry with `messages`, `message_status`, and an extra `account_update` change to drive all `switch` arms without asserting internal logs.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
