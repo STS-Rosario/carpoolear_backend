@@ -69,6 +69,18 @@ class PhoneVerificationManagerTest extends TestCase
         $this->assertSame(6, strlen((string) $result['verification']->verification_code));
     }
 
+    public function test_send_verification_code_returns_validation_errors_when_phone_is_missing(): void
+    {
+        $user = User::factory()->create();
+        $request = Request::create('/api/phone/send', 'POST', []);
+        $manager = $this->manager();
+
+        $result = $manager->sendVerificationCode($user, $request);
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('phone'));
+    }
+
     public function test_send_verification_code_rejected_when_phone_verified_for_other_user(): void
     {
         $owner = User::factory()->create();
@@ -86,6 +98,50 @@ class PhoneVerificationManagerTest extends TestCase
 
         $this->assertNull($result);
         $this->assertNotNull($manager->getErrors());
+    }
+
+    public function test_send_verification_code_returns_blocked_error_for_blocked_pending_verification(): void
+    {
+        Config::set('sms.verification.max_failed_attempts', 1);
+        $user = User::factory()->create();
+
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => '+541199991111',
+            'verification_code' => '123456',
+            'code_sent_at' => Carbon::now(),
+            'verified' => false,
+            'failed_attempts' => 1,
+            'resend_count' => 0,
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1199991111']));
+
+        $this->assertNull($result);
+        $this->assertSame('Too many failed attempts. Please request a new code.', $manager->getErrors()['verification']);
+    }
+
+    public function test_send_verification_code_enforces_resend_cooldown_message(): void
+    {
+        Config::set('sms.verification.resend_cooldown_minutes', 5);
+        $user = User::factory()->create();
+
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => '+541198887777',
+            'verification_code' => '111111',
+            'code_sent_at' => Carbon::now(),
+            'verified' => false,
+            'failed_attempts' => 0,
+            'resend_count' => 0,
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1198887777']));
+
+        $this->assertNull($result);
+        $this->assertStringContainsString('Please wait', $manager->getErrors()['verification']);
     }
 
     public function test_verify_phone_number_updates_user_on_success(): void
@@ -165,6 +221,27 @@ class PhoneVerificationManagerTest extends TestCase
 
         $this->assertNull($result);
         $this->assertSame('No pending verification found', $manager->getErrors()['verification']);
+    }
+
+    public function test_resend_verification_code_fails_when_pending_verification_is_blocked(): void
+    {
+        Config::set('sms.verification.max_failed_attempts', 1);
+        $user = User::factory()->create();
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => '+541177766655',
+            'verification_code' => '123123',
+            'code_sent_at' => Carbon::now()->subMinutes(10),
+            'verified' => false,
+            'failed_attempts' => 1,
+            'resend_count' => 0,
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->resendVerificationCode($user);
+
+        $this->assertNull($result);
+        $this->assertSame('Too many failed attempts. Please request a new code.', $manager->getErrors()['verification']);
     }
 
     public function test_get_verification_status_returns_no_phone_when_user_has_no_mobile_phone(): void
