@@ -1225,6 +1225,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: tests now assert exact email URL under configured base URL and exact push URL `/trips/{tripId}` when trip exists.
   - Mutant IDs: `05933aa25fa2cb52`, `048e163c3f682d59`, `13c00cbff5a42afa`.
 
+## `AnnouncementNotification` (`app/Notifications/AnnouncementNotification.php`)
+
+- **Channels + metadata envelope** (`via` and `toEmail()` metadata keys; report RUN ~6420 and UNTESTED/UNCOVERED ~66160–66230).
+  - Cause: prior tests validated title/url/message behavior but did not pin the channel list and metadata keys, so `RemoveArrayItem` mutants on channels and email metadata (`name_app`, `domain`) survived.
+  - Fix: `Tests\Unit\Notifications\AnnouncementNotificationTest` now asserts exact `getVia()` channels and verifies `toEmail()` includes config-driven `name_app` and `domain`.
+  - Mutant IDs: `8e3fcd6232c8eae8`, `4f7afa8ba8b6f1dd`, `56e9c5a6d212af46`, `8d1e0c06fb899559`.
+
+- **Push extras/image contract** (`toPush()` extras and image fields; report UNTESTED ~66208, ~66219, ~66230).
+  - Cause: push assertions only checked message/title/url and `announcement_id`, leaving nested extras and image key removable without failing.
+  - Fix: same test class now asserts `push.extras.type`, `push.extras.external_url`, and stable `push.image`.
+  - Mutant IDs: `cb11e9770176ab0d`, `8f3dcc403c25ece1`, `ec0ac9fc9743bbb3`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
