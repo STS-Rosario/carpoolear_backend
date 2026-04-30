@@ -2122,3 +2122,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: existing middleware tests validated allow/deny flow but did not explicitly assert that constructor wiring keeps `auth` unset under `testing`, and did not pin the exact warning message composition for non-HTTP exceptions.
   - Fix: extended `tests/Unit/Http/Middleware/CheckUserBannedTest.php` to assert `auth` is null in testing mode and to verify `Log::warning('CheckUserBanned middleware error: ' . $e->getMessage())` is emitted when authentication throws a runtime exception.
   - Mutant IDs: `8516f1b8f7c67305`, `f278dff590c61d95`, `6ddfac98f09a54d6`, `c709cbdbbc11f024`, `268af875efbd4641`, `96a9d05b7b0eeff6`.
+
+## UserLoggin Middleware (`app/Http/Middleware/UserLoggin.php`)
+
+- **JWT exception log-message contract in `handle()`** (catch block line 44 in `tests/coverage/20260428_2310.txt`).
+  - Cause: coverage already validated auth fallback and optional/required authorization behavior, but it did not lock the exact informational log message emitted on JWT parsing failures, allowing concat/remove log-string mutants to survive.
+  - Fix: extended `tests/Unit/Http/Middleware/UserLogginTest.php` with `test_jwt_exception_logs_class_and_request_url_context`, asserting the exact `Log::info('JWT Exception: ' . get_class($e) . ' - ' . 'Request URL: ' . $request->url())` output for a runtime exception and concrete request URL.
+  - Mutant IDs: `e7fba8795b7902d5`, `ec615cab738e8463`, `bb0b5b9c28a2e29d`, `9bc4c527081a531f`, `0fc09670cbb53529`, `cf94dae7ab6fee7e`, `8cadadf104983c48`, `dc6bb974da4481b3`, `05bf7c2ef0a3b3ea`, `344fa3677c75ab36`, `ddfed16f5f2f8419`, `bf1f1aa5f2c8237b`, `c837e2cfccf1a8a0`.
