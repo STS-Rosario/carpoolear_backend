@@ -1679,6 +1679,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: behaviour could not match production DB; HTTP tests for guest rating stayed red until the query matched `user_id_to` and null was handled before property access.
   - Fix: resolve hash + trip + rated user via `Rating::query()->where('voted_hash', …)->where('user_id_to', …)` and early `return null` when no row exists; `Tests\Unit\Services\Logic\RatingManagerTest` now expects a returned `Rating` for a valid hash (replacing the old “throws on null” expectation) and adds `test_get_rate_with_hash_returns_null_when_no_row_matches`.
 
+- **`activeRatings()` eligibility, deduplication, and canceled-state handling** (~123–170; report `tests/coverage/20260428_2310.txt` ~74633–74861).
+  - Cause: existing tests only covered the simplest accepted-passenger path, so mutants in the trip filter criteria (`trip_date`, `mail_send`, `is_passenger`) and passenger-state gates (`STATE_ACCEPTED`/`STATE_CANCELED`, `CANCELED_REQUEST`, one rate pair per passenger user) could survive.
+  - Fix: `test_active_ratings_processes_only_trips_matching_mail_send_is_passenger_and_date_filters` asserts that only eligible trips are processed and rated; `test_active_ratings_deduplicates_same_passenger_and_excludes_canceled_request_type` asserts duplicate passenger requests do not create duplicate pairs and cancellation-by-request is excluded from rating creation.
+  - Mutant IDs: `8dfc9a886c44fc53`, `f573558a3e958412`, `ffa7e2e8873d636f`, `b060f7fcb689ee1c`, `b295ba698526c2bc`, `61680bdb609edd26`, `366d35caf3849d37`, `54d09bab22c07d84`, `9fa979558d0938d4`, `994d1ed0e66f649c`, `ead948fcb73cd717`, `5938ad1f1a26fc00`, `325cc5a32d994b4d`, `324a80a9167773d8`, `499336394d02eb4a`, `d893d9337e8d8d7a`, `01a0fac76e864d05`, `3545f95466d47ae8`, `80b63d6e0f2eb9d9`, `aa12e271766251b0`.
+
 ## ManualValidationPaymentController (`app/Http/Controllers/Api/v1/ManualValidationPaymentController.php`)
 
 - **Mercado Pago redirect parameters** (`success()` ~17–21; report ~42670 `52e108ec7a1dbc2b` `TernaryNegated` on `payment_id` / `collection_id`).
