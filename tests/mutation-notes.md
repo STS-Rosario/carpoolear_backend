@@ -2313,3 +2313,18 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_unread_messages_with_conversation_id_marks_conversation_as_read_for_user`
     Existing `test_multi_send_succeeds_when_identity_validation_allows_user` continues to pin the successful `multi-send` JSON shape (`['message' => true]`).
   - Mutant IDs: `ae65aca91b89758e`, `eae7416a82b35da3`, `bdbb35c39fbd42fb`, `e62084d9fed7e1ff`, `282a71fcea6ca78d`, `4077a0ba656f3a88`, `a8ea5a67cd76a4c1`, `49f2c1b7fcf2d28f`, `44009e160032fa4e`, `b4b7441766a827e9`, `1b123e8036cc075e`, `85c6ee6a1c4bca1e`, `2289fe28a4796f4d`, `bc0fcc60167a7204`, `7fb0b1c1da8fafcb`, `4692811d22c99576`, `bec5b8f34414f565`, `dce53330aaefca72`, `05e5da7db6c50028`, `264ed159e86dc54f`, `b153b926d6d1c8ec`, `296509720161c9f7`, `efd93216c156e862`, `76b05c7fbfe10d63`, `366ebb83c2f39699`, `a143b6768b1e5ab4`.
+
+## PassengerController (`app/Http/Controllers/Api/v1/PassengerController.php`)
+
+- **Middleware registration and passenger-request API contracts** (`__construct`, `requests()`, `allRequests()`, `paymentPendingRequest()`, `transactions()`, and `payRequest()` around lines 20–129 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing passenger tests validated a few success-path endpoints, but they did not pin constructor middleware registration nor several observable HTTP contracts that were mutated: collection-return methods (`requests`, `allRequests`, payment-pending), transactions passthrough payload, and pay-request success/error envelopes.
+  - Fix: extended `tests/Feature/Http/PassengerApiTest.php` with:
+    - `test_constructor_registers_logged_middleware`
+    - `test_get_trip_pending_requests_returns_collection_payload`
+    - `test_get_all_requests_returns_collection_payload`
+    - `test_transactions_endpoint_returns_logic_response`
+    - `test_payment_pending_request_method_returns_collection_payload`
+    - `test_pay_request_returns_data_payload_on_success`
+    - `test_pay_request_returns_unprocessable_with_expected_message_when_logic_fails`
+    These assertions stay at endpoint contract level (`status`, JSON `data` envelope, exact error message/payload) and avoid coupling to internal implementation details.
+  - Mutant IDs: `99765534718a204c`, `87f3f32db60063dd`, `3ec8d83b55c408eb`, `800fc41ddd54d626`, `a790ca8efc70b65e`, `b67fa1eb7088c51c`, `de2bb2b3329b5b03`, `0c7777480869bf16`, `67369af9ba1a9a08`, `ea2ee31f5e559369`, `6df6e9778221a468`, `5c1e19460b74b25d`, `cd6ca4fcfdbf6e8c`, `8b89fbc2c9829f03`, `5054583901d74363`, `1a9eab978ec7bc36`, `abc2dea14648139f`, `247856e595e1a91e`.
