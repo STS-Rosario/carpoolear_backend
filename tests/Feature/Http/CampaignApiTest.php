@@ -151,4 +151,26 @@ class CampaignApiTest extends TestCase
         $response->assertJsonPath('rewards.0.title', 'Active perk');
         $response->assertJsonPath('rewards.0.is_active', true);
     }
+
+    public function test_show_by_slug_defaults_total_donated_to_zero_when_campaign_has_no_paid_donations(): void
+    {
+        $campaign = $this->newCampaign();
+
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => null,
+            'payment_id' => null,
+            'amount_cents' => 2_500,
+            'name' => 'Pending donor',
+            'comment' => null,
+            'user_id' => null,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->getJson('api/campaigns/'.$campaign->slug);
+
+        $response->assertOk();
+        $response->assertJsonCount(0, 'donations');
+        $response->assertJsonPath('total_donated', 0);
+    }
 }
