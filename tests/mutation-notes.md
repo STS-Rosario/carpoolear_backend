@@ -1249,6 +1249,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts `toPush()` returns `/trips/{tripId}` when trip exists and always includes the static logo `image`.
   - Mutant IDs: `bdf3bee255fce6db`, `1b5fa90cd5b7cfa0`, `5b2170b6e88cb5b2`, `8740ad58c17a1584`.
 
+## `SupportTicketReplyNotification` (`app/Notifications/SupportTicketReplyNotification.php`)
+
+- **Delivery channels and push image contract** (`via` list and `toPush().image`; report RUN ~6489 and UNTESTED/UNCOVERED ~66346–66370).
+  - Cause: existing tests covered message/url/type/extras but did not assert channel list and image key, so `RemoveArrayItem` mutants on `via` entries and push image survived.
+  - Fix: `Tests\Unit\Notifications\SupportTicketReplyNotificationTest` now asserts exact `getVia()` channels (`DatabaseChannel`, `PushChannel`) and verifies `toPush()` includes the static logo image for both with/without ticket scenarios.
+  - Mutant IDs: `bd55567746b8aae9`, `0a5247b11be9c61b`, `3f6015fb16429054`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
