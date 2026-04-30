@@ -3,12 +3,29 @@
 namespace Tests\Unit\Notifications;
 
 use STS\Notifications\AnnouncementNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 use Tests\TestCase;
 
 class AnnouncementNotificationTest extends TestCase
 {
+    public function test_via_contains_database_and_push_channels(): void
+    {
+        $notification = new AnnouncementNotification;
+
+        $this->assertSame([
+            DatabaseChannel::class,
+            PushChannel::class,
+        ], $notification->getVia());
+    }
+
     public function test_to_email_uses_defaults_when_optional_fields_are_missing(): void
     {
+        config([
+            'carpoolear.name_app' => 'Carpoolear Test',
+            'app.url' => 'https://app.test',
+        ]);
+
         $notification = new AnnouncementNotification;
         $notification->setAttribute('message', 'System maintenance tonight');
 
@@ -16,7 +33,9 @@ class AnnouncementNotificationTest extends TestCase
 
         $this->assertSame(__('notifications.announcement.default_title'), $email['title']);
         $this->assertSame('announcement', $email['email_view']);
-        $this->assertSame(config('app.url'), $email['url']);
+        $this->assertSame('https://app.test', $email['url']);
+        $this->assertSame('Carpoolear Test', $email['name_app']);
+        $this->assertSame('https://app.test', $email['domain']);
         $this->assertSame('System maintenance tonight', $email['message']);
     }
 
@@ -62,5 +81,8 @@ class AnnouncementNotificationTest extends TestCase
         $this->assertSame('https://example.org/post/42', $extras['external_url']);
         $this->assertSame(42, $extras['announcement_id']);
         $this->assertSame(42, $push['extras']['announcement_id']);
+        $this->assertSame('announcement', $push['extras']['type']);
+        $this->assertSame('https://example.org/post/42', $push['extras']['external_url']);
+        $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
     }
 }
