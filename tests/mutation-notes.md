@@ -1094,6 +1094,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the event was not exercised in tests, so mutating `broadcastOn()` to always return `null` did not fail anything.
   - Fix: `Tests\Unit\Events\MessageSendEventTest::test_broadcast_on_returns_empty_channel_array` requires an array channel list (`[]`, not `null`). `test_constructor_exposes_from_to_and_message_payload` asserts `from`, `to`, and `message` are the values passed to the constructor (opaque payloads, no DB).
 
+## `MessageSend` listener (`app/Listeners/Notification/MessageSend.php`)
+
+- **`handle()` wires `NewMessagePushNotification` into `NotificationServices`** (`handle()` ~27–40; report `tests/coverage/20260428_2310.txt` ~5790–5795 and UNTESTED ~62822–62846 / UNCOVERED ~62858–62871).
+  - Cause: the listener was never executed under test, so `RemoveMethodCall` mutants could drop `setAttribute('from', …)`, `setAttribute('messages', …)`, `notify($to)`, or either `Log::info` in the `catch` without failing the suite.
+  - Fix: `Tests\Unit\Listeners\Notification\MessageSendListenerTest::test_handle_forwards_event_payload_into_notification_and_sends_via_each_channel` binds a `NotificationServices` mock, runs `handle()` with a real `STS\Events\MessageSend`, and asserts two `send` calls (push + database channels) with the same `NewMessagePushNotification` carrying the event’s `from` and `messages` attributes and the original recipient as `$users`. `test_handle_logs_and_does_not_rethrow_when_notification_send_fails` makes `send` throw, spies `Log`, and expects the fixed human-readable line plus the exception object, with no bubbling error.
+  - Mutant IDs: `9eb4b2a859ae2069` (`setAttribute` `from`), `7c2dd4ff0c834167` (`setAttribute` `messages`), `5364f46cd8ca04e7` (`notify`), `1af591e02966c83e` / `4c4c1653660f877a` (catch `Log::info` calls).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
