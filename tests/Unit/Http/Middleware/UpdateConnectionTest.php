@@ -4,6 +4,7 @@ namespace Tests\Unit\Http\Middleware;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use ReflectionProperty;
 use STS\Http\Middleware\UpdateConnection;
@@ -25,6 +26,7 @@ class UpdateConnectionTest extends TestCase
 
         $jwt = Mockery::mock(JWTAuth::class);
         $middleware = new UpdateConnection($jwt);
+        $this->assertNull($this->readAuthProperty($middleware));
 
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('through', 200));
 
@@ -116,6 +118,8 @@ class UpdateConnectionTest extends TestCase
 
     public function test_authenticate_exception_is_swallowed_and_pipeline_continues(): void
     {
+        Log::spy();
+
         $parser = Mockery::mock();
         $parser->shouldReceive('hasToken')->andReturn(true);
 
@@ -126,7 +130,18 @@ class UpdateConnectionTest extends TestCase
         $middleware = $this->middlewareWithInjectedAuth($jwt);
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('recovered'));
 
+        Log::shouldHaveReceived('warning')
+            ->once()
+            ->with('UpdateConnection middleware error: token bad');
         $this->assertSame('recovered', $response->getContent());
+    }
+
+    private function readAuthProperty(UpdateConnection $middleware): mixed
+    {
+        $prop = new ReflectionProperty(UpdateConnection::class, 'auth');
+        $prop->setAccessible(true);
+
+        return $prop->getValue($middleware);
     }
 
     private function middlewareWithInjectedAuth(JWTAuth $jwt): UpdateConnection
