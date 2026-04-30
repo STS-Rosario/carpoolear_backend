@@ -2672,3 +2672,51 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 - **Mutant IDs (user report):** ~`L30` **`EmptyStringToNotEmpty`** on URL concatenation / destination fallback.
   - **Cause:** **`toEmail`** with and without a **`trip`** was not asserted for stable **`url`** / title content when **`$trip` is `null`**.
   - **Fix:** **`tests/Unit/Notifications/AutoCancelPassengerRequestIfRequestLimitedNotificationTest.php`** — asserts **`/app/trips/{id}`** when present and **`…/trips/`** suffix when missing, plus non-empty title with unknown destination.
+
+## Cross-notification payload shaping (`tests/Unit/Notifications/NotificationPayloadShapingTest.php`)
+
+Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayItem`** on email/push arrays, and **`TernaryNegated`** on trip-dependent URLs where a single focused suite asserts **exact keys**, **empty trip URL segments**, and **stable push image** without duplicating per-class integration tests.
+
+- **`RequestNotAnswerNotification`**
+  - **Cause:** Mutants dropped **`DatabaseChannel` / `PushChannel`** from **`$via`**, shrank **`toEmail` / `toPush`** arrays, or replaced empty trip id with junk so URLs and **`image`** diverged (`e73387a48eec8019`, `492d9001e8b0cda9`, `5502d7e78dc22fea`, `1f4a116c1763b008`, `a906367014c10797`, `1990ad760acbbb7f`, `5e87fbbb2529a1d8`).
+  - **Fix:** **`test_request_not_answer_to_email_and_push_shape_with_and_without_trip`** asserts ordered email keys, **`https://{app}/app/trips/`** vs **`…/501`**, push keys including **`image`**, and **`/trips/`** vs **`/trips/501`**.
+
+- **`RejectPassengerNotification`**
+  - **Cause:** Same families on **`$via`**, **`tripDate`** ternary (`c35306496f98298c`), URL fallbacks (`05933aa25fa2cb52`), and missing **`type` / `reason_message`** (`1d72118965799cc8`, `9f1257bd3c1e1b5a`, `3eb7b469befce108`).
+  - **Fix:** **`test_reject_passenger_to_email_includes_type_reason_and_url_keys`**, **`test_reject_passenger_to_email_with_null_trip_does_not_throw`**.
+
+- **`UpdateTripNotification` / `DeleteTripNotification` / `AcceptPassengerNotification` (email only here)**
+  - **Cause:** **`TernaryNegated`** on **`$tripDate`** and **`EmptyStringToNotEmpty`** on trip id in URL (`617d380e35055b64`, `3a937de282ba4924`, `141adabfd3963efa`, `7ef3481701a3fa15` overlap with dedicated class tests).
+  - **Fix:** **`test_update_delete_accept_to_email_null_trip_returns_full_key_set`** — null trip still yields **`email_view`**, **`name_app`**, **`domain`**, and **`…/trips/`** URL.
+
+- **`NewMessageNotification` / `NewMessagePushNotification`**
+  - **Cause:** Empty conversation id segment and push URL (`a174e60ca2ab6723`, `8b08f5a36c8f657e`, `eb9850c7d2c32ef8`).
+  - **Fix:** **`test_new_message_to_email_and_to_push_use_empty_conversation_segment_when_messages_missing`**, **`test_new_message_push_to_email_uses_empty_conversation_id_segment`**.
+
+- **`CancelPassengerNotification`**
+  - **Cause:** **`RemoveArrayItem`** removed **`email_view`** from **`toEmail`** (`ad547466f2b58ab9`).
+  - **Fix:** **`test_cancel_passenger_to_email_preserves_email_view_and_url_keys`**.
+
+- **`SubscriptionMatchNotification` / `HourLeftNotification` / `AutoRequestPassengerNotification` / `AutoCancelRequestIfRequestLimitedNotification`**
+  - **Cause:** **`RemoveArrayItem`** on **`$via`** and **`EmptyStringToNotEmpty`** on trip id in **`toEmail`** (`bb64a15df2c695c9`, `d868da8aaf64e741`, `e3981954c7d3801b`, `f5d2e8602d41ff8d`, `4d9b507f82168236`, `5fd76c5a557088de`, `a4d7a8a2ced57e3c`, `9b83aa339112ae21`, `4a14ecb94567ecbd`, `30aea114a75ccf27`, `df492cd69fc409d3`, `bdf3bee255fce6db`, `3a0e29f299bf4eec`, `ed078bf12bc1e6e2`, `eb5973d5ba5e4600`, `d6773c261f189342`).
+  - **Fix:** **`test_subscription_match_hour_left_and_auto_request_urls_with_trip_id`** asserts **`…/trips/9001`** for all four with a real **`Trip::factory()`** id.
+
+## `AcceptPassengerNotification` — **`getExtras()`** edge cases (extended in **`AcceptPassengerNotificationTest`**)
+
+- **Cause:** Mutants weakened **`is_object($to) && isset($to->id)`** to **`||`**, flipped **`==` / `===`** on **`request_state`**, widened **`isset($trip) && is_object($trip)`**, or incremented the fallback **`0`** (`a5dbb5bd35d432b9`, `fdfb561b3809b6b1`, `f12e359ff30e9720`, `0dbb922329f39783`, `0c0994b3db973a35`).
+- **Fix:** **`test_get_extras_still_my_trips_when_request_state_is_string_four_from_database`** (raw **`'4'`** in DB keeps **`== 4`** branch); **`test_get_extras_returns_trip_when_token_is_not_object_with_id`** (array token); **`test_get_extras_returns_trip_when_token_user_has_no_passenger_row`** (user exists but no **`trip_passengers`** row).
+
+## `TransbankSdkWebpayNormalFlowClient` (`app/Services/Webpay/TransbankSdkWebpayNormalFlowClient.php`)
+
+- **Cause:** Early-return guard mutants (**`IfNegated`**, **`BooleanOrToBooleanAnd`**, empty-string replacements, removed **`trim`**, removed **`return null`**, etc.) let **`getTransactionResult`** proceed with invalid tokens (`4a1f39f9969623c6`, `59fa0207399febff`, `35d752bdd60c2cff`, `1d051938bf9096ac`, `ab0ffee67da0fb53`, `ec94c83528fd2e3f`, `ea528c11d42c4bd0`, and related).
+- **Fix:** **`tests/Unit/Services/Webpay/TransbankSdkWebpayNormalFlowClientTest::test_get_transaction_result_returns_null_for_null_blank_or_whitespace_token`**.
+
+## `MapboxDirectionsRouteService` (`app/Services/MapboxDirectionsRouteService.php`)
+
+- **Cause:** Mutants removed boolean cast, changed token default, inverted **`isEnabled`**, broke point-count thresholds, stripped log context, or removed early returns (`9b5db0632c27a087`, `2a4db0d2f007c8fe`, `9e1a1b9f85c4631a`, `2fa453c3e5f8b2b6`, `f348361169c1b76b`, `a790539d08526917`, `410d99e18bb4452f`, `5a3c0789db439f31`, `2df6193fe601c1d5`, `d07a426f029f0499`, `fc72c611d01f5c7b`, and related count/threshold mutants).
+- **Fix:** **`tests/Unit/Services/MapboxDirectionsRouteServiceTest`** — token empty vs non-empty **`isEnabled`**, disabled short-circuit, **`< 2`** points, **`> 25`** with **`Log::spy()`** on message + **`count`**, **`Http::fake`** happy-path rounding.
+
+## `NotificationChannelsViaTest` (`tests/Unit/Notifications/NotificationChannelsViaTest.php`)
+
+- **Cause:** **`RemoveArrayItem`** / **`TrueToFalse`** on **`$via`** and **`force_email`** for many **`BaseNotification`** subclasses survived without a single **`getVia()`** matrix (`RequestRemainderNotification`, **`FriendRejectNotification`**, **`NewUserNotification`**, **`ResetPasswordNotification`**, **`DummyNotification`**, etc. — IDs from user report such as **`523e1a8313d09d7d`**, **`d3b1fbb9dcc7f93f`**, **`8c5555ea1fac3f38`**, **`5be5c053131c8881`**, **`277a17cb78db227a`**, **`df82baf8af57be87`**, plus all other **`RemoveArrayItem`** entries on **`$via`** listed for notifications not already fully covered elsewhere).
+- **Fix:** Data provider **`notificationViaProvider`** plus **`test_new_user_and_reset_password_force_mail_delivery_flag`** assert exact channel lists and mail **`force_email`** flags.
