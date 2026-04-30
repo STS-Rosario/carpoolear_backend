@@ -1022,6 +1022,20 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: admin badge HTTP tests covered list/show/store/update via `BadgeResourceTest`, but nothing called `DELETE api/admin/badges/{id}`, so removing the `delete()` call could survive mutation testing.
   - Fix: `Tests\Feature\Http\BadgeResourceTest::test_destroy_returns_no_content_and_removes_badge` creates a badge, `DELETE`s it, expects `204 No Content`, and `assertDatabaseMissing` on `badges`.
 
+## `PaymentController` (`app/Http/Controllers/PaymentController.php`)
+
+- **Legacy `Transbank\Webpay\Webpay` dependency** (controller previously called `new Webpay(Configuration::forTestingWebpayPlusNormal())`; that class is not present in `transbank/transbank-sdk` v4, so `transbank` / `transbank-respuesta` fatally errored at runtime).
+  - Cause: dependency drift left the controller unrunnable; mutation report still listed branches (`transbank` ~60343–60461, e.g. `1e6d3511da8840fc` `IfNegated`, `e56b0fd26e484ad9`, concat mutants `9575cd143f2844ea` / `66aad9ada69969b4` / `064b34484cd2ab4e` on `returnUrl`/`finalUrl`, `3409c3efc3227519` / `6ae069ae162d130f` on view data; `transbankResponse` ~60463–60530, e.g. `a8041f1f8c091510`, `63c0f5995c1a678d`, `0cfa0bb7a604906b`, `a0fc1da90852d356`, `f7f7991a2cd098ff`, `0335294feff66778`, `80a3b0f899c85e01`).
+  - Fix: introduce `STS\Contracts\WebpayNormalFlowClient` with `TransbankSdkWebpayNormalFlowClient` (Webpay Plus REST `create` / `commit`, configurable via `config('services.transbank.webpay_plus.*')` and env `TRANSBANK_WEBPAY_PLUS_*`); bind in `AppServiceProvider`. `PaymentController` now depends on the contract instead of instantiating removed SDK types.
+
+- **`transbank()` entry routing + callback URL wiring** (`~17–41` after refactor).
+  - Cause: `echo` for the missing-`tp_id` branch did not populate `TestResponse` bodies, so HTTP assertions could not observe “No transaction id”; unknown `tp_id` vs missing passenger were indistinguishable in responses.
+  - Fix: return plain-text `No transaction id` when `tp_id` is absent, and an empty `200` body when `tp_id` is present but no `trip_passengers` row matches (preserves prior “no checkout” behavior while making it assertable). `Tests\Feature\Http\PaymentControllerWebTest` binds `Tests\Support\Webpay\FakeWebpayNormalFlowClient` and asserts `initTransaction` receives `{scheme+host}/transbank-respuesta` and `…/transbank-final`, the posted amount in cents, and the HTML auto-post form for a real `Trip` + `Passenger` fixture.
+
+- **`transbankResponse()` outcomes** (`~48–144`).
+  - Cause: no end-to-end coverage for null/invalid gateway payloads, success vs declined `responseCode`, or missing passenger, so guard and `view()` data mutants survived.
+  - Fix: same test class drives `POST /transbank-respuesta` with a fake gateway payload: `assertViewHas` for `Transbank ouput empty.` when the client returns `null`; success (`responseCode == 0`) asserts `Passenger` state `STATE_ACCEPTED`, `payment_status` `ok`, and voucher `transbank` view data; decline (`-1`) asserts persisted `payment_status` prefix `error:-1:` and the Spanish copy; unknown `buyOrder` asserts `Operación no encontrada`. `GET /transbank-final` asserts the success blade message.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
