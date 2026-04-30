@@ -108,4 +108,46 @@ class ImageUploadValidatorTest extends TestCase
             $result['errors']['profile']
         );
     }
+
+    public function test_default_max_size_is_ten_mb_when_config_is_missing(): void
+    {
+        config()->offsetUnset('carpoolear.image_upload_max_bytes');
+
+        $file = UploadedFile::fake()->image('large.jpg', 1400, 1400)->size(10300);
+        $result = $this->validator->validate($file, 'avatar');
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(
+            ['File too large. Maximum size: 10 MB.'],
+            $result['errors']['avatar']
+        );
+    }
+
+    public function test_max_size_config_is_cast_to_integer_bytes_before_validation(): void
+    {
+        config()->set('carpoolear.image_upload_max_bytes', '1048576');
+
+        $file = UploadedFile::fake()->image('too-big.jpg', 900, 900)->size(1100);
+        $result = $this->validator->validate($file, 'cover');
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(
+            ['File too large. Maximum size: 1 MB.'],
+            $result['errors']['cover']
+        );
+    }
+
+    public function test_existing_type_error_is_not_overwritten_by_extension_or_size_errors(): void
+    {
+        config()->set('carpoolear.image_upload_max_bytes', 1 * 1024 * 1024);
+
+        $file = UploadedFile::fake()->create('bad.exe', 2100, 'application/octet-stream');
+        $result = $this->validator->validate($file, 'document');
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(
+            ['Invalid image type. Allowed: jpeg, png, webp, heic.'],
+            $result['errors']['document']
+        );
+    }
 }
