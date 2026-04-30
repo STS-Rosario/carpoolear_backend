@@ -1680,6 +1680,16 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `NotificationManager::delete()` returned the void result of `NotificationRepository::delete()`, so `$result` in the controller was always falsy even after a successful soft-delete; the action always threw `ExceptionWithErrors` and successful deletes were never observable under HTTP tests.
   - Fix: `NotificationManager::delete()` now returns `true` after persisting the soft delete and `false` when the row is missing or not owned; `Tests\Feature\Http\NotificationApiTest::test_delete_known_notification_returns_ok_envelope` asserts `DELETE api/notifications/{id}` → `200` + exact `{"data":"ok"}`; unknown id → `422` with the existing error message. `Tests\Unit\Services\Logic\NotificationManagerTest` expectations for the not-found / wrong-user paths were updated from `null` to `false`.
 
+## NotificationManager (`app/Services/Logic/NotificationManager.php`)
+
+- **`getNotifications()` unread-only regression protection** (`getNotifications()` around lines 22 and 24 in `tests/coverage/20260428_2310.txt` survivors).
+  - Cause: existing tests validated shape, pagination, and mark-as-read behavior, but did not explicitly pin that listing endpoints return both read and unread notifications (the repository flag must stay `false` in both paginated and non-paginated branches).
+  - Fix: added to `tests/Unit/Services/Logic/NotificationManagerTest.php`:
+    - `test_get_notifications_returns_read_and_unread_rows_when_not_marking`
+    - `test_paginated_get_notifications_returns_read_and_unread_rows`
+    Both create read + unread rows and assert both `readed=true` and `readed=false` are present in the response.
+  - Mutant IDs: `a4932146ea59090f`, `5a9ac6d79ce99892`.
+
 ## CarController (`app/Http/Controllers/Api/v1/CarController.php`)
 
 - **Constructor `logged` middleware** (`__construct()` ~18; report ~42097, e.g. `9864f7b7934a7a50` `RemoveMethodCall`).
