@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
+use Mockery;
 use STS\Models\Subscription;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -12,6 +13,12 @@ use Tests\TestCase;
 
 class SubscriptionsManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function manager(): SubscriptionsManager
     {
         return new SubscriptionsManager(new SubscriptionsRepository);
@@ -59,6 +66,26 @@ class SubscriptionsManagerTest extends TestCase
         $this->assertTrue($v->fails());
         $this->assertTrue($v->errors()->has('from_lat'));
         $this->assertTrue($v->errors()->has('from_lng'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_validator_rejects_non_string_addresses(): void
+    {
+        Carbon::setTestNow('2027-01-01 12:00:00');
+        $v = $this->manager()->validator([
+            'trip_date' => '2027-06-01 10:00:00',
+            'from_address' => ['invalid'],
+            'from_lat' => -34.6,
+            'from_lng' => -58.4,
+            'to_address' => ['invalid'],
+            'to_lat' => -34.7,
+            'to_lng' => -58.5,
+        ]);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('from_address'));
+        $this->assertTrue($v->errors()->has('to_address'));
 
         Carbon::setTestNow();
     }
@@ -132,6 +159,22 @@ class SubscriptionsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_rejects_duplicate_when_optional_geometry_and_date_are_both_empty(): void
+    {
+        Carbon::setTestNow('2027-05-01 09:00:00');
+        $user = User::factory()->create();
+        $manager = $this->manager();
+        $payload = [
+            'is_passenger' => false,
+        ];
+
+        $this->assertNotNull($manager->create($user, $payload));
+        $this->assertNull($manager->create($user, $payload));
+        $this->assertSame('subscription_exist', $manager->getErrors()['error']);
+
+        Carbon::setTestNow();
+    }
+
     public function test_show_returns_model_for_owner(): void
     {
         $user = User::factory()->create();
@@ -192,6 +235,36 @@ class SubscriptionsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_update_returns_null_and_sets_validation_errors_when_payload_is_invalid(): void
+    {
+        Carbon::setTestNow('2027-07-01 10:00:00');
+        $user = User::factory()->create();
+        $sub = Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
+        $manager = $this->manager();
+
+        $this->assertNull($manager->update($user, $sub->id, [
+            'trip_date' => 'not-a-date',
+            'from_address' => 'x',
+        ]));
+        $this->assertTrue($manager->getErrors()->has('trip_date'));
+        $this->assertTrue($manager->getErrors()->has('from_lat'));
+        $this->assertTrue($manager->getErrors()->has('from_lng'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_show_accepts_equivalent_scalar_ids_for_owner_check(): void
+    {
+        $persisted = User::factory()->create();
+        $viewer = new User;
+        $viewer->id = (string) $persisted->id;
+        $sub = Subscription::factory()->create(['user_id' => $persisted->id, 'state' => true]);
+
+        $found = $this->manager()->show($viewer, $sub->id);
+        $this->assertNotNull($found);
+        $this->assertSame($sub->id, $found->id);
+    }
+
     public function test_delete_removes_subscription_for_owner(): void
     {
         $user = User::factory()->create();
@@ -199,6 +272,31 @@ class SubscriptionsManagerTest extends TestCase
 
         $this->assertTrue($this->manager()->delete($user, $sub->id));
         $this->assertNull(Subscription::query()->find($sub->id));
+    }
+
+    public function test_delete_returns_null_with_model_not_found_error_when_not_owner(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $sub = Subscription::factory()->create(['user_id' => $owner->id, 'state' => true]);
+        $manager = $this->manager();
+
+        $this->assertNull($manager->delete($other, $sub->id));
+        $this->assertSame('model_not_found', $manager->getErrors()['error']);
+    }
+
+    public function test_delete_returns_null_with_cant_delete_model_when_repository_delete_fails(): void
+    {
+        $user = User::factory()->create();
+        $sub = Subscription::factory()->create(['user_id' => $user->id, 'state' => true]);
+
+        $repo = Mockery::mock(SubscriptionsRepository::class);
+        $repo->shouldReceive('show')->once()->with($sub->id)->andReturn($sub);
+        $repo->shouldReceive('delete')->once()->with(Mockery::on(fn ($m) => $m->id === $sub->id))->andReturn(false);
+
+        $manager = new SubscriptionsManager($repo);
+        $this->assertNull($manager->delete($user, $sub->id));
+        $this->assertSame('cant_delete_model', $manager->getErrors()['error']);
     }
 
     public function test_index_returns_only_active_subscriptions(): void
