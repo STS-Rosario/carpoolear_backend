@@ -1651,6 +1651,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: authenticated paths were not covered under HTTP; unknown provider classes only raised `BindingResolutionException`, which was not caught (only `\ReflectionException`), so behaviour differed from the intended “provider not supported” handling.
   - Fix: tests assert `200` and JSON primitive `"OK"` for `update`/`friends` when the token matches the linked account; `catch (\ReflectionException|BindingResolutionException $e)` on `login` returns `401` JSON, and the same exception types on `update`/`friends` map to `ExceptionWithErrors('provider not supported')`. `TestSocialProvider::getUserData` forwards `description` when present so `updateProfile` can change an allowlisted field observable in the DB.
 
+## `SocialManager` (`app/Services/Logic/SocialManager.php`)
+
+- **Provider setup, update-validator rules, and existing-image preservation** (`__construct()`, `validator($data, $id)`, `loginOrCreate()`; report `RUN` ~7891 with UNTESTED at lines 33, 41, 57).
+  - Cause: service-level tests did not explicitly pin constructor provider initialization, update-mode name-rule retention, or the branch that must avoid replacing an already present user image even when provider data contains a new image URL.
+  - Fix: added tests asserting `setDefaultProvider()` is called in constructor, update validator still includes `name => max:255`, and `loginOrCreate()` does not call file creation / overwrite image when the linked user already has one.
+  - Mutant IDs: `075b9332063a966c`, `745f9b6f8984eedb`, `4bb608b637a23b82`.
+
+- **Ownership checks remain value-based across id scalar types** (`makeFriends()` and `updateProfile()` checks comparing authenticated user id with linked account user id; report UNTESTED at lines 73 and 83).
+  - Cause: existing tests used same-type ids only; `==` to `===` mutants survived because no test exercised equivalent string/int ids that should still authorize the same user.
+  - Fix: added tests with mocked social account payloads returning string ids while model users keep integer ids, asserting both friend sync and profile update still execute successfully.
+  - Mutant IDs: `cbc29567bdec83cf`, `8a825a5de4a64e97`, `2676999b4e6fd963`.
+
 ## RatingController (`app/Http/Controllers/Api/v1/RatingController.php`)
 
 - **Constructor middleware** (`__construct()` ~20–21; report ~42528–42576, e.g. `f39fad06752f81dc` / `0ff64d9344f5582f` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except([…])`, `d8e60e9f65d2233a` / `ad679d17dd3062d8` / `3db96a5488df3840` on `logged.optional` `only([…])`).
