@@ -1690,6 +1690,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added `test_resend_verification_code_fails_when_pending_verification_is_blocked` to assert null result and the expected blocked error message.
   - Mutant IDs: `63cb1c49c702e5ac`, `0ce24ed886822c54`, `0c8b7e2940adf80a`.
 
+## `RoutesManager` (`app/Services/Logic/RoutesManager.php`)
+
+- **Fallback near-node threshold path in route matching** (`createRoute()` fallback condition around lines 101–105; report `RUN` ~8611 with UNCOVERED branch mutants at 102/105 and related threshold mutations).
+  - Cause: existing route fixture tests exercised the main near-point branch, but not the fallback path (`md < 0.15 && d < 0.0125`) used when the main threshold fails for short segments.
+  - Fix: `test_create_route_uses_fallback_near_point_threshold_branch` uses a short OSRM segment and a crafted nearby node so the primary condition fails while fallback thresholds pass, then asserts node attachment and processed route state.
+  - Mutant IDs: `6f50d443d4c1e4c9`, `e2d8e33cb7619b29`, `7fe46d6b6de2f595`, `ba0f70226af82a9b`, `d0f2aea00f4b3b08`, `57692b1ddb2d83ab`, `b795a919fe3515f0`, `4385e95be85090a6`, `d1390b0a4203560f`, `19968d1f9c74ad5f`, `0e7645830bb44446`, `2bc7d3e750455ed6`, `4fd823e79d9bc309`.
+
 ## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
 
 - **Constructor middleware** (`__construct()` ~24–25; report ~42192–42216, e.g. `8ed44639c8d9f9bc` / `e0d9f7290643afcb` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except(['login'])`, `75cd57e29108ce0c` on `logged.optional` `only('login')`).
