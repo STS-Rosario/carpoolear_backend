@@ -9,6 +9,16 @@ use Tests\TestCase;
 
 class DeleteAccountRequestTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'user_id',
+            'date_requested',
+            'action_taken',
+            'action_taken_date',
+        ], (new DeleteAccountRequest)->getFillable());
+    }
+
     public function test_belongs_to_user(): void
     {
         $user = User::factory()->create();
