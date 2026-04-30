@@ -830,3 +830,23 @@ This file tracks mutants killed during the current hardening session, with the r
 - **`delete()` success JSON** (~48; report ~42075–42086, e.g. `01dac38bbba23c29` `RemoveArrayItem`, `4d1decfbc4f72942` `AlwaysReturnNull` on `['data' => 'ok']`).
   - Cause: `NotificationManager::delete()` returned the void result of `NotificationRepository::delete()`, so `$result` in the controller was always falsy even after a successful soft-delete; the action always threw `ExceptionWithErrors` and successful deletes were never observable under HTTP tests.
   - Fix: `NotificationManager::delete()` now returns `true` after persisting the soft delete and `false` when the row is missing or not owned; `Tests\Feature\Http\NotificationApiTest::test_delete_known_notification_returns_ok_envelope` asserts `DELETE api/notifications/{id}` → `200` + exact `{"data":"ok"}`; unknown id → `422` with the existing error message. `Tests\Unit\Services\Logic\NotificationManagerTest` expectations for the not-found / wrong-user paths were updated from `null` to `false`.
+
+## CarController (`app/Http/Controllers/Api/v1/CarController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~18; report ~42097, e.g. `9864f7b7934a7a50` `RemoveMethodCall`).
+  - Cause: `tests/Feature/Http/CarApiTest.php` mocked `CarsManager`, so HTTP never exercised real middleware or persistence; dropping `middleware('logged')` stayed green.
+  - Fix: integration-style `CarApiTest` asserts `401` + `Unauthorized.` for unauthenticated `GET|POST|PUT|DELETE api/cars` (and uses the real `CarsManager` / DB).
+
+- **`create()` / `update()` / `show()` JSON envelopes** (~31, ~43, ~65; report ~42109–42145, e.g. `6246136888135c72` / `289bdccc04f8bce3` on `['data' => $car]`, `4b894bda8c4a9522` / `2ad05d8911e6c4f8` on the same pattern for `update`).
+  - Cause: mocked manager bypassed `response()->json(['data' => …])`, so `RemoveArrayItem` / `AlwaysReturnNull` on the outer `data` key never broke CI.
+  - Fix: `POST api/cars` and `PUT api/cars/{id}` assert `200`, `assertJsonStructure` on `data` (`id`, `patente`, `description`, `user_id`, `trips_count`), and `assertJsonPath` on fields returned to the client; `GET api/cars/{id}` asserts the same envelope for an owned car.
+
+- **`delete()` success envelope** (~54; report ~42157–42169, e.g. `fd88d4b6a9b9b3b9` `RemoveArrayItem`, `082ba40b0ae75825` `AlwaysReturnNull` on `['data' => 'ok']`).
+  - Cause: same mock-based coverage never asserted the literal success payload.
+  - Fix: `DELETE api/cars/{id}` after a successful create → `200` + `assertExactJson(['data' => 'ok'])`, and the row is gone from the database.
+
+- **`index()` return value** (~73; report ~42181, e.g. `37f8de8c792798f1` `AlwaysReturnNull`).
+  - Cause: the mock returned a PHP array while production returns `$user->cars` (serialized as a top-level JSON array, not `{ data: … }`); `AlwaysReturnNull` was not exercised by HTTP.
+  - Fix: `GET api/cars` with no cars → `[]`; with one persisted car for the user → non-empty JSON array and `patente` matches (separate tests avoid ordering the “empty index” call before inserts on the same authenticated `User` instance, which can leave a stale empty `cars` relation in memory).
+
+- **Error paths** (`show` / `create` validation / duplicate car): `GET api/cars/{id}` for another user’s car or a missing id → `422` + `Could not found car.`; invalid body → `422`; second `POST` when `CarsManager` rejects duplicate ownership → `422`—these pin the existing `if (! $car)` / `if (! $result)` branches without coupling to internal error arrays beyond status and message.
