@@ -778,6 +778,20 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no POST carried a realistic `entry` / `changes` tree, so mutants on `isset($payload['object'])`, `!== 'whatsapp_business_account'`, `foreach` bodies, or `switch` arms were never exercised under HTTP.
   - Fix: `test_post_with_wrong_object_type_still_returns_success_so_meta_does_not_retry` asserts unknown `object` values still return HTTP `200` and `{"success":true}` (matches production’s non-throwing handler); `test_post_processes_messages_message_status_and_unknown_change_fields` sends one entry with `messages`, `message_status`, and an extra `account_update` change to drive all `switch` arms without asserting internal logs.
 
+## CampaignController (`app/Http/Controllers/Api/v1/CampaignController.php`)
+
+- **Not-found guard** (`showBySlug()` ~16–20; report ~47591–47603, e.g. `c2c07be607736cb1` `RemoveNot`, `db1c2ef37997eb29` `RemoveArrayItem` on the `404` JSON).
+  - Cause: only a generic “missing slug” smoke existed; nothing asserted the `! $campaign` branch together with `! $campaign->visible` or the exact `{"message":"Campaign not found"}` envelope, so inverted visibility logic or stripped error keys survived mutation.
+  - Fix: `Tests\Feature\Http\CampaignApiTest::test_show_by_slug_returns_not_found_when_campaign_does_not_exist` and `::test_show_by_slug_returns_not_found_when_campaign_is_not_visible` hit `GET api/campaigns/{slug}` for a missing slug and for a persisted row with `visible = false`, both expecting `404` + `message`.
+
+- **Eager loads: milestones, donations, rewards** (`showBySlug()` ~22–29; report ~47615–47712, e.g. `7d8ed591ae590128` / `2292cef89b7ae14a` on `milestones` constraints, `2f75328bd77fad4b` / `acdede974bbe5a11` / `89073510aa4fb5a7` on `donations`, `ab58cdb3567100c8` / `98d6df4e9f2e0e96` / `c5bdbc089a9af6f6` on `rewards`).
+  - Cause: no HTTP request loaded a real `Campaign` with related rows, so mutants could drop `orderBy` / `where` clauses from the `load` callbacks or the `is_active` filter without failing the suite.
+  - Fix: `test_show_by_slug_returns_milestones_ordered_by_amount_ascending` seeds two milestones in non-ascending insert order and asserts `milestones.0.amount_cents` & `milestones.1.amount_cents` reflect ascending amounts; `test_show_by_slug_returns_only_paid_donations_newest_first` seeds two `paid` rows (with distinct `created_at`) plus a `pending` donation and asserts only two `donations` entries, `status` always `paid`, newest-first amounts, and `total_donated` matching the sum of paid cents; `test_show_by_slug_returns_only_active_rewards` seeds one inactive and one active reward and asserts a single `rewards` entry with `is_active` true.
+
+- **`total_donated` coalesce on the model** (`showBySlug()` ~31; report ~47726–47750, e.g. `8b0aaaae3c8c357a` `CoalesceRemoveLeft`, `1c83942d0a8b9644` / `b8a17a9df28260ea` `DecrementInteger`/`IncrementInteger` on the `?? 0`).
+  - Cause: the explicit `$campaign->total_donated = $campaign->total_donated ?? 0` line was never executed with a campaign that had paid donations in the same HTTP response, so mutants on the coalesce or assignment never broke an assertion.
+  - Fix: the paid-donations test above asserts `total_donated` in the JSON equals the summed paid `amount_cents` (covers the accessor-backed value surfaced on the serialized payload).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
