@@ -9,6 +9,18 @@ use Tests\TestCase;
 
 class BadgeTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'title',
+            'slug',
+            'description',
+            'image_path',
+            'rules',
+            'visible',
+        ], (new Badge)->getFillable());
+    }
+
     public function test_rules_and_visible_are_cast(): void
     {
         $badge = Badge::query()->create([
@@ -27,6 +39,25 @@ class BadgeTest extends TestCase
 
         $badge->forceFill(['visible' => false])->saveQuietly();
         $this->assertFalse($badge->fresh()->visible);
+    }
+
+    public function test_mass_assignment_persists_all_fillable_fields(): void
+    {
+        $badge = Badge::query()->create([
+            'title' => 'Driver verified',
+            'slug' => 'driver-verified-'.uniqid('', true),
+            'description' => 'Granted after verification',
+            'image_path' => '/img/badges/driver-verified.png',
+            'rules' => ['type' => 'driver_verified', 'minTrips' => 1],
+            'visible' => false,
+        ])->fresh();
+
+        $this->assertSame('Driver verified', $badge->title);
+        $this->assertSame('Granted after verification', $badge->description);
+        $this->assertSame('/img/badges/driver-verified.png', $badge->image_path);
+        $this->assertSame('driver_verified', $badge->rules['type']);
+        $this->assertSame(1, $badge->rules['minTrips']);
+        $this->assertFalse($badge->visible);
     }
 
     public function test_users_relation_attaches_with_awarded_at_pivot(): void
