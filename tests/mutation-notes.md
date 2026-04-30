@@ -1177,6 +1177,17 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Helpers\DatesHelperTest` (plain `PHPUnit\Framework\TestCase`, composer autoload only) asserts `parse_date` yields a `Carbon` instance for default and custom formats, `date_to_string` honors default and overridden formats, and `parse_boolean` matches `FILTER_VALIDATE_BOOLEAN` semantics for booleans and common string/integer inputs.
   - Mutant IDs: `34562addc83b7af7` (`parse_date` ~7), `7b45cc5826adac98` (`date_to_string` ~12), `d0d36613e717f4a0` (`parse_boolean` ~17).
 
+## `OldCordovaAppHelper` (`app/Helpers/OldCordovaAppHelper.php`)
+
+- **`isOldCordovaApp()` UA / WebView detection** (`isOldCordovaApp()` ~12–24; report `tests/coverage/20260428_2310.txt` ~5971–5985 and UNTESTED ~63914–63926).
+  - Cause: helper was never executed, so `BooleanAndToBooleanOr` on the Capacitor short-circuit (`! empty(X_APP_PLATFORM) && ! empty(X_APP_VERSION)`) and `FalseToTrue` on the WebView / Instagram guard could survive.
+  - Fix: `Tests\Unit\Helpers\OldCordovaAppHelperTest` snapshots/restores `$_SERVER` around scenarios: missing `HTTP_SEC_CH_UA` / `HTTP_USER_AGENT` ⇒ `false`; both `HTTP_X_APP_PLATFORM` + `HTTP_X_APP_VERSION` set ⇒ `false`; only `HTTP_X_APP_VERSION` with WebView headers ⇒ `true` (proves both empties are required for the early exit); `Instagram` substring in `HTTP_USER_AGENT` ⇒ `false`; WebView `sec-ch-ua` without Instagram ⇒ `true`.
+
+- **`getFakeTripData()` update-banner payload** (`getFakeTripData()` ~30–92; report UNTESTED ~63938–64830).
+  - Cause: the fake trip envelope was never asserted, so `RemoveArrayItem`, integer nudges on zeros, `FalseToTrue` on boolean literals, and `EmptyStringToNotEmpty` on `request` stayed green.
+  - Fix: same test class asserts stable Spanish banner strings, numeric counters, boolean flags, datetime-shaped `updated_at` / `last_connection`, and `assertArrayHasKey` over the full top-level and nested `user` key sets promised to API clients.
+  - Mutant IDs: `d49ba8167ef10c8a` (`BooleanAndToBooleanOr` ~17), `ee1f1e9cba2f03d7` (`FalseToTrue` on WebView/Instagram line ~23); `getFakeTripData` cluster (representative IDs from the report listing): `92087f7c0588322d`, `9ae3fed2d63935a3`, `b93a1ce4d8856532`, `611fbb558182d263`, `48b0d1a589832710`, `70dd2b6177502360`, `c1d6e8b2f43ffa0a` (`EmptyStringToNotEmpty` ~88), `8b2f1c70ee7db199` — plus parallel `RemoveArrayItem` / `DecrementInteger` / `IncrementInteger` / `FalseToTrue` IDs on the same method through ~64830 in `tests/coverage/20260428_2310.txt`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
