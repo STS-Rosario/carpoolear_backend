@@ -802,6 +802,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no feature test exercised `POST api/references` with a resolved user, so inverting the `if ($this->user)` guard or dropping the success/error responses stayed green; manager failures were never mapped to HTTP.
   - Fix: `test_create_returns_reference_payload_when_valid` asserts `200`, stable `comment` / `user_id_from` / `user_id_to` paths, `assertJsonStructure` on the persisted keys, and a DB row in `users_references`; `test_create_returns_unprocessable_when_comment_missing`, `…_when_target_user_does_not_exist`, `…_when_author_targets_self`, and `…_when_reference_already_exists` assert `422`, `Could not rate user.`, and an `errors` envelope where validation runs (missing `comment`); duplicate / missing target / self-target cases pin the falsy-manager branch without mocking `ReferencesManager`.
 
+## `ReferencesManager` (`app/Services/Logic/ReferencesManager.php`)
+
+- **Self-reference guard uses value equality across scalar forms** (`create()` same-user check around line 39; report survivor `EqualToIdentical`).
+  - Cause: tests asserted self-reference rejection only with same-typed ids, so mutating `==` to `===` could survive without violating existing assertions.
+  - Fix: `test_create_treats_equivalent_scalar_ids_as_same_user_for_self_reference_guard` exercises a same logical user id across int/string forms and asserts `reference_same_user`, pinning value-based self-reference protection.
+  - Mutant IDs: `d3767ca264356c9e`.
+
 ## OsrmProxyController (`app/Http/Controllers/Api/v1/OsrmProxyController.php`)
 
 - **Path length and invalid-profile guards** (`route()` ~21–33; report ~47786–47930, e.g. `5111317cfc3f97d3` `GreaterToGreaterOrEqual` / `b2ddabce106d3ee4` / `bbee9e628c995f42` on `strlen($path) > 4096`, `3cfc4a8539a3ab3a` `RemoveEarlyReturn` on the `400` body, `04fdb93494e0a819` / `3b151ae1757dc10d` / `b3359610345dd4d0` on the `str_starts_with($path, 'driving/')` branch).
