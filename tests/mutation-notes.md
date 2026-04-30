@@ -86,6 +86,22 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `getPotentialNode` bbox initialization/comparators and lng bounds were weakly asserted.
   - Fix: added `test_get_potential_node_uses_both_lat_and_lng_bounds_with_equality_edges`.
 
+- `SubscriptionsRepository.php` `search` (`~63`): `Carbon::now()->subMonths(6)` vs literal nudges (`DecrementInteger` / `IncrementInteger`).
+  - Cause: only “inside window” positives were asserted; five‑ vs six‑month boundaries and “too old” negatives did not pin the exact month constant or direction of error when the window widens/narrows.
+  - Fix: added `test_search_respects_six_month_created_lower_bound_against_five_month_window` (frozen clock + `created_at` between five‑ and six‑month cutoffs must still match) and `test_search_excludes_subscription_created_before_six_month_cutoff_even_if_seven_month_window_would_include` (row just beyond six months must stay excluded).
+
+- `SubscriptionsRepository.php` `search` path filters (`~87–88`): dual `whereRaw` LIKE shapes (adjacent endpoints vs waypoint between endpoints).
+  - Cause: a single pattern covered only one SQL branch; removing either OR clause could still pass when every fixture satisfied the surviving predicate.
+  - Fix: added `test_search_with_path_requires_intermediate_segment_pattern_between_endpoints` (path `.from.mid.to.` requires the `%.from_id.%.to_id.%` branch) and `test_search_with_direct_path_segment_matches_adjacent_endpoints_without_waypoint` (compact `.from.to.` relies on the contiguous-id LIKE branch).
+
+- `SubscriptionsRepository.php` `search` no-path distance (`~93`): last trip vertex selection via `$points[count($points) - 1]`.
+  - Cause: two-point trips did not prove the repository reads the **final** polyline vertex when an extra interior marker exists.
+  - Fix: added `test_search_without_path_uses_last_trip_point_not_middle_marker` (three injected points; subscription keyed to true terminus only).
+
+- `SubscriptionsRepository.php` `getPotentialNode` (`~150–161`): latitude/longitude max/min branches when corners are **not** persisted rows.
+  - Cause: bbox tests that seeded every corner as `NodeGeo` rows made `first()` ambiguous; comparator mutants could still return an arbitrary corner id inside the box.
+  - Fix: added `test_get_potential_node_lat_ordering_uses_branch_assignments_not_swapped_extrema` and `test_get_potential_node_lng_bounds_require_strict_ordering_between_distinct_meridians` using plain `{lat,lng}` corner objects plus a single unambiguous interior `NodeGeo`.
+
 ## ConversationRepository
 
 - `347e5c2ad04e5254`, `7f4a6ce0dc5cee48`, `a583a4a54f8550a2`
