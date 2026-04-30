@@ -1690,6 +1690,15 @@ This file tracks mutants killed during the current hardening session, with the r
     Both create read + unread rows and assert both `readed=true` and `readed=false` are present in the response.
   - Mutant IDs: `a4932146ea59090f`, `5a9ac6d79ce99892`.
 
+## UsersManager (`app/Services/Logic/UsersManager.php`)
+
+- **`create()` activation token contract + case-insensitive banned-name matching** (`create()` around lines 119 and 128 in `tests/coverage/20260428_2310.txt`).
+  - Cause: prior tests checked activation-token presence and a lowercase banned-word config, but didn’t pin the token length contract (`Str::random(40)`) nor prove matching remains case-insensitive when banned words are configured with mixed casing.
+  - Fix: added to `tests/Unit/Services/Logic/UsersManagerTest.php`:
+    - strengthened `test_create_persists_inactive_user_and_dispatches_create_event` with `activation_token` exact length assertion (`40`).
+    - `test_create_bans_user_when_banned_word_config_uses_mixed_case` to assert mixed-case configured banned words still ban lowercase user names.
+  - Mutant IDs: `86174efcb6415a46`, `15a4ace8f553a316`, `26567b5534040daf`.
+
 ## CarController (`app/Http/Controllers/Api/v1/CarController.php`)
 
 - **Constructor `logged` middleware** (`__construct()` ~18; report ~42097, e.g. `9864f7b7934a7a50` `RemoveMethodCall`).
