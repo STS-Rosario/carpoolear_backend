@@ -2244,3 +2244,14 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_get_config_uses_non_cordova_banner_values_by_default`
     - expanded existing config assertions to require excluded keys are absent and all banner variants map correctly in both cordova and non-cordova requests
   - Mutant IDs: `e00e4f81a6bf2df1`, `ce0bb53f780c5983`, `5728fb0b63843b2c`, `8422e52f9a6d765d`, `ab57889e92d7181a`, `105749d67085b274`, `66a6aae3113a9baa`, `3dce1227c281770f`, `e2d3566354cd7ddf`, `b597844b620c8476`, `d3d9fbf2530e71cf`, `cc584ed88ab9b5ae`, `10b2403cbd7c606c`, `920c1f9d950cd09e`, `2e770b2c01379af6`, `a4352971bfe9085b`, `8dab81b550357160`, `6bada9b3a1fef48a`, `e62e4d0819fbaf19`, `b259ec617983065e`, `ba566582f26e8cca`.
+
+## ManualIdentityValidationController (`app/Http/Controllers/Api/v1/ManualIdentityValidationController.php`)
+
+- **Auth middleware and rollback-on-provider-error contract** (`__construct` line 19; `createPreference()`/`createQrOrder()` catch blocks around lines 116-118 and 178-180 in `tests/coverage/20260428_2310.txt`).
+  - Cause: manual identity API tests covered happy paths and newly-created-row rollback behavior, but they did not explicitly pin two contracts: controller-level `logged` middleware registration, and the guard that only *newly created* unpaid requests are deleted when Mercado Pago calls fail (existing unpaid requests must remain).
+  - Fix: extended `tests/Feature/Http/ManualIdentityValidationApiTest.php` with:
+    - `test_constructor_registers_logged_middleware`
+    - `test_preference_failure_keeps_existing_unpaid_request`
+    - `test_qr_order_failure_keeps_existing_unpaid_request`
+    These assert stable behavior at API/data-contract level and prevent destructive rollback regressions for existing requests.
+  - Mutant IDs: `dd32c96b7620c345`, `848a5d48b63521b2`, `d67ac69ffb71e256`, `57ee8d4446b8cbc4`, `480e452bc085c461`.
