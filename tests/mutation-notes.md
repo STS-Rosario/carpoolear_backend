@@ -1699,6 +1699,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_create_bans_user_when_banned_word_config_uses_mixed_case` to assert mixed-case configured banned words still ban lowercase user names.
   - Mutant IDs: `86174efcb6415a46`, `15a4ace8f553a316`, `26567b5534040daf`.
 
+- **`resetPassword()` token and reset URL payload contract** (`resetPassword()` around lines 497 and 505 in `tests/coverage/20260428_2310.txt`).
+  - Cause: tests asserted that an email job was queued, but didn’t lock token length or the exact reset URL passed into the queued job payload, allowing token-length and URL-concatenation mutants to survive.
+  - Fix: strengthened `test_reset_password_queues_email_for_known_user` to assert:
+    - returned token length is exactly `40`.
+    - queued `SendPasswordResetEmail` contains the same token and the exact URL `${app.url}/app/reset-password/{token}` (via reflection over queued job payload).
+  - Mutant IDs: `7b26e8eda8b83476`, `ce82a12ad7adc7f7`, `147c4727b1b15a2d`, `3241d1f1eb121787`, `8109b3665e672a30`, `28b0ab4513a7332e`, `6a0e9efd15a49350`, `b073b1a96c0c627a`.
+
 ## CarController (`app/Http/Controllers/Api/v1/CarController.php`)
 
 - **Constructor `logged` middleware** (`__construct()` ~18; report ~42097, e.g. `9864f7b7934a7a50` `RemoveMethodCall`).
