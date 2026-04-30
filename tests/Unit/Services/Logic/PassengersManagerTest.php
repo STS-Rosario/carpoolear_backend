@@ -146,6 +146,49 @@ class PassengersManagerTest extends TestCase
         Event::assertNotDispatched(RequestEvent::class);
     }
 
+    public function test_new_request_sets_validation_errors_and_stops_when_trip_id_is_invalid(): void
+    {
+        Event::fake([RequestEvent::class]);
+        $requester = User::factory()->create();
+        $manager = $this->manager();
+
+        $this->assertNull($manager->newRequest(null, $requester, []));
+
+        $errors = $manager->getErrors();
+        $this->assertInstanceOf(MessageBag::class, $errors);
+        $this->assertTrue($errors->has('trip_id'));
+        $this->assertFalse($errors->has('error'));
+        Event::assertNotDispatched(RequestEvent::class);
+    }
+
+    public function test_new_request_sets_limit_error_when_unanswered_limit_module_blocks_user(): void
+    {
+        Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $requester = User::factory()->create();
+
+        $usersManagerMock = \Mockery::mock(\STS\Services\Logic\UsersManager::class);
+        $usersManagerMock->shouldReceive('unansweredConversationOrRequestsByTrip')
+            ->once()
+            ->with(\Mockery::type(Trip::class))
+            ->andReturn(false);
+        $this->app->instance(\STS\Services\Logic\UsersManager::class, $usersManagerMock);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($trip->id, $requester, []));
+        $this->assertSame('user_has_reach_request_limit', $manager->getErrors()['error']);
+        $this->assertSame(0, Passenger::query()->where('trip_id', $trip->id)->where('user_id', $requester->id)->count());
+        Event::assertNotDispatched(RequestEvent::class);
+        Event::assertNotDispatched(AcceptEvent::class);
+        Event::assertNotDispatched(AutoRequestEvent::class);
+    }
+
     public function test_new_request_autoaccept_dispatches_auto_and_accept_events(): void
     {
         Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
