@@ -1070,6 +1070,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the event was never constructed under test; mutating `broadcastOn()` to always return `null` stayed equivalent to “no failing assertion” for callers that never invoked it.
   - Fix: `Tests\Unit\Events\Friend\CancelEventTest::test_broadcast_on_returns_empty_channel_array` asserts `broadcastOn()` is an array and equals `[]` (Laravel’s broadcasting contract expects a channel list, not `null`). `test_constructor_exposes_from_and_to_payload` pins the public `from` / `to` payload so constructor regressions fail the suite.
 
+## `Friend\Request` event (`app/Events/Friend/Request.php`)
+
+- **`broadcastOn()` return type** (`broadcastOn()` ~32–35; report `tests/coverage/20260428_2310.txt` ~5682–5683 and UNCOVERED ~62451, mutant ID `46c88b038a3cda2e` `AlwaysReturnNull` on `return []`).
+  - Cause: same as `Friend\Cancel`—no test invoked `broadcastOn()`, so returning `null` instead of `[]` was not detected.
+  - Fix: `Tests\Unit\Events\Friend\RequestEventTest::test_broadcast_on_returns_empty_channel_array` asserts an empty array channel list; `test_constructor_exposes_from_and_to_payload` asserts `from` / `to` are stored as given.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
