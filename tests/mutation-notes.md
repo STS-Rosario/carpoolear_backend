@@ -1280,6 +1280,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts push payload always includes the static logo `image` for both trip-present and trip-missing flows.
   - Mutant IDs: `ba25913889089719`.
 
+## `FriendRejectNotification` (`app/Notifications/FriendRejectNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~6594 and UNTESTED/UNCOVERED ~66535–66595).
+  - Cause: previous tests covered reject message/template fields and sender behavior, but did not pin channel list and email metadata (`name_app`, `domain`), so `RemoveArrayItem` mutants survived.
+  - Fix: `Tests\Unit\Notifications\FriendRejectNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` on email payload.
+  - Mutant IDs: `d3b1fbb9dcc7f93f`, `97cde90955901dd1`, `fd6bf38990757708`, `f3028b1fc3a34916`, `b2becdc8dc7eeabd`.
+
+- **Push image contract** (`toPush().image`; report UNTESTED ~66595).
+  - Cause: push tests validated message/url/extras id but not the image field.
+  - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
+  - Mutant IDs: `0818175ba270b6b3`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
