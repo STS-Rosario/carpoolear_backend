@@ -24,9 +24,9 @@ class TripsManagerTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function minimalCreatePayload(): array
+    private function minimalCreatePayload(array $overrides = []): array
     {
-        return [
+        return array_merge([
             'is_passenger' => 0,
             'from_town' => 'Origin Town',
             'to_town' => 'Destination Town',
@@ -51,7 +51,7 @@ class TripsManagerTest extends TestCase
                     'lng' => -58.5,
                 ],
             ],
-        ];
+        ], $overrides);
     }
 
     public function test_validator_create_requires_core_fields(): void
@@ -93,6 +93,79 @@ class TripsManagerTest extends TestCase
         $manager = $this->manager();
         $this->assertNull($manager->create($user, ['is_passenger' => 0]));
         $this->assertTrue($manager->getErrors()->has('from_town'));
+        Carbon::setTestNow();
+    }
+
+    public function test_create_rejects_unverified_driver_when_module_requires_verified_drivers(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config(['carpoolear.module_validated_drivers' => true]);
+        $user = User::factory()->create(['driver_is_verified' => false]);
+        $manager = $this->manager();
+
+        $result = $manager->create($user, $this->minimalCreatePayload([
+            'is_passenger' => 0,
+        ]));
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('driver_is_verified'));
+        Carbon::setTestNow();
+    }
+
+    public function test_create_bans_user_when_recent_trip_count_exceeds_configured_limit(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config([
+            'carpoolear.trip_creation_limits.max_trips' => 0,
+            'carpoolear.trip_creation_limits.time_window_hours' => 24,
+        ]);
+        $user = User::factory()->create(['banned' => 0]);
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::now()->addDays(1),
+            'created_at' => Carbon::now()->subHour(),
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('banned'));
+        $this->assertSame(1, (int) $user->fresh()->banned);
+        Carbon::setTestNow();
+    }
+
+    public function test_create_bans_user_when_description_contains_banned_word(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config(['carpoolear.banned_words_trip_description' => ['whatsapp']]);
+        $user = User::factory()->create(['banned' => 0]);
+        $manager = $this->manager();
+
+        $result = $manager->create($user, $this->minimalCreatePayload([
+            'description' => 'Contact me on WhatsApp now',
+        ]));
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('banned'));
+        $this->assertSame(1, (int) $user->fresh()->banned);
+        Carbon::setTestNow();
+    }
+
+    public function test_create_bans_user_when_description_contains_banned_phone_number(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config(['carpoolear.banned_phones' => ['1234567890']]);
+        $user = User::factory()->create(['banned' => 0]);
+        $manager = $this->manager();
+
+        $result = $manager->create($user, $this->minimalCreatePayload([
+            'description' => 'Call me 1234567890',
+        ]));
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('banned'));
+        $this->assertSame(1, (int) $user->fresh()->banned);
         Carbon::setTestNow();
     }
 
