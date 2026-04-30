@@ -1003,6 +1003,16 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_delete_treats_equivalent_scalar_owner_ids_as_owner`
   - Mutant IDs: `c92c634b58a09840`, `9876e42b2733194d`, `48a51a12f9e9292f`, `a33399cec7d3a7c1`, `7524eaeff5a1d671`.
 
+## PassengersManager (`app/Services/Logic/PassengersManager.php`)
+
+- **`newRequest` input-validation early return and unanswered-limit guard** (`newRequest()` around lines 103–118; report block around `tests/coverage/20260428_2310.txt` ~83611+).
+  - Cause: existing tests covered happy-path request creation and duplicate/expired branches, but they did not assert that invalid input halts execution with validation errors, nor that the unanswered-message-limit module blocks request creation with the expected domain error.
+  - Fix: added behavior-focused tests in `tests/Unit/Services/Logic/PassengersManagerTest.php`:
+    - `test_new_request_sets_validation_errors_and_stops_when_trip_id_is_invalid`
+    - `test_new_request_sets_limit_error_when_unanswered_limit_module_blocks_user`
+    These assert no passenger row/event side effects and stable error contracts.
+  - Mutant IDs: `58facf184867f3de`, `3e5b706169bcaed5`, `9601f6da87958d26`, `dcaea794ad350599`, `63b7d0f13a2601ca`, `0dd7b68e0d44b83a`, `871c66f6cbd5414c`, `908299bb7890ab93`.
+
 ## CampaignRewardController (`app/Http/Controllers/Api/v1/CampaignRewardController.php`)
 
 - **Reward must match campaign** (`purchase()` ~23–24; report `tests/coverage/20260428_2310.txt` ~50767–50827, e.g. `ed58202f2968321d` `IfNegated`, `18ae731ddd647c45` `NotIdenticalToIdentical`, `7a8b5e2c4ebef271` `RemoveEarlyReturn`, `03fe0485e559dd70` `RemoveArrayItem` on the 404 payload).
