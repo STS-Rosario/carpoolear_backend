@@ -1383,6 +1383,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts exact `/trips/{tripId}` when trip exists and always checks static logo `image`, while preserving explicit fallback assertions.
   - Mutant IDs: `141adabfd3963efa`, `99e130ff74d5ad1f`, `241dda59fe2ab838`, `9e74badd1376c08f`, `212d0e94fa912e38`.
 
+## `NewMessageNotification` (`app/Notifications/NewMessageNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~6915 and UNTESTED/UNCOVERED ~67359–67454).
+  - Cause: prior tests covered sender/conversation behavior, but did not pin channel list and email metadata keys (`name_app`, `domain`), so `RemoveArrayItem` mutants survived.
+  - Fix: `Tests\Unit\Notifications\NewMessageNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` in email payload.
+  - Mutant IDs: `81a545a25a6d7f8c`, `1c5caa8e9a9c0e29`, `921cd8c1ecb2ed3c`, `e6287ab0c842b5cc`, `3c6f0e5b09439cfd`.
+
+- **Push type/image and empty-conversation fallback contract** (`toPush()` fallback + payload keys; report UNTESTED ~67395, ~67431, ~67443, ~67454).
+  - Cause: tests validated message/url/extras id but did not pin push `type` and `image`, and needed explicit empty-conversation assertions to constrain fallback mutants.
+  - Fix: same test class now asserts push `type` (`conversation`) and static `image` in both fallback and populated cases, keeping explicit `/conversations/` fallback behavior checks.
+  - Mutant IDs: `a174e60ca2ab6723`, `8b08f5a36c8f657e`, `696fd8f6c68c78c4`, `ba9683b63103a225`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
