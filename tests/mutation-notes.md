@@ -124,6 +124,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `matchUser` constraints for private/non-deleted conversation were incompletely asserted.
   - Fix: added `test_match_user_ignores_non_private_and_deleted_conversations`.
 
+- `ConversationRepository.php` `matchUser` (`~108–118`): symmetric join wiring on `c1`/`c2` user ids plus removal of dead `\Log::info` noise.
+  - Cause: Infection `RemoveMethodCall` clusters on the SQL builder left equivalent results when argument order never changed; the stray logger call was also a no-op survivor unrelated to behavior.
+  - Fix: removed the debug `\Log::info` from `matchUser`; added `test_match_user_finds_same_row_when_user_arguments_are_reversed` (forward/back queries must resolve the same private conversation id).
+
+- `ConversationRepository.php` `getConversationFromId` (`~40–44`): lookup key typing vs null guards (`EqualToIdentical` / `NotEqualToNotIdentical` clusters).
+  - Cause: tests always passed native integers; string coercion through `where('id', …)` was undocumented.
+  - Fix: added `test_get_conversation_from_id_accepts_string_primary_key_matching_integer_column`.
+
+- `ConversationRepository.php` `usersToChat` (`~193–197`): `$whoID` truthiness gate before `where('id', $whoID)`.
+  - Cause: filters with `whoID` set were covered, but returning **multiple** candidates without `whoID` was not asserted alongside the narrowed query—negating the guard collapses those behaviors.
+  - Fix: added `test_users_to_chat_without_who_id_returns_all_matching_friends`.
+
 - `8fa06f6a1fb7d09f`, `11abb847856a06ed`, `e4c6534df6af4cfa`, `4b765ce76aaa9ed8`, `888e85411dbe27c8`
   - Cause: `userList` nested iteration and search/self filters were uncovered.
   - Fix: added `test_user_list_excludes_self_and_filters_with_search_text`.

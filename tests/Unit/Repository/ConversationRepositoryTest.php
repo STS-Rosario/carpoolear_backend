@@ -514,4 +514,60 @@ class ConversationRepositoryTest extends TestCase
 
         $this->assertTrue($users->pluck('id')->contains($driver->id));
     }
+
+    public function test_match_user_finds_same_row_when_user_arguments_are_reversed(): void
+    {
+        // Mutation intent: both join predicates (`c1.user_id`, `c2.user_id`) must participate; reversing callers should not change the resolved conversation.
+        // Kills: ConversationRepository.php `matchUser` (~113–114) RemoveMethodCall clusters that drop one side of the join wiring.
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($u1->id, ['read' => true]);
+        $conversation->users()->attach($u2->id, ['read' => true]);
+
+        $repo = new ConversationRepository;
+        $forward = $repo->matchUser($u1->id, $u2->id);
+        $backward = $repo->matchUser($u2->id, $u1->id);
+
+        $this->assertNotNull($forward);
+        $this->assertNotNull($backward);
+        $this->assertSame($forward->id, $backward->id);
+        $this->assertTrue($forward->is($conversation));
+    }
+
+    public function test_get_conversation_from_id_accepts_string_primary_key_matching_integer_column(): void
+    {
+        // Mutation intent: strengthen lookup coverage beyond strict-null branches (`EqualToIdentical` / `NotEqualToNotIdentical` on guards vs SQL coercion).
+        // Fix: exercise numeric-string ids that MySQL still resolves (`where('id', …)`), documenting observable behavior for callers passing route params.
+        $conversation = Conversation::factory()->create();
+        $repo = new ConversationRepository;
+
+        $found = $repo->getConversationFromId((string) $conversation->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($conversation));
+    }
+
+    public function test_users_to_chat_without_who_id_returns_all_matching_friends(): void
+    {
+        // Mutation intent: keep `if ($whoID)` guard (`ConversationRepository.php` ~193–196); negating it collapses targeting vs broadcast search modes.
+        // Kills: `IfNegated` on `$whoID` together with multi-hit search assertions.
+        $owner = User::factory()->create(['name' => 'Owner MultiWho']);
+        $friendA = User::factory()->create(['name' => 'Zoe Candidate']);
+        $friendB = User::factory()->create(['name' => 'Amy Candidate']);
+        (new FriendsRepository)->add($friendA, $owner, User::FRIEND_ACCEPTED);
+        (new FriendsRepository)->add($friendB, $owner, User::FRIEND_ACCEPTED);
+
+        $repo = new ConversationRepository;
+        $all = $repo->usersToChat($owner->id, null, 'Candidate');
+
+        $this->assertGreaterThanOrEqual(2, $all->count());
+        $ids = $all->pluck('id')->all();
+        $this->assertContains($friendA->id, $ids);
+        $this->assertContains($friendB->id, $ids);
+
+        $onlyA = $repo->usersToChat($owner->id, $friendA->id, 'Candidate');
+        $this->assertCount(1, $onlyA);
+        $this->assertSame($friendA->id, $onlyA->first()->id);
+    }
 }

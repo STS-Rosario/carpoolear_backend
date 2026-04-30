@@ -94,7 +94,6 @@ class ConversationRepository
             $query->where('id', $user2ID);
         })->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)->first(); */
 
-        \Log::info('estamos aca');
         /*
 
         select * from `conversations` where exists (
