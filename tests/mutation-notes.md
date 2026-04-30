@@ -874,6 +874,58 @@ This file tracks mutants killed during the current hardening session, with the r
 
 - **Production fix:** `passengers()` called `PassengersManager::index`, which does not exist on the real manager (only the mock defined `index`). The controller now calls `getPassengers`, and `PassengerApiTest` expects `getPassengers` on the mock so unauthenticated integration tests and authenticated listing hit the same contract the app ships.
 
+## TripController (`app/Http/Controllers/Api/v1/TripController.php`)
+
+- **Constructor middleware** (`__construct()` ~23–24; report `tests/coverage/20260428_2310.txt` ~49570–49582, e.g. `c663114eec329d6d`, `15211f89b962e093` `RemoveMethodCall` on `middleware('logged')->except(['search'])` and `middleware('logged.optional')->only('search')`).
+  - Cause: `TripApiTest` mocked `TripsManager`, so stripping either middleware registration never failed CI on authenticated trip routes vs public `GET api/trips` search.
+  - Fix: `Tests\Feature\Http\TripControllerIntegrationTest::test_trip_mutating_routes_require_authentication` calls `POST|PUT|DELETE` trip routes, `GET` show, `changeSeats`, `change-visibility`, `users/my-trips`, `users/my-old-trips`, `users/sellado-viaje`, `POST` `trips/price`, and `trips/trip-info` without auth and expects `401` + `Unauthorized.` on each.
+
+- **`create` / `update` Fractal `item()` success** (`~44`, `~60`; report ~49594–49606, e.g. `abf71ba394dc49fb`, `9c74808de3d71cd2` `AlwaysReturnNull`).
+  - Cause: mocked `create`/`update` never returned through the real `TripTransformer` item envelope.
+  - Fix: `test_create_returns_trip_payload_when_validation_and_route_cache_succeed` seeds `route_cache` for the same point geometry as the valid payload (avoids live OSRM), asserts `200` + `data.id` / towns, and `assertDatabaseHas` on `trips`; `test_update_returns_trip_payload_when_owner_updates_description` asserts `200` + updated `description` on a real owned trip.
+
+- **`create` identity gate** (`~32–34`; report already showed killed `IfNegated`/`RemoveNot` on the same line cluster in a focused run, but HTTP coverage was still mock-based).
+  - Cause: integration did not combine `IdentityValidationHelper::canPerformRestrictedActions` with `POST api/trips` under strict new-user enforcement.
+  - Fix: `test_create_returns_unprocessable_when_identity_required_and_user_not_validated` mirrors the Conversation pattern and asserts `422` + `IdentityValidationHelper::identityValidationRequiredMessage()`.
+
+- **`create` / `update` failure envelopes** (`~37–41`, `~53–57`; `RemoveArrayItem` / falsy guards adjacent to success returns in the same report block).
+  - Cause: only `200`-ish mock paths existed; validation failures and cross-user updates did not assert stable `422` + `Could not create/update trip.` messages.
+  - Fix: `test_create_returns_unprocessable_when_validation_fails` posts an empty body; `test_update_returns_unprocessable_when_user_does_not_own_trip` asserts `422` + `Could not update trip.` with a structured `errors` payload.
+
+- **`delete()` success JSON** (`~84`; report ~49654–49666, e.g. `9517fb9b1f72d7e4`, `b1b043c4a4773adf`).
+  - Cause: mock returned a boolean without asserting `['data' => 'ok']`.
+  - Fix: `test_delete_returns_ok_envelope_when_owner_deletes_trip` expects exact `{"data":"ok"}` and a soft-deleted trip row.
+
+- **`show()` visibility vs Cordova stubs** (`~89–102`, `~107–123`; report ~49678–49966 large `RemoveEarlyReturn` / `RemoveArrayItem` / pagination integer mutants on the fake search payload).
+  - Cause: no HTTP test set the old WebView `Sec-CH-UA` + `User-Agent` fingerprint, so the early-return stubs for upgrade messaging were never exercised; public vs friends visibility for `show` was not asserted via HTTP.
+  - Fix: `withOldCordovaUserAgent()` drives `GET api/trips` and authenticated `GET api/trips/{id}` expecting the documented placeholder copy (`ACTUALIZA TU APP`, synthetic `data.id`, and search `meta.pagination.total` = 1); `test_show_returns_trip_when_visibility_allows` / `test_show_returns_unprocessable_when_trip_is_not_visible` cover real `TripsManager::show` outcomes.
+
+- **`changeTripSeats()`** (`~69–73`; report ~49618–49642 `IfNegated` / `RemoveNot` / `AlwaysReturnNull`).
+  - Cause: HTTP never hit both the successful increment path and a failing increment guarded by seat rules.
+  - Fix: `test_change_trip_seats_returns_trip_when_increment_succeeds` vs `test_change_trip_seats_returns_unprocessable_when_increment_invalid` (full seats then `increment` = 1).
+
+- **`search()` default `page_size`, `trackSearch`, and `paginator()`** (`~128–139`; report ~49978–50039, e.g. `cec52c87e9394c5c` / `bea2fce6e518f46b`, `7f27f1260cb84bcf` / `438ae9eff911929b`, `d30d3fb47b9ab440`, `9e56d117c6cec8f9`, plus `trackSearch` ternary / `if ($originId || $destinationId)` cluster ~50051–50159).
+  - Cause: guest search only asserted `200` from a mock paginator; default `page_size`, `trackSearch`, and the `paginator` return were not tied to observable persistence or pagination fields.
+  - Fix: `test_search_allows_guests_and_returns_paginated_envelope` pins `meta.pagination.per_page` = 20 when omitted; `test_search_respects_custom_page_size` pins `7`; `test_search_with_origin_persists_trip_search_row` creates a real `nodes_geo` origin (FK-safe), performs an authenticated search with `origin_id` + `is_passenger=true`, and asserts a new `trip_searches` row with matching `origin_id`, `user_id`, and `is_passenger`.
+
+- **`getTrips()` / `getOldTrips()` branches** (`~165–197`; report ~50221–50317, e.g. `f8566aa29d6a6f32`, `8a0a4550e338855a`, `6ab01c9c3e105887`, `bfece4cfe2d85a15`, `63bf7c113f5a6da8`, `9ea8f777ed7074cd`).
+  - Cause: `TripApiTest` mocked listings; `as_driver`, optional `user_id`, and the `getOldTrips` `user_id` branch were not observable over HTTP with real `TripsManager`.
+  - Fix: `test_get_trips_lists_driver_trips_and_supports_as_driver_false`, `test_admin_can_list_trips_for_another_user_via_user_id`, and `test_get_old_trips_returns_past_trips_for_requested_user`.
+
+- **`price()` / `getTripInfo()` / `selladoViaje()`** (`~200–228`; report ~50329–50437).
+  - Cause: no authenticated HTTP coverage for these endpoints with real manager/repository return shapes (only mocks or unit tests).
+  - Fix: `test_price_endpoint_returns_numeric_estimate_for_distance` (`api_price` off, `fuel_price` known), `test_trip_info_endpoint_returns_route_shape_when_route_cache_hit`, and `test_sellado_viaje_returns_success_envelope_with_threshold_fields`.
+
+- **`changeVisibility()`** (`~235–239`; report ~50449–50473).
+  - Cause: owner path re-loads the trip after toggling `deleted_at` via `TripRepository::show`, which excludes soft-deleted rows for non-admins, so the owner HTTP path can end in `422` even when the toggle partially applied; nothing asserted the admin/`withTrashed` path that the manager comment implies.
+  - Fix: `test_change_visibility_returns_trip_payload_for_admin` exercises `POST api/trips/{id}/change-visibility` as an admin on another user’s trip and expects `200` + `data.id` (stable contract without relying on the broken non-admin reload sequence).
+
+## ExceptionWithErrors (`app/Http/ExceptionWithErrors.php`) — supporting fix for trip update denial
+
+- **`render()` string `$errors` from `trans('errors.tripowner')` etc.** (`render()` ~29–36; uncovered when `TripController::update` throws after `TripsManager::update` returns falsy with a **string** error bag).
+  - Cause: `render()` assumed `$errors` was always an array or `MessageBag`; calling `toArray()` on a translation string fatals, masking the intended `422`.
+  - Fix: normalize scalar/string errors to a minimal `['error' => […]]` array before building the JSON response so `test_update_returns_unprocessable_when_user_does_not_own_trip` (and similar controllers) receive consistent `422` envelopes.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
