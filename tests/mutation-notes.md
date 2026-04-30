@@ -1016,6 +1016,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: optional `message_markdown` reply branch and status transitions were not isolated from other admin flows in a single focused suite.
   - Fix: `test_resolve_without_message_updates_status_without_extra_reply` asserts `Resuelto` without incrementing reply count; `test_close_with_message_creates_admin_reply_and_closed_fields` asserts a new admin reply row, `Cerrado`, and `closed_at` / `closed_by`.
 
+## Admin `BadgeController` (`app/Http/Controllers/Api/Admin/BadgeController.php`)
+
+- **`destroy()` must delete the badge** (`~52–55`; report `tests/coverage/20260428_2310.txt` ~60331–60338, `01d16cd3016fa9aa` `RemoveMethodCall` on `$badge->delete()`; RUN summary ~5497–5498 still listed line 54 as uncovered until this test).
+  - Cause: admin badge HTTP tests covered list/show/store/update via `BadgeResourceTest`, but nothing called `DELETE api/admin/badges/{id}`, so removing the `delete()` call could survive mutation testing.
+  - Fix: `Tests\Feature\Http\BadgeResourceTest::test_destroy_returns_no_content_and_removes_badge` creates a badge, `DELETE`s it, expects `204 No Content`, and `assertDatabaseMissing` on `badges`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
