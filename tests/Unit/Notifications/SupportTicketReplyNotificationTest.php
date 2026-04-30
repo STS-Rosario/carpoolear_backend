@@ -3,10 +3,22 @@
 namespace Tests\Unit\Notifications;
 
 use STS\Notifications\SupportTicketReplyNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 use Tests\TestCase;
 
 class SupportTicketReplyNotificationTest extends TestCase
 {
+    public function test_via_contains_database_and_push_channels(): void
+    {
+        $notification = new SupportTicketReplyNotification;
+
+        $this->assertSame([
+            DatabaseChannel::class,
+            PushChannel::class,
+        ], $notification->getVia());
+    }
+
     public function test_to_string_returns_expected_literal_message(): void
     {
         $notification = new SupportTicketReplyNotification;
@@ -36,9 +48,11 @@ class SupportTicketReplyNotificationTest extends TestCase
         $this->assertSame('/tickets/987', $pushWithTicket['url']);
         $this->assertSame('ticket', $pushWithTicket['type']);
         $this->assertSame(987, $pushWithTicket['extras']['id']);
+        $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $pushWithTicket['image']);
 
         $pushWithoutTicket = $notification->toPush(null, null);
         $this->assertSame('/tickets/', $pushWithoutTicket['url']);
         $this->assertNull($pushWithoutTicket['extras']['id']);
+        $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $pushWithoutTicket['image']);
     }
 }
