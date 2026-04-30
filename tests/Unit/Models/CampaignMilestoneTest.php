@@ -145,6 +145,8 @@ class CampaignMilestoneTest extends TestCase
             'amount_cents' => 333,
         ]);
 
-        $this->assertSame(30, $milestone->fresh()->progress_percentage);
+        $fresh = $milestone->fresh();
+        $this->assertSame(30, $fresh->progress_percentage);
+        $this->assertIsInt($fresh->progress_percentage);
     }
 }
