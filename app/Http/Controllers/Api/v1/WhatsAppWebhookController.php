@@ -94,7 +94,7 @@ class WhatsAppWebhookController extends Controller
             $this->processWebhookPayload($payload);
 
             return response()->json(['success' => true], 200);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error processing WhatsApp webhook', [
                 'error' => $e->getMessage(),
                 'payload' => $payload,

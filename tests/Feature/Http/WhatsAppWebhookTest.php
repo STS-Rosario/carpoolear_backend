@@ -258,4 +258,33 @@ class WhatsAppWebhookTest extends TestCase
             ->assertOk()
             ->assertExactJson(['success' => true]);
     }
+
+    public function test_post_logs_error_and_returns_processing_failed_json_when_change_payload_is_invalid(): void
+    {
+        Log::spy();
+        $secret = 'app-secret-'.uniqid();
+        config(['services.whatsapp.app_secret' => $secret]);
+
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [
+                [
+                    'id' => 'waba-test-id',
+                    'changes' => [null],
+                ],
+            ],
+        ];
+        $body = json_encode($payload, JSON_THROW_ON_ERROR);
+
+        $this->signedPost($body, $secret)
+            ->assertOk()
+            ->assertExactJson(['success' => false, 'error' => 'Processing failed']);
+
+        Log::shouldHaveReceived('error')->withArgs(function (string $message, array $context): bool {
+            return $message === 'Error processing WhatsApp webhook'
+                && ($context['error'] ?? '') !== ''
+                && isset($context['payload'])
+                && is_array($context['payload']);
+        });
+    }
 }
