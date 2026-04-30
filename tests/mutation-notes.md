@@ -2214,3 +2214,14 @@ This file tracks mutants killed during the current hardening session, with the r
     - `logged` middleware `except` list is exactly `['rate', 'pendingRate']`
     - `logged.optional` middleware `only` list is exactly `['rate', 'pendingRate']`
   - Mutant IDs: `f39fad06752f81dc`, `0ff64d9344f5582f`, `d8e60e9f65d2233a`, `ad679d17dd3062d8`, `3db96a5488df3840`.
+
+## ManualValidationPaymentController (`app/Http/Controllers/Api/v1/ManualValidationPaymentController.php`)
+
+- **Manual-payment redirect and payment/logging contract** (`success()` lines 20-44 in `tests/coverage/20260428_2310.txt`).
+  - Cause: tests already covered core success/failure redirects, but they did not fully pin two subtle contracts: (1) `payment_result` must carry URL-encoded exact values in redirect query, and (2) logging context must always include `request_id`, `user_id`, and `payment_id` (including fallback to persisted `payment_id` when no new identifier arrives).
+  - Fix: extended `tests/Feature/Http/ManualValidationPaymentControllerTest.php` with:
+    - `test_non_success_result_is_urlencoded_in_redirect_query`
+    - `test_success_without_new_payment_identifier_logs_existing_payment_id_context`
+    - strengthened `test_success_without_payment_identifiers_leaves_payment_id_null` with log-context assertions
+    These keep tests behavior-focused (redirect URL/query + persisted/logged outcomes) while killing concatenation/coalesce/context mutants.
+  - Mutant IDs: `a3c24651d8fb4374`, `de9375a6b8210028`, `d80ff039b708d77b`, `e3f3167aabd3bc7b`, `55666010f31015f2`, `163f75c53fc19539`, `75a030a9cf982577`, `639feeeb046cfce5`, `69bf21bfd77cab86`, `28ee521144e5d306`, `245ec9777748af44`, `cfd7b7544a4f999e`, `843875a989a61907`, `278a09704c38443e`.
