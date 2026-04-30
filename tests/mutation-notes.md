@@ -1158,9 +1158,9 @@ This file tracks mutants killed during the current hardening session, with the r
 
 ## `ModuleLimitedRequest` listener (`app/Listeners/Request/ModuleLimitedRequest.php`)
 
-- **`handle()` module gate, hour window, destination filter, `AutoCancel`, and passenger persistence** (`handle()` ~29–60; report `tests/coverage/20260428_2310.txt` ~5938–5950 and UNCOVERED ~63693–63825).
+- **`handle()` module gate, hour window, destination filter, `AutoCancel`, and passenger persistence** (`handle()` ~29–60; report `tests/coverage/20260428_2310.txt` ~5938–5950 and UNCOVERED ~63693–63825, including line ~63753 onward).
   - Cause: the listener was never executed under test, so mutants could flip `module_user_request_limited_enabled`, negate inner `if`s, strip the `(int)` cast or hour literal, weaken the `to_town` strict check, skip the `AutoCancel` dispatch, or drop `$request->save()` without detection.
-  - Fix: `Tests\Unit\Listeners\Request\ModuleLimitedRequestListenerTest` toggles `carpoolear.module_user_request_limited_enabled` / `module_user_request_limited_hours_range`, seeds two drivers, one traveler with an accepted seat on trip A plus a pending seat request on trip B, and `Event::fake([AutoCancel::class])`: module off ⇒ no `AutoCancel`; module on with matching `to_town` and trip dates inside the window ⇒ `AutoCancel` carries trip B, B’s owner, and the traveler, and the pending `Passenger` row becomes `STATE_CANCELED` with `CANCELED_SYSTEM`; different `to_town` or a trip date five hours away ⇒ no dispatch (covers the `===` / `&&` filter and the `tripsRequested` window).
+  - Fix: `Tests\Unit\Listeners\Request\ModuleLimitedRequestListenerTest` toggles `carpoolear.module_user_request_limited_enabled` / `module_user_request_limited_hours_range`, seeds two drivers, one traveler with an accepted seat on trip A plus a pending seat request on trip B, and `Event::fake([AutoCancel::class])`: module off ⇒ no `AutoCancel`; module on with matching `to_town` and trip dates inside the window ⇒ `AutoCancel` carries trip B, B’s owner, and the traveler, and the pending `Passenger` row becomes `STATE_CANCELED` with `CANCELED_SYSTEM`; different `to_town` or a trip date five hours away ⇒ no dispatch; and with `module_user_request_limited_hours_range` removed from config, a trip at +3h stays untouched, pinning the default `2`-hour fallback (covers the `===` / `&&` filter, hours-range default/cast, and `tripsRequested` window).
   - Mutant IDs: `aac707563ebfa2d0` (`FalseToTrue` on module flag ~34), `8870297e10179d77` (`IfNegated` ~36), `4991968c16c84348` / `272b2e1e3ed3d15c` / `d531bd4c640305e7` (`RemoveIntegerCast` / `DecrementInteger` / `IncrementInteger` on hours ~37), `dd16f55a9357d574` / `b47f592825c06a3f` (`IdenticalToNotIdentical` / `BooleanAndToBooleanOr` on destination ~45), `290d004bc5e24baa` / `2a9e55fabed5705e` (`IfNegated` / `ForeachEmptyIterable` ~48–49), `b730794301ff566b` (`IfNegated` ~53), `995ae0a7af6d0762` (`RemoveFunctionCall` on `event(new AutoCancel…)` ~55), `5e6b49ecc35a9024` (`RemoveMethodCall` on `$request->save()` ~57).
 
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
@@ -1187,6 +1187,23 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the fake trip envelope was never asserted, so `RemoveArrayItem`, integer nudges on zeros, `FalseToTrue` on boolean literals, and `EmptyStringToNotEmpty` on `request` stayed green.
   - Fix: same test class asserts stable Spanish banner strings, numeric counters, boolean flags, datetime-shaped `updated_at` / `last_connection`, and `assertArrayHasKey` over the full top-level and nested `user` key sets promised to API clients.
   - Mutant IDs: `d49ba8167ef10c8a` (`BooleanAndToBooleanOr` ~17), `ee1f1e9cba2f03d7` (`FalseToTrue` on WebView/Instagram line ~23); `getFakeTripData` cluster (representative IDs from the report listing): `92087f7c0588322d`, `9ae3fed2d63935a3`, `b93a1ce4d8856532`, `611fbb558182d263`, `48b0d1a589832710`, `70dd2b6177502360`, `c1d6e8b2f43ffa0a` (`EmptyStringToNotEmpty` ~88), `8b2f1c70ee7db199` — plus parallel `RemoveArrayItem` / `DecrementInteger` / `IncrementInteger` / `FalseToTrue` IDs on the same method through ~64830 in `tests/coverage/20260428_2310.txt`.
+
+## `IdentityValidationHelper` (`app/Helpers/IdentityValidationHelper.php`)
+
+- **Enforcement gating and config defaults** (`enforcementIsActive()` ~14–23, `isNewUserRequiringValidation()` ~58–80; report RUN ~6089+ and UNTESTED ~64841–65009).
+  - Cause: prior tests mostly set explicit config values, so mutants that changed config defaults (`false` -> `true`) or removed early returns could survive when keys were absent.
+  - Fix: `Tests\Unit\IdentityValidationHelperTest` now covers key-absence behavior by unsetting `carpoolear` keys and asserting the public policy outcome: enforcement is only active when enabled and not optional, and "required new users" is only enforced when the flag is truly present/enabled.
+  - Mutant IDs: `b924252c1257bfea`, `aafc60cad9afc335`, `8aaa4d2bcfe1983d`, `b37ec49361d780e6`, `a7f3fc988e442dbb`, `7356795a65c6e5ce`, `b9dd022ccc45468a`, `1709889203edf6eb`.
+
+- **Date cutoff and deadline semantics** (`newUsersCutoffDate()` ~31–36, `isUserCreatedOnOrAfterCutoff()` ~40–52, `isCurrentUserPastDeadline()` ~86–103; report UNCOVERED/UNTESTED ~64889–65129).
+  - Cause: uncovered null/empty cutoff and deadline boundaries let early-return mutants survive (`return null/false` removals, inverted guards).
+  - Fix: tests now assert null cutoff for empty config, parsed cutoff normalization to start-of-day, created-at before/after-cutoff behavior, and deadline boundary behavior with `Carbon::setTestNow` (same day allowed, after end-of-day blocked), including exemptions for new users and already validated users.
+  - Mutant IDs: `bb9464df7094a716`, `b7bd82ec4f776e1f`, `b83b952b020b438c`, `2b95ceda6de2d03d`, `acd2b39bac8f6e5a`, `0e3cfd398df605d6`, `83795d01e3c14578`, `6fbb49f4311e3718`, `650c8d4c07f327fc`, `e8e019108181e78c`, `cacca3108609452d`, `48e74ec1a0fb1d1e`, `2debd42a9b54412a`.
+
+- **Public error contract helpers** (`identityValidationRequiredError()` ~135, `identityValidationRequiredMessage()` ~139; report tail ~65177+).
+  - Cause: helper return contracts were not asserted directly, so array/string return mutants could go unnoticed.
+  - Fix: added direct contract assertions for the exact error shape expected by frontend (`identity_validation_required`) and stable user-facing message text.
+  - Mutant IDs: `575359b26e8206d5`, `8420b4fc9e1d361f`, `d746cd304df7ec41`.
 
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
