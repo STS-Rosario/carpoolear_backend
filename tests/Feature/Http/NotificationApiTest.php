@@ -2,64 +2,118 @@
 
 namespace Tests\Feature\Http;
 
-use Tests\TestCase;
-use Mockery as m;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Mail;
+use STS\Models\User;
+use STS\Notifications\DummyNotification;
+use Tests\TestCase;
 
 class NotificationApiTest extends TestCase
 {
     use DatabaseTransactions;
 
-    protected $logic;
-
-    public function setUp(): void
+    public function test_notifications_require_authentication(): void
     {
-        parent::setUp();
-        $this->logic = $this->mock(\STS\Services\Logic\NotificationManager::class);
+        $this->getJson('api/notifications')
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthorized.']);
     }
 
-    public function tearDown(): void
+    public function test_notification_count_requires_authentication(): void
     {
-        m::close();
-        parent::tearDown();
+        $this->getJson('api/notifications/count')
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthorized.']);
     }
 
-    protected function parseJson($response)
+    public function test_delete_notification_requires_authentication(): void
     {
-        return json_decode($response->getContent());
+        $this->deleteJson('api/notifications/1')
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthorized.']);
     }
 
-    public function testIndex()
+    public function test_index_returns_notification_list_envelope(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $this->actingAs($u1, 'api');
+        Mail::fake();
+        Carbon::setTestNow('2026-04-10 10:00:00');
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
 
-        $this->logic->shouldReceive('getNotifications')->once()->andReturn([]);
+        $dummy = new DummyNotification;
+        $dummy->setAttribute('dummy', 'api');
+        $dummy->notify($user);
 
-        $response = $this->call('GET', 'api/notifications/');
-        $this->assertTrue($response->status() == 200);
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/notifications');
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'data' => [
+                [
+                    'id',
+                    'readed',
+                    'created_at',
+                    'text',
+                    'extras',
+                ],
+            ],
+        ]);
+        $response->assertJsonPath('data.0.text', 'Dummy Notification api');
+
+        Carbon::setTestNow();
     }
 
-    public function testCount()
+    public function test_count_returns_unread_total(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $this->actingAs($u1, 'api');
+        Mail::fake();
+        Carbon::setTestNow('2026-04-11 09:00:00');
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
 
-        $this->logic->shouldReceive('getUnreadCount')->once()->andReturn(5);
+        $this->actingAs($user, 'api');
+        $this->getJson('api/notifications/count')->assertOk()->assertJson(['data' => 0]);
 
-        $response = $this->call('GET', 'api/notifications/count');
-        $this->assertTrue($response->status() == 200);
-        $this->assertTrue($this->parseJson($response)->data == 5);
+        $dummy = new DummyNotification;
+        $dummy->setAttribute('dummy', 'unread');
+        $dummy->notify($user);
+
+        $this->getJson('api/notifications/count')->assertOk()->assertJson(['data' => 1]);
+
+        Carbon::setTestNow();
     }
 
-    public function testDelete()
+    public function test_delete_known_notification_returns_ok_envelope(): void
     {
-        $u1 = \STS\Models\User::factory()->create();
-        $this->actingAs($u1, 'api');
+        Mail::fake();
+        Carbon::setTestNow('2026-04-12 12:00:00');
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
 
-        $this->logic->shouldReceive('delete')->once()->andReturn(true);
+        $dummy = new DummyNotification;
+        $dummy->setAttribute('dummy', 'del');
+        $dummy->notify($user);
 
-        $response = $this->call('DELETE', 'api/notifications/1');
-        $this->assertTrue($response->status() == 200);
+        $rows = $user->notifications()->orderByDesc('id')->get();
+        $this->assertCount(1, $rows);
+        $id = (int) $rows->first()->id;
+
+        $this->actingAs($user, 'api');
+
+        $this->deleteJson('api/notifications/'.$id)
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertCount(0, $user->fresh()->notifications);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_delete_unknown_notification_is_unprocessable(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
+
+        $this->deleteJson('api/notifications/999999999')
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Could not delete notiication.');
     }
 }
