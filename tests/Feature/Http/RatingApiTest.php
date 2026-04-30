@@ -3,14 +3,24 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
+use Mockery;
+use STS\Http\Controllers\Api\v1\RatingController;
 use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Services\Logic\RatingManager;
+use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class RatingApiTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function persistRating(array $attributes): Rating
     {
         $rating = new Rating;
@@ -23,6 +33,31 @@ class RatingApiTest extends TestCase
         $rating->save();
 
         return $rating->fresh();
+    }
+
+    public function test_constructor_registers_expected_logged_middleware_scopes(): void
+    {
+        $controller = new RatingController(
+            Mockery::mock(RatingManager::class),
+            Mockery::mock(UsersManager::class)
+        );
+
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+        $loggedOptional = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged.optional';
+        });
+
+        $this->assertNotNull($logged);
+        $this->assertNotNull($loggedOptional);
+
+        $loggedOptions = is_array($logged) ? ($logged['options'] ?? []) : ($logged->options ?? []);
+        $optionalOptions = is_array($loggedOptional) ? ($loggedOptional['options'] ?? []) : ($loggedOptional->options ?? []);
+
+        $this->assertSame(['rate', 'pendingRate'], $loggedOptions['except'] ?? []);
+        $this->assertSame(['rate', 'pendingRate'], $optionalOptions['only'] ?? []);
     }
 
     public function test_ratings_route_requires_authentication(): void
