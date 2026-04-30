@@ -136,6 +136,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: filters with `whoID` set were covered, but returning **multiple** candidates without `whoID` was not asserted alongside the narrowed query—negating the guard collapses those behaviors.
   - Fix: added `test_users_to_chat_without_who_id_returns_all_matching_friends`.
 
+- `ConversationRepository.php` `usersToChat` name search (`~198–199`): `where('name', 'like', '%'.$search_text.'%')` plus commented email branch.
+  - Cause: broader friend lists could still satisfy `RemoveMethodCall` / `ConcatRemove*` mutants when every seeded name accidentally matched a weakened pattern (or when the `where` vanished entirely).
+  - Fix: added `test_users_to_chat_search_requires_substring_between_sql_wildcards` (two accepted friends; only the name embedding the needle may match).
+  - Mutant operators (Infection log): `RemoveMethodCall`, `ConcatRemoveLeft`, `ConcatRemoveRight`, `ConcatSwitchSides` (reported ~line 199).
+
 - `8fa06f6a1fb7d09f`, `11abb847856a06ed`, `e4c6534df6af4cfa`, `4b765ce76aaa9ed8`, `888e85411dbe27c8`
   - Cause: `userList` nested iteration and search/self filters were uncovered.
   - Fix: added `test_user_list_excludes_self_and_filters_with_search_text`.
@@ -210,11 +215,21 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: carpooleado branch was only proven with multi-item pages or empty pages; a **single-item** page must still enter the filter so `> 1` or other comparator mutations drop carpooleado counts incorrectly.
   - Fix: added `test_track_search_counts_carpooleados_when_current_page_has_exactly_one_trip`.
 
+- `TripSearchRepository.php` `trackSearch` carpooleado filter (`~26–28`): `seats_available <= 0` vs strict `< 0`.
+  - Cause: full trips whose `seats_available` accessor resolves to **zero** must still increment carpooleados; tightening the comparator to `< 0` silently drops them while tests only used strictly negative availability.
+  - Fix: added `test_track_search_counts_trip_with_zero_seats_available_as_carpooleado`.
+  - Mutant operators (Infection log): `SmallerToSmallerOrEqual`, `GreaterToGreaterOrEqual`, `IncrementInteger`, `DecrementInteger` on the `<= 0` / `> 0` predicates (reported ~lines 25–27).
+
 ## MessageRepository
 
 - Cluster `MessageRepository.php` (`tests/coverage/20260428_2310.txt` ~1080–1108): `changeMessageReadState` / `createMessageReadState` pivot payloads, `getMessagesUnread` `$item->pivot->read == 0`, `markMessages` bulk `update` keys.
   - Cause: survivor mutants removed pivot `read` keys or dropped `updated_at` from the bulk update without assertions on raw `user_message_read` / `conversations_users` rows; loose `== 0` vs `=== 0` was not distinguished when `read` is stored as `'0'`.
   - Fix: added `test_mark_messages_updates_user_message_read_updated_at`, `test_change_message_read_state_persists_read_flag_in_user_message_read`, `test_create_message_read_state_inserts_read_into_user_message_read`, `test_get_messages_unread_includes_conversation_when_pivot_read_is_loosely_zero`.
+
+- `MessageRepository.php` `markMessages` (`~85–90`): `whereHas('users', …)` must keep the `user_id` constraint for the acting reader.
+  - Cause: removing the inner `where('user_id', $user->id)` still marks rows when only one reader exists, so `RemoveMethodCall` survived until a second unread pivot proved cross-user isolation.
+  - Fix: added `test_mark_messages_only_updates_unread_rows_for_authenticated_user`.
+  - Mutant operators (Infection log): `RemoveMethodCall` (~line 88); cluster around `getMessagesUnread` also lists `EqualToIdentical` (~67) covered by existing loose-`read` tests plus this scoping test.
 
 - `MessageRepository.php` `store` / `delete` (`~13–20`): `return $message->save()` / `return $message->delete()`.
   - Cause: integration tests only asserted successful paths.
@@ -275,6 +290,11 @@ This file tracks mutants killed during the current hardening session, with the r
 - `5656ee9b01173343`, `85d71c45fe613abd`, `18c59a50fd2ffaeb`, `7bfc0ab3a97dea41`, `7242bbee8560e5a1`, `853a1c66244b9770`, `37e68b0071fa371b`, `53c27d17ceefefc7`, `92a7cb8cf0ce32c2`, `7409a27f9aff2ae1`, `53d5810f9a02f52f`, `3aab526f6920f8c0`
   - Cause: friend visibility generation branches (FoF vs friends-only) and SQL inserts were weakly asserted.
   - Fix: added `test_generate_trip_friend_visibility_fof_and_friends_only_branches_insert_rows`.
+
+- `TripRepository.php` `generateTripFriendVisibility` (`~68–100`): `< 2` privacy gate vs `friendship_type_id == 1` / `== 0` SQL branches.
+  - Cause: inserts were asserted for private modes only; public trips (`friendship_type_id >= 2`) left the method as a no-op that mutants could widen (`< 2` → `<= 2`) without failing unless a public trip explicitly expects **zero** visibility rows.
+  - Fix: added `test_generate_trip_friend_visibility_skips_public_trips`.
+  - Mutant operators (Infection log): `IfNegated`, `GreaterToGreaterOrEqual`, `SmallerToSmallerOrEqual`, `BooleanAndToBooleanOr` on the `< 2` guard and inner branches (~69+ in survivor reports).
 
 - `a7a74d3095388168`, `b06e7346ab0b7439`, `4be0f43c62497887`, `0213b9ad10d10530`, `5554cc2241bfb082`, `022258a4506e3501`, `a83b5da5b120f035`, `6938af9e22ede182`, `05e9c3d11001b524`, `a740b8f320284c77`, `9d95fa6e7a3a63ff`, `da58e72d61dacac0`, `4ac785b2268a41f5`, `4a534627977977e3`, `071ba109676bd985`
   - Cause: max seat-price guard/cap logic in `create` was not covered across condition and arithmetic mutations.
@@ -697,6 +717,11 @@ This file tracks mutants killed during the current hardening session, with the r
 - `RoutesRepository.php` `getPotentialsNodes` (`~19–25`): lat max/min branch when `$n1->lat < $n2->lat` (else path vs northern-first ordering).
   - Cause: bbox integration tests mostly lat-descended endpoints (`n1` north of `n2`), so swapping lat assignment without an assertion near the expanded lat floor could survive.
   - Fix: added `test_get_potentials_nodes_handles_reversed_lat_order_and_keeps_bounds` (southern endpoint first + node just inside vs clearly outside `minLat - latDiff`).
+
+- `RoutesRepository.php` `getPotentialsNodes` lat padding (`~33–34`): literal `$latDiff = 0.5` feeding `whereBetween('lat', [$minLat - $latDiff, $maxLat + $latDiff])`.
+  - Cause: floating mutants on the padding constant could shrink the southern bound so a node exactly at `minLat - 0.5` dropped out while tests only sampled interior points away from the margin.
+  - Fix: added `test_get_potentials_nodes_includes_node_on_south_lat_margin_boundary`.
+  - Mutant operators (Infection log): `DecrementFloat` / `IncrementFloat` on `$latDiff`; related bbox branches list `DecrementInteger` / `IncrementInteger`, `GreaterToGreaterOrEqual` on lat/lng comparators (~15–19, ~26).
 
 - `RoutesRepository.php` `autocomplete` (`~41–55`): zero-row result set for `CONCAT(...) LIKE` + country filter.
   - Cause: every autocomplete test asserted at least one hit; removing `whereRaw`, `where('country', …)`, `orderBy`, or `limit` could survive without an empty-collection assertion.

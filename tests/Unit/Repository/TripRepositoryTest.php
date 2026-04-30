@@ -5,6 +5,7 @@ namespace Tests\Unit\Repository;
 use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -3581,5 +3582,24 @@ class TripRepositoryTest extends TestCase
             'error_code' => 'routing_service_unavailable',
         ];
         $this->assertEquals($expected, $payload);
+    }
+
+    public function test_generate_trip_friend_visibility_skips_public_trips(): void
+    {
+        // Mutation intent: outer guard `friendship_type_id < 2` (`TripRepository.php` ~69) must stay strict; public trips (`PRIVACY_PUBLIC = 2`) must not execute either SQL insert branch.
+        // Kills: `GreaterToGreaterOrEqual` / `IfNegated` clusters that widen the `< 2` comparison or skip the early exit.
+        $driver = User::factory()->create();
+        $friend = User::factory()->create();
+        $driver->allFriends()->attach($friend->id, ['state' => User::FRIEND_ACCEPTED]);
+
+        $publicTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $this->repo()->generateTripFriendVisibility($publicTrip);
+
+        $this->assertSame(0, (int) DB::table('user_visibility_trip')->where('trip_id', $publicTrip->id)->count());
     }
 }
