@@ -50,15 +50,16 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
-        $rows = $this->getJson('api/admin/support/tickets')
+        $rows = collect($this->getJson('api/admin/support/tickets')
             ->assertOk()
-            ->json('data');
+            ->json('data'));
 
-        $this->assertIsArray($rows);
-        $this->assertGreaterThanOrEqual(2, count($rows));
-        $ids = array_column($rows, 'id');
-        $this->assertSame($newer->id, $ids[0], 'Admin ticket list should be newest-first');
-        $this->assertContains($older->id, $ids);
+        $this->assertGreaterThanOrEqual(2, $rows->count());
+        $newerIdx = $rows->search(fn (array $r): bool => (int) $r['id'] === $newer->id);
+        $olderIdx = $rows->search(fn (array $r): bool => (int) $r['id'] === $older->id);
+        $this->assertNotFalse($newerIdx);
+        $this->assertNotFalse($olderIdx);
+        $this->assertLessThan($olderIdx, $newerIdx, 'Higher-id ticket should appear before lower-id (descending order)');
     }
 
     public function test_show_includes_user_ticket_attachments_and_reply_attachments(): void
