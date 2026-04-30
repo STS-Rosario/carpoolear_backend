@@ -1371,6 +1371,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: existing branch tests are kept behavior-first and explicit: no matching token request => `type=trip`; token user with `STATE_WAITING_PAYMENT` => `type=my-trips` and correct `trip_id`, which exercises object/id guard, state gate, and id propagation through the public payload.
   - Mutant IDs: `a5dbb5bd35d432b9`, `fdfb561b3809b6b1`, `f12e359ff30e9720`, `0dbb922329f39783`, `07d8ea2961b27a1d`, `0c0994b3db973a35`, `7ef3481701a3fa15`, `4caac72f000a9181`.
 
+## `DeleteTripNotification` (`app/Notifications/DeleteTripNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~6872 and UNTESTED/UNCOVERED ~67242–67348).
+  - Cause: existing tests covered title/message/url and trip id, but did not pin channel list and email metadata keys (`name_app`, `domain`), so `RemoveArrayItem` mutants survived.
+  - Fix: `Tests\Unit\Notifications\DeleteTripNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app`/`domain` fields in email payload.
+  - Mutant IDs: `d4229e23b057541b`, `f99cb0def29c256b`, `fa0405ae6c7f66a3`, `4fd7258be3d49ced`, `ae1953b03beb54a0`.
+
+- **Push URL/image and fallback trip-id contract** (`toPush()` concat around trip id and image key; report UNTESTED ~67278, ~67290, ~67326, ~67337, ~67348).
+  - Cause: tests asserted fallback `/trips/` and extras id, but did not pin positive `/trips/{id}` and image key in the same suite, leaving concat and key-removal mutants under-constrained.
+  - Fix: same test class now asserts exact `/trips/{tripId}` when trip exists and always checks static logo `image`, while preserving explicit fallback assertions.
+  - Mutant IDs: `141adabfd3963efa`, `99e130ff74d5ad1f`, `241dda59fe2ab838`, `9e74badd1376c08f`, `212d0e94fa912e38`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
