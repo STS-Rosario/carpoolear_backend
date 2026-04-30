@@ -1972,3 +1972,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests created ratings through factories but did not lock the explicit fillable list, so `RemoveArrayItem` mutants on rating fields survived.
   - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/RatingTest.php` to assert the full fillable list.
   - Mutant IDs: `d1f82b51ff3b844c`, `d40f1893aa197f2c`, `3ca7432a86d5423a`, `7296c5e8f4ef9143`, `c0c0f8639e284fb0`, `b87bd2670900102f`, `f903d44decd8f705`, `a1dd123907df6982`, `25052a0138f3b66b`, `46aca11abc0af2f4`, `b9fdb174c2df2bcd`, `50abbf7f635b94e3`.
+
+## Message (`app/Models/Message.php`)
+
+- **Mass-assignment contract for message payload fields** (`$fillable` lines 16–21 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing tests already covered relationships, casts, touches and read counting, but they did not explicitly lock the full fillable list; `RemoveArrayItem` mutants on message fields remained under-constrained.
+  - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/MessageTest.php` to assert the full fillable contract.
+  - Mutant IDs: `f60c93c13f8b3aa0`, `85bc7ccf0a366016`, `ab56e01336a65e24`, `ae4b7cef01a92bb5`, `3a47d9dcd297ef5b`, `6a572d38393973bf`.
