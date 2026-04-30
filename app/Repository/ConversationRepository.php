@@ -42,7 +42,7 @@ class ConversationRepository
             return; // el viaje no existe;
         }
         if ($user != null) {
-            if ($conversation->users()->where('user_id', $user->id)->count() == 0) {
+            if (! $conversation->users()->whereKey($user->id)->exists()) {
                 return; // handlear error
             }
         }
@@ -52,17 +52,13 @@ class ConversationRepository
 
     public function getConversationByTripId($tripId, ?User $user = null)
     {
-        $conversation = Conversation::where('trip_id', $tripId)->first();
-        if ($conversation == null) {
-            return;
-        }
-        if ($user) {
-            if ($conversation->users()->where('id', $user->id)->count() == 0) {
-                return;
-            }
+        $query = Conversation::query()->where('trip_id', $tripId);
+
+        if ($user !== null) {
+            $query->whereHas('users', fn ($q) => $q->whereKey($user->id));
         }
 
-        return $conversation;
+        return $query->orderByDesc('id')->first();
     }
 
     public function getConversationsByTrip($trip)
