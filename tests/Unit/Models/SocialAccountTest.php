@@ -8,6 +8,23 @@ use Tests\TestCase;
 
 class SocialAccountTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'user_id',
+            'provider_user_id',
+            'provider',
+        ], (new SocialAccount)->getFillable());
+    }
+
+    public function test_hidden_contains_created_at_and_updated_at(): void
+    {
+        $this->assertSame([
+            'created_at',
+            'updated_at',
+        ], (new SocialAccount)->getHidden());
+    }
+
     public function test_belongs_to_user(): void
     {
         $user = User::factory()->create();
