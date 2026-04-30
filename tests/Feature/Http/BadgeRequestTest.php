@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Validation\Rules\Unique;
+use STS\Http\Requests\BadgeRequest;
 use STS\Models\Campaign;
 use STS\Models\User;
 use Tests\TestCase;
@@ -34,6 +36,14 @@ class BadgeRequestTest extends TestCase
 
         $this->postJson('api/admin/badges', $this->validRegistrationDurationPayload('slug-non-admin'))
             ->assertForbidden();
+    }
+
+    public function test_authorize_returns_false_for_guest_without_throwing(): void
+    {
+        $request = new BadgeRequest;
+        $request->setUserResolver(fn () => null);
+
+        $this->assertFalse($request->authorize());
     }
 
     public function test_store_requires_title(): void
@@ -248,6 +258,42 @@ class BadgeRequestTest extends TestCase
         ])->assertCreated();
 
         $this->assertDatabaseHas('badges', ['slug' => $slug]);
+    }
+
+    public function test_rules_and_messages_define_expected_badge_validation_contract(): void
+    {
+        $request = new BadgeRequest;
+        $rules = $request->rules();
+        $messages = $request->messages();
+
+        $this->assertSame(['required', 'string', 'max:255'], $rules['title']);
+        $this->assertContains('required', $rules['slug']);
+        $this->assertContains('string', $rules['slug']);
+        $this->assertContains('max:255', $rules['slug']);
+        $this->assertTrue(
+            collect($rules['slug'])->contains(fn ($rule) => $rule instanceof Unique),
+            'slug rules must include unique constraint'
+        );
+
+        $this->assertSame(['nullable', 'string'], $rules['description']);
+        $this->assertSame(['nullable', 'string', 'max:255'], $rules['image_path']);
+        $this->assertSame(['required', 'array'], $rules['rules']);
+        $this->assertContains('required', $rules['rules.type']);
+        $this->assertContains('string', $rules['rules.type']);
+        $this->assertContains('required_if:rules.type,registration_duration', $rules['rules.days']);
+        $this->assertContains('integer', $rules['rules.days']);
+        $this->assertContains('min:1', $rules['rules.days']);
+        $this->assertContains('required_if:rules.type,donated_to_campaign', $rules['rules.campaign_id']);
+        $this->assertContains('integer', $rules['rules.campaign_id']);
+        $this->assertContains('exists:campaigns,id', $rules['rules.campaign_id']);
+        $this->assertContains('required_if:rules.type,total_donated', $rules['rules.amount']);
+        $this->assertContains('numeric', $rules['rules.amount']);
+        $this->assertContains('min:0', $rules['rules.amount']);
+
+        $this->assertArrayHasKey('rules.type.in', $messages);
+        $this->assertArrayHasKey('rules.days.required_if', $messages);
+        $this->assertArrayHasKey('rules.campaign_id.required_if', $messages);
+        $this->assertArrayHasKey('rules.amount.required_if', $messages);
     }
 
     /**
