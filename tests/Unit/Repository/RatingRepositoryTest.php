@@ -289,4 +289,20 @@ class RatingRepositoryTest extends TestCase
 
         $this->assertNull((new RatingRepository)->find($missingId));
     }
+
+    public function test_get_rating_matches_trip_id_when_pair_rates_multiple_trips(): void
+    {
+        // Mutation intent: chained `where('trip_id', …)` (~17 RemoveMethodCall); without it `first()` becomes ambiguous across trips for the same from/to pair.
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $tripA = Trip::factory()->create(['user_id' => $driver->id]);
+        $tripB = Trip::factory()->create(['user_id' => $driver->id]);
+        $ratingA = $this->seedRating($passenger, $driver, $tripA, ['voted_hash' => 'mtp-a-'.uniqid('', true)]);
+        $ratingB = $this->seedRating($passenger, $driver, $tripB, ['voted_hash' => 'mtp-b-'.uniqid('', true)]);
+
+        $repo = new RatingRepository;
+
+        $this->assertTrue($ratingA->is($repo->getRating($passenger->id, $driver->id, $tripA->id)));
+        $this->assertTrue($ratingB->is($repo->getRating($passenger->id, $driver->id, $tripB->id)));
+    }
 }
