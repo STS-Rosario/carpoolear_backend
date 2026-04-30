@@ -792,6 +792,16 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the explicit `$campaign->total_donated = $campaign->total_donated ?? 0` line was never executed with a campaign that had paid donations in the same HTTP response, so mutants on the coalesce or assignment never broke an assertion.
   - Fix: the paid-donations test above asserts `total_donated` in the JSON equals the summed paid `amount_cents` (covers the accessor-backed value surfaced on the serialized payload).
 
+## ReferencesController (`app/Http/Controllers/Api/v1/ReferencesController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~18; report ~47762 `90b971ed534c165d` `RemoveMethodCall`).
+  - Cause: only `ReferencesManager` / repository unit tests existed; nothing hit `POST api/references` through the real `UserLoggin` stack, so removing `middleware('logged')` never failed CI.
+  - Fix: `Tests\Feature\Http\ReferencesApiTest::test_create_requires_authentication` posts without a JWT / session fallback and expects `401` + `Unauthorized.` (same envelope as other `logged` routes).
+
+- **`create()` authenticated branch vs `ReferencesManager::create` outcomes** (`create()` ~24–34; report ~47774 `5d2065e545df76ba` `IfNegated` on `if ($this->user)`, plus success `response()->json($reference)` vs `ExceptionWithErrors('Could not rate user.', …)` when the manager returns falsy).
+  - Cause: no feature test exercised `POST api/references` with a resolved user, so inverting the `if ($this->user)` guard or dropping the success/error responses stayed green; manager failures were never mapped to HTTP.
+  - Fix: `test_create_returns_reference_payload_when_valid` asserts `200`, stable `comment` / `user_id_from` / `user_id_to` paths, `assertJsonStructure` on the persisted keys, and a DB row in `users_references`; `test_create_returns_unprocessable_when_comment_missing`, `…_when_target_user_does_not_exist`, `…_when_author_targets_self`, and `…_when_reference_already_exists` assert `422`, `Could not rate user.`, and an `errors` envelope where validation runs (missing `comment`); duplicate / missing target / self-target cases pin the falsy-manager branch without mocking `ReferencesManager`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
