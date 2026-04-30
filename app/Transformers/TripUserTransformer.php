@@ -2,8 +2,8 @@
 
 namespace STS\Transformers;
 
-use STS\Models\User;
 use League\Fractal\TransformerAbstract;
+use STS\Models\User;
 
 class TripUserTransformer extends TransformerAbstract
 {
@@ -24,8 +24,8 @@ class TripUserTransformer extends TransformerAbstract
         $data = [
             'id' => $user->id,
             'name' => $user->name,
-            //'email' => $user->email,
-            'descripcion' => $user->descripcion,
+            // 'email' => $user->email,
+            'descripcion' => $user->description,
             'private_note' => $user->private_note,
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
@@ -35,16 +35,16 @@ class TripUserTransformer extends TransformerAbstract
             'has_pin' => $user->has_pin,
             'is_member' => $user->is_member,
             'monthly_donate' => $user->monthly_donate,
-            'do_not_alert_request_seat'       => $user->do_not_alert_request_seat,
-            'do_not_alert_accept_passenger'   => $user->do_not_alert_accept_passenger,
-            'do_not_alert_pending_rates'      => $user->do_not_alert_pending_rates,
-            'do_not_alert_pricing'      => $user->do_not_alert_pricing,
-            'autoaccept_requests'    => $user->autoaccept_requests,
-            'driver_is_verified'    => $user->driver_is_verified,
-            'driver_data_docs'      => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
-            'conversation_opened_count'      => $user->conversation_opened_count,
-            'conversation_answered_count'      => $user->conversation_answered_count,
-            'answer_delay_sum'      => $user->answer_delay_sum,
+            'do_not_alert_request_seat' => $user->do_not_alert_request_seat,
+            'do_not_alert_accept_passenger' => $user->do_not_alert_accept_passenger,
+            'do_not_alert_pending_rates' => $user->do_not_alert_pending_rates,
+            'do_not_alert_pricing' => $user->do_not_alert_pricing,
+            'autoaccept_requests' => $user->autoaccept_requests,
+            'driver_is_verified' => $user->driver_is_verified,
+            'driver_data_docs' => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
+            'conversation_opened_count' => $user->conversation_opened_count,
+            'conversation_answered_count' => $user->conversation_answered_count,
+            'answer_delay_sum' => $user->answer_delay_sum,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
         ];
 

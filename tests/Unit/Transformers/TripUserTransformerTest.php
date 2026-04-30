@@ -18,11 +18,8 @@ class TripUserTransformerTest extends TestCase
             'last_connection' => '2026-04-30 15:00:00',
         ]);
         $user->forceFill([
-            'descripcion' => 'Profile description',
+            'description' => 'Profile description',
             'private_note' => 'Private note',
-            'positive_ratings' => 10,
-            'negative_ratings' => 1,
-            'accounts' => null,
             'has_pin' => true,
             'is_member' => false,
             'monthly_donate' => true,
@@ -68,6 +65,13 @@ class TripUserTransformerTest extends TestCase
         ], array_keys($payload));
         $this->assertSame($user->id, $payload['id']);
         $this->assertSame('Trip User', $payload['name']);
+        $this->assertSame('Profile description', $payload['descripcion']);
+        $this->assertSame('Private note', $payload['private_note']);
+        $this->assertSame(0, $payload['positive_ratings']);
+        $this->assertSame(0, $payload['negative_ratings']);
+        $this->assertSame(3, $payload['conversation_opened_count']);
+        $this->assertSame(2, $payload['conversation_answered_count']);
+        $this->assertSame(120.0, $payload['answer_delay_sum']);
         $this->assertSame('2026-04-30 15:00:00', $payload['last_connection']);
         $this->assertSame('2026-04-29 09:30:00', $payload['identity_validated_at']);
         $this->assertIsObject($payload['driver_data_docs']);

@@ -57,6 +57,14 @@ class BaseNotification
         return array_keys($this->attributes);
     }
 
+    /**
+     * @return array<int, class-string>
+     */
+    public function getVia(): array
+    {
+        return $this->via;
+    }
+
     public function notify($users)
     {
         foreach ($this->via as $channel) {

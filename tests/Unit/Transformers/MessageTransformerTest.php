@@ -22,7 +22,6 @@ class MessageTransformerTest extends TestCase
             'conversation_id' => $conversation->id,
             'text' => 'Hello there',
             'estado' => Message::STATE_NOLEIDO,
-            'time' => null,
         ]);
         $message->forceFill(['created_at' => Carbon::parse('2026-04-30 14:00:00')])->saveQuietly();
 
@@ -54,7 +53,6 @@ class MessageTransformerTest extends TestCase
             'conversation_id' => $conversation->id,
             'text' => 'Author message',
             'estado' => Message::STATE_NOLEIDO,
-            'time' => null,
         ]);
         $message->users()->attach($reader->id, ['read' => true]);
 

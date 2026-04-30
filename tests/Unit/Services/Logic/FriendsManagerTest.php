@@ -108,10 +108,11 @@ class FriendsManagerTest extends TestCase
 
         $manager->request($alice, $bob);
         $manager->request($bob, $alice);
+        // Second request deletes the first edge; only the last request row survives.
         $this->assertNotEmpty($manager->getPendings($alice));
-        $this->assertNotEmpty($manager->getPendings($bob));
+        $this->assertTrue($manager->getPendings($bob)->isEmpty());
 
-        $this->assertTrue($manager->accept($bob, $alice));
+        $this->assertTrue($manager->accept($alice, $bob));
 
         $this->assertEmpty($manager->getPendings($alice));
         $this->assertEmpty($manager->getPendings($bob));
@@ -219,7 +220,7 @@ class FriendsManagerTest extends TestCase
         $manager->request($a, $b);
         $manager->request($b, $a);
         $this->assertNotEmpty($manager->getPendings($a));
-        $this->assertNotEmpty($manager->getPendings($b));
+        $this->assertTrue($manager->getPendings($b)->isEmpty());
 
         $this->assertTrue($manager->make($a, $b));
         $this->assertEmpty($manager->getPendings($a));

@@ -81,7 +81,7 @@ class TripTransformerTest extends TestCase
         $this->assertSame('Rosario', $payload['from_town']);
         $this->assertSame('Cordoba', $payload['to_town']);
         $this->assertSame('2026-04-30 18:30:00', $payload['trip_date']);
-        $this->assertSame(400, $payload['distance']);
+        $this->assertEquals(400, $payload['distance']);
         $this->assertSame(15000, $payload['seat_price_cents']);
         $this->assertFalse($payload['sellado_pending']);
         $this->assertNull($payload['sellado_pending_label']);

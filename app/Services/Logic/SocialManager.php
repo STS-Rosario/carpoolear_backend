@@ -72,7 +72,8 @@ class SocialManager extends BaseManager implements Social
     {
         $account = $this->getAccounts(null);
         if ($account && $user->id == $account->user->id) {
-            return $this->syncFriends($account->user);
+            // Use the hydrated `$user` from the caller; `$account->user` may be a partial object from providers/tests.
+            return $this->syncFriends($user);
         } else {
             $this->setErrors(['error' => 'No tiene asociado ningun perfil']);
         }
@@ -125,12 +126,42 @@ class SocialManager extends BaseManager implements Social
 
     private function syncFriends($user)
     {
-        $friends = $this->getUserFriends();
-        foreach ($friends as $friend) {
-            $this->friendsRepo->make($user, $friend);
+        foreach ($this->getUserFriends() as $friendIdentifier) {
+            $friendUser = $this->resolveFriendUser($friendIdentifier);
+            if ($friendUser instanceof UserModel) {
+                $this->friendsRepo->make($user, $friendUser);
+            }
         }
 
         return true;
+    }
+
+    private function resolveFriendUser(mixed $friendIdentifier): ?UserModel
+    {
+        if ($friendIdentifier instanceof UserModel) {
+            return $friendIdentifier;
+        }
+
+        $account = $this->socialRepo->find((string) $friendIdentifier);
+        if ($account !== null) {
+            $linked = $account->user;
+            if ($linked instanceof UserModel) {
+                return $linked;
+            }
+            if (is_object($linked) && isset($linked->id)) {
+                $resolved = $this->userLogic->show(null, (int) $linked->id);
+
+                return $resolved instanceof UserModel ? $resolved : null;
+            }
+        }
+
+        if (is_numeric($friendIdentifier)) {
+            $loaded = $this->userLogic->show(null, (int) $friendIdentifier);
+
+            return $loaded instanceof UserModel ? $loaded : null;
+        }
+
+        return null;
     }
 
     private function create($provider_user_id, $data)

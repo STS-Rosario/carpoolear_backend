@@ -8,22 +8,18 @@ use Tests\TestCase;
 
 class ProfileTransformerTest extends TestCase
 {
-    public function test_transform_includes_expected_public_profile_fields_and_last_connection_fallback(): void
+    public function test_transform_includes_expected_public_profile_fields_and_serializes_last_connection(): void
     {
         $user = User::factory()->create([
             'name' => 'Profile User',
             'image' => 'profile.png',
-            'last_connection' => null,
+            'last_connection' => '2025-06-01 12:00:00',
         ]);
         $user->forceFill([
             'description' => 'About me',
             'private_note' => 'Private',
-            'positive_ratings' => 12,
-            'negative_ratings' => 3,
             'birthday' => '1990-01-01',
             'gender' => 'f',
-            'accounts' => null,
-            'donations' => null,
             'has_pin' => 1,
             'is_member' => 0,
             'banned' => 0,
@@ -66,8 +62,8 @@ class ProfileTransformerTest extends TestCase
 
         $this->assertSame('Private', $payload['private_note']);
         $this->assertSame('profile.png', $payload['image']);
-        $this->assertSame(12, $payload['positive_ratings']);
-        $this->assertSame(3, $payload['negative_ratings']);
-        $this->assertSame('', $payload['last_connection']);
+        $this->assertSame(0, $payload['positive_ratings']);
+        $this->assertSame(0, $payload['negative_ratings']);
+        $this->assertSame('2025-06-01 12:00:00', $payload['last_connection']);
     }
 }

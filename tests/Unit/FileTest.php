@@ -17,7 +17,7 @@ class FileTest extends TestCase
 
     private function testing_folder_path(): string
     {
-        return public_path($this->testing_folder());
+        return $this->files->resolveUploadFolder($this->testing_folder());
     }
 
     protected function setUp(): void

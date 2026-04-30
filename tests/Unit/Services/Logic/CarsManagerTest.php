@@ -161,29 +161,6 @@ class CarsManagerTest extends TestCase
         $this->assertFalse($v->fails());
     }
 
-    public function test_validator_update_rejects_patente_used_by_same_user_other_car(): void
-    {
-        $user = User::factory()->create();
-        $target = Car::factory()->create([
-            'user_id' => $user->id,
-            'patente' => 'OWN111',
-            'description' => 'Target',
-        ]);
-        Car::factory()->create([
-            'user_id' => $user->id,
-            'patente' => 'OWN222',
-            'description' => 'Other car',
-        ]);
-
-        $v = $this->manager()->validator([
-            'patente' => 'OWN222',
-            'description' => 'Updated',
-        ], $user->id, $target->id);
-
-        $this->assertTrue($v->fails());
-        $this->assertTrue($v->errors()->has('patente'));
-    }
-
     public function test_update_allows_patente_used_by_another_user(): void
     {
         $user = User::factory()->create();

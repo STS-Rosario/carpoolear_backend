@@ -15,7 +15,7 @@ class FileRepositoryTest extends TestCase
 
     private function testing_folder_path(): string
     {
-        return public_path($this->testing_folder());
+        return (new FileRepository)->resolveUploadFolder($this->testing_folder());
     }
 
     protected function tearDown(): void
@@ -62,7 +62,7 @@ class FileRepositoryTest extends TestCase
         $tmp = sys_get_temp_dir().'/file-repo-'.uniqid('', true).'.txt';
         File::put($tmp, 'payload-nested');
         $folder = $this->testing_folder().'a/b/c/';
-        $folderPath = public_path($folder);
+        $folderPath = (new FileRepository)->resolveUploadFolder($folder);
         if (File::isDirectory($folderPath)) {
             File::deleteDirectory($folderPath);
         }

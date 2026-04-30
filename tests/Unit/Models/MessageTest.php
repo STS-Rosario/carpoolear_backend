@@ -18,7 +18,6 @@ class MessageTest extends TestCase
             'text',
             'estado',
             'conversation_id',
-            'time',
         ], (new Message)->getFillable());
     }
 

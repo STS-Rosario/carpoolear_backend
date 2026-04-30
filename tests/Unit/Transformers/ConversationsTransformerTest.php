@@ -33,7 +33,6 @@ class ConversationsTransformerTest extends TestCase
             'conversation_id' => $conversation->id,
             'text' => 'Latest text',
             'estado' => Message::STATE_NOLEIDO,
-            'time' => null,
         ]);
         $message->forceFill(['created_at' => Carbon::parse('2026-04-30 12:00:00')])->saveQuietly();
 

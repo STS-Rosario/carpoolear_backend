@@ -185,8 +185,12 @@ class AnnouncementServiceTest extends TestCase
             'active' => true,
             'banned' => false,
         ]);
-        Device::factory()->create([
+        Device::query()->create([
             'user_id' => $user->id,
+            'session_id' => 'sess-announce-'.uniqid('', true),
+            'device_id' => 'device-announce-'.uniqid('', true),
+            'device_type' => 'ios',
+            'app_version' => 1,
             'notifications' => true,
             'last_activity' => Carbon::now()->subDays(40),
         ]);

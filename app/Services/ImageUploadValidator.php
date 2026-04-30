@@ -15,7 +15,8 @@ class ImageUploadValidator
     {
         $allowedMimes = config('carpoolear.image_upload_allowed_mimes', []);
         $allowedExtensions = config('carpoolear.image_upload_allowed_extensions', []);
-        $maxBytes = (int) config('carpoolear.image_upload_max_bytes', 10 * 1024 * 1024);
+        $maxBytesRaw = config('carpoolear.image_upload_max_bytes');
+        $maxBytes = (int) ($maxBytesRaw ?? 10 * 1024 * 1024);
 
         $mime = $file->getMimeType();
         $extension = strtolower($file->getClientOriginalExtension());
@@ -32,7 +33,7 @@ class ImageUploadValidator
         }
 
         if ($size === null || $size > $maxBytes) {
-            $errors[$field] = $errors[$field] ?? ['File too large. Maximum size: ' . ($maxBytes / (1024 * 1024)) . ' MB.'];
+            $errors[$field] = $errors[$field] ?? ['File too large. Maximum size: '.($maxBytes / (1024 * 1024)).' MB.'];
         }
 
         if ($errors !== []) {

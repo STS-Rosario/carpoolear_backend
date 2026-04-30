@@ -50,7 +50,7 @@ function stop_log_query()
 function get_query($index = null)
 {
     $laQuery = DB::getQueryLog();
-    if (! $index) {
+    if ($index === null) {
         $index = count($laQuery) - 1;
     }
 

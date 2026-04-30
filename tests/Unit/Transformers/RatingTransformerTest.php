@@ -67,7 +67,7 @@ class RatingTransformerTest extends TestCase
             'user_id_to' => $to->id,
             'rating' => Rating::STATE_NEGATIVO,
             'comment' => 'Late arrival',
-            'reply_comment' => null,
+            'reply_comment' => '',
             'reply_comment_created_at' => null,
             'user_to_type' => 0,
             'user_to_state' => 0,
