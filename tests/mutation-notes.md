@@ -1467,6 +1467,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: expanded attachment assertions to pin `ticket_id = null`, exact MIME for regular uploads, integer `size_bytes`, and explicit `'application/octet-stream'` fallback when a file reports no MIME type.
   - Mutant IDs: `56295b30cdce490a`, `887972c9890360ba`, `f4820b7e07f13d46`, `736729407ea1265f`, `e951af3148175d79`.
 
+## `ImageUploadValidator` (`app/Services/ImageUploadValidator.php`)
+
+- **Max-size bytes fallback and numeric normalization** (`validate()` `maxBytes` initialization; report `RUN` ~7762 and UNTESTED line 18 cluster).
+  - Cause: tests did not directly assert behavior when `image_upload_max_bytes` is absent or string-configured, leaving default-expression and cast arithmetic mutants under-constrained.
+  - Fix: `test_default_max_size_is_ten_mb_when_config_is_missing` asserts 10 MB fallback output; `test_max_size_config_is_cast_to_integer_bytes_before_validation` asserts string config is interpreted as integer bytes and produces a stable 1 MB limit message.
+  - Mutant IDs: `a2209fd09b739317`, `28c0bdda4631c783`, `cc18d4b85cc4b4d3`, `9c1bb0495ea70f03`, `e1e5f74c83f39e81`, `5be50bba52778139`, `673dc67339351329`, `ab5340d743546d56`, `0bc16fc0daa0dc93`.
+
+- **Error-message precedence when multiple validations fail** (`validate()` coalescing on extension/size branches; report UNTESTED lines 31 and 35).
+  - Cause: prior assertions did not pin that once a type error exists, extension and size checks must not overwrite that message; coalesce-removal mutants could silently change client-facing errors.
+  - Fix: `test_existing_type_error_is_not_overwritten_by_extension_or_size_errors` uses a file that fails MIME, extension, and size simultaneously and asserts the first type error remains the returned message for the field.
+  - Mutant IDs: `6ab86d936441fc55`, `a4b95665438fd324`, `77590d4dafe7a8e4`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
