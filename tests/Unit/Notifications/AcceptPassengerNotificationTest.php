@@ -98,4 +98,54 @@ class AcceptPassengerNotificationTest extends TestCase
         $this->assertSame('my-trips', $extras['type']);
         $this->assertSame($trip->id, $extras['trip_id']);
     }
+
+    public function test_get_extras_still_my_trips_when_request_state_is_string_four_from_database(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $from->id]);
+        $row = Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $to->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+        \DB::table('trip_passengers')->where('id', $row->id)->update(['request_state' => '4']);
+
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('trip', $trip->fresh());
+        $notification->setAttribute('token', $to->fresh());
+
+        $extras = $notification->getExtras();
+
+        $this->assertSame('my-trips', $extras['type']);
+    }
+
+    public function test_get_extras_returns_trip_when_token_is_not_object_with_id(): void
+    {
+        $trip = Trip::factory()->create();
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('trip', $trip->fresh());
+        $notification->setAttribute('token', []);
+
+        $extras = $notification->getExtras();
+
+        $this->assertSame('trip', $extras['type']);
+        $this->assertSame($trip->id, $extras['trip_id']);
+    }
+
+    public function test_get_extras_returns_trip_when_token_user_has_no_passenger_row(): void
+    {
+        $trip = Trip::factory()->create();
+        $ghost = User::factory()->create();
+
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('trip', $trip->fresh());
+        $notification->setAttribute('token', $ghost);
+
+        $extras = $notification->getExtras();
+
+        $this->assertSame('trip', $extras['type']);
+        $this->assertSame($trip->id, $extras['trip_id']);
+    }
 }
