@@ -40,6 +40,17 @@ class QueriesTest extends TestCase
         $this->assertCount(2, $decoded->data);
     }
 
+    public function test_make_pagination_treats_page_number_zero_as_first_page(): void
+    {
+        User::factory()->count(4)->create();
+
+        $query = User::orderBy('email');
+        $paginated = make_pagination($query, 0, 2);
+        $decoded = json_decode(json_encode($paginated), false, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(1, (int) $decoded->current_page);
+    }
+
     public function test_make_pagination_returns_all_rows_when_page_size_is_null(): void
     {
         User::factory()->count(5)->create();
