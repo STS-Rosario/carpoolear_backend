@@ -570,4 +570,20 @@ class ConversationRepositoryTest extends TestCase
         $this->assertCount(1, $onlyA);
         $this->assertSame($friendA->id, $onlyA->first()->id);
     }
+
+    public function test_users_to_chat_search_requires_substring_between_sql_wildcards(): void
+    {
+        // Mutation intent: `where('name','like','%'.$search_text.'%')` (~198) — RemoveMethodCall / Concat* mutants drop wildcards or the `where` and return unrelated friends.
+        $owner = User::factory()->create(['name' => 'Owner ChatLike']);
+        $needle = 'MidSeg'.substr(uniqid('', true), 0, 8);
+        $match = User::factory()->create(['name' => 'Alpha'.$needle.'Beta']);
+        $miss = User::factory()->create(['name' => 'GammaPlainNoTokenHere']);
+        (new FriendsRepository)->add($match, $owner, User::FRIEND_ACCEPTED);
+        (new FriendsRepository)->add($miss, $owner, User::FRIEND_ACCEPTED);
+
+        $hits = (new ConversationRepository)->usersToChat($owner->id, null, $needle);
+
+        $this->assertTrue($hits->pluck('id')->contains($match->id));
+        $this->assertFalse($hits->pluck('id')->contains($miss->id));
+    }
 }
