@@ -1426,6 +1426,23 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Notifications\DummyNotificationTest` now asserts `getVia()` is exactly `[DatabaseChannel::class, MailChannel::class]`.
   - Mutant IDs: `277a17cb78db227a`, `df82baf8af57be87`.
 
+## `MercadoPagoService` (`app/Services/MercadoPagoService.php`)
+
+- **Configuration guard behavior** (`__construct()` / `ensureConfigured()` / `createPaymentPreference()`; report RUN ~7187 and UNTESTED/UNCOVERED ~68931+).
+  - Cause: service-level guard paths were not directly asserted, so mutants negating empty-token checks or removing required setup calls could survive.
+  - Fix: `Tests\Unit\Services\MercadoPagoServiceTest::test_create_payment_preference_throws_when_access_token_is_missing` asserts the public exception contract when credentials are absent.
+  - Mutant IDs: `9b1dc7339f43b267`, `4bdf596c8d58d9f2`, `37d074c750e714e1`, `fb8e31c0af73f9b7`, `ba057c55b7a4748a`, `30da4230fbc5121d`.
+
+- **Sellado preference payload contract** (`createPaymentPreferenceForSellado()` path; report cluster around ~69087–69591).
+  - Cause: URL assembly, amount conversion, and external reference generation were not asserted as public outputs, leaving payload-shape mutants under-constrained.
+  - Fix: tests assert missing `frontend_url` throws; and with a test override of `createPaymentPreference`, assert generated back_urls, `unit_price` conversion from cents, `auto_return`, and hashed external reference shape.
+  - Mutant IDs: `1244275cff538555`, `701d135546a19962`, `f1ab798f82a15e9b`, `5e304c8fe7b9d1d7`, `db359c3c6cd6c359`, `4f26b944579fabbb`, `4eabdfc07c637430`, `39ad6deaa20062f3`.
+
+- **QR minimum-amount guard** (`createQrOrderForManualValidation()` lower bound; report cluster around ~70287+).
+  - Cause: provider minimum (`>= 15.00`) guard was not pinned directly; comparison mutants could bypass payment constraints.
+  - Fix: `test_create_qr_order_for_manual_validation_rejects_amount_below_provider_minimum` asserts an `InvalidArgumentException` for amounts below 1500 cents.
+  - Mutant IDs: `9f2505c62c6495e6`, `11ba1d7bda32fe6a`, `c08b8c5f4036d0c8`, `51fa88af658de6ee`, `b5ae2dcba3ec93e8`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
