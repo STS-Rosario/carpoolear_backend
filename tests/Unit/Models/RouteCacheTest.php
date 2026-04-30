@@ -9,6 +9,23 @@ use Tests\TestCase;
 
 class RouteCacheTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'points',
+            'route_data',
+            'expires_at',
+            'hashed_points',
+        ], (new RouteCache)->getFillable());
+    }
+
+    public function test_casts_include_points_route_data_and_expires_at(): void
+    {
+        $this->assertSame('array', (new RouteCache)->getCasts()['points']);
+        $this->assertSame('array', (new RouteCache)->getCasts()['route_data']);
+        $this->assertSame('datetime', (new RouteCache)->getCasts()['expires_at']);
+    }
+
     /**
      * @return array{0: list<array{lat: float, lng: float}>, 1: string}
      */
