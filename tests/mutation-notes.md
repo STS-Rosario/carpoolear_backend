@@ -1979,3 +1979,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: existing tests already covered relationships, casts, touches and read counting, but they did not explicitly lock the full fillable list; `RemoveArrayItem` mutants on message fields remained under-constrained.
   - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/MessageTest.php` to assert the full fillable contract.
   - Mutant IDs: `f60c93c13f8b3aa0`, `85bc7ccf0a366016`, `ab56e01336a65e24`, `ae4b7cef01a92bb5`, `3a47d9dcd297ef5b`, `6a572d38393973bf`.
+
+## RouteCache (`app/Models/RouteCache.php`)
+
+- **Mass-assignment and cast contract for cached routes** (`$fillable` lines 12–15 and `$casts` lines 19–21 in `tests/coverage/20260428_2310.txt`).
+  - Cause: behavioral tests validated hashing/update flows but did not pin the explicit fillable and cast declarations directly, so `RemoveArrayItem` mutants in both arrays survived.
+  - Fix: added to `tests/Unit/Models/RouteCacheTest.php`:
+    - `test_fillable_contains_expected_mass_assignable_attributes`
+    - `test_casts_include_points_route_data_and_expires_at`
+    These assert the exact fillable list and required casts (`points`, `route_data`, `expires_at`).
+  - Mutant IDs: `337fe7413e2924ba`, `0357ec5a936b9e17`, `a203dddbdb2afa94`, `ae712c541080994a`, `4d3d9d3cb51614c1`, `4b787bf9379b0f5d`, `47ba9c07ca364dfe`.
