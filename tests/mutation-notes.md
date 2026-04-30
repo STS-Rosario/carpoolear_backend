@@ -1237,6 +1237,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts `push.extras.type`, `push.extras.external_url`, and stable `push.image`.
   - Mutant IDs: `cb11e9770176ab0d`, `8f3dcc403c25ece1`, `ec0ac9fc9743bbb3`.
 
+## `AutoRequestPassengerNotification` (`app/Notifications/AutoRequestPassengerNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~6447 and UNTESTED/UNCOVERED ~66241–66335).
+  - Cause: previous tests validated sender/trip message behavior, but did not pin channel list and email metadata fields, so `RemoveArrayItem` mutants on channels and `name_app`/`domain` survived.
+  - Fix: `Tests\Unit\Notifications\AutoRequestPassengerNotificationTest` now asserts exact `getVia()` channels and verifies config-driven email metadata (`name_app`, `domain`).
+  - Mutant IDs: `4a14ecb94567ecbd`, `30aea114a75ccf27`, `df492cd69fc409d3`, `2a6a0d4651081841`, `400033190345e0a5`.
+
+- **Push URL/image contract for present and missing trip** (`toPush()` concat around trip id and image key; report UNTESTED ~66277, ~66313, ~66324, ~66335).
+  - Cause: tests asserted fallback `/trips/` but not the positive `/trips/{id}` path nor image key, leaving concat and `RemoveArrayItem` mutants under-constrained.
+  - Fix: same test class now asserts `toPush()` returns `/trips/{tripId}` when trip exists and always includes the static logo `image`.
+  - Mutant IDs: `bdf3bee255fce6db`, `1b5fa90cd5b7cfa0`, `5b2170b6e88cb5b2`, `8740ad58c17a1584`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
