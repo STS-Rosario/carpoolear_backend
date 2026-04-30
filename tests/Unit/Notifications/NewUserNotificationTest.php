@@ -3,12 +3,25 @@
 namespace Tests\Unit\Notifications;
 
 use STS\Notifications\NewUserNotification;
+use STS\Services\Notifications\Channels\MailChannel;
 use Tests\TestCase;
 
 class NewUserNotificationTest extends TestCase
 {
+    public function test_via_contains_mail_channel_only(): void
+    {
+        $notification = new NewUserNotification;
+
+        $this->assertSame([MailChannel::class], $notification->getVia());
+    }
+
     public function test_to_email_uses_activation_token_when_present(): void
     {
+        config([
+            'carpoolear.name_app' => 'Carpoolear Test',
+            'app.url' => 'https://app.test',
+        ]);
+
         $notification = new NewUserNotification;
         $notification->setAttribute('token', 'abc123token');
 
@@ -16,7 +29,9 @@ class NewUserNotificationTest extends TestCase
 
         $this->assertSame(__('notifications.new_user.title'), $email['title']);
         $this->assertSame('create_account', $email['email_view']);
-        $this->assertSame(config('app.url').'/app/activate/abc123token', $email['url']);
+        $this->assertSame('https://app.test/app/activate/abc123token', $email['url']);
+        $this->assertSame('Carpoolear Test', $email['name_app']);
+        $this->assertSame('https://app.test', $email['domain']);
     }
 
     public function test_to_email_uses_empty_token_suffix_when_missing(): void
