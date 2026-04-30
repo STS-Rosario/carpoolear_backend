@@ -992,6 +992,17 @@ This file tracks mutants killed during the current hardening session, with the r
 
 - **Production fix:** `delete()` called `DeviceManager::delete($user, $id)` with arguments reversed versus the manager signature `delete($session_id, $user)` and `is_int($session_id)` branching. The controller now calls `delete((int) $id, $user)` so route ids resolve by primary key instead of misrouting the `User` instance through the `session_id` branch.
 
+## DeviceManager (`app/Services/Logic/DeviceManager.php`)
+
+- **Validation + ownership semantics + session short-circuit in registration** (`validator/register/update/delete`; report block around `tests/coverage/20260428_2310.txt` ~83179+ for `DeviceManager`).
+  - Cause: existing manager tests covered happy-path creation/update, but did not lock down invalid `notifications` validation, scalar-equivalent owner ID comparisons, or the early-return contract when `session_id` already exists (which should not continue into cross-user `device_id` collision cleanup logic).
+  - Fix: added behavior-focused tests in `tests/Unit/Services/Logic/DeviceManagerTest.php`:
+    - `test_validator_rejects_invalid_notifications_value`
+    - `test_register_with_existing_session_does_not_delete_other_users_same_device_id`
+    - `test_update_accepts_equivalent_scalar_owner_ids`
+    - `test_delete_treats_equivalent_scalar_owner_ids_as_owner`
+  - Mutant IDs: `c92c634b58a09840`, `9876e42b2733194d`, `48a51a12f9e9292f`, `a33399cec7d3a7c1`, `7524eaeff5a1d671`.
+
 ## CampaignRewardController (`app/Http/Controllers/Api/v1/CampaignRewardController.php`)
 
 - **Reward must match campaign** (`purchase()` ~23–24; report `tests/coverage/20260428_2310.txt` ~50767–50827, e.g. `ed58202f2968321d` `IfNegated`, `18ae731ddd647c45` `NotIdenticalToIdentical`, `7a8b5e2c4ebef271` `RemoveEarlyReturn`, `03fe0485e559dd70` `RemoveArrayItem` on the 404 payload).
