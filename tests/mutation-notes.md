@@ -972,6 +972,28 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the `catch` block was never hit from outside the controller.
   - Fix: `test_purchase_returns_server_error_when_payment_preference_fails` makes the mocked service throw; expects `500` + `Could not create payment preference` and a pending donation without `payment_id`.
 
+## Admin `CampaignRewardController` (`app/Http/Controllers/Api/Admin/CampaignRewardController.php`)
+
+- **`index()` list + paid-only `withCount`** (`~15–19`; report `tests/coverage/20260428_2310.txt` ~59300–59338, e.g. `6a835fc5484329a0` `RemoveArrayItem`, `1993bdddeaa98eaf` `RemoveMethodCall` on `withCount`, `d4d9e47a4ab3a101` `AlwaysReturnNull`).
+  - Cause: admin reward routes had no feature coverage; mutants could drop the constrained count relation, return nothing, or strip JSON keys without failing tests.
+  - Fix: `Tests\Feature\Http\AdminCampaignRewardControllerIntegrationTest::test_index_returns_rewards_with_paid_donations_count` seeds two rewards and three donations (two `paid`, one `pending`) on one reward; `GET api/admin/campaigns/{slug}/rewards` asserts `donations_count` is `2` vs `0` for the other reward.
+
+- **`store()` validation + create + 201** (`~24–34`; report ~59350–59422, e.g. `d8d46738ddbe459b` through `6822b6e75d0c1a08` `RemoveArrayItem`, `afe04f9a620678a0` / `e006ad10e72ad353` on status `201`, `b3bb137141d42371` `AlwaysReturnNull`).
+  - Cause: create path and validation envelope were never exercised over HTTP.
+  - Fix: `test_store_creates_reward_and_returns_created_payload` posts a valid body and asserts `201`, persisted fields, and `assertDatabaseHas`. `test_store_returns_unprocessable_when_validation_fails` omits required fields and expects `422` with no row inserted.
+
+- **`show()` membership + `loadCount`** (`~37–45`; report ~59434–59546, e.g. `cc157c525225c290`, `9d20639622e63338`, `a0bd0778cb9464d9` `RemoveEarlyReturn`, `86e3104be426e79c` `RemoveMethodCall` on `loadCount`, `229725aecd7e18dc` `AlwaysReturnNull`).
+  - Cause: show response and cross-campaign guard had no HTTP assertions.
+  - Fix: `test_show_returns_reward_with_paid_donation_count` asserts `donations_count` reflects only `paid` rows. `test_show_returns_not_found_when_reward_belongs_to_another_campaign` expects `404` + `Reward does not belong to this campaign`.
+
+- **`update()` membership + validate + persist** (`~48–64`; report ~59558–59690, e.g. `b20ab62b4956ac1a`, `7613bfef78f9df43`, `4b8f1e3e85c8788d` `RemoveEarlyReturn`, `eba3fa6d6fc1f241` `RemoveMethodCall` on `update`, `abf59f97e30971ca` `AlwaysReturnNull`).
+  - Cause: update happy path and 404 branch were uncovered.
+  - Fix: `test_update_persists_changes_for_matching_campaign` sends a partial body and asserts JSON + DB. `test_update_returns_not_found_when_reward_belongs_to_another_campaign` ensures the wrong-campaign pairing returns `404` and leaves the row unchanged.
+
+- **`destroy()` membership + 204 + delete** (`~67–75`; report ~59702–59816, e.g. `76ceca2628d45fe6`, `182e15e779d7a982`, `de83d3cd6b134d66` `RemoveEarlyReturn`, `d6b74aa99521e47e` `RemoveMethodCall` on `delete`, `4a877b855792fcf7` `AlwaysReturnNull`, `6087cdd9593c95e1` on `204`).
+  - Cause: delete and its 404 guard were never hit from HTTP.
+  - Fix: `test_destroy_returns_no_content_and_deletes_reward` expects `204` and `assertDatabaseMissing`. `test_destroy_returns_not_found_when_reward_belongs_to_another_campaign` expects `404` and asserts the reward row still exists.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
