@@ -4,13 +4,53 @@ namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Mockery;
+use STS\Http\Controllers\Api\v1\UserController;
 use STS\Models\Badge;
 use STS\Models\User;
+use STS\Services\AnonymizationService;
+use STS\Services\Logic\DeviceManager;
+use STS\Services\Logic\UsersManager;
+use STS\Services\UserDeletionService;
 use Tests\TestCase;
 
 class UserControllerApiTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    public function test_constructor_registers_expected_logged_and_logged_optional_middleware_scopes(): void
+    {
+        $controller = new UserController(
+            Mockery::mock(UsersManager::class),
+            Mockery::mock(DeviceManager::class),
+            Mockery::mock(UserDeletionService::class),
+            Mockery::mock(AnonymizationService::class)
+        );
+
+        $middlewares = $controller->getMiddleware();
+
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+        $loggedOptional = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged.optional';
+        });
+
+        $this->assertNotNull($logged);
+        $this->assertNotNull($loggedOptional);
+
+        $loggedOptions = is_array($logged) ? ($logged['options'] ?? []) : ($logged->options ?? []);
+        $loggedOptionalOptions = is_array($loggedOptional) ? ($loggedOptional['options'] ?? []) : ($loggedOptional->options ?? []);
+
+        $this->assertSame(['create', 'registerDonation', 'bankData', 'terms'], $loggedOptions['except'] ?? []);
+        $this->assertSame(['create', 'registerDonation', 'bankData', 'terms'], $loggedOptionalOptions['only'] ?? []);
+    }
 
     public function test_user_list_requires_authentication(): void
     {
