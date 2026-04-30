@@ -477,6 +477,7 @@ class UsersManagerTest extends TestCase
         $this->assertInstanceOf(User::class, $user);
         $this->assertFalse((bool) $user->active);
         $this->assertNotNull($user->activation_token);
+        $this->assertSame(40, strlen((string) $user->activation_token));
         Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
     }
 
@@ -488,6 +489,27 @@ class UsersManagerTest extends TestCase
 
         $user = $this->manager()->create([
             'name' => 'User ForbiddenWord Name',
+            'email' => $email,
+            'password' => 'password12',
+            'password_confirmation' => 'password12',
+            'emails_notifications' => true,
+        ]);
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertSame(1, (int) $user->fresh()->banned);
+        Event::assertDispatched(CreateEvent::class, fn ($e) => (int) $e->id === (int) $user->id);
+
+        config(['carpoolear.banned_words_names' => []]);
+    }
+
+    public function test_create_bans_user_when_banned_word_config_uses_mixed_case(): void
+    {
+        Event::fake([CreateEvent::class]);
+        config(['carpoolear.banned_words_names' => ['ForBidDenWord']]);
+        $email = 'banned-case-'.uniqid('', true).'@example.com';
+
+        $user = $this->manager()->create([
+            'name' => 'user forbiddenword name',
             'email' => $email,
             'password' => 'password12',
             'password_confirmation' => 'password12',
