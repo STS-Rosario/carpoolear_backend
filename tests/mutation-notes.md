@@ -1082,6 +1082,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: same gap as other `Friend\*` events—`broadcastOn()` was never executed under test, so `null` vs `[]` was invisible.
   - Fix: `Tests\Unit\Events\Friend\RejectEventTest::test_broadcast_on_returns_empty_channel_array` and `test_constructor_exposes_from_and_to_payload` assert the broadcasting channel list contract and the `from` / `to` payload.
 
+## `Friend\Accept` event (`app/Events/Friend/Accept.php`)
+
+- **`broadcastOn()` return type** (`broadcastOn()` ~32–35; report `tests/coverage/20260428_2310.txt` ~5688–5689 and UNCOVERED ~62473, mutant ID `bf5f0d99c7b10309` `AlwaysReturnNull` on `return []`).
+  - Cause: same as sibling `Friend\*` events—no test called `broadcastOn()`, so `AlwaysReturnNull` was not killed.
+  - Fix: `Tests\Unit\Events\Friend\AcceptEventTest::test_broadcast_on_returns_empty_channel_array` and `test_constructor_exposes_from_and_to_payload` assert `[]` (not `null`) and stable `from` / `to` assignment.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
