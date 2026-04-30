@@ -84,6 +84,7 @@ class TripTransformerTest extends TestCase
         $this->assertEquals(400, $payload['distance']);
         $this->assertSame(15000, $payload['seat_price_cents']);
         $this->assertFalse($payload['sellado_pending']);
+        $this->assertIsBool($payload['sellado_pending']);
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
@@ -99,6 +100,7 @@ class TripTransformerTest extends TestCase
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
         $this->assertTrue($payload['sellado_pending']);
+        $this->assertIsBool($payload['sellado_pending']);
         $this->assertSame('Falta pagar Sellado', $payload['sellado_pending_label']);
     }
 
@@ -112,6 +114,7 @@ class TripTransformerTest extends TestCase
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
         $this->assertFalse($payload['sellado_pending']);
+        $this->assertIsBool($payload['sellado_pending']);
         $this->assertNull($payload['sellado_pending_label']);
     }
 
@@ -192,5 +195,85 @@ class TripTransformerTest extends TestCase
         $this->assertSame('send', $payload['request']);
         $this->assertArrayNotHasKey('allPassengerRequest', $payload);
         $this->assertSame(1, $payload['passengerPending_count']);
+    }
+
+    public function test_transform_owner_branch_matches_numeric_string_trip_user_id(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $acceptedUser = User::factory()->create();
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        Passenger::query()->create([
+            'user_id' => $acceptedUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $trip = $trip->fresh(['user', 'passenger', 'passengerAccepted']);
+        $trip->mergeCasts(['user_id' => 'string']);
+        $trip->syncOriginal();
+        $trip->forceFill(['user_id' => (string) $owner->id]);
+        $trip->setRelation('user', $owner);
+
+        $payload = (new TripTransformer($owner))->transform($trip);
+
+        $this->assertArrayHasKey('allPassengerRequest', $payload);
+        $this->assertCount(1, $payload['passenger']);
+    }
+
+    public function test_transform_mutates_pending_passenger_rows_with_request_metadata(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $pendingUser = User::factory()->create(['name' => 'Pending Rider', 'email' => 'pending@example.test']);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        $pending = Passenger::query()->create([
+            'user_id' => $pendingUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_PENDING,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($owner))->transform($trip->fresh());
+
+        $this->assertGreaterThan(0, $payload['request_count']);
+        $pendingRow = collect($payload['allPassengerRequest'])->firstWhere('id', $pendingUser->id);
+        $this->assertNotNull($pendingRow);
+        $this->assertSame($pending->id, $pendingRow->request_id);
+        $this->assertSame($pendingUser->id, $pendingRow->id);
+        $this->assertSame('Pending Rider', $pendingRow->name);
+        $this->assertSame('pending@example.test', $pendingRow->email);
+    }
+
+    public function test_transform_admin_with_pending_request_gets_send_flag_without_owner_inner_branch(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        Passenger::query()->create([
+            'user_id' => $admin->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_PENDING,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($admin))->transform($trip->fresh());
+
+        $this->assertSame('send', $payload['request']);
+        $this->assertArrayHasKey('allPassengerRequest', $payload);
     }
 }
