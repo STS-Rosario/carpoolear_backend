@@ -2054,3 +2054,13 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_transform_omits_to_when_rate_at_exists_and_formats_dates`
     These assert full payload keys/values, `rate_at` + `reply_comment_created_at` formatting/null handling, and `to` inclusion only for pending ratings.
   - Mutant IDs: `ec4fe966f38dcc88`, `e16b37588faabc41`, `089759411ab99c2f`, `6cce00491a56c9cc`, `3963df43610199bd`, `973f066d09fc7aa9`, `d2a8cdaf38e3c572`, `9722101c3241732c`, `63b86ee963fb7ab8`, `5c846dac41cda869`, `1f6831546c45b4c1`.
+
+## MessageTransformer (`app/Transformers/MessageTransformer.php`)
+
+- **Message payload contract in `transform()`** (base keys lines 25–29 and author branch line 31 in `tests/coverage/20260428_2310.txt`).
+  - Cause: no dedicated unit coverage existed for this transformer, so base field removals and author-condition mutants survived.
+  - Fix: added `tests/Unit/Transformers/MessageTransformerTest.php` with:
+    - `test_transform_includes_base_message_fields`
+    - `test_transform_adds_no_of_read_for_message_author`
+    These assert required base keys/values, and that `no_of_read` appears only when transformer user matches message author.
+  - Mutant IDs: `a86f8bf4ab90ac60`, `1c641cc363f3ce37`, `d7c079f0f86a82b0`, `6a459b0d9dc4b8ff`, `4ac8c7e17d3c77f2`, `a1974f7b9327064f`, `86a6a7056fb024cf`, `3e55fb8bf11f8540`.
