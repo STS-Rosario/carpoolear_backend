@@ -1122,6 +1122,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Listeners\Notification\PendingRateListenerTest::test_handle_builds_pending_rate_notification_and_notifies_recipient_on_all_channels` mocks `NotificationServices`, dispatches a real `STS\Events\Rating\PendingRate` with factory `User` + `Trip` + a string `hash`, and asserts three `send` calls (database + mail + push) with `PendingRateNotification` carrying that trip and hash and the event recipient as `$users`.
   - Mutant IDs: `a878a11ca9e96d09` (`setAttribute` `trip`), `3cb34b6012258665` (`setAttribute` `hash`), `1eca2d1f700d872c` (`notify`).
 
+## `TripRequestRemainder` listener (`app/Listeners/Notification/TripRequestRemainder.php`)
+
+- **`handle()` driver guard + `RequestRemainderNotification` wiring** (`handle()` ~27–35; report `tests/coverage/20260428_2310.txt` ~5879–5882 and UNTESTED ~63120–63145).
+  - Cause: the listener was never run under test, so `IfNegated` on `if ($to)` or `RemoveMethodCall` on `setAttribute('trip', …)` / `notify($to)` could survive unnoticed.
+  - Fix: `Tests\Unit\Listeners\Notification\TripRequestRemainderListenerTest::test_handle_skips_notification_when_trip_has_no_driver` passes a plain trip payload with `user` missing/`null` and asserts `NotificationServices::send` is never called. `test_handle_notifies_trip_owner_on_all_channels` uses a factory `Trip` tied to a `User` and expects three channel sends with `RequestRemainderNotification` carrying that trip and the owner as recipient.
+  - Mutant IDs: `f0f6004bd73e4246` (`IfNegated` ~31), `b02208cda2b2ec89` (`setAttribute` `trip`), `b9abadcd0aeece93` (`notify`).
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
