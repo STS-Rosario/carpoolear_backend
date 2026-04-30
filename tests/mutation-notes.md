@@ -813,3 +813,20 @@ This file tracks mutants killed during the current hardening session, with the r
 - **`index()` / `searchUsers()` / `show()` / `badges()`** (~166–223; report ~40303–40447, e.g. `4de52af47ca5d8ee` / `7d858eba37fa268c` on `! ($id > 0)`, `5b1e135352c1f30c` / `321f8517c6d050b8` on `badges()` guards, plus `searchUsers` request `has('name')` / repository `if ($name)` coupling).
   - Cause: list/search/show/badges HTTP paths were not covered beyond ad-hoc flows, so comparison and collection-return mutants survived.
   - Fix: authenticated `GET api/users/list` with and without `value`, `GET api/users/search?name=…` (non-empty name so the repository query runs), `GET api/users/{id}` for another user, and `GET api/users/{id}/badges` with one visible and one hidden `Badge` attached—response must list only the visible badge title.
+
+## NotificationController (`app/Http/Controllers/Api/v1/NotificationController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~18; report ~42039, e.g. `779c872fc3be09d4` `RemoveMethodCall`).
+  - Cause: `GET|DELETE api/notifications*` was never called without a session/JWT fallback, so removing `middleware('logged')` left the suite green.
+  - Fix: `Tests\Feature\Http\NotificationApiTest` asserts `401` + `Unauthorized.` on `GET api/notifications`, `GET api/notifications/count`, and `DELETE api/notifications/1` when unauthenticated.
+
+- **`index()` JSON envelope** (~28; report ~42051–42063, e.g. `f69f1908891f8b37` `RemoveArrayItem`, `fbe364fa95eb8522` `AlwaysReturnNull` on `['data' => $notifications]`).
+  - Cause: no HTTP test asserted the list contract returned by the controller (only manager/repository unit coverage).
+  - Fix: authenticated `GET api/notifications` after a real `DummyNotification` is sent to the user; `assertJsonStructure` on `data[]` keys `id`, `readed`, `created_at`, `text`, `extras`, and `assertJsonPath` on the rendered `text` so stripping `data` or returning `null` fails.
+
+- **`count()`** (~37; report `RUN` block ~3726–3727 already showed killed mutants for `RemoveArrayItem` / `AlwaysReturnNull` on the same envelope pattern).
+  - Fix: same feature test asserts `GET api/notifications/count` returns `{"data":0}` with no rows, then `{"data":1}` after one unread notification is created—keeps the numeric envelope pinned without coupling to repository pagination.
+
+- **`delete()` success JSON** (~48; report ~42075–42086, e.g. `01dac38bbba23c29` `RemoveArrayItem`, `4d1decfbc4f72942` `AlwaysReturnNull` on `['data' => 'ok']`).
+  - Cause: `NotificationManager::delete()` returned the void result of `NotificationRepository::delete()`, so `$result` in the controller was always falsy even after a successful soft-delete; the action always threw `ExceptionWithErrors` and successful deletes were never observable under HTTP tests.
+  - Fix: `NotificationManager::delete()` now returns `true` after persisting the soft delete and `false` when the row is missing or not owned; `Tests\Feature\Http\NotificationApiTest::test_delete_known_notification_returns_ok_envelope` asserts `DELETE api/notifications/{id}` → `200` + exact `{"data":"ok"}`; unknown id → `422` with the existing error message. `Tests\Unit\Services\Logic\NotificationManagerTest` expectations for the not-found / wrong-user paths were updated from `null` to `false`.
