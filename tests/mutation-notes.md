@@ -1163,6 +1163,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Listeners\Request\ModuleLimitedRequestListenerTest` toggles `carpoolear.module_user_request_limited_enabled` / `module_user_request_limited_hours_range`, seeds two drivers, one traveler with an accepted seat on trip A plus a pending seat request on trip B, and `Event::fake([AutoCancel::class])`: module off ⇒ no `AutoCancel`; module on with matching `to_town` and trip dates inside the window ⇒ `AutoCancel` carries trip B, B’s owner, and the traveler, and the pending `Passenger` row becomes `STATE_CANCELED` with `CANCELED_SYSTEM`; different `to_town` or a trip date five hours away ⇒ no dispatch; and with `module_user_request_limited_hours_range` removed from config, a trip at +3h stays untouched, pinning the default `2`-hour fallback (covers the `===` / `&&` filter, hours-range default/cast, and `tripsRequested` window).
   - Mutant IDs: `aac707563ebfa2d0` (`FalseToTrue` on module flag ~34), `8870297e10179d77` (`IfNegated` ~36), `4991968c16c84348` / `272b2e1e3ed3d15c` / `d531bd4c640305e7` (`RemoveIntegerCast` / `DecrementInteger` / `IncrementInteger` on hours ~37), `dd16f55a9357d574` / `b47f592825c06a3f` (`IdenticalToNotIdentical` / `BooleanAndToBooleanOr` on destination ~45), `290d004bc5e24baa` / `2a9e55fabed5705e` (`IfNegated` / `ForeachEmptyIterable` ~48–49), `b730794301ff566b` (`IfNegated` ~53), `995ae0a7af6d0762` (`RemoveFunctionCall` on `event(new AutoCancel…)` ~55), `5e6b49ecc35a9024` (`RemoveMethodCall` on `$request->save()` ~57).
 
+## `FriendCancelNotification` (`app/Notifications/FriendCancelNotification.php`)
+
+- **Delivery channels and notification payload contract** (`via` list plus `toEmail()` / `toPush()`; report RUN ~6199 and UNTESTED/UNCOVERED ~65616–65676).
+  - Cause: previous tests covered message text and extras but not the full channel/payload envelope, so `RemoveArrayItem` mutants on channel entries (`DatabaseChannel`, `MailChannel`, `PushChannel`) and payload keys (`name_app`, `domain`, `image`) could survive.
+  - Fix: `Tests\Unit\Notifications\FriendCancelNotificationTest` now asserts exact `getVia()` channels, and verifies `toEmail()` includes config-driven `name_app` + `domain`, while `toPush()` always includes the fixed brand image URL; existing tests still cover sender/fallback message and `extras.id`.
+  - Mutant IDs: `dc22e279bbb1a657`, `57c15e556f707cf0`, `b72a4557ca331e10`, `0273b8fef0ebf5ca`, `f060ccf0e34e1c8d`, `782596ce139c1a28`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
