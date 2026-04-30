@@ -20,6 +20,7 @@ class DatesTest extends TestCase
     {
         $result = parse_date('2026-04-28');
 
+        $this->assertNotNull($result);
         $this->assertInstanceOf(Carbon::class, $result);
         $this->assertSame('2026-04-28', $result->format('Y-m-d'));
     }
@@ -36,12 +37,14 @@ class DatesTest extends TestCase
     {
         $date = Carbon::create(2026, 4, 28, 9, 30, 5);
 
+        $this->assertNotNull(date_to_string($date));
         $this->assertSame('2026-04-28', date_to_string($date));
         $this->assertSame('28/04/2026 09:30', date_to_string($date, 'd/m/Y H:i'));
     }
 
     public function test_parse_boolean_handles_common_true_and_false_values(): void
     {
+        $this->assertNotNull(parse_boolean('true'));
         $this->assertTrue(parse_boolean('true'));
         $this->assertTrue(parse_boolean('1'));
         $this->assertTrue(parse_boolean('yes'));
