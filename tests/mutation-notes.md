@@ -1671,6 +1671,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added tests for invalid update payload error propagation, owner check with equivalent `string`/`int` ids, and delete failure branch using a mocked repository that returns `false` from `delete()`.
   - Mutant IDs: `5c54c12ce1eae4e1`, `9e8b317e2ab7ec4f`, `a2323900408e799f`, `7eb659a30afcc28b`, `c4270b5c44a4b906`, `27d9a0e7423de0fe`.
 
+## `FriendsManager` (`app/Services/Logic/FriendsManager.php`)
+
+- **Pending cleanup before request/accept/reject/make transitions** (`request()`, `accept()`, `reject()`, `make()`; report `RUN` ~8371 survivors at lines 33–35, 52–53, 69, 99).
+  - Cause: existing tests asserted final success states but did not explicitly pin that stale pending edges in both directions are deleted before creating new request/accepted states.
+  - Fix: added tests that pre-seed opposite pending requests and assert pending rows are removed in the relevant direction(s) after `request`, `accept`, `reject`, and `make`, while preserving expected final friendship behavior.
+  - Mutant IDs: `b3173ede283e1643`, `2d0953e958cf6cd5`, `2a7d621ea25aaaaa`, `8bfdb610196767e0`, `9d19f8f7c8bc331b`, `9f25c27e6d26842c`, `c2940e4641b4e040`.
+
 ## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
 
 - **Constructor middleware** (`__construct()` ~24–25; report ~42192–42216, e.g. `8ed44639c8d9f9bc` / `e0d9f7290643afcb` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except(['login'])`, `75cd57e29108ce0c` on `logged.optional` `only('login')`).
