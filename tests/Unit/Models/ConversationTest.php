@@ -2,6 +2,9 @@
 
 namespace Tests\Unit\Models;
 
+use Database\Factories\ConversationFactory;
+use ReflectionClass;
+use ReflectionMethod;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\Trip;
@@ -84,5 +87,25 @@ class ConversationTest extends TestCase
     public function test_table_name_is_conversations(): void
     {
         $this->assertSame('conversations', (new Conversation)->getTable());
+    }
+
+    public function test_new_factory_resolves_conversation_factory_instance(): void
+    {
+        $ref = new ReflectionClass(Conversation::class);
+        $method = $ref->getMethod('newFactory');
+        $method->setAccessible(true);
+        $factory = $method->invoke(null);
+
+        $this->assertInstanceOf(ConversationFactory::class, $factory);
+    }
+
+    public function test_casts_method_declares_deleted_at_entry(): void
+    {
+        $method = new ReflectionMethod(Conversation::class, 'casts');
+        $method->setAccessible(true);
+        $casts = $method->invoke(new Conversation);
+
+        $this->assertArrayHasKey('deleted_at', $casts);
+        $this->assertSame('boolean', $casts['deleted_at']);
     }
 }
