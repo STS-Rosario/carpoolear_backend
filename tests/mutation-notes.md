@@ -1678,6 +1678,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added tests that pre-seed opposite pending requests and assert pending rows are removed in the relevant direction(s) after `request`, `accept`, `reject`, and `make`, while preserving expected final friendship behavior.
   - Mutant IDs: `b3173ede283e1643`, `2d0953e958cf6cd5`, `2a7d621ea25aaaaa`, `8bfdb610196767e0`, `9d19f8f7c8bc331b`, `9f25c27e6d26842c`, `c2940e4641b4e040`.
 
+## `PhoneVerificationManager` (`app/Services/Logic/PhoneVerificationManager.php`)
+
+- **Send-code guard and validation error contracts** (`sendVerificationCode()` validator/blocked/cooldown branches; report `RUN` ~8435 survivors around lines 51–53, 72–75, 79–84).
+  - Cause: tests covered successful send and some verification flows but did not explicitly pin send-path validation errors, blocked-pending behavior, or resend-cooldown rejection message behavior.
+  - Fix: added tests for missing phone validation (`errors.phone`), blocked pending verification (`verification` blocked message), and cooldown enforcement (stable “Please wait …” message in `errors.verification`).
+  - Mutant IDs: `dfcbe44aad70f46b`, `5994823fd95f55ee`, `e6a7310bcde4933d`, `f5c2c16da117868f`, `f33d106d256addf6`, `ee2443aff7ba4b8b`, `46cb92d4512b112a`, `680db3c20f00622d`, `7566d7280e4e5c06`, `ed07795a5c77a174`, `6d5eab04f1f202f0`.
+
+- **Resend blocked path contract** (`resendVerificationCode()` blocked branch; report around lines 239–241).
+  - Cause: resend coverage asserted “no pending verification” and successful resend, but not blocked-pending rejection semantics.
+  - Fix: added `test_resend_verification_code_fails_when_pending_verification_is_blocked` to assert null result and the expected blocked error message.
+  - Mutant IDs: `63cb1c49c702e5ac`, `0ce24ed886822c54`, `0c8b7e2940adf80a`.
+
 ## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
 
 - **Constructor middleware** (`__construct()` ~24–25; report ~42192–42216, e.g. `8ed44639c8d9f9bc` / `e0d9f7290643afcb` `RemoveArrayItem` / `RemoveMethodCall` on `middleware('logged')->except(['login'])`, `75cd57e29108ce0c` on `logged.optional` `only('login')`).
