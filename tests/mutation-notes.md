@@ -2018,3 +2018,15 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: the suite used `create()` with both fields but did not lock the exact fillable declaration; `RemoveArrayItem` mutants on `user_id` and `trip_id` persisted.
   - Fix: added `test_fillable_contains_user_id_and_trip_id` in `tests/Unit/Models/TripVisibilityTest.php` to assert the full fillable list.
   - Mutant IDs: `dc13c19680240135`, `9f208f3cc5b527e6`.
+
+## CampaignMilestone (`app/Models/CampaignMilestone.php`)
+
+- **Mass-assignment contract for milestone definition fields** (`$fillable` lines 13–17 in `tests/coverage/20260428_2310.txt`).
+  - Cause: behavior tests covered relation and progress math, but did not explicitly lock the full fillable declaration; `RemoveArrayItem` mutants on milestone fields survived.
+  - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/CampaignMilestoneTest.php`.
+  - Mutant IDs: `6fc7a582cc741cdc`, `9b713736720af9ed`, `e0c7f64beaf85f2e`, `032ca524eb978b0d`, `6216b922eb17e463`.
+
+- **Progress percentage integer contract** (`getProgressPercentageAttribute()` line 45 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing progress assertions covered exact integer-friendly ratios and cap behavior, but not a fractional ratio that requires integer truncation.
+  - Fix: added `test_progress_percentage_returns_truncated_integer_value` asserting `100/333` resolves to `30` (not a float), while still using paid-donation totals.
+  - Mutant IDs: `f6f4f1295d124329`, `e750ec2030ed6ea7`.
