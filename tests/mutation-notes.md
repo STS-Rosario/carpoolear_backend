@@ -2162,3 +2162,14 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_more_data_uses_ranking_limit_of_50_and_returns_expected_envelopes`
     These assert status/error contracts, enforce `LIMIT_TOP=25` and `LIMIT_RANKING=50` query bindings, and pin `usuarios_activos` mapped keys.
   - Mutant IDs: `0482c448462f2ca0`, `472a8f5bea6591ae`, `c6a84f0b58a5c881`, `6feb9a501c1c567c`, `8d278e990e599aef`, `17fa098c44f64446`, `6335327c8ec74547`, `bc4fc83116781d30`, `a9a4d17996a6e5d5`, `578355ca413649bd`, `272ac6ded23c9103`, `c9dd830e43bc153d`, `14502503e2561085`, `cf8b6d1d65b568a6`, `a093e341a72fae00`, `7b79b6d7134d5250`, `2b398079e05822ce`, `d9652c8cd57f13b4`, `742eb16c0427a15d`, `399a3bdea5957c38`, `773db4fb059904a0`, `cb3657aa2fabe07d`, `6abb8223ba9d0c52`, `9ca0b1e223b2cdeb`, `c1e3840cb1e50884`, `7d7ee0e510748427`, `98698ebaf245c437`, `91ef88ea444b7560`, `164c1fae4f43d319`, `422ac4184ade764a`, `2893731f1a287107`, `349bdb6c87db171d`, `04a157e0a474c890`, `c97937b9ccaf8f27`, `f07f266cce7a3be3`, `0de1fa013949ca5c`, `8c1429bf41255d4e`.
+
+## MercadoPagoWebhookController (`app/Http/Controllers/Api/v1/MercadoPagoWebhookController.php`)
+
+- **Webhook validation and early-return error contracts** (`handle()` and `handleOrderProcessed()` branches around lines 60-103 in `tests/coverage/20260428_2310.txt`).
+  - Cause: webhook tests covered several happy/error paths, but they did not explicitly lock some verified-request guard branches (missing `data_id` in body), invalid hashed external-reference parsing, and `order.processed` payload validation/non-manual acknowledgement paths.
+  - Fix: extended `tests/Feature/Http/MercadoPagoWebhookTest.php` with:
+    - `test_payment_created_with_unparseable_hashed_reference_returns_invalid_external_reference`
+    - `test_order_processed_with_missing_external_reference_returns_invalid_payload_error`
+    - `test_order_processed_with_non_manual_external_reference_is_acknowledged_without_side_effects`
+    These assert expected 400/success responses and error payloads for those branch contracts.
+  - Mutant IDs: `f9dd2a3f69450b38`, `e63646a5594a8a4d`, `fbfb1f706785b899`, `f63e5c8832b67213`, `7ce1f3c5a1485d28`, `8a234d42e60c8926`, `e72db76d8013a4d1`, `d158522703fbebdd`, `c2c465d9100008fc`, `fa47f0a08a26a0ea`, `f86a23389af3be5d`, `9a7597acb5ec187c`, `1ca70733c080fe1d`, `0f11134727930645`, `e2080fb34fb05ffa`, `fa358c360f93c4d3`, `aeb789b482b9c8fa`, `1297fff50652b501`, `c8ad9bf93c012e9f`, `755e8b4e20fdbbfb`, `3b9d4825589563ba`, `afe23dc937cef94e`, `a7677c617dccc085`.
