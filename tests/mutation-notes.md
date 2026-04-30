@@ -728,6 +728,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: `Tests\Feature\Http\SubscriptionsApiTest` mocked `SubscriptionsManager`, so the controller still ran but responses were not tied to real persistence; weak assertions (`status == 200` only) let `RemoveArrayItem`, `AlwaysReturnNull`, and negated-condition mutants survive.
   - Fix: rewrote that feature file to use real auth + real manager/DB: `assertUnauthorized` for guests (kills dropped `middleware('logged')`), `assertExactJson` / `assertJsonPath` / `assertJsonStructure` on success payloads, `assertUnprocessable` on validation failure, and DB assertions for create/delete.
 
+## `SubscriptionsManager` (`app/Services/Logic/SubscriptionsManager.php`)
+
+- **Validation and update-error propagation contracts** (`validator()` rules and `update()` validation-fail path; report `RUN` ~7981, cluster around lines 23/29/31/32 and 116).
+  - Cause: tests did not pin non-string `from_address` / `to_address` rejection or the update branch that forwards validator errors when payload is invalid, so rule-removal and `setErrors()`-removal mutants could survive.
+  - Fix: added `test_validator_rejects_non_string_addresses` and `test_update_returns_null_and_sets_validation_errors_when_payload_is_invalid` to assert stable validation behavior and error propagation.
+  - Mutant IDs: `7079be4265b9da71`, `88811053b8cd90e8`, `7d261d60c73cc95a`, `746c9b7a522a2141`, `0d3468a50523002f`.
+
+- **Duplicate/ownership/delete branch behavior** (`create()` duplicate matching including empty optional fields, `show()` owner check, and `delete()` failure branches; report cluster around lines 59–94, 135, 151, 156).
+  - Cause: previous tests mainly covered full-geometry duplicates and successful delete, but did not constrain duplicate detection when optional date/coords are empty, scalar-equivalent owner ids, or repository-delete-failure and non-owner delete paths.
+  - Fix: added tests for duplicate rejection with empty optional geometry/date, owner acceptance with equivalent scalar ids (`string`/`int`), `model_not_found` on non-owner delete, and `cant_delete_model` when repository `delete` returns false.
+  - Mutant IDs: `adfe249adfab4a15`, `d38088d2611a5bba`, `8c85ef77b044b41f`, `cdcb164e95818106`, `6b9b37a01feef1df`, `dcf6376cdd1086de`, `ab290f84bfd422fe`, `8b86db852cdfcf98`, `b357d2d567671f6e`, `dfe39af01c8fc3b0`, `912d4c066b4d3438`, `f07c24817044966d`, `d45b4dfdecbbc811`, `86253f3d47dba1c8`, `5dac330ffb095910`, `1c607efe448a33ff`, `26e1a4e11aab3650`, `71a7ddce4abc6863`, `62d54fe498c12de8`, `f585e6912cde6e63`, `86294367b1d5921e`, `3932860febfe07e3`, `f44c648d53d644c0`, `5aee697ace1e889a`, `929e73e5e9ae4e1a`, `daea7864f1de4247`, `df112dd7ff33f72c`, `eae229a29c598138`, `b7a057dd14f2f1ad`, `e5384086ab326d36`, `0ca492edc392fd1b`, `91130cb815625280`.
+
 ## ManualIdentityValidationController (`app/Http/Controllers/Api/v1/ManualIdentityValidationController.php`)
 
 - `dd32c96b7620c345` (`Line 19: RemoveMethodCall`, report ~44383)
