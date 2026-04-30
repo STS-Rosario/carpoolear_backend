@@ -2006,3 +2006,15 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_hidden_contains_created_at_and_updated_at`
     These explicitly pin both model contracts.
   - Mutant IDs: `376096f277675b26`, `a70b30eca57d2673`, `6fb088ec974b9202`, `1b4f71927431e9f9`, `d975ca07f581acdc`.
+
+## TripVisibility (`app/Models/TripVisibility.php`)
+
+- **Composite-key model configuration contract** (`$incrementing` line 9 and `$timestamps` line 11 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing tests exercised relationships and delete behavior, but did not explicitly pin model-level configuration flags; boolean flip mutants survived.
+  - Fix: added `test_model_uses_non_incrementing_and_no_timestamps` in `tests/Unit/Models/TripVisibilityTest.php` to assert both flags remain disabled.
+  - Mutant IDs: `caaad87c256d7bcc`, `d94c9e952ed57e54`.
+
+- **Mass-assignment contract for composite-key fields** (`$fillable` line 15 in `tests/coverage/20260428_2310.txt`).
+  - Cause: the suite used `create()` with both fields but did not lock the exact fillable declaration; `RemoveArrayItem` mutants on `user_id` and `trip_id` persisted.
+  - Fix: added `test_fillable_contains_user_id_and_trip_id` in `tests/Unit/Models/TripVisibilityTest.php` to assert the full fillable list.
+  - Mutant IDs: `dc13c19680240135`, `9f208f3cc5b527e6`.
