@@ -111,6 +111,22 @@ class ReferencesManagerTest extends TestCase
         $this->assertSame('reference_same_user', $manager->getErrors()['error']);
     }
 
+    public function test_create_treats_equivalent_scalar_ids_as_same_user_for_self_reference_guard(): void
+    {
+        $persisted = User::factory()->create();
+        $author = new User;
+        $author->id = (int) $persisted->id;
+
+        $manager = $this->manager();
+        $result = $manager->create($author, [
+            'comment' => 'Should still be self reference',
+            'user_id_to' => (string) $persisted->id,
+        ]);
+
+        $this->assertNull($result);
+        $this->assertSame('reference_same_user', $manager->getErrors()['error']);
+    }
+
     public function test_create_fails_when_reference_already_exists_between_users(): void
     {
         $from = User::factory()->create();
