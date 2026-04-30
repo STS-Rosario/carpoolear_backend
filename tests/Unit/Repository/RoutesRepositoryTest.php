@@ -79,6 +79,24 @@ class RoutesRepositoryTest extends TestCase
         $this->assertFalse($ids->contains($outsideLat->id));
     }
 
+    public function test_get_potentials_nodes_includes_node_on_south_lat_margin_boundary(): void
+    {
+        // Mutation intent: expanded lat window uses `$latDiff = 0.5` (`RoutesRepository.php` ~33); shrinking the literal excludes nodes exactly at `minLat - 0.5`.
+        // Kills: `DecrementFloat` / `IncrementFloat` clusters on `$latDiff` together with bbox math (~15–18).
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+        $n2 = $this->makeNode(['lat' => -32.0, 'lng' => -58.0]);
+        $minLat = min((float) $n1->lat, (float) $n2->lat);
+        $onSouthMargin = $this->makeNode([
+            'lat' => $minLat - 0.5,
+            'lng' => -58.0,
+            'name' => 'SouthMargin'.substr(uniqid('', true), 0, 6),
+        ]);
+
+        $rows = $this->repo()->getPotentialsNodes($n1, $n2);
+
+        $this->assertTrue($rows->pluck('id')->contains($onSouthMargin->id));
+    }
+
     public function test_autocomplete_returns_empty_when_no_rows_match(): void
     {
         // Mutation intent: preserve whereRaw + optional country filter when CONCAT yields zero hits (~41–55).
