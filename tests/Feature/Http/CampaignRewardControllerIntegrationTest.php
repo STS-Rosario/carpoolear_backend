@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Log;
 use MercadoPago\Resources\Preference;
 use Mockery;
 use STS\Models\Campaign;
@@ -67,7 +68,7 @@ class CampaignRewardControllerIntegrationTest extends TestCase
 
         $this->postJson($this->purchaseUrl($campaignA, $rewardOnB))
             ->assertNotFound()
-            ->assertJsonPath('error', 'Reward does not belong to this campaign');
+            ->assertExactJson(['error' => 'Reward does not belong to this campaign']);
 
         $this->assertSame(0, CampaignDonation::count());
     }
@@ -81,7 +82,7 @@ class CampaignRewardControllerIntegrationTest extends TestCase
 
         $this->postJson($this->purchaseUrl($campaign, $reward))
             ->assertStatus(400)
-            ->assertJsonPath('error', 'This reward is not available');
+            ->assertExactJson(['error' => 'This reward is not available']);
 
         $this->assertSame(0, CampaignDonation::count());
     }
@@ -106,13 +107,15 @@ class CampaignRewardControllerIntegrationTest extends TestCase
 
         $this->postJson($this->purchaseUrl($campaign, $reward))
             ->assertStatus(400)
-            ->assertJsonPath('error', 'This reward is sold out');
+            ->assertExactJson(['error' => 'This reward is sold out']);
 
         $this->assertSame(1, CampaignDonation::count());
     }
 
     public function test_purchase_creates_pending_donation_returns_urls_and_stores_preference_id(): void
     {
+        Log::spy();
+
         $campaign = $this->makeCampaign();
         $reward = $this->makeReward($campaign);
 
@@ -139,9 +142,19 @@ class CampaignRewardControllerIntegrationTest extends TestCase
             'comment' => 'Thanks',
         ])
             ->assertOk()
-            ->assertJsonPath('message', 'Payment preference created')
-            ->assertJsonPath('data.url', 'https://checkout.example/live')
-            ->assertJsonPath('data.sandbox_url', 'https://checkout.example/sandbox');
+            ->assertExactJson([
+                'message' => 'Payment preference created',
+                'data' => [
+                    'url' => 'https://checkout.example/live',
+                    'sandbox_url' => 'https://checkout.example/sandbox',
+                ],
+            ]);
+
+        Log::shouldHaveReceived('info')->once()->withArgs(function (string $message, array $context): bool {
+            return $message === 'Preference created'
+                && isset($context['preference'])
+                && $context['preference'] !== null;
+        });
 
         $this->assertDatabaseHas('campaign_donations', [
             'campaign_id' => $campaign->id,
@@ -195,6 +208,8 @@ class CampaignRewardControllerIntegrationTest extends TestCase
 
     public function test_purchase_returns_server_error_when_payment_preference_fails(): void
     {
+        Log::spy();
+
         $campaign = $this->makeCampaign();
         $reward = $this->makeReward($campaign);
 
@@ -206,7 +221,14 @@ class CampaignRewardControllerIntegrationTest extends TestCase
 
         $this->postJson($this->purchaseUrl($campaign, $reward))
             ->assertStatus(500)
-            ->assertJsonPath('error', 'Could not create payment preference');
+            ->assertExactJson(['error' => 'Could not create payment preference']);
+
+        Log::shouldHaveReceived('error')->once()->withArgs(function (string $message, array $context) use ($campaign, $reward): bool {
+            return str_contains($message, 'Error creating payment preference for campaign reward')
+                && (int) $context['campaign_id'] === (int) $campaign->id
+                && (int) $context['reward_id'] === (int) $reward->id
+                && str_contains((string) $context['error'], 'Mercado Pago unavailable');
+        });
 
         $this->assertDatabaseHas('campaign_donations', [
             'campaign_id' => $campaign->id,
