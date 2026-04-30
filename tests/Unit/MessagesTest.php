@@ -107,6 +107,8 @@ class MessagesTest extends TestCase
         $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, (int) $conversation->type);
         $this->assertSame($trip->id, (int) $conversation->trip_id);
 
+        $this->conversationRepository->addUser($conversation, $user->id);
+
         $found = $this->conversationManager->getConversationByTrip($user, $trip->id);
         $this->assertNotNull($found);
         $this->assertTrue($found->is($conversation));
@@ -129,6 +131,57 @@ class MessagesTest extends TestCase
         $this->assertSame('test 2', $messages[1]->text);
         $this->assertSame('test 1', $messages[2]->text);
         Event::assertDispatched(MessageSend::class, 3);
+    }
+
+    public function test_create_trip_conversation_twice_creates_two_rows_for_same_trip(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+
+        $first = $this->conversationManager->createTripConversation($trip->id);
+        $second = $this->conversationManager->createTripConversation($trip->id);
+
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, (int) $first->type);
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, (int) $second->type);
+        $this->assertSame((int) $trip->id, (int) $first->trip_id);
+        $this->assertSame((int) $trip->id, (int) $second->trip_id);
+    }
+
+    public function test_match_success()
+    {
+        $c = \STS\Models\Conversation::factory()->create();
+
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+
+        $this->conversationRepository->addUser($c, $u1->id);
+        $this->conversationRepository->addUser($c, $u2->id);
+
+        $c2 = $this->conversationRepository->matchUser($u1->id, $u2->id);
+
+        $this->assertTrue($c->id == $c2->id);
+    }
+
+    public function test_match_fail()
+    {
+        $c = \STS\Models\Conversation::factory()->create();
+        $c2 = \STS\Models\Conversation::factory()->create();
+
+        $u1 = \STS\Models\User::factory()->create();
+        $u2 = \STS\Models\User::factory()->create();
+        $u3 = \STS\Models\User::factory()->create();
+
+        $this->conversationRepository->addUser($c, $u1->id);
+        $this->conversationRepository->addUser($c, $u2->id);
+
+        $this->conversationRepository->addUser($c2, $u2->id);
+        $this->conversationRepository->addUser($c2, $u3->id);
+
+        $cc1 = $this->conversationRepository->matchUser($u1->id, $u2->id);
+        $cc2 = $this->conversationRepository->matchUser($u2->id, $u3->id);
+
+        $this->assertFalse($cc1->id == $cc2->id);
     }
 
     public function test_conversation_unread_state_and_unread_fetch_flow(): void

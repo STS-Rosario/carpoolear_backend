@@ -2,10 +2,10 @@
 
 namespace STS\Models;
 
-use STS\Models\User as UserModel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use STS\Models\User as UserModel;
 
 class Conversation extends Model
 {
@@ -31,9 +31,10 @@ class Conversation extends Model
     protected function casts(): array
     {
         return [
-            'deleted_at' => 'boolean'
+            'deleted_at' => 'boolean',
         ];
-    } 
+    }
+
     protected $hidden = [];
 
     public function users()
@@ -43,7 +44,8 @@ class Conversation extends Model
 
     public function read(UserModel $user)
     {
-        $userRelation = $this->users()->where('user_id', $user->id)->first();
+        $userRelation = $this->users()->whereKey($user->id)->first();
+
         return $userRelation ? $userRelation->pivot->read : false;
     }
 
