@@ -3,13 +3,23 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Mockery;
+use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Models\SocialAccount;
 use STS\Models\User;
+use STS\Services\Logic\DeviceManager;
+use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class SocialApiTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
 
     /**
      * @param  array<string, mixed>  $payload
@@ -39,6 +49,31 @@ class SocialApiTest extends TestCase
             ->assertExactJson(['error' => 'provider not supported']);
     }
 
+    public function test_constructor_registers_expected_logged_middleware_scopes(): void
+    {
+        $controller = new SocialController(
+            Mockery::mock(UsersManager::class),
+            Mockery::mock(DeviceManager::class)
+        );
+
+        $middlewares = $controller->getMiddleware();
+        $logged = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged';
+        });
+        $loggedOptional = collect($middlewares)->first(function ($entry) {
+            return (is_array($entry) ? ($entry['middleware'] ?? null) : ($entry->middleware ?? null)) === 'logged.optional';
+        });
+
+        $this->assertNotNull($logged);
+        $this->assertNotNull($loggedOptional);
+
+        $loggedOptions = is_array($logged) ? ($logged['options'] ?? []) : ($logged->options ?? []);
+        $optionalOptions = is_array($loggedOptional) ? ($loggedOptional['options'] ?? []) : ($loggedOptional->options ?? []);
+
+        $this->assertSame(['login'], $loggedOptions['except'] ?? []);
+        $this->assertSame(['login'], $optionalOptions['only'] ?? []);
+    }
+
     public function test_social_login_returns_jwt_for_existing_linked_account(): void
     {
         $user = User::factory()->create([
@@ -62,6 +97,44 @@ class SocialApiTest extends TestCase
         $this->postJson('api/social/login/test', ['access_token' => $accessToken])
             ->assertOk()
             ->assertJsonStructure(['token']);
+    }
+
+    public function test_social_endpoints_accept_mixed_case_provider_name(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'description' => 'Before mixed case',
+        ]);
+        $pid = 'mixed-pid-'.substr(uniqid('', true), 0, 12);
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'test',
+        ]);
+
+        $accessToken = $this->encodeTestAccessToken([
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'description' => 'After mixed case',
+            'friend_ids' => [],
+        ]);
+        $provider = 'TeSt';
+
+        $this->postJson('api/social/login/'.$provider, ['access_token' => $accessToken])
+            ->assertOk()
+            ->assertJsonStructure(['token']);
+
+        $this->actingAs($user, 'api');
+        $update = $this->putJson('api/social/update/'.$provider, ['access_token' => $accessToken]);
+        $update->assertOk();
+        $this->assertSame('OK', $update->json());
+        $this->assertSame('After mixed case', $user->fresh()->description);
+
+        $friends = $this->postJson('api/social/friends/'.$provider, ['access_token' => $accessToken]);
+        $friends->assertOk();
+        $this->assertSame('OK', $friends->json());
     }
 
     public function test_social_login_rejects_banned_linked_account(): void
