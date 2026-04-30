@@ -1996,3 +1996,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests already pinned action constants and datetime casts, but they did not explicitly lock the full fillable list, so `RemoveArrayItem` mutants on request payload fields survived.
   - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/DeleteAccountRequestTest.php` to assert the complete fillable contract.
   - Mutant IDs: `4e426c4b533f019c`, `99d2660358954bb2`, `741510b11a90a082`, `80be6b480e417b75`.
+
+## SocialAccount (`app/Models/SocialAccount.php`)
+
+- **Mass-assignment and hidden-fields contract for social identities** (`$fillable` line 10 and `$hidden` line 13 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing tests asserted relation and serialization output but did not directly lock the declared fillable/hidden arrays, so `RemoveArrayItem` mutants on those contracts survived.
+  - Fix: added to `tests/Unit/Models/SocialAccountTest.php`:
+    - `test_fillable_contains_expected_mass_assignable_attributes`
+    - `test_hidden_contains_created_at_and_updated_at`
+    These explicitly pin both model contracts.
+  - Mutant IDs: `376096f277675b26`, `a70b30eca57d2673`, `6fb088ec974b9202`, `1b4f71927431e9f9`, `d975ca07f581acdc`.
