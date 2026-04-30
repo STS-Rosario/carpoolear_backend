@@ -1395,6 +1395,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts push `type` (`conversation`) and static `image` in both fallback and populated cases, keeping explicit `/conversations/` fallback behavior checks.
   - Mutant IDs: `a174e60ca2ab6723`, `8b08f5a36c8f657e`, `696fd8f6c68c78c4`, `ba9683b63103a225`.
 
+## `NewUserNotification` (`app/Notifications/NewUserNotification.php`)
+
+- **Mail-only channel and `force_email` contract** (`via` + `force_email`; report RUN ~6960 and UNTESTED/UNCOVERED ~67465–67501).
+  - Cause: previous tests asserted `force_email` and URL behavior, but did not pin the explicit mail-only channel list, so channel-array removal mutants could survive.
+  - Fix: `Tests\Unit\Notifications\NewUserNotificationTest` now asserts `getVia()` is exactly `[MailChannel::class]` and keeps `force_email === true` as a public contract.
+  - Mutant IDs: `8c5555ea1fac3f38`, `273355d12ea614a6`.
+
+- **Email metadata payload contract** (`toEmail()` `name_app`/`domain` fields; report UNTESTED ~67489, ~67501).
+  - Cause: activation URL/title were asserted, but metadata fields were not pinned.
+  - Fix: same test class now sets config and asserts `name_app` and `domain` in addition to activation URL behavior.
+  - Mutant IDs: `9b540537bce228fa`, `84a60d616e6af51f`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
