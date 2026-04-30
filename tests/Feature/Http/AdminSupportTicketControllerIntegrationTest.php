@@ -2,14 +2,17 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
+use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
 class AdminSupportTicketControllerIntegrationTest extends TestCase
@@ -50,9 +53,10 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
-        $rows = collect($this->getJson('api/admin/support/tickets')
-            ->assertOk()
-            ->json('data'));
+        $indexResponse = $this->getJson('api/admin/support/tickets')->assertOk();
+        $this->assertSame(['data'], array_keys($indexResponse->json()));
+
+        $rows = collect($indexResponse->json('data'));
 
         $this->assertGreaterThanOrEqual(2, $rows->count());
         $newerIdx = $rows->search(fn (array $r): bool => (int) $r['id'] === $newer->id);
@@ -99,9 +103,10 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
-        $payload = $this->getJson('api/admin/support/tickets/'.$ticket->id)
-            ->assertOk()
-            ->json('data');
+        $showResponse = $this->getJson('api/admin/support/tickets/'.$ticket->id)->assertOk();
+        $this->assertSame(['data'], array_keys($showResponse->json()));
+
+        $payload = $showResponse->json('data');
 
         $this->assertSame($owner->id, $payload['user']['id']);
         $this->assertSame($owner->email, $payload['user']['email']);
@@ -142,10 +147,11 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
         $file = UploadedFile::fake()->image('note.png', 30, 30);
 
-        $this->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
+        $replyResponse = $this->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
             'message_markdown' => 'Please see screenshot.',
             'attachments' => [$file],
         ])->assertOk();
+        $this->assertSame(['data'], array_keys($replyResponse->json()));
 
         $reply = SupportTicketReply::query()
             ->where('ticket_id', $ticket->id)
@@ -160,6 +166,194 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'user_id' => $admin->id,
             'original_name' => 'note.png',
         ]);
+    }
+
+    public function test_reply_with_text_only_returns_fresh_ticket_under_data_and_advances_status(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'We are looking into this.',
+        ])->assertOk();
+
+        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertSame($ticket->id, $response->json('data.id'));
+        $this->assertSame('En revision', $response->json('data.status'));
+
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'We are looking into this.',
+        ]);
+    }
+
+    public function test_reply_returns_success_when_notification_delivery_fails(): void
+    {
+        $this->mock(NotificationServices::class, function ($mock) {
+            $mock->shouldReceive('send')->andThrow(new \RuntimeException('delivery failed'));
+        });
+
+        $this->mock(ExceptionHandler::class, function ($mock) {
+            $mock->shouldIgnoreMissing();
+            $mock->shouldReceive('report')->once()->with(Mockery::type(\Throwable::class));
+        });
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Answer posted regardless of push.',
+        ])->assertOk();
+
+        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertSame('En revision', $response->json('data.status'));
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'message_markdown' => 'Answer posted regardless of push.',
+        ]);
+    }
+
+    public function test_reply_accepts_explicit_empty_attachments_array(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'No files attached.',
+            'attachments' => [],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'message_markdown' => 'No files attached.',
+        ]);
+    }
+
+    public function test_reopen_clears_closure_fields_and_sets_ticket_under_review(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Cerrado',
+            'closed_at' => now()->subHour(),
+            'closed_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/reopen')
+            ->assertOk();
+
+        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertSame('En revision', $response->json('data.status'));
+
+        $fresh = SupportTicket::query()->findOrFail($ticket->id);
+        $this->assertNull($fresh->closed_at);
+        $this->assertNull($fresh->closed_by);
+        $this->assertSame($admin->id, (int) $fresh->updated_by);
+    }
+
+    public function test_update_status_non_cerrado_does_not_set_closed_metadata(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/status', [
+            'status' => 'Esperando respuesta',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'Esperando respuesta');
+
+        $fresh = $ticket->fresh();
+        $this->assertNull($fresh->closed_at);
+        $this->assertNull($fresh->closed_by);
+    }
+
+    public function test_update_internal_note_omitted_key_clears_like_explicit_null(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['internal_note_markdown' => 'keep until cleared']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/internal-note', [])
+            ->assertOk()
+            ->assertJsonPath('data.internal_note_markdown', null);
+
+        $this->assertNull($ticket->fresh()->internal_note_markdown);
+    }
+
+    public function test_resolve_with_message_creates_admin_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/resolve', [
+            'message_markdown' => 'Fixed on our side.',
+        ])
+            ->assertOk();
+
+        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertSame('Resuelto', $response->json('data.status'));
+
+        $this->assertSame($before + 1, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Fixed on our side.',
+        ]);
+    }
+
+    public function test_close_without_message_sets_cerrado_and_closed_metadata_without_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/close', [])
+            ->assertOk();
+
+        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertSame('Cerrado', $response->json('data.status'));
+
+        $this->assertSame($before, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+
+        $fresh = $ticket->fresh();
+        $this->assertNotNull($fresh->closed_at);
+        $this->assertSame($admin->id, (int) $fresh->closed_by);
     }
 
     public function test_update_status_sets_closed_metadata_only_for_cerrado(): void
