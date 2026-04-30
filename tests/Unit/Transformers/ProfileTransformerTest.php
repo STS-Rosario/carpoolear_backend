@@ -66,4 +66,43 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame(0, $payload['negative_ratings']);
         $this->assertSame('2025-06-01 12:00:00', $payload['last_connection']);
     }
+
+    public function test_transform_identity_validated_is_strict_boolean(): void
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['identity_validated' => true])->saveQuietly();
+
+        $payload = (new ProfileTransformer(null))->transform($user->fresh());
+
+        $this->assertTrue($payload['identity_validated']);
+        $this->assertIsBool($payload['identity_validated']);
+    }
+
+    public function test_transform_includes_private_fields_when_viewing_own_profile(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'self-profile@example.test',
+            'mobile_phone' => '+5491112345678',
+        ]);
+
+        $payload = (new ProfileTransformer($user))->transform($user->fresh());
+
+        $this->assertSame('self-profile@example.test', $payload['email']);
+        $this->assertSame('+5491112345678', $payload['mobile_phone']);
+        $this->assertArrayHasKey('validate_by_date', $payload);
+    }
+
+    public function test_transform_includes_sensitive_fields_for_admin_viewing_other_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create([
+            'email' => 'subject@example.test',
+            'nro_doc' => '30123456',
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertSame('subject@example.test', $payload['email']);
+        $this->assertSame('30123456', $payload['nro_doc']);
+    }
 }
