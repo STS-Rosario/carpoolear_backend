@@ -223,6 +223,25 @@ class MercadoPagoWebhookTest extends TestCase
             ->assertJson(['error' => 'Unknown payment type']);
     }
 
+    public function test_payment_created_with_unparseable_hashed_reference_returns_invalid_external_reference(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $paymentId = 66110023;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $paymentId, 'req-invalid-hash-ref', 'wh-secret-test');
+
+        $this->stubMercadoPagoPayments([
+            $paymentId => $this->mercadoPagoPaymentPayload('bad-hash-value:'.base64_encode('Sellado de Viaje ID: 123'), $paymentId),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
+            'action' => 'payment.created',
+            'data_id' => (string) $paymentId,
+        ], $headers)
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid external reference']);
+    }
+
     public function test_order_processed_for_manual_validation_qr_prefix_marks_paid_when_accredited(): void
     {
         config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
@@ -284,6 +303,43 @@ class MercadoPagoWebhookTest extends TestCase
             ->assertExactJson(['status' => 'success']);
 
         $this->assertFalse($row->fresh()->paid);
+    }
+
+    public function test_order_processed_with_missing_external_reference_returns_invalid_payload_error(): void
+    {
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        $orderId = 'ord-missing-external-reference';
+        $headers = $this->orderProcessedSignatureHeaders($orderId, 'req-order-missing-external', 'wh-secret-qr-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
+            'action' => 'order.processed',
+            'data' => [
+                'status' => 'processed',
+                'status_detail' => 'accredited',
+            ],
+        ], $headers)
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid payload']);
+    }
+
+    public function test_order_processed_with_non_manual_external_reference_is_acknowledged_without_side_effects(): void
+    {
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        $orderId = 'ord-non-manual-ref';
+        $headers = $this->orderProcessedSignatureHeaders($orderId, 'req-order-non-manual', 'wh-secret-qr-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
+            'action' => 'order.processed',
+            'data' => [
+                'external_reference' => 'trip_sellado_non_manual',
+                'status' => 'processed',
+                'status_detail' => 'accredited',
+            ],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
     }
 
     public function test_payment_created_for_trip_sellado_marks_payment_and_trip_ready_when_approved(): void
