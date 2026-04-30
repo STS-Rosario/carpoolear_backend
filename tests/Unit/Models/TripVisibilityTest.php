@@ -69,6 +69,32 @@ class TripVisibilityTest extends TestCase
         ]);
     }
 
+    public function test_delete_scopes_to_both_user_id_and_trip_id_columns(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $tripA = Trip::factory()->create(['user_id' => $owner->id]);
+        $tripB = Trip::factory()->create(['user_id' => $owner->id]);
+
+        TripVisibility::query()->create(['user_id' => $viewer->id, 'trip_id' => $tripA->id]);
+        TripVisibility::query()->create(['user_id' => $viewer->id, 'trip_id' => $tripB->id]);
+
+        $rowA = TripVisibility::query()
+            ->where('user_id', $viewer->id)
+            ->where('trip_id', $tripA->id)
+            ->firstOrFail();
+        $rowA->delete();
+
+        $this->assertDatabaseMissing('user_visibility_trip', [
+            'user_id' => $viewer->id,
+            'trip_id' => $tripA->id,
+        ]);
+        $this->assertDatabaseHas('user_visibility_trip', [
+            'user_id' => $viewer->id,
+            'trip_id' => $tripB->id,
+        ]);
+    }
+
     public function test_same_user_can_have_rows_for_different_trips(): void
     {
         $owner = User::factory()->create();
