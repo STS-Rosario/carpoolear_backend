@@ -9,6 +9,17 @@ use Tests\TestCase;
 
 class CampaignMilestoneTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'campaign_id',
+            'title',
+            'description',
+            'image_path',
+            'amount_cents',
+        ], (new CampaignMilestone)->getFillable());
+    }
+
     private function makeCampaign(): Campaign
     {
         return Campaign::query()->create([
@@ -113,5 +124,27 @@ class CampaignMilestoneTest extends TestCase
         ]);
 
         $this->assertSame(0, $milestone->fresh()->progress_percentage);
+    }
+
+    public function test_progress_percentage_returns_truncated_integer_value(): void
+    {
+        $campaign = $this->makeCampaign();
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'payment_id' => 'p-frac',
+            'amount_cents' => 100,
+            'user_id' => null,
+            'status' => 'paid',
+        ]);
+
+        $milestone = CampaignMilestone::query()->create([
+            'campaign_id' => $campaign->id,
+            'title' => 'Fractional progress',
+            'description' => 'D',
+            'image_path' => null,
+            'amount_cents' => 333,
+        ]);
+
+        $this->assertSame(30, $milestone->fresh()->progress_percentage);
     }
 }
