@@ -3,8 +3,8 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
-use Mockery;
 use Illuminate\Support\Facades\DB;
+use Mockery;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\User;
@@ -376,5 +376,29 @@ class MessageRepositoryTest extends TestCase
         $rows = $this->repo()->getMessagesUnread($reader, null);
 
         $this->assertSame(1, $rows->count());
+    }
+
+    public function test_mark_messages_only_updates_unread_rows_for_authenticated_user(): void
+    {
+        // Mutation intent: inner `where('user_id', $user->id)` (~88) inside `markMessages` `whereHas` — RemoveMethodCall would widen updates to other readers.
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+
+        $message = $this->makeMessage($conversation, $sender, 'shared');
+        $message->users()->attach($userA->id, ['read' => false]);
+        $message->users()->attach($userB->id, ['read' => false]);
+
+        $this->repo()->markMessages($userA, $conversation->id);
+
+        $this->assertTrue((bool) DB::table('user_message_read')
+            ->where('message_id', $message->id)
+            ->where('user_id', $userA->id)
+            ->value('read'));
+        $this->assertFalse((bool) DB::table('user_message_read')
+            ->where('message_id', $message->id)
+            ->where('user_id', $userB->id)
+            ->value('read'));
     }
 }
