@@ -36,6 +36,16 @@ class DeviceManagerTest extends TestCase
         $this->assertTrue($v->errors()->has('app_version'));
     }
 
+    public function test_validator_rejects_invalid_notifications_value(): void
+    {
+        $v = $this->manager()->validator($this->validPayload([
+            'notifications' => 'maybe',
+        ]));
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('notifications'));
+    }
+
     public function test_validate_input_sets_errors_on_failure(): void
     {
         $manager = $this->manager();
@@ -76,6 +86,36 @@ class DeviceManagerTest extends TestCase
 
         $this->assertSame($first->id, $second->id);
         $this->assertSame(2, (int) $second->fresh()->app_version);
+    }
+
+    public function test_register_with_existing_session_does_not_delete_other_users_same_device_id(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $session = 'sess-fixed-'.uniqid('', true);
+        $sharedDeviceId = 'shared-dev-'.uniqid('', true);
+
+        $existing = $this->manager()->register($owner, $this->validPayload([
+            'session_id' => $session,
+            'device_id' => 'owner-original-'.uniqid('', true),
+            'app_version' => 1,
+        ]));
+
+        $otherDevice = $this->manager()->register($other, $this->validPayload([
+            'session_id' => 'other-sess-'.uniqid('', true),
+            'device_id' => $sharedDeviceId,
+            'app_version' => 1,
+        ]));
+
+        $updated = $this->manager()->register($owner, $this->validPayload([
+            'session_id' => $session,
+            'device_id' => $sharedDeviceId,
+            'app_version' => 9,
+        ]));
+
+        $this->assertSame($existing->id, $updated->id);
+        $this->assertNotNull(Device::query()->find($otherDevice->id));
+        $this->assertSame(2, Device::query()->count());
     }
 
     public function test_register_updates_when_same_device_id_and_same_user(): void
@@ -131,6 +171,21 @@ class DeviceManagerTest extends TestCase
         $this->assertEqualsCanonicalizing(['device_not_found'], $manager->getErrors());
     }
 
+    public function test_update_accepts_equivalent_scalar_owner_ids(): void
+    {
+        $owner = User::factory()->create();
+        $device = $this->manager()->register($owner, $this->validPayload(['app_version' => 2]));
+        $sameOwnerAsStringId = new User;
+        $sameOwnerAsStringId->id = (string) $owner->id;
+
+        $updated = $this->manager()->update($sameOwnerAsStringId, $device->id, $this->validPayload([
+            'app_version' => 10,
+        ]));
+
+        $this->assertInstanceOf(Device::class, $updated);
+        $this->assertSame(10, (int) $updated->fresh()->app_version);
+    }
+
     public function test_update_persists_changes_for_owner(): void
     {
         $user = User::factory()->create();
@@ -177,6 +232,20 @@ class DeviceManagerTest extends TestCase
 
         $manager = $this->manager();
         $manager->delete($device->session_id, $user);
+
+        $this->assertTrue(Device::query()->whereKey($device->id)->exists());
+        $this->assertEqualsCanonicalizing(['device_not_found'], $manager->getErrors());
+    }
+
+    public function test_delete_treats_equivalent_scalar_owner_ids_as_owner(): void
+    {
+        $owner = User::factory()->create();
+        $device = $this->manager()->register($owner, $this->validPayload());
+        $sameOwnerAsStringId = new User;
+        $sameOwnerAsStringId->id = (string) $owner->id;
+
+        $manager = $this->manager();
+        $manager->delete($device->session_id, $sameOwnerAsStringId);
 
         $this->assertTrue(Device::query()->whereKey($device->id)->exists());
         $this->assertEqualsCanonicalizing(['device_not_found'], $manager->getErrors());
