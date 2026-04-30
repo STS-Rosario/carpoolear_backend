@@ -2205,3 +2205,12 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_social_endpoints_accept_mixed_case_provider_name`
     These assert middleware `except/only` contracts and prove `login`, `update`, and `friends` still work when the route provider is `TeSt` (normalization + provider binding/token wiring path).
   - Mutant IDs: `e0d9f7290643afcb`, `75cd57e29108ce0c`, `b65d1ac227139ef0`, `5c4a89dd27031ba2`, `dd496ec2320aa540`, `41aebc3060761bf6`, `4446cdc073ef2881`, `7586dfbef95032c2`, `b3d33ab7486e366e`, `05192135a87e3514`, `1060cde5f4429478`, `7bb040fbfa160916`, `6a606c0269b28fd4`.
+
+## RatingController (`app/Http/Controllers/Api/v1/RatingController.php`)
+
+- **Constructor auth middleware scope contract** (`__construct` lines 20-21 in `tests/coverage/20260428_2310.txt`).
+  - Cause: rating endpoint tests covered authenticated/guest behavior and response envelopes, but they did not directly pin the controller middleware registration contract, so constructor-level array-item and method-call mutants survived.
+  - Fix: extended `tests/Feature/Http/RatingApiTest.php` with `test_constructor_registers_expected_logged_middleware_scopes`, asserting:
+    - `logged` middleware `except` list is exactly `['rate', 'pendingRate']`
+    - `logged.optional` middleware `only` list is exactly `['rate', 'pendingRate']`
+  - Mutant IDs: `f39fad06752f81dc`, `0ff64d9344f5582f`, `d8e60e9f65d2233a`, `ad679d17dd3062d8`, `3db96a5488df3840`.
