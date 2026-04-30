@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 /**
@@ -40,6 +41,7 @@ class WhatsAppWebhookTest extends TestCase
 
     public function test_get_verification_returns_plaintext_challenge_when_mode_and_token_match(): void
     {
+        Log::spy();
         $token = 'verify-token-'.uniqid();
         config(['services.whatsapp.verify_token' => $token]);
 
@@ -53,10 +55,37 @@ class WhatsAppWebhookTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
             ->assertSee($challenge, false);
+
+        Log::shouldHaveReceived('info')->withArgs(function (...$args): bool {
+            if (count($args) !== 2 || ! is_string($args[0]) || ! is_array($args[1])) {
+                return false;
+            }
+            [$message, $context] = $args;
+
+            return $message === 'WhatsApp webhook received'
+                && ($context['method'] ?? null) === 'GET'
+                && array_key_exists('data', $context)
+                && array_key_exists('content', $context)
+                && array_key_exists('headers', $context)
+                && array_key_exists('content_type', $context);
+        });
+
+        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($token, $challenge): bool {
+            if (count($args) !== 2 || ! is_string($args[0]) || ! is_array($args[1])) {
+                return false;
+            }
+            [$message, $context] = $args;
+
+            return $message === 'WhatsApp webhook verification request'
+                && ($context['mode'] ?? null) === 'subscribe'
+                && ($context['token'] ?? null) === $token
+                && ($context['challenge'] ?? null) === $challenge;
+        });
     }
 
     public function test_get_verification_returns_forbidden_when_verify_token_mismatches(): void
     {
+        Log::spy();
         config(['services.whatsapp.verify_token' => 'expected-token']);
 
         $this->get('/webhooks/whatsapp?'.http_build_query([
@@ -66,6 +95,12 @@ class WhatsAppWebhookTest extends TestCase
         ]))
             ->assertForbidden()
             ->assertSee('Forbidden', false);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
+            return $message === 'WhatsApp webhook verification failed'
+                && ($context['expected_token'] ?? null) === 'expected-token'
+                && ($context['received_token'] ?? null) === 'wrong-token';
+        });
     }
 
     public function test_get_verification_returns_forbidden_when_mode_is_not_subscribe(): void
