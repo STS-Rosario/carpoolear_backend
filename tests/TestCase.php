@@ -9,6 +9,11 @@ abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
 
+    /**
+     * Drop views before tables during migrate:fresh so wipes stay consistent when SQL views exist (e.g. legacy rating aggregates).
+     */
+    protected bool $dropViews = true;
+
     protected function actingAsApiUser($user)
     {
         return $this->actingAs($user, 'api');
