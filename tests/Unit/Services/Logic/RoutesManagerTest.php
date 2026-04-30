@@ -272,4 +272,41 @@ class RoutesManagerTest extends TestCase
         $this->assertTrue((bool) $route->processed);
         $this->assertCount(0, $route->nodes()->pluck('nodes_geo.id')->all());
     }
+
+    public function test_create_route_uses_fallback_near_point_threshold_branch(): void
+    {
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0, 'name' => 'FFrom']);
+        $n2 = $this->makeNode(['lat' => -34.0, 'lng' => -58.002, 'name' => 'FTo']);
+
+        // Crafted to satisfy fallback branch:
+        // - close to line: d < 0.0125
+        // - close enough to endpoint: md < 0.15
+        // - but outside first branch by md >= dd (with short segment => small dd)
+        $fallbackNear = $this->makeNode([
+            'lat' => -34.1,
+            'lng' => -58.001,
+            'name' => 'FFallbackNear',
+        ]);
+
+        $route = new Route;
+        $route->forceFill([
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'processed' => false,
+        ])->save();
+
+        $fixture = $this->osrmFixtureWithLocations([
+            [-58.0, -34.0],
+            [-58.002, -34.0],
+        ]);
+        $manager = new RoutesManagerWithFixture(new RoutesRep, $fixture);
+        $route->load(['origin', 'destiny']);
+
+        $manager->createRoute($route);
+
+        $route->refresh();
+        $this->assertTrue((bool) $route->processed);
+        $attached = $route->nodes()->pluck('nodes_geo.id')->all();
+        $this->assertContains($fallbackNear->id, $attached);
+    }
 }
