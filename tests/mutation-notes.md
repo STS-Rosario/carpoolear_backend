@@ -1455,6 +1455,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_send_announcement_with_active_only_excludes_users_without_recent_connection` and `test_send_to_user_skips_when_only_stale_devices_exist_and_activity_filter_is_enabled` assert only recent users are processed and stale devices trigger the documented skip result.
   - Mutant IDs: `9870e81bb72d3621`, `425657d4c5a64367`, `a88ef40224d776c6`, `3755f7152a2d15b2`, `b350714ef7733c8e`, `e18e4e5b2a22e662`, `502685e33a249aa9`, `7a80b40cd13c1095`, `a923c148b89166fa`, `28c51f9998a4c9ec`, `540a5422b957720a`, `231278fcc0eb080e`, `3006a1f7a2470bd8`.
 
+## `SupportTicketService` (`app/Services/SupportTicketService.php`)
+
+- **Attachment iteration and path naming contract** (`storeReplyAttachments()` loop/folder/filename generation; report `RUN` ~7712 and UNTESTED cluster ~74153–74393).
+  - Cause: tests did not enforce that invalid non-file entries are skipped (not terminating the loop) and that stored paths retain the `support/YYYY/MM/<ulid>_<random>.<ext>` contract, so loop-control and concat mutants could survive.
+  - Fix: `test_store_reply_attachments_continues_after_invalid_item_and_processes_next_file` pins `continue` semantics when an invalid item appears first; `test_store_reply_attachments_persists_only_uploaded_files` now asserts a strict path regex that validates folder structure and generated filename shape.
+  - Mutant IDs: `481fcda8e0c89b94`, `fc5b97260566e1e4`, `27d7fe2239ed486d`, `b22ece0363e1cbf9`, `a91a4fb4250d268b`, `6da2782b1f786a21`, `c1fa26dbe6162fdd`, `64073c2c4197432a`, `8a7e2040155411ab`, `6d8f84cd9e905cb6`, `32376970d735b086`, `8bfa85c810141ec1`, `87c76453a507775a`, `40b850aa96c9ce0b`, `b1308448cecd63aa`, `92929c3ddbeeefc9`, `5b1e99bb0c361256`, `68ccd1ac56409c1e`, `a8cd754db40e59f4`, `5e16982e9874d877`, `9c6f47aa00c970c9`.
+
+- **Attachment metadata normalization** (`ticket_id`, mime fallback, size cast; report UNTESTED cluster ~74405–74453).
+  - Cause: metadata assertions were partial, leaving room for mutants that remove `ticket_id`, bypass MIME fallback, or strip integer casting of file size.
+  - Fix: expanded attachment assertions to pin `ticket_id = null`, exact MIME for regular uploads, integer `size_bytes`, and explicit `'application/octet-stream'` fallback when a file reports no MIME type.
+  - Mutant IDs: `56295b30cdce490a`, `887972c9890360ba`, `f4820b7e07f13d46`, `736729407ea1265f`, `e951af3148175d79`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
