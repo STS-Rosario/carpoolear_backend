@@ -61,4 +61,27 @@ class MessageTransformerTest extends TestCase
         $this->assertArrayHasKey('no_of_read', $payload);
         $this->assertSame(2, $payload['no_of_read']);
     }
+
+    public function test_transform_treats_numeric_string_message_user_id_as_author_for_no_of_read(): void
+    {
+        $author = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+
+        $message = Message::query()->create([
+            'user_id' => $author->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Loose id match',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $message->users()->attach($author->id, ['read' => false]);
+
+        $message = $message->fresh();
+        $message->mergeCasts(['user_id' => 'string']);
+        $message->forceFill(['user_id' => (string) $author->id])->saveQuietly();
+
+        $payload = (new MessageTransformer($author))->transform($message->fresh());
+
+        $this->assertArrayHasKey('no_of_read', $payload);
+        $this->assertSame(1, $payload['no_of_read']);
+    }
 }
