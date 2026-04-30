@@ -11,6 +11,25 @@ use Tests\TestCase;
 
 class SupportTicketTest extends TestCase
 {
+    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    {
+        $this->assertSame([
+            'user_id',
+            'type',
+            'subject',
+            'status',
+            'priority',
+            'unread_for_user',
+            'unread_for_admin',
+            'internal_note_markdown',
+            'last_reply_at',
+            'created_by',
+            'updated_by',
+            'closed_by',
+            'closed_at',
+        ], (new SupportTicket)->getFillable());
+    }
+
     private function makeTicket(User $user, array $overrides = []): SupportTicket
     {
         return SupportTicket::query()->create(array_merge([
