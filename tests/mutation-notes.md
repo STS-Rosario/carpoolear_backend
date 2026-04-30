@@ -2115,3 +2115,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: middleware tests exercised request flow but did not explicitly assert that testing environment leaves JWT auth unset, and did not lock the warning log message emitted when token parsing fails.
   - Fix: extended `tests/Unit/Http/Middleware/UpdateConnectionTest.php` to assert `auth` remains unset in testing mode and to verify `Log::warning('UpdateConnection middleware error: ' . $e->getMessage())` is called when authentication throws.
   - Mutant IDs: `5abf9eb0d21e9109`, `2213389f1c611fec`, `df189085c1ff367d`, `421b23a92718772f`, `bfdd8393e5ea397e`, `30a4d363c9f8da8f`.
+
+## CheckUserBanned Middleware (`app/Http/Middleware/CheckUserBanned.php`)
+
+- **Constructor testing-environment guard and warning log contract** (`__construct` line 29 and `handle` catch logging line 54 in `tests/coverage/20260428_2310.txt`).
+  - Cause: existing middleware tests validated allow/deny flow but did not explicitly assert that constructor wiring keeps `auth` unset under `testing`, and did not pin the exact warning message composition for non-HTTP exceptions.
+  - Fix: extended `tests/Unit/Http/Middleware/CheckUserBannedTest.php` to assert `auth` is null in testing mode and to verify `Log::warning('CheckUserBanned middleware error: ' . $e->getMessage())` is emitted when authentication throws a runtime exception.
+  - Mutant IDs: `8516f1b8f7c67305`, `f278dff590c61d95`, `6ddfac98f09a54d6`, `c709cbdbbc11f024`, `268af875efbd4641`, `96a9d05b7b0eeff6`.
