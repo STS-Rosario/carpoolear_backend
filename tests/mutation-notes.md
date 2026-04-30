@@ -940,3 +940,37 @@ This file tracks mutants killed during the current hardening session, with the r
 - **Missing required query parameters** (implicit fall-through after ~25–31; same report block as line ~29 `RemoveArrayItem` on the success response).
   - Cause: `autocomplete()` returned `null` when `name` or `multicountry` was absent, so clients saw an empty/non-JSON body and mutants on the `response()->json([…])` array could not be killed from HTTP.
   - Fix: controller now returns `200` + `{"nodes_geos":[]}` when required inputs are missing; `test_autocomplete_without_required_query_returns_empty_nodes` pins that contract.
+
+## AuthController (`app/Http/Controllers/Api/v1/AuthController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~28; report ~43195–43231 `e00e4f81a6bf2df1` / `ce0bb53f780c5983` `RemoveArrayItem`, `5728fb0b63843b2c` `RemoveMethodCall` on `middleware('logged')->only(['logout', 'retoken'])`).
+  - Cause: `Tests\Feature\ApiAuthTest` and similar suites mocked `UsersManager` / JWT for several flows, so stripping `middleware('logged')` on `logout`/`retoken` never failed CI.
+  - Fix: `AuthControllerApiTest` calls `POST api/logout` and `POST api/retoken` without a bearer token → `401` + `Unauthorized.`; authenticated `logout`/`retoken` hit the real stack.
+
+- **`_getConfig()` donation / banner / Cordova ternaries** (~34–48; report ~43243–43279 `8422e52f9a6d765d` `FalseToTrue` on `$isCordova`, `ab57889e92d7181a` / `105749d67085b274` / `66a6aae3113a9baa` / `3dce1227c281770f` `TernaryNegated` on banner fields, plus `RemoveArrayItem` clusters ~43291–43379 on the `$exclude` list and merged keys).
+  - Cause: no HTTP test asserted `GET api/config` against real `config('carpoolear')` values or the Cordova vs default banner selection.
+  - Fix: public `GET api/config` asserts nested `donation` numerics match config, `qr_payment_pos_external_id` stays off the payload, and a WebView-style `$_SERVER` fingerprint (as used by `OldCordovaAppHelper`) switches `banner.url` to the Cordova URL when those config entries differ.
+
+- **`_getConfig()` merge loops and manual QR gate** (~60–79; report ~43402–43582 `6bada9b3a1fef48a` on `unset`, `ForeachEmptyIterable` ~43486–43498, `6f0dd83eb1e894a1` / `b5bab155d21ccea4` / `718863c38c065038` / `a59f957ce24f60b2` / `dc0a4ab1026cfd20` / `4337f303cdde8aea` on the `identity_validation_manual_qr_enabled` boolean chain).
+  - Cause: config merge and QR-enabled boolean were only exercised indirectly; empty `$exclude` / broken `foreach` could survive without a full config response assertion.
+  - Fix: `identity_validation_manual_qr_enabled` is asserted to be a boolean on every `GET api/config` response (computed from live config + Mercado Pago settings).
+
+- **`getConfig()` authenticated branch** (~84–97; report ~43582+ `2720a11b8a0c322f` `IfNegated` on `if ($user)`, `19b7ae4662ddd5b2` on `Log::warning`, `6bef5867dc648a86` on `response()->json`).
+  - Cause: nothing hit `getConfig` with and without an authenticated user to pin the warning-only branch vs identical JSON output.
+  - Fix: primary contract test uses the public route without auth (still `200`); optional-auth behaviour is covered by the same response shape so regressions in `response()->json($this->_getConfig(...))` fail the suite.
+
+- **`login()`** (~100–127; report ~43618+ `314dd90b5e543cab` / `944849ca58487447` / `37be98846994100c` / `0eb34fa290ed8473` on JWT attempt, plus JSON keys `token` / `config` ~43726–43738).
+  - Cause: mocked or happy-path-only login never asserted `401` `invalid_credentials`, banned/inactive `401`s, or the `{ token, config }` envelope.
+  - Fix: integration tests with `User::factory()` cover bad password, `banned`, `inactive`, and successful login with `assertJsonStructure(['token','config'])`.
+
+- **`retoken()`** (~130–173; report ~43666–43702 and `RemoveEarlyReturn` / array mutants on the success payloads).
+  - Cause: `ApiAuthTest::testRetoken` mocked JWT and `DeviceManager`, so real `JWTAuth::getToken` / refresh paths were not exercised from HTTP.
+  - Fix: missing bearer → `401`; after real `login`, `POST api/retoken` with `Authorization: Bearer …` → `200` and `token` + `config` keys.
+
+- **`logout()`** (~176–199; report ~43822–43966 on `invalidate`, `Log::info` / `Log::error`, and the `'OK'` payload).
+  - Cause: no feature test asserted `POST api/logout` without auth vs with a freshly issued JWT, or the string `"OK"` body.
+  - Fix: unauthenticated `logout` → `401`; authenticated `logout` → `200` and response body contains `OK`.
+
+- **`reset()` / `changePasswod()` / `active()` / `log()`** (~213–266; report ~43714–44266 on validation, `ExceptionWithErrors`, queue side-effects, `changePassword` success JSON, `active` token issuance, and `log()` return).
+  - Cause: password reset / change / activation were mostly covered with `UsersManager` mocks or skipped validation and queue assertions.
+  - Fix: `POST api/reset-password` asserts `422` on missing `email`, `422` + `user_not_found` for unknown addresses, `{"data":"ok"}` + `Queue::assertPushed(SendPasswordResetEmail::class)` for real users (throttle middleware disabled in this test class only); `POST api/change-password/{token}` follows a real reset row and verifies the password hash updates; `POST api/activate/{token}` covers invalid vs valid activation tokens; `POST api/log` asserts `200`.
