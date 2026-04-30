@@ -816,6 +816,32 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no HTTP test forced a failed primary request then a successful fallback, or a `200` body missing the `code` key (so `fetchFromOsrmBases` keeps looping and returns `null`), so dual-base ordering and `array_key_exists('code', $data)` checks were invisible to CI.
   - Fix: `test_retries_fallback_base_when_primary_returns_unsuccessful_http` configures distinct primary/fallback hosts with `Http::fake` and expects `200` + `code` `Ok` after two outbound GETs; `test_treats_successful_http_without_osrm_code_key_as_upstream_failure` returns `200` JSON without `code` and expects the same `NoRoute` / `upstream_failed` client contract as a hard failure.
 
+## ConversationController (`app/Http/Controllers/Api/v1/ConversationController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~27; report ~49040 `ae65aca91b89758e` `RemoveMethodCall`).
+  - Cause: older `ConversationApiTest` methods hit authenticated flows only, so stripping `middleware('logged')` never failed CI on `GET|POST api/conversations*`.
+  - Fix: `Tests\Feature\Http\ConversationApiTest::test_conversation_endpoints_require_authentication` calls `GET api/conversations`, `POST api/conversations`, `GET api/conversations/show/1`, `GET api/conversations/1`, `GET api/conversations/user-list`, `GET api/conversations/unread`, `POST …/send`, and `POST …/multi-send` without auth and expects `401` + `Unauthorized.` on each.
+
+- **`index()` pagination inputs** (`index()` ~35–46; report ~49052–49112, e.g. `eae7416a82b35da3` / `bdbb35c39fbd42fb` on default `pageNumber`, `e62084d9fed7e1ff` / `282a71fcea6ca78d` on `pageSize`, `4077a0ba656f3a88` `IfNegated` on `$request->has('page')`).
+  - Cause: list coverage asserted total count only with default pagination, so mutants on `has('page')` / `has('page_size')` or default integers never broke an assertion tied to `meta.pagination`.
+  - Fix: `test_index_respects_page_size_query_parameter` seeds two conversations that each have at least one message (repository `has('messages')` gate), then `GET api/conversations?page=1&page_size=1` and asserts `meta.pagination.total`, `per_page`, and `current_page`.
+
+- **`show()` falsy conversation** (`show()` ~56–59; report ~49112 `a8ea5a67cd76a4c1` `IfNegated` on `if ($conversation)`).
+  - Cause: tests used a low numeric id for “missing” rows but did not assert the `ExceptionWithErrors('Bad request exceptions')` envelope for a guaranteed non-existent id.
+  - Fix: `test_show_returns_unprocessable_when_conversation_missing_or_inaccessible` uses `GET api/conversations/show/{id}` with an id past `max(id)` and expects `422` + `Bad request exceptions`.
+
+- **`create()` / `send()` identity gate** (`create()` / `send()` ~66–68 and ~112–114; report ~49124–49196, e.g. `49f2c1b7fcf2d28f` `BooleanAndToBooleanOr`, `44009e160032fa4e` / `b4b7441766a827e9` `RemoveNot` on `! $this->user->is_admin`, `1b123e8036cc075e` / `85c6ee6a1c4bca1e` / `2289fe28a4796f4d` / `bc0fcc60167a7204` on `send`, `7fb0b1c1da8fafcb` on `if ($m = …)`).
+  - Cause: existing POST/send tests used admins or left identity enforcement off, so mutants could swap `&&`/`||`, drop `!is_admin`, or bypass `IdentityValidationHelper::canPerformRestrictedActions` without failing HTTP assertions.
+  - Fix: with `identity_validation_enabled`, non-optional enforcement, `identity_validation_required_new_users`, and a `identity_validation_new_users_date` in the past, `test_create_returns_unprocessable_when_identity_required_and_user_not_validated` and `test_send_returns_unprocessable_when_identity_required_and_user_not_validated` exercise non-admin, non-validated users and assert `422` + `IdentityValidationHelper::identityValidationRequiredMessage()` (and the structured `identity_validation_required` error on `create`).
+
+- **`multiSend()` identity gate (no admin bypass)** (`multiSend()` ~189–198; report ~49292–49343, e.g. `296509720161c9f7` `IfNegated`, `efd93216c156e862` `RemoveNot`, `76b05c7fbfe10d63` / `366ebb83c2f39699` / `a143b6768b1e5ab4` on `if ($m = $this->conversationLogic->sendToAll(…))` / return payload).
+  - Cause: `create()` and `send()` exempt admins from the identity check, but `multiSend()` only calls `canPerformRestrictedActions`, so admins without identity could still pass CI if nothing asserted that branch; success JSON for `['message' => true]` was not pinned.
+  - Fix: `test_multi_send_returns_unprocessable_for_admin_without_identity_when_enforcement_requires_it` uses an `is_admin` user with `identity_validated = false` under the same config block and expects `422`; `test_multi_send_succeeds_when_identity_validation_allows_user` asserts `200` and exact `{"message":true}`.
+
+- **`userList()` optional `value` and `getMessagesUnread()` query branches** (`userList()` ~161–167; `getMessagesUnread()` ~175–183; report ~49232–49280, e.g. `bec5b8f34414f565` `IfNegated` on `has('value')`, `05e5da7db6c50028` / `264ed159e86dc54f` on `has('conversation_id')` / `has('timestamp')`, `dce53330aaefca72` / `b153b926d6d1c8ec` `AlwaysReturnNull` on assignments).
+  - Cause: `user-list` was only hit without `value`; `unread` was never hit with optional filters, so `has()` / assignment mutants stayed green.
+  - Fix: `test_user_list_accepts_optional_value_query_without_error` compares `200` + `data` shape with and without `value`; `test_unread_messages_endpoint_accepts_conversation_id_and_timestamp_query` hits `GET api/conversations/unread` with both query parameters and asserts `200` + `data` envelope.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
