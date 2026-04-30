@@ -896,3 +896,29 @@ This file tracks mutants killed during the current hardening session, with the r
 - **`getRate()` hash path** (~36–55): in-memory `Collection::where('user_to_id', …)` used a **non-existent column name** (schema is `user_id_to`), so guest/hash resolution never matched a row; the path also risked reading `$rate->voted` when `$rate` was null.
   - Cause: behaviour could not match production DB; HTTP tests for guest rating stayed red until the query matched `user_id_to` and null was handled before property access.
   - Fix: resolve hash + trip + rated user via `Rating::query()->where('voted_hash', …)->where('user_id_to', …)` and early `return null` when no row exists; `Tests\Unit\Services\Logic\RatingManagerTest` now expects a returned `Rating` for a valid hash (replacing the old “throws on null” expectation) and adds `test_get_rate_with_hash_returns_null_when_no_row_matches`.
+
+## ManualValidationPaymentController (`app/Http/Controllers/Api/v1/ManualValidationPaymentController.php`)
+
+- **Mercado Pago redirect parameters** (`success()` ~17–21; report ~42670 `52e108ec7a1dbc2b` `TernaryNegated` on `payment_id` / `collection_id`).
+  - Cause: only a generic redirect smoke hit `GET api/mercadopago/manual-validation-success` with no query string, so swapping the `?:` operands never broke CI.
+  - Fix: `ManualValidationPaymentControllerTest` asserts `collection_id` is persisted when `payment_id` is absent, and `payment_id` wins when both are present.
+
+- **Frontend base URL normalization** (`success()` ~22–23; report ~42682–42730 `5dba6d58746df5cf` `UnwrapRtrim`, `ff1b5f89c7e57334` / `568c26b481605596` / `a57c11da0880081f` `Concat*` on `$frontendBase` + path).
+  - Cause: no assertion tied the configured base URL to the final `Location` header or to slash collapsing.
+  - Fix: tests pin `config('services.mercadopago.oauth_frontend_redirect')` to a known origin, assert redirects to `{base}/setting/identity-validation/manual`, and assert a trailing slash on the base does not produce `//setting` in the URL.
+
+- **`request_id` gate** (`success()` ~25; report ~42730 `5681f51465e95b14` `IfNegated` on `if ($requestId)`).
+  - Cause: without a `request_id` query parameter, mutating the outer `if` never failed the suite.
+  - Fix: `test_without_request_id_redirects_to_manual_validation_route` expects the base manual-validation path with no `request_id` query segment.
+
+- **Persist only when row exists and result is success** (`success()` ~27–28; report ~42742–42778 `4d5cf8ad378f4245` `IfNegated`, `29f11d10045393bf` / `61fa29ac3708cef7` on `=== 'success'`, `436e8462f7c5392b` `TrueToFalse` on `paid`).
+  - Cause: no HTTP test created a `ManualIdentityValidation` and then exercised failure vs success `result`, so negated guards or flipped booleans on `paid` stayed green.
+  - Fix: success path asserts `paid`, `paid_at`, optional `payment_id`; `result=failure` asserts `paid` stays false and `payment_result` appears on the redirect URL instead of `payment_success`.
+
+- **Optional `payment_id` assignment** (`success()` ~30–32; report ~42790–42814 `2c0e82621374f7f4`, `9f9e171ff4ec26dc`, `dc9a0b844536448c`, `0e809fec086bd1d8`, `5fb25ef74ecd198b`, `154bd897691adca7`, plus `RemoveMethodCall` on `save` / `Log::info` ~42826–42874).
+  - Cause: nothing asserted that empty/absent payment identifiers leave `payment_id` null while a concrete id is stored when provided.
+  - Fix: one test calls success with no `payment_id`/`collection_id` and expects `payment_id` remains null; others cover `mp-…` / `col-…` persistence; `Log::spy()` asserts the structured `Manual identity validation payment success` log on the happy path.
+
+- **Redirect query assembly** (`success()` ~40–44; report ~42826+ `RemoveArrayItem` / `Concat*` / `IfNegated` on `payment_success` vs `payment_result`, e.g. `639feeeb046cfce5`, `69bf21bfd77cab86`, `28ee521144e5d306`, `278a09704c38443e`).
+  - Cause: redirect URL fragments were not parsed or asserted, so concat/order mutants on `request_id`, `payment_success=1`, and `payment_result` survived.
+  - Fix: tests parse `Location` with `parse_url` / `parse_str` and assert `request_id`, `payment_success=1` on success, `payment_result` on non-success, and an unknown numeric `request_id` still yields a redirect without creating a DB row.
