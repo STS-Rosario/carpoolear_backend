@@ -224,11 +224,14 @@ class ManualIdentityValidationApiTest extends TestCase
         config(['carpoolear.identity_validation_enabled' => false]);
 
         $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
 
         $this->actingAs($user, 'api')
             ->postJson('api/users/manual-identity-validation/preference')
-            ->assertUnprocessable()
+            ->assertStatus(503)
             ->assertJsonPath('message', 'Identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createPaymentPreferenceForManualValidation');
     }
 
     public function test_preference_returns_unprocessable_when_manual_validation_disabled(): void
@@ -239,11 +242,14 @@ class ManualIdentityValidationApiTest extends TestCase
         ]);
 
         $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
 
         $this->actingAs($user, 'api')
             ->postJson('api/users/manual-identity-validation/preference')
-            ->assertUnprocessable()
+            ->assertStatus(503)
             ->assertJsonPath('message', 'Manual identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createPaymentPreferenceForManualValidation');
     }
 
     public function test_preference_returns_unprocessable_when_cost_not_positive(): void
@@ -459,11 +465,14 @@ class ManualIdentityValidationApiTest extends TestCase
         ]);
 
         $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
 
         $this->actingAs($user, 'api')
             ->postJson('api/users/manual-identity-validation/qr-order')
-            ->assertUnprocessable()
+            ->assertStatus(503)
             ->assertJsonPath('message', 'QR payment is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
     }
 
     public function test_qr_order_returns_unprocessable_when_pos_external_id_missing(): void
@@ -477,11 +486,14 @@ class ManualIdentityValidationApiTest extends TestCase
         ]);
 
         $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
 
         $this->actingAs($user, 'api')
             ->postJson('api/users/manual-identity-validation/qr-order')
-            ->assertUnprocessable()
+            ->assertStatus(503)
             ->assertJsonPath('message', 'QR payment is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
     }
 
     public function test_qr_order_returns_unprocessable_when_cost_not_positive(): void
@@ -691,7 +703,7 @@ class ManualIdentityValidationApiTest extends TestCase
             'back_image' => $back,
             'selfie_image' => $selfie,
         ])
-            ->assertUnprocessable()
+            ->assertNotFound()
             ->assertJsonPath('message', 'Invalid request.');
     }
 
@@ -711,7 +723,7 @@ class ManualIdentityValidationApiTest extends TestCase
             'back_image' => $back,
             'selfie_image' => $selfie,
         ])
-            ->assertUnprocessable()
+            ->assertNotFound()
             ->assertJsonPath('message', 'Invalid request.');
 
         $this->assertNull($otherRequest->fresh()->submitted_at);
