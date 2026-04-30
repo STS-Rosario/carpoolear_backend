@@ -2090,3 +2090,14 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_transform_sets_request_send_for_pending_non_owner_user`
     These assert strict sellado gating and the expected outputs for owner vs pending non-owner contexts.
   - Mutant IDs: `2431910d6343b79e`, `f82e1a66752274a7`, `1d4a47989b788128`, `f54e9e28e7cb11ff`, `2d31580e8b250f56`, `281b1f741c398a06`, `d0c132cf4e070451`, `fd8dbb72f8890b62`, `618c0a8c658f98d7`, `9beb79d07fa17f23`, `66801009e9f66115`, `5b41550ce4872e60`, `35468e9c438a5ff0`, `512186accc06e6ef`, `42e400d04d2b92ca`, `c1534e6f96e28f4d`, `1e22c7c635a4cb8e`, `cc208bf1fe967964`, `9423ee3638dbe762`, `ec6efb69b9236070`, `ee056a616eccf621`, `665209308a5f971b`, `ac1cc08d286b980d`, `407c9d0beab0077f`, `dd841ade4f818e74`, `562a5bbaf3254396`, `caf69dd79c0c1280`, `27a5ae842a597c81`, `28b85e64519a4764`.
+
+## ConversationsTransformer (`app/Transformers/ConversationsTransformer.php`)
+
+- **Conversation payload contract across private/trip branches** (base fields, private peer metadata, unread/update_at, users list, and coordinate-by-message branch in `tests/coverage/20260428_2310.txt` around lines 27–83).
+  - Cause: there was no dedicated unit test for this transformer, so array-item removals and conditional-branch mutants survived across id/type fields, private-title/image logic, unread inversion, and users serialization.
+  - Fix: added `tests/Unit/Transformers/ConversationsTransformerTest.php` with:
+    - `test_transform_private_conversation_includes_core_fields_last_message_and_users`
+    - `test_transform_uses_unknown_user_fallback_when_private_peer_is_missing`
+    - `test_transform_includes_trip_and_return_trip_when_coordinate_module_enabled`
+    These lock base keys, private/default title-image behavior, unread semantics, latest message payload, users list entries, and trip/return-trip inclusion when module flag is enabled.
+  - Mutant IDs: `1bff9f4c33d95847`, `7d86d46daf119c1e`, `04c6003ade4ff494`, `18a2853d33969c42`, `9634249b331912cf`, `bbe6a65c62442d51`, `623fde324ee1910a`, `9166e2d879a54b64`, `a64bf4216f140712`, `343c1be62c09328a`, `69679d2c5b405ea4`, `62d3e3f626af1c7f`, `f4be77fb4e28f855`, `db73e38e56838cf4`, `e618124bede2c973`, `b8672564974faa24`, `ec7e276cd739bdc6`, `645160071fc14cba`, `5a4fc49dcda742e6`, `6d247296a0c87862`.
