@@ -1213,6 +1213,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `Tests\Unit\Notifications\FriendRequestNotificationTest` now asserts exact `getVia()` channels and verifies config-driven email metadata plus push image key while preserving existing behavioral assertions.
   - Mutant IDs: `daa7f4b4aaf97a99`, `20d83a74818297d7`, `e369cc1abcd9bd8d`, `3a70fab404df5b1b`, `e005b4fca5093951`, `e4edf96664a26b6d`.
 
+## `RejectPassengerNotification` (`app/Notifications/RejectPassengerNotification.php`)
+
+- **Channels + payload metadata contract** (`via` list and `toEmail()` / `toPush()` metadata keys; report RUN ~6375 and UNTESTED/UNCOVERED ~66043–66149).
+  - Cause: previous tests validated reject title/message and trip id, but did not pin channel list and metadata envelope fields, so `RemoveArrayItem` mutants on channels and `name_app`/`domain`/`image` could survive.
+  - Fix: `Tests\Unit\Notifications\RejectPassengerNotificationTest` now asserts exact `getVia()` channels, verifies config-driven email metadata (`name_app`, `domain`) and push image key, while keeping sender fallback behavior.
+  - Mutant IDs: `1d72118965799cc8`, `9f1257bd3c1e1b5a`, `3eb7b469befce108`, `d880062ac589c8a6`, `a7b75e68cd90dca3`, `b53e3c9240091146`.
+
+- **Trip URL composition on push/email** (`toEmail()` and `toPush()` concat around trip id; report UNTESTED ~66091, ~66127, ~66138).
+  - Cause: no positive assertion for `/trips/{id}` left concat mutants on push URL and empty-suffix mutation under-constrained.
+  - Fix: tests now assert exact email URL under configured base URL and exact push URL `/trips/{tripId}` when trip exists.
+  - Mutant IDs: `05933aa25fa2cb52`, `048e163c3f682d59`, `13c00cbff5a42afa`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
