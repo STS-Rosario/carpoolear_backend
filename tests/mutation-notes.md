@@ -922,3 +922,21 @@ This file tracks mutants killed during the current hardening session, with the r
 - **Redirect query assembly** (`success()` ~40–44; report ~42826+ `RemoveArrayItem` / `Concat*` / `IfNegated` on `payment_success` vs `payment_result`, e.g. `639feeeb046cfce5`, `69bf21bfd77cab86`, `28ee521144e5d306`, `278a09704c38443e`).
   - Cause: redirect URL fragments were not parsed or asserted, so concat/order mutants on `request_id`, `payment_success=1`, and `payment_result` survived.
   - Fix: tests parse `Location` with `parse_url` / `parse_str` and assert `request_id`, `payment_success=1` on success, `payment_result` on non-success, and an unknown numeric `request_id` still yields a redirect without creating a DB row.
+
+## RoutesController (`app/Http/Controllers/Api/v1/RoutesController.php`)
+
+- **Constructor middleware** (`__construct()` ~14–16; report ~43068–43092 `3287c71431a84354` / `f3df9f4d30bca0e3` `RemoveArrayItem`, `d2d0058f294666c0` `RemoveMethodCall` on `middleware('logged')->except(['autocomplete'])` and `logged.optional` `only('autocomplete')`).
+  - Cause: nothing hit `GET api/trips/autocomplete` with the real controller stack, so stripping middleware registrations never failed CI.
+  - Fix: `RoutesApiTest` exercises `GET api/trips/autocomplete` without auth and asserts `200` + JSON (confirms `logged.optional` path); the controller still registers strict `logged` for any future non-autocomplete actions.
+
+- **Default country when omitted** (`autocomplete()` ~22–24; report ~43104–43116 `7526843b114dac91` `IfNegated`, `8b9dda63c478d5fc` `RemoveNot` on `isset($data['country'])`).
+  - Cause: no HTTP request asserted behaviour when `country` was missing from the query string.
+  - Fix: seed a `NodeGeo` with `country = ARG`, call autocomplete with `name` + `multicountry` only, and assert the first hit stays in `ARG`.
+
+- **Search gate and multicountry flag** (`autocomplete()` ~25–29; report ~43128–43183 `aaabb5d8da0db706`, `dfca7ecbdec0485a`, `942d66eed2738eed`, `e15d928b6b9ed73b` on `isset`/`=== 'true'`, plus ~43183 `5f7f84d37b3b46b6` `RemoveArrayItem` on the JSON envelope).
+  - Cause: only repository/unit coverage existed; HTTP never compared `multicountry=true` vs `false` or asserted the `nodes_geos` key.
+  - Fix: feature tests seed distinct `nodes_geo` rows and assert country filtering when `multicountry=false`, cross-country results when `multicountry=true`, literal `'false'` vs `'true'` semantics, and `assertJsonStructure` on `nodes_geos`.
+
+- **Missing required query parameters** (implicit fall-through after ~25–31; same report block as line ~29 `RemoveArrayItem` on the success response).
+  - Cause: `autocomplete()` returned `null` when `name` or `multicountry` was absent, so clients saw an empty/non-JSON body and mutants on the `response()->json([…])` array could not be killed from HTTP.
+  - Fix: controller now returns `200` + `{"nodes_geos":[]}` when required inputs are missing; `test_autocomplete_without_required_query_returns_empty_nodes` pins that contract.
