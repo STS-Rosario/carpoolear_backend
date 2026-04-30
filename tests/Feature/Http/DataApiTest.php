@@ -4,6 +4,8 @@ namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use STS\Http\Controllers\Api\v1\DataController;
 use STS\Models\ActiveUsersPerMonth;
 use STS\Models\Passenger;
 use STS\Models\Trip;
@@ -162,5 +164,85 @@ class DataApiTest extends TestCase
                 'frecuencia_origenes_destinos_posterior_ago_2017',
                 'usuarios_activos',
             ]);
+    }
+
+    public function test_trips_seats_and_users_endpoints_return_500_with_expected_error_payload_when_query_fails(): void
+    {
+        DB::shouldReceive('select')->andThrow(new \Exception('db failed'));
+
+        $this->getJson('api/data/trips')
+            ->assertStatus(500)
+            ->assertJson(['error' => 'Error retrieving trips data']);
+
+        $this->getJson('api/data/seats')
+            ->assertStatus(500)
+            ->assertJson(['error' => 'Error retrieving seats data']);
+
+        $this->getJson('api/data/users')
+            ->assertStatus(500)
+            ->assertJson(['error' => 'Error retrieving users data']);
+    }
+
+    public function test_data_web_caps_frequency_sections_to_top_25_results(): void
+    {
+        $driver = User::factory()->create();
+        $baseDate = Carbon::parse('2029-01-01 08:00:00');
+
+        for ($i = 1; $i <= 30; $i++) {
+            $trip = Trip::factory()->create([
+                'user_id' => $driver->id,
+                'is_passenger' => 0,
+                'trip_date' => $baseDate->copy()->addDays($i),
+                'total_seats' => 2,
+            ]);
+
+            TripPoint::query()->create([
+                'trip_id' => $trip->id,
+                'address' => "Origin {$i}",
+                'description' => "Origin {$i}",
+                'lat' => -31.40 + ($i / 1000),
+                'lng' => -64.18 + ($i / 1000),
+            ]);
+            TripPoint::query()->create([
+                'trip_id' => $trip->id,
+                'address' => "Dest {$i}",
+                'description' => "Dest {$i}",
+                'lat' => -34.60 + ($i / 1000),
+                'lng' => -58.38 + ($i / 1000),
+            ]);
+        }
+
+        ActiveUsersPerMonth::query()->create([
+            'year' => 2029,
+            'month' => 1,
+            'value' => 1,
+            'saved_at' => Carbon::parse('2029-01-01 00:00:00', 'UTC'),
+        ]);
+
+        $payload = $this->get('/data-web')->assertOk()->json();
+
+        $this->assertCount(25, $payload['frecuencia_origenes_posterior_ago_2017']);
+        $this->assertCount(25, $payload['frecuencia_destinos_posterior_ago_2017']);
+        $this->assertCount(25, $payload['frecuencia_origenes_destinos_posterior_ago_2017']);
+        $this->assertArrayHasKey('key', $payload['usuarios_activos'][0]);
+        $this->assertArrayHasKey('año', $payload['usuarios_activos'][0]);
+        $this->assertArrayHasKey('mes', $payload['usuarios_activos'][0]);
+        $this->assertArrayHasKey('cantidad', $payload['usuarios_activos'][0]);
+        $this->assertArrayHasKey('saved_at', $payload['usuarios_activos'][0]);
+    }
+
+    public function test_more_data_uses_ranking_limit_of_50_and_returns_expected_envelopes(): void
+    {
+        DB::shouldReceive('select')
+            ->withArgs(fn ($query, $bindings = []) => str_contains($query, 'LIMIT ?') && $bindings === [50])
+            ->times(3)
+            ->andReturn([]);
+
+        $response = app(DataController::class)->moreData();
+        $payload = $response->getData(true);
+
+        $this->assertArrayHasKey('ranking_calificaciones', $payload);
+        $this->assertArrayHasKey('ranking_conductores', $payload);
+        $this->assertArrayHasKey('ranking_pasajeros', $payload);
     }
 }
