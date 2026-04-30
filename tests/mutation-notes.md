@@ -974,3 +974,29 @@ This file tracks mutants killed during the current hardening session, with the r
 - **`reset()` / `changePasswod()` / `active()` / `log()`** (~213–266; report ~43714–44266 on validation, `ExceptionWithErrors`, queue side-effects, `changePassword` success JSON, `active` token issuance, and `log()` return).
   - Cause: password reset / change / activation were mostly covered with `UsersManager` mocks or skipped validation and queue assertions.
   - Fix: `POST api/reset-password` asserts `422` on missing `email`, `422` + `user_not_found` for unknown addresses, `{"data":"ok"}` + `Queue::assertPushed(SendPasswordResetEmail::class)` for real users (throttle middleware disabled in this test class only); `POST api/change-password/{token}` follows a real reset row and verifies the password hash updates; `POST api/activate/{token}` covers invalid vs valid activation tokens; `POST api/log` asserts `200`.
+
+## SubscriptionController (`app/Http/Controllers/Api/v1/SubscriptionController.php`)
+
+- **Constructor `logged` middleware** (`__construct()` ~17; report ~44277 `5d29aa8234bb5792` `RemoveMethodCall`).
+  - Cause: happy-path subscription tests authenticated first, so removing `middleware('logged')` never broke CI if nothing asserted unauthenticated `GET|POST|PUT|DELETE api/subscriptions*`.
+  - Fix: `SubscriptionsApiTest::test_subscription_endpoints_require_authentication` now hits `GET api/subscriptions`, `GET api/subscriptions/{id}`, `POST`, `PUT`, and `DELETE` without auth and expects `401` + `Unauthorized.` on each.
+
+- **`create()` JSON envelope** (`create()` ~25–30; report ~44289–44301 `3d136cad6b2c42dd` `RemoveArrayItem`, `0210d42bec609bd0` `AlwaysReturnNull` on `['data' => $model]`).
+  - Cause: success path was covered, but duplicate / validation failures did not pin the `422` + `Could not create new model.` contract when `SubscriptionsManager::create` returns falsy.
+  - Fix: `test_create_duplicate_geometry_returns_unprocessable` posts the same valid geometry twice for one user and asserts `422` + message; invalid body still returns `422` with `errors`.
+
+- **`update()` JSON envelope and ownership** (`update()` ~33–42; report ~44313–44325 `889a361f5f558540`, `d7f5005e2e783a35`).
+  - Cause: only the owned update path was exercised; mutants on `response()->json(['data' => $model])` or skipping the `if (! $model)` guard stayed green.
+  - Fix: `test_update_returns_unprocessable_when_subscription_not_owned` and `test_update_returns_unprocessable_when_validation_fails` assert `422` with `Could not update model.` vs validation `errors` respectively.
+
+- **`delete()` success and error envelopes** (`delete()` ~45–53; report ~44337–44349 `9f81ffbda5a22c2f`, `37d088fcab7e2292`).
+  - Cause: only successful delete asserted `{"data":"ok"}`; cross-user delete did not exercise `ExceptionWithErrors('Could not delete subscription.', …)`.
+  - Fix: `test_delete_returns_unprocessable_when_subscription_not_owned` expects `422` + `Could not delete subscription.`; success test keeps `assertExactJson(['data' => 'ok'])`.
+
+- **`show()` ownership gate** (`show()` ~56–64; report ~44361–44372 `b736079953f89cd7`, `84645031db77ee06`).
+  - Cause: `show` for another user’s id was not asserted, so `AlwaysReturnNull` on the success JSON or inverted ownership checks could survive.
+  - Fix: `test_show_returns_unprocessable_when_subscription_belongs_to_another_user` asserts `422` + `Could not found model.`.
+
+- **`index()` list envelope** (`index()` ~67–72; report ~44361–44372 `b736079953f89cd7` `RemoveArrayItem`, `84645031db77ee06` `AlwaysReturnNull` on `['data' => $models]`).
+  - Cause: index was only asserted for inclusion of an active row, not as an explicit `{ data: … }` envelope when the list is empty.
+  - Fix: authenticated `GET api/subscriptions` remains `200` with a `data` array (`test_index_returns_active_subscriptions_for_user`); unauthenticated access is rejected by the strengthened auth test.
