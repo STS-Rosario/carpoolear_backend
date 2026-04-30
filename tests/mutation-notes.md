@@ -2030,3 +2030,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: existing progress assertions covered exact integer-friendly ratios and cap behavior, but not a fractional ratio that requires integer truncation.
   - Fix: added `test_progress_percentage_returns_truncated_integer_value` asserting `100/333` resolves to `30` (not a float), while still using paid-donation totals.
   - Mutant IDs: `f6f4f1295d124329`, `e750ec2030ed6ea7`.
+
+## SupportTicket (`app/Models/SupportTicket.php`)
+
+- **Mass-assignment contract for support ticket lifecycle fields** (`$fillable` lines 13–25 in `tests/coverage/20260428_2310.txt`).
+  - Cause: model tests validated relationships and datetime casts, but did not explicitly lock the full fillable declaration, so `RemoveArrayItem` mutants across ticket payload fields survived.
+  - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/SupportTicketTest.php` to assert the exact fillable list.
+  - Mutant IDs: `1c5cc342ddd2b4cc`, `7542a5b58ca81c64`, `f457848fdffb4f47`, `cc4c97676e5970e3`, `1d33b4f1f133b2d6`, `d51c8be37ae42354`, `7b418d1b8c69f3f0`, `4cfc97a7905d4304`, `79d3e757f71a0780`, `1637ecc874f295ca`, `2d17d19743770972`, `9f67c557f0246b48`, `a2d5e9deb9e5d0e9`.
