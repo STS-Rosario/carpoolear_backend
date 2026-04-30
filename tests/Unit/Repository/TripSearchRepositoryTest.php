@@ -227,6 +227,37 @@ class TripSearchRepositoryTest extends TestCase
         $this->assertSame(1, $row->amount_trips_carpooleados);
     }
 
+    public function test_track_search_counts_trip_with_zero_seats_available_as_carpooleado(): void
+    {
+        // Mutation intent: predicate must stay `seats_available <= 0` (not `< 0`) so a full trip with **zero** remaining seats is counted.
+        // Kills: `TripSearchRepository.php` ~27 `SmallerToSmallerOrEqual` / `IncrementInteger` clusters on the comparison literal.
+        $user = User::factory()->create();
+        $origin = $this->makeNode();
+        $dest = $this->makeNode();
+
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'total_seats' => 2,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+
+        $fresh = $trip->fresh();
+        $this->assertSame(0, (int) $fresh->seats_available);
+
+        $paginator = new LengthAwarePaginator(collect([$fresh]), 1, 10, 1, ['path' => '/trips']);
+        $row = $this->repo()->trackSearch($user, $origin->id, $dest->id, $paginator);
+
+        $this->assertSame(1, $row->amount_trips);
+        $this->assertSame(1, $row->amount_trips_carpooleados);
+    }
+
     public function test_track_search_persists_search_payload_columns_for_array_remove_mutants(): void
     {
         // Mutation intent: guard `searchData` keys (`user_id`, `origin_id`, `destination_id`, `results_json`, …) — dropping a RemoveArrayItem mutant should fail DB or assertions.
