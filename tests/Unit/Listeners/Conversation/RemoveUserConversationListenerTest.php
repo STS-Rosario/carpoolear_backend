@@ -75,4 +75,27 @@ class RemoveUserConversationListenerTest extends TestCase
             new PassengerCanceled($trip, $moderator, $passenger, 0)
         );
     }
+
+    public function test_handle_uses_loose_equality_so_numeric_string_trip_owner_id_matches_driver(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $conversation = Mockery::mock(Conversation::class);
+
+        $trip = new \stdClass;
+        $trip->user_id = (string) $driver->id;
+        $trip->conversation = $conversation;
+
+        $repo = Mockery::mock(ConversationRepository::class);
+        $repo->shouldReceive('removeUser')
+            ->once()
+            ->with(
+                $conversation,
+                Mockery::on(fn (User $user) => $user->is($passenger))
+            );
+
+        (new removeUserConversation($repo))->handle(
+            new PassengerCanceled($trip, $driver, $passenger, 0)
+        );
+    }
 }
