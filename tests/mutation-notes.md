@@ -2074,3 +2074,10 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_transform_returns_null_for_optional_docs_and_identity_date_when_absent`
     These lock all expected payload keys and verify `driver_data_docs` decode/null handling plus `identity_validated_at` formatting/null behavior.
   - Mutant IDs: `6b4c2129bdee5bdb`, `630941ae4c9fb587`, `0aef54721b2445f2`, `dcb26dce8a1eeba8`, `55fb4e465dc28ded`, `4032ce2922799e52`, `b72c720db7b0e256`, `5ec9a6f8cd9a8f72`, `d0c7811d901486dc`, `521b80ca3b9b7a37`, `d59fdaeb6fe4b18d`, `59138cb8eedc6cad`, `54c587a8ee643243`, `981a79af722a07c1`, `4b0659e6c35f8457`, `fab396d7ccafe33a`, `0b64db3801e1b4ce`, `ea5b57bd3203ff7c`, `79f456b16e351ccf`, `b739490af7e8c5b4`, `d28ffc98e36abeb0`, `4e83574ff8b35971`, `518b5320f1b209af`, `4a9a04c061b95633`.
+
+## TripTransformer (`app/Transformers/TripTransformer.php`)
+
+- **Base trip payload contract in `transform()`** (core array fields around lines 26+ in `tests/coverage/20260428_2310.txt`).
+  - Cause: trip transformation was only asserted indirectly, leaving many `RemoveArrayItem` mutants on base payload fields and `trip_date` ternary handling under-constrained.
+  - Fix: added `tests/Unit/Transformers/TripTransformerTest.php` (especially `test_transform_returns_expected_base_trip_payload_without_user_context`) to pin complete base keys and representative values, including `trip_date`, pricing, defaults (`request`, `passenger`), plus explicit sellado/deletion branch assertions.
+  - Mutant IDs: `26c7093cfe4d8355`, `12d5c8912c3a7bfe`, `536d3e5120a825e7`, `57de05aa62fac8e6`, `fe8bf2edd2d99542`, `970d3a18d8068c8a`, `c58d869df9fcd804`, `135cabb35db0a282`, `922c2f6a4fd4e54f`, `69f832be4bf08f20`, `3ea8d121305adaf1`, `479c8e359779948c`, `6046711db3ef202f`, `1707d560f17146aa`, `826d3459090dd99c`, `f932dba9d1f61aad`.
