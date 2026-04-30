@@ -1340,6 +1340,13 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts exact `/trips/{tripId}` when trip exists and always checks static logo `image`; fallback empty trip path remains explicitly checked.
   - Mutant IDs: `617d380e35055b64`, `3a937de282ba4924`, `664de3c8dc54d264`, `b4ad29d49eb5c02c`, `0ef7a1f027a9d62d`.
 
+## `PendingRateNotification` (`app/Notifications/PendingRateNotification.php`)
+
+- **Channels + email metadata contract** (`via` list and `toEmail()` metadata keys; report RUN ~6791 and UNTESTED/UNCOVERED ~67015–67063).
+  - Cause: existing tests validated destination/title/url behavior, but did not pin channel list and email metadata fields (`name_app`, `domain`), so `RemoveArrayItem` mutants survived.
+  - Fix: `Tests\Unit\Notifications\PendingRateNotificationTest` now asserts exact `getVia()` channels and verifies config-driven `name_app` and `domain` in email payload.
+  - Mutant IDs: `11cee4fb3f0b0c2d`, `dea0f3f85ca80f3f`, `f1d94ffb399e8a59`, `768c5247f780bdc7`, `7ce14e22c467b772`.
+
 ## `removeUserConversation` listener (`app/Listeners/Conversation/removeUserConversation.php`)
 
 - **Who gets detached from the trip conversation** (`handle()` ~28–34; report `tests/coverage/20260428_2310.txt` ~5956–5961 and UNTESTED ~63839–63865).
