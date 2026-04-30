@@ -353,6 +353,52 @@ class PassengersManagerTest extends TestCase
         Event::assertDispatched(RejectEvent::class);
     }
 
+    public function test_send_full_trip_message_calls_conversation_manager_when_module_enabled_and_trip_is_full(): void
+    {
+        Config::set('carpoolear.module_send_full_trip_message', true);
+        $driver = User::factory()->create(['send_full_trip_message' => 1]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'total_seats' => 1,
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+        $trip->load(['user', 'passengerAccepted']);
+
+        $conversationManagerMock = \Mockery::mock(\STS\Services\Logic\ConversationsManager::class);
+        $conversationManagerMock->shouldReceive('sendFullTripMessage')
+            ->once()
+            ->with(\Mockery::on(fn ($arg) => $arg instanceof Trip && (int) $arg->id === (int) $trip->id));
+        $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
+
+        $this->manager()->sendFullTripMessage($trip);
+    }
+
+    public function test_send_full_trip_message_skips_when_module_is_disabled(): void
+    {
+        Config::set('carpoolear.module_send_full_trip_message', false);
+        $driver = User::factory()->create(['send_full_trip_message' => 1]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'total_seats' => 1,
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+        $trip->load(['user', 'passengerAccepted']);
+
+        $conversationManagerMock = \Mockery::mock(\STS\Services\Logic\ConversationsManager::class);
+        $conversationManagerMock->shouldReceive('sendFullTripMessage')->never();
+        $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
+
+        $this->manager()->sendFullTripMessage($trip);
+    }
+
     public function test_pay_request_completes_waiting_payment_and_dispatches_reject_event(): void
     {
         Event::fake([RejectEvent::class]);
