@@ -954,6 +954,24 @@ This file tracks mutants killed during the current hardening session, with the r
 
 - **Production fix:** `delete()` called `DeviceManager::delete($user, $id)` with arguments reversed versus the manager signature `delete($session_id, $user)` and `is_int($session_id)` branching. The controller now calls `delete((int) $id, $user)` so route ids resolve by primary key instead of misrouting the `User` instance through the `session_id` branch.
 
+## CampaignRewardController (`app/Http/Controllers/Api/v1/CampaignRewardController.php`)
+
+- **Reward must match campaign** (`purchase()` ~23–24; report `tests/coverage/20260428_2310.txt` ~50767–50827, e.g. `ed58202f2968321d` `IfNegated`, `18ae731ddd647c45` `NotIdenticalToIdentical`, `7a8b5e2c4ebef271` `RemoveEarlyReturn`, `03fe0485e559dd70` `RemoveArrayItem` on the 404 payload).
+  - Cause: `purchase` had no HTTP coverage; mutants could flip the membership guard, loosen `!==` to `!=`, drop the early return, or strip `error` from the JSON without failing CI.
+  - Fix: `Tests\Feature\Http\CampaignRewardControllerIntegrationTest::test_purchase_returns_not_found_when_reward_belongs_to_another_campaign` posts to `POST /api/campaigns/{slug}/rewards/{id}/purchase` with a reward whose `campaign_id` differs from the route campaign and expects `404` + `Reward does not belong to this campaign`, and asserts no `campaign_donations` row is created.
+
+- **Inactive and sold-out guards** (`~27–32`; report ~50839–50959, e.g. `25d1ac8530d7eb1d`, `d0fc5cc987eb6e53`, `b5cf69a2993e8fea`, `980a086a8060292b` `RemoveEarlyReturn`, `e1e6cc14e34bcfb8` `RemoveArrayItem`).
+  - Cause: branches for `!$reward->is_active` and `$reward->is_sold_out` were never exercised over HTTP.
+  - Fix: `test_purchase_returns_bad_request_when_reward_is_inactive` and `test_purchase_returns_bad_request_when_reward_is_sold_out` (sold out via one `paid` donation against `quantity_available` = 1) expect `400` and the stable `error` strings; Mercado Pago is not invoked (`shouldNotReceive` on `createPaymentPreferenceForCampaignDonation`).
+
+- **Donation create + Mercado Pago hand-off + success JSON** (`~37–67`; report ~50971–51164, e.g. `e21b61e9aa2fb3db` through `10e186d7166873a9` `RemoveArrayItem` on `CampaignDonation::create` keys, `97b622a5caccb7af` / `357ff8cd100de9c0` `RemoveNullSafeOperator`, `30eedcd128fb8bda` / `b68e7b0c0626b774` `RemoveMethodCall` on `update` / `Log::info`, `8e39be8d489325af` etc. on the success response).
+  - Cause: happy path never ran under test; mutants could drop attributes on create, omit `user_id` null-safe handling, skip persisting `payment_id`, remove log calls, or strip `message` / `data.url` / `data.sandbox_url`.
+  - Fix: `test_purchase_creates_pending_donation_returns_urls_and_stores_preference_id` mocks `MercadoPagoService::createPaymentPreferenceForCampaignDonation` to return a `Preference` with `id`, `init_point`, and `sandbox_init_point`; asserts `200`, JSON shape, and `campaign_donations` row including `name` / `comment` from the body. `test_purchase_passes_authenticated_user_id_to_payment_service` uses a JWT from `api/login` and expects the service to receive `$user->id` and the donation row to store `user_id`.
+
+- **Failure envelope after preference errors** (`~70–77`; report ~51176–51252, e.g. `2462fac2b5eec24a` `RemoveMethodCall` on `Log::error`, `4e124ed8c5530765` `RemoveArrayItem` on the 500 `error`, `85dbb56933c9568c` / `d7f5b7031c7f085d` on status code).
+  - Cause: the `catch` block was never hit from outside the controller.
+  - Fix: `test_purchase_returns_server_error_when_payment_preference_fails` makes the mocked service throw; expects `500` + `Could not create payment preference` and a pending donation without `payment_id`.
+
 ## DataController (`app/Http/Controllers/Api/v1/DataController.php`)
 
 - **Constants `LIMIT_TOP` / `LIMIT_RANKING`** (lines ~12–13; report ~33792–33828, e.g. `0482c448462f2ca0` / `472a8f5bea6591ae` `DecrementInteger`/`IncrementInteger` on `25`, `c6a84f0b58a5c881` / `6feb9a501c1c567c` on `50`).
