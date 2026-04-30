@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Models;
 
+use Database\Factories\CarFactory;
+use ReflectionClass;
 use STS\Models\Car;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -82,5 +84,15 @@ class CarTest extends TestCase
     public function test_table_name_is_cars(): void
     {
         $this->assertSame('cars', (new Car)->getTable());
+    }
+
+    public function test_new_factory_resolves_car_factory_instance(): void
+    {
+        $ref = new ReflectionClass(Car::class);
+        $method = $ref->getMethod('newFactory');
+        $method->setAccessible(true);
+        $factory = $method->invoke(null);
+
+        $this->assertInstanceOf(CarFactory::class, $factory);
     }
 }
