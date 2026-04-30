@@ -52,6 +52,25 @@ class ExceptionWithErrorsTest extends TestCase
         $this->assertSame('No field errors', $response->getData(true)['message']);
     }
 
+    public function test_render_uses_custom_http_status_for_message_only_payload(): void
+    {
+        $exception = new ExceptionWithErrors('Temporarily down.', null, 503);
+        $response = $exception->render(Request::create('/', 'GET'));
+
+        $this->assertSame(503, $response->getStatusCode());
+        $this->assertSame(['message' => 'Temporarily down.'], $response->getData(true));
+    }
+
+    public function test_render_uses_custom_http_status_for_errors_payload(): void
+    {
+        $exception = new ExceptionWithErrors('Not found.', ['id' => ['missing']], 404);
+        $response = $exception->render(Request::create('/', 'GET'));
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('Not found.', $response->getData(true)['message']);
+        $this->assertSame(['id' => ['missing']], $response->getData(true)['errors']);
+    }
+
     public function test_render_with_custom_errors_object_uses_to_array_payload(): void
     {
         $errorsObject = new class

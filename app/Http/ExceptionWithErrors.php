@@ -7,14 +7,15 @@ use Illuminate\Http\JsonResponse;
 
 class ExceptionWithErrors extends Exception
 {
-    protected $message;
-
     protected $errors;
 
-    public function __construct($message, $errors = null)
+    protected int $httpStatus;
+
+    public function __construct($message, $errors = null, int $httpStatus = 422)
     {
-        $this->message = $message;
+        parent::__construct((string) $message);
         $this->errors = $errors;
+        $this->httpStatus = $httpStatus;
     }
 
     public function report()
@@ -27,7 +28,7 @@ class ExceptionWithErrors extends Exception
         if (is_null($this->errors)) {
             return response()->json([
                 'message' => $this->message,
-            ], 422);
+            ], $this->httpStatus);
         } else {
             $errorsPayload = $this->errors;
             if (is_object($errorsPayload) && method_exists($errorsPayload, 'toArray')) {
@@ -41,7 +42,7 @@ class ExceptionWithErrors extends Exception
             return response()->json([
                 'errors' => $errorsPayload,
                 'message' => $this->message,
-            ], 422);
+            ], $this->httpStatus);
         }
     }
 }
