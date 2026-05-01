@@ -1,11 +1,12 @@
 <?php
- 
+
 use Illuminate\Support\Facades\Route;
 use STS\Http\Controllers\Api\v1\DataController;
+use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
+use STS\Http\Controllers\Api\v1\WhatsAppWebhookController;
 use STS\Http\Controllers\HomeController;
 use STS\Http\Controllers\PaymentController;
-use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
-    
+
 Route::get('/', [HomeController::class, 'home']);
 Route::get('/home', [HomeController::class, 'home']);
 Route::get('/generateHash', [HomeController::class, 'hashPassword']);
@@ -45,6 +46,10 @@ Route::any('/transbank-final', [PaymentController::class, 'transbankFinal']);
 
 // MercadoPago webhook
 Route::any('/webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle'])
+    ->withoutMiddleware(['web']);
+
+// WhatsApp webhook
+Route::any('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle'])
     ->withoutMiddleware(['web']);
 
 Route::get('/config.xml', function () {

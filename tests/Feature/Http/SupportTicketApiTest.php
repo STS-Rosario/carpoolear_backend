@@ -7,6 +7,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use STS\Models\SupportTicket;
+use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use Tests\TestCase;
 
@@ -149,6 +151,99 @@ class SupportTicketApiTest extends TestCase
             'subject' => 'Need more help',
             'message_markdown' => 'Second',
         ])->assertStatus(429);
+    }
+
+    public function test_index_lists_only_current_user_tickets_newest_first(): void
+    {
+        $owner = $this->createUser();
+        $stranger = $this->createUser();
+
+        $this->actingAs($owner, 'api');
+        $firstId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'First ticket',
+            'message_markdown' => 'Hello',
+        ])->json(), 'data.id');
+
+        $secondId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Second ticket',
+            'message_markdown' => 'Follow up',
+        ])->json(), 'data.id');
+
+        $this->actingAs($stranger, 'api');
+        $this->post('api/support/tickets', [
+            'type' => 'feedback',
+            'subject' => 'Stranger only',
+            'message_markdown' => 'Private',
+        ])->assertStatus(200);
+
+        $this->actingAs($owner, 'api');
+        $response = $this->getJson('api/support/tickets');
+        $response->assertStatus(200)->assertJsonCount(2, 'data');
+        $this->assertSame($secondId, $response->json('data.0.id'));
+        $this->assertSame($firstId, $response->json('data.1.id'));
+    }
+
+    public function test_show_returns_404_for_unknown_ticket_id(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $missingId = (int) (SupportTicket::query()->max('id') ?? 0) + 99_999;
+
+        $this->getJson("api/support/tickets/{$missingId}")
+            ->assertNotFound()
+            ->assertExactJson(['error' => 'Ticket not found']);
+    }
+
+    public function test_reply_returns_422_when_ticket_is_resolved(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Needs closure test',
+            'message_markdown' => 'Body',
+        ])->json(), 'data.id');
+
+        SupportTicket::query()->whereKey($ticketId)->update(['status' => 'Resuelto']);
+
+        $this->postJson("api/support/tickets/{$ticketId}/replies", [
+            'message_markdown' => 'Trying after resolve',
+        ])
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Ticket is closed for replies']);
+    }
+
+    public function test_close_persists_status_and_optional_closing_message(): void
+    {
+        Storage::fake('public');
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Close me',
+            'message_markdown' => 'Initial',
+        ])->json(), 'data.id');
+
+        $this->postJson("api/support/tickets/{$ticketId}/close", [
+            'message_markdown' => 'Thanks, closing now.',
+        ])->assertStatus(200)->assertJsonPath('data.status', 'Cerrado');
+
+        $ticket = SupportTicket::query()->findOrFail($ticketId);
+        $this->assertSame('Cerrado', $ticket->status);
+        $this->assertSame($user->id, (int) $ticket->closed_by);
+        $this->assertNotNull($ticket->closed_at);
+
+        $closingReply = SupportTicketReply::query()
+            ->where('ticket_id', $ticketId)
+            ->where('message_markdown', 'Thanks, closing now.')
+            ->first();
+        $this->assertNotNull($closingReply);
+        $this->assertFalse((bool) $closingReply->is_admin);
     }
 
     public function test_priority_is_assigned_by_type_and_not_by_user_input(): void

@@ -2,103 +2,150 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Trip;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use STS\Events\Passenger\Accept as AcceptEvent;
+use STS\Events\Passenger\Cancel as CancelEvent;
+use STS\Events\Passenger\Reject as RejectEvent;
+use STS\Events\Passenger\Request as RequestEvent;
 use STS\Models\Passenger;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Trip;
+use STS\Models\User;
+use STS\Repository\PassengersRepository;
+use STS\Services\Logic\PassengersManager;
+use Tests\TestCase;
 
 class PassengersTest extends TestCase
 {
-    use DatabaseTransactions;
+    private PassengersManager $passengerManager;
 
-    protected $passengerManager;
+    private PassengersRepository $passengerRepository;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
-        start_log_query();
-        $this->passengerManager = \App::make(\STS\Services\Logic\PassengersManager::class);
-        $this->passengerRepository = \App::make(\STS\Repository\PassengersRepository::class);
+        $this->passengerManager = $this->app->make(PassengersManager::class);
+        $this->passengerRepository = $this->app->make(PassengersRepository::class);
+
+        Config::set('carpoolear.module_unaswered_message_limit', false);
+        Config::set('carpoolear.module_user_request_limited', false);
+        Config::set('carpoolear.module_trip_seats_payment', false);
+        Config::set('carpoolear.module_send_full_trip_message', false);
+        Carbon::setTestNow('2028-01-01 10:00:00');
     }
 
-    public function testNewRequest()
+    protected function tearDown(): void
     {
-        $driver = \STS\Models\User::factory()->create();
-        $passenger = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
+
+    private function createFutureTripWithDriver(): array
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'total_seats' => 4,
+        ]);
+
+        return [$driver, $trip];
+    }
+
+    public function test_new_request_creates_pending_request_and_dispatches_event(): void
+    {
+        Event::fake([RequestEvent::class]);
+        [$driver, $trip] = $this->createFutureTripWithDriver();
+        $passenger = User::factory()->create();
+
         $result = $this->passengerManager->newRequest($trip->id, $passenger);
+
         $this->assertNotNull($result);
-        $this->assertTrue($trip->passengerPending->count() > 0);
+        $this->assertSame(Passenger::STATE_PENDING, (int) $result->fresh()->request_state);
+        $this->assertSame($trip->id, (int) $result->trip_id);
+        $this->assertSame($passenger->id, (int) $result->user_id);
+        Event::assertDispatched(RequestEvent::class);
     }
 
-    public function testAcceptRequest()
+    public function test_accept_request_moves_passenger_to_accepted_and_dispatches_event(): void
     {
-        $driver = \STS\Models\User::factory()->create();
-        $passenger = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        Event::fake([AcceptEvent::class]);
+        [$driver, $trip] = $this->createFutureTripWithDriver();
+        $passenger = User::factory()->create();
 
         $this->passengerRepository->newRequest($trip->id, $passenger);
-
         $result = $this->passengerManager->acceptRequest($trip->id, $passenger->id, $driver);
+
         $this->assertNotNull($result);
-        $this->assertTrue($trip->passengerAccepted->count() > 0);
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) $result->fresh()->request_state);
+        $this->assertTrue($this->passengerManager->isUserRequestAccepted($trip->id, $passenger->id));
+        Event::assertDispatched(AcceptEvent::class);
     }
 
-    public function testRejectRequest()
+    public function test_reject_request_moves_passenger_to_rejected_and_dispatches_event(): void
     {
-        $driver = \STS\Models\User::factory()->create();
-        $passenger = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        Event::fake([RejectEvent::class]);
+        [$driver, $trip] = $this->createFutureTripWithDriver();
+        $passenger = User::factory()->create();
 
         $this->passengerRepository->newRequest($trip->id, $passenger);
-
         $result = $this->passengerManager->rejectRequest($trip->id, $passenger->id, $driver);
+
         $this->assertNotNull($result);
+        $this->assertSame(Passenger::STATE_REJECTED, (int) $result->fresh()->request_state);
+        Event::assertDispatched(RejectEvent::class);
     }
 
-    public function testCancelRequest()
+    public function test_cancel_request_from_passenger_marks_canceled_state_and_dispatches_event(): void
     {
-        $driver = \STS\Models\User::factory()->create();
-        $passenger = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        Event::fake([CancelEvent::class]);
+        [$driver, $trip] = $this->createFutureTripWithDriver();
+        $passenger = User::factory()->create();
         $this->passengerRepository->newRequest($trip->id, $passenger);
 
         $result = $this->passengerManager->cancelRequest($trip->id, $passenger->id, $passenger);
         $this->assertNotNull($result);
-        $this->assertTrue($trip->passengerPending->count() == 0);
+        $this->assertSame(Passenger::STATE_CANCELED, (int) $result->fresh()->request_state);
+        $this->assertSame(Passenger::CANCELED_REQUEST, (int) $result->fresh()->canceled_state);
+        Event::assertDispatched(CancelEvent::class);
     }
 
-    public function testGetPassenger()
+    public function test_get_passengers_returns_only_accepted_rows_for_owner(): void
     {
-        $driver = \STS\Models\User::factory()->create();
-        $passengerA = \STS\Models\User::factory()->create();
-        $passengerB = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        [$driver, $trip] = $this->createFutureTripWithDriver();
+        $passengerA = User::factory()->create();
+        $passengerB = User::factory()->create();
 
-        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        Passenger::factory()->aceptado()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        Passenger::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'trip_id' => $trip->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
 
         $result = $this->passengerManager->getPassengers($trip->id, $driver, []);
         $this->assertNotNull($result);
-        $this->assertTrue($result->count() > 0);
+        $this->assertCount(2, $result);
     }
 
-    public function testPenddingPassenger()
+    public function test_get_pending_requests_returns_pending_for_driver_scope(): void
     {
-        $driver = \STS\Models\User::factory()->create();
-        $passengerA = \STS\Models\User::factory()->create();
-        $passengerB = \STS\Models\User::factory()->create();
-        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        [$driver, $trip] = $this->createFutureTripWithDriver();
+        $passengerA = User::factory()->create();
+        $passengerB = User::factory()->create();
 
-        \STS\Models\Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
-        \STS\Models\Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
+        Passenger::factory()->create(['user_id' => $passengerA->id, 'trip_id' => $trip->id]);
+        Passenger::factory()->aceptado()->create(['user_id' => $passengerB->id, 'trip_id' => $trip->id]);
 
         $result = $this->passengerManager->getPendingRequests($trip->id, $driver, []);
         $this->assertNotNull($result);
-        $this->assertTrue($result->count() > 0);
+        $this->assertCount(1, $result);
+        $this->assertSame($passengerA->id, $result->first()->user_id);
 
         $result = $this->passengerManager->getPendingRequests(null, $driver, []);
-        $this->assertTrue($result->count() > 0);
+        $this->assertGreaterThanOrEqual(1, $result->count());
     }
 }

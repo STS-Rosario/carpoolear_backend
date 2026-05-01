@@ -127,7 +127,14 @@ class UserController extends Controller
 
         return response()->json([
             'message' => 'Identity validation cleared',
-            'data' => $user->fresh(['id', 'name', 'nro_doc', 'identity_validated', 'identity_validated_at', 'identity_validation_type']),
+            'data' => $user->fresh()->only([
+                'id',
+                'name',
+                'nro_doc',
+                'identity_validated',
+                'identity_validated_at',
+                'identity_validation_type',
+            ]),
         ]);
     }
 

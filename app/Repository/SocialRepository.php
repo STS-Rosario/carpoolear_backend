@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Models\User;
 use STS\Models\SocialAccount;
+use STS\Models\User;
 
 class SocialRepository
 {
@@ -21,7 +21,7 @@ class SocialRepository
         $this->provider = $provider;
     }
 
-    public function getProvider($provider)
+    public function getProvider($provider = null)
     {
         return $this->provider;
     }
@@ -32,8 +32,8 @@ class SocialRepository
             $provider = $this->provider;
         }
         $account = SocialAccount::whereProvider($provider)
-                                    ->whereProviderUserId($provider_user_id)
-                                    ->first();
+            ->whereProviderUserId($provider_user_id)
+            ->first();
 
         return $account;
     }
@@ -45,7 +45,7 @@ class SocialRepository
         }
         $account = new SocialAccount([
             'provider_user_id' => $provider_user_id,
-            'provider'         => $provider,
+            'provider' => $provider,
         ]);
         $account->user()->associate($user);
         $account->save();

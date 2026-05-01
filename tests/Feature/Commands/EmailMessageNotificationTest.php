@@ -2,18 +2,15 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Conversation;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use STS\Models\Conversation;
+use STS\Models\User;
+use Tests\TestCase;
 
 class EmailMessageNotificationTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testMarksMessagesAsNotified()
+    public function test_marks_messages_as_notified()
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
@@ -50,7 +47,7 @@ class EmailMessageNotificationTest extends TestCase
         ]);
     }
 
-    public function testRunsSuccessfullyWithNoMessages()
+    public function test_runs_successfully_with_no_messages()
     {
         $this->artisan('messages:email')->assertSuccessful();
     }

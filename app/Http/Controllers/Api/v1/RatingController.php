@@ -2,7 +2,7 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
-use Illuminate\Http\Request; 
+use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\RatingManager;
@@ -41,7 +41,7 @@ class RatingController extends Controller
 
         $data = $this->rateLogic->getRatings($user, $data);
 
-        return $this->paginator($data, new RatingTransformer());
+        return $this->paginator($data, new RatingTransformer);
     }
 
     public function pendingRate(Request $request)
@@ -54,26 +54,25 @@ class RatingController extends Controller
         } else {
             if ($request->has('hash')) {
                 $hash = $request->get('hash');
-                $data = $this->rateLogic->getPendingRatings($hash);
+                $data = $this->rateLogic->getPendingRatingsByHash($hash);
             } else {
                 throw new ExceptionWithErrors('Hash not provided');
             }
         }
 
-        return $this->collection($data, new RatingTransformer());
+        return $this->collection($data, new RatingTransformer);
     }
 
     public function rate($tripId, $userId, Request $request)
     {
         $me = auth()->user();
 
-        
         if ($me) {
             $response = $this->rateLogic->rateUser($me, $userId, $tripId, $request->all());
         } else {
             if ($request->has('hash')) {
                 $hash = $request->get('hash');
-                $response = $this->rateLogic->rateUser($me, $hash, $tripId, $request->all());
+                $response = $this->rateLogic->rateUser($hash, $userId, $tripId, $request->all());
             } else {
                 throw new ExceptionWithErrors('Hash not provided');
             }

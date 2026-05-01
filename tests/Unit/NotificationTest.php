@@ -2,90 +2,91 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use STS\Models\User;
+use Illuminate\Support\Facades\Mail;
 use STS\Models\Trip;
+use STS\Models\User;
 use STS\Notifications\DummyNotification;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use STS\Services\Notifications\Models\ValueNotification;
+use STS\Services\Logic\NotificationManager;
 use STS\Services\Notifications\Models\DatabaseNotification;
+use STS\Services\Notifications\Models\ValueNotification;
+use Tests\TestCase;
 
 class NotificationTest extends TestCase
 {
-    use DatabaseTransactions;
+    private NotificationManager $manager;
 
-    public function testMorph()
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->manager = $this->app->make(NotificationManager::class);
+        Mail::fake();
+    }
+
+    private function sendDummy(User $user, Trip $trip, string $value = 'dummy'): void
+    {
+        $dummy = new DummyNotification;
+        $dummy->setAttribute('dummy', $value);
+        $dummy->setAttribute('trip', $trip);
+        $dummy->notify($user);
+    }
+
+    public function test_morph_values_persist_and_resolve_related_models(): void
     {
         $user = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $user->id]);
-        $notification = new DatabaseNotification();
+        $notification = new DatabaseNotification;
         $notification->user_id = $user->id;
         $notification->save();
 
-        $tripValue = new ValueNotification();
+        $tripValue = new ValueNotification;
         $tripValue->key = 'trip';
         $tripValue->value()->associate($trip);
         $notification->plain_values()->save($tripValue);
 
-        $userValue = new ValueNotification();
+        $userValue = new ValueNotification;
         $userValue->key = 'user';
         $userValue->value()->associate($user);
         $notification->plain_values()->save($userValue);
 
         $fetched = DatabaseNotification::find($notification->id);
         $this->assertNotNull($fetched);
-        $this->assertEquals(2, $fetched->plain_values()->count());
+        $this->assertSame(2, $fetched->plain_values()->count());
+        $this->assertSame($trip->id, $fetched->attributes()['trip']->id);
+        $this->assertSame($user->id, $fetched->attributes()['user']->id);
     }
 
-    public function testDummyNotification()
+    public function test_dummy_notification_persists_trip_attribute_and_string_representation(): void
     {
-        $user = User::factory()->create(['email' => 'marianoabotta@gmail.com']);
+        $user = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $user->id]);
+        $this->sendDummy($user, $trip, 'dummy');
 
-        $dummy = new DummyNotification;
-        $dummy->setAttribute('dummy', 'dummy');
-        $dummy->setAttribute('trip', $trip);
-
-        $dummy->notify($user);
-
-        $notification = DatabaseNotification::first();
+        $notification = DatabaseNotification::query()->first();
         $this->assertNotNull($notification);
-
-        $this->assertEquals($notification->attributes()['trip']->id, $trip->id);
+        $this->assertSame($trip->id, $notification->attributes()['trip']->id);
 
         $notifications = DatabaseNotification::all();
         $first = $notifications->asNotifications()->first();
-
-        $this->assertEquals($first->toString(), 'Dummy Notification dummy');
+        $this->assertSame('Dummy Notification dummy', $first->toString());
     }
 
-    public function testNotificationLogic()
+    public function test_notification_manager_flow_read_mark_and_delete(): void
     {
-        $user = User::factory()->create(['email' => 'marianoabotta@gmail.com']);
+        $user = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $user->id]);
+        $this->sendDummy($user, $trip, 'dummy');
 
-        $dummy = new DummyNotification;
-        $dummy->setAttribute('dummy', 'dummy');
-        $dummy->setAttribute('trip', $trip);
-
-        $dummy->notify($user);
-
-        $manager = \App::make(\STS\Services\Logic\NotificationManager::class);
-
-        $notifications = $manager->getNotifications($user, []);
-        $this->assertEquals(count($notifications), 1);
-
+        $notifications = $this->manager->getNotifications($user, []);
+        $this->assertCount(1, $notifications);
         $notification = $notifications[0];
+        $this->assertSame('Dummy Notification dummy', $notification['text']);
+        $this->assertFalse($notification['readed']);
 
-        $unreadCount = $manager->getUnreadCount($user);
-        $this->assertEquals($unreadCount, 1);
+        $this->assertSame(1, $this->manager->getUnreadCount($user));
+        $this->manager->getNotifications($user, ['mark' => true]);
+        $this->assertSame(0, $this->manager->getUnreadCount($user));
 
-        $notifications = $manager->getNotifications($user, ['mark' => true]);
-        $unreadCount = $manager->getUnreadCount($user);
-        $this->assertEquals($unreadCount, 0);
-
-        $manager->delete($user, $notification['id']);
-        $notifications = $manager->getNotifications($user, []);
-        $this->assertEquals(count($notifications), 0);
+        $this->manager->delete($user, $notification['id']);
+        $this->assertCount(0, $this->manager->getNotifications($user, []));
     }
 }

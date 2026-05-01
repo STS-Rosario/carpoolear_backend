@@ -2,18 +2,15 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Trip;
-use STS\Models\Passenger;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\Passenger;
+use STS\Models\Trip;
+use STS\Models\User;
+use Tests\TestCase;
 
 class CreateRatesTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testRunsSuccessfully()
+    public function test_runs_successfully()
     {
         $driver = User::factory()->create();
         $passenger = User::factory()->create();
@@ -32,7 +29,7 @@ class CreateRatesTest extends TestCase
         $this->artisan('rate:create')->assertSuccessful();
     }
 
-    public function testRunsWithNoTrips()
+    public function test_runs_with_no_trips()
     {
         $this->artisan('rate:create')->assertSuccessful();
     }

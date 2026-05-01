@@ -41,6 +41,8 @@ class User extends Authenticatable implements JWTSubject
         'description',
         'private_note',
         'mobile_phone',
+        'phone_verified',
+        'phone_verified_at',
         'image',
         'active',
         'activation_token',
@@ -91,6 +93,8 @@ class User extends Authenticatable implements JWTSubject
             'identity_validated_at' => 'datetime',
             'identity_validation_rejected_at' => 'datetime',
             'validate_by_date' => 'date',
+            'phone_verified' => 'boolean',
+            'phone_verified_at' => 'datetime',
         ];
     }
 
@@ -198,6 +202,23 @@ class User extends Authenticatable implements JWTSubject
         $donations->where('month', '>=', date('Y-m-01 00:00:00'));
 
         return $donations;
+    }
+
+    /**
+     * Mercado Pago / campaign checkout donations (not monthly donation rows).
+     */
+    public function campaignDonations()
+    {
+        return $this->hasMany(CampaignDonation::class, 'user_id');
+    }
+
+    /**
+     * All legacy monthly donation rows (no calendar-month filter).
+     * Used for lifetime totals such as badge rules.
+     */
+    public function donationRecords()
+    {
+        return $this->hasMany(Donation::class, 'user_id');
     }
 
     public function unreadNotifications()

@@ -12,18 +12,23 @@ class FirebaseService
     private $googleClient;
 
     private $firebaseFile = '';
-    private $firebaseName = '';
 
+    private $firebaseName = '';
 
     public function __construct()
     {
         $this->firebaseFile = config('firebase.firebase_path');
         $this->firebaseName = config('firebase.firebase_project_name');
 
+        // Inicializamos el cliente de Google con la cuenta de servicio
+        $this->googleClient = new Client;
+        $firebasePath = storage_path((string) $this->firebaseFile);
 
-        // Inicializamos el cliente de Google con la cuenta de servicio 
-        $this->googleClient = new Client();
-        $this->googleClient->setAuthConfig(storage_path($this->firebaseFile));
+        // In test/CI or local setups the env can point to a directory (or be empty).
+        // Avoid crashing on boot; send attempts will still fail downstream if misconfigured.
+        if ($this->firebaseFile && is_file($firebasePath) && is_readable($firebasePath)) {
+            $this->googleClient->setAuthConfig($firebasePath);
+        }
         $this->googleClient->addScope('https://www.googleapis.com/auth/firebase.messaging');
     }
 
@@ -32,8 +37,22 @@ class FirebaseService
      */
     public function getAccessToken()
     {
-        $accessToken = $this->googleClient->fetchAccessTokenWithAssertion();
+        $accessToken = $this->fetchMessagingAccessToken();
+
         return $accessToken['access_token'];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function fetchMessagingAccessToken(): array
+    {
+        return $this->googleClient->fetchAccessTokenWithAssertion();
+    }
+
+    protected function httpClient(): HttpClient
+    {
+        return new HttpClient;
     }
 
     /**
@@ -43,13 +62,13 @@ class FirebaseService
     {
         try {
             $accessToken = $this->getAccessToken();
-            $http = new HttpClient();
-            $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
+            $http = $this->httpClient();
+            $url = 'https://fcm.googleapis.com/v1/projects/'.$this->firebaseName.'/messages:send';
 
             $message = [
                 'message' => [
-                    'token' => $deviceToken
-                ]
+                    'token' => $deviceToken,
+                ],
             ];
 
             switch (strtolower($deviceType)) {
@@ -64,13 +83,13 @@ class FirebaseService
                             }
                         }
                     }
-                    
+
                     $message['message']['android'] = [
                         'notification' => $notification,
-                        'data' => $stringData
+                        'data' => $stringData,
                     ];
                     break;
-                    
+
                 case 'ios':
                     $stringData = [];
                     if (is_array($data)) {
@@ -82,25 +101,25 @@ class FirebaseService
                             }
                         }
                     }
-                    
+
                     $message['message']['apns'] = [
                         'payload' => [
                             'aps' => [
                                 'alert' => [
                                     'title' => $notification['title'],
-                                    'body' => $notification['body']
+                                    'body' => $notification['body'],
                                 ],
                                 'sound' => 'default',
-                                'badge' => 1
-                            ]
+                                'badge' => 1,
+                            ],
                         ],
                         'headers' => [
-                            'apns-priority' => '10'
-                        ]
+                            'apns-priority' => '10',
+                        ],
                     ];
                     $message['message']['data'] = $stringData;
                     break;
-                    
+
                 case 'browser':
                 case 'web':
                 default:
@@ -114,33 +133,33 @@ class FirebaseService
                             }
                         }
                     }
-                    
+
                     $message['message']['webpush'] = [
                         'notification' => $notification,
-                        'data' => $stringData
+                        'data' => $stringData,
                     ];
                     break;
             }
 
             $response = $http->post($url, [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Authorization' => 'Bearer '.$accessToken,
                     'Content-Type' => 'application/json',
                 ],
-                'json' => $message
+                'json' => $message,
             ]);
 
             $responseBody = json_decode($response->getBody(), true);
             $statusCode = $response->getStatusCode();
 
             return $responseBody;
-            
+
         } catch (ClientException $e) {
             // Extract detailed error information from FCM API response
             $statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
             $responseBody = null;
             $errorDetails = null;
-            
+
             if ($e->getResponse()) {
                 try {
                     $responseBody = json_decode($e->getResponse()->getBody()->getContents(), true);
@@ -151,8 +170,8 @@ class FirebaseService
                     $responseBody = $e->getResponse()->getBody()->getContents();
                 }
             }
-            
-            \Log::error('FirebaseService: FCM ClientException (HTTP ' . $statusCode . ')', [
+
+            \Log::error('FirebaseService: FCM ClientException (HTTP '.$statusCode.')', [
                 'device_token' => $deviceToken,
                 'device_type' => $deviceType,
                 'status_code' => $statusCode,
@@ -165,15 +184,14 @@ class FirebaseService
                 'fcm_error_details' => $errorDetails['details'] ?? null,
                 'full_error_response' => $responseBody,
                 'request_payload' => $message,
-                'error_trace' => $e->getTraceAsString()
+                'error_trace' => $e->getTraceAsString(),
             ]);
-            
+
             throw $e;
-            
         } catch (RequestException $e) {
             $statusCode = $e->getResponse() ? $e->getResponse()->getStatusCode() : null;
             $responseBody = null;
-            
+
             if ($e->getResponse()) {
                 try {
                     $responseBody = json_decode($e->getResponse()->getBody()->getContents(), true);
@@ -181,7 +199,7 @@ class FirebaseService
                     $responseBody = $e->getResponse()->getBody()->getContents();
                 }
             }
-            
+
             \Log::error('FirebaseService: FCM RequestException', [
                 'device_token' => $deviceToken,
                 'device_type' => $deviceType,
@@ -191,11 +209,10 @@ class FirebaseService
                 'error_message' => $e->getMessage(),
                 'full_error_response' => $responseBody,
                 'request_payload' => $message,
-                'error_trace' => $e->getTraceAsString()
+                'error_trace' => $e->getTraceAsString(),
             ]);
-            
+
             throw $e;
-            
         } catch (\Exception $e) {
             \Log::error('FirebaseService: Error sending notification', [
                 'device_token' => $deviceToken,
@@ -205,7 +222,7 @@ class FirebaseService
                 'error' => $e->getMessage(),
                 'error_trace' => $e->getTraceAsString(),
                 'notification' => $notification ?? null,
-                'data' => $data ?? null
+                'data' => $data ?? null,
             ]);
             throw $e;
         }
@@ -228,33 +245,33 @@ class FirebaseService
     {
         try {
             $accessToken = $this->getAccessToken();
-            
-            $http = new HttpClient();
-            $url = 'https://fcm.googleapis.com/v1/projects/' . $this->firebaseName . '/messages:send';
-            
+
+            $http = $this->httpClient();
+            $url = 'https://fcm.googleapis.com/v1/projects/'.$this->firebaseName.'/messages:send';
+
             $message = [
                 'message' => [
                     'token' => $deviceToken,
                     'webpush' => [
                         'notification' => [
                             'title' => '',
-                            'body' => ''
-                        ]
+                            'body' => '',
+                        ],
                     ],
                     'data' => [
-                        'invalidate' => 'true'
-                    ]
-                ]
+                        'invalidate' => 'true',
+                    ],
+                ],
             ];
-            
+
             $http->post($url, [
                 'headers' => [
-                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Authorization' => 'Bearer '.$accessToken,
                     'Content-Type' => 'application/json',
                 ],
                 'json' => $message,
             ]);
-            
+
             return true;
         } catch (\Exception $e) {
             return false;

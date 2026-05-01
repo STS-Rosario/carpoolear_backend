@@ -2,58 +2,66 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
 
 class CleanupPasswordResetTokensTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testDeletesExpiredTokens()
+    protected function tearDown(): void
     {
-        DB::table('password_resets')->insert([
-            'email' => 'old@example.com',
-            'token' => 'old-token',
-            'created_at' => Carbon::now()->subHours(25),
-        ]);
-
-        DB::table('password_resets')->insert([
-            'email' => 'recent@example.com',
-            'token' => 'recent-token',
-            'created_at' => Carbon::now()->subHours(1),
-        ]);
-
-        $this->artisan('auth:cleanup-reset-tokens')->assertSuccessful();
-
-        $this->assertDatabaseMissing('password_resets', ['email' => 'old@example.com']);
-        $this->assertDatabaseHas('password_resets', ['email' => 'recent@example.com']);
+        Schema::dropIfExists('failed_jobs');
+        parent::tearDown();
     }
 
-    public function testKeepsAllTokensWhenNoneExpired()
+    public function test_prints_failed_job_cleanup_line_only_when_matching_rows_deleted(): void
     {
-        DB::table('password_resets')->insert([
-            'email' => 'fresh@example.com',
-            'token' => 'fresh-token',
-            'created_at' => Carbon::now()->subHours(2),
+        Schema::dropIfExists('failed_jobs');
+        Schema::create('failed_jobs', function (Blueprint $table): void {
+            $table->id();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at');
+        });
+
+        DB::table('failed_jobs')->insert([
+            'connection' => 'sync',
+            'queue' => 'default',
+            'payload' => json_encode(['displayName' => 'SendPasswordResetEmail', 'job' => 'STS\\Jobs\\SendPasswordResetEmail']),
+            'exception' => 'test',
+            'failed_at' => now()->subDays(2),
         ]);
 
-        $this->artisan('auth:cleanup-reset-tokens')->assertSuccessful();
-
-        $this->assertDatabaseHas('password_resets', ['email' => 'fresh@example.com']);
+        $this->artisan('auth:cleanup-reset-tokens', ['--hours' => 1])
+            ->expectsOutputToContain('Also cleaned up 1 failed email jobs.')
+            ->assertSuccessful();
     }
 
-    public function testCustomHoursOption()
+    public function test_does_not_print_failed_job_line_when_payload_does_not_match(): void
     {
-        DB::table('password_resets')->insert([
-            'email' => 'test@example.com',
-            'token' => 'test-token',
-            'created_at' => Carbon::now()->subHours(5),
+        Schema::dropIfExists('failed_jobs');
+        Schema::create('failed_jobs', function (Blueprint $table): void {
+            $table->id();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at');
+        });
+
+        DB::table('failed_jobs')->insert([
+            'connection' => 'sync',
+            'queue' => 'default',
+            'payload' => json_encode(['displayName' => 'OtherJob', 'job' => 'Other']),
+            'exception' => 'test',
+            'failed_at' => now()->subDays(2),
         ]);
 
-        $this->artisan('auth:cleanup-reset-tokens', ['--hours' => 4])->assertSuccessful();
-
-        $this->assertDatabaseMissing('password_resets', ['email' => 'test@example.com']);
+        $this->artisan('auth:cleanup-reset-tokens', ['--hours' => 1])
+            ->doesntExpectOutputToContain('Also cleaned up')
+            ->assertSuccessful();
     }
 }

@@ -3,9 +3,9 @@
 namespace STS\Http\Middleware;
 
 use Closure;
-use Carbon\Carbon;
-use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Contracts\Auth\Guard;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tymon\JWTAuth\JWTAuth;
 
 class CheckUserBanned
 {
@@ -21,8 +21,7 @@ class CheckUserBanned
     /**
      * Create a new filter instance.
      *
-     * @param Guard $auth
-     *
+     * @param  Guard  $auth
      * @return void
      */
     public function __construct(JWTAuth $auth)
@@ -35,9 +34,7 @@ class CheckUserBanned
     /**
      * Handle an incoming request.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \Closure                 $next
-     *
+     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function handle($request, Closure $next)
@@ -50,8 +47,11 @@ class CheckUserBanned
                     abort(403, 'Access denied');
                 }
             }
-        } catch (\Exception $e) {
-            \Log::warning('CheckUserBanned middleware error: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            if ($e instanceof HttpException) {
+                throw $e;
+            }
+            \Log::warning('CheckUserBanned middleware error: '.$e->getMessage());
         }
 
         return $next($request);

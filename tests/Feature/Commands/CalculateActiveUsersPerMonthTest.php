@@ -2,17 +2,14 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\ActiveUsersPerMonth;
 use Carbon\Carbon;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use STS\Models\ActiveUsersPerMonth;
+use STS\Models\User;
+use Tests\TestCase;
 
 class CalculateActiveUsersPerMonthTest extends TestCase
 {
-    use DatabaseTransactions;
-
-    public function testCalculatesActiveUsersForPreviousMonth()
+    public function test_calculates_active_users_for_previous_month()
     {
         $lastMonth = Carbon::now()->subMonth();
         $monthStr = $lastMonth->format('Y-m');
@@ -60,7 +57,7 @@ class CalculateActiveUsersPerMonthTest extends TestCase
         $this->assertEquals(2, $record->value);
     }
 
-    public function testDryRunDoesNotSaveToDatabase()
+    public function test_dry_run_does_not_save_to_database()
     {
         $lastMonth = Carbon::now()->subMonth();
         $monthStr = $lastMonth->format('Y-m');
@@ -80,7 +77,7 @@ class CalculateActiveUsersPerMonthTest extends TestCase
         $this->assertNull($record);
     }
 
-    public function testSkipsIfDataAlreadyExists()
+    public function test_skips_if_data_already_exists()
     {
         $lastMonth = Carbon::now()->subMonth();
         $monthStr = $lastMonth->format('Y-m');
@@ -100,7 +97,7 @@ class CalculateActiveUsersPerMonthTest extends TestCase
         $this->assertEquals(99, $record->value);
     }
 
-    public function testForceRecalculates()
+    public function test_force_recalculates()
     {
         $lastMonth = Carbon::now()->subMonth();
         $monthStr = $lastMonth->format('Y-m');

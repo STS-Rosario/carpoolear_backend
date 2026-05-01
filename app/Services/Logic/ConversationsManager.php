@@ -2,18 +2,17 @@
 
 namespace STS\Services\Logic;
 
+use Carbon\Carbon;
+use STS\Events\MessageSend;
+use STS\Models\Conversation;
+use STS\Models\Message;
+use STS\Models\Passenger;
+use STS\Models\Trip;
+use STS\Models\User;
 use STS\Repository\ConversationRepository;
 use STS\Repository\MessageRepository;
 use STS\Repository\UserRepository;
-use STS\Models\User;
-use Carbon\Carbon;
 use Validator;
-use STS\Models\Message;
-use STS\Events\MessageSend;
-use STS\Models\Passenger;
-use STS\Models\Conversation;
-use STS\Models\Trip; 
-use STS\Services\Logic\UsersManager;
 
 class ConversationsManager extends BaseManager
 {
@@ -40,7 +39,7 @@ class ConversationsManager extends BaseManager
 
     private function createConversation($type, $tripId = null)
     {
-        $conversation = new Conversation();
+        $conversation = new Conversation;
         if ($tripId) {
             $conversation->trip_id = $tripId;
         }
@@ -68,19 +67,20 @@ class ConversationsManager extends BaseManager
         // \Log::info('$tripId: ' . $tripId);
         $trip = Trip::find($tripId); // Chequeo que el tripId pertenezca a un viaje
 
-        if (!$trip) {
+        if (! $trip) {
             $tripId = null;
         } else {
             $module_unaswered_message_limit = config('carpoolear.module_unaswered_message_limit', false);
             if ($module_unaswered_message_limit) {
                 $allow = $this->userManager->unansweredConversationOrRequestsByTrip($trip);
-                if (!$allow) {
+                if (! $allow) {
                     $this->setErrors(['error' => 'user_has_reach_request_limit']);
+
                     return;
                 }
             }
         }
-        if (!$conversation) {
+        if (! $conversation) {
             if ($this->usersCanChat($user1, $user2ID)) {
                 $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION, $tripId);
                 $this->conversationRepository->addUser($conversation, $user1ID);
@@ -93,10 +93,12 @@ class ConversationsManager extends BaseManager
                 $conversation = $this->updateTripId($conversation, $tripId);
             }
         }
+
         return $conversation;
     }
 
-    private function updateTripId ($conversation, $tripId) {
+    private function updateTripId($conversation, $tripId)
+    {
         return $this->conversationRepository->updateTripId($conversation, $tripId);
     }
 
@@ -147,7 +149,7 @@ class ConversationsManager extends BaseManager
 
     public function getUsersFromConversation(User $user, $conversationId)
     {
-        //Falta chequear permisos
+        // Falta chequear permisos
         $conversation = $this->conversationRepository->getConversationFromId($conversationId);
 
         return $conversation->users;
@@ -172,19 +174,19 @@ class ConversationsManager extends BaseManager
     {
         if ($conversation = $this->checkPrivateConversation($user, $conversationId)) {
             $users = match_array($users);
-            $userArray = [];
+            $userIdsToAdd = [];
             foreach ($users as $userId) {
                 $to = $this->userRepository->show($userId);
                 if ($to && $this->usersCanChat($user, $userId)) {
-                    $usersArray[] = $userId;
+                    $userIdsToAdd[] = $userId;
                 } else {
                     $this->setErrors(['user' => 'user_'.$userId.'_does_not_exist']);
 
                     return;
                 }
             }
-            foreach ($usersArray as $user) {
-                $this->conversationRepository->addUser($conversation, $user);
+            foreach ($userIdsToAdd as $participantId) {
+                $this->conversationRepository->addUser($conversation, $participantId);
             }
 
             return true;
@@ -220,7 +222,7 @@ class ConversationsManager extends BaseManager
 
     private function newMessage(array $data)
     {
-        $message = (new Message())->fill($data);
+        $message = (new Message)->fill($data);
         // the message starts no notified
         $message->already_notified = 0;
         $this->messageRepository->store($message);
@@ -231,9 +233,9 @@ class ConversationsManager extends BaseManager
     private function validator(array $data)
     {
         return Validator::make($data, [
-            'user_id'               => 'required|integer',
-            'text'                  => 'required|string|max:800',
-            'conversation_id'       => 'required|integer',
+            'user_id' => 'required|integer',
+            'text' => 'required|string|max:800',
+            'conversation_id' => 'required|integer',
         ]);
     }
 
@@ -259,26 +261,26 @@ class ConversationsManager extends BaseManager
                     $arr = $conversation->messages->toArray();
                     $initiator = $arr[0];
                     // $initiatorUser = User::where('id', $initiator['user_id'])->first();
-                    if (!$conversation->processed_for_average_response) {
+                    if (! $conversation->processed_for_average_response) {
                         if (count($conversation->messages) > 1) {
-                            for ($i = 1; $i < count($arr); $i++) { 
+                            for ($i = 1; $i < count($arr); $i++) {
                                 $m = $arr[$i];
-                                \Log::info($m['user_id'] . ' = ' . $initiator['user_id']);
+                                \Log::info($m['user_id'].' = '.$initiator['user_id']);
                                 if ($m['user_id'] != $initiator['user_id']) {
                                     $date = Carbon::parse($initiator['created_at']);
                                     $dateLate = Carbon::parse($m['created_at']);
                                     $diff = (int) $date->diffInSeconds($dateLate);
                                     $to = $user;
-                                    if (!isset($to->answer_delay_sum) || is_null($to->answer_delay_sum)) {
+                                    if (! isset($to->answer_delay_sum) || is_null($to->answer_delay_sum)) {
                                         $to->answer_delay_sum = 0;
                                     }
-                                    if (!isset($to->conversation_answered_count) || is_null($to->conversation_answered_count)) {
+                                    if (! isset($to->conversation_answered_count) || is_null($to->conversation_answered_count)) {
                                         $to->conversation_answered_count = 0;
                                     }
                                     $to->conversation_answered_count = $to->conversation_answered_count + 1;
                                     $to->answer_delay_sum = $to->answer_delay_sum + $diff;
                                     $to->save();
-                                    
+
                                     $conversation->processed_for_average_response = true;
                                     $conversation->save();
                                     break;
@@ -287,12 +289,12 @@ class ConversationsManager extends BaseManager
                         }
                     }
                 }
-                if (!$conversation->processed_for_sum_response) {
+                if (! $conversation->processed_for_sum_response) {
                     foreach ($otherUsers as $to) {
-                        if (!isset($to->conversation_opened_count) || is_null($to->conversation_opened_count)) {
+                        if (! isset($to->conversation_opened_count) || is_null($to->conversation_opened_count)) {
                             $to->conversation_opened_count = 0;
                         }
-                        if (!isset($to->conversation_answered_count) || is_null($to->conversation_answered_count)) {
+                        if (! isset($to->conversation_answered_count) || is_null($to->conversation_answered_count)) {
                             $to->conversation_answered_count = 0;
                         }
                         $to->conversation_opened_count = $to->conversation_opened_count + 1;
@@ -301,6 +303,7 @@ class ConversationsManager extends BaseManager
                     $conversation->processed_for_sum_response = true;
                     $conversation->save();
                 }
+
                 return $newMessage;
             } else {
                 $this->setErrors(['conversation_id' => 'conversation_does_not_exist']);
@@ -322,7 +325,7 @@ class ConversationsManager extends BaseManager
 
     private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $timestamp = null, $pageSize = null)
     {
-        //FALTA CHEQUEAR PERMISOS
+        // FALTA CHEQUEAR PERMISOS
         $conversation = $this->getConversation($user, $conversation_id);
 
         if ($conversation) {
@@ -348,7 +351,8 @@ class ConversationsManager extends BaseManager
         return $messages;
     }
 
-    public function sendFullTripMessage (Trip $trip) {
+    public function sendFullTripMessage(Trip $trip)
+    {
         // obtener todas las personas que consultaron
         $conversations = $this->conversationRepository->getConversationsByTrip($trip);
         $destinations = [];
@@ -358,13 +362,13 @@ class ConversationsManager extends BaseManager
                     // tengo que validar que no esté aceptado tambien
                     $esperandoRespuestaSolicitud = false;
                     foreach ($trip->passenger as $request) {
-                        if ($request->request_state == Passenger::STATE_PENDING && $request->user_id == $user->id) { 
+                        if ($request->request_state == Passenger::STATE_PENDING && $request->user_id == $user->id) {
                             $esperandoRespuestaSolicitud = true;
                             break;
                         }
                     }
-                    \Log::info('$esperandoRespuestaSolicitud: ' . $user->id . ' / ' . $esperandoRespuestaSolicitud ? 'true' : 'false');
-                    if (!in_array($user->id, $destinations) && $esperandoRespuestaSolicitud) {
+                    \Log::info('$esperandoRespuestaSolicitud: '.$user->id.' / '.$esperandoRespuestaSolicitud ? 'true' : 'false');
+                    if (! in_array($user->id, $destinations) && $esperandoRespuestaSolicitud) {
                         $destinations[] = $user->id;
                     }
                 }
@@ -373,7 +377,7 @@ class ConversationsManager extends BaseManager
 
         if (count($destinations)) {
             $message = 'Mensaje automático: El viaje con destino a ';
-            $message .= $trip->to_town . ' de fecha ' . $trip->trip_date . ' se ha completado.';
+            $message .= $trip->to_town.' de fecha '.$trip->trip_date.' se ha completado.';
             $this->sendToAll($trip->user, $destinations, $message); // $user, $destinations, $message
         }
     }
