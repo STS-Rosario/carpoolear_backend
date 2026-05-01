@@ -2856,3 +2856,28 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 - **Cause:** **`RemoveArrayItem`** / **`TrueToFalse`** on **`$via`** and **`force_email`** for many **`BaseNotification`** subclasses survived without a single **`getVia()`** matrix (`RequestRemainderNotification`, **`FriendRejectNotification`**, **`NewUserNotification`**, **`ResetPasswordNotification`**, **`DummyNotification`**, etc. — IDs from user report such as **`523e1a8313d09d7d`**, **`d3b1fbb9dcc7f93f`**, **`8c5555ea1fac3f38`**, **`5be5c053131c8881`**, **`277a17cb78db227a`**, **`df82baf8af57be87`**, plus all other **`RemoveArrayItem`** entries on **`$via`** listed for notifications not already fully covered elsewhere).
 - **Fix:** Data provider **`notificationViaProvider`** plus **`test_new_user_and_reset_password_force_mail_delivery_flag`** assert exact channel lists and mail **`force_email`** flags.
+
+## `FirebaseService` — ClientException / RequestException / `invalidateToken` (Infection cluster, Apr 2026 report)
+
+- **Cause:** **`RemoveArrayItem`** / **`CoalesceRemoveLeft`** on **`ClientException`** **`\\Log::error`** context (e.g. **`783ddbade0db9cbd`**, **`f951de13462c31f8`**, **`2a886c2ebefe1f2e`**, **`2b804d5365b9a195`**, **`25fa35b544698def`**, **`2b367930d7bd3d7f`**, **`0cc119c484e26798`**, **`2b1344c0b3ca5074`**, **`4952006c3553fe89`**, **`f579642329a87576`**, **`274bb9bb3b464c13`**, **`b7fbfbf44d33c966`**, **`75dbbc523e59b0cc`**, **`e5936d9482ab82d6`**); **`TernaryNegated`** / **`IfNegated`** / **`TrueToFalse`** on **`RequestException`** handling (**`de363cdb1f54ea36`**, **`de79cceb40f937d7`**, **`34bd86902b2f6240`**); **`RemoveMethodCall`** / **`RemoveArrayItem`** on **`RequestException`** / generic **`catch`** logs (**`3f991be10e470ccf`**–**`9a9b896cdbc49ba9`**, **`6b13e08acace72bf`**–**`34475aae8163e2a1`**); **`invalidateToken`** URL / payload / headers / return (**`e817088968d49113`**–**`aaaaf32e33dd89b9`**, **`0ea0301b96558397`**).
+- **Fix:** **`tests/Unit/Services/FirebaseServiceTest.php`** drives **`FirebaseServiceHarness`** and asserts **`\\Log::error`** payloads with **`->with($message, Mockery::on(...))`** (typed **`withArgs` closures** against **`Log::error` did not match Mockery’s dispatcher in this stack, so expectations silently failed and surfaced as **`NoMatchingExpectationException`**). Tests cover missing top-level **`error`** (all **`fcm_error_*`** null while **`full_error_response`** stays decoded), **`StreamInterface::getContents`** throw then raw string fallback, **`RequestException`** without response, invalid JSON body (**`json_decode` → `null`**), generic exception logging, and **`invalidateToken`** URL + **`Bearer`** + **`invalidate`** data + boolean return on failure.
+
+## `GoogleDirection` (`app/Services/GoogleDirection.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`donwloadPoint`** / **`save`** (**`74656916d822c6a5`**, **`30c80fe704a76f1d`**, **`b940405abcb74e6b`**); **`Concat*`** on geocode URL (**`5e76bafc41b2e807`**, **`d65a9af92d84f30b`**, **`b9064aa30aad1a7d`**); **`TrueToFalse`** / **`IfNegated`** / index mutants / **`BreakToContinue`** / **`RemoveArrayItem`** on **`TripPoint`** attributes (**`05e20fbbe5dbfa4d`** through **`19a17e6241b96580`**).
+- **Fix:** production **`fetchGeocodeJson`** seam; **`tests/Unit/Services/GoogleDirectionTest.php`** **`GoogleDirectionHarness`** queues decoded fixtures, asserts **`download`** issues two fetches (encoded **`from_town` / `to_town`**), **`donwloadPoint`** **`save`** receives expected **`TripPoint`** fields, and non-**`OK`** / **`null`** decode paths perform no save while still exercising **`fetchGeocodeJson`**.
+
+## `TestSocialProvider` (`app/Services/Social/TestSocialProvider.php`)
+
+- **Cause:** **`RemoveEarlyReturn`** (**`c67f50872db19e70`**, **`fb0226861f5fe976`**, **`c42c450cdc31d082`**) — fall-through would yield invalid rows or **`TypeError`** on **`friend_ids`**.
+- **Fix:** **`tests/Unit/Services/Social/TestSocialProviderTest.php`** covers invalid JSON token, missing / empty **`provider_user_id`**, happy path with **`description`**, **`getUserFriends`** for non-array token, non-array **`friend_ids`**, and stringified friend ids.
+
+## `AppleSocialProvider` (`app/Services/Social/AppleSocialProvider.php`)
+
+- **Cause:** **`RemoveMethodCall`** / **`Concat*`** on **`\\Log::info('getUserData'.json_encode($data))`** (**`746bde8245dafb6a`**, **`1154e62ee20c0876`**, **`5afb25e2cdba15f1`**, **`dad8a558ecbd2747`**); **`IfNegated`** / **`Concat*`** on **`fullName`** assembly (**`770f4778a917a9d5`** through **`0fa4b626c6d30670`**).
+- **Fix:** **`tests/Unit/Services/Social/AppleSocialProviderTest.php`** asserts the log line equals **`getUserData`**.**`json_encode($data)`** and covers default anonymous name, given-only, and family-append branches.
+
+## `FacebookSocialProvider` (`app/Services/Social/FacebookSocialProvider.php`)
+
+- **Cause:** status / **`isset`** / gender / birthday / return-array / **`request`** URL / friends loop / **`getError`** mutants (e.g. **`f9a794005551afcc`**–**`6d473fa7e62ff87f`**, **`509e85bf91dbea0a`**–**`ca7c9ff9095dc3f0`**).
+- **Fix:** **`tests/Unit/Services/Social/FacebookSocialProviderTest.php`** injects a mock **`GuzzleHttp\\Client`** via **`Closure::bind`** (dynamic **`$client`**), fakes **`200`** / error responses, asserts **`FACEBOOK BODY:`** logging, normalized **`gender` / `birthday`**, **`getUserFriends`** ids, and **`getError`** payloads on failure paths.
