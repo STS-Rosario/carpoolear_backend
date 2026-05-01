@@ -290,9 +290,9 @@ class TripsManager extends BaseManager
         }
     }
 
-    public function index($data)
+    public function index($user, $data)
     {
-        return $this->tripRepo->search($user, $data);
+        return $this->search($user, $data);
     }
 
     private function proccessTrips($trips)

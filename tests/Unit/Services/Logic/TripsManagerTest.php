@@ -3,19 +3,32 @@
 namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
+use Mockery;
+use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
+use STS\Models\Car;
 use STS\Models\Passenger;
 use STS\Models\Trip;
+use STS\Models\TripPoint;
 use STS\Models\User;
 use STS\Repository\FriendsRepository;
 use STS\Repository\TripRepository;
 use STS\Services\Logic\FriendsManager;
 use STS\Services\Logic\TripsManager;
+use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class TripsManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function manager(): TripsManager
     {
         return $this->app->make(TripsManager::class);
@@ -393,5 +406,393 @@ class TripsManagerTest extends TestCase
         Passenger::factory()->aceptado()->create(['trip_id' => $trip->id, 'user_id' => $b->id]);
 
         $this->assertTrue($this->manager()->shareTrip($a->fresh(), $b->fresh()));
+    }
+
+    public function test_index_delegates_to_search_with_user(): void
+    {
+        Carbon::setTestNow('2028-05-01 10:00:00');
+        $user = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDays(10),
+        ]);
+
+        $manager = $this->manager();
+        $criteria = ['user_id' => $user->id];
+        $fromIndex = $manager->index($user, $criteria);
+        $fromSearch = $manager->search($user, $criteria);
+
+        $this->assertEquals($fromSearch->count(), $fromIndex->count());
+        Carbon::setTestNow();
+    }
+
+    public function test_create_aborts_when_get_trip_info_returns_routing_service_unavailable(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $user = User::factory()->create(['banned' => 0]);
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([]));
+        $repo->shouldReceive('getTripInfo')->once()->andReturn(['error_code' => 'routing_service_unavailable']);
+        $repo->shouldNotReceive('create');
+
+        Event::fake([CreateEvent::class]);
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNull($result);
+        $this->assertInstanceOf(\Illuminate\Support\MessageBag::class, $manager->getErrors());
+        $this->assertTrue($manager->getErrors()->has('error'));
+        Event::assertNotDispatched(CreateEvent::class);
+        Carbon::setTestNow();
+    }
+
+    public function test_update_aborts_when_get_trip_info_returns_routing_service_unavailable(): void
+    {
+        Carbon::setTestNow('2028-04-01 10:00:00');
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::parse('2028-05-01 12:00:00'),
+        ]);
+        $trip->load('user');
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('show')->with(Mockery::on(fn ($u) => $u->is($driver)), $trip->id)->andReturn($trip);
+        $repo->shouldReceive('getTripInfo')->once()->andReturn(['error_code' => 'routing_service_unavailable']);
+        $repo->shouldNotReceive('update');
+
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+        $result = $manager->update($driver, $trip->id, [
+            'points' => [
+                ['address' => 'A', 'json_address' => ['x' => 1], 'lat' => -1.0, 'lng' => -2.0],
+                ['address' => 'B', 'json_address' => ['y' => 2], 'lat' => -3.0, 'lng' => -4.0],
+            ],
+        ]);
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('error'));
+        Carbon::setTestNow();
+    }
+
+    public function test_create_rejects_unverified_driver_when_is_passenger_is_string_zero(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config(['carpoolear.module_validated_drivers' => true]);
+        $user = User::factory()->create(['driver_is_verified' => false]);
+        $manager = $this->manager();
+
+        $payload = $this->minimalCreatePayload(['is_passenger' => '0']);
+        $result = $manager->create($user, $payload);
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('driver_is_verified'));
+        Carbon::setTestNow();
+    }
+
+    public function test_create_does_not_ban_when_recent_trip_count_equals_limit(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config([
+            'carpoolear.trip_creation_limits.max_trips' => 2,
+            'carpoolear.trip_creation_limits.time_window_hours' => 24,
+        ]);
+        $user = User::factory()->create(['banned' => 0]);
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([1, 2]));
+        $repo->shouldReceive('getTripInfo')->once()->andReturn([]);
+        $repo->shouldReceive('create')->once()->andReturnUsing(function (array $data) use ($user) {
+            return Trip::factory()->create([
+                'user_id' => $data['user_id'] ?? $user->id,
+                'from_town' => $data['from_town'] ?? 'X',
+                'to_town' => $data['to_town'] ?? 'Y',
+                'trip_date' => $data['trip_date'] ?? Carbon::now()->addDays(5),
+                'total_seats' => $data['total_seats'] ?? 3,
+                'friendship_type_id' => $data['friendship_type_id'] ?? Trip::PRIVACY_PUBLIC,
+            ]);
+        });
+
+        Event::fake([CreateEvent::class]);
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNotNull($result);
+        $this->assertSame(0, (int) $user->fresh()->banned);
+        Carbon::setTestNow();
+    }
+
+    public function test_create_bans_when_recent_trip_count_strictly_exceeds_limit(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config([
+            'carpoolear.trip_creation_limits.max_trips' => 2,
+            'carpoolear.trip_creation_limits.time_window_hours' => 24,
+        ]);
+        $user = User::factory()->create(['banned' => 0]);
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([1, 2, 3]));
+        $repo->shouldNotReceive('getTripInfo');
+        $repo->shouldNotReceive('create');
+
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('banned'));
+        $this->assertSame(1, (int) $user->fresh()->banned);
+        Carbon::setTestNow();
+    }
+
+    public function test_create_logs_trip_limit_diag_lines(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config([
+            'carpoolear.trip_creation_limits.max_trips' => 1,
+            'carpoolear.trip_creation_limits.time_window_hours' => 24,
+        ]);
+        $user = User::factory()->create(['banned' => 0]);
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('getRecentTrips')->andReturn(collect([1, 2]));
+        $repo->shouldNotReceive('create');
+
+        Event::fake([MessageLogged::class]);
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+        $manager->create($user, $this->minimalCreatePayload());
+
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'maxTrips'));
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'timeWindow'));
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'recentTrips'));
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'User banned due to exceeding trip creation limits'));
+        Carbon::setTestNow();
+    }
+
+    public function test_banned_word_matching_is_case_insensitive_for_configured_word(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [
+                        [
+                            'distance' => 365_000,
+                            'duration' => 18_000,
+                        ],
+                    ],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config(['carpoolear.banned_words_trip_description' => ['WhatsApp']]);
+        $user = User::factory()->create(['banned' => 0]);
+        $manager = $this->manager();
+
+        $result = $manager->create($user, $this->minimalCreatePayload([
+            'description' => 'write me on whatsapp please',
+        ]));
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('banned'));
+        Carbon::setTestNow();
+    }
+
+    public function test_parent_trip_id_sets_return_trip_id_on_parent(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [
+                        [
+                            'distance' => 365_000,
+                            'duration' => 18_000,
+                        ],
+                    ],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = User::factory()->create();
+        $car = Car::factory()->create(['user_id' => $user->id]);
+        $manager = $this->manager();
+
+        $parent = $manager->create($user, $this->minimalCreatePayload([
+            'car_id' => $car->id,
+        ]));
+        $this->assertNotNull($parent);
+
+        $child = $manager->create($user, $this->minimalCreatePayload([
+            'car_id' => $car->id,
+            'trip_date' => '2028-03-11 15:00:00',
+            'parent_trip_id' => $parent->id,
+        ]));
+        $this->assertNotNull($child);
+        $this->assertSame($child->id, (int) $parent->fresh()->return_trip_id);
+        Carbon::setTestNow();
+    }
+
+    public function test_proccess_trips_fills_ciudad_and_provincia_when_missing(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        TripPoint::factory()->create([
+            'trip_id' => $trip->id,
+            'json_address' => ['name' => 'Rosario', 'state' => 'Santa Fe'],
+        ]);
+        $trip->load('points');
+
+        $method = new \ReflectionMethod(TripsManager::class, 'proccessTrips');
+        $method->setAccessible(true);
+        $out = $method->invoke($this->manager(), collect([$trip]));
+
+        $json = $out->first()->points->first()->json_address;
+        $this->assertSame('Rosario', $json['ciudad']);
+        $this->assertSame('Santa Fe', $json['provincia']);
+    }
+
+    public function test_user_can_see_fof_trip_when_viewer_is_friend_of_friend(): void
+    {
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $c = User::factory()->create();
+        $friends = new FriendsManager(new FriendsRepository);
+        $friends->make($a, $b);
+        $friends->make($b, $c);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $a->id,
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        $this->assertTrue($this->manager()->userCanSeeTrip($c->fresh(), $trip));
+    }
+
+    public function test_user_cannot_see_fof_trip_without_friend_of_friend_link(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        $this->assertFalse($this->manager()->userCanSeeTrip($stranger, $trip));
+    }
+
+    public function test_user_can_see_public_trip_false_when_sellado_required_and_not_ready(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+        ]);
+
+        $this->assertFalse($this->manager()->userCanSeeTrip($stranger, $trip));
+    }
+
+    public function test_user_can_see_public_trip_when_passing_trip_id_integer(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        $this->assertTrue($this->manager()->userCanSeeTrip($stranger, $trip->id));
+    }
+
+    public function test_delete_sets_tripowner_error_for_non_owner(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $manager = $this->manager();
+        $manager->delete($stranger, $trip->id);
+
+        $this->assertSame(trans('errors.tripowner'), $manager->getErrors());
+    }
+
+    public function test_update_sets_tripowner_error_for_non_owner(): void
+    {
+        Carbon::setTestNow('2028-04-01 10:00:00');
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::parse('2028-05-01 12:00:00'),
+        ]);
+
+        $manager = $this->manager();
+        $manager->update($stranger, $trip->id, ['total_seats' => 2]);
+
+        $this->assertSame(trans('errors.tripowner'), $manager->getErrors());
+        Carbon::setTestNow();
+    }
+
+    public function test_change_visibility_sets_tripowner_error_for_non_owner(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Event::fake([MessageLogged::class]);
+        $manager = $this->manager();
+        $manager->changeVisibility($stranger, $trip->id);
+
+        $this->assertSame(trans('errors.tripowner'), $manager->getErrors());
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'changeVisibility trip'));
+    }
+
+    public function test_calc_trip_price_arg_branch_uses_simple_price(): void
+    {
+        config(['carpoolear.osm_country' => 'ARG', 'carpoolear.fuel_price' => 1000]);
+        $manager = $this->manager();
+        $distance = 2000;
+        $expected = $this->app->make(TripRepository::class)->simplePrice($distance);
+
+        $this->assertSame(
+            $expected,
+            $manager->calcTripPrice(['name' => 'X'], ['name' => 'Y'], $distance)
+        );
+    }
+
+    public function test_price_uses_calc_trip_price_when_api_price_enabled_and_endpoints_present(): void
+    {
+        config([
+            'carpoolear.api_price' => true,
+            'carpoolear.osm_country' => 'ARG',
+            'carpoolear.fuel_price' => 1000,
+        ]);
+        $manager = $this->manager();
+        $distance = 1500;
+        $expected = $this->app->make(TripRepository::class)->simplePrice($distance);
+
+        $this->assertSame(
+            $expected,
+            $manager->price(['name' => 'Origin'], ['name' => 'Dest'], $distance)
+        );
     }
 }

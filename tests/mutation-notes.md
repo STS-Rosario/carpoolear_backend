@@ -2759,6 +2759,38 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 - **Cause:** Large **`RemoveArrayItem`** cluster on the **`Validator::make`** rule arrays for create/update (`2bf182013f292967`, `c956340d2a485557`, `2cbf82629ffc4849`, … through **`af4da0dd82967cff`** / **`fe1dd43cb6325253`** / **`39100582fee2269d`** / **`5c3e62165275d84c`** / **`4acf06efc7650c4e`).
 - **Fix:** **`TripsManagerTest::test_validator_create_includes_all_documented_rule_keys`** and **`test_validator_update_includes_all_documented_rule_keys`** assert every top-level key plus expanded **`points.{i}.*`** keys present for representative payloads.
 
+## `TripsManager` — create / update / limits / routing / visibility / pricing / index (second Infection batch)
+
+- **Cause:** **`index($data)`** called **`$this->tripRepo->search($user, $data)`** with an undefined **`$user`** (runtime error + **`AlwaysReturnNull`** / dead code mutants on **`index`**). **IDs:** (implicit **`index`** / **`295`** region from report **`1b43b9f54689d2b3`**-class).
+- **Fix:** **`TripsManager::index($user, $data)`** now delegates to **`search($user, $data)`** so **`proccessTrips`** runs consistently. **`TripsManagerTest::test_index_delegates_to_search_with_user`** compares result sizes for the same criteria.
+
+- **Cause:** **`RemoveArrayItem`** on **`points.*.lat`** / **`points.*.lng`** in the update validator branch (**`b0c225d55bd474dc`**, **`4556419cbd275731`**). Covered in practice by the same rule-key matrix as the first batch; this batch adds behavioral tests below.
+- **Fix:** Existing **`test_validator_update_includes_all_documented_rule_keys`** remains the primary guard.
+
+- **Cause:** **`EqualToIdentical`** / **`FalseToTrue`** on **`$data['is_passenger'] == 0`** vs **`=== 0`**, or **`config(..., false)`** flipped to **`true`** (**`49062199b6d3e0d4`**, **`7c0497a1691c199d`**). String **`'0'`** must still be treated as driver for the verified-driver gate.
+- **Fix:** **`test_create_rejects_unverified_driver_when_is_passenger_is_string_zero`**.
+
+- **Cause:** **`DecrementInteger` / `IncrementInteger`** on **`max_trips`** / **`time_window_hours`**, **`GreaterToGreaterOrEqual`** on **`>`** vs **`>=`**, **`FalseToTrue` / `IncrementInteger`** on **`userManager->update(..., ['banned' => 1], ...)`**, log-line **`RemoveMethodCall` / `Concat*`** mutants (**`426106bae6440604`**, **`9707ad70953b544e`**, **`bb2597511eb925cf`**, **`4f3f1fd28d414ca2`**, **`4d21404584ee38d8`**–**`64fb4157bbc348ea`**, **`a635f2b8aa4969ea`**, **`35d9e4844ce5bd1f`**, **`497564bc151c2e87`**, **`e80e7cf7f050d097`**–**`ef333cb868c6dbda`**).
+- **Fix:** **`test_create_does_not_ban_when_recent_trip_count_equals_limit`** (mocked **`getRecentTrips`** count equals **`max_trips`**, **`create` must run**, user stays unbanned); **`test_create_bans_when_recent_trip_count_strictly_exceeds_limit`** (**`>`** not **`>=`**, ban **`1`**); **`test_create_logs_trip_limit_diag_lines`** asserts **`MessageLogged`** **`info`** lines for **`maxTrips`**, **`timeWindow`**, **`recentTrips`**, and the ban summary.
+
+- **Cause:** **`UnwrapStrtolower`** on **`strtolower($word)`** in banned-word matching (**`05ec6eeb0c8dbbe1`**). Config entries with mixed case must still match a lowercased description.
+- **Fix:** **`test_banned_word_matching_is_case_insensitive_for_configured_word`** (**`Http::fake`** OSRM so **`create`** reaches the description scan).
+
+- **Cause:** **`IfNegated` / `BooleanAndToBooleanOr`** on **`isset($data['points']) && is_array($data['points'])`**, **`CoalesceRemoveLeft`**, **`RemoveMethodCall`** on **`$messageBag->add` / `setErrors` / `return`**, **`IfNegated`** on **`$parentTrip`** (**`acd2d268e49541c7`**, **`118c8dbd0bfac81d`**, **`e04ff117068f519c`**, **`551cb7d00230915d`**, **`65c649c8eafac83b`**, **`b7d6458dd544fa62`** and related **`147`**–**`160`** IDs).
+- **Fix:** **`test_create_aborts_when_get_trip_info_returns_routing_service_unavailable`** and **`test_update_aborts_when_get_trip_info_returns_routing_service_unavailable`** (narrow **`TripRepository`** mock: **`getTripInfo`** returns **`routing_service_unavailable`**, **`create`/`update` not called**, **`CreateEvent`** not fired on create path); **`test_parent_trip_id_sets_return_trip_id_on_parent`** (**`Http::fake`** + real **`create`**, asserts **`parent->return_trip_id`**).
+
+- **Cause:** **`ForeachEmptyIterable`**, **`PostIncrementToPostDecrement`**, **`IfNegated`** on **`proccessTrips`** (**`8f2600e68a3ef9b7`**, **`fa98dce65f42229a`**, **`ca2da7ac3c1a67d5`**, **`625f2f210b8c85e4`**, **`1ba522012e80c0f8`**, **`75d615e7b0a14d11`**).
+- **Fix:** **`test_proccess_trips_fills_ciudad_and_provincia_when_missing`** invokes **`proccessTrips`** via reflection on a trip with a **`TripPoint`** whose **`json_address`** has **`name`/`state`** but no **`ciudad`**.
+
+- **Cause:** **`EqualToIdentical` / `EqualToNotEqual` / `IfNegated` / `TrueToFalse` / `RemoveEarlyReturn` / `FalseToTrue` / `AlwaysReturnNull`** across **`userCanSeeTrip`** and related privacy / sellado checks (**`d0ac7ffd5bbfea3a`**, **`5c4ad0af897c3dc4`**, **`feb5b3612891dfec`**, **`5a1165ebd871a3c7`**, **`94151452a019ab20`**, **`a536883b6b6d2087`**, **`c69ba96fcd8a617d`**, **`fab1691b74906477`**, **`8ea074ac0c5910f2`**, **`2e71468bb07aed5e`**, **`409`/`412`/`417`/`428`/`429`/`434`** cluster).
+- **Fix:** **`test_user_can_see_fof_trip_when_viewer_is_friend_of_friend`**, **`test_user_cannot_see_fof_trip_without_friend_of_friend_link`**, **`test_user_can_see_public_trip_false_when_sellado_required_and_not_ready`**, **`test_user_can_see_public_trip_when_passing_trip_id_integer`**.
+
+- **Cause:** **`RemoveMethodCall`** on **`setErrors(trans('errors.tripowner'))` / `trans('errors.notrip')`** for non-owner **`delete`/`update`/`changeVisibility`** (**`13561fba3c33e01a`**, **`292f2cbb7ed551f2`**, **`61223ef61a958305`**, **`2232244e5d65cf38`**, etc.).
+- **Fix:** **`test_delete_sets_tripowner_error_for_non_owner`**, **`test_update_sets_tripowner_error_for_non_owner`**, **`test_change_visibility_sets_tripowner_error_for_non_owner`** (plus **`MessageLogged`** for the visibility diagnostic line so **`RemoveMethodCall`** on **`\\Log::info('changeVisibility trip: …')`** is caught — **`de9e8d619ed784f0`** family).
+
+- **Cause:** **`EmptyStringToNotEmpty`**, **`IfNegated`**, **`ElseIfNegated`**, **`EqualToNotEqual`**, **`EqualToIdentical`** on **`calcTripPrice`** ARG/CHL branches and embedded **`json_decode`** (**`94c18e3ee85250af`**, **`da4e9423078fbdc7`**, **`d0c33e888c4e2ff8`**, **`5a66d95aa2c9bb37`**, **`9b2aaa4b0eb66147`**, **`64464b899ba0eca0`**, **`4e0faa554c26cf44`**).
+- **Fix:** **`test_calc_trip_price_arg_branch_uses_simple_price`** (**`osm_country`** **`ARG`** ⇒ same numeric result as **`TripRepository::simplePrice`**); **`test_price_uses_calc_trip_price_when_api_price_enabled_and_endpoints_present`** locks **`$from && $to && config('carpoolear.api_price')`** with **`api_price` true**, non-empty endpoints, and **`ARG`** so **`price()`** must call **`calcTripPrice`** (mutants **`23a5b075981522ac`**, **`b9cfd9f16d428dad`**).
+
 ## `RoutesManager::fetchOsrmRouteJson` (`app/Services/Logic/RoutesManager.php`)
 
 - **Cause:** Mutants weakened **`curl_setopt`**, **`curl_exec`**, **`json_decode(..., true)`**, logging, or return value (`b98a3f42b58098ae`, `19ae5408dbf92434`, `137220af0495d633`, `f6a0a6050930bb8a`, `53eb087cf517e66b`, `359feb0fb1c6e36c`, `9520657b28e6fef3`, `94e0cd4934508c2c`, `a278bb53cb46cc28`, `bb85f96147df686b`, `8949fc68697a5f7b`).
