@@ -3,6 +3,8 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use Mockery;
 use STS\Console\Commands\GenerateTripVisibility;
 use STS\Models\Trip;
@@ -46,7 +48,11 @@ class GenerateTripVisibilityTest extends TestCase
             ->with(Mockery::on(fn ($trip) => $trip instanceof Trip && $trip->id === $eligibleTrip->id));
         $this->app->instance(TripRepository::class, $repo);
 
+        Event::fake([MessageLogged::class]);
+
         $this->artisan('trip:visibility')->assertExitCode(0);
+
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e): bool => $e->message === 'COMMAND GenerateTripVisibility');
     }
 
     public function test_command_contract_is_defined(): void
