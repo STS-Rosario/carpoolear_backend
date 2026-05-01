@@ -37,9 +37,22 @@ class FirebaseService
      */
     public function getAccessToken()
     {
-        $accessToken = $this->googleClient->fetchAccessTokenWithAssertion();
+        $accessToken = $this->fetchMessagingAccessToken();
 
         return $accessToken['access_token'];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function fetchMessagingAccessToken(): array
+    {
+        return $this->googleClient->fetchAccessTokenWithAssertion();
+    }
+
+    protected function httpClient(): HttpClient
+    {
+        return new HttpClient;
     }
 
     /**
@@ -49,7 +62,7 @@ class FirebaseService
     {
         try {
             $accessToken = $this->getAccessToken();
-            $http = new HttpClient;
+            $http = $this->httpClient();
             $url = 'https://fcm.googleapis.com/v1/projects/'.$this->firebaseName.'/messages:send';
 
             $message = [
@@ -233,7 +246,7 @@ class FirebaseService
         try {
             $accessToken = $this->getAccessToken();
 
-            $http = new HttpClient;
+            $http = $this->httpClient();
             $url = 'https://fcm.googleapis.com/v1/projects/'.$this->firebaseName.'/messages:send';
 
             $message = [
