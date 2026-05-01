@@ -3,6 +3,8 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use STS\Console\Commands\RequestNotAnswer;
 use STS\Events\Trip\Alert\RequestNotAnswer as RequestNotAnswerEvent;
@@ -22,7 +24,9 @@ class RequestNotAnswerTest extends TestCase
     public function test_handle_dispatches_event_for_pending_requests_created_three_days_ago(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 4, 28, 10, 0, 0));
-        Event::fake();
+        Event::fake([RequestNotAnswerEvent::class, MessageLogged::class]);
+        $previous = Model::preventsLazyLoading();
+        Model::preventLazyLoading(true);
 
         $driver = User::factory()->create();
         $passengerUser = User::factory()->create();
@@ -48,7 +52,15 @@ class RequestNotAnswerTest extends TestCase
             'updated_at' => Carbon::now()->subDays(2),
         ])->saveQuietly();
 
-        $this->artisan('trip:requestnotanswer')->assertExitCode(0);
+        try {
+            $this->artisan('trip:requestnotanswer')->assertExitCode(0);
+        } finally {
+            Model::preventLazyLoading($previous);
+        }
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->message === 'COMMAND RequestNotAnswer';
+        });
 
         Event::assertDispatched(RequestNotAnswerEvent::class, function (RequestNotAnswerEvent $event) use ($trip, $passengerUser) {
             return $event->trip->id === $trip->id
