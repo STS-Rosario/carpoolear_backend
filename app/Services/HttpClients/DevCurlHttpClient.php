@@ -32,15 +32,6 @@ class DevCurlHttpClient extends FacebookCurlHttpClient
             }
         }
 
-        if ($curlHandle && is_resource($curlHandle)) {
-            // Disable SSL verification for development
-            curl_setopt($curlHandle, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($curlHandle, CURLOPT_SSL_VERIFYHOST, false);
-            curl_setopt($curlHandle, CURLOPT_CAINFO, false);
-            curl_setopt($curlHandle, CURLOPT_CAPATH, false);
-        } else {
-            // If we can't find the handle, just log and continue
-            \Log::warning('Could not find cURL handle in DevCurlHttpClient');
-        }
+        DevFacebookCurlSsl::applyInsecureSslOrLogMissing($curlHandle);
     }
 }
