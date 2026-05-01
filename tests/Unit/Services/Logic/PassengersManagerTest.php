@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\MessageBag;
+use Mockery;
 use STS\Events\Passenger\Accept as AcceptEvent;
 use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
 use STS\Events\Passenger\Cancel as CancelEvent;
@@ -19,6 +20,12 @@ use Tests\TestCase;
 
 class PassengersManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -161,6 +168,50 @@ class PassengersManagerTest extends TestCase
         Event::assertNotDispatched(RequestEvent::class);
     }
 
+    public function test_internal_request_validation_requires_user_id(): void
+    {
+        $manager = $this->manager();
+        $method = (new \ReflectionClass($manager))->getMethod('validateInput');
+        $method->setAccessible(true);
+        $validator = $method->invoke($manager, ['trip_id' => 1]);
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('user_id'));
+    }
+
+    public function test_new_request_blocks_when_user_request_limited_module_detects_similar_trip(): void
+    {
+        Event::fake([RequestEvent::class]);
+        Config::set('carpoolear.module_user_request_limited', (object) [
+            'enabled' => true,
+            'hours_range' => 48,
+        ]);
+        $driverA = User::factory()->create(['autoaccept_requests' => false]);
+        $driverB = User::factory()->create();
+        $tripDate = Carbon::parse('2028-07-10 10:00:00');
+        $tripA = Trip::factory()->create([
+            'user_id' => $driverA->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => $tripDate,
+        ]);
+        $tripB = Trip::factory()->create([
+            'user_id' => $driverB->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => $tripDate->copy()->addHours(12),
+        ]);
+        $requester = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $tripB->id,
+            'user_id' => $requester->id,
+        ]);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($tripA->id, $requester, []));
+        $this->assertSame('user_has_another_similar_trip', $manager->getErrors()['error']);
+        $this->assertSame(0, Passenger::query()->where('trip_id', $tripA->id)->where('user_id', $requester->id)->count());
+        Event::assertNotDispatched(RequestEvent::class);
+    }
+
     public function test_new_request_sets_limit_error_when_unanswered_limit_module_blocks_user(): void
     {
         Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
@@ -237,6 +288,27 @@ class PassengersManagerTest extends TestCase
 
         Event::assertDispatched(CancelEvent::class);
         $this->assertSame(Passenger::STATE_CANCELED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_cancel_request_passenger_while_waiting_payment_sets_while_paying_state(): void
+    {
+        Event::fake([CancelEvent::class]);
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->manager()->cancelRequest($trip->id, $passenger->id, $passenger, []);
+
+        Event::assertDispatched(CancelEvent::class);
+        $row = Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->first();
+        $this->assertSame(Passenger::STATE_CANCELED, (int) $row->request_state);
+        $this->assertSame(Passenger::CANCELED_PASSENGER_WHILE_PAYING, (int) $row->canceled_state);
     }
 
     public function test_cancel_request_driver_cancels_accepted_passenger(): void
@@ -334,6 +406,59 @@ class PassengersManagerTest extends TestCase
         $this->assertSame('not_valid_request', $manager->getErrors()['error']);
     }
 
+    public function test_accept_request_moves_to_waiting_payment_when_seats_payment_module_enabled(): void
+    {
+        Event::fake([AcceptEvent::class]);
+        Config::set('carpoolear.module_trip_seats_payment', true);
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'total_seats' => 3,
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $conversationManagerMock = Mockery::mock(\STS\Services\Logic\ConversationsManager::class);
+        $conversationManagerMock->shouldReceive('sendFullTripMessage')->never();
+        $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
+
+        $this->manager()->acceptRequest($trip->id, $passenger->id, $driver, []);
+
+        $this->assertSame(Passenger::STATE_WAITING_PAYMENT, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+        Event::assertDispatched(AcceptEvent::class);
+    }
+
+    public function test_new_request_autoaccept_with_payment_module_dispatches_auto_and_accept_events(): void
+    {
+        Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
+        Config::set('carpoolear.module_trip_seats_payment', true);
+        $driver = User::factory()->create(['autoaccept_requests' => true]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+            'total_seats' => 4,
+        ]);
+        $requester = User::factory()->create();
+
+        $conversationManagerMock = Mockery::mock(\STS\Services\Logic\ConversationsManager::class);
+        $conversationManagerMock->shouldReceive('sendFullTripMessage')->never();
+        $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
+
+        $row = $this->manager()->newRequest($trip->id, $requester, []);
+
+        $this->assertNotNull($row);
+        $this->assertSame(Passenger::STATE_WAITING_PAYMENT, (int) $row->fresh()->request_state);
+        Event::assertNotDispatched(RequestEvent::class);
+        Event::assertDispatched(AutoRequestEvent::class);
+        Event::assertDispatched(AcceptEvent::class);
+    }
+
     public function test_reject_request_rejects_pending_and_dispatches_reject_event(): void
     {
         Event::fake([RejectEvent::class]);
@@ -412,10 +537,56 @@ class PassengersManagerTest extends TestCase
             'passenger_type' => Passenger::TYPE_PASAJERO,
         ]);
 
-        $this->manager()->payRequest($trip->id, $passenger->id, $driver, []);
+        $out = $this->manager()->payRequest($trip->id, $passenger->id, $driver, []);
 
+        $this->assertInstanceOf(Passenger::class, $out);
+        $this->assertTrue((bool) $out);
         $this->assertSame(Passenger::STATE_ACCEPTED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
         Event::assertDispatched(RejectEvent::class);
+    }
+
+    public function test_pay_request_returns_null_when_passenger_not_waiting_payment(): void
+    {
+        Event::fake([RejectEvent::class]);
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->payRequest($trip->id, $passenger->id, $driver, []));
+        $this->assertSame('not_valid_request', $manager->getErrors()['error']);
+        Event::assertNotDispatched(RejectEvent::class);
+    }
+
+    public function test_pay_request_returns_early_when_input_invalid(): void
+    {
+        Event::fake([RejectEvent::class]);
+        $driver = User::factory()->create();
+
+        $this->assertNull($this->manager()->payRequest(null, 1, $driver, []));
+        Event::assertNotDispatched(RejectEvent::class);
+    }
+
+    public function test_reject_request_returns_early_when_input_invalid(): void
+    {
+        Event::fake([RejectEvent::class]);
+        $driver = User::factory()->create();
+
+        $this->assertNull($this->manager()->rejectRequest(null, 1, $driver, []));
+        Event::assertNotDispatched(RejectEvent::class);
+    }
+
+    public function test_accept_request_returns_early_when_input_invalid(): void
+    {
+        Event::fake([AcceptEvent::class]);
+        $driver = User::factory()->create();
+
+        $this->assertNull($this->manager()->acceptRequest(null, 1, $driver, []));
+        Event::assertNotDispatched(AcceptEvent::class);
     }
 
     public function test_transactions_returns_passengers_with_payment_status_on_past_trips(): void
