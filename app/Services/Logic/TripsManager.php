@@ -3,6 +3,7 @@
 namespace STS\Services\Logic;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\MessageBag;
 use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
@@ -469,14 +470,9 @@ class TripsManager extends BaseManager
             if (! empty($slug_destiny) && ! empty($slug_origin)) {
                 $url = 'https://ww2.copec.cl/chiletur/planner_route.json?start_destination='.$slug_origin.'&end_destination='.$slug_destiny;
 
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                $output = curl_exec($ch);
-                curl_close($ch);
-
+                $output = Http::timeout(30)->get($url)->body();
                 $calc = json_decode($output);
-                if (! isset($calc->error)) {
+                if (is_object($calc) && ! isset($calc->error)) {
                     $price_pretol = $calc->combustible->default_gasoline_value * ($calc->distance / 1000) / 14; // 14 lts por km en ruta
                     $price_tolls = 0;
                     foreach ($calc->tolls as $toll) {

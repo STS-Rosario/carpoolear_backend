@@ -779,6 +779,72 @@ class TripsManagerTest extends TestCase
         );
     }
 
+    public function test_calc_trip_price_chl_sums_copec_fuel_and_tolls_when_planner_returns_ok(): void
+    {
+        config(['carpoolear.osm_country' => 'CHL']);
+        $distance = 500;
+        $copecPayload = [
+            'combustible' => ['default_gasoline_value' => 1400],
+            'distance' => 100000,
+            'tolls' => [
+                ['car_valley' => 500],
+                ['car_valley' => 100],
+            ],
+        ];
+        Http::fake([
+            'https://ww2.copec.cl/*' => Http::response(json_encode($copecPayload), 200),
+        ]);
+
+        $manager = $this->manager();
+        $price = $manager->calcTripPrice(
+            ['name' => 'Salida desde Santiago por autopista'],
+            ['name' => 'Llegada a Valparaíso'],
+            $distance
+        );
+
+        // default_gasoline_value * (distance_m / 1000) / 14 + sum(tolls.car_valley)
+        $this->assertSame(10600, (int) $price);
+    }
+
+    public function test_calc_trip_price_chl_falls_back_to_simple_price_when_copec_returns_error(): void
+    {
+        config(['carpoolear.osm_country' => 'CHL']);
+        $distance = 777;
+        Http::fake([
+            'https://ww2.copec.cl/*' => Http::response(json_encode(['error' => 'planner_failed']), 200),
+        ]);
+        $expected = $this->app->make(TripRepository::class)->simplePrice($distance);
+        $manager = $this->manager();
+
+        $this->assertSame(
+            $expected,
+            $manager->calcTripPrice(
+                ['name' => 'Desde Santiago'],
+                ['name' => 'Hacia Valparaíso'],
+                $distance
+            )
+        );
+    }
+
+    public function test_calc_trip_price_chl_does_not_call_copec_when_city_slugs_cannot_be_resolved(): void
+    {
+        config(['carpoolear.osm_country' => 'CHL']);
+        Http::fake();
+        $distance = 321;
+        $expected = $this->app->make(TripRepository::class)->simplePrice($distance);
+        $manager = $this->manager();
+
+        $this->assertSame(
+            $expected,
+            $manager->calcTripPrice(
+                ['name' => 'Origen sin ciudad conocida'],
+                ['name' => 'Destino igualmente desconocido'],
+                $distance
+            )
+        );
+        Http::assertNothingSent();
+    }
+
     public function test_price_uses_calc_trip_price_when_api_price_enabled_and_endpoints_present(): void
     {
         config([
