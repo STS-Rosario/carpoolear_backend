@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\Logic;
 
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -1056,6 +1057,35 @@ class UsersManagerTest extends TestCase
         $this->assertStringContainsString('Please wait', $manager->getErrors()['error']);
 
         Queue::assertPushed(SendPasswordResetEmail::class, 1);
+    }
+
+    public function test_reset_password_cooldown_error_uses_five_minus_elapsed_integer_minutes(): void
+    {
+        Queue::fake();
+        Carbon::setTestNow('2028-02-01 15:00:00');
+        $user = User::factory()->make([
+            'id' => 33333,
+            'email' => 'cooldown-exact@example.com',
+        ]);
+        $lastReset = (object) ['created_at' => Carbon::parse('2028-02-01 14:57:00')];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('getUserBy')->twice()->with('email', $user->email)->andReturn($user);
+        $userRepo->shouldReceive('getLastPasswordReset')->twice()->with($user->email)->andReturn(null, $lastReset);
+        $userRepo->shouldReceive('deleteResetToken')->once();
+        $userRepo->shouldReceive('storeResetToken')->once();
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $manager = new UsersManager($userRepo, $tripRepo);
+
+        $this->assertIsString($manager->resetPassword($user->email));
+
+        $this->assertNull($manager->resetPassword($user->email));
+        $this->assertSame(
+            'Please wait 2 minutes before requesting another password reset',
+            $manager->getErrors()['error']
+        );
+
+        Carbon::setTestNow();
     }
 
     public function test_change_password_updates_password_and_clears_token(): void
