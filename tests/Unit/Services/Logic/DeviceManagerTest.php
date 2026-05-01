@@ -3,6 +3,8 @@
 namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use STS\Models\Device;
 use STS\Models\User;
 use STS\Repository\DeviceRepository;
@@ -85,6 +87,7 @@ class DeviceManagerTest extends TestCase
         ]));
 
         $this->assertSame($first->id, $second->id);
+        $this->assertInstanceOf(Device::class, $second);
         $this->assertSame(2, (int) $second->fresh()->app_version);
     }
 
@@ -303,6 +306,17 @@ class DeviceManagerTest extends TestCase
         $this->assertNull(Device::query()->find($device->id));
     }
 
+    public function test_logout_device_returns_false_when_session_belongs_to_another_user(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        $payload = $this->validPayload();
+        $device = $this->manager()->register($owner, $payload);
+
+        $this->assertFalse($this->manager()->logoutDevice($payload['session_id'], $stranger));
+        $this->assertNotNull(Device::query()->find($device->id));
+    }
+
     public function test_logout_all_devices_removes_all_for_user(): void
     {
         $user = User::factory()->create();
@@ -314,5 +328,22 @@ class DeviceManagerTest extends TestCase
 
         $this->assertSame(2, $count);
         $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_logout_all_devices_emits_summary_log_line(): void
+    {
+        Event::fake([MessageLogged::class]);
+        $user = User::factory()->create();
+        $m = $this->manager();
+        $m->register($user, $this->validPayload(['session_id' => 'x-'.uniqid('', true), 'device_id' => 'dx-'.uniqid('', true)]));
+
+        $count = $m->logoutAllDevices($user);
+
+        $this->assertSame(1, $count);
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info'
+                && str_contains($e->message, 'Logout all devices completed')
+                && isset($e->context['user_id'], $e->context['devices_removed']);
+        });
     }
 }
