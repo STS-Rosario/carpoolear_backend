@@ -2900,6 +2900,38 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 - **Cause:** **`RemoveArrayItem`** on default forbidden config (**`ccd0de77d3fca999`**); forbidden short-circuit and filter behavior (**`121a17c4e21c8f5f`**, **`8dbb009f1feb7282`**, **`304f8ebcb152795d`**, **`d07949e4f5dbbe20`**, **`bf8fdd49e604964a`**, **`cce3d744f2c8bf6e`**); Slack path mutants (**`3c613612873272ec`**, **`8f4860ca49c7c052`**, **`e33d2fb2651ff8dd`**, **`420e87d5f33f46b5`**, **`d91c63331a42642a`**, **`d62442ead20b026e`**, **`eea5fe969d710f63`**).
 - **Fix:** **`tests/Unit/Services/UserEditablePropertiesServiceTest.php`** sets **`carpoolear.user_edit_properties`** to **`[]`** to assert default **`['is_admin']`**, covers forbidden-before-allowed, multi-key **`filterForUser`**, admin early return on blocked-flagged diff, **`Http::fake`** **`429`** with **`Log::warning`** context + **`Http::assertSent`**, and transport exception with **`Log::warning`** context validated via **`Mockery::on`** + nested **`$this->assert*`** (so the test is not “risky” without assertions).
 
+## Notifications stack (Apr 2026 Infection report)
+
+### `DatabaseNotification` (`app/Services/Notifications/Models/DatabaseNotification.php`)
+
+- **Cause:** **`RemoveArrayItem`** on **`$fillable`** (**`95932af7f7787960`**, **`9e703e806b83a423`**, **`a6a73454a2d295c4`**); **`AlwaysReturnNull`** on **`user()`** (**`c866d2a47c5eb006`**); **`RemoveEarlyReturn`** / **`ForeachEmptyIterable`** / **`UnwrapStrReplace`** / **`IncrementInteger`** on **`attributes()`** (**`8e1bb8a87020136e`**, **`bdf4acf05af1c056`**, **`fcf534f4e22a0d84`**, **`cbac10ea6c2cc436`**, **`7018045f9c3582d0`**).
+- **Fix:** **`tests/Unit/Services/Notifications/Models/DatabaseNotificationModelTest.php`** asserts **`getFillable()`**, **`user()`** foreign key + resolved user, reflection-set **`$_attributes`** cache short-circuit, empty **`value_type`** → **`value_text`**, and legacy **`STS\\User`** string rewrite before morph resolution.
+
+### `ValueNotification` (`app/Services/Notifications/Models/ValueNotification.php`)
+
+- **Cause:** **`RemoveArrayItem`** on **`$fillable`** (**`ea6cd2cffbea85e9`**, **`1302389b8710d4c4`**, **`87e87adf8cc84a59`**); **`IfNegated`** / threshold mutants on **`strlen($this->value_type) > 0`** (**`15ceab59e3a554ca`**, **`dacfb9ff7198de16`**, **`059f4b8600db1d52`**, **`3f24515675928ef8`**, **`1b94ceaec30b7a25`**).
+- **Fix:** **`tests/Unit/Services/Notifications/Models/ValueNotificationModelTest.php`** asserts **`getFillable()`**, **`value()`** returns **`MorphTo`**, and a **soft-deleted** **`Trip`** is still resolved when **`value_type`** is non-empty ( **`withTrashed()`** branch); without that branch the relation would come back empty for trashed parents.
+
+### `NotificationServices` (`app/Services/Notifications/NotificationServices.php`)
+
+- **Cause:** **`ForeachEmptyIterable`** / **`IfNegated`** / **`BooleanAndToBooleanOr`** on **`AppConfig`** loop (**`5681143c0004ff15`**, **`91c9036d3f996e9e`**, **`496aa1585622bf7b`**); **`RemoveMethodCall`** / **`Concat*`** on **`\\Config::set`** (**`bcb143dc7141165f`**, **`002ed5d30bfe00f8`**, **`7c712eb26fb08e7b`**, **`19750e225ec8e0f5`**, **`6205f66a3bb76e6f`**); **`BooleanOrToBooleanAnd`** / **`InstanceOfToFalse`** on user normalization (**`7423f5998485181a`**, **`d4e0e5ff7dfc5343`**); catch **`\\Log::info`** mutants (**`5fc4eff5862b263f`**, **`e9ca6ab9c1a8f56f`**); **`FalseToTrue`** on **`shouldSendNotification`** (**`6b0e47989b310051`**).
+- **Fix:** **`tests/Unit/Services/Notifications/NotificationServicesTest.php`** seeds **`AppConfig`** rows and asserts **`config()`** for Laravel vs **`carpoolear.*`** keys; uses a **`RecordingNotificationChannel`** (static call log) for single user, **`User::factory()->count(2)`**, plain **`array`**, and **`collect()`** shapes; registers **`NotificationSending`** listener returning **`false`** to prove the driver is skipped; **`ThrowingNotificationChannel`** + **`Log`** expectations for **`error sending:`** and the thrown exception.
+
+### `BaseNotification` (`app/Services/Notifications/BaseNotification.php`)
+
+- **Cause:** **`FalseToTrue`** on **`$force_email`** (**`62c1d24c2d2e8725`**).
+- **Fix:** **`tests/Unit/Services/Notifications/BaseNotificationDefaultsTest.php`** reflects **`force_email`** on an anonymous **`BaseNotification`** subclass (default stays **`false`**).
+
+### `MailChannel` (`app/Services/Notifications/Channels/MailChannel.php`)
+
+- **Cause:** **`IfNegated`** / **`UnwrapArrayMerge`** / **`IfNegated`** / **`RemoveNot`** / **`RemoveMethodCall`** / **`Concat*`** / view / **`ssmtp_send_mail`** / **`getData`** condition mutants (**`b560f4402bfe7ff5`**, **`7558455867fd788a`**, **`60a617d44d3375a7`**, **`d34ddf0f2743f0e5`**, **`00f455ca9b3518a8`**, **`e933e3a1f4b82120`**, **`acde9270d0823013`**, **`7293f49ba52986e7`**, **`22ba4f844bfdc98d`**, **`240d5b2f323fb3d4`**, **`22571c6366dff292`**, **`639441aa5a6d1928`**, **`79c2ff7dbe31a8d0`**, **`7335ab50c3ced589`**, **`c864414832a1f410`**, **`9bb66ef9da6907b4`**).
+- **Fix:** **`tests/Unit/Services/Notifications/Channels/MailChannelTest.php`** covers empty email (no **`Log::info`**), **`mail.enabled` false** ( **`notification info:`** only), **`mail.enabled` true** with **`DummyNotification`** + **`Trip`** ( **`sending_mail:`** JSON, **`estoy aca:`** / **`estoy alla:`**, **`ssmtp_send_mail: START`** ), and **`getData`** throws when **`toEmail`** is missing.
+
+### `PushChannel` (`app/Services/Notifications/Channels/PushChannel.php`)
+
+- **Cause:** activity filter / device loop / platform branch / **`\\Log::error`** context mutants (**`8e8c586ae3e7fb6c`**, **`343ba1110ffb0770`**, **`79163b8603b734ae`**, **`20d53c441ad97f81`**, **`4b464328646774ce`**, **`78005cf9475c4fe8`**, **`06d3cbbd0dbc19cf`**, **`4572c8a208f2acd3`**, **`052e983d3bd241ec`**, **`4261ef0513bd107c`**, **`280d7181b1999b34`**, **`0e66df230b2042f2`**, **`9437846a9483b113`**, **`1620df97777bc69a`**, **`3bcd2d226eb7897a`**, **`78022741492b6543`**, **`94ebd53778239bd3`**, **`05de2a9cf2a0e79c`**, **`d919f70093817397`**).
+- **Fix:** **`tests/Unit/Services/Notifications/Channels/PushChannelTest.php`** uses real **`Device`** rows + **`AnnouncementNotification`**: notifications disabled or stale **`last_activity`** yields **zero** push **`Log::error`** calls; **`send_push_notifications_to_device_activity_days === 0`** still includes very stale devices and surfaces at least one error when Android send fails; explicit **`Log::error`** expectation with context keys for the outer catch when Firebase/APNs misconfiguration throws inside **`sendAndroid`**.
+
 ## `FacebookSocialProvider` (`app/Services/Social/FacebookSocialProvider.php`)
 
 - **Cause:** status / **`isset`** / gender / birthday / return-array / **`request`** URL / friends loop / **`getError`** mutants (e.g. **`f9a794005551afcc`**–**`6d473fa7e62ff87f`**, **`509e85bf91dbea0a`**–**`ca7c9ff9095dc3f0`**).
