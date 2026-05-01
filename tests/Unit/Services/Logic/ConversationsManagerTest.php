@@ -2,17 +2,31 @@
 
 namespace Tests\Unit\Services\Logic;
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Mockery;
 use STS\Events\MessageSend;
 use STS\Models\Conversation;
 use STS\Models\Message;
+use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Repository\ConversationRepository;
+use STS\Repository\MessageRepository;
+use STS\Repository\UserRepository;
 use STS\Services\Logic\ConversationsManager;
+use STS\Services\Logic\FriendsManager;
+use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
 
 class ConversationsManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function manager(): ConversationsManager
     {
         return $this->app->make(ConversationsManager::class);
@@ -229,5 +243,80 @@ class ConversationsManagerTest extends TestCase
 
         $this->assertNotNull($found);
         $this->assertTrue($found->is($conversation));
+    }
+
+    public function test_find_or_create_private_conversation_sets_limit_error_when_module_blocks_trip(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+
+        $userManager = Mockery::mock(UsersManager::class);
+        $userManager->shouldReceive('unansweredConversationOrRequestsByTrip')
+            ->once()
+            ->andReturn(false);
+
+        $manager = new ConversationsManager(
+            $this->app->make(ConversationRepository::class),
+            $this->app->make(MessageRepository::class),
+            $this->app->make(UserRepository::class),
+            $this->app->make(FriendsManager::class),
+            $userManager,
+        );
+
+        $admin = User::factory()->create(['is_admin' => true]);
+        $other = User::factory()->create();
+        $trip = Trip::factory()->create();
+
+        $this->assertNull($manager->findOrCreatePrivateConversation($admin, $other, $trip->id));
+        $this->assertSame('user_has_reach_request_limit', $manager->getErrors()['error']);
+    }
+
+    public function test_remove_user_from_conversation_sets_error_for_non_member(): void
+    {
+        $member = User::factory()->create();
+        $stranger = User::factory()->create();
+        $other = User::factory()->create();
+
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($member->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->removeUserFromConversation($stranger, $conversation->id, $other));
+        $this->assertSame('user_does_not_have_access_to_conversation', $manager->getErrors()['conversation_id']);
+    }
+
+    public function test_send_full_trip_message_notifies_passenger_with_pending_request(): void
+    {
+        Event::fake([MessageSend::class]);
+
+        $driver = User::factory()->create(['is_admin' => true]);
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'to_town' => 'Testville',
+            'trip_date' => '2026-06-15 09:00:00',
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $conversation->users()->attach($passengerUser->id, ['read' => true]);
+
+        $trip->load(['user', 'passenger']);
+
+        $this->manager()->sendFullTripMessage($trip);
+
+        Event::assertDispatched(MessageSend::class, function (MessageSend $e) use ($passengerUser, $trip): bool {
+            return $e->to->is($passengerUser)
+                && str_contains((string) $e->message->text, 'Mensaje automático')
+                && str_contains((string) $e->message->text, $trip->to_town);
+        });
     }
 }
