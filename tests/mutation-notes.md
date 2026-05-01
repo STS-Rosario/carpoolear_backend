@@ -3036,3 +3036,33 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 - **Cause:** undeclared **`$routeRepo`**; **`RemoveMethodCall`** on **`\\Log::info('COMMAND updateTrips')`** / trip count log (**`df63c4a59a2c87a9`**, **`33fff8f2a0549c93`**); many **`handle()`** mutants remain only partially covered, but log lines were untested.
 - **Fix:** typed **`$routeLogic` / `$routeRepo`**, **`parent::__construct()`** ordering; **`tests/Unit/Console/Commands/UpdateTripsTest.php`** asserts **`MessageLogged`** for **`COMMAND updateTrips`** and a **`Trips: `**-prefixed line when running **`node:updateTrips`** with a no-points trip.
+
+### `RequestNotAnswer` (`app/Console/Commands/RequestNotAnswer.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND RequestNotAnswer')`** (**`50ff0ce9e9922e9c`**); **`RemoveArrayItem`** / **`RemoveMethodCall`** on **`$passengers->with(['user', 'trip'])`** (**`97cd516bcb7e4a65`**, **`3b7ca2c9f8e9fb59`**, **`a64b13e501fc488a`**).
+- **Fix:** **`tests/Unit/Console/Commands/RequestNotAnswerTest.php`** asserts **`MessageLogged`** **`COMMAND RequestNotAnswer`** and enables **`Model::preventLazyLoading(true)`** for the run so dropping **`with()`** would raise when building **`RequestNotAnswerEvent`** (needs **`user`** and **`trip`** without lazy loads).
+
+### `BuildRoutes` (`app/Console/Commands/BuildRoutes.php`)
+
+- **Cause:** **`RemoveMethodCall`** on command / route-builder **`\\Log::info`** lines (**`df8ccc6bafb062ea`**, **`67b3f44a8bbe6fce`**); **`RemoveArrayItem`** on **`Route::with(['origin', 'destiny'])`** (**`45a39736a23d2ae1`**, **`6443769febc886b6`**); **`RemoveMethodCall`** on **`whereHas`** closure filter (**`76a5a14c5ed40c03`**, **`a166d4404c75e711`**); catch-block logging (**`cfef0728317d8c89`**, **`afd774f01999bd94`**).
+- **Fix:** **`tests/Unit/Console/Commands/BuildRoutesTest.php`** asserts **`MessageLogged`** for **`COMMAND BuildRoutes`** and **`Route builder `**; **`createRoute`** expectation requires **`relationLoaded('origin')`** and **`relationLoaded('destiny')`**; second future trip attached only to another route proves **`routes.id`** filter; exception test asserts **`MessageLogged`** for **`Route builder ex`** and the exception message substring.
+
+### `GenerateTripVisibility` (`app/Console/Commands/GenerateTripVisibility.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND GenerateTripVisibility')`** (**`ae1e0d385a2622e2`**).
+- **Fix:** **`tests/Unit/Console/Commands/GenerateTripVisibilityTest.php`** asserts **`MessageLogged`** **`COMMAND GenerateTripVisibility`**.
+
+### `TestAnnouncement` (`app/Console/Commands/TestAnnouncement.php`)
+
+- **Cause:** large clusters of **`RemoveMethodCall`** on **`$this->info` / `$this->line` / `$this->error`**, **`ForeachEmptyIterable`**, ternary/concat mutants on device lines (**`4ef7108adefb40e8`** through **`7aea811fbf47c6d5`**, etc.); **`TrueToFalse` / `FalseToTrue`** on **`User::where('active'… 'banned'…)`** and **`where('notifications', true)`** (**`2f35c2d56135406e`**, **`7c6118620c7d858e`**, **`3e6d7f5c59bf0fe8`**); **`IfNegated` / `RemoveNot`** on **`if (!$user)`** (**`a7bfd4a189cd53fa`**, **`ac5f3873fafd1f48`**); failure-path **`$this->error`** concat mutants (**`f52bcb899362c13a`**, **`f7ff6ec34a9c76f0`**, …).
+- **Fix:** **`tests/Unit/Console/Commands/TestAnnouncementTest.php`** pins stable **`expectsOutputToContain`** / **`expectsOutput`** strings on the **`--user-id`** success path; adds **`test_handle_resolves_eligible_user_when_user_id_option_is_omitted`** (inactive distractor + single eligible user, **`sendToUser`** must receive the eligible id); adds **`test_handle_prints_service_error_when_send_to_user_fails`** for the prefixed error line.
+
+### `EvaluateBadges` (`app/Console/Commands/EvaluateBadges.php`)
+
+- **Cause:** early-return and display branches untested (**`total_users === 0`**, confirm cancel, **`displayUserStats`**, **`processUsersInBatches`**, **`displayResults`** — e.g. **`4cc1ab1b59c8fb63`**, **`554692cfda8632c5`**, **`060213e2e9d199f1`**, **`1905cd5ad0a383d6`**, **`17a8e6ffc1b0644d`**, **`f68248f36d9f6a4d`**, **`7f64a8fd4d08604c`**, **`3a89afb73c3589c1`**, and many **`RemoveMethodCall`** on progress/result lines).
+- **Fix:** **`tests/Unit/Console/Commands/EvaluateBadgesTest.php`** extends the dry-run integration test with explicit lines for **`user-ids`**, **`active-only`**, dry-run banner, and **`doesntExpectOutputToContain('  Badges awarded:')`**; **`test_handle_warns_when_no_users_match_filters`** pins the zero-user early exit; **`test_handle_runs_evaluation_when_confirmed_without_dry_run`** exercises confirm-yes and **`displayResults`** (**`Users processed`** / **`Badges awarded`**). Deep mutants inside **`BadgeEvaluatorService::evaluate`** (pivot minute window, **`Log::error`** context keys) remain harder without constructor injection.
+
+### `CalculateActiveUsersPerMonth` (`app/Console/Commands/CalculateActiveUsersPerMonth.php`)
+
+- **Cause:** **`RemoveMethodCall`** on startup / dry-run / save / log lines (**`5b509000be785e24`**, **`f9f92d47d727eae9`**, **`9ee1c830bc2aa3c1`**, **`ff93a3ca49cb9391`**, **`0b0bac912e20b51a`**, **`05bdc0396c902a67`**); **`getTargetMonth` / `validateTargetMonth`** boolean and **`exit(1)`** mutants (**`b3289bddcfcabc7c`**, **`4601aa80dc2d7fe5`**, **`1be86f6f144df8f6`**, …); **`RemoveArrayItem`** on **`saved_at`** in **`create`** (**`29aee8e054cfa3d1`**); duplicate-key **`catch`** branch still relies on integration-only scenarios (**`ca0d9e0d39eae091`**, **`d550179f7701049d`**, …).
+- **Fix:** **`exit(1)`** replaced with **`throw new \\InvalidArgumentException`** from **`getTargetMonth` / `validateTargetMonth`**, caught in **`handle()`** returning **`1`** (testable exit code). **`tests/Unit/Console/Commands/CalculateActiveUsersPerMonthTest.php`** asserts startup / dry-run **`Year` / `Month` / `Value`** lines, **`assertExitCode(1)`** for invalid and current-month options, persisted **`saved_at`**, and **`MessageLogged`** for the post-save summary line.
