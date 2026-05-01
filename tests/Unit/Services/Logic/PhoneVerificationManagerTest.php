@@ -4,7 +4,10 @@ namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
+use Mockery;
 use STS\Models\PhoneVerification;
 use STS\Models\User;
 use STS\Repository\PhoneVerificationRepository;
@@ -14,11 +17,25 @@ use Tests\TestCase;
 
 class PhoneVerificationManagerTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
     private function manager(): PhoneVerificationManager
     {
         return new PhoneVerificationManager(
             new PhoneVerificationRepository,
             new SmsService
+        );
+    }
+
+    private function managerWithSms(SmsService $sms): PhoneVerificationManager
+    {
+        return new PhoneVerificationManager(
+            new PhoneVerificationRepository,
+            $sms
         );
     }
 
@@ -302,5 +319,95 @@ class PhoneVerificationManagerTest extends TestCase
 
         $stats = $this->manager()->getVerificationStats($user);
         $this->assertSame(1, (int) $stats->total_attempts);
+    }
+
+    public function test_send_verification_code_sets_sms_error_when_send_returns_false(): void
+    {
+        $sms = Mockery::mock(SmsService::class);
+        $sms->shouldReceive('formatPhoneNumber')->once()->with('1122233344')->andReturn('+541122333344');
+        $sms->shouldReceive('send')->once()->andReturn(false);
+
+        $user = User::factory()->create();
+        $manager = $this->managerWithSms($sms);
+
+        $this->assertNull($manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1122233344'])));
+        $this->assertSame('Failed to send verification code', $manager->getErrors()['sms']);
+    }
+
+    public function test_send_verification_code_logs_error_when_send_returns_false(): void
+    {
+        Event::fake([MessageLogged::class]);
+
+        $sms = Mockery::mock(SmsService::class);
+        $sms->shouldReceive('formatPhoneNumber')->once()->andReturn('+541122333355');
+        $sms->shouldReceive('send')->once()->andReturn(false);
+
+        $user = User::factory()->create();
+        $manager = $this->managerWithSms($sms);
+        $manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1122233355']));
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'error'
+                && str_contains((string) $e->message, 'Failed to send verification SMS');
+        });
+    }
+
+    public function test_verify_phone_number_returns_null_and_sets_validation_errors_when_code_invalid(): void
+    {
+        $user = User::factory()->create();
+        $manager = $this->manager();
+
+        $this->assertNull($manager->verifyPhoneNumber($user, Request::create('/', 'POST', ['code' => '12'])));
+        $this->assertTrue($manager->getErrors()->has('code'));
+    }
+
+    public function test_verify_phone_number_returns_null_when_no_pending_verification_exists(): void
+    {
+        $user = User::factory()->create();
+        $manager = $this->manager();
+
+        $this->assertNull($manager->verifyPhoneNumber($user, Request::create('/', 'POST', ['code' => '123456'])));
+        $this->assertSame('No pending verification found', $manager->getErrors()['verification']);
+    }
+
+    public function test_resend_verification_code_sets_sms_error_when_send_returns_false(): void
+    {
+        $user = User::factory()->create();
+        PhoneVerification::create([
+            'user_id' => $user->id,
+            'phone_number' => '+541122334466',
+            'verification_code' => '654321',
+            'code_sent_at' => Carbon::now()->subMinutes(10),
+            'verified' => false,
+            'failed_attempts' => 0,
+            'resend_count' => 0,
+        ]);
+
+        $sms = Mockery::mock(SmsService::class);
+        $sms->shouldReceive('send')->once()->andReturn(false);
+
+        $manager = $this->managerWithSms($sms);
+        $this->assertNull($manager->resendVerificationCode($user));
+        $this->assertSame('Failed to send verification code', $manager->getErrors()['sms']);
+    }
+
+    public function test_send_verification_code_increments_resend_count_on_repeat_send_for_same_user(): void
+    {
+        Config::set('sms.verification.resend_cooldown_minutes', 0);
+
+        $sms = Mockery::mock(SmsService::class);
+        $sms->shouldReceive('formatPhoneNumber')->twice()->with('1188877766')->andReturn('+541188877766');
+        $sms->shouldReceive('send')->twice()->andReturn(true);
+
+        $user = User::factory()->create();
+        $manager = $this->managerWithSms($sms);
+
+        $this->assertNotNull($manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1188877766'])));
+        $row = PhoneVerification::where('user_id', $user->id)->first();
+        $this->assertNotNull($row);
+        $this->assertSame(0, (int) $row->resend_count);
+
+        $this->assertNotNull($manager->sendVerificationCode($user, Request::create('/', 'POST', ['phone' => '1188877766'])));
+        $this->assertSame(1, (int) $row->fresh()->resend_count);
     }
 }
