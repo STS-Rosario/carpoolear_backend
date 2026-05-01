@@ -2,11 +2,10 @@
 
 namespace STS\Console\Commands;
 
-use Carbon\Carbon;
-use Illuminate\Console\Command; 
+use Illuminate\Console\Command;
+use STS\Models\NodeGeo;
 use STS\Models\Route;
 use STS\Models\Trip;
-use STS\Models\NodeGeo;
 use STS\Repository\RoutesRepository;
 use STS\Services\Logic\RoutesManager;
 
@@ -26,18 +25,20 @@ class updateTrips extends Command
      */
     protected $description = 'create and assign routes to old trips';
 
-    protected $routeLogic;
+    protected RoutesManager $routeLogic;
+
+    protected RoutesRepository $routeRepo;
 
     /**
      * Create a new command instance.
      *
-     * @returnactiveRatings void
+     * @return void
      */
     public function __construct(RoutesManager $routeLogic, RoutesRepository $routeRepo)
     {
+        parent::__construct();
         $this->routeLogic = $routeLogic;
         $this->routeRepo = $routeRepo;
-        parent::__construct();
     }
 
     /**
@@ -47,28 +48,28 @@ class updateTrips extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND updateTrips");
+        \Log::info('COMMAND updateTrips');
         // iterar x viajes creados, asignar ruta / crearla
         $query = Trip::query()->with(['routes', 'routes.nodes', 'points']);
-        $query->where('trip_date', '>=', '2017-09-01 00:00:00'); 
+        $query->where('trip_date', '>=', '2017-09-01 00:00:00');
         $query->whereNull('route_id');
         $query->take(5000);
         $trips = $query->get();
-        \Log::info("Trips: " . count($trips));
-        foreach($trips as $trip) {
-            $this->info("Trip Id: " . $trip->id);
-            \Log::info("Trip Id: " . $trip->id);
-            
+        \Log::info('Trips: '.count($trips));
+        foreach ($trips as $trip) {
+            $this->info('Trip Id: '.$trip->id);
+            \Log::info('Trip Id: '.$trip->id);
+
             if (count($trip->points) == 0) {
-                $this->info("No point" . $trip->id);
-                \Log::info("No point" . $trip->id);
+                $this->info('No point'.$trip->id);
+                \Log::info('No point'.$trip->id);
+
                 continue;
             }
 
             $from = $trip->points[0];
             $to = $trip->points[1];
-            
-            
+
             $fromStart = new NodeGeo;
             $fromStart->lat = $from->lat - 0.05;
             $fromStart->lng = $from->lng - 0.1;
@@ -76,7 +77,7 @@ class updateTrips extends Command
             $fromEnd->lat = $from->lat + 0.05;
             $fromEnd->lng = $from->lng + 0.1;
             $fromNode = $this->getPotentialNode($fromStart, $fromEnd);
-            
+
             $toStart = new NodeGeo;
             $toStart->lat = $to->lat - 0.05;
             $toStart->lng = $to->lng - 0.1;
@@ -84,14 +85,13 @@ class updateTrips extends Command
             $toEnd->lat = $to->lat + 0.05;
             $toEnd->lng = $to->lng + 0.1;
             $toNode = $this->getPotentialNode($toStart, $toEnd);
-            
-            
+
             if ($fromNode && $toNode) {
                 $route = Route::where('from_id', $fromNode->id)->where('to_id', $toNode->id)->first();
                 if ($route) {
                     $trip->routes()->sync([$route->id]);
                 } else {
-                    $route = new Route();
+                    $route = new Route;
                     $route->from_id = $fromNode->id;
                     $route->to_id = $toNode->id;
                     $route->processed = false;
@@ -100,25 +100,26 @@ class updateTrips extends Command
                     $trip->routes()->sync([$route->id]);
                 }
             } else {
-                $this->info("ERROR NO SE ENCONTRO NODO " . $trip->id);
-                \Log::info("ERROR NO SE ENCONTRO NODO " . $trip->id);
-                if (!$fromNode) {
-                    $this->info("name " . $from->address);
-                    \Log::info("name " . $from->address);
+                $this->info('ERROR NO SE ENCONTRO NODO '.$trip->id);
+                \Log::info('ERROR NO SE ENCONTRO NODO '.$trip->id);
+                if (! $fromNode) {
+                    $this->info('name '.$from->address);
+                    \Log::info('name '.$from->address);
                 }
-                if (!$toNode) {
-                    $this->info("name " . $to->address);
-                    \Log::info("name " . $to->address);
+                if (! $toNode) {
+                    $this->info('name '.$to->address);
+                    \Log::info('name '.$to->address);
                 }
-            }      
-            
+            }
+
             $trip->route_id = 1;
-            $trip->save();      
+            $trip->save();
         }
 
     }
 
-    public function getPotentialNode ($n1, $n2) {
+    public function getPotentialNode($n1, $n2)
+    {
         $maxLat = 0;
         $minLat = 0;
         $minLng = 0;
@@ -139,6 +140,7 @@ class updateTrips extends Command
         }
         $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
         $query->whereBetween('lng', [$minLng, $maxLng]);
+
         return $query->first();
     }
 }

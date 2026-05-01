@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Console\Commands;
 
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use Mockery;
 use STS\Console\Commands\updateTrips;
 use STS\Models\NodeGeo;
@@ -53,6 +55,8 @@ class UpdateTripsTest extends TestCase
 
     public function test_handle_skips_trip_without_points_and_keeps_route_id_null(): void
     {
+        Event::fake([MessageLogged::class]);
+
         Trip::factory()->create([
             'trip_date' => '2018-01-10 08:00:00',
             'route_id' => null,
@@ -66,5 +70,12 @@ class UpdateTripsTest extends TestCase
             ->assertExitCode(0);
 
         $this->assertNull(Trip::query()->first()->route_id);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND updateTrips';
+        });
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && str_starts_with($e->message, 'Trips: ');
+        });
     }
 }

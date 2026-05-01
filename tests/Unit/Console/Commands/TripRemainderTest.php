@@ -3,6 +3,7 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Event;
 use Mockery;
@@ -24,7 +25,7 @@ class TripRemainderTest extends TestCase
     public function test_handle_dispatches_hour_left_for_driver_and_each_accepted_passenger(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 4, 28, 9, 25, 0));
-        Event::fake();
+        Event::fake([HourLeftEvent::class, MessageLogged::class]);
 
         $driver = (object) ['id' => 10];
         $passengerA = (object) ['id' => 20];
@@ -67,6 +68,37 @@ class TripRemainderTest extends TestCase
             return $event->trip->id === $tripWithPassengers->id && $event->to->id === $passengerB->id;
         });
         Event::assertDispatchedTimes(HourLeftEvent::class, 3);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND TripRemainder';
+        });
+    }
+
+    public function test_handle_dispatches_hour_left_when_exactly_one_accepted_passenger(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 4, 28, 9, 25, 0));
+        Event::fake([HourLeftEvent::class, MessageLogged::class]);
+
+        $driver = (object) ['id' => 10];
+        $passengerA = (object) ['id' => 20];
+
+        $tripWithOnePassenger = (object) [
+            'id' => 5,
+            'user' => $driver,
+            'passengerAccepted' => collect([
+                (object) ['user' => $passengerA],
+            ]),
+        ];
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('index')
+            ->once()
+            ->andReturn(new Collection([$tripWithOnePassenger]));
+
+        $command = new TripRemainder(Mockery::mock(TripsManager::class), $repo);
+        $command->handle();
+
+        Event::assertDispatchedTimes(HourLeftEvent::class, 2);
     }
 
     public function test_command_contract_is_defined(): void

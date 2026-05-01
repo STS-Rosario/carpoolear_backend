@@ -21,6 +21,7 @@ class AnonymizeUserTest extends TestCase
 
         $this->artisan('user:anonymize', ['id' => $user->id])
             ->expectsOutput("User (id={$user->id}) current data:")
+            ->expectsOutputToContain('Original Name')
             ->expectsOutput('User deactivated and personal info has been anonymized.')
             ->assertExitCode(0);
 

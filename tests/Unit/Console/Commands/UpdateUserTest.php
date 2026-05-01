@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Console\Commands;
 
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use STS\Console\Commands\UpdateUser;
 use STS\Models\Passenger;
 use STS\Models\Rating;
@@ -14,6 +16,8 @@ class UpdateUserTest extends TestCase
 {
     public function test_handle_reassigns_related_records_to_new_user(): void
     {
+        Event::fake([MessageLogged::class]);
+
         $original = User::factory()->create(['active' => true]);
         $new = User::factory()->create(['active' => true]);
         $other = User::factory()->create(['active' => true]);
@@ -58,6 +62,10 @@ class UpdateUserTest extends TestCase
         $this->assertSame($new->id, (int) $trip->fresh()->user_id);
         $this->assertSame($new->id, (int) $referenceFrom->fresh()->user_id_from);
         $this->assertSame($new->id, (int) $referenceTo->fresh()->user_id_to);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND UpdateUser';
+        });
     }
 
     public function test_handle_with_remove_deactivates_original_user_after_confirmation(): void

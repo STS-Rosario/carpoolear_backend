@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Console\Commands;
 
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use STS\Console\Commands\EmailMessageNotification;
 use STS\Models\Conversation;
 use STS\Models\Message;
@@ -12,6 +14,8 @@ class EmailMessageNotificationTest extends TestCase
 {
     public function test_handle_marks_only_pending_messages_as_notified(): void
     {
+        Event::fake([MessageLogged::class]);
+
         $author = User::factory()->create();
         $recipientA = User::factory()->create();
         $recipientB = User::factory()->create();
@@ -51,6 +55,10 @@ class EmailMessageNotificationTest extends TestCase
         $alreadyNotified->forceFill(['already_notified' => 1])->saveQuietly();
 
         $this->artisan('messages:email')->assertExitCode(0);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND EmailMessageNotification';
+        });
 
         $this->assertSame(1, (int) $pendingOne->fresh()->already_notified);
         $this->assertSame(1, (int) $pendingTwo->fresh()->already_notified);

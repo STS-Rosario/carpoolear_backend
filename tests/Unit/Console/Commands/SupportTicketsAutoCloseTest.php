@@ -45,12 +45,15 @@ class SupportTicketsAutoCloseTest extends TestCase
             'last_reply_at' => Carbon::now()->subDays(2),
         ]);
 
+        Carbon::setTestNow(Carbon::create(2026, 4, 28, 15, 0, 0));
+
         $this->artisan('support-tickets:autoclose')
             ->expectsOutput('Support tickets auto-closed: 1')
             ->assertExitCode(0);
 
         $this->assertSame('Cerrado', $toClose->fresh()->status);
         $this->assertNotNull($toClose->fresh()->closed_at);
+        $this->assertSame('2026-04-28 15:00:00', $toClose->fresh()->updated_at->format('Y-m-d H:i:s'));
         $this->assertSame('Resuelto', $staysOpen->fresh()->status);
         $this->assertNull($staysOpen->fresh()->closed_at);
     }

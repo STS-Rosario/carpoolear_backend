@@ -3,6 +3,7 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use STS\Console\Commands\RequestRemainder;
 use STS\Events\Trip\Alert\RequestRemainder as RequestRemainderEvent;
@@ -22,7 +23,7 @@ class RequestRemainderTest extends TestCase
     public function test_handle_dispatches_events_for_last_week_and_even_days_in_second_week(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 4, 28, 10, 0, 0));
-        Event::fake();
+        Event::fake([MessageLogged::class, RequestRemainderEvent::class]);
 
         $driver = User::factory()->create();
 
@@ -66,6 +67,27 @@ class RequestRemainderTest extends TestCase
             return $event->trip->id === $tripTenDays->id;
         });
         Event::assertDispatchedTimes(RequestRemainderEvent::class, 2);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND RequestRemainder';
+        });
+    }
+
+    public function test_handle_does_not_include_trips_without_pending_passengers(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 4, 28, 10, 0, 0));
+        Event::fake([MessageLogged::class, RequestRemainderEvent::class]);
+
+        $driver = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => 0,
+            'trip_date' => Carbon::now()->copy()->addDays(5),
+        ]);
+
+        $this->artisan('trip:request')->assertExitCode(0);
+
+        Event::assertNotDispatched(RequestRemainderEvent::class);
     }
 
     public function test_command_contract_is_defined(): void

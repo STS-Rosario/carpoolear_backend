@@ -2976,3 +2976,63 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 - **Cause:** **`IfNegated`** / comparator / integer nudges on **`if ($failedEmailJobs > 0)`** and **`RemoveMethodCall`** on the follow-up **`$this->info`** (**`8dbfecadbcfa0827`**, **`b82fab5c5a8a5c5b`**, **`716432bfd922d028`**, **`873f502749296b18`**, **`2633f2a7573f53c7`**, **`4273f5e6919eb91c`**). The project ships without a **`failed_jobs`** migration, so the branch stayed untested unless the table exists.
 - **Fix:** **`tests/Feature/Commands/CleanupPasswordResetTokensTest.php`** creates a minimal **`failed_jobs`** table in the test, seeds rows with / without **`SendPasswordResetEmail`** in **`payload`**, runs **`auth:cleanup-reset-tokens`**, and asserts presence vs absence of **`Also cleaned up … failed email jobs.`**; **`tearDown`** drops **`failed_jobs`** so other suites stay clean.
+
+### `DownloadPoints` (`app/Console/Commands/DownloadPoints.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND DownloadPoints')`** (**`1f1dd1800557cb0e`**); **`EqualToIdentical`** on **`$trip->points->count() == 0`** (**`c2287e413f14b409`**); implicit **`where('trip_date', '>=', now())`** vs past trips; constructing **`GoogleDirection`** in tests triggered side effects / risky teardown noise.
+- **Fix:** optional injectable **`GoogleDirection`** in the constructor; **`count() === 0`** for strict empty check; **`tests/Unit/Console/Commands/DownloadPointsTest.php`** asserts **`MessageLogged`** **`COMMAND DownloadPoints`**, **`download()`** only for a future trip with zero points, and **`download` never called** when the only trip is in the past.
+
+### `RequestRemainder` (`app/Console/Commands/RequestRemainder.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND RequestRemainder')`** (**`b196cacdfecc454a`**); **`RemoveMethodCall`** on **`$trips->has('passengerPending')`** (**`fd8920fbadff9f78`**); **`RemoveIntegerCast`**, **`/ 7` vs `/ 6`/`/ 8`**, **`IfNegated` / comparator nudges** on **`$weeks < 1` / `< 2`**, **`EqualToIdentical` / integer nudges** on **`$days % 2 == 0`** (**`9df1edfb7dd4f2e2`**, **`30807dcdb9c17a1d`**, **`7355e95c258a9d37`**, **`07ef0137eb6f18ed`**, **`54b6ab29b2af80b6`**, **`6468e7f611b3b194`**, **`ef9908bce27ddaff`**, **`7c06c6d14d92eb46`**, **`1da3f5967f252fe2`**, **`f517ec3c1064329f`**, **`28ba8ea641833853`**, **`9b7d1d3b8b0d2621`**, etc.).
+- **Fix:** **`tests/Unit/Console/Commands/RequestRemainderTest.php`** asserts **`MessageLogged`** **`COMMAND RequestRemainder`** alongside existing **`RequestRemainder`** event expectations, and adds **`test_handle_does_not_include_trips_without_pending_passengers`** so removing **`has('passengerPending')`** would surface spurious dispatches.
+
+### `CreateRates` (`app/Console/Commands/CreateRates.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND CreateRates')`** (**`2dee0320ba95fc7f`**).
+- **Fix:** **`tests/Unit/Console/Commands/CreateRatesTest.php`** fakes **`MessageLogged`** and asserts **`COMMAND CreateRates`** while keeping the **`RatingManager::activeRatings`** date expectation.
+
+### `CleanTripVisibility` (`app/Console/Commands/CleanTripVisibility.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND CleanTripVisibility')`** (**`be0012e1f834d6f8`**).
+- **Fix:** **`tests/Feature/Commands/CleanTripVisibilityTest.php`** — **`test_logs_command_identifier_when_visibility_clean_runs`** asserts **`MessageLogged`** **`COMMAND CleanTripVisibility`** (DB behavior remains covered by existing visibility tests).
+
+### `TripRemainder` (`app/Console/Commands/TripRemainder.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND TripRemainder')`** (**`d9706b25a2d36a53`**); **`IncrementInteger`** on **`passengerAccepted->count() > 0`** (**`79bd18183b4447bb`**) — changing **`> 0`** to **`> 1`** skips trips with exactly one accepted passenger.
+- **Fix:** **`tests/Unit/Console/Commands/TripRemainderTest.php`** asserts **`MessageLogged`** **`COMMAND TripRemainder`** and adds **`test_handle_dispatches_hour_left_when_exactly_one_accepted_passenger`** (expects **two** **`HourLeftEvent`** dispatches: driver + one passenger).
+
+### `UpdateUser` (`app/Console/Commands/UpdateUser.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND UpdateUser')`** (**`e8af54b66f209c70`**).
+- **Fix:** **`tests/Unit/Console/Commands/UpdateUserTest.php`** asserts **`MessageLogged`** **`COMMAND UpdateUser`** on the main reassignment path.
+
+### `AnonymizeUser` (`app/Console/Commands/AnonymizeUser.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`$this->info($user)`** after the header line (**`ceb7b0c74dcc2aa2`**).
+- **Fix:** **`tests/Unit/Console/Commands/AnonymizeUserTest.php`** asserts **`expectsOutputToContain('Original Name')`** so the serialized user line cannot be dropped without failing.
+
+### `ConversationCreate` (`app/Console/Commands/ConversationCreate.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND ConversationCreate')`** (**`d90a960acaca14ec`**).
+- **Fix:** **`tests/Unit/Console/Commands/ConversationCreateTest.php`** asserts **`MessageLogged`** **`COMMAND ConversationCreate`** on both success and failure paths.
+
+### `SupportTicketsAutoClose` (`app/Console/Commands/SupportTicketsAutoClose.php`)
+
+- **Cause:** **`RemoveIntegerCast`** / default nudges on **`(int) config('carpoolear.support_ticket_autoclose_days', 10)`** (**`7b1689a4664dc8c7`**, **`ec8324295dc72532`**, **`66766ae600d6a933`**); **`RemoveArrayItem`** on **`update([..., 'updated_at' => now()])`** (**`4627e443f4132055`**).
+- **Fix:** **`tests/Unit/Console/Commands/SupportTicketsAutoCloseTest.php`** advances frozen **`Carbon`** before **`artisan`** and asserts the closed ticket’s **`updated_at`** matches the later **`now()`**, proving **`updated_at`** is written with **`status` / `closed_at`**.
+
+### `AssignMsMjmsCampaignBadge` (`app/Console/Commands/AssignMsMjmsCampaignBadge.php`)
+
+- **Cause:** large cluster (**`CAMPAIGN_ID`**, **`$badgeData` keys**, **`visible`**, dry-run branches, donor counts, **`$skipped` / `$toAssignCount`**, **`UserBadge::insert` columns**, concat mutants — IDs from the user report such as **`a6a678ff7841bdea`**, **`93457115960ef79f`**, **`6b8f4c75ac76ad96`**, … through **`0b4c944ea347a248`**).
+- **Fix:** **`tests/Unit/Console/Commands/AssignMsMjmsCampaignBadgeTest.php`** adds **`test_handle_reports_zero_donors_when_no_paid_donations_exist`** and **`test_handle_skips_insert_when_every_donor_already_has_the_badge`** on top of existing dry-run / multi-donor coverage.
+
+### `EmailMessageNotification` (`app/Console/Commands/EmailMessageNotification.php`)
+
+- **Cause:** **`RemoveMethodCall`** on **`\\Log::info('COMMAND EmailMessageNotification')`** (**`014a7daa70d1995f`**); **`RemoveArrayItem`** on **`Message::with([...])`** (**`b73f0342ccc735b3`**, **`773126f144004f89`**); save path touching **`conversation`** without eager load.
+- **Fix:** command now eager-loads **`conversation`** with **`from`** and **`users`**; **`tests/Unit/Console/Commands/EmailMessageNotificationTest.php`** asserts **`MessageLogged`** **`COMMAND EmailMessageNotification`**.
+
+### `updateTrips` (`app/Console/Commands/updateTrips.php`)
+
+- **Cause:** undeclared **`$routeRepo`**; **`RemoveMethodCall`** on **`\\Log::info('COMMAND updateTrips')`** / trip count log (**`df63c4a59a2c87a9`**, **`33fff8f2a0549c93`**); many **`handle()`** mutants remain only partially covered, but log lines were untested.
+- **Fix:** typed **`$routeLogic` / `$routeRepo`**, **`parent::__construct()`** ordering; **`tests/Unit/Console/Commands/UpdateTripsTest.php`** asserts **`MessageLogged`** for **`COMMAND updateTrips`** and a **`Trips: `**-prefixed line when running **`node:updateTrips`** with a no-points trip.

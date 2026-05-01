@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Console\Commands;
 
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use Mockery;
 use STS\Models\User;
 use STS\Services\Logic\ConversationsManager;
@@ -17,6 +19,8 @@ class ConversationCreateTest extends TestCase
 
     public function test_handle_creates_private_conversation_and_reports_success(): void
     {
+        Event::fake([MessageLogged::class]);
+
         $from = User::factory()->create();
         $to = User::factory()->create();
 
@@ -36,10 +40,16 @@ class ConversationCreateTest extends TestCase
         ])
             ->expectsOutput('Conversation has been created.')
             ->assertExitCode(0);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND ConversationCreate';
+        });
     }
 
     public function test_handle_reports_error_when_conversation_cannot_be_created(): void
     {
+        Event::fake([MessageLogged::class]);
+
         $from = User::factory()->create();
         $to = User::factory()->create();
 
@@ -55,5 +65,7 @@ class ConversationCreateTest extends TestCase
         ])
             ->expectsOutput('Conversation could not be created, maybe none of the users are admin?')
             ->assertExitCode(0);
+
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e): bool => $e->message === 'COMMAND ConversationCreate');
     }
 }

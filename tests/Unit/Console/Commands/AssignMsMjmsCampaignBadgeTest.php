@@ -117,6 +117,57 @@ class AssignMsMjmsCampaignBadgeTest extends TestCase
         $this->assertSame(0, UserBadge::query()->where('badge_id', $badge->id)->where('user_id', $failedDonor->id)->count());
     }
 
+    public function test_handle_reports_zero_donors_when_no_paid_donations_exist(): void
+    {
+        $this->seedCampaign(1);
+
+        $this->artisan('badges:assign-msmjms-campaign')
+            ->expectsOutputToContain('Found 0 unique donor(s) with paid donations for campaign 1.')
+            ->assertExitCode(0);
+    }
+
+    public function test_handle_skips_insert_when_every_donor_already_has_the_badge(): void
+    {
+        $this->seedCampaign(1);
+        $donor = User::factory()->create();
+
+        CampaignDonation::query()->create([
+            'campaign_id' => 1,
+            'campaign_reward_id' => null,
+            'payment_id' => null,
+            'amount_cents' => 1000,
+            'name' => 'Donor',
+            'comment' => null,
+            'user_id' => $donor->id,
+            'status' => 'paid',
+        ]);
+
+        $badge = Badge::query()->create([
+            'title' => 'Aporté a la campaña +S+J+S',
+            'slug' => 'aportante-msmjms',
+            'description' => 'Yo aporté para la campaña +Seguro +Justo +Simple',
+            'image_path' => 'badges/msmjms.jpg',
+            'rules' => ['campaignId' => 1],
+            'visible' => true,
+        ]);
+
+        UserBadge::query()->create([
+            'user_id' => $donor->id,
+            'badge_id' => $badge->id,
+            'awarded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->artisan('badges:assign-msmjms-campaign')
+            ->expectsOutputToContain('Badge already exists')
+            ->expectsOutputToContain('1 user(s) already have this badge.')
+            ->expectsOutputToContain('No new user_badges to assign.')
+            ->assertExitCode(0);
+
+        $this->assertSame(1, UserBadge::query()->where('badge_id', $badge->id)->count());
+    }
+
     public function test_command_contract_is_defined(): void
     {
         $command = new AssignMsMjmsCampaignBadge;
