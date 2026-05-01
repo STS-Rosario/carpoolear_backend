@@ -45,6 +45,40 @@ class EvaluateBadgesTest extends TestCase
             ->expectsOutput('Starting badge evaluation...')
             ->expectsOutput('User Statistics:')
             ->expectsOutput('  Total users to evaluate: 1')
+            ->expectsOutput('  Filtering by specific user IDs')
+            ->expectsOutput('  Only users with recent connections (last 30 days)')
+            ->expectsOutput('  DRY RUN MODE - No badges will be awarded')
+            ->doesntExpectOutputToContain('  Badges awarded:')
+            ->expectsOutput('Badge evaluation completed!')
+            ->assertExitCode(0);
+    }
+
+    public function test_handle_warns_when_no_users_match_filters(): void
+    {
+        $this->artisan('badges:evaluate', [
+            '--dry-run' => true,
+            '--user-ids' => '999999991,999999992',
+        ])
+            ->expectsOutput('  Total users to evaluate: 0')
+            ->expectsOutput('No users found matching the criteria.')
+            ->assertExitCode(0);
+    }
+
+    public function test_handle_runs_evaluation_when_confirmed_without_dry_run(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 4, 28, 10, 0, 0));
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'last_connection' => Carbon::now()->subDay(),
+        ]);
+
+        $this->artisan('badges:evaluate', ['--user-ids' => (string) $user->id])
+            ->expectsConfirmation('Proceed with badge evaluation?', 'yes')
+            ->expectsOutputToContain('Evaluation Results:')
+            ->expectsOutputToContain('  Users processed: 1')
+            ->expectsOutputToContain('  Badges awarded:')
             ->expectsOutput('Badge evaluation completed!')
             ->assertExitCode(0);
     }
