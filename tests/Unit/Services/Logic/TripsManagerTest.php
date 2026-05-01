@@ -65,6 +65,57 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_validator_create_includes_all_documented_rule_keys(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+        $rules = $this->manager()->validator($this->minimalCreatePayload(), $user->id)->getRules();
+        $expected = [
+            'is_passenger', 'from_town', 'to_town', 'trip_date', 'total_seats', 'friendship_type_id',
+            'estimated_time', 'distance', 'co2', 'description', 'return_trip_id', 'parent_trip_id', 'car_id',
+            'weekly_schedule', 'weekly_schedule_time',
+        ];
+        foreach ($expected as $key) {
+            $this->assertArrayHasKey($key, $rules, "Missing create rule key: {$key}");
+        }
+        foreach (['0', '1'] as $i) {
+            foreach (['address', 'json_address', 'lat', 'lng'] as $field) {
+                $key = "points.{$i}.{$field}";
+                $this->assertArrayHasKey($key, $rules, "Missing create rule key: {$key}");
+            }
+        }
+        Carbon::setTestNow();
+    }
+
+    public function test_validator_update_includes_all_documented_rule_keys(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+        $payload = [
+            'points' => [
+                ['address' => 'A', 'json_address' => ['x' => 1], 'lat' => -1.0, 'lng' => -2.0],
+                ['address' => 'B', 'json_address' => ['y' => 2], 'lat' => -3.0, 'lng' => -4.0],
+            ],
+        ];
+        $rules = $this->manager()->validator($payload, $user->id, $trip->id)->getRules();
+        $expected = [
+            'is_passenger', 'from_town', 'to_town', 'trip_date', 'total_seats', 'friendship_type_id',
+            'estimated_time', 'distance', 'co2', 'return_trip_id', 'parent_trip_id', 'car_id',
+            'weekly_schedule', 'weekly_schedule_time',
+        ];
+        foreach ($expected as $key) {
+            $this->assertArrayHasKey($key, $rules, "Missing update rule key: {$key}");
+        }
+        foreach (['0', '1'] as $i) {
+            foreach (['address', 'json_address', 'lat', 'lng'] as $field) {
+                $key = "points.{$i}.{$field}";
+                $this->assertArrayHasKey($key, $rules, "Missing update rule key: {$key}");
+            }
+        }
+        Carbon::setTestNow();
+    }
+
     public function test_validator_create_passes_with_future_trip_date_and_points(): void
     {
         Carbon::setTestNow('2028-01-01 12:00:00');
