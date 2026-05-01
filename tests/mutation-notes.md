@@ -2941,6 +2941,15 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 - **Cause:** **`getData`** / **`getExtraData`** branch mutants (**`b78667ca7f7a0141`**, **`69d5ed1566de7130`**) when **`method_exists`** is flipped or the implicit no-return path is removed.
 - **Fix:** **`test_get_data_throws_when_notification_has_no_to_push`** expects the legacy exception string; **`test_get_extra_data_returns_null_when_notification_has_no_get_extras`** pins the **`null`** outcome when **`getExtras`** is absent.
 
+- **Cause:** **`sendBrowser`** path and outer catch for non-Android devices were not exercised, so **`device_type`** / **`sendBrowser`** message-array mutants and **`FirebaseService::sendNotification`** failures on the browser branch stayed **`UNCOVERED`** (e.g. **`8309f7edc66ccec9`**, **`8e0990a866624300`**, **`6e5d65ae063eaddd`**, **`b1646d93d0f9b758`**, **`0966c5574495a480`**).
+- **Fix:** **`test_send_logs_push_channel_error_when_browser_send_throws`** uses **`device_type` = `browser`**, **`AnnouncementNotification`**, and asserts the outer **`PushChannel: Error sending push notification`** context (including **`device_type`** **`browser`** and redacted token).
+
+- **Cause:** **`sendIOS`** inner **`\\Log::error`** (**`PushChannel: sendIOS error`**) and early **`sendAPNsNotification`** failure (**certificate missing**) had no test, leaving **`RemoveMethodCall`** / **`RemoveArrayItem`** mutants on that log and the **`!file_exists($apnsCert)`** guard **`UNCOVERED`** (e.g. **`920e2fbb3d907ec5`**, **`76309010639e13bc`**, **`004701aa6f31677d`**, **`b09b27d40b52f77b`**, **`c9120ff03383484e`**, **`6c3218b0989bfc1d`**).
+- **Fix:** **`test_send_logs_ios_inner_and_outer_errors_when_apns_certificate_missing`** points **`push-notification.ios.certificate`** at a non-existent path, uses a persisted **`ios`** device (64-char hex **`device_id`** so later token validation cannot mask the cert check), and asserts inner log **`device_id`**, full **`device_token`**, and **`APNs certificate not found`**, plus outer **`device_type`** **`ios`**.
+
+- **Cause:** **`sendAndroid`** **`$data`** merge (**`type`**, **`url`**, **`image`**, **`getExtras`** overwrite of **`extras`**) was not asserted end-to-end, so mutants could drop keys from **`input_data`** or from the payload-building branches without failing tests.
+- **Fix:** **`test_send_android_error_input_data_includes_type_url_and_image_from_to_push`** drives **`send()`** with an anonymous notification implementing **`toPush`** + **`getExtras`**, then asserts **`sendAndroid`** inner **`input_data`** preserves **`message`**, **`title`**, **`url`**, **`type`**, **`image`**, and the merged **`extras`** array.
+
 ## `FacebookSocialProvider` (`app/Services/Social/FacebookSocialProvider.php`)
 
 - **Cause:** status / **`isset`** / gender / birthday / return-array / **`request`** URL / friends loop / **`getError`** mutants (e.g. **`f9a794005551afcc`**–**`6d473fa7e62ff87f`**, **`509e85bf91dbea0a`**–**`ca7c9ff9095dc3f0`**).

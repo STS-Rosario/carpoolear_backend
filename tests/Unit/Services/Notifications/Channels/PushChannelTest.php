@@ -177,6 +177,143 @@ class PushChannelTest extends TestCase
         $this->assertNull((new PushChannel)->getExtraData(new \stdClass));
     }
 
+    public function test_send_logs_push_channel_error_when_browser_send_throws(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'browser-token-for-push-test',
+            'device_type' => 'browser',
+            'session_id' => 's-browser',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello browser');
+        $notification->setAttribute('title', 'TB');
+
+        (new PushChannel)->send($notification, $user);
+
+        $outer = $this->firstLogMatching($logged, 'PushChannel: Error sending push notification');
+        $this->assertNotNull($outer);
+        $ctx = $outer['context'];
+        $this->assertSame($user->id, $ctx['user_id']);
+        $this->assertSame($device->id, $ctx['device_id']);
+        $this->assertSame(substr((string) $device->device_id, 0, 20).'...', $ctx['device_token']);
+        $this->assertSame('browser', $ctx['device_type']);
+        $this->assertNotSame('', (string) ($ctx['error'] ?? ''));
+    }
+
+    public function test_send_logs_ios_inner_and_outer_errors_when_apns_certificate_missing(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+        Config::set('push-notification.ios.certificate', base_path('nonexistent-apns-cert-'.uniqid('', true).'.pem'));
+
+        $logged = [];
+        Log::shouldReceive('error')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => str_repeat('a', 64),
+            'device_type' => 'ios',
+            'session_id' => 's-ios',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello ios');
+        $notification->setAttribute('title', 'TI');
+
+        (new PushChannel)->send($notification, $user);
+
+        $inner = $this->firstLogMatching($logged, 'PushChannel: sendIOS error');
+        $this->assertNotNull($inner, 'Expected sendIOS catch to log before rethrowing.');
+        $ictx = $inner['context'];
+        $this->assertSame($device->id, $ictx['device_id']);
+        $this->assertSame($device->device_id, $ictx['device_token']);
+        $this->assertStringContainsString('APNs certificate not found', (string) ($ictx['error'] ?? ''));
+
+        $outer = $this->firstLogMatching($logged, 'PushChannel: Error sending push notification');
+        $this->assertNotNull($outer);
+        $this->assertSame('ios', $outer['context']['device_type']);
+        $this->assertSame($user->id, $outer['context']['user_id']);
+    }
+
+    public function test_send_android_error_input_data_includes_type_url_and_image_from_to_push(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $user = User::factory()->create();
+        Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'android-rich-payload-token',
+            'device_type' => 'android',
+            'session_id' => 's-rich',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new class
+        {
+            public function toPush($user, $device): array
+            {
+                return [
+                    'message' => 'Rich body',
+                    'title' => 'Rich title',
+                    'url' => 'https://example.com/deeplink',
+                    'type' => 'custom_type',
+                    'image' => 'https://cdn.example/push.png',
+                ];
+            }
+
+            public function getExtras(): array
+            {
+                return ['from_get_extras' => '1'];
+            }
+        };
+
+        (new PushChannel)->send($notification, $user);
+
+        $inner = $this->firstLogMatching($logged, 'PushChannel: sendAndroid error');
+        $this->assertNotNull($inner);
+        $data = $inner['context']['input_data'];
+        $this->assertSame('Rich body', $data['message']);
+        $this->assertSame('Rich title', $data['title']);
+        $this->assertSame('https://example.com/deeplink', $data['url']);
+        $this->assertSame('custom_type', $data['type']);
+        $this->assertSame('https://cdn.example/push.png', $data['image']);
+        $this->assertSame(['from_get_extras' => '1'], $data['extras']);
+    }
+
     /**
      * @param  list<array{message: string, context: array}>  $logged
      * @return array{message: string, context: array}|null
