@@ -1,6 +1,14 @@
 <?php
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Symfony\Component\Console\Command\Command as SymfonyCommand;
+
+if (app()->runningUnitTests()) {
+    Artisan::command('test:test', function () {
+        return SymfonyCommand::SUCCESS;
+    });
+}
 
 Schedule::command('rate:create')->hourly();
 

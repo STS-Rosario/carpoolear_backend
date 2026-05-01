@@ -3,8 +3,11 @@
 namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Events\User\Create as CreateEvent;
@@ -1088,6 +1091,196 @@ class UsersManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_reset_password_cooldown_logs_password_reset_cooldown_with_full_email_logs_context(): void
+    {
+        Queue::fake();
+        Carbon::setTestNow('2028-03-10 10:00:00');
+        config(['carpoolear.log_emails' => true]);
+
+        $user = User::factory()->make([
+            'id' => 55_001,
+            'email' => 'cooldown-email-logs@example.com',
+        ]);
+        $lastReset = (object) ['created_at' => Carbon::parse('2028-03-10 09:58:00')];
+
+        $emailChannel = Mockery::mock();
+        $emailChannel->shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('PASSWORD_RESET_REQUEST', Mockery::on(function (array $context) use ($user) {
+                return $context['email'] === $user->email
+                    && isset($context['timestamp'], $context['ip']);
+            }));
+        $emailChannel->shouldReceive('warning')
+            ->once()
+            ->ordered()
+            ->with('PASSWORD_RESET_COOLDOWN', Mockery::on(function (array $context) use ($user, $lastReset) {
+                return $context['user_id'] === $user->id
+                    && $context['email'] === $user->email
+                    && $context['remaining_minutes'] === 3
+                    && $context['last_reset_at'] === $lastReset->created_at->toIso8601String()
+                    && isset($context['timestamp']);
+            }));
+
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('resetPassword userManager', ['email' => $user->email]);
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with(
+                'Password reset cooldown active for user '.$user->email.', remaining: 3 minutes'
+            );
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('getUserBy')->once()->with('email', $user->email)->andReturn($user);
+        $userRepo->shouldReceive('getLastPasswordReset')->once()->with($user->email)->andReturn($lastReset);
+        $tripRepo = Mockery::mock(TripRepository::class);
+        $manager = new UsersManager($userRepo, $tripRepo);
+
+        $this->assertNull($manager->resetPassword($user->email));
+        $this->assertStringContainsString('Please wait', $manager->getErrors()['error']);
+        Queue::assertNothingPushed();
+
+        Carbon::setTestNow();
+        config(['carpoolear.log_emails' => false]);
+    }
+
+    public function test_reset_password_with_email_logging_queues_job_on_emails_with_ten_second_delay_and_logs_queued_payload(): void
+    {
+        Queue::fake();
+        Carbon::setTestNow('2028-04-01 08:00:00');
+        config(['carpoolear.log_emails' => true, 'app.url' => 'https://app-reset.test']);
+
+        $user = User::factory()->create([
+            'email' => 'reset-log-'.uniqid('', true).'@example.com',
+        ]);
+
+        $emailChannel = Mockery::mock();
+        $emailChannel->shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('PASSWORD_RESET_REQUEST', Mockery::type('array'));
+        $emailChannel->shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('PASSWORD_RESET_QUEUED', Mockery::on(function (array $context) use ($user) {
+                return $context['user_id'] === $user->id
+                    && $context['email'] === $user->email
+                    && isset($context['timestamp'])
+                    && is_string($context['token'] ?? null)
+                    && str_ends_with($context['token'], '...')
+                    && strlen($context['token']) === 13;
+            }));
+
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('resetPassword userManager', ['email' => $user->email]);
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('resetPassword before queuing email');
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('resetPassword email queued successfully', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+
+        $token = $this->manager()->resetPassword($user->email);
+        $this->assertIsString($token);
+
+        Queue::assertPushed(SendPasswordResetEmail::class, function (SendPasswordResetEmail $job) {
+            $expected = Carbon::parse('2028-04-01 08:00:10');
+
+            return $job->queue === 'emails'
+                && $job->delay instanceof Carbon
+                && $job->delay->equalTo($expected);
+        });
+
+        Carbon::setTestNow();
+        config(['carpoolear.log_emails' => false]);
+    }
+
+    public function test_reset_password_unknown_user_logs_warning_and_email_logs_when_enabled(): void
+    {
+        Queue::fake();
+        config(['carpoolear.log_emails' => true]);
+        $email = 'missing-logs-'.uniqid('', true).'@example.com';
+
+        $this->app->instance('request', Request::create(
+            '/',
+            'GET',
+            [],
+            [],
+            [],
+            ['REMOTE_ADDR' => '203.0.113.44']
+        ));
+
+        $emailChannel = Mockery::mock();
+        $emailChannel->shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('PASSWORD_RESET_REQUEST', Mockery::type('array'));
+        $emailChannel->shouldReceive('warning')
+            ->once()
+            ->ordered()
+            ->with('PASSWORD_RESET_USER_NOT_FOUND', Mockery::on(function (array $context) use ($email) {
+                return $context['email'] === $email
+                    && isset($context['timestamp'])
+                    && $context['ip'] === '203.0.113.44';
+            }));
+
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('resetPassword userManager', ['email' => $email]);
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+        Log::shouldReceive('warning')
+            ->once()
+            ->ordered()
+            ->with('Password reset requested for non-existent user', ['email' => $email]);
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->resetPassword($email));
+        $this->assertSame('user_not_found', $manager->getErrors()['error']);
+        Queue::assertNothingPushed();
+
+        config(['carpoolear.log_emails' => false]);
+    }
+
     public function test_change_password_updates_password_and_clears_token(): void
     {
         Queue::fake();
@@ -1102,6 +1295,37 @@ class UsersManagerTest extends TestCase
             'password_confirmation' => 'newsecret12',
         ]));
 
+        $this->assertTrue(\Hash::check('newsecret12', $user->fresh()->password));
+    }
+
+    public function test_change_password_activates_inactive_user_and_rejects_reuse_of_consumed_token(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create([
+            'active' => false,
+            'email' => 'inactive-cp-'.uniqid('', true).'@example.com',
+        ]);
+        $this->assertFalse((bool) $user->active);
+
+        $token = $this->manager()->resetPassword($user->email);
+        $this->assertNotNull($token);
+
+        $manager = $this->manager();
+        $this->assertTrue($manager->changePassword($token, [
+            'email' => $user->email,
+            'password' => 'newsecret12',
+            'password_confirmation' => 'newsecret12',
+        ]));
+
+        $user->refresh();
+        $this->assertTrue((bool) $user->active);
+        $this->assertTrue(\Hash::check('newsecret12', $user->password));
+
+        $this->assertNull($manager->changePassword($token, [
+            'email' => $user->email,
+            'password' => 'anotherpass12',
+            'password_confirmation' => 'anotherpass12',
+        ]));
         $this->assertTrue(\Hash::check('newsecret12', $user->fresh()->password));
     }
 
@@ -1216,6 +1440,31 @@ class UsersManagerTest extends TestCase
         $this->assertSame(0, (int) $this->manager()->tripsDistance($user, 9999));
     }
 
+    public function test_trips_count_and_distance_treat_string_zero_and_one_like_integer_passenger_types(): void
+    {
+        $user = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => now()->subDay(),
+            'distance' => 8000,
+        ]);
+        $passengerTrip = Trip::factory()->create([
+            'trip_date' => now()->subDays(3),
+            'distance' => 12000,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $passengerTrip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertSame(1, $this->manager()->tripsCount($user, (string) Passenger::TYPE_CONDUCTOR));
+        $this->assertSame(1, $this->manager()->tripsCount($user, (string) Passenger::TYPE_PASAJERO));
+        $this->assertSame(8000, (int) $this->manager()->tripsDistance($user, (string) Passenger::TYPE_CONDUCTOR));
+        $this->assertSame(12000, (int) $this->manager()->tripsDistance($user, (string) Passenger::TYPE_PASAJERO));
+    }
+
     public function test_trips_metrics_ignore_future_driver_and_passenger_trips(): void
     {
         $user = User::factory()->create();
@@ -1252,6 +1501,42 @@ class UsersManagerTest extends TestCase
         $this->assertSame($user->id, (int) $saved->user_id);
         $this->assertNotNull($saved->month);
         $this->assertTrue($saved->exists);
+    }
+
+    public function test_migrate_users_invokes_test_artisan_command_and_logs_exit_code(): void
+    {
+        $this->assertSame(0, Artisan::call('test:test'));
+
+        Log::shouldReceive('info')
+            ->once()
+            ->with('Test COMMAND exit0');
+
+        $this->manager()->migrateUsers(1, 2);
+    }
+
+    public function test_terms_text_reads_language_specific_path_then_default_when_lang_empty(): void
+    {
+        $termsDir = storage_path('terms');
+        if (! is_dir($termsDir)) {
+            mkdir($termsDir, 0775, true);
+        }
+
+        $slug = 'termsapp'.substr(uniqid('', true), -10);
+        config(['carpoolear.target_app' => $slug]);
+
+        $pathLang = $termsDir.DIRECTORY_SEPARATOR.$slug.'_es.html';
+        $pathBase = $termsDir.DIRECTORY_SEPARATOR.$slug.'.html';
+
+        file_put_contents($pathLang, '<html>es-content</html>');
+        file_put_contents($pathBase, '<html>default-content</html>');
+
+        try {
+            $this->assertSame('<html>es-content</html>', $this->manager()->termsText('es')->content);
+            $this->assertSame('<html>default-content</html>', $this->manager()->termsText('')->content);
+        } finally {
+            @unlink($pathLang);
+            @unlink($pathBase);
+        }
     }
 
     public function test_unanswered_conversation_or_requests_by_trip_respects_user_limit(): void
