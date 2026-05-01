@@ -3,6 +3,8 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use STS\Console\Commands\CalculateActiveUsersPerMonth;
 use STS\Models\ActiveUsersPerMonth;
 use STS\Models\User;
@@ -35,9 +37,13 @@ class CalculateActiveUsersPerMonthTest extends TestCase
             '--month' => '2026-03',
             '--dry-run' => true,
         ])
+            ->expectsOutputToContain('Starting active users calculation...')
             ->expectsOutputToContain('Calculating active users for: March 2026')
             ->expectsOutputToContain('Found 1 active users for March 2026')
             ->expectsOutput('DRY RUN: Would save the following data:')
+            ->expectsOutput('  Year: 2026')
+            ->expectsOutput('  Month: 3')
+            ->expectsOutput('  Value: 1')
             ->assertExitCode(0);
 
         $this->assertSame(0, ActiveUsersPerMonth::query()->where('year', 2026)->where('month', 3)->count());
@@ -113,5 +119,57 @@ class CalculateActiveUsersPerMonthTest extends TestCase
         $this->assertTrue($command->getDefinition()->hasOption('month'));
         $this->assertTrue($command->getDefinition()->hasOption('dry-run'));
         $this->assertTrue($command->getDefinition()->hasOption('force'));
+    }
+
+    public function test_invalid_month_option_returns_non_zero_exit_code(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 4, 15, 10, 0, 0));
+
+        $this->artisan('users:calculate-active-per-month', [
+            '--month' => 'not-a-month',
+        ])
+            ->expectsOutputToContain('Invalid month format')
+            ->assertExitCode(1);
+    }
+
+    public function test_current_or_future_month_option_returns_non_zero_exit_code(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 4, 15, 10, 0, 0));
+
+        $this->artisan('users:calculate-active-per-month', [
+            '--month' => '2026-04',
+        ])
+            ->expectsOutputToContain('Cannot calculate active users for current month')
+            ->expectsOutputToContain('Current month data is incomplete')
+            ->expectsOutputToContain('Please specify a past month')
+            ->assertExitCode(1);
+    }
+
+    public function test_successful_save_persists_saved_at_and_writes_summary_log(): void
+    {
+        Carbon::setTestNow(Carbon::create(2026, 4, 15, 10, 0, 0));
+        Event::fake([MessageLogged::class]);
+
+        User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'last_connection' => Carbon::create(2026, 3, 5, 9, 0, 0),
+        ]);
+
+        $this->artisan('users:calculate-active-per-month', [
+            '--month' => '2026-03',
+        ])
+            ->expectsOutput('Active users calculation completed successfully!')
+            ->assertExitCode(0);
+
+        $row = ActiveUsersPerMonth::query()->where('year', 2026)->where('month', 3)->first();
+        $this->assertNotNull($row);
+        $this->assertNotNull($row->saved_at);
+        $this->assertTrue($row->saved_at->isSameDay(Carbon::now()));
+
+        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $log): bool => str_contains(
+            (string) $log->message,
+            'Active users calculated for March 2026: 1 users'
+        ));
     }
 }
