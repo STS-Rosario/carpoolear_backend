@@ -4,7 +4,6 @@ namespace Tests\Unit\Services\Notifications\Channels;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-use Mockery;
 use STS\Models\Device;
 use STS\Models\User;
 use STS\Notifications\AnnouncementNotification;
@@ -13,12 +12,6 @@ use Tests\TestCase;
 
 class PushChannelTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        Mockery::close();
-        parent::tearDown();
-    }
-
     public function test_send_skips_push_pipeline_when_device_notifications_disabled(): void
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
@@ -114,20 +107,15 @@ class PushChannelTest extends TestCase
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
 
+        $logged = [];
         Log::shouldReceive('error')
-            ->once()
-            ->with(
-                'PushChannel: Error sending push notification',
-                Mockery::on(function (array $context): bool {
-                    $this->assertArrayHasKey('error', $context);
-                    $this->assertNotSame('', $context['error']);
-
-                    return true;
-                })
-            );
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
 
         $user = User::factory()->create();
-        Device::query()->create([
+        $device = Device::query()->create([
             'user_id' => $user->id,
             'device_id' => 'test-token-android-throw',
             'device_type' => 'android',
@@ -143,5 +131,64 @@ class PushChannelTest extends TestCase
         $notification->setAttribute('title', 'T');
 
         (new PushChannel)->send($notification, $user);
+
+        $outer = $this->firstLogMatching($logged, 'PushChannel: Error sending push notification');
+        $this->assertNotNull($outer, 'Expected outer PushChannel catch to log once.');
+        $ctx = $outer['context'];
+        $this->assertSame($user->id, $ctx['user_id']);
+        $this->assertSame($device->id, $ctx['device_id']);
+        $this->assertSame(substr((string) $device->device_id, 0, 20).'...', $ctx['device_token']);
+        $this->assertSame('android', $ctx['device_type']);
+        $this->assertIsString($ctx['error'] ?? null);
+        $this->assertNotSame('', $ctx['error']);
+        $this->assertIsString($ctx['error_trace'] ?? null);
+        $this->assertGreaterThan(40, strlen($ctx['error_trace']));
+
+        $inner = $this->firstLogMatching($logged, 'PushChannel: sendAndroid error');
+        $this->assertNotNull($inner, 'Expected sendAndroid catch to log before rethrowing.');
+        $ictx = $inner['context'];
+        $this->assertSame($device->id, $ictx['device_id']);
+        $this->assertSame(substr((string) $device->device_id, 0, 20).'...', $ictx['device_token']);
+        $this->assertIsString($ictx['error'] ?? null);
+        $this->assertNotSame('', $ictx['error']);
+        $this->assertIsString($ictx['error_trace'] ?? null);
+        $this->assertNotSame('', $ictx['error_trace']);
+        $this->assertIsArray($ictx['input_data'] ?? null);
+        $this->assertSame('Hello', $ictx['input_data']['message']);
+        $this->assertSame('T', $ictx['input_data']['title']);
+    }
+
+    public function test_get_data_throws_when_notification_has_no_to_push(): void
+    {
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage("Method toPush does't exists");
+
+        $user = User::factory()->create();
+        $device = new Device([
+            'device_id' => 'x',
+            'device_type' => 'android',
+        ]);
+
+        (new PushChannel)->getData(new \stdClass, $user, $device);
+    }
+
+    public function test_get_extra_data_returns_null_when_notification_has_no_get_extras(): void
+    {
+        $this->assertNull((new PushChannel)->getExtraData(new \stdClass));
+    }
+
+    /**
+     * @param  list<array{message: string, context: array}>  $logged
+     * @return array{message: string, context: array}|null
+     */
+    private function firstLogMatching(array $logged, string $message): ?array
+    {
+        foreach ($logged as $entry) {
+            if (($entry['message'] ?? '') === $message) {
+                return $entry;
+            }
+        }
+
+        return null;
     }
 }
