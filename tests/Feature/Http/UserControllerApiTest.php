@@ -549,6 +549,79 @@ class UserControllerApiTest extends TestCase
             ->assertJsonFragment(['message' => 'Identity validation is not available.']);
     }
 
+    public function test_mercadopago_oauth_url_returns_503_for_mp_disabled_branch_with_exact_status(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_mercado_pago_enabled' => false,
+        ]);
+        config(['services.mercadopago.client_id' => 'configured-but-mp-off']);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'nro_doc' => '30123456',
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/users/mercadopago-oauth-url')
+            ->assertStatus(503)
+            ->assertJsonFragment([
+                'message' => 'Identity validation with Mercado Pago is not available.',
+            ]);
+    }
+
+    public function test_mercadopago_oauth_url_returns_503_for_missing_client_id_with_exact_status(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_mercado_pago_enabled' => true,
+        ]);
+        config(['services.mercadopago.client_id' => '   ']);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'nro_doc' => '30999111',
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('api/users/mercadopago-oauth-url')
+            ->assertStatus(503)
+            ->assertJsonFragment([
+                'message' => 'Mercado Pago OAuth is not configured. Set MERCADO_PAGO_CLIENT_ID and related env vars.',
+            ]);
+    }
+
+    public function test_mercadopago_oauth_url_returns_422_with_nro_doc_required_validation_when_dni_missing(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_mercado_pago_enabled' => true,
+        ]);
+        config(['services.mercadopago.client_id' => 'configured-client']);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'nro_doc' => '',
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/users/mercadopago-oauth-url');
+        $response->assertStatus(422)
+            ->assertJsonFragment([
+                'message' => 'User must have DNI (nro_doc) set to validate identity.',
+            ]);
+        $this->assertSame(
+            ['required'],
+            $response->json('errors.nro_doc')
+        );
+    }
+
     public function test_mercadopago_oauth_url_returns_authorization_payload_when_configured(): void
     {
         config([

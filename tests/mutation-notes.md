@@ -3643,10 +3643,10 @@ Scoped mutation run used **`Line:MutatorName`** labels from Infection; line numb
   - **Mutant ID:** **`Line 285:TernaryNegated`**, **`Line 285:GreaterToGreaterOrEqual`**.
   - **Fix:** **`test_change_boolean_property_maps_non_positive_route_value_to_zero`**.
 
-- **`Line 299–307: IfNegated`**, **`FalseToTrue`**, **`EmptyStringToNotEmpty`**, **`UnwrapTrim`**, **`IdenticalToNotIdentical`** (**`getMercadoPagoOAuthUrl`** config + **`client_id`** + **`nro_doc`** guards)
-  - **Cause:** Each early **`throw new ExceptionWithErrors(..., 503)`** must be distinguishable from the success JSON payload.
-  - **Mutant ID:** **`Line 299:IfNegated`**, **`Line 302:IfNegated`**, **`Line 306:IfNegated`**, **`Line 306:IdenticalToNotIdentical`**, **`Line 306:EmptyStringToNotEmpty`**, **`Line 306:UnwrapTrim`**, etc.
-  - **Fix:** **`test_mercadopago_oauth_url_returns_503_when_identity_validation_disabled`**; **`test_mercadopago_oauth_url_returns_authorization_payload_when_configured`** (**`MercadoPagoOAuthService`** mock returns PKCE-shaped array); **`test_mercadopago_oauth_url_non_pkce_flow_returns_string_url_and_hits_scalar_cache_branch`** (real **`MercadoPagoOAuthService`**, **`oauth_pkce_enabled` false** ⇒ scalar URL + **`Cache::put`** branch without **`code_verifier`**).
+- **`Line 299–307: IfNegated`**, **`FalseToTrue`**, **`EmptyStringToNotEmpty`**, **`UnwrapTrim`**, **`IdenticalToNotIdentical`**, **`Line 303/307: DecrementInteger`/`IncrementInteger`** (**`getMercadoPagoOAuthUrl`** config + **`client_id`** + **`nro_doc`** guards)
+  - **Cause:** Each early **`throw new ExceptionWithErrors(..., 503)`** must use status **`503`** exactly (not **`502`/`504`** from integer mutants); the missing-**`nro_doc`** branch uses default **`ExceptionWithErrors`** status **`422`** with a strict **`errors.nro_doc`** shape (**`Line 313:RemoveArrayItem`**).
+  - **Mutant ID:** **`Line 299:IfNegated`**, **`Line 302:IfNegated`**, **`Line 306:IfNegated`**, **`Line 303:DecrementInteger`**, **`Line 307:DecrementInteger`**, **`Line 313:RemoveArrayItem`**, etc.
+  - **Fix:** **`test_mercadopago_oauth_url_returns_503_when_identity_validation_disabled`**; **`test_mercadopago_oauth_url_returns_503_for_mp_disabled_branch_with_exact_status`**; **`test_mercadopago_oauth_url_returns_503_for_missing_client_id_with_exact_status`**; **`test_mercadopago_oauth_url_returns_422_with_nro_doc_required_validation_when_dni_missing`**; **`test_mercadopago_oauth_url_returns_authorization_payload_when_configured`**; **`test_mercadopago_oauth_url_non_pkce_flow_returns_string_url_and_hits_scalar_cache_branch`**.
 
 - **`Line 333–361`**, **`Line 373–423`** (**`deleteAccountRequest`**, **`deleteAccount`** branches, **`JWTAuth::invalidate`**, **`Log::info`**)
   - **Cause:** **`201`** + DB row + queued job, hard-delete vs anonymize vs **`422`** **`negative_ratings`**, and success JSON **`action`** keys were mostly uncovered in the scoped run.
@@ -3663,21 +3663,36 @@ Scoped mutation run used **`Line:MutatorName`** labels from Infection; line numb
   - **Mutant ID:** **`Line 163:AlwaysReturnNull`** (historical; line drift).
   - **Fix:** **`test_update_photo_accepts_base64_profile_payload`** (minimal valid JPEG data URL).
 
-### UserController — remaining uncovered (scoped run, ~92% score)
+### UserController — follow-up to 100% (scoped **`UserController.php`** + dual test paths)
 
-These lines stayed **`UNCOVERED`** or low-value without brittle **`Log`** / **`JWTAuth`** fakes:
+Previously uncovered mutants (example Infection IDs from the report) are now killed by **`tests/Unit/Http/UserControllerMutationSurvivorsTest.php`** plus stricter Mercado Pago feature assertions in **`UserControllerApiTest`**.
 
-- **`Line 57: ContinueToBreak`** (**`create`** driver-doc loop **`if (! $file) { continue; }`**)
-  - **Cause:** Multipart registration fixtures do not send a **`false`** / empty upload slot that hits **`continue`** while still exercising **`uploadDoc`** on a later element.
-  - **Mutant ID:** **`Line 57:ContinueToBreak`**.
-  - **Fix (optional):** custom request builder or **`create`** unit test with a synthetic **`files()`** iterator containing a falsy entry (not pursued here).
+- **`Line 57:ContinueToBreak`** (**`bed08a1908c4acd8`**)
+  - **Cause:** Replacing **`continue`** with **`break`** exits the loop on the first falsy slot, so a later real **`UploadedFile`** never reaches **`uploadDoc`**.
+  - **Fix:** **`test_create_skips_falsy_driver_file_slot_then_uploads_remaining_files`** — **`Request::file('driver_data_docs')`** returns **`[null, $good]`**; **`uploadDoc`** must be invoked **once** with **`$good`**, and **`create`** receives **`driver_data_docs`** JSON **`["uploaded-ref-1"]`**.
 
-- **`Line 88: RemoveMethodCall`**, **`Concat*`** (**`registrationResponsePayload`** **`JWTAuth::fromUser`** / **`Log::error`**)
-  - **Cause:** Issuing a JWT after registration requires an **active, unbanned** new user and a token path that does not fail; **`Log::error`** only runs on **`JWTException`**.
-  - **Mutant ID:** **`Line 88:RemoveMethodCall`**, **`Line 88:ConcatRemoveLeft`**, etc.
-  - **Fix (optional):** end-to-end registration that yields **`token`** plus a **`JWTAuth`** partial mock that throws once.
+- **`Line 88:RemoveMethodCall`**, **`Line 88:Concat*`** (**`d29ba1c4a21ea572`**, **`8cad102ba557b674`**, **`2af557b4c6e12978`**, **`e393ce20df87a15a`**)
+  - **Cause:** The **`JWTException`** catch must log the full **`Could not issue JWT after registration: …`** prefix plus **`$e->getMessage()`**; removing concat or **`\\Log::error`** survives without an assertion on the exact string.
+  - **Fix:** **`test_registration_response_payload_logs_full_message_when_jwt_issue_fails_for_active_user`** — bind **`tymon.jwt.auth`** mock so **`fromUser`** throws **`JWTException('fixture-jwt-failure')`**, invoke private **`registrationResponsePayload`** via reflection, **`Log::spy()`** + **`shouldHaveReceived('error', …)`**.
 
-- **`Line 396` / `Line 416`** (**`deleteAccount`** catch **`\\Log::error('Failed to invalidate JWT…` + concat**)
-  - **Cause:** The catch blocks run only when **`JWTAuth::invalidate`** throws; happy-path deletes do not enter them.
-  - **Mutant ID:** **`Line 396:RemoveMethodCall`**, **`Line 396:ConcatRemoveLeft`**, **`Line 416:RemoveMethodCall`**, etc.
-  - **Fix (optional):** **`JWTAuth::shouldReceive('invalidate')->andThrow(...)`** in a narrow test (risky with real login + facade state).
+- **`Line 303:DecrementInteger`**, **`Line 303:IncrementInteger`** (**`709b0a14f91916d2`**, **`2dbe19693d0ac52e`**)
+  - **Cause:** Mutants change the third argument of **`ExceptionWithErrors`** from **`503`** to **`502`/`504`**; a loose “any 5xx” check would not fail.
+  - **Fix:** **`test_mercadopago_oauth_url_returns_503_for_mp_disabled_branch_with_exact_status`** — **`assertStatus(503)`** and message fragment for Mercado Pago disabled.
+
+- **`Line 307:DecrementInteger`**, **`Line 307:IncrementInteger`** (**`ef10f49de8a9fcd4`**, **`7cd8f3474ada4b0c`**)
+  - **Cause:** Same literal **`503`** mutation on the “missing **`client_id`**” branch.
+  - **Fix:** **`test_mercadopago_oauth_url_returns_503_for_missing_client_id_with_exact_status`**.
+
+- **`Line 313:RemoveArrayItem`** (**`83489a5b20a0e2d5`**, **`b7cd9109bac681fe`**)
+  - **Cause:** The **`errors`** payload must keep **`nro_doc` => `['required']`** (not an empty inner list, not dropping the **`nro_doc`** key).
+  - **Fix:** **`test_mercadopago_oauth_url_returns_422_with_nro_doc_required_validation_when_dni_missing`** — note **`ExceptionWithErrors`** here uses the default **`422`** status (no third argument in the controller); **`assertSame(['required'], $response->json('errors.nro_doc'))`**.
+
+- **`Line 396:RemoveMethodCall`**, **`Line 396:Concat*`** (**`517e64589bd0c140`**, **`5dfa98d4807f5bd3`**, **`30431f34326f56df`**, **`0eafd1952ed23c38`**)
+  - **Cause:** **`deleteAccount`** hard-delete path catch must log **`Failed to invalidate JWT after delete: …`** when **`invalidate`** throws.
+  - **Fix:** **`test_delete_account_delete_branch_logs_when_jwt_invalidate_throws`** — mock **`tymon.jwt.auth`**, **`getToken`** returns a sentinel, **`invalidate`** throws, assert **`Log::error`** full string.
+
+- **`Line 416:RemoveMethodCall`**, **`Line 416:Concat*`** (**`aae16edfc4a2ce84`**, **`f23e0fbd709a8c27`**, **`f500d615561a2e5e`**, **`a117154e05e0e0d2`**)
+  - **Cause:** Same for the anonymize branch message **`Failed to invalidate JWT after anonymize: …`**.
+  - **Fix:** **`test_delete_account_anonymize_branch_logs_when_jwt_invalidate_throws`** — user with a trip, **`AnonymizationService`** mock, same **`Log::error`** contract.
+
+Scoped mutation command (both test files): **`PEST_PHP=…` `DB_DATABASE=testing1` `composer test:mutate -- --path=app/Http/Controllers/Api/v1/UserController.php tests/Feature/Http/UserControllerApiTest.php tests/Unit/Http/UserControllerMutationSurvivorsTest.php`** → **100%** score in the successful run.
