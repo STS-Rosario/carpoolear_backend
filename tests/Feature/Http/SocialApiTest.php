@@ -134,6 +134,67 @@ class SocialApiTest extends TestCase
         $this->assertSame('OK', $friends->json());
     }
 
+    /**
+     * {@see SocialController::installProvider} uses {@see ucfirst}({@see strtolower}($provider)) so the
+     * concrete class is {@see \STS\Services\Social\TestSocialProvider}. Without {@see strtolower}, an
+     * all-caps segment would resolve to the wrong class name.
+     *
+     * Mutant ID: Line 33:UnwrapUcfirst
+     */
+    public function test_social_login_resolves_uppercase_provider_via_strtolower_before_ucfirst(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+        $pid = 'upper-pid-'.substr(uniqid('', true), 0, 12);
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'test',
+        ]);
+
+        $accessToken = $this->encodeTestAccessToken([
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+        ]);
+
+        $this->postJson('api/social/login/TEST', ['access_token' => $accessToken])
+            ->assertOk()
+            ->assertJsonStructure(['token']);
+    }
+
+    /**
+     * Without {@see strtolower}, {@see ucfirst}('tEsT') yields `TEsT` (wrong provider class). The
+     * pipeline must lowercase the full segment first.
+     *
+     * Mutant ID: Line 33:UnwrapStrtolower
+     */
+    public function test_social_login_resolves_studly_provider_via_strtolower_before_ucfirst(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+        $pid = 'studly-pid-'.substr(uniqid('', true), 0, 12);
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'test',
+        ]);
+
+        $accessToken = $this->encodeTestAccessToken([
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+        ]);
+
+        $this->postJson('api/social/login/tEsT', ['access_token' => $accessToken])
+            ->assertOk()
+            ->assertJsonStructure(['token']);
+    }
+
     public function test_social_login_rejects_banned_linked_account(): void
     {
         $user = User::factory()->create([

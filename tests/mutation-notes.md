@@ -3696,3 +3696,15 @@ Previously uncovered mutants (example Infection IDs from the report) are now kil
   - **Fix:** **`test_delete_account_anonymize_branch_logs_when_jwt_invalidate_throws`** — user with a trip, **`AnonymizationService`** mock, same **`Log::error`** contract.
 
 Scoped mutation command (both test files): **`PEST_PHP=…` `DB_DATABASE=testing1` `composer test:mutate -- --path=app/Http/Controllers/Api/v1/UserController.php tests/Feature/Http/UserControllerApiTest.php tests/Unit/Http/UserControllerMutationSurvivorsTest.php`** → **100%** score in the successful run.
+
+## SocialController (`app/Http/Controllers/Api/v1/SocialController.php`)
+
+- **`Line 33:UnwrapUcfirst`**
+  - **Cause:** **`installProvider`** must build **`STS\Services\Social\{Name}SocialProvider`** with PascalCase **`Test`** for the test provider. **`UnwrapUcfirst`** leaves only **`strtolower`**, so an all-caps route segment **`TEST`** becomes the class basename **`test`**, which does not match **`TestSocialProvider`** on case-sensitive autoloaders.
+  - **Mutant ID:** **`Line 33:UnwrapUcfirst`**.
+  - **Fix:** **`test_social_login_resolves_uppercase_provider_via_strtolower_before_ucfirst`** — **`POST api/social/login/TEST`** with a valid test **`access_token`** must return **`200`** and a **`token`**.
+
+- **`Line 33:UnwrapStrtolower`**
+  - **Cause:** **`UnwrapStrtolower`** leaves **`ucfirst($provider)`** only; for **`tEsT`**, PHP returns **`TEsT`**, resolving the wrong class **`TEsTSocialProvider`** instead of **`TestSocialProvider`** (correct path is **`strtolower` → `test` → `ucfirst` → `Test`**).
+  - **Mutant ID:** **`Line 33:UnwrapStrtolower`**.
+  - **Fix:** **`test_social_login_resolves_studly_provider_via_strtolower_before_ucfirst`** — **`POST api/social/login/tEsT`** with a valid test **`access_token`** must return **`200`** and a **`token`**.
