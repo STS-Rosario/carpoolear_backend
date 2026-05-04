@@ -701,6 +701,27 @@ class ManualIdentityValidationApiTest extends TestCase
         $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
     }
 
+    public function test_qr_order_returns_service_unavailable_when_manual_validation_disabled_before_qr_gate(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => false,
+            'carpoolear.identity_validation_manual_qr_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 2_000,
+            'carpoolear.qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Manual identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
+    }
+
     public function test_qr_order_returns_unprocessable_when_pos_external_id_missing(): void
     {
         config([
@@ -920,6 +941,31 @@ class ManualIdentityValidationApiTest extends TestCase
             ]);
 
         $this->assertSame(1, ManualIdentityValidation::where('user_id', $user->id)->count());
+    }
+
+    public function test_qr_order_rolls_back_new_row_when_mercado_pago_throws_before_response(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.identity_validation_manual_qr_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 2_000,
+            'carpoolear.qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->mock(MercadoPagoService::class, function ($mock) {
+            $mock->shouldReceive('createQrOrderForManualValidation')
+                ->once()
+                ->andThrow(new \RuntimeException('QR order unavailable'));
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertStatus(500);
+
+        $this->assertSame(0, ManualIdentityValidation::where('user_id', $user->id)->count());
     }
 
     public function test_qr_order_rolls_back_new_row_when_qr_data_missing(): void
