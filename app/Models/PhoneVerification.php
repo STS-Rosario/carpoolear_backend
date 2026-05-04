@@ -10,17 +10,23 @@ class PhoneVerification extends Model
 {
     protected $table = 'phone_verifications';
 
-    protected $fillable = [
-        'user_id',
-        'phone_number',
-        'verified',
-        'verification_code',
-        'code_sent_at',
-        'ip_address',
-        'failed_attempts',
-        'resend_count',
-        'verified_at',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'user_id',
+            'phone_number',
+            'verified',
+            'verification_code',
+            'code_sent_at',
+            'ip_address',
+            'failed_attempts',
+            'resend_count',
+            'verified_at',
+        ];
+    }
 
     protected function casts(): array
     {
@@ -46,14 +52,10 @@ class PhoneVerification extends Model
     public function canResend(): bool
     {
         $cooldown = (int) config('sms.verification.resend_cooldown_minutes', 2);
-        if ($cooldown === 0) {
-            return true;
-        }
-        if ($this->code_sent_at === null) {
-            return true;
-        }
 
-        return now()->greaterThanOrEqualTo($this->getNextResendTime());
+        return $cooldown === 0
+            || $this->code_sent_at === null
+            || now()->greaterThanOrEqualTo($this->getNextResendTime());
     }
 
     public function getNextResendTime(): Carbon
@@ -73,12 +75,10 @@ class PhoneVerification extends Model
     public function isExpired(): bool
     {
         $minutes = (int) config('sms.verification.expires_in_minutes', 5);
-        if ($this->code_sent_at === null) {
-            return true;
-        }
-        $deadline = $this->code_sent_at->copy()->addMinutes($minutes);
+        $sent = $this->code_sent_at;
 
-        return now()->greaterThanOrEqualTo($deadline);
+        return $sent === null
+            || now()->greaterThanOrEqualTo($sent->copy()->addMinutes($minutes));
     }
 
     public function verifyCode(string $code): bool

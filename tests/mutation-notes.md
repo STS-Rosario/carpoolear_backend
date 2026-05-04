@@ -3329,3 +3329,47 @@ Pest mutation run (**154** mutants, **100%** score with **`tests/Unit/Models/Use
 - **`STS\Models\Payment` missing** (blocked **`payments()`** tests)
   - **Cause:** Table was renamed to **`payment_attempts`** and the model is **`PaymentAttempt`**, but **`User::payments()`** / **`Trip::payments()`** still reference **`STS\Models\Payment`**.
   - **Fix:** Added **`app/Models/Payment.php`** as a thin subclass of **`PaymentAttempt`** so legacy relation strings resolve without changing **`User`** / **`Trip`** signatures in this pass.
+
+## PhoneVerification (`app/Models/PhoneVerification.php`)
+
+Pest mutation run (**55** mutants, **100%** score with **`tests/Unit/Models/PhoneVerificationTest.php`** and **`--path=app/Models/PhoneVerification.php`**). **`Line N: MutatorName`** is the report label; Pest prints **`--id=`** hashes mainly for untested/uncovered mutants.
+
+- **`Line 14–26: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** (**`$fillable`** → **`getFillable()`**)
+  - **Cause:** Property-based **`$fillable`** did not map each key to a covered executable line for **`RemoveArrayItem`**.
+  - **Fix:** **`getFillable()`** returns the nine keys explicitly; **`test_fillable_lists_persisted_columns`** asserts the full ordered list.
+
+- **`Line 33–36: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** (**`casts()`**)
+  - **Cause:** Dropping **`verified`**, **`code_sent_at`**, or **`verified_at`** from **`casts()`** could survive without **`getCasts()`** assertions.
+  - **Fix:** **`test_casts_include_verified_and_timestamps`** asserts each cast entry.
+
+- **`Line 47–49`**, **`RemoveIntegerCast`**, **`DecrementInteger` / `IncrementInteger`**, **`GreaterOrEqualTo*`** (**`isBlocked`**)
+  - **Cause:** **`(int) config(...)`** and **`(int) $this->failed_attempts`** and **`>= $max`** were not pinned with a non-default **`max_failed_attempts`** and inclusive boundary.
+  - **Fix:** **`test_is_blocked_uses_configured_max_inclusive`** and **`test_is_blocked_casts_string_attempts_from_storage`**.
+
+- **`Line 54–57`**, **`IdenticalToNotIdentical`**, **`BooleanOrToBooleanAnd`**, int mutants (**`canResend`**)
+  - **Cause:** Early-return shape and **`$cooldown === 0`** branch were hard to distinguish from mutants; cooldown vs **`code_sent_at`** vs **`getNextResendTime()`** needed separate scenarios.
+  - **Fix:** Refactored **`canResend()`** to a single **`return $cooldown === 0 || $this->code_sent_at === null || now()->gte($this->getNextResendTime())`**; tests **`test_can_resend_when_cooldown_is_zero_without_touching_sent_at`**, **`test_can_resend_when_code_never_sent`**, **`test_can_resend_follows_next_resend_time_after_cooldown`**.
+
+- **`Line 63–64`**, **`RemoveIntegerCast`**, **`CoalesceRemoveLeft`** (**`getNextResendTime`**)
+  - **Cause:** **`$this->code_sent_at ?? now()`** and **`(int) config`** were not proven against a fixed **`code_sent_at`** base time.
+  - **Fix:** **`test_get_next_resend_time_uses_sent_at_not_now_when_present`**.
+
+- **`Line 71–72`**, **`PlusToMinus`**, **`RemoveIntegerCast`**, **`RemoveMethodCall`** (**`incrementResendCount`**)
+  - **Cause:** **`(int) $this->resend_count + 1`** and **`save()`** were not asserted after persist.
+  - **Fix:** **`test_increment_resend_count_persists_increment`**.
+
+- **`Line 77–80`**, **`RemoveIntegerCast`**, **`IdenticalToNotIdentical`**, **`BooleanOrToBooleanAnd`** (**`isExpired`**)
+  - **Cause:** Separate early **`return true`** for **`code_sent_at === null`** led to **`RemoveEarlyReturn` / `TrueToFalse`** survivors; deadline math was under-tested.
+  - **Fix:** Refactored **`isExpired()`** to **`return $sent === null || now()->gte($sent->copy()->addMinutes($minutes))`**; **`test_is_expired_when_no_code_sent_timestamp`** and **`test_is_expired_respects_deadline_from_configured_minutes`**.
+
+- **`Line 86`**, **`RemoveStringCast`** (**`verifyCode`**)
+  - **Cause:** **`hash_equals`** with **`(string)`** casts could be stripped while tests only used matching strings.
+  - **Fix:** **`test_verify_code_compares_string_normalization`** includes leading-zero mismatch and **`verifyCode(42)`** against stored **`'42'`**.
+
+- **`Line 91–92`**, **`Line 101`**, **`Line 106–107`** (**`incrementFailedAttempts`**, **`markAsVerified`**, **`resetFailedAttempts`**)
+  - **Cause:** **`TrueToFalse`** on **`verified = true`**, **`RemoveMethodCall`** on **`save()`**, and literal **`0`** for **`failed_attempts`** were not tied to DB/assertions.
+  - **Fix:** **`test_increment_failed_attempts_returns_blocked_flag_and_persists`**, **`test_mark_as_verified_sets_boolean_timestamp_and_saves`**, **`test_reset_failed_attempts_writes_zero`**.
+
+- **`Line 41: AlwaysReturnNull`** (**`user()`**)
+  - **Cause:** Relation return type not asserted in the dedicated model test file.
+  - **Fix:** **`test_user_relation_is_belongs_to_user`**.
