@@ -319,6 +319,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: without the second `where`, any active-state row on the trip satisfied `whereIn('request_state', …)` and inflated `count() > 0` for unrelated users.
   - Fix: `test_user_has_active_request_is_false_when_only_another_user_has_active_states`.
 
+- `91717da9a004e497` (`Line 237: AlwaysReturnNull`, `isUserRequestWaitingPayment` → `isUserInRequestType`).
+  - Cause: `PassengersRepositoryTest` never invoked `isUserRequestWaitingPayment`, so Pest marked the mutant **UNCOVERED** (no line→test mapping for that return).
+  - Fix: `test_is_user_request_waiting_payment_is_true_only_for_waiting_payment_state`.
+
 - `Line 91: IfNegated`, `Line 91: RemoveNot`, `Line 92: ForeachEmptyIterable`, `Line 93: RemoveMethodCall` (`changeRequestState` criteria branch / `where($column, $value)` loop).
   - Cause: callers always passed criteria matching the row under test, so skipping the `! empty($criterias)` block or the loop still returned a row and updated it.
   - Fix: state-mismatch negatives that must return `null` without mutating the row: `test_approve_for_payment_does_not_match_accepted_passenger`, `test_pay_request_does_not_match_pending_passenger`, `test_accept_request_does_not_match_waiting_payment_passenger`, `test_reject_request_does_not_match_accepted_passenger`.

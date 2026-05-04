@@ -427,6 +427,28 @@ class PassengersRepositoryTest extends TestCase
         $this->assertTrue($repo->isUserRequestRejected($trip->id, $user->id));
     }
 
+    public function test_is_user_request_waiting_payment_is_true_only_for_waiting_payment_state(): void
+    {
+        $trip = Trip::factory()->create();
+        $user = User::factory()->create();
+        $repo = $this->repo();
+
+        $this->assertFalse($repo->isUserRequestWaitingPayment($trip->id, $user->id));
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+        $this->assertFalse($repo->isUserRequestWaitingPayment($trip->id, $user->id));
+
+        Passenger::where('trip_id', $trip->id)->where('user_id', $user->id)->update([
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+        $this->assertTrue($repo->isUserRequestWaitingPayment($trip->id, $user->id));
+    }
+
     public function test_trips_with_transactions_returns_empty_when_user_has_no_qualifying_rows(): void
     {
         // Mutation intent: join + filters yield zero `trips` rows (~180–206).
