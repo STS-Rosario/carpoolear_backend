@@ -14,11 +14,106 @@ use STS\Repository\UserRepository;
 use STS\Services\Notifications\Models\DatabaseNotification;
 use Tests\TestCase;
 
+/** Records merge invocations without calling `User::migrateUser()` (undefined on the model). */
+final class UserRepositoryMergeSpy extends UserRepository
+{
+    /** @var list<array{0: int, 1: int}> */
+    public array $mergeCalls = [];
+
+    protected function invokeMigrateUserMerge(User $userKeep, User $userToDelete): void
+    {
+        $this->mergeCalls[] = [$userKeep->id, $userToDelete->id];
+    }
+}
+
 class UserRepositoryTest extends TestCase
 {
     private function repo(): UserRepository
     {
         return new UserRepository;
+    }
+
+    public function test_migrate_users_no_op_when_delete_user_missing(): void
+    {
+        // Mutation intent: `if ($user && $user_delete)` (~34) must stay false when the delete id does not resolve.
+        $keep = User::factory()->create();
+
+        $this->repo()->migrateUsers(999_999_999, $keep->id);
+
+        $this->assertTrue($keep->fresh()->exists());
+    }
+
+    public function test_migrate_users_no_op_when_keep_user_missing(): void
+    {
+        // Mutation intent: same guard when `$user_id_keep` does not resolve (short-circuit on `$user`).
+        $delete = User::factory()->create();
+
+        $this->repo()->migrateUsers($delete->id, 999_999_998);
+
+        $this->assertTrue($delete->fresh()->exists());
+    }
+
+    public function test_migrate_users_invokes_merge_when_both_users_exist(): void
+    {
+        // Mutation intent: `RemoveMethodCall` on merge (~35) and `IfNegated` / `BooleanAndToBooleanOr` on the guard (~34).
+        $spy = new UserRepositoryMergeSpy;
+        $keep = User::factory()->create();
+        $delete = User::factory()->create();
+
+        $spy->migrateUsers($delete->id, $keep->id);
+
+        $this->assertSame([[$keep->id, $delete->id]], $spy->mergeCalls);
+    }
+
+    public function test_invoke_migrate_user_merge_forwards_to_migrate_user_on_keep_user(): void
+    {
+        // Mutation intent: `RemoveMethodCall` on `$userKeep->migrateUser(...)` (~42) — default implementation must stay delegated (Pest otherwise only hits the override in `UserRepositoryMergeSpy`).
+        $keep = Mockery::mock(User::class);
+        $delete = Mockery::mock(User::class);
+        $keep->shouldReceive('migrateUser')->once()->with($delete);
+
+        $m = new \ReflectionMethod(UserRepository::class, 'invokeMigrateUserMerge');
+        $m->setAccessible(true);
+        $m->invoke(new UserRepository, $keep, $delete);
+    }
+
+    public function test_friend_list_returns_accepted_friends_collection(): void
+    {
+        // Mutation intent: `friendList` must execute `friends()->get()` (~147 RemoveMethodCall on `friends()` / builder).
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+        $repo = $this->repo();
+        $repo->addFriend($a, $b, 'flist');
+
+        $list = $repo->friendList($a->fresh());
+
+        $this->assertCount(1, $list);
+        $this->assertTrue($list->first()->is($b));
+    }
+
+    public function test_get_notifications_omitted_unread_argument_matches_explicit_false(): void
+    {
+        // Mutation intent: `FalseToTrue` on `$unread = false` (~178) — default must stay “all notifications”.
+        $user = User::factory()->create();
+        DatabaseNotification::create([
+            'user_id' => $user->id,
+            'type' => 'Tests\\DummyNotificationA',
+            'read_at' => null,
+        ]);
+        DatabaseNotification::create([
+            'user_id' => $user->id,
+            'type' => 'Tests\\DummyNotificationB',
+            'read_at' => now(),
+        ]);
+
+        $explicit = $this->repo()->getNotifications($user->fresh(), false);
+        $defaulted = $this->repo()->getNotifications($user->fresh());
+
+        $this->assertCount(2, $explicit);
+        $this->assertEqualsCanonicalizing(
+            $explicit->pluck('id')->all(),
+            $defaulted->pluck('id')->all()
+        );
     }
 
     public function test_create_persists_user(): void
@@ -296,6 +391,18 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse($b->fresh()->friends()->where('users.id', $a->id)->exists());
     }
 
+    public function test_add_friend_persists_empty_string_origin(): void
+    {
+        // Mutation intent: `EmptyStringToNotEmpty` on default `$provider = ''` (~131) and attach payload keys (~135–136).
+        $a = User::factory()->create();
+        $b = User::factory()->create();
+
+        $this->repo()->addFriend($a, $b, '');
+
+        $this->assertDatabaseHas('friends', ['uid1' => $a->id, 'uid2' => $b->id, 'origin' => '']);
+        $this->assertDatabaseHas('friends', ['uid1' => $b->id, 'uid2' => $a->id, 'origin' => '']);
+    }
+
     public function test_password_reset_token_round_trip(): void
     {
         $user = User::factory()->create(['email' => 'reset-'.uniqid('', true).'@example.com']);
@@ -304,6 +411,9 @@ class UserRepositoryTest extends TestCase
         $this->repo()->storeResetToken($user, $token);
 
         $this->assertDatabaseHas('password_resets', ['email' => $user->email, 'token' => $token]);
+        $row = DB::table('password_resets')->where('email', $user->email)->where('token', $token)->first();
+        $this->assertNotNull($row);
+        $this->assertNotNull($row->created_at);
 
         $resolved = $this->repo()->getUserByResetToken($token);
         $this->assertTrue($resolved->is($user));
@@ -439,5 +549,20 @@ class UserRepositoryTest extends TestCase
         $trip = Trip::factory()->create(['user_id' => $driver->id]);
 
         $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
+    }
+
+    public function test_unanswered_conversation_or_requests_counts_only_when_trip_belongs_to_user(): void
+    {
+        // Mutation intent: `whereHas('trip', fn ($q) => $q->where('user_id', $userId))` (~197–199 RemoveMethodCall / trip ownership).
+        $ownerA = User::factory()->create();
+        $ownerB = User::factory()->create();
+        $tripB = Trip::factory()->create(['user_id' => $ownerB->id]);
+        Passenger::factory()->create([
+            'trip_id' => $tripB->id,
+            'user_id' => $ownerA->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($ownerA->id, $tripB->id));
     }
 }

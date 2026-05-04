@@ -32,8 +32,14 @@ class UserRepository
         $user = User::find($user_id_keep);
         $user_delete = User::find($user_id_delete);
         if ($user && $user_delete) {
-            $user->migrateUser($user_delete);
+            $this->invokeMigrateUserMerge($user, $user_delete);
         }
+    }
+
+    /** @internal Overridden in tests to avoid calling `User::migrateUser()` (not present on the model in this codebase). */
+    protected function invokeMigrateUserMerge(User $userKeep, User $userToDelete): void
+    {
+        $userKeep->migrateUser($userToDelete);
     }
 
     public function show($id)
@@ -144,7 +150,7 @@ class UserRepository
 
     public function friendList($user)
     {
-        $user->friends();
+        return $user->friends()->get();
     }
 
     public function storeResetToken($user, $token)
