@@ -3378,7 +3378,7 @@ Pest mutation run (**55** mutants, **100%** score with **`tests/Unit/Models/Phon
 
 Pest mutation run (**120** mutants, **100%** score with **`tests/Unit/Models/TripTest.php`** and **`--path=app/Models/Trip.php`**). **`Line N: MutatorName`** is the primary label; uncovered **`AlwaysReturnNull`** hashes before the fix included **`ab29d1260bce9e40`**, **`3cff604ee9a3fa6c`**, **`4fd96a8baaed222e`**, **`3e08cd786efa50c9`**, **`378e277f4084cbea`**, **`a042f05503fede7b`**, **`56499ed81432c490`**, **`81be75ebf0ae6bb3`**, **`d34f45fc9b8475a6`**.
 
-- **`Line 25: AlwaysReturnNull`** (**`newFactory`**)
+- **`Line 23–26: AlwaysReturnNull`** (**`newFactory`**)
   - **Cause:** No assertion that **`Trip::newFactory()`** returns a real factory instance.
   - **Fix:** **`test_new_factory_returns_trip_factory`**.
 
@@ -3386,39 +3386,39 @@ Pest mutation run (**120** mutants, **100%** score with **`tests/Unit/Models/Tri
   - **Cause:** Same PCOV **`const`** coverage gap as **`User`** friendship ints; bitmask / privacy ints overlap by design (**`PRIVACY_FRIENDS`** vs **`FINALIZADO`**, etc.).
   - **Fix:** **`// @pest-mutate-ignore:DecrementInteger,IncrementInteger`** on each numeric **`const`** line; **`test_core_constants`** keeps semantic spot-checks.
 
-- **`Line 68–100: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** (**`$fillable`** → **`getFillable()`**)
+- **`Line 70–102: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** (**`$fillable`** → **`getFillable()`**)
   - **Cause:** Property **`$fillable`** did not map each key to executable lines.
   - **Fix:** **`getFillable()`**; **`test_fillable_lists_mass_assignment_columns`**.
 
-- **`Line 109–110`**, **`Line 116–119`**, **`getHidden` / `getAppends` / `getArrayableAppends`**
+- **`Line 107–137`**, **`getHidden` / `getAppends` / `getArrayableAppends`**
   - **Cause:** **`$hidden`** / **`$appends`** weak for **`RemoveArrayItem`**; dead early **`return []`** risk on appends.
   - **Fix:** **`getHidden()`**; **`getAppends()`**, **`hasAppended()`**, ternary **`getArrayableAppends()`**; **`test_hidden_suppresses_enc_path`**, **`test_appends_list_trip_computed_attributes`**, **`test_to_array_includes_each_appended_accessor_key`**.
 
-- **`Line 141–151: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** (**`casts()`**)
+- **`Line 139–153: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** (**`casts()`**)
   - **Cause:** Cast entries could be trimmed without failing tests.
   - **Fix:** **`test_casts_include_scheduling_and_money_columns`** (per-key **`getCasts()`** assertions).
 
-- **`Line 157: AlwaysReturnNull`** (**`parentTrip`**), **`Line 193–194: RemoveArrayItem`** (**`ratings()->with([...])`**)
+- **`Line 155–158: AlwaysReturnNull`** (**`parentTrip`**), **`Line 208–211: RemoveArrayItem`** (**`ratings()->with([...])`**)
   - **Cause:** **`parentTrip()`** not invoked; eager-load keys for **`from` / `to`** not asserted.
   - **Fix:** **`test_parent_trip_relation_returns_has_one`**, **`test_ratings_relation_eager_loads_from_and_to`**.
 
-- **`Line 200: AlwaysReturnNull`** (**`payments()`**)
+- **`Line 228–231: AlwaysReturnNull`** (**`payments()`**)
   - **Cause:** Relation not exercised with a persisted **`Payment`** row in **`TripTest`**.
   - **Fix:** **`test_payments_relation_returns_has_many_and_counts_rows`**.
 
-- **`Line 205`**, **`Line 215`**, **`Line 220`**, **`Line 225`**, **`Line 167`**, **`Line 172`**, **`Line 182`** (**`AlwaysReturnNull`** on secondary relations)
-  - **Cause:** **`userVisibility`**, **`car`**, **`routes`**, **`days`**, **`points`**, **`outbound`**, **`inbound`**, **`conversation`** were never invoked under **`TripTest`**, so PCOV marked **`return $this->hasMany/…`** as uncovered.
+- **`Line 165–226`** (**`AlwaysReturnNull`** on secondary relations: **`userVisibility`**, **`car`**, **`routes`**, **`days`**, **`points`**, **`outbound`**, **`inbound`**, **`conversation`**)
+  - **Cause:** Those relation methods were never invoked under **`TripTest`**, so PCOV marked **`return $this->hasMany/…`** as uncovered.
   - **Fix:** **`test_secondary_trip_relations_return_expected_relation_objects`**.
 
-- **`Line 205` / `getPassengerCountAttribute`**, **`Line 240` / `isPending`**, **`Line 245` / `isPassenger`**, **`Line 250` / `getSeatsAvailableAttribute`**
+- **`Line 233–251`** (**`getPassengerCountAttribute`**, **`isPending`**, **`isPassenger`**, **`getSeatsAvailableAttribute`**)
   - **Cause:** **`> 0`**, **`>= $max`**, subtraction vs **`passengerAccepted()`**, and driver-exclusion on counts were under-specified.
   - **Fix:** **`test_passenger_count_matches_accepted_passengers_excluding_driver`**, **`test_is_pending_true_only_when_passenger_has_pending_or_waiting_payment`**, **`test_is_passenger_true_when_accepted_for_user`** (existing seats test still covers **`getSeatsAvailableAttribute`**).
 
-- **`Line 210: RemoveArrayItem`** (**`passengerPending`** **`whereIn`**)
+- **`Line 190–196: RemoveArrayItem`** (**`passengerPending`** **`whereIn`**)
   - **Cause:** Only one pending state exercised; dropping **`STATE_WAITING_PAYMENT`** from the array could survive.
   - **Fix:** **`test_passenger_pending_query_includes_only_pending_and_waiting_payment_states_only`**.
 
-- **`Line 301: AlwaysReturnNull`** (**`setStateReady`** **`return $this`**)
+- **`Line 297–302: AlwaysReturnNull`** (**`setStateReady`** **`return $this`**)
   - **Cause:** Fluent **`return $this`** not asserted.
   - **Fix:** **`test_set_state_ready_returns_same_model_for_fluent_chain`**.
 
