@@ -293,6 +293,56 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: happy-path fixtures used one passenger per trip, so duplicate trip ids from the passenger join and shallow relation graphs did not fail without explicit assertions.
   - Fix: added `test_trips_with_transactions_returns_one_row_per_trip_when_multiple_passengers_have_payment_status` and `test_trips_with_transactions_eager_loads_declared_closure_relations`.
 
+- **Mutant IDs** (Pest prints `Line N: MutatorName`; per-run hashes vary—use `pest --mutate --path=app/Repository/PassengersRepository.php --mutation-id=…` to replay a single hash after a run).
+
+- `Line 54: RemoveMethodCall` (`PassengersRepository.php` `getPendingPaymentRequests`, `where('trip_passengers.user_id', $user->id)`).
+  - Cause: another user’s `STATE_WAITING_PAYMENT` row on a future trip still satisfied join/date/state filters, so dropping the passenger-user constraint stayed green.
+  - Fix: `test_get_pending_payment_requests_only_includes_rows_for_the_authenticated_passenger_user`.
+
+- `Line 55: RemoveMethodCall` (`getPendingPaymentRequests`, `where('trips.trip_date', '>=', …)`).
+  - Cause: no assertion that past-dated trips are excluded for waiting-payment listings.
+  - Fix: `test_get_pending_payment_requests_excludes_waiting_payment_rows_on_past_trips`.
+
+- `Line 57: RemoveMethodCall` (`getPendingPaymentRequests`, `where('request_state', STATE_WAITING_PAYMENT)`).
+  - Cause: only “no rows at all” was covered; a `STATE_PENDING` row on a future trip did not prove the state filter.
+  - Fix: `test_get_pending_payment_requests_excludes_non_waiting_payment_states`.
+
+- `Line 71: RemoveArrayItem` (`newRequest` payload `['request_state' => …]` / neighbor keys).
+  - Cause: returned-model assertions could still pass if a removed column matched an accidental default; DB-level check was missing.
+  - Fix: `test_new_request_persists_explicit_request_state_and_passenger_type` (reads `trip_passengers` row after insert).
+
+- `Line 89: RemoveMethodCall` (`changeRequestState`, `where('user_id', $userId)`).
+  - Cause: multi-passenger same-trip positives existed, but mutants could still escape when combined filters were not re-asserted on “no change” paths that reuse the same query builder.
+  - Fix: keep `test_accept_request_targets_only_requested_passenger_on_shared_trip`; add state-mismatch tests below (each calls `changeRequestState` and relies on the `user_id` constraint so the wrong row is not updated).
+
+- `Line 213: RemoveMethodCall` (`userHasActiveRequest`, second `where('user_id', $userId)`).
+  - Cause: without the second `where`, any active-state row on the trip satisfied `whereIn('request_state', …)` and inflated `count() > 0` for unrelated users.
+  - Fix: `test_user_has_active_request_is_false_when_only_another_user_has_active_states`.
+
+- `Line 91: IfNegated`, `Line 91: RemoveNot`, `Line 92: ForeachEmptyIterable`, `Line 93: RemoveMethodCall` (`changeRequestState` criteria branch / `where($column, $value)` loop).
+  - Cause: callers always passed criteria matching the row under test, so skipping the `! empty($criterias)` block or the loop still returned a row and updated it.
+  - Fix: state-mismatch negatives that must return `null` without mutating the row: `test_approve_for_payment_does_not_match_accepted_passenger`, `test_pay_request_does_not_match_pending_passenger`, `test_accept_request_does_not_match_waiting_payment_passenger`, `test_reject_request_does_not_match_accepted_passenger`.
+
+- `Line 116: RemoveArrayItem`, `Line 121: RemoveArrayItem`, `Line 125: RemoveArrayItem` (`cancelRequest` `$criteria` arrays).
+  - Cause: cancel paths were only tested when the matching row existed; removing a criteria key could match the wrong `request_state` and still look “successful” without a negative control.
+  - Fix: `test_cancel_request_pending_reason_does_not_cancel_accepted_passenger`, `test_cancel_request_while_paying_reason_does_not_cancel_accepted_passenger`, `test_cancel_request_driver_reason_does_not_cancel_pending_passenger`.
+
+- `Line 138: RemoveArrayItem`, `Line 149: RemoveArrayItem`, `Line 160: RemoveArrayItem`, `Line 171: RemoveArrayItem` (`aproveForPaymentRequest` / `payRequest` / `acceptRequest` / `rejectRequest` criteria passed into `changeRequestState`).
+  - Cause: same as cancel: positives only; criteria stripping could widen the match to the wrong lifecycle row.
+  - Fix: same four state-mismatch tests as for `~91–93` (each method’s “must not match” scenario).
+
+- `Line 190: RemoveMethodCall` (`tripsWithTransactions` closure: `where('trips.user_id', …)` vs `orWhere('trip_passengers.user_id', …)`).
+  - Cause: driver-as-passenger cases satisfied `orWhere` alone; an owner-only driver with paying peers did not prove the driver leg of the OR group.
+  - Fix: `test_trips_with_transactions_includes_driver_owned_trip_when_driver_is_not_a_passenger_row`.
+
+- `Line 195: RemoveMethodCall` (`whereNotNull('trip_passengers.payment_status')`).
+  - Cause: rows without `payment_status` were not asserted to exclude the trip from the listing.
+  - Fix: `test_trips_with_transactions_excludes_past_trips_when_payment_status_is_null`.
+
+- `Line 196: RemoveMethodCall` (`whereNull('trips.deleted_at')`).
+  - Cause: soft-delete exclusion was only asserted for pending listings, not for `tripsWithTransactions` with paid passengers.
+  - Fix: `test_trips_with_transactions_excludes_soft_deleted_trip_even_when_passengers_have_payment_status`.
+
 ## TripRepository (current batch)
 
 - `47a4022bfb577c5a`, `a50255ec77726d09`, `33b99591f429010d`, `7ab8d1032746dbfa`, `c971ded4c0583849`, `dd8743ead8f87fde`, `14701d7b0afa6c43`, `9e6cb9312e8e70ea`, `e0900113fa619282`, `fce18506ce2a3b67`, `2f31f58e34bc7f68`, `bbdfa6dd5309dc76`, `b687fb0c758f9ff7`, `1294a7e0b757765f`, `13bffdc93611a1bd`, `2561f9ba60928e7c`, `aa1ba96b77874b63`, `bb988e6606ef287b`, `64854536d7731d76`, `926f5eb76fa1c5d2`, `ee8770e106619a2a`, `86a3522102bd856b`, `4abda33c3ccae2f5`, `0280f49e5e9aa5f6`, `168a1c682d274fec`, `9332ef5aa60d7c7b`, `726f02044afec66a`, `74f70ee8c58fdc8d`

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -610,5 +611,258 @@ class PassengersRepositoryTest extends TestCase
             $this->assertNotNull($passRow->trip);
             $this->assertTrue($passRow->trip->relationLoaded('user'));
         }
+    }
+
+    public function test_get_pending_payment_requests_only_includes_rows_for_the_authenticated_passenger_user(): void
+    {
+        $driverA = User::factory()->create();
+        $driverB = User::factory()->create();
+        $passengerA = User::factory()->create();
+        $passengerB = User::factory()->create();
+        $tripA = Trip::factory()->create([
+            'user_id' => $driverA->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $tripB = Trip::factory()->create([
+            'user_id' => $driverB->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $tripA->id,
+            'user_id' => $passengerA->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $tripB->id,
+            'user_id' => $passengerB->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+
+        $rows = $this->repo()->getPendingPaymentRequests(null, $passengerA, []);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($tripA->id, $rows->first()->trip_id);
+        $this->assertSame($passengerA->id, (int) $rows->first()->user_id);
+    }
+
+    public function test_get_pending_payment_requests_excludes_waiting_payment_rows_on_past_trips(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+
+        $this->assertCount(0, $this->repo()->getPendingPaymentRequests(null, $passenger, []));
+    }
+
+    public function test_get_pending_payment_requests_excludes_non_waiting_payment_states(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $this->assertCount(0, $this->repo()->getPendingPaymentRequests(null, $passenger, []));
+    }
+
+    public function test_new_request_persists_explicit_request_state_and_passenger_type(): void
+    {
+        $trip = Trip::factory()->create();
+        $user = User::factory()->create();
+
+        $p = $this->repo()->newRequest($trip->id, $user, []);
+
+        $row = DB::table('trip_passengers')->where('id', $p->id)->first();
+        $this->assertNotNull($row);
+        $this->assertSame(Passenger::STATE_PENDING, (int) $row->request_state);
+        $this->assertSame(Passenger::TYPE_PASAJERO, (int) $row->passenger_type);
+    }
+
+    public function test_approve_for_payment_does_not_match_accepted_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->aproveForPaymentRequest($trip->id, $passenger->id, $driver, []));
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_pay_request_does_not_match_pending_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->payRequest($trip->id, $passenger->id, $driver, []));
+        $this->assertSame(Passenger::STATE_PENDING, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_accept_request_does_not_match_waiting_payment_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->acceptRequest($trip->id, $passenger->id, $driver, []));
+        $this->assertSame(Passenger::STATE_WAITING_PAYMENT, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_reject_request_does_not_match_accepted_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->rejectRequest($trip->id, $passenger->id, $driver, []));
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_cancel_request_pending_reason_does_not_cancel_accepted_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->cancelRequest($trip->id, $passenger, Passenger::CANCELED_REQUEST));
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_cancel_request_while_paying_reason_does_not_cancel_accepted_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->cancelRequest($trip->id, $passenger, Passenger::CANCELED_PASSENGER_WHILE_PAYING));
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_cancel_request_driver_reason_does_not_cancel_pending_passenger(): void
+    {
+        $trip = Trip::factory()->create();
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertNull($this->repo()->cancelRequest($trip->id, $passenger, Passenger::CANCELED_DRIVER));
+        $this->assertSame(Passenger::STATE_PENDING, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_trips_with_transactions_includes_driver_owned_trip_when_driver_is_not_a_passenger_row(): void
+    {
+        $driver = User::factory()->create();
+        $peer = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $p = Passenger::factory()->aceptado()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $peer->id,
+        ]);
+        $p->forceFill(['payment_status' => 'paid'])->saveQuietly();
+
+        $trips = $this->repo()->tripsWithTransactions($driver);
+
+        $this->assertCount(1, $trips);
+        $this->assertSame($pastTrip->id, $trips->first()->id);
+    }
+
+    public function test_trips_with_transactions_excludes_soft_deleted_trip_even_when_passengers_have_payment_status(): void
+    {
+        $driver = User::factory()->create();
+        $peer = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $p = Passenger::factory()->aceptado()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $peer->id,
+        ]);
+        $p->forceFill(['payment_status' => 'paid'])->saveQuietly();
+        $pastTrip->delete();
+
+        $this->assertCount(0, $this->repo()->tripsWithTransactions($driver));
+    }
+
+    public function test_trips_with_transactions_excludes_past_trips_when_payment_status_is_null(): void
+    {
+        $driver = User::factory()->create();
+        $peer = User::factory()->create();
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $p = Passenger::factory()->aceptado()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $peer->id,
+        ]);
+        $p->forceFill(['payment_status' => null])->saveQuietly();
+
+        $this->assertCount(0, $this->repo()->tripsWithTransactions($driver));
+    }
+
+    public function test_user_has_active_request_is_false_when_only_another_user_has_active_states(): void
+    {
+        $trip = Trip::factory()->create();
+        $alice = User::factory()->create();
+        $bob = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $bob->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $this->assertFalse($this->repo()->userHasActiveRequest($trip->id, $alice->id));
     }
 }
