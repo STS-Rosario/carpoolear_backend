@@ -49,7 +49,7 @@
         "test": "php artisan test",
         "test:coverage": "php -d memory_limit=512M artisan test --coverage",
         "test:coverage:ci": "php -d memory_limit=512M artisan test --coverage --min=50",
-        "test:mutate": "php -d pcov.directory=. ./vendor/bin/pest --mutate",
+        "test:mutate": "bash scripts/pest-mutate.sh",
         "setup-git-hooks": "@php -r \"if (file_exists('.git')) { passthru('git config core.hooksPath .githooks'); }\"",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

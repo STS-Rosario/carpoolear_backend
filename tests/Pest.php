@@ -21,8 +21,9 @@
 |   template path like `/Users/you/Work/...`), PHPUnit still records files/lines but **per-line
 |   test ids stay empty** (`[]`), so Pest shows every mutant as UNCOVERED (0 tested). `ini_set`
 |   cannot override this (SYSTEM). Fix Herd/PHP ini, or prefix PHP with `-d pcov.directory=.`
-|   from `carpoolear_backend` (or pass an absolute project path). Use `composer test:mutate -- -- …`
-|   which applies that flag for you.
+|   from `carpoolear_backend` (or pass an absolute project path). **`composer test:mutate`** runs
+|   `scripts/pest-mutate.sh` (same `-d pcov.directory=.`); Composer must use **PHP ≥ 8.5** (`require.php`).
+|   If your global `composer`/`php` is older, set **`PEST_PHP`** to PHP 8.5+ (e.g. Herd **`php85`**) or invoke `./vendor/bin/pest --mutate` with that binary directly.
 | - Scoped runs finish the initial suite in a few seconds; Pest’s per-mutant timeout is
 |   derived from that duration (~initial + 5s), which is too low for Laravel bootstrap.
 |   `scripts/patch-pest-mutate-subprocess.php` (composer post-autoload-dump) floors the
