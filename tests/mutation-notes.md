@@ -3261,3 +3261,27 @@ Pest mutation run (22 mutants, 100% score) identifies each survivor by **`Line N
 - **`Line 76: AlwaysReturnNull`** (`trip`)
   - **Cause:** Relation method could return **`null`** while higher-level tests still passed.
   - **Fix:** **`test_trip_relation_returns_belongs_to`** asserts **`BelongsTo`** from **`(new TripPoint)->trip()`** (alongside existing **`Trip`** association tests).
+
+## CampaignReward (`app/Models/CampaignReward.php`)
+
+Pest mutation run (38 mutants, 100% score). **`Line N: MutatorName`** is the primary mutant label; **`f623b72178afd660`** was reported as **`Line 54: RemoveEarlyReturn`** on an early **`getArrayableAppends`** guard before refactor.
+
+- **`Line 12–17: RemoveArrayItem`** (`$fillable` / **`getFillable`**)
+  - **Cause:** Property-based **`$fillable`** did not map each key to an executable statement, so **`RemoveArrayItem`** mutants were often **uncovered** or trivially equivalent.
+  - **Fix:** **`getFillable()`** returns the six keys explicitly; **`test_fillable_lists_reward_columns`** and **`test_mass_assignment_persists_all_fillable_columns`** pin the list and **`CampaignReward::create`** with exactly those keys.
+
+- **`Line 21–23: RemoveArrayItem`** (`$casts` / **`casts()`**)
+  - **Cause:** Same as fillable: trimming a cast entry could survive without **`getCasts()`** assertions.
+  - **Fix:** **`protected function casts(): array`**; **`test_casts_include_numeric_and_active_columns`**.
+
+- **`Line 27–29: RemoveArrayItem`** (`$appends` / accessors in arrays)
+  - **Cause:** **`$appends`** property array mutants were weakly tied to tests; **`toArray()`** alone did not assert the full append list.
+  - **Fix:** **`getAppends()`**, **`hasAppended()`**, and **`getArrayableAppends()`** aligned so appended keys are returned from a multi-line array; **`test_appends_list_accessor_names_for_array_output`** and **`test_to_array_includes_each_appended_accessor`**.
+
+- **`Line 64: DecrementInteger`** (`getQuantityRemainingAttribute`: **`max(0, …)`**)
+  - **Cause:** Tests only reached **`quantity_remaining === 0`** when **`sold === available`**; nudging the **`0`** literal in **`max(0, …)`** (e.g. to **`max(-1, …)`**) still passed because **`available - sold`** was **`0`**, not negative.
+  - **Fix:** **`test_quantity_remaining_stays_zero_when_paid_donations_exceed_capacity`** (capacity **2**, three **`paid`** donations) asserts **`quantity_remaining`** stays **`0`**, which fails if the floor in **`max`** is wrong.
+
+- **`f623b72178afd660`** (**`Line 54: RemoveEarlyReturn`** on **`getArrayableAppends`** empty guard)
+  - **Cause:** **`return []`** when **`count($appends) === 0`** was **never executed** because **`getAppends()`** is always non-empty for **`CampaignReward`**, so the line was **uncovered**.
+  - **Fix:** Replaced the early-return shape with a single path: **`$keys = count($appends) === 0 ? [] : array_combine(...)`** then **`return $this->getArrayableItems($keys)`**, so the empty case is still correct without a dedicated uncovered **`return`**.
