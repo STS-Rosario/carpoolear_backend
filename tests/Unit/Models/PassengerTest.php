@@ -2,15 +2,128 @@
 
 namespace Tests\Unit\Models;
 
+use Database\Factories\PassengerFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use ReflectionMethod;
 use STS\Models\Passenger;
+use STS\Models\Rating;
 use STS\Models\Trip;
 use STS\Models\User;
 use Tests\TestCase;
 
 class PassengerTest extends TestCase
 {
-    public function test_belongs_to_user_and_trip(): void
+    /**
+     * @param  array<string, mixed>  $overrides
+     */
+    private function makeRating(User $from, User $to, Trip $trip, array $overrides = []): Rating
+    {
+        $rating = Rating::factory()->create(array_merge([
+            'trip_id' => $trip->id,
+            'user_id_from' => $from->id,
+            'user_id_to' => $to->id,
+            'user_to_type' => 0,
+            'user_to_state' => 0,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Test comment.',
+            'reply_comment' => '',
+            'reply_comment_created_at' => null,
+            'voted' => false,
+            'voted_hash' => 'hash-'.uniqid('', true),
+            'rate_at' => null,
+        ], $overrides));
+
+        if (array_key_exists('available', $overrides)) {
+            $rating->forceFill(['available' => $overrides['available']])->saveQuietly();
+        } else {
+            $rating->forceFill(['available' => true])->saveQuietly();
+        }
+
+        return $rating->fresh();
+    }
+
+    public function test_new_factory_returns_passenger_factory(): void
+    {
+        $method = new ReflectionMethod(Passenger::class, 'newFactory');
+        $method->setAccessible(true);
+        $factory = $method->invoke(null);
+
+        $this->assertInstanceOf(PassengerFactory::class, $factory);
+        $this->assertInstanceOf(PassengerFactory::class, Passenger::factory());
+    }
+
+    public function test_fillable_lists_mass_assignment_columns(): void
+    {
+        $expected = [
+            'user_id',
+            'trip_id',
+            'passenger_type',
+            'request_state',
+            'canceled_state',
+        ];
+
+        $this->assertSame($expected, (new Passenger)->getFillable());
+    }
+
+    public function test_hidden_is_empty_list(): void
+    {
+        $this->assertSame([], (new Passenger)->getHidden());
+    }
+
+    public function test_get_casts_includes_trip_id_integer_and_payment_info_array(): void
+    {
+        $expected = [
+            'trip_id' => 'integer',
+            'payment_info' => 'array',
+        ];
+        $casts = (new Passenger)->getCasts();
+        foreach ($expected as $key => $type) {
+            $this->assertSame($type, $casts[$key] ?? null, 'casts['.$key.']');
+        }
+    }
+
+    public function test_rating_given_returns_has_many_and_filters_by_trip(): void
+    {
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $tripOnPassenger = Trip::factory()->create(['user_id' => $driver->id]);
+        $otherTrip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $passenger = Passenger::factory()->create([
+            'user_id' => $passengerUser->id,
+            'trip_id' => $tripOnPassenger->id,
+        ]);
+
+        $this->assertInstanceOf(HasMany::class, $passenger->ratingGiven());
+
+        $this->makeRating($passengerUser, $driver, $tripOnPassenger);
+        $this->makeRating($passengerUser, $driver, $otherTrip);
+
+        $this->assertSame(1, $passenger->fresh()->ratingGiven()->count());
+    }
+
+    public function test_rating_received_returns_has_many_and_filters_by_trip(): void
+    {
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $tripOnPassenger = Trip::factory()->create(['user_id' => $driver->id]);
+        $otherTrip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $passenger = Passenger::factory()->create([
+            'user_id' => $passengerUser->id,
+            'trip_id' => $tripOnPassenger->id,
+        ]);
+
+        $this->assertInstanceOf(HasMany::class, $passenger->ratingReceived());
+
+        $this->makeRating($driver, $passengerUser, $tripOnPassenger);
+        $this->makeRating($driver, $passengerUser, $otherTrip);
+
+        $this->assertSame(1, $passenger->fresh()->ratingReceived()->count());
+    }
+
+    public function test_user_and_trip_relations_return_belongs_to(): void
     {
         $driver = User::factory()->create();
         $passengerUser = User::factory()->create();
@@ -21,6 +134,8 @@ class PassengerTest extends TestCase
             'trip_id' => $trip->id,
         ]);
 
+        $this->assertInstanceOf(BelongsTo::class, $passenger->user());
+        $this->assertInstanceOf(BelongsTo::class, $passenger->trip());
         $this->assertTrue($passenger->user->is($passengerUser));
         $this->assertTrue($passenger->trip->is($trip));
     }
