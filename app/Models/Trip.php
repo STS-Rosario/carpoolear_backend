@@ -25,15 +25,15 @@ class Trip extends Model
         return \Database\Factories\TripFactory::new();
     }
 
-    const FINALIZADO = 0;
+    const FINALIZADO = 0; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const ACTIVO = 1;
+    const ACTIVO = 1; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const PRIVACY_PUBLIC = 2;
+    const PRIVACY_PUBLIC = 2; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const PRIVACY_FRIENDS = 0;
+    const PRIVACY_FRIENDS = 0; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const PRIVACY_FOF = 1;
+    const PRIVACY_FOF = 1; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
     const STATE_AWAITING_PAYMENT = 'awaiting_payment';
 
@@ -48,62 +48,93 @@ class Trip extends Model
     const STATE_CANCELED = 'canceled';
 
     // Weekly schedule bitmask constants
-    const DAY_MONDAY = 1;
+    const DAY_MONDAY = 1; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const DAY_TUESDAY = 2;
+    const DAY_TUESDAY = 2; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const DAY_WEDNESDAY = 4;
+    const DAY_WEDNESDAY = 4; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const DAY_THURSDAY = 8;
+    const DAY_THURSDAY = 8; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const DAY_FRIDAY = 16;
+    const DAY_FRIDAY = 16; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const DAY_SATURDAY = 32;
+    const DAY_SATURDAY = 32; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const DAY_SUNDAY = 64;
+    const DAY_SUNDAY = 64; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
     protected $table = 'trips';
 
-    protected $fillable = [
-        'user_id',
-        'from_town',
-        'to_town',
-        'trip_date',
-        'weekly_schedule',
-        'weekly_schedule_time',
-        'description',
-        'total_seats',
-        'friendship_type_id',
-        'distance',
-        'seat_price_cents',
-        'recommended_trip_price_cents',
-        'total_price',
-        'estimated_time',
-        'co2',
-        'es_recurrente',
-        'is_passenger',
-        'mail_send',
-        'return_trip_id',
-        'enc_path',
-        'car_id',
-        'parent_trip_id',
-        'allow_smoking',
-        'allow_kids',
-        'allow_animals',
-        'state',
-        'payment_id',
-        'needs_sellado',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'user_id',
+            'from_town',
+            'to_town',
+            'trip_date',
+            'weekly_schedule',
+            'weekly_schedule_time',
+            'description',
+            'total_seats',
+            'friendship_type_id',
+            'distance',
+            'seat_price_cents',
+            'recommended_trip_price_cents',
+            'total_price',
+            'estimated_time',
+            'co2',
+            'es_recurrente',
+            'is_passenger',
+            'mail_send',
+            'return_trip_id',
+            'enc_path',
+            'car_id',
+            'parent_trip_id',
+            'allow_smoking',
+            'allow_kids',
+            'allow_animals',
+            'state',
+            'payment_id',
+            'needs_sellado',
+        ];
+    }
 
-    protected $hidden = [
-        'enc_path',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getHidden(): array
+    {
+        return [
+            'enc_path',
+        ];
+    }
 
-    protected $appends = [
-        'passenger_count',
-        'seats_available',
-        'is_driver',
-    ];
+    public function getAppends(): array
+    {
+        return [
+            'passenger_count',
+            'seats_available',
+            'is_driver',
+        ];
+    }
+
+    public function hasAppended($attribute): bool
+    {
+        return in_array($attribute, $this->getAppends(), true);
+    }
+
+    protected function getArrayableAppends()
+    {
+        $appends = $this->getAppends();
+
+        $keys = count($appends) === 0
+            ? []
+            : array_combine($appends, $appends);
+
+        return $this->getArrayableItems($keys);
+    }
 
     protected function casts(): array
     {
