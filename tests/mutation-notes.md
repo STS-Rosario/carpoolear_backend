@@ -3534,3 +3534,42 @@ Pest mutation run (**28** mutants, **100%** score with **`tests/Unit/Transformer
   - **Cause:** Assertions checked **`last_connection`** / **`identity_validated_at`** on one row but not the full ordered key list, so removing e.g. **`name`** could survive.
   - **Mutant ID:** **`Line 83:RemoveArrayItem`** (pre-refactor); post-refactor **`Line 84:RemoveArrayItem`** … **`Line 87:RemoveArrayItem`** in the **28-mutant** run.
   - **Fix:** **`test_transform_users_rows_each_expose_stable_key_order`** asserts **`['id', 'name', 'last_connection', 'identity_validated_at'] === array_keys($row)`** for every **`$payload['users']`** entry.
+
+## ProfileTransformer (`app/Transformers/ProfileTransformer.php`) — follow-up (Pest scoped)
+
+Pest mutation run (**65** mutants, **100%** score with **`tests/Unit/Transformers/ProfileTransformerTest.php`** and **`--path=app/Transformers/ProfileTransformer.php`**). Labels use **`Line:MutatorName`** from the successful scoped run.
+
+- **`Line 53: EmptyStringToNotEmpty`** (historical **`last_connection`** ternary)
+  - **Cause:** MySQL can persist **`NULL`** **`last_connection`** as a sentinel datetime; the old truthy check still formatted it, and **`EmptyStringToNotEmpty`** on the **`''`** fallback could slip past weak assertions.
+  - **Mutant ID:** **`Line 53:EmptyStringToNotEmpty`** (pre-refactor); post-refactor **`Line 41–43`** cluster includes **`Line 43:EmptyStringToNotEmpty`** on the serialized string line.
+  - **Fix:** Serialize only when **`$lastConnection instanceof Carbon && $lastConnection->year > 0`**; **`test_transform_last_connection_serializes_to_empty_string_when_null`**.
+
+- **`Line 60–76`**, **`Line 79–81`**, **`Line 74–77`**: **`RemoveArrayItem`**, duplicate **`monthly_donate`**, **`Line 69` / `driver_data_docs`** ternary
+  - **Cause:** The initial **`$data`** block had **`monthly_donate` twice** (second overwrote the first silently); many keys had no strict **`array_keys`** contract; **`driver_data_docs`** JSON branch was under-tested.
+  - **Mutant ID:** historical **`Line 60:RemoveArrayItem`** … **`Line 76:RemoveArrayItem`**, **`Line 69:TernaryNegated`**, **`Line 69:RemoveArrayItem`**; post-refactor **`Line 46:RemoveArrayItem`** … **`Line 81:RemoveArrayItem`** (scoped run).
+  - **Fix:** Remove the duplicate **`monthly_donate`** entry; **`test_transform_public_payload_root_key_list_matches_transformer_contract`**; **`test_transform_driver_data_docs_json_decodes_when_present`**.
+
+- **`Line 74: RemoveBooleanCast`**, **`Line 79` / `identity_validated`**
+  - **Cause:** **`(bool)`** cast on **`identity_validated`** was redundant with **`assertTrue`** / loose checks.
+  - **Mutant ID:** **`Line 74:RemoveBooleanCast`** (historical); replaced by **`Line 79:TernaryNegated`**, **`FalseToTrue`**, **`TrueToFalse`** on **`… ? true : false`**.
+  - **Fix:** **`$user->identity_validated ? true : false`**; **`assertSame(true, …)`** / **`test_transform_identity_validated_false_is_strict_boolean`**.
+
+- **`Line 79` / `Line 84: EqualToIdentical`** (**`$user->id == $this->user->id`**, admin branch)
+  - **Cause:** Strict **`===`** would fail when the subject’s **`id`** is hydrated as a numeric **string** (same as **`TripTransformer`** / **`Trip`** **`checkFriendship`** pattern).
+  - **Mutant ID:** **`Line 84:EqualToIdentical`**, **`Line 89:EqualToIdentical`** (post-refactor line numbers).
+  - **Fix:** **`test_transform_own_profile_branch_uses_loose_id_equality_for_string_subject_id`**, **`test_transform_admin_branch_uses_loose_id_equality_for_string_subject_id`**.
+
+- **`Line 107: IfNegated`** (**`shareTrip`** gate for **`data_visibility === '0'`**)
+  - **Cause:** No fixture where the viewer had an **accepted** seat on the subject’s **active** trip, so **`TripRepository::shareTrip`** stayed false and **`IfNegated`** could survive.
+  - **Mutant ID:** **`Line 112:IfNegated`** (post-refactor **`switch`** **`case '0'`** block).
+  - **Fix:** **`test_transform_viaja_conmigo_adds_contact_when_accepted_passenger_views_driver`** (future **`trip_date`**, **`STATE_ACCEPTED`** passenger) and **`test_transform_viaja_conmigo_hides_contact_when_viewer_has_no_shared_accepted_trip`**.
+
+- **`Line 126: IfNegated`** (**`if ($user->state)`** tail)
+  - **Cause:** Negating to **`if (! $user->state)`** would still run and set **`$data['state'] = null`**, adding a **`state`** key that normal users should not expose.
+  - **Mutant ID:** **`Line 131:IfNegated`** (post-refactor).
+  - **Fix:** **`test_transform_does_not_emit_state_key_when_user_state_is_empty`**.
+
+- **`Line 120: BreakToContinue`** (historical dash / weak)
+  - **Cause:** Non-**`0`/`1`** **`data_visibility`** relied on the **`default`** **`switch`** branch; without an assertion, **`BreakToContinue`** vs fall-through risk was unclear.
+  - **Mutant ID:** **`Line 128:BreakToContinue`** (post-refactor **`default`** **`break`**).
+  - **Fix:** **`test_transform_unknown_data_visibility_does_not_expose_public_contact_block`** (**`data_visibility` `9`**) plus **`test_transform_public_visibility_one_exposes_contact_without_viewer_context`** for the **`'1'`** branch.
