@@ -3496,3 +3496,27 @@ Pest mutation run (**21** mutants, **100%** score with **`tests/Unit/Models/Camp
 
 - **`campaign()`** relation
   - **Fix:** **`test_belongs_to_campaign`** asserts **`assertInstanceOf(BelongsTo::class, $milestone->campaign())`** in addition to the loaded **`campaign`** model.
+
+## TripTransformer (`app/Transformers/TripTransformer.php`)
+
+Pest mutation run (**54** mutants, **100%** score with **`tests/Unit/Transformers/TripTransformerTest.php`** and **`--path=app/Transformers/TripTransformer.php`**). Labels use **`Line:MutatorName`** from the successful scoped run.
+
+- **`Line 54: RemoveBooleanCast`** (historical; PHP **8.5** evaluates **`&&`** as **`bool`**, so stripping **`(bool)`** often left **`assertFalse`** passing for edge values)
+  - **Cause:** **`(bool) (...)`** was redundant with **`&&`**’s boolean result, so **`RemoveBooleanCast`** could survive alongside **`assertFalse`** / **`assertTrue`** (looser than strict **`bool`** identity).
+  - **Mutant ID:** **`Line 54:RemoveBooleanCast`** (pre-refactor); post-refactor the same line is covered by **`Line 54:TernaryNegated`**, **`Line 54:NotIdenticalToIdentical`**, **`Line 54:BooleanAndToBooleanOr`**, **`Line 54:FalseToTrue`**, **`Line 54:TrueToFalse`**.
+  - **Fix:** Replace the cast with an explicit **`… ? true : false`**; tighten tests to **`assertSame(false, …)`** / **`assertSame(true, …)`** so non-boolean truthy/falsy values cannot slip through.
+
+- **`Line 85: GreaterToGreaterOrEqual`**, **`Line 85: DecrementInteger`** (historical **`count($trip->passenger) > 0`** guard)
+  - **Cause:** **`if (count(...) > 0) { foreach … }`** was observationally the same as **`>= 0`** or **`> -1`** when the collection was empty: the **`foreach`** body never ran, so mutants escaped.
+  - **Mutant ID:** **`Line 85:GreaterToGreaterOrEqual`**, **`Line 85:DecrementInteger`** (pre-refactor); the redundant guard was removed, so the surviving mutants disappear ( **`Line 85:ForeachEmptyIterable`** remains on the bare **`foreach`** in the **54-mutant** run).
+  - **Fix:** Drop the redundant **`if`** and **`foreach`** over **`$trip->passenger`** directly (empty relations are a no-op).
+
+- **`Line 25–50: RemoveArrayItem`** (**`$data`** base payload)
+  - **Cause:** Each array element must be asserted so trimming a key fails **`array_keys`** / field assertions in **`test_transform_returns_expected_base_trip_payload_without_user_context`**.
+  - **Mutant ID:** **`Line 25:RemoveArrayItem`** … **`Line 50:RemoveArrayItem`** (scoped run).
+  - **Fix:** Same integration-style test and sibling cases in **`TripTransformerTest`**.
+
+- **`Line 99: AlwaysReturnNull`** (**`return $data`**)
+  - **Cause:** Returning **`null`** would break every assertion on the transformed array.
+  - **Mutant ID:** **`Line 99:AlwaysReturnNull`**.
+  - **Fix:** All transformer tests expect a populated **`array`**.
