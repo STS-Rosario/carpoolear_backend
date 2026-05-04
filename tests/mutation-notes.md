@@ -2226,6 +2226,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: **`protected $fillable` / `$hidden` defaults are not executed as normal statement coverage** in the mutation harness, so **`RemoveArrayItem`** on those property arrays was marked **UNCOVERED** even with integration tests (example prior IDs: **`2c0f884e30bfefad`**, **`7054a8e516336a28`**, **`ef904bf0a36513cf`**, **`effc309dc925ebdd`**, **`952ed805852d4efb`**, etc.). **`AlwaysReturnNull`** on **`newFactory()`** / **`user()`** needed direct contracts; **`casts()`** needed explicit **`getCasts()`** assertions.
   - Fix: replaced **`$fillable` / `$hidden` properties** with **`getFillable(): array`** and **`getHidden(): array`** overrides so list literals live in **executed methods** (one mass-assignment test + fillable/hidden list tests). Added **`test_new_factory_returns_subscription_factory`**, **`test_casts_include_trip_date_and_json_address_columns`**, **`test_user_relation_returns_belongs_to`**, **`test_hidden_attributes_list_covers_timestamp_columns`**, and **`test_mass_assignment_persists_every_fillable_column`** in **`tests/Unit/Models/SubscriptionTest.php`**. Pest: **26 mutations, 100%** on `Subscription.php`.
 
+## ActiveUsersPerMonth (`app/Models/ActiveUsersPerMonth.php`)
+
+- **`$fillable` (~12–16)**, **`casts()` (~19–25)**, **`getMonthNameAttribute` (~32–34 `IncrementInteger` / `DecrementInteger`)**, scopes **`forYear` / `forMonth` / `forYearMonth`** (~48–66).
+  - Cause: like **`Subscription`**, **`protected $fillable`** array lines were **not covered** for Pest **`RemoveArrayItem`**. **`casts()`** return entries needed explicit **`getCasts()`** assertions. A single **`month_name`** example left **`IncrementInteger`** on **`Carbon::createFromDate(..., 1)`** under-constrained for some literals. Scopes were already exercised by query tests.
+  - Fix: **`getFillable(): array`** replaces the **`$fillable` property**; **`tests/Unit/Models/ActiveUsersPerMonthTest.php`** adds **`test_fillable_lists_aggregate_columns`**, **`test_casts_cover_all_stored_scalar_columns`**, and **`#[DataProvider]`**-driven **`test_month_name_accessor_matches_english_calendar_month`** (multiple year/month pairs). Pest: **15 mutations, 100%** on `ActiveUsersPerMonth.php`.
+
 ## Message (`app/Models/Message.php`)
 
 - **Mass-assignment contract for message payload fields** (`$fillable` lines 16–21 in `tests/coverage/20260428_2310.txt`).

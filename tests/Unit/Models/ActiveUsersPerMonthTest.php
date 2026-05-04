@@ -4,11 +4,32 @@ namespace Tests\Unit\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use STS\Models\ActiveUsersPerMonth;
 use Tests\TestCase;
 
 class ActiveUsersPerMonthTest extends TestCase
 {
+    public function test_fillable_lists_aggregate_columns(): void
+    {
+        // Mutation intent: `RemoveArrayItem` on `getFillable()` (was uncovered on `$fillable` property lines ~12–16).
+        $this->assertSame(
+            ['year', 'month', 'saved_at', 'value'],
+            (new ActiveUsersPerMonth)->getFillable()
+        );
+    }
+
+    public function test_casts_cover_all_stored_scalar_columns(): void
+    {
+        // Mutation intent: `RemoveArrayItem` / `AlwaysReturnEmptyArray` on `casts()` (~21–26).
+        $casts = (new ActiveUsersPerMonth)->getCasts();
+
+        $this->assertSame('integer', $casts['year']);
+        $this->assertSame('integer', $casts['month']);
+        $this->assertSame('datetime', $casts['saved_at']);
+        $this->assertSame('integer', $casts['value']);
+    }
+
     public function test_integer_and_datetime_casts(): void
     {
         $row = ActiveUsersPerMonth::query()->create([
@@ -29,16 +50,27 @@ class ActiveUsersPerMonthTest extends TestCase
         $this->assertSame('2026-04-01 00:00:00', $row->saved_at->format('Y-m-d H:i:s'));
     }
 
-    public function test_month_name_accessor(): void
+    public static function calendarMonthNameCases(): iterable
     {
+        yield 'january' => [2026, 1, 'January'];
+        yield 'february_leap' => [2024, 2, 'February'];
+        yield 'june' => [2025, 6, 'June'];
+        yield 'july' => [2026, 7, 'July'];
+        yield 'december' => [2025, 12, 'December'];
+    }
+
+    #[DataProvider('calendarMonthNameCases')]
+    public function test_month_name_accessor_matches_english_calendar_month(int $year, int $month, string $expected): void
+    {
+        // Mutation intent: `IncrementInteger` / `DecrementInteger` on `Carbon::createFromDate($this->year, $this->month, 1)` (~34) must keep the stored year/month (day anchored to 1).
         $row = ActiveUsersPerMonth::query()->create([
-            'year' => 2026,
-            'month' => 7,
+            'year' => $year,
+            'month' => $month,
             'saved_at' => now(),
             'value' => 10,
         ]);
 
-        $this->assertSame('July', $row->fresh()->month_name);
+        $this->assertSame($expected, $row->fresh()->month_name);
     }
 
     public function test_year_month_accessor(): void
