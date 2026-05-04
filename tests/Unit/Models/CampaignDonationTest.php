@@ -24,6 +24,23 @@ class CampaignDonationTest extends TestCase
         ]);
     }
 
+    public function test_create_requires_explicit_status(): void
+    {
+        $campaign = $this->makeCampaign();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => null,
+            'payment_id' => null,
+            'amount_cents' => 100,
+            'name' => null,
+            'comment' => null,
+            'user_id' => null,
+        ]);
+    }
+
     public function test_belongs_to_campaign_and_user(): void
     {
         $user = User::factory()->create();

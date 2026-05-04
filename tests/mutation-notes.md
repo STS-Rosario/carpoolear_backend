@@ -1293,6 +1293,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: happy path never ran under test; mutants could drop attributes on create, omit `user_id` null-safe handling, skip persisting `payment_id`, remove log calls, or strip `message` / `data.url` / `data.sandbox_url`.
   - Fix: `test_purchase_creates_pending_donation_returns_urls_and_stores_preference_id` mocks `MercadoPagoService::createPaymentPreferenceForCampaignDonation` to return a `Preference` with `id`, `init_point`, and `sandbox_init_point`; asserts `200`, JSON shape, and `campaign_donations` row including `name` / `comment` from the body. `test_purchase_passes_authenticated_user_id_to_payment_service` uses a JWT from `api/login` and expects the service to receive `$user->id` and the donation row to store `user_id`.
 
+- **`purchase()` donation `status` key** (`purchase()` ~44 `RemoveArrayItem` on `'status' => 'pending'` in `CampaignDonation::create([...])`).
+  - Cause: the `campaign_donations.status` column defaults to `pending` in MySQL, so removing `'status' => 'pending'` from the controller’s `create` payload still produced a `pending` row and satisfied `assertDatabaseHas(..., 'status' => 'pending')`—the mutant stayed green.
+  - Fix: `CampaignDonation` now throws from an `eloquent.creating` hook if `status` is missing from attributes, so the purchase flow must pass `status` explicitly; `tests/Unit/Models/CampaignDonationTest::test_create_requires_explicit_status` documents the contract. Re-run Pest for the current `xxh3` id if needed (killed lines do not print an ID in this Pest version).
+
 - **Failure envelope after preference errors** (`~70–77`; report ~51176–51252, e.g. `2462fac2b5eec24a` `RemoveMethodCall` on `Log::error`, `4e124ed8c5530765` `RemoveArrayItem` on the 500 `error`, `85dbb56933c9568c` / `d7f5b7031c7f085d` on status code).
   - Cause: the `catch` block was never hit from outside the controller.
   - Fix: `test_purchase_returns_server_error_when_payment_preference_fails` makes the mocked service throw; expects `500` + `Could not create payment preference` and a pending donation without `payment_id`.
