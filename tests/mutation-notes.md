@@ -2698,6 +2698,11 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
   - **Cause:** `render()` always used status **422**; toggling flag conditions or the literal status in controllers did not change observable HTTP output, so `FalseToTrue` / integer nudges on companion lines survived in downstream controller reports.
   - **Fix:** `__construct($message, $errors = null, int $httpStatus = 422)` stores `$httpStatus` and both JSON branches use it; removed redundant child `$message` property in favour of `parent::__construct`. Unit coverage: `test_render_uses_custom_http_status_for_message_only_payload`, `test_render_uses_custom_http_status_for_errors_payload` in `tests/Unit/Http/ExceptionWithErrorsTest.php`.
 
+- **Follow-up (Pest scoped, 19 mutants @ 100%)** — **`Line 16: RemoveStringCast`**, **`Line 37: RemoveArrayItem`**, **`Line 39: RemoveStringCast` / `RemoveArrayItem`**
+  - **Cause:** **`(string) $message`** was not exercised with a non-**`string`** **`$message`** that **requires** coercion (**`resource`** → **`Exception::__construct` `TypeError`** without the cast). The string and scalar **`$errors`** branches only asserted shallow equality, so trimming **`error`**, the inner list wrapper, or **`(string)`** on non-string scalars could survive.
+  - **Mutant ID:** **`Line 16:RemoveStringCast`**, **`Line 37:RemoveArrayItem`** (×2), **`Line 39:RemoveStringCast`**, **`Line 39:RemoveArrayItem`** (×2) (historical report line numbers align with **`render()`** coercion block).
+  - **Fix:** **`test_constructor_string_cast_allows_resource_message_for_parent`**; **`test_render_wraps_string_errors_under_error_key_with_list_value`** (**`array_keys`** + nested list); **`test_render_wraps_scalar_errors_as_string_list_under_error_key`** (**`int`**); **`test_render_wraps_false_scalar_as_empty_string_under_error_key`** (**`bool`** **`false`** → **`''`**).
+
 ## ManualIdentityValidationController (`app/Http/Controllers/Api/v1/ManualIdentityValidationController.php`)
 
 - **Mutant IDs (user report):** `L88:FalseToTrue`, `L89:IncrementInteger` / `L89:DecrementInteger`, `L91:FalseToTrue`, and QR guard lines `L451–L485` (`FalseToTrue` / integer mutants); submit invalid-request lines (`L694–L715` style) for **404** vs **422**.
