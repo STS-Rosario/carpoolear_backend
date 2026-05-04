@@ -5,6 +5,7 @@ namespace Tests\Unit\Repository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Mockery;
+use PDO;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\User;
@@ -378,6 +379,35 @@ class MessageRepositoryTest extends TestCase
         $this->assertSame(1, $rows->count());
     }
 
+    public function test_get_messages_unread_includes_unread_conversation_when_pdo_stringifies_tinyint_as_string_zero(): void
+    {
+        // Mutation intent: `Line 67: EqualToIdentical` — `== 0` must stay loose; `=== 0` fails when PDO returns pivot `read` as string "0" (`"0" == 0` true, `"0" === 0` false).
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => false]);
+
+        $pdo = DB::connection()->getPdo();
+        $previous = $pdo->getAttribute(PDO::ATTR_STRINGIFY_FETCHES);
+        $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
+
+        try {
+            $reader = User::query()->with('conversations')->findOrFail($reader->id);
+            $pivotRead = $reader->conversations->first()->pivot->read;
+            $this->assertIsString($pivotRead);
+            $this->assertTrue($pivotRead == 0);
+            $this->assertFalse($pivotRead === 0);
+
+            $this->makeMessage($conv, $sender, 'body', Carbon::parse('2018-05-01 09:00:00'));
+
+            $rows = $this->repo()->getMessagesUnread($reader, null);
+        } finally {
+            $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, $previous);
+        }
+
+        $this->assertCount(1, $rows);
+    }
+
     public function test_mark_messages_only_updates_unread_rows_for_authenticated_user(): void
     {
         // Mutation intent: inner `where('user_id', $user->id)` (~88) inside `markMessages` `whereHas` — RemoveMethodCall would widen updates to other readers.
@@ -396,6 +426,53 @@ class MessageRepositoryTest extends TestCase
             ->where('message_id', $message->id)
             ->where('user_id', $userA->id)
             ->value('read'));
+        $this->assertFalse((bool) DB::table('user_message_read')
+            ->where('message_id', $message->id)
+            ->where('user_id', $userB->id)
+            ->value('read'));
+    }
+
+    public function test_mark_messages_does_not_refresh_callers_pivot_when_only_other_user_is_unread(): void
+    {
+        // Mutation intent: `Line 88: RemoveMethodCall` on inner `where('user_id', $user->id)` — without it, `whereHas` matches any unread pivot,
+        // the message id is plucked, and the outer UPDATE still targets `$user->id`, touching rows that were already read (updated_at changes).
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+
+        $message = $this->makeMessage($conversation, $sender, 'split-read-state');
+        $message->users()->attach($userA->id, ['read' => true]);
+        $message->users()->attach($userB->id, ['read' => false]);
+
+        $frozenAt = '2019-11-10 08:30:00';
+        DB::table('user_message_read')
+            ->where('message_id', $message->id)
+            ->where('user_id', $userA->id)
+            ->update(['updated_at' => $frozenAt]);
+
+        Carbon::setTestNow(Carbon::parse('2026-01-15 14:00:00'));
+
+        $this->repo()->markMessages($userA, $conversation->id);
+
+        Carbon::setTestNow();
+
+        $this->assertSame(
+            1,
+            (int) DB::table('user_message_read')
+                ->where('message_id', $message->id)
+                ->where('user_id', $userA->id)
+                ->value('read')
+        );
+        $this->assertSame(
+            $frozenAt,
+            Carbon::parse(
+                (string) DB::table('user_message_read')
+                    ->where('message_id', $message->id)
+                    ->where('user_id', $userA->id)
+                    ->value('updated_at')
+            )->format('Y-m-d H:i:s')
+        );
         $this->assertFalse((bool) DB::table('user_message_read')
             ->where('message_id', $message->id)
             ->where('user_id', $userB->id)

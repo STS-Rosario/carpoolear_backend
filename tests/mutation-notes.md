@@ -265,7 +265,14 @@ This file tracks mutants killed during the current hardening session, with the r
 - `MessageRepository.php` `markMessages` (`~85–90`): `whereHas('users', …)` must keep the `user_id` constraint for the acting reader.
   - Cause: removing the inner `where('user_id', $user->id)` still marks rows when only one reader exists, so `RemoveMethodCall` survived until a second unread pivot proved cross-user isolation.
   - Fix: added `test_mark_messages_only_updates_unread_rows_for_authenticated_user`.
-  - Mutant operators (Infection log): `RemoveMethodCall` (~line 88); cluster around `getMessagesUnread` also lists `EqualToIdentical` (~67) covered by existing loose-`read` tests plus this scoping test.
+
+- **`Line 67: EqualToIdentical`** (`$item->pivot->read == 0` in `getMessagesUnread`).
+  - Cause: with default PDO typing, `read` hydrates as **int `0`**, so `== 0` and `=== 0` behave the same — the mutant survives despite `test_get_messages_unread_includes_conversation_when_pivot_read_is_loosely_zero`.
+  - Fix: **`test_get_messages_unread_includes_unread_conversation_when_pdo_stringifies_tinyint_as_string_zero`** — temporarily enables **`PDO::ATTR_STRINGIFY_FETCHES`** so pivot `read` is **`"0"`** (`"0" == 0` true, `"0" === 0` false); the repository must keep **loose** comparison.
+
+- **`Line 88: RemoveMethodCall`** (inner **`where('user_id', $user->id)`** inside `markMessages` **`whereHas`**).
+  - Cause: dropping **`user_id`** still yields the same **`pluck('id')`** when every unread pivot belongs to the caller; **`test_mark_messages_only_updates_unread_rows_for_authenticated_user`** does not observe extra **`UPDATE`** rows on the caller when the caller was already **`read => true`**.
+  - Fix: **`test_mark_messages_does_not_refresh_callers_pivot_when_only_other_user_is_unread`** — caller already read, other user unread; inner constraint removed ⇒ message id included ⇒ bulk **`UPDATE`** bumps caller’s **`updated_at`** even though **`read`** stays **1**.
 
 - `MessageRepository.php` `store` / `delete` (`~13–20`): `return $message->save()` / `return $message->delete()`.
   - Cause: integration tests only asserted successful paths.
