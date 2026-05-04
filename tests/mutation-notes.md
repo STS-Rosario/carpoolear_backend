@@ -1083,6 +1083,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no HTTP test forced a failed primary request then a successful fallback, or a `200` body missing the `code` key (so `fetchFromOsrmBases` keeps looping and returns `null`), so dual-base ordering and `array_key_exists('code', $data)` checks were invisible to CI.
   - Fix: `test_retries_fallback_base_when_primary_returns_unsuccessful_http` configures distinct primary/fallback hosts with `Http::fake` and expects `200` + `code` `Ok` after two outbound GETs; `test_treats_successful_http_without_osrm_code_key_as_upstream_failure` returns `200` JSON without `code` and expects the same `NoRoute` / `upstream_failed` client contract as a hard failure.
 
+- **Apr 2026 `RUN` follow-up — boundary 4097, cache key hash, logs, upstream URL, `array_filter`, TTL** (user-report survivors on `route()` / `fetchFromOsrmBases()` such as `Line 21:IncrementInteger`, `Line 36` `Concat*` / `EmptyStringToNotEmpty`, `Line 40–41` / `Line 48` / `Line 52–53` `RemoveMethodCall` / `substr` / `UnwrapSubstr` / integer nudges, `Line 66–75`, `Line 86` `UnwrapArrayFilter`/`UnwrapArrayUnique`/`UnwrapArrayValues`, `Line 89–106`).
+  - **Cause:** Headers and JSON bodies alone did not assert `Log::debug`/`Log::warning`/`Log::info` payloads, exact `Cache::get` keys, `Http::recorded()` upstream URLs (query must reach `$request->getQueryString()`), `strlen > 4096` vs `4097`, or `Cache::put` expiry for non-`Ok` OSRM codes—so concat/substr/ternary/`max(60, ttl)`/`array_values(array_unique(array_filter(…))))` mutants stayed green.
+  - **Fix:** `OsrmProxyApiTest` adds `test_rejects_path_with_length_4097_characters`, `test_cache_get_uses_key_prefixed_with_osrm_proxy_v1_and_sha256_of_path_and_query`, `test_cache_hit_logs_debug_with_path_preview_truncated_to_96_chars`, `test_returns_no_route_envelope_when_upstream_unreachable` (Log spy on all-upstream-failed), `test_upstream_non_success_http_logs_warning_with_base_and_status`, `test_upstream_ok_logs_info_with_base_http_status_and_osrm_code`, `test_blank_primary_base_is_skipped_and_fallback_is_used` (`array_filter`), `test_get_request_appends_query_string_to_upstream_url` (`Http::recorded()[0][0]->url()`; use `$this->get(...?...)` so the query string is present), and `test_osrm_error_response_uses_error_cache_ttl_in_put_expiry`. Re-run Infection for updated hashes.
+
 ## ConversationController (`app/Http/Controllers/Api/v1/ConversationController.php`)
 
 - **Constructor `logged` middleware** (`__construct()` ~27; report ~49040 `ae65aca91b89758e` `RemoveMethodCall`).
@@ -2578,6 +2582,8 @@ This file tracks mutants killed during the current hardening session, with the r
     - `test_query_string_participates_in_cache_key`
     These ensure boundary correctness (`> 4096` only) and prevent cache collisions across different query strings.
   - Mutant IDs: `5111317cfc3f97d3`, `b2ddabce106d3ee4`, `bbee9e628c995f42`, `deaf6e334992589f`, `cc27b4b6e7ed5581`, `c799ef935ec62b93`, `5a6e7966157a659d`, `d7c8083d03bebf49`, `44e6628a9cab4887`, `c62f2e9a1954f748`, `62d43b0c36680083`, `58748f2ba654608e`.
+
+- **Apr 2026 `RUN` follow-up:** `test_rejects_path_with_length_4097_characters`, `test_cache_get_uses_key_prefixed_with_osrm_proxy_v1_and_sha256_of_path_and_query`, `test_cache_hit_logs_debug_with_path_preview_truncated_to_96_chars`, Log spy on `test_returns_no_route_envelope_when_upstream_unreachable`, `test_upstream_non_success_http_logs_warning_with_base_and_status`, `test_upstream_ok_logs_info_with_base_http_status_and_osrm_code`, `test_blank_primary_base_is_skipped_and_fallback_is_used`, `test_get_request_appends_query_string_to_upstream_url` (`Http::recorded()`; `$this->get` with `?` so `getQueryString()` is non-empty), `test_osrm_error_response_uses_error_cache_ttl_in_put_expiry`.
 
 ## ConversationController (`app/Http/Controllers/Api/v1/ConversationController.php`)
 
