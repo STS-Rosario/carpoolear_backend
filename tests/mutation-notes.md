@@ -876,10 +876,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: bbox integration tests mostly lat-descended endpoints (`n1` north of `n2`), so swapping lat assignment without an assertion near the expanded lat floor could survive.
   - Fix: added `test_get_potentials_nodes_handles_reversed_lat_order_and_keeps_bounds` (southern endpoint first + node just inside vs clearly outside `minLat - latDiff`).
 
-- `RoutesRepository.php` `getPotentialsNodes` lat padding (`~33–34`): literal `$latDiff = 0.5` feeding `whereBetween('lat', [$minLat - $latDiff, $maxLat + $latDiff])`.
-  - Cause: floating mutants on the padding constant could shrink the southern bound so a node exactly at `minLat - 0.5` dropped out while tests only sampled interior points away from the margin.
-  - Fix: added `test_get_potentials_nodes_includes_node_on_south_lat_margin_boundary`.
-  - Mutant operators (Infection log): `DecrementFloat` / `IncrementFloat` on `$latDiff`; related bbox branches list `DecrementInteger` / `IncrementInteger`, `GreaterToGreaterOrEqual` on lat/lng comparators (~15–19, ~26).
+- `RoutesRepository.php` `getPotentialsNodes` lat padding (`~19–20` after refactor): literal `$latDiff = 0.5` feeding `whereBetween('lat', [$minLat - $latDiff, $maxLat + $latDiff])`.
+  - Cause: **`DecrementFloat`** shrinks the southern pad—easy to catch at **`minLat - 0.5`**. **`IncrementFloat`** (Pest: **`$node->value++`** on **`0.5` → `1.5`**) **widens** latitude bounds; interior-only tests still pass, so the mutant survived until a row **north of `maxLat + 0.5`** but **inside `maxLat + 1.5`** existed.
+  - Fix: **`test_get_potentials_nodes_includes_node_on_south_lat_margin_boundary`** (south edge); **`test_get_potentials_nodes_excludes_node_north_of_half_degree_pad`** (decoy at **`maxLat + 1.0`** excluded at **`latDiff = 0.5`**).
+  - Mutant IDs (report): **`Line 33: IncrementFloat`** (historic line before refactor).
+
+- **`Lines 15–18` `IncrementInteger` / `DecrementInteger`; `Line 19` / `Line 26` `GreaterToGreaterOrEqual`** on legacy **`getPotentialsNodes`** (`$ … = 0` seeds + **`if ($n1->lat > $n2->lat)`** / **`if ($n1->lng > $n2->lng)`**).
+  - Cause: zero seeds were **dead stores** (both branches always reassigned **`max*`/`min*`** before use); **`>` vs `>=`** left the axis-aligned bbox unchanged whenever endpoints tied or endpoints alone defined the rectangle—mutants were observationally equivalent.
+  - Fix: **`getPotentialsNodes`** now computes **`$maxLat`/`$minLat`/`$maxLng`/`$minLng`** via **`max()`/`min()`** (same geometry, no redundant literals/branches), eliminating those unreachable-equivalent mutants at the source.
 
 - `RoutesRepository.php` `autocomplete` (`~41–55`): zero-row result set for `CONCAT(...) LIKE` + country filter.
   - Cause: every autocomplete test asserted at least one hit; removing `whereRaw`, `where('country', …)`, `orderBy`, or `limit` could survive without an empty-collection assertion.

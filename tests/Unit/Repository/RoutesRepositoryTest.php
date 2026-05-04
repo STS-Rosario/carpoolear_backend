@@ -97,6 +97,23 @@ class RoutesRepositoryTest extends TestCase
         $this->assertTrue($rows->pluck('id')->contains($onSouthMargin->id));
     }
 
+    public function test_get_potentials_nodes_excludes_node_north_of_half_degree_pad(): void
+    {
+        // Mutation intent: `IncrementFloat` on `$latDiff = 0.5` yields `1.5` (pest increments float literals by 1.0), widening `whereBetween` northbound enough to pull in decoys that must stay out at `0.5`.
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+        $n2 = $this->makeNode(['lat' => -32.0, 'lng' => -58.0]);
+        $maxLat = max((float) $n1->lat, (float) $n2->lat);
+        $tooFarNorth = $this->makeNode([
+            'lat' => $maxLat + 1.0,
+            'lng' => -58.0,
+            'name' => 'NorthDecoy'.substr(uniqid('', true), 0, 6),
+        ]);
+
+        $rows = $this->repo()->getPotentialsNodes($n1, $n2);
+
+        $this->assertFalse($rows->pluck('id')->contains($tooFarNorth->id));
+    }
+
     public function test_autocomplete_returns_empty_when_no_rows_match(): void
     {
         // Mutation intent: preserve whereRaw + optional country filter when CONCAT yields zero hits (~41–55).
