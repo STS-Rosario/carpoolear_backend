@@ -3583,3 +3583,101 @@ Pest mutation run (**65** mutants, **100%** score with **`tests/Unit/Transformer
   - **Cause:** Non-**`0`/`1`** **`data_visibility`** relied on the **`default`** **`switch`** branch; without an assertion, **`BreakToContinue`** vs fall-through risk was unclear.
   - **Mutant ID:** **`Line 128:BreakToContinue`** (post-refactor **`default`** **`break`**).
   - **Fix:** **`test_transform_unknown_data_visibility_does_not_expose_public_contact_block`** (**`data_visibility` `9`**) plus **`test_transform_public_visibility_one_exposes_contact_without_viewer_context`** for the **`'1'`** branch.
+
+## UserController (`app/Http/Controllers/Api/v1/UserController.php`)
+
+Scoped mutation run used **`Line:MutatorName`** labels from Infection; line numbers drift with edits—see **`tests/Feature/Http/UserControllerApiTest.php`**.
+
+- **`Line 40–41: RemoveArrayItem`**, **`RemoveMethodCall`** (constructor **`middleware('logged')` / `middleware('logged.optional')`** scopes)
+  - **Cause:** Removing an **`except`/`only`** entry or a **`middleware`** call could leave routes wrongly public or wrongly protected without a failing assertion on the controller itself.
+  - **Mutant ID:** **`Line 40:RemoveArrayItem`**, **`Line 40:RemoveMethodCall`**, **`Line 41:RemoveArrayItem`**, **`Line 41:RemoveMethodCall`** (historical scoped run).
+  - **Fix:** **`test_constructor_registers_expected_logged_and_logged_optional_middleware_scopes`**.
+
+- **`Line 51: FalseToTrue`** (**`config('carpoolear.module_validated_drivers', false)`** gate before driver doc upload)
+  - **Cause:** Flipping the default argument makes the driver-doc branch run when the config key is absent; combined with **`empty($files)`** and other mutants, the gate was under-specified relative to “module off” behavior.
+  - **Mutant ID:** **`Line 51:FalseToTrue`**.
+  - **Fix:** Existing **`test_validated_drivers_registration_persists_uploaded_doc_references`** (module **on** + files ⇒ persisted JSON refs); **`test_registration_*`** inactive path; driver upload path remains asserted end-to-end via **`UsersManager`** + HTTP registration.
+
+- **`Line 99: FalseToTrue`**, **`BooleanAndToBooleanOr`** (**`$is_driver`** = **`config(...) && (isset(...) || $me->driver_is_verified)`**)
+  - **Cause:** Treating a verified driver as a non-driver when the module is disabled would skip driver-specific validation paths incorrectly.
+  - **Mutant ID:** **`Line 99:FalseToTrue`** (and related boolean mutants on the same expression).
+  - **Fix:** **`test_update_driver_path_requires_module_flag_even_when_user_is_already_verified_driver`**.
+
+- **`Line 113: FalseToTrue`**, **`IncrementInteger`**, **`Line 114: RemoveMethodCall`**, **`Concat*`**, **`Line 115: BreakToContinue`** (banned phone loop + **`Log::info`** concatenation + **`break`**)
+  - **Cause:** **`str_contains`** / loop body / log message / **`break`** mutants could survive if only a single banned fragment was ever tested.
+  - **Mutant ID:** **`Line 113:FalseToTrue`**, **`Line 113:IncrementInteger`**, **`Line 114:RemoveMethodCall`**, **`Line 114:ConcatRemoveLeft`**, **`Line 115:BreakToContinue`**, etc.
+  - **Fix:** **`test_update_bans_user_when_mobile_matches_configured_fragment`**; **`test_update_ban_phone_logs_once_when_two_fragments_both_match`** (two overlapping fragments so a missing **`break`** would double-apply **`update(..., banned => 1)`**).
+
+- **`Line 169: DecrementInteger`**, **`IncrementInteger`**, **`GreaterToGreaterOrEqual`** (**`if (! ($id > 0))`** in **`show`**)
+  - **Cause:** Boundary **`>`** vs **`>=`** and off-by-one mutants change whether **`$id`** falls back to **`$me->id`**.
+  - **Mutant ID:** **`Line 169:DecrementInteger`**, **`Line 169:IncrementInteger`**, **`Line 169:GreaterToGreaterOrEqual`** (cluster).
+  - **Fix:** **`test_show_other_user_by_numeric_id_returns_profile_envelope`**, **`test_show_me_sets_validate_by_date_when_enforcement_days_and_grace_apply`** (self profile via **`me`**), and identity **`validate_by_date`** assertions pinning **`addDays($days)`** vs **`$days > 0`** (**`test_show_me_does_not_set_validate_by_date_when_grace_days_are_zero`** for **`Line 182:GreaterToGreaterOrEqual`** / **`Line 179:RemoveIntegerCast`** cluster).
+
+- **`Line 201: GreaterToGreaterOrEqual`**, **`Line 201: FalseToTrue`** (**`badges`** **`! ($id > 0) || $id === 'me'`**)
+  - **Cause:** **`me`** slug and strict **`>`** boundary for numeric IDs need distinct outcomes (**self** vs **missing user**).
+  - **Mutant ID:** **`Line 201:GreaterToGreaterOrEqual`**, **`Line 201:FalseToTrue`**, **`Line 201:DecrementInteger`**, **`Line 201:IncrementInteger`**.
+  - **Fix:** **`test_badges_me_slug_resolves_to_authenticated_user`**; **`test_badges_unknown_numeric_id_returns_not_found`** (**`User::find`** miss ⇒ **`ExceptionWithErrors`** **`422`**).
+
+- **`Line 218: IfNegated`** (**`index`** **`$request->has('value')`**)
+  - **Cause:** Negating **`has('value')`** still returns **`200`** with an empty envelope unless the **`value`** filter is shown to change the result set size.
+  - **Mutant ID:** **`Line 218:IfNegated`**.
+  - **Fix:** **`test_user_index_search_value_narrows_results_relative_to_open_list`**.
+
+- **`Line 229: IfNegated`** (**`searchUsers`** **`$request->has('name')`**)
+  - **Cause:** Without **`name`**, **`UserRepository::searchUsers`** returns **`null`**; the controller must pass **`null`** (not an arbitrary string) so Fractal output differs from a filtered search.
+  - **Mutant ID:** **`Line 229:IfNegated`**.
+  - **Fix:** **`test_user_search_requires_name_parameter_to_apply_filter`**.
+
+- **`Line 256–257: FalseToTrue`**, **`DecrementInteger`**, **`Line 256: IfNegated`** (**`registerDonation`** **`intval` / `! $user->id > 0`** anonymous donor **`164619`**)
+  - **Cause:** The anonymous donor id and the **`intval`** coercion must match real DB foreign keys; mutants on **`164619`** or the **`>`** comparison change **`user_id`** on the saved **`Donation`**.
+  - **Mutant ID:** **`Line 256:IfNegated`**, **`Line 257:DecrementInteger`**, **`Line 257:IncrementInteger`**, **`Line 256:FalseToTrue`** (see **`registerDonation`** **`intval`** / guard).
+  - **Fix:** **`test_register_donation_maps_zero_user_to_anonymous_donor_id`** (seeds placeholder user **`164619`** when missing); **`test_register_donation_uses_numeric_user_from_request`**.
+
+- **`Line 276: TernaryNegated`**, **`EmptyStringToNotEmpty`** (**`terms`** **`$request->has('lang') ? ... : ''`**)
+  - **Cause:** Wrong branch picks **`termsText('')`** vs **`termsText($lang)`**, reading different HTML files.
+  - **Mutant ID:** **`Line 276:TernaryNegated`**, **`Line 276:EmptyStringToNotEmpty`**.
+  - **Fix:** **`test_terms_lang_selects_language_specific_file_when_present`** (writes **`storage/terms/{app}_{lang}.html`** fixture).
+
+- **`Line 285: TernaryNegated`**, **`GreaterToGreaterOrEqual`** (**`changeBooleanProperty`** **`$value > 0 ? 1 : 0`**)
+  - **Cause:** Route **`value`** must map **`0`** to persisted **`0`**, not **`1`**.
+  - **Mutant ID:** **`Line 285:TernaryNegated`**, **`Line 285:GreaterToGreaterOrEqual`**.
+  - **Fix:** **`test_change_boolean_property_maps_non_positive_route_value_to_zero`**.
+
+- **`Line 299–307: IfNegated`**, **`FalseToTrue`**, **`EmptyStringToNotEmpty`**, **`UnwrapTrim`**, **`IdenticalToNotIdentical`** (**`getMercadoPagoOAuthUrl`** config + **`client_id`** + **`nro_doc`** guards)
+  - **Cause:** Each early **`throw new ExceptionWithErrors(..., 503)`** must be distinguishable from the success JSON payload.
+  - **Mutant ID:** **`Line 299:IfNegated`**, **`Line 302:IfNegated`**, **`Line 306:IfNegated`**, **`Line 306:IdenticalToNotIdentical`**, **`Line 306:EmptyStringToNotEmpty`**, **`Line 306:UnwrapTrim`**, etc.
+  - **Fix:** **`test_mercadopago_oauth_url_returns_503_when_identity_validation_disabled`**; **`test_mercadopago_oauth_url_returns_authorization_payload_when_configured`** (**`MercadoPagoOAuthService`** mock returns PKCE-shaped array); **`test_mercadopago_oauth_url_non_pkce_flow_returns_string_url_and_hits_scalar_cache_branch`** (real **`MercadoPagoOAuthService`**, **`oauth_pkce_enabled` false** ⇒ scalar URL + **`Cache::put`** branch without **`code_verifier`**).
+
+- **`Line 333–361`**, **`Line 373–423`** (**`deleteAccountRequest`**, **`deleteAccount`** branches, **`JWTAuth::invalidate`**, **`Log::info`**)
+  - **Cause:** **`201`** + DB row + queued job, hard-delete vs anonymize vs **`422`** **`negative_ratings`**, and success JSON **`action`** keys were mostly uncovered in the scoped run.
+  - **Mutant ID:** clusters **`Line 342:RemoveMethodCall`**, **`Line 378:IfNegated`**, **`Line 385:IfNegated`**, **`Line 412:IfNegated`**, etc. (dash / **`⨯`** tails in historical report).
+  - **Fix:** **`test_delete_account_request_persists_row_and_dispatches_email_job`** (**`Bus::fake()`**); **`test_delete_account_hard_deletes_user_without_related_activity`**; **`test_delete_account_anonymizes_when_user_has_trip_history`**; **`test_delete_account_rejects_when_negative_ratings_exist`** (**`Rating::factory`** with **`STATE_NEGATIVO`**).
+
+- **`Line 124–152: IfNegated`**, **`AlwaysReturnNull`** (**`adminUpdate`** access + **`userLogic->update`**)
+  - **Cause:** Admin gate, missing **`user.id`**, missing target user, and failed update paths need distinct HTTP **`422`** outcomes vs success **`200`** profile JSON.
+  - **Mutant ID:** **`Line 127:IfNegated`**, **`Line 135:IfNegated`**, **`Line 143:IfNegated`**, **`Line 152:AlwaysReturnNull`**, etc.
+  - **Fix:** **`test_admin_update_requires_admin_and_target_payload`**; **`test_admin_update_denies_non_admin`**.
+
+- **`Line 155–163: AlwaysReturnNull`** (**`updatePhoto`**)
+  - **Cause:** **`UsersManager::updatePhoto`** failure vs success must change persisted **`image`** / response status.
+  - **Mutant ID:** **`Line 163:AlwaysReturnNull`** (historical; line drift).
+  - **Fix:** **`test_update_photo_accepts_base64_profile_payload`** (minimal valid JPEG data URL).
+
+### UserController — remaining uncovered (scoped run, ~92% score)
+
+These lines stayed **`UNCOVERED`** or low-value without brittle **`Log`** / **`JWTAuth`** fakes:
+
+- **`Line 57: ContinueToBreak`** (**`create`** driver-doc loop **`if (! $file) { continue; }`**)
+  - **Cause:** Multipart registration fixtures do not send a **`false`** / empty upload slot that hits **`continue`** while still exercising **`uploadDoc`** on a later element.
+  - **Mutant ID:** **`Line 57:ContinueToBreak`**.
+  - **Fix (optional):** custom request builder or **`create`** unit test with a synthetic **`files()`** iterator containing a falsy entry (not pursued here).
+
+- **`Line 88: RemoveMethodCall`**, **`Concat*`** (**`registrationResponsePayload`** **`JWTAuth::fromUser`** / **`Log::error`**)
+  - **Cause:** Issuing a JWT after registration requires an **active, unbanned** new user and a token path that does not fail; **`Log::error`** only runs on **`JWTException`**.
+  - **Mutant ID:** **`Line 88:RemoveMethodCall`**, **`Line 88:ConcatRemoveLeft`**, etc.
+  - **Fix (optional):** end-to-end registration that yields **`token`** plus a **`JWTAuth`** partial mock that throws once.
+
+- **`Line 396` / `Line 416`** (**`deleteAccount`** catch **`\\Log::error('Failed to invalidate JWT…` + concat**)
+  - **Cause:** The catch blocks run only when **`JWTAuth::invalidate`** throws; happy-path deletes do not enter them.
+  - **Mutant ID:** **`Line 396:RemoveMethodCall`**, **`Line 396:ConcatRemoveLeft`**, **`Line 416:RemoveMethodCall`**, etc.
+  - **Fix (optional):** **`JWTAuth::shouldReceive('invalidate')->andThrow(...)`** in a narrow test (risky with real login + facade state).
