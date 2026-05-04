@@ -706,6 +706,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added `Tests\Unit\Providers\AppServiceProviderBindingsTest` (`test_binds_social_contract_to_social_manager`, `test_registers_webpay_normal_flow_client_singleton`).
   - Mutant operators (Infection log): `RemoveMethodCall` (~lines 18–19).
 
+- **`AppServiceProvider.php` `register()` (`Line 18: RemoveMethodCall`, `Line 19: RemoveMethodCall`)** — follow-up when Pest still reported survivors.
+  - Cause: asserting only **`make()` + `assertInstanceOf` / `assertSame`** can miss removals of the registration lines if another layer ever satisfied the same abstracts (or if resolution looked “close enough” in a narrow harness). The **`Social`** binding must exist explicitly; **`WebpayNormalFlowClient`** must stay a **shared** singleton, not a transient binding.
+  - Fix: **`test_binds_social_contract_to_social_manager`** now **`$this->app->bound(Social::class)`** before **`make`**. **`test_registers_webpay_normal_flow_client_singleton`** now asserts **`bound(WebpayNormalFlowClient::class)`** and **`isShared(WebpayNormalFlowClient::class)`** before the two **`make`** calls (Pest: 2 mutations, **100%** score on `AppServiceProvider.php`).
+
 ## ReferencesRepository
 
 - `ReferencesRepository.php` `create` (`~9–11`): `return $reference->save()`.
