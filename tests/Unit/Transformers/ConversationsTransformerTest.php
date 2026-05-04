@@ -3,6 +3,7 @@
 namespace Tests\Unit\Transformers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\Trip;
@@ -121,6 +122,51 @@ class ConversationsTransformerTest extends TestCase
 
         $this->assertArrayNotHasKey('trip', $payload);
         $this->assertArrayNotHasKey('return_trip', $payload);
+    }
+
+    public function test_transform_skips_coordinate_branch_when_module_key_missing_from_config(): void
+    {
+        $originalCarpoolear = config('carpoolear');
+        try {
+            config(['carpoolear' => Arr::except($originalCarpoolear, ['module_coordinate_by_message'])]);
+
+            $viewer = User::factory()->create();
+            $owner = User::factory()->create();
+            $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+            $conversation = Conversation::query()->create([
+                'type' => Conversation::TYPE_TRIP_CONVERSATION,
+                'title' => 'Trip chat',
+                'trip_id' => $trip->id,
+            ]);
+            $conversation->users()->attach($viewer->id, ['read' => true]);
+
+            $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+            $this->assertArrayNotHasKey('trip', $payload);
+            $this->assertArrayNotHasKey('return_trip', $payload);
+        } finally {
+            config(['carpoolear' => $originalCarpoolear]);
+        }
+    }
+
+    public function test_transform_users_rows_each_expose_stable_key_order(): void
+    {
+        $viewer = User::factory()->create(['name' => 'Viewer']);
+        $other = User::factory()->create(['name' => 'Other']);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Chat',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $expectedKeys = ['id', 'name', 'last_connection', 'identity_validated_at'];
+        foreach ($payload['users'] as $row) {
+            $this->assertSame($expectedKeys, array_keys($row));
+        }
     }
 
     public function test_transform_private_peer_without_image_uses_empty_string_not_null(): void
