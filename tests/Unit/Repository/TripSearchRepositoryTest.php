@@ -179,6 +179,60 @@ class TripSearchRepositoryTest extends TestCase
         $this->assertSame(0, $row->amount_trips_carpooleados);
     }
 
+    public function test_track_search_does_not_call_filter_when_slice_count_is_zero(): void
+    {
+        // Mutation intent: guard must stay `$trips->count() > 0` (not `>= 0` / `> -1`), so an empty current slice never forwards `filter` to the collection.
+        // Kills: `Line 25: GreaterToGreaterOrEqual`, `Line 25: DecrementInteger` (literal / comparator drift on the `> 0` gate).
+        $user = User::factory()->create();
+        $origin = $this->makeNode();
+        $dest = $this->makeNode();
+
+        $paginator = new class(collect([]), 8, 10, 2, ['path' => '/trips']) extends LengthAwarePaginator
+        {
+            public int $filterCalls = 0;
+
+            public function __call($method, $parameters)
+            {
+                if ($method === 'filter') {
+                    $this->filterCalls++;
+                }
+
+                return parent::__call($method, $parameters);
+            }
+        };
+
+        $this->repo()->trackSearch($user, $origin->id, $dest->id, $paginator);
+
+        $this->assertSame(0, $paginator->filterCalls);
+    }
+
+    public function test_track_search_does_not_count_trip_with_one_seat_left_as_carpooleado(): void
+    {
+        // Mutation intent: predicate must stay `seats_available <= 0` (not `<= 1`, not `< 0`); exactly one free seat is not “full”.
+        // Kills: `Line 27: IncrementInteger` on the comparison literal, adjacent `GreaterToGreaterOrEqual` / ordering mutants on `<= 0`.
+        $user = User::factory()->create();
+        $origin = $this->makeNode();
+        $dest = $this->makeNode();
+
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'total_seats' => 2,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+
+        $fresh = $trip->fresh();
+        $this->assertSame(1, (int) $fresh->seats_available);
+
+        $paginator = new LengthAwarePaginator(collect([$fresh]), 1, 10, 1, ['path' => '/trips']);
+        $row = $this->repo()->trackSearch($user, $origin->id, $dest->id, $paginator);
+
+        $this->assertSame(1, $row->amount_trips);
+        $this->assertSame(0, $row->amount_trips_carpooleados);
+    }
+
     public function test_track_search_counts_each_full_trip_as_carpooleado(): void
     {
         // Mutation intent: preserve `$trip->seats_available <= 0` filter over all items when `$trips->count() > 0`.

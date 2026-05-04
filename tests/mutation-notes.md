@@ -248,6 +248,14 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added `test_track_search_counts_trip_with_zero_seats_available_as_carpooleado`.
   - Mutant operators (Infection log): `SmallerToSmallerOrEqual`, `GreaterToGreaterOrEqual`, `IncrementInteger`, `DecrementInteger` on the `<= 0` / `> 0` predicates (reported ~lines 25–27).
 
+- **`Line 25: GreaterToGreaterOrEqual`**, **`Line 25: DecrementInteger`** (`$trips->count() > 0` gate vs `>= 0` / `> -1`).
+  - Cause: with an **empty page slice**, `amount_trips_carpooleados` stays **0** whether or not the filter runs, so loosening the comparator could survive without an observable difference.
+  - Fix: **`test_track_search_does_not_call_filter_when_slice_count_is_zero`** — `LengthAwarePaginator` subclass counts **`__call('filter', …)`**; empty slice must perform **zero** filter forwards (mutating to **`>= 0`** or **`> -1`** would invoke **`filter`** and fail).
+
+- **`Line 27: IncrementInteger`** (`seats_available <= 0` right-hand literal).
+  - Cause: only **fully occupied** (`seats_available === 0`) trips were asserted; widening to **`<= 1`** still passes when every fixture had **0** availability.
+  - Fix: **`test_track_search_does_not_count_trip_with_one_seat_left_as_carpooleado`** — one accepted passenger on **two** seats ⇒ **`seats_available === 1`** ⇒ **`amount_trips_carpooleados` must be 0**.
+
 ## MessageRepository
 
 - Cluster `MessageRepository.php` (`tests/coverage/20260428_2310.txt` ~1080–1108): `changeMessageReadState` / `createMessageReadState` pivot payloads, `getMessagesUnread` `$item->pivot->read == 0`, `markMessages` bulk `update` keys.
