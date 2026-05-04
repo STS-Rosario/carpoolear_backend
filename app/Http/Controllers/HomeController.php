@@ -1,16 +1,16 @@
 <?php
 
 namespace STS\Http\Controllers;
- 
+
 use Illuminate\Http\Request;
-use STS\Services\Logic\UsersManager; 
+use STS\Services\Logic\UsersManager;
 
 class HomeController extends Controller
 {
     public function home()
     {
         $url = config('carpoolear.home_redirection', '');
-        if (!empty($url)) {
+        if (! empty($url)) {
             return redirect()->away($url);
         } else {
             return view('home');
@@ -37,19 +37,15 @@ class HomeController extends Controller
         return view('acerca-de-proyecto');
     }
 
-    public function descarga()
+    public function descarga(Request $request)
     {
-        $useragent = $_SERVER['HTTP_USER_AGENT'];
+        $useragent = (string) $request->userAgent();
 
-        $isIOS = preg_match('/iPad|iPhone|iPod/', $useragent);
-
-        if ($isIOS) {
-            header('Location: https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8');
-            die();
-        } else {
-            header('Location: https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419');
-            die();
+        if (preg_match('/iPad|iPhone|iPod/', $useragent) === 1) {
+            return redirect()->away('https://itunes.apple.com/ar/app/carpoolear/id1045211385?mt=8');
         }
+
+        return redirect()->away('https://play.google.com/store/apps/details?id=com.sts.carpoolear&hl=es_419');
     }
 
     public function autoRojo()
@@ -60,9 +56,11 @@ class HomeController extends Controller
     public function hashPassword(Request $request)
     {
         if ($request->has('p')) {
-            echo bcrypt($request->get('p'));
-            die;
+            return response((string) bcrypt($request->get('p')), 200)
+                ->header('Content-Type', 'text/plain; charset=UTF-8');
         }
+
+        return response()->noContent();
     }
 
     public function plataformaPreguntasFrecuentes()
@@ -124,6 +122,7 @@ class HomeController extends Controller
     {
         return view('freelance');
     }
+
     public function derrumbe()
     {
         return view('derrumbe');
@@ -133,7 +132,6 @@ class HomeController extends Controller
     {
         return view('lucro');
     }
-
 
     public function donarcompartir()
     {
@@ -152,12 +150,15 @@ class HomeController extends Controller
 
     public function endsWith($haystack, $needle)
     {
-        $length = strlen($needle);
-        if ($length == 0) {
+        $needleStr = (string) $needle;
+        if ($needleStr === '') {
             return true;
         }
 
-        return substr($haystack, -$length) === $needle;
+        $haystackStr = (string) $haystack;
+        $length = strlen($needleStr);
+
+        return substr($haystackStr, -$length) === $needleStr;
     }
 
     public function test()
@@ -173,12 +174,12 @@ class HomeController extends Controller
         ];
         $manager->createRoute($route); */
         /* $trip = Trip::where('id', 182307)->with([
-            'user', 
-            'user.accounts', 
-            'points', 
+            'user',
+            'user.accounts',
+            'points',
             'passenger',
-            'passengerAccepted', 
-            'car', 
+            'passengerAccepted',
+            'car',
             'ratings',
             'routes'
         ])->first();

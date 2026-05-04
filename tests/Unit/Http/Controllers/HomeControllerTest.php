@@ -4,6 +4,7 @@ namespace Tests\Unit\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
@@ -78,6 +79,57 @@ class HomeControllerTest extends TestCase
         $this->assertTrue($controller->endsWith('bundle.js', '.js'));
         $this->assertFalse($controller->endsWith('bundle.css', '.js'));
         $this->assertTrue($controller->endsWith('anything', ''));
+        $this->assertTrue($controller->endsWith('price_99', '99'));
+        $this->assertTrue($controller->endsWith('price_99', 99));
+        $this->assertFalse($controller->endsWith('abcdef', 'ab'));
+    }
+
+    public function test_descarga_redirects_to_app_store_for_ios_user_agent(): void
+    {
+        $request = Request::create('/descarga', 'GET', [], [], [], [
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Mobile/15E148 Safari/604.1',
+        ]);
+
+        $response = app(HomeController::class)->descarga($request);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertStringContainsString('itunes.apple.com', $response->headers->get('Location'));
+    }
+
+    public function test_descarga_redirects_to_play_store_for_non_ios_user_agent(): void
+    {
+        $request = Request::create('/descarga', 'GET', [], [], [], [
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36',
+        ]);
+
+        $response = app(HomeController::class)->descarga($request);
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame(302, $response->getStatusCode());
+        $this->assertStringContainsString('play.google.com', $response->headers->get('Location'));
+    }
+
+    public function test_hash_password_returns_plain_text_bcrypt_when_query_param_present(): void
+    {
+        $request = Request::create('/generateHash', 'GET', ['p' => 'secret-password']);
+
+        $response = app(HomeController::class)->hashPassword($request);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertStringStartsWith('$2y$', $response->getContent());
+        $this->assertStringContainsString('text/plain', (string) $response->headers->get('Content-Type'));
+    }
+
+    public function test_hash_password_returns_no_content_without_query_param(): void
+    {
+        $request = Request::create('/generateHash', 'GET');
+
+        $response = app(HomeController::class)->hashPassword($request);
+
+        $this->assertSame(204, $response->getStatusCode());
+        $this->assertSame('', $response->getContent());
     }
 
     public function test_handle_app_returns_js_asset_or_index_html(): void
