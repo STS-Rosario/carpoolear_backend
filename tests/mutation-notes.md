@@ -397,6 +397,20 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: loose equality vs strict string identity was mutation-equivalent for current callers.
   - Fix: use **`===`** for `$way` in **`whereLocation`**.
 
+- **`search()` fuzzy `date` branch** (`TripRepository.php` ~421–445): `subDays(3)` / `addDays(3)`, **`if ($from->lte($now))`**, **`pow(2, dayOfWeekIso - 1)`**, weekly **`whereRaw`**, outer **`where` closure**, relevance **`orderBy(DB::Raw(...))`**, secondary **`orderBy('trip_date')`**.
+  - Cause: no assertions tied the ±3 day window, the “clamp lower bound to now” guard, the weekday bitmask, or the DATEDIFF-based ordering to observable result sets; mutants on integer literals and SQL fragments stayed **UNCOVERED**.
+  - Fix: **`test_search_fuzzy_date_includes_boundary_trips_at_plus_minus_three_days`**, **`test_search_fuzzy_date_clamps_lower_window_to_now_so_recent_past_trips_are_excluded`** (`Carbon::setTestNow` + fixed `Y-m-d`), **`test_search_fuzzy_date_weekly_or_matches_search_weekday_bit_not_other_days`**, **`test_search_fuzzy_date_orders_exact_calendar_match_before_adjacent_day`** (scoped with **`user_id`** + **`app.timezone`** aligned to Buenos Aires).
+
+- **Mutant IDs (fuzzy date / weekly / ordering):** `453e4cf88b31d174`, `25d5fb2d4ca2a73a`, `beda51e61eb62f1b`, `8de0b608ffdb3ff8`, `0db1229a8b85bd1d`, `9de469727caf77c9`, `13bca791d6f8c362`, `943b947555f3efbb`, `15e92769177f49d3`, `f6abc70b49d464ad`, `4b79fddd09df6ade`, `d4107cd8d2d1121b`, `8426cc232cb4572d`, `4a896c355b323e83`, `f74f670bea1dfc0d`, `ba94c1bb9f1f45e0`, `168aabcaf2296c6c`, `c233631798837356`, `962413601e70898c`, `3dbfb6643272bfda`, `71e56250960ce44e`, `9aaf6ee49dcc4ce7`, `ebbacfa376e614e5`, `8ca8062d7fa8d804`.
+
+- **`Line 498–499: RemoveMethodCall`** (dead inner `else` under `if ($user && ! $user->is_admin)`).
+  - Cause: the **`else`** was unreachable because the outer guard already requires a non-null **`$user`**; mutators still targeted **`RemoveMethodCall`** on those state predicates.
+  - Fix: remove the dead branch and flatten the closure (**`ca4fe9485b8d2cde`**, **`e5bafee435c83296`**).
+
+- **`Line 799: ContinueToBreak`** (`requestOsrmForTripInfoCoords` empty **`$base`**).
+  - Cause: **`array_filter([$primary, $fallback])`** dropped empty-string primaries before the loop, so **`if ($base === '') { continue; }`** never ran and **`ContinueToBreak`** stayed **UNCOVERED**.
+  - Fix: filter bases with **`static fn ($base) => $base !== null`** so an empty primary is iterated and **`continue`** skips it; **`test_request_osrm_for_trip_info_coords_skips_empty_primary_base_and_uses_fallback`** now asserts exactly **one** HTTP request to the fallback host (**`e4c5b9e3190c1e1c`**).
+
 - `47a4022bfb577c5a`, `a50255ec77726d09`, `33b99591f429010d`, `7ab8d1032746dbfa`, `c971ded4c0583849`, `dd8743ead8f87fde`, `14701d7b0afa6c43`, `9e6cb9312e8e70ea`, `e0900113fa619282`, `fce18506ce2a3b67`, `2f31f58e34bc7f68`, `bbdfa6dd5309dc76`, `b687fb0c758f9ff7`, `1294a7e0b757765f`, `13bffdc93611a1bd`, `2561f9ba60928e7c`, `aa1ba96b77874b63`, `bb988e6606ef287b`, `64854536d7731d76`, `926f5eb76fa1c5d2`, `ee8770e106619a2a`, `86a3522102bd856b`, `4abda33c3ccae2f5`, `0280f49e5e9aa5f6`, `168a1c682d274fec`, `9332ef5aa60d7c7b`, `726f02044afec66a`, `74f70ee8c58fdc8d`
   - Cause: private `getPotentialNode` math and bbox comparator branches were not directly exercised.
   - Fix: added `test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges` (reflection call to validate returned node is inside bbox only).

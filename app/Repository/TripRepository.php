@@ -473,35 +473,26 @@ class TripRepository
 
         if ($user && ! $user->is_admin) {
             $trips->where(function ($q) use ($user) {
-                if ($user) {
-                    // only show trips that are ready (paid by driver) or have no state
-                    $q->where(function ($q) use ($user) {
-                        $q->where('state', '=', Trip::STATE_READY)
-                            ->orWhere('state', '=', Trip::STATE_PAID)
-                            ->orWhereNull('state')
-                            ->orWhere('user_id', $user->id);
-                    });
+                // only show trips that are ready (paid by driver) or have no state
+                $q->where(function ($q) use ($user) {
+                    $q->where('state', '=', Trip::STATE_READY)
+                        ->orWhere('state', '=', Trip::STATE_PAID)
+                        ->orWhereNull('state')
+                        ->orWhere('user_id', $user->id);
+                });
 
-                    $q->where(function ($q) use ($user) {
-                        $q->whereUserId($user->id)
-                            ->orWhere(function ($q) use ($user) {
-                                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
-                                    ->orWhere(function ($q) use ($user) {
-                                        $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
-                                            ->whereHas('userVisibility', function ($q) use ($user) {
-                                                $q->where('user_id', $user->id);
-                                            });
-                                    });
-                            });
-                    });
-                } else {
-                    $q->where(function ($q) {
-                        $q->where('state', '=', Trip::STATE_READY)
-                            ->orWhere('state', '=', Trip::STATE_PAID)
-                            ->orWhereNull('state');
-                    })
-                        ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
-                }
+                $q->where(function ($q) use ($user) {
+                    $q->whereUserId($user->id)
+                        ->orWhere(function ($q) use ($user) {
+                            $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
+                                ->orWhere(function ($q) use ($user) {
+                                    $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
+                                        ->whereHas('userVisibility', function ($q) use ($user) {
+                                            $q->where('user_id', $user->id);
+                                        });
+                                });
+                        });
+                });
             });
         }
         if (isset($data['origin_id']) && isset($data['destination_id'])) {
@@ -788,7 +779,9 @@ class TripRepository
         $fallback = config('carpoolear.osrm_router_fallback_base_url')
             ? rtrim((string) config('carpoolear.osrm_router_fallback_base_url'), '/')
             : null;
-        $bases = array_values(array_unique(array_filter([$primary, $fallback])));
+        $bases = array_values(array_unique(
+            array_filter([$primary, $fallback], static fn ($base) => $base !== null)
+        ));
 
         $upstreamPath = '/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true';
         $lastPayload = null;

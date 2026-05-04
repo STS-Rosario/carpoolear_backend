@@ -1468,6 +1468,210 @@ class TripRepositoryTest extends TestCase
             $strictItems->search(fn ($t) => $t->id === $strictLate->id));
     }
 
+    public function test_search_fuzzy_date_includes_boundary_trips_at_plus_minus_three_days(): void
+    {
+        // Mutation intent: non-strict `date` search must use `subDays(3)` / `addDays(3)` for the regular window.
+        // Kills: `453e4cf88b31d174`, `25d5fb2d4ca2a73a`, `beda51e61eb62f1b`, `8de0b608ffdb3ff8`.
+        $tz = 'America/Argentina/Buenos_Aires';
+        Config::set('app.timezone', $tz);
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        $owner = User::factory()->create();
+
+        $center = Carbon::now($tz)->addMonths(3)->next(Carbon::TUESDAY)->startOfDay();
+        $dateStr = $center->format('Y-m-d');
+
+        $onLower = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->subDays(3)->setTime(12, 0, 0),
+        ]);
+        $outsideLower = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->subDays(4)->setTime(12, 0, 0),
+        ]);
+        $onUpper = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->addDays(3)->setTime(12, 0, 0),
+        ]);
+        $outsideUpper = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->addDays(4)->setTime(12, 0, 0),
+        ]);
+
+        $page = $this->repo()->search($admin, [
+            'user_id' => $owner->id,
+            'date' => $dateStr,
+            'page' => 1,
+            'page_size' => 50,
+        ]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertTrue($ids->contains($onLower->id));
+        $this->assertTrue($ids->contains($onUpper->id));
+        $this->assertFalse($ids->contains($outsideLower->id));
+        $this->assertFalse($ids->contains($outsideUpper->id));
+    }
+
+    public function test_search_fuzzy_date_clamps_lower_window_to_now_so_recent_past_trips_are_excluded(): void
+    {
+        // Mutation intent: when `date_search - 3 days` is not after `now`, `$from` must be raised to `Carbon::now(...)`.
+        // Kills: `0db1229a8b85bd1d`.
+        $tz = 'America/Argentina/Buenos_Aires';
+        Config::set('app.timezone', $tz);
+        Carbon::setTestNow(Carbon::parse('2026-06-15 15:00:00', $tz));
+
+        try {
+            $admin = User::factory()->create();
+            $admin->forceFill(['is_admin' => true])->saveQuietly();
+            $owner = User::factory()->create();
+
+            $dateStr = '2026-06-16';
+
+            $tripInsideNominalSpanBeforeNow = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => Carbon::parse('2026-06-14 10:00:00', $tz),
+            ]);
+
+            $page = $this->repo()->search($admin, [
+                'user_id' => $owner->id,
+                'date' => $dateStr,
+                'page' => 1,
+                'page_size' => 50,
+            ]);
+            $ids = collect($page->items())->pluck('id');
+
+            $this->assertFalse($ids->contains($tripInsideNominalSpanBeforeNow->id));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_search_fuzzy_date_weekly_or_matches_search_weekday_bit_not_other_days(): void
+    {
+        // Mutation intent: `pow(2, dayOfWeekIso - 1)` and `(weekly_schedule & ?) > 0` gate weekly rows outside the date span.
+        // Kills: `9de469727caf77c9`, `13bca791d6f8c362`, `943b947555f3efbb`, `15e92769177f49d3`, `f6abc70b49d464ad`,
+        //        `8426cc232cb4572d`, `4a896c355b323e83`, `f74f670bea1dfc0d`, `ba94c1bb9f1f45e0`,
+        //        `4b79fddd09df6ade`, `d4107cd8d2d1121b`.
+        $tz = 'America/Argentina/Buenos_Aires';
+        Config::set('app.timezone', $tz);
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        $owner = User::factory()->create();
+
+        $wednesday = Carbon::parse('2026-07-08', $tz)->startOfDay();
+        $this->assertSame(3, $wednesday->dayOfWeekIso);
+        $dateStr = $wednesday->format('Y-m-d');
+
+        $farOutside = Carbon::parse('2026-07-28 09:00:00', $tz);
+
+        $wednesdayOnly = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => Trip::DAY_WEDNESDAY,
+            'trip_date' => $farOutside,
+        ]);
+        $mondayOnly = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => Trip::DAY_MONDAY,
+            'trip_date' => $farOutside->copy()->addHour(),
+        ]);
+
+        $page = $this->repo()->search($admin, [
+            'user_id' => $owner->id,
+            'date' => $dateStr,
+            'page' => 1,
+            'page_size' => 50,
+        ]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertTrue($ids->contains($wednesdayOnly->id));
+        $this->assertFalse($ids->contains($mondayOnly->id));
+    }
+
+    public function test_search_fuzzy_date_orders_exact_calendar_match_before_adjacent_day(): void
+    {
+        // Mutation intent: preserve the relevance `orderBy(DB::Raw("IF(ABS(DATEDIFF(..."))` then `orderBy('trip_date')`.
+        // Kills: `168aabcaf2296c6c`, `c233631798837356`, `962413601e70898c`, `3dbfb6643272bfda`, `71e56250960ce44e`,
+        //        `9aaf6ee49dcc4ce7`, `ebbacfa376e614e5`, `8ca8062d7fa8d804`.
+        $tz = 'America/Argentina/Buenos_Aires';
+        Config::set('app.timezone', $tz);
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        $owner = User::factory()->create();
+
+        $center = Carbon::now($tz)->addMonths(3)->next(Carbon::THURSDAY)->startOfDay();
+        $dateStr = $center->format('Y-m-d');
+
+        $nextDay = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->addDay()->setTime(8, 0, 0),
+        ]);
+        $sameDayLate = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->setTime(18, 0, 0),
+        ]);
+        $sameDayEarly = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'weekly_schedule' => 0,
+            'trip_date' => $center->copy()->setTime(7, 0, 0),
+        ]);
+
+        $page = $this->repo()->search($admin, [
+            'user_id' => $owner->id,
+            'date' => $dateStr,
+            'page' => 1,
+            'page_size' => 50,
+        ]);
+        $items = collect($page->items())->values();
+        $positions = [
+            'early' => $items->search(fn ($t) => $t->id === $sameDayEarly->id),
+            'late' => $items->search(fn ($t) => $t->id === $sameDayLate->id),
+            'next' => $items->search(fn ($t) => $t->id === $nextDay->id),
+        ];
+        $this->assertNotFalse($positions['early']);
+        $this->assertNotFalse($positions['late']);
+        $this->assertNotFalse($positions['next']);
+        $this->assertLessThan($positions['next'], $positions['early']);
+        $this->assertLessThan($positions['next'], $positions['late']);
+        $this->assertLessThan($positions['early'], $positions['late']);
+    }
+
     public function test_search_weekly_schedule_uses_bitwise_filter_and_orders_by_trip_date(): void
     {
         // Mutation intent: preserve weekly-schedule bitwise whereRaw and ordering branch in search().
@@ -3535,8 +3739,8 @@ class TripRepositoryTest extends TestCase
 
     public function test_request_osrm_for_trip_info_coords_skips_empty_primary_base_and_uses_fallback(): void
     {
-        // Mutation intent: preserve array_filter removal of empty primary so loop still reaches a non-empty fallback base.
-        // Kills (lines ~800–807): e.g. 8221b8c1988dceea, ae3dbf7954ba3af3.
+        // Mutation intent: empty primary base must hit `continue` (not `break`) so the fallback URL is requested once.
+        // Kills: `e4c5b9e3190c1e1c`, `8221b8c1988dceea`, `ae3dbf7954ba3af3`.
         Config::set('carpoolear.osrm_router_base_url', '');
         Config::set('carpoolear.osrm_router_fallback_base_url', 'https://fbonly.test/');
 
@@ -3554,6 +3758,9 @@ class TripRepositoryTest extends TestCase
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '1,1;2,2', 'hp-skip');
 
         $this->assertSame('route', $result['status']);
+        $recorded = Http::recorded();
+        $this->assertCount(1, $recorded);
+        $this->assertStringContainsString('fbonly.test', $recorded[0][0]->url());
     }
 
     public function test_store_trip_info_success_caches_route_and_logs_ttl_when_cache_enabled(): void
