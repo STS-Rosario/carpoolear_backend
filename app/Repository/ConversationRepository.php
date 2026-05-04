@@ -38,10 +38,10 @@ class ConversationRepository
     public function getConversationFromId($conversation_id, ?User $user = null)
     {
         $conversation = Conversation::where('id', $conversation_id)->first();
-        if ($conversation == null) {
+        if ($conversation === null) {
             return; // el viaje no existe;
         }
-        if ($user != null) {
+        if ($user !== null) {
             if (! $conversation->users()->whereKey($user->id)->exists()) {
                 return; // handlear error
             }

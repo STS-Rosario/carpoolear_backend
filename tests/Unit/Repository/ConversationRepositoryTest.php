@@ -535,6 +535,29 @@ class ConversationRepositoryTest extends TestCase
         $this->assertTrue($forward->is($conversation));
     }
 
+    public function test_match_user_resolves_distinct_private_threads_when_user_one_chats_two_peers(): void
+    {
+        // Mutation intent: both `where('c1.user_id', …)` and `where('c2.user_id', …)` must pin the pair; dropping either can match the wrong private row when user1 shares one thread with user2 and another with user3.
+        // Kills: `Line 116: RemoveMethodCall`, `Line 117: RemoveMethodCall`.
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        $u3 = User::factory()->create();
+
+        $conv12 = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conv12->users()->attach($u1->id, ['read' => true]);
+        $conv12->users()->attach($u2->id, ['read' => true]);
+
+        $conv13 = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conv13->users()->attach($u1->id, ['read' => true]);
+        $conv13->users()->attach($u3->id, ['read' => true]);
+
+        $repo = new ConversationRepository;
+
+        $this->assertSame($conv12->id, $repo->matchUser($u1->id, $u2->id)?->id);
+        $this->assertSame($conv13->id, $repo->matchUser($u1->id, $u3->id)?->id);
+        $this->assertNotSame($repo->matchUser($u1->id, $u2->id)?->id, $repo->matchUser($u1->id, $u3->id)?->id);
+    }
+
     public function test_get_conversation_from_id_accepts_string_primary_key_matching_integer_column(): void
     {
         // Mutation intent: strengthen lookup coverage beyond strict-null branches (`EqualToIdentical` / `NotEqualToNotIdentical` on guards vs SQL coercion).
@@ -585,5 +608,61 @@ class ConversationRepositoryTest extends TestCase
 
         $this->assertTrue($hits->pluck('id')->contains($match->id));
         $this->assertFalse($hits->pluck('id')->contains($miss->id));
+    }
+
+    public function test_users_to_chat_orders_candidates_by_name(): void
+    {
+        // Mutation intent: preserve terminal `orderBy('name')` (~203 RemoveMethodCall); without it two accepted friends can return in insertion order.
+        // Kills: `Line 203: RemoveMethodCall`.
+        $owner = User::factory()->create(['name' => 'Owner Sort']);
+        $zebra = User::factory()->create(['name' => 'ZebraSortFriend']);
+        $alpha = User::factory()->create(['name' => 'AlphaSortFriend']);
+        (new FriendsRepository)->add($zebra, $owner, User::FRIEND_ACCEPTED);
+        (new FriendsRepository)->add($alpha, $owner, User::FRIEND_ACCEPTED);
+
+        $rows = (new ConversationRepository)->usersToChat($owner->id, null, 'SortFriend');
+
+        $this->assertGreaterThanOrEqual(2, $rows->count());
+        $names = $rows->pluck('name')->values()->all();
+        $sorted = $names;
+        sort($sorted, SORT_STRING);
+        $this->assertSame($sorted, $names, 'usersToChat must return rows sorted by name ascending');
+        $this->assertFalse($rows->pluck('id')->contains($owner->id));
+    }
+
+    public function test_users_to_chat_eager_loads_accounts_on_each_candidate(): void
+    {
+        // Mutation intent: preserve `$users->with('accounts')` (~202 RemoveMethodCall) so consumers do not N+1 account lookups.
+        // Kills: `Line 202: RemoveMethodCall`.
+        $owner = User::factory()->create(['name' => 'Owner Accounts']);
+        $friend = User::factory()->create(['name' => 'Friend Accounts']);
+        (new FriendsRepository)->add($friend, $owner, User::FRIEND_ACCEPTED);
+
+        $rows = (new ConversationRepository)->usersToChat($owner->id, null, 'Accounts');
+
+        $this->assertTrue($rows->isNotEmpty());
+        foreach ($rows as $row) {
+            $this->assertTrue($row->relationLoaded('accounts'), 'expected accounts eager-loaded on '.$row->name);
+        }
+    }
+
+    public function test_users_to_chat_includes_fof_trip_driver_when_seeker_is_direct_friend_of_driver(): void
+    {
+        // Mutation intent: FoF nested block must keep `whereHas('user.friends', …)` (~176–177 RemoveMethodCall) when the seeker is a direct friend of the trip owner (not only the friends-of-friends disjunct).
+        // Kills: `Line 176: RemoveMethodCall`, `Line 177: RemoveMethodCall` clusters tied to the inner friends gate.
+        $viewer = User::factory()->create(['name' => 'DirectFoFSeek']);
+        $needle = 'DirectFoFDrv'.substr(uniqid('', true), 0, 8);
+        $driver = User::factory()->create(['name' => $needle.' Captain']);
+        (new FriendsRepository)->add($driver, $viewer, User::FRIEND_ACCEPTED);
+
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_FOF,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $rows = (new ConversationRepository)->usersToChat($viewer->id, null, 'DirectFoFDrv');
+
+        $this->assertTrue($rows->pluck('id')->contains($driver->id));
     }
 }

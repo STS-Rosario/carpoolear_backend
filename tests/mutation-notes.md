@@ -140,6 +140,26 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: tests always passed native integers; string coercion through `where('id', …)` was undocumented.
   - Fix: added `test_get_conversation_from_id_accepts_string_primary_key_matching_integer_column`.
 
+- `Line 41: EqualToIdentical`, `Line 44: NotEqualToNotIdentical` (`getConversationFromId` null guards).
+  - Cause: loose `== null` / `!= null` survived mutation to strict operators without observable difference for Eloquent `first()` + typed `?User` callers in the existing suite.
+  - Fix: use `=== null` and `!== null` in `ConversationRepository::getConversationFromId` (canonical null checks for this API).
+
+- `Line 116: RemoveMethodCall`, `Line 117: RemoveMethodCall` (`matchUser` `where('c1.user_id', …)` / `where('c2.user_id', …)`).
+  - Cause: symmetric argument-reversal test used a single private thread; removing one join predicate could still return that row when only one `(user1, user2)` pair existed in the database.
+  - Fix: `test_match_user_resolves_distinct_private_threads_when_user_one_chats_two_peers` (two private conversations sharing `user1` with different partners; `matchUser` must return the correct id for each pair).
+
+- `Line 169: RemoveMethodCall`, `Line 172: RemoveMethodCall`, `Line 174: RemoveMethodCall`, `Line 175: RemoveMethodCall`, `Line 176: RemoveMethodCall`, `Line 177: RemoveMethodCall`, `Line 180: RemoveMethodCall`, `Line 185: RemoveMethodCall`, `Line 189: RemoveMethodCall`, `Line 192: RemoveMethodCall` (`usersToChat` builder chain: admin/trips FoF/passenger disjuncts, self-exclusion).
+  - Cause: overlapping OR branches meant dropping one `where` / `whereHas` could still return the same seeded driver/admin rows from another disjunct; self-exclusion was not re-asserted on sorted multi-hit queries.
+  - Fix: `test_users_to_chat_includes_fof_trip_driver_when_seeker_is_direct_friend_of_driver` (FoF trip + **direct** `user.friends` inner gate without relying solely on the friends-of-friends leg); `test_users_to_chat_orders_candidates_by_name` + owner id exclusion reinforces terminal filters.
+
+- `Line 203: RemoveMethodCall` (`usersToChat` `orderBy('name')`).
+  - Cause: single-hit searches did not prove stable ordering when multiple candidates matched the same needle.
+  - Fix: `test_users_to_chat_orders_candidates_by_name`.
+
+- `Line 202: RemoveMethodCall` (`usersToChat` `with('accounts')`).
+  - Cause: callers never asserted eager loading; lazy loading masked removal of `with('accounts')`.
+  - Fix: `test_users_to_chat_eager_loads_accounts_on_each_candidate`.
+
 - `ConversationRepository.php` `usersToChat` (`~193–197`): `$whoID` truthiness gate before `where('id', $whoID)`.
   - Cause: filters with `whoID` set were covered, but returning **multiple** candidates without `whoID` was not asserted alongside the narrowed query—negating the guard collapses those behaviors.
   - Fix: added `test_users_to_chat_without_who_id_returns_all_matching_friends`.
