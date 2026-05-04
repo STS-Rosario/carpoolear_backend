@@ -36,19 +36,30 @@ class Trip extends Model
     const PRIVACY_FOF = 1;
 
     const STATE_AWAITING_PAYMENT = 'awaiting_payment';
+
     const STATE_PENDING_PAYMENT = 'pending_payment';
+
     const STATE_PAID = 'paid';
+
     const STATE_PAYMENT_FAILED = 'payment_failed';
+
     const STATE_READY = 'ready';
+
     const STATE_CANCELED = 'canceled';
 
     // Weekly schedule bitmask constants
     const DAY_MONDAY = 1;
+
     const DAY_TUESDAY = 2;
+
     const DAY_WEDNESDAY = 4;
+
     const DAY_THURSDAY = 8;
+
     const DAY_FRIDAY = 16;
+
     const DAY_SATURDAY = 32;
+
     const DAY_SUNDAY = 64;
 
     protected $table = 'trips';
@@ -81,7 +92,7 @@ class Trip extends Model
         'allow_animals',
         'state',
         'payment_id',
-        'needs_sellado'
+        'needs_sellado',
     ];
 
     protected $hidden = [
@@ -92,7 +103,7 @@ class Trip extends Model
         'passenger_count',
         'seats_available',
         'is_driver',
-    ]; 
+    ];
 
     protected function casts(): array
     {
@@ -106,9 +117,9 @@ class Trip extends Model
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
             'recommended_trip_price_cents' => 'integer',
-            'state' => 'string'
+            'state' => 'string',
         ];
-    } 
+    }
 
     public function parentTrip()
     {
@@ -120,7 +131,7 @@ class Trip extends Model
         return $this->belongsTo('STS\Models\User', 'user_id');
     }
 
-    public function userVisibility ()
+    public function userVisibility()
     {
         return $this->hasMany('STS\Models\TripVisibility', 'trip_id');
     }
@@ -135,7 +146,8 @@ class Trip extends Model
         return $this->hasMany('STS\Models\Passenger', 'trip_id')->with('user');
     }
 
-    public function routes () {
+    public function routes()
+    {
         return $this->belongsToMany('STS\Models\Route', 'trip_routes', 'trip_id', 'route_id');
     }
 
@@ -147,8 +159,8 @@ class Trip extends Model
     public function passengerPending()
     {
         return $this->passenger()->whereIn('request_state', [
-            Passenger::STATE_PENDING, 
-            Passenger::STATE_WAITING_PAYMENT
+            Passenger::STATE_PENDING,
+            Passenger::STATE_WAITING_PAYMENT,
         ]);
     }
 
@@ -164,7 +176,7 @@ class Trip extends Model
 
     public function ratings()
     {
-        return $this->hasMany('STS\Models\Rating', 'trip_id')->with(['from','to']);
+        return $this->hasMany('STS\Models\Rating', 'trip_id')->with(['from', 'to']);
     }
 
     public function outbound()
@@ -177,9 +189,14 @@ class Trip extends Model
         return $this->belongsTo('STS\Models\Trip', 'return_trip_id');
     }
 
+    /**
+     * Official trip group thread only. Private DMs can share the same trip_id;
+     * they must not be returned here (see addUserConversation / removeUserConversation).
+     */
     public function conversation()
     {
-        return $this->hasOne('STS\Models\Conversation', 'trip_id');
+        return $this->hasOne(Conversation::class, 'trip_id')
+            ->where('type', Conversation::TYPE_TRIP_CONVERSATION);
     }
 
     public function payments()
@@ -214,7 +231,7 @@ class Trip extends Model
 
     public function setDescriptionAttribute($value)
     {
-        $this->attributes['description'] = $value; //htmlentities($value);
+        $this->attributes['description'] = $value; // htmlentities($value);
     }
 
     public function isAwaitingPayment()
@@ -240,24 +257,28 @@ class Trip extends Model
     public function setStateAwaitingPayment()
     {
         $this->state = self::STATE_AWAITING_PAYMENT;
+
         return $this;
     }
 
     public function setStatePaymentFailed()
     {
         $this->state = self::STATE_PAYMENT_FAILED;
+
         return $this;
     }
 
     public function setStateReady()
     {
         $this->state = self::STATE_READY;
+
         return $this;
     }
 
     public function setStateCanceled()
     {
         $this->state = self::STATE_CANCELED;
+
         return $this;
     }
 
@@ -271,6 +292,7 @@ class Trip extends Model
         if ($this->trip_date === null) {
             return false;
         }
+
         return $this->trip_date->lt(Carbon::now());
     }
 
