@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
 use STS\Models\CampaignMilestone;
@@ -9,7 +10,7 @@ use Tests\TestCase;
 
 class CampaignMilestoneTest extends TestCase
 {
-    public function test_fillable_contains_expected_mass_assignable_attributes(): void
+    public function test_fillable_lists_mass_assignment_columns(): void
     {
         $this->assertSame([
             'campaign_id',
@@ -44,6 +45,7 @@ class CampaignMilestoneTest extends TestCase
             'amount_cents' => 500,
         ]);
 
+        $this->assertInstanceOf(BelongsTo::class, $milestone->campaign());
         $this->assertTrue($milestone->campaign->is($campaign));
     }
 
@@ -148,5 +150,29 @@ class CampaignMilestoneTest extends TestCase
         $fresh = $milestone->fresh();
         $this->assertSame(30, $fresh->progress_percentage);
         $this->assertIsInt($fresh->progress_percentage);
+    }
+
+    public function test_progress_percentage_matches_intdiv_of_donation_times_hundred_over_goal(): void
+    {
+        $campaign = $this->makeCampaign();
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'payment_id' => 'p-intdiv-edge',
+            'amount_cents' => 199,
+            'user_id' => null,
+            'status' => 'paid',
+        ]);
+
+        $milestone = CampaignMilestone::query()->create([
+            'campaign_id' => $campaign->id,
+            'title' => '333 cent target',
+            'description' => 'D',
+            'image_path' => null,
+            'amount_cents' => 333,
+        ]);
+
+        $fresh = $milestone->fresh();
+        $this->assertSame(intdiv(199 * 100, 333), $fresh->progress_percentage);
+        $this->assertSame(59, $fresh->progress_percentage);
     }
 }
