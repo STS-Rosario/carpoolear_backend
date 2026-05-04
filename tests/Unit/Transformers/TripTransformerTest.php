@@ -83,7 +83,7 @@ class TripTransformerTest extends TestCase
         $this->assertSame('2026-04-30 18:30:00', $payload['trip_date']);
         $this->assertEquals(400, $payload['distance']);
         $this->assertSame(15000, $payload['seat_price_cents']);
-        $this->assertFalse($payload['sellado_pending']);
+        $this->assertSame(false, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
@@ -99,7 +99,7 @@ class TripTransformerTest extends TestCase
 
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
-        $this->assertTrue($payload['sellado_pending']);
+        $this->assertSame(true, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
         $this->assertSame('Falta pagar Sellado', $payload['sellado_pending_label']);
     }
@@ -113,7 +113,7 @@ class TripTransformerTest extends TestCase
 
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
-        $this->assertFalse($payload['sellado_pending']);
+        $this->assertSame(false, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
         $this->assertNull($payload['sellado_pending_label']);
     }
