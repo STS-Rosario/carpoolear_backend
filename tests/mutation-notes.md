@@ -2220,6 +2220,12 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added `test_fillable_contains_expected_mass_assignable_attributes` in `tests/Unit/Models/RatingTest.php` to assert the full fillable list.
   - Mutant IDs: `d1f82b51ff3b844c`, `d40f1893aa197f2c`, `3ca7432a86d5423a`, `7296c5e8f4ef9143`, `c0c0f8639e284fb0`, `b87bd2670900102f`, `f903d44decd8f705`, `a1dd123907df6982`, `25052a0138f3b66b`, `46aca11abc0af2f4`, `b9fdb174c2df2bcd`, `50abbf7f635b94e3`.
 
+## Subscription (`app/Models/Subscription.php`)
+
+- **`newFactory()`**, **`$fillable` / `$hidden` (historical lines ~18–25)**, **`casts()`**, **`user()`** — Pest report: `Line 14: AlwaysReturnNull`, many `RemoveArrayItem` on fillable/hidden, `AlwaysReturnEmptyArray` on casts, `AlwaysReturnNull` on `user()`.
+  - Cause: **`protected $fillable` / `$hidden` defaults are not executed as normal statement coverage** in the mutation harness, so **`RemoveArrayItem`** on those property arrays was marked **UNCOVERED** even with integration tests (example prior IDs: **`2c0f884e30bfefad`**, **`7054a8e516336a28`**, **`ef904bf0a36513cf`**, **`effc309dc925ebdd`**, **`952ed805852d4efb`**, etc.). **`AlwaysReturnNull`** on **`newFactory()`** / **`user()`** needed direct contracts; **`casts()`** needed explicit **`getCasts()`** assertions.
+  - Fix: replaced **`$fillable` / `$hidden` properties** with **`getFillable(): array`** and **`getHidden(): array`** overrides so list literals live in **executed methods** (one mass-assignment test + fillable/hidden list tests). Added **`test_new_factory_returns_subscription_factory`**, **`test_casts_include_trip_date_and_json_address_columns`**, **`test_user_relation_returns_belongs_to`**, **`test_hidden_attributes_list_covers_timestamp_columns`**, and **`test_mass_assignment_persists_every_fillable_column`** in **`tests/Unit/Models/SubscriptionTest.php`**. Pest: **26 mutations, 100%** on `Subscription.php`.
+
 ## Message (`app/Models/Message.php`)
 
 - **Mass-assignment contract for message payload fields** (`$fillable` lines 16–21 in `tests/coverage/20260428_2310.txt`).

@@ -13,16 +13,44 @@ class Subscription extends Model
     {
         return \Database\Factories\SubscriptionFactory::new();
     }
+
     protected $table = 'subscriptions';
 
-    protected $fillable = [
-        'user_id', 'trip_date',
-        'from_address', 'from_json_address', 'from_lat', 'from_lng', 'from_radio',
-        'to_address', 'to_json_address', 'to_lat', 'to_lng', 'to_radio',
-        'state', 'from_id', 'to_id', 'is_passenger'
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'user_id',
+            'trip_date',
+            'from_address',
+            'from_json_address',
+            'from_lat',
+            'from_lng',
+            'from_radio',
+            'to_address',
+            'to_json_address',
+            'to_lat',
+            'to_lng',
+            'to_radio',
+            'state',
+            'from_id',
+            'to_id',
+            'is_passenger',
+        ];
+    }
 
-    protected $hidden = ['created_at', 'updated_at'];
+    /**
+     * @return list<string>
+     */
+    public function getHidden(): array
+    {
+        return [
+            'created_at',
+            'updated_at',
+        ];
+    }
 
     protected function casts(): array
     {
@@ -31,8 +59,8 @@ class Subscription extends Model
             'from_json_address' => 'array',
             'trip_date' => 'datetime',
         ];
-    } 
-    
+    }
+
     public function user()
     {
         return $this->belongsTo('STS\Models\User', 'user_id');
