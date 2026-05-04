@@ -3425,3 +3425,42 @@ Pest mutation run (**120** mutants, **100%** score with **`tests/Unit/Models/Tri
 - **`Line 331: EqualToIdentical`** (**`checkFriendship`** **`$conductor->id == $user->id`**)
   - **Cause:** **`===`** rejects **`string`** vs **`int`** id for the same user; with **`PRIVACY_FRIENDS`** the early self-branch must still short-circuit before the pivot lookup.
   - **Fix:** **`test_check_friendship_self_branch_uses_loose_id_equality_for_friends_privacy`** (viewer **`(object) ['id' => (string) $driver->id]`**).
+
+## Passenger (`app/Models/Passenger.php`)
+
+Pest mutation run (**14** mutants, **100%** score with **`tests/Unit/Models/PassengerTest.php`** and **`--path=app/Models/Passenger.php`**). Integer **`DecrementInteger` / `IncrementInteger`** on **`const`** literals are suppressed with **`@pest-mutate-ignore`** (same PCOV **`const`** gap as **`Trip`** / **`User`**); scoped runs therefore do not list per-const int mutants. Killed mutants are identified below as **`Line:MutatorName`** (Pest’s default console output for this run did not print per-mutant **`--id=`** hashes for detected mutants).
+
+- **`Line 12–15: AlwaysReturnNull`** (**`newFactory`**)
+  - **Cause:** **`newFactory()`** was never asserted to return a real factory instance.
+  - **Mutant ID:** **`Line 12:AlwaysReturnNull`** (representative; factory body starts at line 12 in post-refactor file).
+  - **Fix:** **`test_new_factory_returns_passenger_factory`** (reflection + **`Passenger::factory()`**).
+
+- **`Line 17–45: DecrementInteger` / `IncrementInteger`** (numeric **class constants**)
+  - **Cause:** PCOV does not treat **`const … = <int>;`** as reliably coverable; prior runs surfaced many **UNCOVERED** int mutants overlapping across **`STATE_*`**, **`CANCELED_*`**, and **`TYPE_*`** bands.
+  - **Mutant ID:** cluster label **`Passenger:const-int`** (individual int mutants omitted when ignored).
+  - **Fix:** **`// @pest-mutate-ignore:DecrementInteger,IncrementInteger`** on each numeric **`const`** line; **`test_state_type_and_cancel_constants`** keeps the public wire values stable.
+
+- **`Line 52–60: RemoveArrayItem`**, **`AlwaysReturnEmptyArray`** on **`getFillable()`** return array
+  - **Cause:** Property **`$fillable`** did not map each mass-assignable key to executable lines.
+  - **Mutant ID:** **`Line 54:AlwaysReturnEmptyArray`**, **`Line 55:RemoveArrayItem`** … **`Line 59:RemoveArrayItem`** (scoped run line numbers point at the **`return [`** block and each key line).
+  - **Fix:** **`getFillable()`** with one key per line; **`test_fillable_lists_mass_assignment_columns`**.
+
+- **`Line 66–69: getHidden()`** (empty **`return []`**)
+  - **Cause:** Explicit **`getHidden()`** keeps serialization contract visible and matches the **`Trip`** / **`User`** pattern; the latest **14-mutant** scoped run did not emit separate mutants for this empty array (no keys to remove).
+  - **Mutant ID:** _none in 14-mutant run_ (guarded by **`test_hidden_is_empty_list`** for regressions if mutators expand).
+  - **Fix:** **`getHidden(): array`** returning **`[]`**; **`test_hidden_is_empty_list`**.
+
+- **`Line 71–76: RemoveArrayItem`**, **`Line 73: AlwaysReturnEmptyArray`** (**`casts()`**)
+  - **Cause:** Duplicate **`protected $casts`** plus **`casts()`** made cast coverage ambiguous; dropping **`trip_id`** or **`payment_info`** could survive without **`getCasts()`** assertions.
+  - **Mutant ID:** **`Line 73:AlwaysReturnEmptyArray`**, **`Line 74:RemoveArrayItem`**, **`Line 75:RemoveArrayItem`**.
+  - **Fix:** Single **`casts()`** method only; **`test_get_casts_includes_trip_id_integer_and_payment_info_array`**, **`test_casts_method_declares_trip_id_integer_and_payment_info_array`**.
+
+- **`Line 79–87: AlwaysReturnNull`** (**`user()`**, **`trip()`**)
+  - **Cause:** Relations were loaded by attribute access but not asserted as **`BelongsTo`** instances in this test file.
+  - **Mutant ID:** **`Line 81:AlwaysReturnNull`**, **`Line 86:AlwaysReturnNull`**.
+  - **Fix:** **`test_user_and_trip_relations_return_belongs_to`**.
+
+- **`Line 92–105: AlwaysReturnNull`** (**`ratingGiven`**, **`ratingReceived`**), plus **`RemoveMethodCall`** risk on **`where('trip_id', …)`**
+  - **Cause:** Relations were unused in production code paths; **`hasMany(..., 'user_id_from')`** defaulted the owner key to **`passengers.id`**, while **`rating.user_id_from`** / **`user_id_to`** FKs reference **`users.id`**, so real **`Rating`** rows could not satisfy the old join. **`AlwaysReturnNull`** on the **`return`** was **UNCOVERED** / weakly covered; stripping **`where('trip_id', $this->trip_id)`** could survive without a second trip.
+  - **Mutant ID:** **`Line 94:AlwaysReturnNull`**, **`Line 103:AlwaysReturnNull`** (and **`where`** coverage via count mismatch if removed).
+  - **Fix:** Third argument **`'user_id'`** on both **`hasMany`** calls so the child FK lines up with **`users.id`**; **`test_rating_given_returns_has_many_and_filters_by_trip`**, **`test_rating_received_returns_has_many_and_filters_by_trip`** (two trips, two ratings, count **1** each).
