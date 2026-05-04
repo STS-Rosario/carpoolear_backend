@@ -29,6 +29,18 @@ if (is_file($projectRoot.'/.env.testing')) {
     Dotenv\Dotenv::createImmutable($projectRoot, '.env.testing')->safeLoad();
 }
 
+// Pest mutant subprocesses inherit PEST_MUTATION_TESTING from the parent runner. This process
+// still holds LOCK_EX on storage/framework/phpunit-mysql-*.lock until shutdown; waiting for the
+// same lock here deadlocks every child until the mutation timeout (`t`). Skip lock + DROP/CREATE
+// here — RefreshDatabase in the child still migrates the `testing` schema as needed.
+$pestMutation = $_ENV['PEST_MUTATION_TESTING'] ?? false;
+if ($pestMutation === false && function_exists('getenv')) {
+    $pestMutation = getenv('PEST_MUTATION_TESTING');
+}
+if (is_string($pestMutation) && $pestMutation !== '') {
+    return;
+}
+
 $env = static function (string $key, string $default = ''): string {
     if (array_key_exists($key, $_ENV)) {
         return (string) $_ENV[$key];

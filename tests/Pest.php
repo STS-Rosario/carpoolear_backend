@@ -17,6 +17,15 @@
 |   Pest reports UNCOVERED for mutants even when tests exist. Run `pest --mutate` without
 |   `--parallel` so the initial `--coverage-php` pass stays single-process and each mutant
 |   gets correct test filters.
+| - Scoped runs finish the initial suite in a few seconds; Pest’s per-mutant timeout is
+|   derived from that duration (~initial + 5s), which is too low for Laravel bootstrap.
+|   `scripts/patch-pest-mutate-subprocess.php` (composer post-autoload-dump) floors the
+|   timeout (default floor 240s; override with `PEST_MUTATION_TIMEOUT_FLOOR_SECONDS`).
+| - If every mutant shows `t`, run `php scripts/patch-pest-mutate-subprocess.php` or
+|   `composer dump-autoload` (patch runs before `package:discover` so it still applies when
+|   discover fails).
+| - `tests/bootstrap.php` skips MySQL lock + DROP/CREATE when `PEST_MUTATION_TESTING` is set
+|   (mutant children); otherwise they block on the same `flock` as the parent and every mutant times out (`t`).
 */
 if (! defined('PHPUNIT_COMPOSER_INSTALL')) {
     if (isset($GLOBALS['_composer_autoload_path']) && is_string($GLOBALS['_composer_autoload_path']) && $GLOBALS['_composer_autoload_path'] !== '') {
