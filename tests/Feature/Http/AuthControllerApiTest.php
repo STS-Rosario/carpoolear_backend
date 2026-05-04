@@ -2,17 +2,22 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Http\Controllers\Api\v1\AuthController;
+use STS\Http\Middleware\UserLoggin;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use Tests\TestCase;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthControllerApiTest extends TestCase
 {
@@ -148,32 +153,6 @@ class AuthControllerApiTest extends TestCase
         ])
             ->assertStatus(401)
             ->assertJson(['error' => 'invalid_credentials']);
-    }
-
-    public function test_login_with_banned_user_returns_401(): void
-    {
-        $user = User::factory()->create([
-            'active' => true,
-            'banned' => true,
-        ]);
-
-        $this->postJson('api/login', [
-            'email' => $user->email,
-            'password' => '123456',
-        ])->assertStatus(401);
-    }
-
-    public function test_login_with_inactive_user_returns_401(): void
-    {
-        $user = User::factory()->create([
-            'active' => false,
-            'banned' => false,
-        ]);
-
-        $this->postJson('api/login', [
-            'email' => $user->email,
-            'password' => '123456',
-        ])->assertStatus(401);
     }
 
     public function test_login_success_returns_token_and_config_envelope(): void
@@ -314,5 +293,302 @@ class AuthControllerApiTest extends TestCase
     public function test_log_endpoint_returns_success(): void
     {
         $this->postJson('api/log')->assertOk();
+    }
+
+    public function test_login_config_banner_uses_default_non_cordova_branch_from_get_config_helper(): void
+    {
+        config([
+            'carpoolear.banner_url' => 'https://banners.example/default',
+            'carpoolear.banner_url_cordova' => 'https://banners.example/cordova-only',
+        ]);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        $this->postJson('api/login', [
+            'email' => $user->email,
+            'password' => '123456',
+        ])
+            ->assertOk()
+            ->assertJsonPath('config.banner.url', 'https://banners.example/default');
+    }
+
+    public function test_get_config_logs_environment_check_and_guest_warning(): void
+    {
+        Log::spy();
+
+        $this->getJson('api/config')->assertOk();
+
+        Log::shouldHaveReceived('info')->withArgs(function ($message, $context): bool {
+            return (string) $message === 'Environment Check:'
+                && is_array($context)
+                && isset($context['raw_env'], $context['config_values'], $context['app_env'], $context['env_path']);
+        });
+
+        Log::shouldHaveReceived('warning')->with('getConfig called without authenticated user');
+    }
+
+    public function test_get_config_merges_flat_carpoolear_keys_after_exclude_foreach(): void
+    {
+        $this->getJson('api/config')
+            ->assertOk()
+            ->assertJsonPath('name_app', config('carpoolear.name_app'));
+    }
+
+    public function test_get_config_identity_validation_manual_qr_enabled_matches_conjunctive_gate(): void
+    {
+        $snapshot = [
+            'services.mercadopago' => config('services.mercadopago'),
+            'carpoolear.identity_validation_manual_enabled' => config('carpoolear.identity_validation_manual_enabled'),
+            'carpoolear.identity_validation_manual_qr_enabled' => config('carpoolear.identity_validation_manual_qr_enabled'),
+            'carpoolear.qr_payment_pos_external_id' => config('carpoolear.qr_payment_pos_external_id'),
+        ];
+
+        try {
+            $mercado = config('services.mercadopago', []);
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.identity_validation_manual_enabled' => true,
+                'carpoolear.identity_validation_manual_qr_enabled' => true,
+                'carpoolear.qr_payment_pos_external_id' => 'pos-external-1',
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('identity_validation_manual_qr_enabled', true);
+
+            config(['carpoolear.identity_validation_manual_enabled' => false]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('identity_validation_manual_qr_enabled', false);
+
+            config([
+                'carpoolear.identity_validation_manual_enabled' => true,
+                'carpoolear.identity_validation_manual_qr_enabled' => false,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('identity_validation_manual_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = '';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.identity_validation_manual_enabled' => true,
+                'carpoolear.identity_validation_manual_qr_enabled' => true,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('identity_validation_manual_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config(['carpoolear.qr_payment_pos_external_id' => '']);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('identity_validation_manual_qr_enabled', false);
+        } finally {
+            config($snapshot);
+        }
+    }
+
+    public function test_login_with_banned_user_returns_user_banned_message(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => true,
+        ]);
+
+        $this->postJson('api/login', [
+            'email' => $user->email,
+            'password' => '123456',
+        ])
+            ->assertStatus(401)
+            ->assertSee('user_banned');
+    }
+
+    public function test_login_with_inactive_user_returns_user_not_active_message(): void
+    {
+        $user = User::factory()->create([
+            'active' => false,
+            'banned' => false,
+        ]);
+
+        $this->postJson('api/login', [
+            'email' => $user->email,
+            'password' => '123456',
+        ])
+            ->assertStatus(401)
+            ->assertSee('user_not_active');
+    }
+
+    public function test_retoken_with_app_version_passes_session_payload_to_device_manager(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $token = $this->postJson('api/login', [
+            'email' => $user->email,
+            'password' => '123456',
+        ])->assertOk()->json('token');
+
+        $device = Mockery::mock(DeviceManager::class)->makePartial();
+        $device->shouldReceive('updateBySession')
+            ->once()
+            ->withArgs(function (string $sessionId, array $payload): bool {
+                return $sessionId !== ''
+                    && ($payload['app_version'] ?? null) === '3.2.1'
+                    && isset($payload['session_id']);
+            });
+        $this->instance(DeviceManager::class, $device);
+
+        $this->postJson('api/retoken', ['app_version' => '3.2.1'], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk();
+    }
+
+    public function test_retoken_after_short_ttl_expiry_refreshes_token_and_returns_config(): void
+    {
+        $previousTtl = config('jwt.ttl');
+        $this->freezeTime();
+
+        try {
+            config(['jwt.ttl' => 1]);
+
+            $user = User::factory()->create(['active' => true, 'banned' => false]);
+
+            $token = $this->postJson('api/login', [
+                'email' => $user->email,
+                'password' => '123456',
+            ])->assertOk()->json('token');
+
+            $this->travel(2)->minutes();
+
+            $this->postJson('api/retoken', [], [
+                'Authorization' => 'Bearer '.$token,
+            ])
+                ->assertOk()
+                ->assertJsonStructure(['token', 'config']);
+        } finally {
+            config(['jwt.ttl' => $previousTtl]);
+        }
+    }
+
+    public function test_reset_password_maps_rate_limit_exception_to_user_message(): void
+    {
+        Log::spy();
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('resetPassword')
+            ->once()
+            ->with('rate-test@example.com')
+            ->andThrow(new \Exception('upstream returned 450 rate limit'));
+        $this->instance(UsersManager::class, $users);
+
+        $this->postJson('api/reset-password', ['email' => 'rate-test@example.com'])
+            ->assertStatus(422)
+            ->assertJsonFragment([
+                'message' => 'Too many password reset attempts. Please try again later.',
+            ]);
+
+        Log::shouldHaveReceived('error')->withArgs(fn ($message): bool => str_contains((string) $message, 'Password reset error'));
+    }
+
+    public function test_reset_password_maps_wait_minutes_exception_to_same_message(): void
+    {
+        Log::spy();
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('resetPassword')
+            ->once()
+            ->with('cooldown@example.com')
+            ->andThrow(new \Exception('Please wait 4 minutes before requesting another password reset'));
+        $this->instance(UsersManager::class, $users);
+
+        $this->postJson('api/reset-password', ['email' => 'cooldown@example.com'])
+            ->assertStatus(422)
+            ->assertJsonFragment([
+                'message' => 'Please wait 4 minutes before requesting another password reset',
+            ]);
+
+        Log::shouldHaveReceived('error')->withArgs(fn ($message): bool => str_contains((string) $message, 'Password reset error'));
+    }
+
+    public function test_login_returns_500_when_jwt_attempt_throws_jwt_exception(): void
+    {
+        $jwt = Mockery::mock();
+        $jwt->shouldReceive('attempt')
+            ->once()
+            ->andThrow(new JWTException('token factory unavailable'));
+
+        $original = $this->app->make('tymon.jwt.auth');
+        JWTAuth::swap($jwt);
+
+        try {
+            $user = User::factory()->create([
+                'active' => true,
+                'banned' => false,
+            ]);
+
+            $this->postJson('api/login', [
+                'email' => $user->email,
+                'password' => '123456',
+            ])
+                ->assertStatus(500)
+                ->assertJson(['error' => 'could_not_create_token']);
+        } finally {
+            JWTAuth::swap($original);
+        }
+    }
+
+    public function test_retoken_with_banned_user_returns_forbidden_banned_payload(): void
+    {
+        $this->withoutMiddleware(UserLoggin::class);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        $token = $this->postJson('api/login', [
+            'email' => $user->email,
+            'password' => '123456',
+        ])->assertOk()->json('token');
+
+        $user->forceFill(['banned' => true])->save();
+
+        $retoken = $this->postJson('api/retoken', [], [
+            'Authorization' => 'Bearer '.$token,
+        ]);
+
+        $retoken->assertForbidden();
+        $this->assertSame('banned', $retoken->json());
+    }
+
+    public function test_logout_logs_error_when_jwt_invalidate_throws(): void
+    {
+        Log::spy();
+
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $devices = Mockery::mock(DeviceManager::class);
+        $devices->shouldReceive('logoutDevice')->once();
+
+        $tokenObj = Mockery::mock(\Tymon\JWTAuth\Token::class);
+
+        $jwt = Mockery::mock();
+        $jwt->shouldReceive('getToken')->twice()->andReturn($tokenObj, $tokenObj);
+        $jwt->shouldReceive('invalidate')
+            ->once()
+            ->andThrow(new \RuntimeException('invalidate simulated failure'));
+
+        $original = $this->app->make('tymon.jwt.auth');
+        JWTAuth::swap($jwt);
+
+        try {
+            $this->actingAs($user, 'api');
+
+            $controller = new AuthController(app(UsersManager::class), $devices);
+            $response = $controller->logout(Request::create('http://localhost/api/logout', 'POST'));
+
+            $this->assertSame(200, $response->getStatusCode());
+        } finally {
+            JWTAuth::swap($original);
+        }
+
+        Log::shouldHaveReceived('error')->withArgs(function ($message, $context = []): bool {
+            return str_contains((string) $message, 'Failed to invalidate JWT token')
+                && str_contains((string) $message, 'invalidate simulated failure');
+        });
     }
 }
