@@ -135,6 +135,40 @@ class RatingApiTest extends TestCase
             ->assertJsonStructure(['data']);
     }
 
+    public function test_ratings_for_own_user_when_route_id_is_numeric_string_skips_users_manager_show(): void
+    {
+        $rated = User::factory()->create(['active' => true, 'banned' => false]);
+        $voter = User::factory()->create(['active' => true, 'banned' => false]);
+        $trip = Trip::factory()->create(['user_id' => $voter->id]);
+
+        $row = $this->persistRating([
+            'trip_id' => $trip->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $rated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Same user string id branch',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::now(),
+            'available' => 1,
+        ]);
+
+        $this->actingAs($rated, 'api');
+
+        $userLogic = Mockery::mock(UsersManager::class);
+        $userLogic->shouldReceive('show')->never();
+        $this->instance(UsersManager::class, $userLogic);
+
+        $pathUserId = (string) $rated->id;
+
+        $response = $this->getJson('api/users/'.$pathUserId.'/ratings?page_size=10');
+        $response->assertOk();
+        $this->assertContains($row->id, array_column($response->json('data'), 'id'));
+    }
+
     public function test_pending_lists_outbound_ratings_awaiting_vote(): void
     {
         $voter = User::factory()->create(['active' => true, 'banned' => false]);

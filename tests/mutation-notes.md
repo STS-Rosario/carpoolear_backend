@@ -2051,6 +2051,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: mocked HTTP tests never asserted the Fractal paginated envelope for real `getRatings` + `RatingTransformer` output.
   - Fix: authenticated listing with `page_size` and a persisted `rating` row (`available = 1`, `user_id_to` = viewer) asserts a non-empty `data` array containing that rating’s `id`; `GET api/users/{id}/ratings?page_size=10` pins the “view another user’s ratings” branch (`UsersManager::show` + `getRatings`).
 
+- **`ratings()` self branch** (~32; Infection `Line 32:EqualToIdentical`, `Line 32:EqualToNotEqual` on `$me->id == $id`).
+  - Cause: route parameters are strings while `auth()->user()->id` is typically an integer; loose equality treats them as the same user, but mutating to `===` skips the self branch (would call `show`), and mutating to `!=` flips the combined condition so the self case wrongly falls through to `show` as well (for a numeric string id, `7 != '7'` is false, so the whole `is_null($id) || $me->id != $id` becomes false and forces the else branch).
+  - Fix: `test_ratings_for_own_user_when_route_id_is_numeric_string_skips_users_manager_show` binds a `UsersManager` mock with `show` forbidden, calls `GET api/users/{(string) id}/ratings`, and asserts the viewer’s rating row is still listed (real `RatingManager::getRatings` must receive `$me`, not a user resolved only via `show`).
+
 - **`pendingRate()`** (~47–63; report ~42600, e.g. `59d2813374437302` `AlwaysReturnNull` on `collection`).
   - Cause: guest path called `getPendingRatings($hash)` (expects a `User`), so hash-based pending mail links could not be covered reliably; `AlwaysReturnNull` on `collection()` was never tied to a real JSON body.
   - Fix: controller now calls `getPendingRatingsByHash($hash)` for guests; tests assert `GET api/users/ratings/pending` without auth → `422` `Hash not provided`, and `?hash=…` returns `200` with `data` containing the pending row.
