@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use STS\Http\Controllers\Api\v1\ManualValidationPaymentController;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
 use Tests\TestCase;
@@ -221,5 +223,92 @@ class ManualValidationPaymentControllerTest extends TestCase
                 && (int) $context['user_id'] === (int) $user->id
                 && (string) $context['payment_id'] === 'previous-mp-id';
         });
+    }
+
+    public function test_success_when_payment_and_collection_resolve_to_empty_string_does_not_persist_empty_payment_id(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $row = ManualIdentityValidation::query()->create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            'payment_id' => null,
+        ]);
+
+        $request = Request::create('https://backend.test/api/mercadopago/manual-validation-success', 'GET');
+        $request->query->set('request_id', (string) $row->id);
+        $request->query->set('result', 'success');
+        $request->query->set('payment_id', '');
+        $request->query->set('collection_id', '');
+
+        $response = app(ManualValidationPaymentController::class)->success($request);
+
+        $this->assertSame(302, $response->getStatusCode());
+
+        $fresh = $row->fresh();
+        $this->assertTrue($fresh->paid);
+        $this->assertNull($fresh->payment_id);
+    }
+
+    public function test_success_logs_empty_string_payment_context_when_resolved_identifier_is_empty_even_if_row_has_prior_payment_id(): void
+    {
+        Log::spy();
+
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $row = ManualIdentityValidation::query()->create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            'payment_id' => 'prior-mp-reference',
+        ]);
+
+        $request = Request::create('https://backend.test/api/mercadopago/manual-validation-success', 'GET');
+        $request->query->set('request_id', (string) $row->id);
+        $request->query->set('result', 'success');
+        $request->query->set('payment_id', '');
+        $request->query->set('collection_id', '');
+
+        app(ManualValidationPaymentController::class)->success($request);
+
+        $fresh = $row->fresh();
+        $this->assertTrue($fresh->paid);
+        $this->assertSame('prior-mp-reference', $fresh->payment_id);
+
+        Log::shouldHaveReceived('info')->withArgs(function ($message, $context) use ($row, $user): bool {
+            return (string) $message === 'Manual identity validation payment success'
+                && is_array($context)
+                && (string) $context['request_id'] === (string) $row->id
+                && (int) $context['user_id'] === (int) $user->id
+                && array_key_exists('payment_id', $context)
+                && $context['payment_id'] === '';
+        });
+    }
+
+    public function test_success_normalizes_integer_payment_identifier_to_string_on_model(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $row = ManualIdentityValidation::query()->create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $request = Request::create(
+            'https://backend.test/api/mercadopago/manual-validation-success',
+            'GET',
+            [
+                'request_id' => (string) $row->id,
+                'result' => 'success',
+            ]
+        );
+        $request->query->set('payment_id', 55_055);
+
+        $response = app(ManualValidationPaymentController::class)->success($request);
+
+        $this->assertSame(302, $response->getStatusCode());
+
+        $fresh = $row->fresh();
+        $this->assertSame('55055', $fresh->payment_id);
+        $this->assertIsString($fresh->getRawOriginal('payment_id'));
     }
 }
