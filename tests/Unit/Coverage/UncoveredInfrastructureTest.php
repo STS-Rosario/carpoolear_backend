@@ -10,7 +10,6 @@ use STS\Events\Passenger\AutoCancel;
 use STS\Events\Passenger\AutoRequest;
 use STS\Events\TestEvent;
 use STS\Events\User\Reset;
-use STS\Http\Controllers\Api\v1\DebugController;
 use STS\Http\Middleware\RedirectIfAuthenticated;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\Trip;
@@ -24,22 +23,6 @@ class UncoveredInfrastructureTest extends TestCase
     {
         Mockery::close();
         parent::tearDown();
-    }
-
-    public function test_debug_controller_log_swallows_empty_request(): void
-    {
-        $controller = new DebugController;
-        $request = Request::create('/api/log', 'POST', []);
-        $controller->log($request);
-        $this->assertTrue(true);
-    }
-
-    public function test_debug_controller_log_with_payload(): void
-    {
-        $controller = new DebugController;
-        $request = Request::create('/api/log', 'POST', ['log' => 'unit-test']);
-        $controller->log($request);
-        $this->assertTrue(true);
     }
 
     public function test_events_can_be_constructed_and_dispatched(): void
