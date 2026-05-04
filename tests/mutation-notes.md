@@ -3464,3 +3464,35 @@ Pest mutation run (**14** mutants, **100%** score with **`tests/Unit/Models/Pass
   - **Cause:** Relations were unused in production code paths; **`hasMany(..., 'user_id_from')`** defaulted the owner key to **`passengers.id`**, while **`rating.user_id_from`** / **`user_id_to`** FKs reference **`users.id`**, so real **`Rating`** rows could not satisfy the old join. **`AlwaysReturnNull`** on the **`return`** was **UNCOVERED** / weakly covered; stripping **`where('trip_id', $this->trip_id)`** could survive without a second trip.
   - **Mutant ID:** **`Line 94:AlwaysReturnNull`**, **`Line 103:AlwaysReturnNull`** (and **`where`** coverage via count mismatch if removed).
   - **Fix:** Third argument **`'user_id'`** on both **`hasMany`** calls so the child FK lines up with **`users.id`**; **`test_rating_given_returns_has_many_and_filters_by_trip`**, **`test_rating_received_returns_has_many_and_filters_by_trip`** (two trips, two ratings, count **1** each).
+
+## CampaignMilestone (`app/Models/CampaignMilestone.php`)
+
+Pest mutation run (**21** mutants, **100%** score with **`tests/Unit/Models/CampaignMilestoneTest.php`** and **`--path=app/Models/CampaignMilestone.php`**). Labels below use **`Line:MutatorName`** from the successful scoped run (Pest did not print per-mutant **`--id=`** hashes).
+
+- **`Line 13–17: RemoveArrayItem`** (prior report on **`$fillable`** property), **`Line 17: AlwaysReturnEmptyArray`**
+  - **Cause:** A single **`protected $fillable`** array did not map each key to a separate executable line, so **`RemoveArrayItem`** mutants were **UNCOVERED** (dashes in the prior report).
+  - **Mutant ID:** **`Line 17:AlwaysReturnEmptyArray`**, **`Line 18:RemoveArrayItem`** … **`Line 22:RemoveArrayItem`** (post-refactor **`getFillable()`** **`return [`** block).
+  - **Fix:** **`getFillable()`** with one column per line; **`test_fillable_lists_mass_assignment_columns`**.
+
+- **`Line 45: RemoveIntegerCast`**, **`Line 45: IncrementInteger`** (prior report on **`getProgressPercentageAttribute`**)
+  - **Cause:** **`(int) (($donated / $amount) * 100)`** could lose mutants to implicit **`int`** coercion at the **`: int`** return boundary (**`RemoveIntegerCast`**), and mutating the **`100`** scale literal could stay equivalent under float rounding (**`IncrementInteger`**).
+  - **Mutant ID:** (historical) **`Line 45:RemoveIntegerCast`**, **`Line 45:IncrementInteger`**; replaced by **`Line 52:MultiplicationToDivision`**, **`Line 52:DecrementInteger`**, **`Line 52:IncrementInteger`**, **`Line 54:MinToMax`**, **`Line 54:DecrementInteger`**, **`Line 54:IncrementInteger`** on the **`intdiv`** + **`min`** implementation.
+  - **Fix:** **`intdiv($donated * 100, $this->amount_cents)`** then **`min(100, $pct)`**; **`test_progress_percentage_matches_intdiv_of_donation_times_hundred_over_goal`** uses **199 / 333** cents so **`intdiv(199*100, 333)`** is **59** but **`intdiv(199*101, 333)`** is **60**, catching a wrong scale literal.
+
+- **`Line 39: GreaterOrEqualToGreater`**, **`Line 39: GreaterOrEqualToSmaller`** (**`isReached`**)
+  - **Cause:** **`>=`** boundary between **`total_donated`** and **`amount_cents`** needed real paid totals.
+  - **Mutant ID:** **`Line 39:GreaterOrEqualToGreater`**, **`Line 39:GreaterOrEqualToSmaller`**.
+  - **Fix:** **`test_is_reached_when_paid_total_meets_or_exceeds_amount`**.
+
+- **`Line 47–48`** (**`amount_cents === 0`**, early return)
+  - **Cause:** Zero-target branch and literal **`0`** return.
+  - **Mutant ID:** **`Line 47:IfNegated`**, **`Line 47:IdenticalToNotIdentical`**, **`Line 47:DecrementInteger`**, **`Line 47:IncrementInteger`**, **`Line 48:DecrementInteger`**, **`Line 48:IncrementInteger`**, **`Line 48:RemoveEarlyReturn`**.
+  - **Fix:** **`test_progress_percentage_is_zero_when_milestone_target_is_zero`**.
+
+- **`Line 52–54`** (**`intdiv`** / **`min`**)
+  - **Cause:** Arithmetic and cap must match truncated percentage and **100** ceiling.
+  - **Mutant ID:** see **`Line 52`** / **`Line 54`** cluster above (all marked detected in the **21-mutant** run).
+  - **Fix:** **`test_progress_percentage_scales_and_caps_at_100`**, **`test_progress_percentage_returns_truncated_integer_value`**, plus **`test_progress_percentage_matches_intdiv_of_donation_times_hundred_over_goal`** (**199** / **333** cents).
+
+- **`campaign()`** relation
+  - **Fix:** **`test_belongs_to_campaign`** asserts **`assertInstanceOf(BelongsTo::class, $milestone->campaign())`** in addition to the loaded **`campaign`** model.
