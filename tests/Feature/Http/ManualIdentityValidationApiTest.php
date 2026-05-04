@@ -11,6 +11,7 @@ use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
 use STS\Services\HeicToJpegConverter;
+use STS\Services\ImageUploadValidator;
 use STS\Services\MercadoPagoService;
 use Tests\TestCase;
 
@@ -30,6 +31,21 @@ class ManualIdentityValidationApiTest extends TestCase
             'carpoolear.identity_validation_enabled' => true,
             'carpoolear.identity_validation_manual_enabled' => true,
         ]);
+    }
+
+    /**
+     * Replace `config('carpoolear')` with a copy that omits the given keys (exercises `config(..., $default)` literals).
+     *
+     * @param  array<int, string>  $keys
+     * @param  array<string, mixed>  $merge
+     */
+    private function carpoolearConfigWithout(array $keys, array $merge = []): void
+    {
+        $c = array_merge([], config('carpoolear'));
+        foreach ($keys as $key) {
+            unset($c[$key]);
+        }
+        config(['carpoolear' => array_merge($c, $merge)]);
     }
 
     public function test_constructor_registers_logged_middleware(): void
@@ -146,6 +162,48 @@ class ManualIdentityValidationApiTest extends TestCase
             ->assertExactJson(['cost_cents' => 12_450]);
     }
 
+    public function test_cost_returns_zero_when_identity_validation_enabled_key_omitted_relying_on_default_false(): void
+    {
+        $this->carpoolearConfigWithout(['identity_validation_enabled'], [
+            'identity_validation_manual_enabled' => true,
+            'manual_identity_validation_cost_cents' => 99_999,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/users/manual-identity-validation-cost')
+            ->assertOk()
+            ->assertExactJson(['cost_cents' => 0]);
+    }
+
+    public function test_cost_returns_zero_when_manual_validation_enabled_key_omitted_relying_on_default_false(): void
+    {
+        $this->carpoolearConfigWithout(['identity_validation_manual_enabled'], [
+            'identity_validation_enabled' => true,
+            'manual_identity_validation_cost_cents' => 99_999,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/users/manual-identity-validation-cost')
+            ->assertOk()
+            ->assertExactJson(['cost_cents' => 0]);
+    }
+
+    public function test_cost_returns_zero_when_manual_identity_validation_cost_cents_key_omitted_relying_on_default_zero(): void
+    {
+        $this->carpoolearConfigWithout(['manual_identity_validation_cost_cents']);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/users/manual-identity-validation-cost')
+            ->assertOk()
+            ->assertExactJson(['cost_cents' => 0]);
+    }
+
     public function test_status_returns_empty_contract_when_identity_validation_disabled(): void
     {
         config(['carpoolear.identity_validation_enabled' => false]);
@@ -156,6 +214,26 @@ class ManualIdentityValidationApiTest extends TestCase
             ->getJson('api/users/manual-identity-validation')
             ->assertOk()
             ->assertExactJson($this->expectedEmptyStatusPayload());
+    }
+
+    public function test_status_returns_empty_contract_when_identity_validation_enabled_key_omitted_even_if_user_has_submission(): void
+    {
+        $user = User::factory()->create();
+        ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->carpoolearConfigWithout(['identity_validation_enabled']);
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/users/manual-identity-validation')
+            ->assertOk()
+            ->assertExactJson($this->expectedEmptyStatusPayload());
+
+        $this->assertSame(1, ManualIdentityValidation::where('user_id', $user->id)->count());
     }
 
     public function test_status_returns_empty_contract_when_user_has_no_submission(): void
@@ -235,6 +313,42 @@ class ManualIdentityValidationApiTest extends TestCase
         $mp->shouldNotHaveReceived('createPaymentPreferenceForManualValidation');
     }
 
+    public function test_preference_returns_service_unavailable_when_identity_validation_enabled_key_omitted_without_mp_call(): void
+    {
+        $this->carpoolearConfigWithout(['identity_validation_enabled'], [
+            'identity_validation_manual_enabled' => true,
+            'manual_identity_validation_cost_cents' => 500,
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createPaymentPreferenceForManualValidation');
+    }
+
+    public function test_preference_returns_service_unavailable_when_manual_validation_enabled_key_omitted_without_mp_call(): void
+    {
+        $this->carpoolearConfigWithout(['identity_validation_manual_enabled'], [
+            'identity_validation_enabled' => true,
+            'manual_identity_validation_cost_cents' => 500,
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Manual identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createPaymentPreferenceForManualValidation');
+    }
+
     public function test_preference_returns_unprocessable_when_manual_validation_disabled(): void
     {
         config([
@@ -269,6 +383,21 @@ class ManualIdentityValidationApiTest extends TestCase
             ->assertJsonPath('message', 'Manual identity validation is not available.');
     }
 
+    public function test_preference_returns_unprocessable_when_manual_identity_validation_cost_cents_key_omitted_relying_on_default_zero(): void
+    {
+        $this->carpoolearConfigWithout(['manual_identity_validation_cost_cents']);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Manual identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createPaymentPreferenceForManualValidation');
+    }
+
     public function test_preference_returns_checkout_url_and_request_id(): void
     {
         config([
@@ -301,6 +430,62 @@ class ManualIdentityValidationApiTest extends TestCase
             ]);
 
         $this->assertNotNull($requestId);
+    }
+
+    public function test_preference_persists_new_unpaid_row_with_paid_false(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 500,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->mock(MercadoPagoService::class, function ($mock) {
+            $preference = new Preference;
+            $preference->init_point = 'https://checkout.example/pay';
+            $preference->sandbox_init_point = null;
+
+            $mock->shouldReceive('createPaymentPreferenceForManualValidation')
+                ->once()
+                ->andReturn($preference);
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference')
+            ->assertOk();
+
+        $row = ManualIdentityValidation::where('user_id', $user->id)->first();
+        $this->assertNotNull($row);
+        $this->assertFalse((bool) $row->paid);
+    }
+
+    public function test_preference_succeeds_when_cost_is_one_cent(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 1,
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->mock(MercadoPagoService::class, function ($mock) {
+            $preference = new Preference;
+            $preference->init_point = 'https://checkout.example/min';
+            $preference->sandbox_init_point = null;
+
+            $mock->shouldReceive('createPaymentPreferenceForManualValidation')
+                ->once()
+                ->withArgs(fn (int $requestId, ?int $amount, ?string $redirect): bool => $amount === 1)
+                ->andReturn($preference);
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference')
+            ->assertOk()
+            ->assertJsonPath('init_point', 'https://checkout.example/min');
     }
 
     public function test_preference_reuses_existing_unpaid_request_instead_of_creating_a_second_row(): void
@@ -476,6 +661,46 @@ class ManualIdentityValidationApiTest extends TestCase
         $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
     }
 
+    public function test_qr_order_returns_service_unavailable_when_identity_validation_enabled_key_omitted_without_mp_call(): void
+    {
+        $this->carpoolearConfigWithout(['identity_validation_enabled'], [
+            'identity_validation_manual_enabled' => true,
+            'identity_validation_manual_qr_enabled' => true,
+            'manual_identity_validation_cost_cents' => 2_000,
+            'qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
+    }
+
+    public function test_qr_order_returns_service_unavailable_when_manual_qr_enabled_key_omitted_without_mp_call(): void
+    {
+        $this->carpoolearConfigWithout(['identity_validation_manual_qr_enabled'], [
+            'identity_validation_enabled' => true,
+            'identity_validation_manual_enabled' => true,
+            'manual_identity_validation_cost_cents' => 2_000,
+            'qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'QR payment is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
+    }
+
     public function test_qr_order_returns_unprocessable_when_pos_external_id_missing(): void
     {
         config([
@@ -484,6 +709,27 @@ class ManualIdentityValidationApiTest extends TestCase
             'carpoolear.identity_validation_manual_qr_enabled' => true,
             'carpoolear.manual_identity_validation_cost_cents' => 2_000,
             'carpoolear.qr_payment_pos_external_id' => '',
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'QR payment is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
+    }
+
+    public function test_qr_order_returns_service_unavailable_when_pos_external_id_is_null(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.identity_validation_manual_qr_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 2_000,
+            'carpoolear.qr_payment_pos_external_id' => null,
         ]);
 
         $user = User::factory()->create();
@@ -513,6 +759,26 @@ class ManualIdentityValidationApiTest extends TestCase
             ->postJson('api/users/manual-identity-validation/qr-order')
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Manual identity validation is not available.');
+    }
+
+    public function test_qr_order_returns_unprocessable_when_manual_identity_validation_cost_cents_key_omitted(): void
+    {
+        $this->carpoolearConfigWithout(['manual_identity_validation_cost_cents'], [
+            'identity_validation_enabled' => true,
+            'identity_validation_manual_enabled' => true,
+            'identity_validation_manual_qr_enabled' => true,
+            'qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+        $mp = $this->spy(MercadoPagoService::class);
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Manual identity validation is not available.');
+
+        $mp->shouldNotHaveReceived('createQrOrderForManualValidation');
     }
 
     public function test_qr_order_returns_payload_from_payment_provider(): void
@@ -551,6 +817,68 @@ class ManualIdentityValidationApiTest extends TestCase
                 'qr_data' => 'encoded-qr-payload',
                 'order_id' => 'mp-order-abc',
             ]);
+    }
+
+    public function test_qr_order_persists_new_unpaid_row_with_paid_false(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.identity_validation_manual_qr_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 2_000,
+            'carpoolear.qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->mock(MercadoPagoService::class, function ($mock) {
+            $mock->shouldReceive('createQrOrderForManualValidation')
+                ->once()
+                ->andReturnUsing(fn (int $requestId): array => [
+                    'request_id' => $requestId,
+                    'order_id' => 'mp-order-new',
+                    'qr_data' => 'qr-new',
+                    'payment_id' => null,
+                ]);
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertOk();
+
+        $row = ManualIdentityValidation::where('user_id', $user->id)->first();
+        $this->assertNotNull($row);
+        $this->assertFalse((bool) $row->paid);
+    }
+
+    public function test_qr_order_succeeds_when_cost_is_one_cent(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.identity_validation_manual_qr_enabled' => true,
+            'carpoolear.manual_identity_validation_cost_cents' => 1,
+            'carpoolear.qr_payment_pos_external_id' => 'POS_EXT',
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->mock(MercadoPagoService::class, function ($mock) {
+            $mock->shouldReceive('createQrOrderForManualValidation')
+                ->once()
+                ->withArgs(fn (int $requestId, ?int $amount): bool => $amount === 1)
+                ->andReturnUsing(fn (int $requestId): array => [
+                    'request_id' => $requestId,
+                    'order_id' => 'mp-order-min',
+                    'qr_data' => 'qr-min',
+                    'payment_id' => null,
+                ]);
+        });
+
+        $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/qr-order')
+            ->assertOk()
+            ->assertJsonPath('qr_data', 'qr-min');
     }
 
     public function test_qr_order_reuses_existing_unpaid_request_instead_of_creating_a_second_row(): void
@@ -683,7 +1011,56 @@ class ManualIdentityValidationApiTest extends TestCase
             'selfie_image' => $selfie,
         ])
             ->assertStatus(422)
-            ->assertJsonPath('message', 'request_id is required.');
+            ->assertJsonPath('message', 'request_id is required.')
+            ->assertJsonPath('errors.request_id', ['required']);
+
+        $this->assertNull($validationRequest->fresh()->submitted_at);
+    }
+
+    public function test_submit_returns_service_unavailable_when_identity_validation_enabled_key_omitted(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+        $this->carpoolearConfigWithout(['identity_validation_enabled'], [
+            'identity_validation_manual_enabled' => true,
+        ]);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Identity validation is not available.');
+
+        $this->assertNull($validationRequest->fresh()->submitted_at);
+    }
+
+    public function test_submit_returns_service_unavailable_when_manual_validation_enabled_key_omitted(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+        $this->carpoolearConfigWithout(['identity_validation_manual_enabled'], [
+            'identity_validation_enabled' => true,
+        ]);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'Manual identity validation is not available.');
 
         $this->assertNull($validationRequest->fresh()->submitted_at);
     }
@@ -773,6 +1150,42 @@ class ManualIdentityValidationApiTest extends TestCase
         $this->assertNull($validationRequest->fresh()->submitted_at);
     }
 
+    public function test_submit_with_missing_front_image_returns_triple_required_message(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'All three images are required: front_image, back_image, selfie_image.');
+
+        $this->assertNull($validationRequest->fresh()->submitted_at);
+    }
+
+    public function test_submit_with_missing_back_image_returns_triple_required_message(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'All three images are required: front_image, back_image, selfie_image.');
+
+        $this->assertNull($validationRequest->fresh()->submitted_at);
+    }
+
     public function test_submit_with_valid_jpeg_returns_201_and_saves_paths(): void
     {
         $user = User::factory()->create();
@@ -790,11 +1203,70 @@ class ManualIdentityValidationApiTest extends TestCase
         ]);
 
         $response->assertStatus(201);
+        $response->assertExactJson([
+            'message' => 'Submission received.',
+            'request_id' => $validationRequest->id,
+        ]);
         $validationRequest->refresh();
         $this->assertNotNull($validationRequest->front_image_path);
         $this->assertNotNull($validationRequest->back_image_path);
         $this->assertNotNull($validationRequest->selfie_image_path);
         $this->assertNotNull($validationRequest->submitted_at);
+    }
+
+    public function test_submit_accepts_validator_payload_without_valid_key_treating_as_success(): void
+    {
+        $this->mock(ImageUploadValidator::class, function ($mock) {
+            $mock->shouldReceive('validate')
+                ->times(3)
+                ->andReturn([]);
+        });
+
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])->assertStatus(201);
+    }
+
+    public function test_submit_stores_jpeg_under_identity_validations_prefix_when_converter_returns_bytes(): void
+    {
+        $this->mock(HeicToJpegConverter::class, function ($mock) {
+            $mock->shouldReceive('convert')
+                ->times(3)
+                ->andReturn('fake-jpeg-bytes');
+        });
+
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])->assertStatus(201);
+
+        $validationRequest->refresh();
+        $expectedPrefix = 'identity_validations/'.$validationRequest->id.'/';
+        $this->assertStringStartsWith($expectedPrefix, (string) $validationRequest->front_image_path);
+        $this->assertMatchesRegularExpression(
+            '#^identity_validations/\d+/[a-zA-Z0-9]{40}\.jpg$#',
+            (string) $validationRequest->front_image_path
+        );
+        Storage::disk('local')->assertExists($validationRequest->front_image_path);
     }
 
     public function test_submit_with_disallowed_file_type_returns_422(): void
@@ -894,5 +1366,35 @@ class ManualIdentityValidationApiTest extends TestCase
         $this->assertNotNull($validationRequest->selfie_image_path);
         $this->assertNotNull($validationRequest->submitted_at);
         Storage::disk('local')->assertExists($validationRequest->front_image_path);
+    }
+
+    public function test_submit_back_image_validation_failure_returns_field_errors(): void
+    {
+        $this->mock(ImageUploadValidator::class, function ($mock) {
+            $mock->shouldReceive('validate')
+                ->once()
+                ->andReturn(['valid' => true]);
+            $mock->shouldReceive('validate')
+                ->once()
+                ->andReturn(['valid' => false, 'errors' => ['back_image' => ['Invalid image type.']]]);
+        });
+
+        $user = User::factory()->create();
+        $validationRequest = $this->createPaidValidationRequest($user);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.back_image', ['Invalid image type.']);
+
+        $this->assertNull($validationRequest->fresh()->submitted_at);
     }
 }
