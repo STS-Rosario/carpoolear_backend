@@ -169,5 +169,47 @@ class CampaignApiTest extends TestCase
         $response->assertOk();
         $response->assertJsonCount(0, 'donations');
         $response->assertJsonPath('total_donated', 0);
+        $this->assertSame(0, $response->json('total_donated'));
+    }
+
+    public function test_show_by_slug_total_donated_matches_sum_of_loaded_paid_donations_only(): void
+    {
+        $campaign = $this->newCampaign();
+
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => null,
+            'payment_id' => 'pay-a',
+            'amount_cents' => 10_000,
+            'name' => 'Paid A',
+            'comment' => null,
+            'user_id' => null,
+            'status' => 'paid',
+        ]);
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => null,
+            'payment_id' => 'pay-b',
+            'amount_cents' => 234,
+            'name' => 'Paid B',
+            'comment' => null,
+            'user_id' => null,
+            'status' => 'paid',
+        ]);
+        CampaignDonation::query()->create([
+            'campaign_id' => $campaign->id,
+            'campaign_reward_id' => null,
+            'payment_id' => null,
+            'amount_cents' => 50_000,
+            'name' => 'Pending',
+            'comment' => null,
+            'user_id' => null,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->getJson('api/campaigns/'.$campaign->slug)->assertOk();
+
+        $this->assertSame(10_234, $response->json('total_donated'));
+        $response->assertJsonCount(2, 'donations');
     }
 }

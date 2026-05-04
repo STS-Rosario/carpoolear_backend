@@ -1048,9 +1048,9 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no HTTP request loaded a real `Campaign` with related rows, so mutants could drop `orderBy` / `where` clauses from the `load` callbacks or the `is_active` filter without failing the suite.
   - Fix: `test_show_by_slug_returns_milestones_ordered_by_amount_ascending` seeds two milestones in non-ascending insert order and asserts `milestones.0.amount_cents` & `milestones.1.amount_cents` reflect ascending amounts; `test_show_by_slug_returns_only_paid_donations_newest_first` seeds two `paid` rows (with distinct `created_at`) plus a `pending` donation and asserts only two `donations` entries, `status` always `paid`, newest-first amounts, and `total_donated` matching the sum of paid cents; `test_show_by_slug_returns_only_active_rewards` seeds one inactive and one active reward and asserts a single `rewards` entry with `is_active` true.
 
-- **`total_donated` coalesce on the model** (`showBySlug()` ~31; report ~47726–47750, e.g. `8b0aaaae3c8c357a` `CoalesceRemoveLeft`, `1c83942d0a8b9644` / `b8a17a9df28260ea` `DecrementInteger`/`IncrementInteger` on the `?? 0`).
-  - Cause: the explicit `$campaign->total_donated = $campaign->total_donated ?? 0` line was never executed with a campaign that had paid donations in the same HTTP response, so mutants on the coalesce or assignment never broke an assertion.
-  - Fix: the paid-donations test above asserts `total_donated` in the JSON equals the summed paid `amount_cents` (covers the accessor-backed value surfaced on the serialized payload).
+- **`total_donated` coalesce / merge** (`showBySlug()`; report ~47726–47750, e.g. `8b0aaaae3c8c357a` `CoalesceRemoveLeft`, `1c83942d0a8b9644` / `b8a17a9df28260ea` `DecrementInteger`/`IncrementInteger` on the `?? 0` literal; Apr 2026 `RUN` also surfaced `RemoveIntegerCast` / `UnwrapArrayMerge` / `RemoveArrayItem` on the merged payload).
+  - **Cause:** `$campaign->total_donated = $campaign->total_donated ?? 0` did not change the JSON body: `Campaign::getTotalDonatedAttribute()` wins over a set attribute in `Model::toArray()`, so Infection could alter the coalesce/`0` literal or drop `array_merge` without failing HTTP assertions that only read the accessor output.
+  - **Fix:** `showBySlug()` now sets `$paidTotalCents = (int) ($campaign->donations->sum('amount_cents') ?? 0)` after the paid-only `load()` and returns `array_merge($campaign->toArray(), ['total_donated' => $paidTotalCents])` so the serialized `total_donated` is tied to the eager-loaded relation. `CampaignApiTest` adds `test_show_by_slug_total_donated_matches_sum_of_loaded_paid_donations_only` (strict `assertSame(10_234, …)` with two paid + one pending row) and tightens the zero-only-paid case with `assertSame(0, …)`. Re-run Infection for updated line hashes.
 
 ## ReferencesController (`app/Http/Controllers/Api/v1/ReferencesController.php`)
 
@@ -2555,12 +2555,9 @@ This file tracks mutants killed during the current hardening session, with the r
 
 ## CampaignController (`app/Http/Controllers/Api/v1/CampaignController.php`)
 
-- **Public campaign payload contract for donation totals** (`showBySlug()` line 31 in `tests/coverage/20260428_2310.txt`).
-  - Cause: campaign tests covered not-found/visibility and relation filtering/order, but they did not explicitly pin fallback behavior when there are no paid donations and `total_donated` can be null.
-  - Fix: extended `tests/Feature/Http/CampaignApiTest.php` with `test_show_by_slug_defaults_total_donated_to_zero_when_campaign_has_no_paid_donations`, asserting the API returns:
-    - empty `donations` array when only pending donations exist
-    - `total_donated = 0` fallback
-  - Mutant IDs: `8b0aaaae3c8c357a`, `1c83942d0a8b9644`, `b8a17a9df28260ea`.
+- **Apr 2026 `RUN` — `total_donated` / `array_merge` on `showBySlug()`** (user-report `Line 31:CoalesceRemoveLeft`, `Line 31:DecrementInteger`/`IncrementInteger`; Infection then reports the surviving operators on the new `$paidTotalCents` / `array_merge` lines until 100%).
+  - **Cause:** Same as the earlier `total_donated` bullet: accessor dominated `toArray()`, so mutants on the old assignment line were invisible to the feature suite.
+  - **Fix:** `array_merge($campaign->toArray(), ['total_donated' => (int) ($campaign->donations->sum('amount_cents') ?? 0)])` after paid-only eager load; `CampaignApiTest::test_show_by_slug_total_donated_matches_sum_of_loaded_paid_donations_only` plus stricter `assertSame(0, …)` on the pending-only campaign. Prior mutant IDs for the old line: `8b0aaaae3c8c357a`, `1c83942d0a8b9644`, `b8a17a9df28260ea`.
 
 ## ReferencesController (`app/Http/Controllers/Api/v1/ReferencesController.php`)
 
