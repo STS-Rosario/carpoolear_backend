@@ -3520,3 +3520,17 @@ Pest mutation run (**54** mutants, **100%** score with **`tests/Unit/Transformer
   - **Cause:** Returning **`null`** would break every assertion on the transformed array.
   - **Mutant ID:** **`Line 99:AlwaysReturnNull`**.
   - **Fix:** All transformer tests expect a populated **`array`**.
+
+## ConversationsTransformer (`app/Transformers/ConversationsTransformer.php`) — follow-up (Pest scoped)
+
+Pest mutation run (**28** mutants, **100%** score with **`tests/Unit/Transformers/ConversationsTransformerTest.php`** and **`--path=app/Transformers/ConversationsTransformer.php`**). Labels use **`Line:MutatorName`** from the successful scoped run.
+
+- **`Line 31: FalseToTrue`** (historical; **`config('carpoolear.module_coordinate_by_message', false)`** default literal)
+  - **Cause:** In normal runs **`carpoolear.module_coordinate_by_message`** is always defined in **`config/carpoolear.php`**, so Laravel never used the second-argument default; mutating **`false` → `true`** in source did not change runtime, and **`FalseToTrue`** escaped.
+  - **Mutant ID:** **`Line 31:FalseToTrue`** (pre-refactor line).
+  - **Fix:** Read the value with **`config('carpoolear.module_coordinate_by_message')`** and coerce with **`filter_var(..., FILTER_VALIDATE_BOOLEAN)`** (no trailing default literal); **`test_transform_skips_coordinate_branch_when_module_key_missing_from_config`** temporarily drops the key from **`config('carpoolear')`** and restores it in **`finally`**, asserting **`trip`** / **`return_trip`** stay absent.
+
+- **`Line 83: RemoveArrayItem`** (historical **`'name'`** in each **`users[]`** row)
+  - **Cause:** Assertions checked **`last_connection`** / **`identity_validated_at`** on one row but not the full ordered key list, so removing e.g. **`name`** could survive.
+  - **Mutant ID:** **`Line 83:RemoveArrayItem`** (pre-refactor); post-refactor **`Line 84:RemoveArrayItem`** … **`Line 87:RemoveArrayItem`** in the **28-mutant** run.
+  - **Fix:** **`test_transform_users_rows_each_expose_stable_key_order`** asserts **`['id', 'name', 'last_connection', 'identity_validated_at'] === array_keys($row)`** for every **`$payload['users']`** entry.
