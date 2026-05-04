@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Mockery;
 use STS\Models\Rating;
 use STS\Models\Trip;
@@ -12,6 +13,14 @@ use Tests\TestCase;
 
 class RatingRepositoryTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // `getRatingsCount` queries `availables_ratings`, which is not shipped in repo migrations (production view).
+        DB::statement('CREATE OR REPLACE VIEW availables_ratings AS SELECT id, user_id_to, rating FROM rating WHERE available = 1');
+    }
+
     /**
      * @param  array<string, mixed>  $overrides
      */
@@ -94,6 +103,94 @@ class RatingRepositoryTest extends TestCase
         $this->assertSame('', $row->reply_comment);
         $this->assertNull($row->reply_comment_created_at);
         $this->assertNull($row->rate_at);
+    }
+
+    public function test_create_persists_exact_pending_defaults_in_rating_table(): void
+    {
+        // Mutation intent: `create()` `$newRating` RemoveArrayItem (~86–94) — omitting keys must not silently match DB defaults where values must stay explicit (hash, types, empty strings).
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $hash = 'payload-'.substr(uniqid('', true), 0, 10);
+
+        $row = (new RatingRepository)->create($passenger->id, $driver->id, $trip->id, 8, 9, $hash);
+
+        $db = DB::table('rating')->where('id', $row->id)->first();
+        $this->assertNotNull($db);
+        $this->assertSame($trip->id, (int) $db->trip_id);
+        $this->assertSame($passenger->id, (int) $db->user_id_from);
+        $this->assertSame($driver->id, (int) $db->user_id_to);
+        $this->assertNull($db->rating);
+        $this->assertSame('', $db->comment);
+        $this->assertSame('', $db->reply_comment);
+        $this->assertFalse((bool) $db->voted);
+        $this->assertNull($db->reply_comment_created_at);
+        $this->assertSame($hash, $db->voted_hash);
+        $this->assertSame(8, (int) $db->user_to_type);
+        $this->assertSame(9, (int) $db->user_to_state);
+        $this->assertNull($db->rate_at);
+    }
+
+    public function test_update_rating_availability_returns_array_from_call_statement(): void
+    {
+        // Mutation intent: `Line 112: AlwaysReturnNull` — must return `DB::select(...)` result (typically `[]` for this CALL), not `null`.
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $rating = $this->seedRating($passenger, $driver, $trip, ['voted_hash' => 'proc-'.uniqid('', true)]);
+
+        $result = (new RatingRepository)->update_rating_availability($rating);
+
+        $this->assertIsArray($result);
+    }
+
+    public function test_get_ratings_count_returns_zero_when_user_has_no_available_ratings(): void
+    {
+        $driver = User::factory()->create();
+
+        $count = (new RatingRepository)->getRatingsCount($driver, ['value' => true]);
+
+        $this->assertNotNull($count);
+        $this->assertSame(0, (int) $count);
+    }
+
+    public function test_get_ratings_count_matches_available_rows_by_rating_sign(): void
+    {
+        // Mutation intent: bindings `user_id` / `rating`, guard `if (count($results) && isset($results[0]->count))`, early `return $results[0]->count`, final `return 0`.
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $this->seedRating($passenger, $driver, $trip, [
+            'rating' => Rating::STATE_POSITIVO,
+            'available' => true,
+            'voted_hash' => 'cnt-pos-a-'.uniqid('', true),
+        ]);
+        $this->seedRating($passenger, $driver, $trip, [
+            'rating' => Rating::STATE_POSITIVO,
+            'available' => true,
+            'voted_hash' => 'cnt-pos-b-'.uniqid('', true),
+        ]);
+        $this->seedRating($passenger, $driver, $trip, [
+            'rating' => Rating::STATE_NEGATIVO,
+            'available' => true,
+            'voted_hash' => 'cnt-neg-'.uniqid('', true),
+        ]);
+        $this->seedRating($passenger, $driver, $trip, [
+            'rating' => Rating::STATE_POSITIVO,
+            'available' => false,
+            'voted_hash' => 'cnt-hidden-'.uniqid('', true),
+        ]);
+
+        $repo = new RatingRepository;
+
+        $positive = $repo->getRatingsCount($driver, ['value' => true]);
+        $this->assertNotNull($positive);
+        $this->assertSame(2, (int) $positive);
+
+        $negative = $repo->getRatingsCount($driver, ['value' => false]);
+        $this->assertNotNull($negative);
+        $this->assertSame(1, (int) $negative);
     }
 
     public function test_find_and_find_by(): void

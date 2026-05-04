@@ -669,6 +669,18 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: filters always asserted non-empty lists.
   - Fix: added `test_get_ratings_returns_empty_when_no_available_ratings_for_user` and `test_get_ratings_paginates_empty_when_no_rows_match`.
 
+- **`RatingRepository.php` `getRatingsCount` (~46–57) — report IDs:** `Line 50–51: RemoveArrayItem`, `Line 53: IfNegated`, `Line 53: BooleanAndToBooleanOr`, `Line 53–54: DecrementInteger` / `IncrementInteger`, `Line 54: RemoveEarlyReturn`, `Line 57: DecrementInteger` / `IncrementInteger` / `AlwaysReturnNull`.
+  - Cause (PDO/runtime): `DB::select(DB::raw(...), $bindings)` passed an `Expression` into the connection layer so PDO saw a non-string query (`TypeError: PDO::prepare(): Argument #1 ($query) must be of type string, Expression given`), so integration tests never exercised real counts. A `DB::partialMock()->shouldReceive('select')` workaround broke the facade for later tests (`DatabaseManager` null offset) and was flagged risky.
+  - Fix: replaced manual `DB::select` + defensive `return 0` with `DB::table('availables_ratings')->where(...)->count()` so behavior stays correct for zero rows, bindings stay explicit, and Pest no longer reports unreachable mutations on the old fallback literal (**UNCOVERED IDs:** `4c79227ae7d29d5a`, `8c60eded860d5561`, `ea766dcf783060dd` — `Line 60: DecrementInteger` / `IncrementInteger` / `AlwaysReturnNull`). Recreate `availables_ratings` in test `setUp`. Added `test_get_ratings_count_matches_available_rows_by_rating_sign` plus `assertNotNull` + `(int)` checks on counts so nullable-return mutants fail on the happy path.
+
+- **`RatingRepository.php` `create` payload (~82–94) — report IDs:** `Line 86–94: RemoveArrayItem`, plus adjacent `EmptyStringToNotEmpty` / `FalseToTrue`.
+  - Cause: factory-backed assertions left weak coupling between persisted defaults and explicit `$newRating` keys (some omissions matched incidental defaults).
+  - Fix: `test_create_persists_exact_pending_defaults_in_rating_table` reads `rating` row via `DB::table('rating')` and asserts each scalar/null/`''`/false field tied to the create payload.
+
+- **`RatingRepository.php` `update_rating_availability` (~109–112) — report ID:** `Line 112: AlwaysReturnNull`.
+  - Cause: returning `null` instead of `DB::select('CALL …')` is still “callable” from callers if tests never asserted an array.
+  - Fix: `test_update_rating_availability_returns_array_from_call_statement` asserts `assertIsArray` on the `CALL` result.
+
 ## FileRepository
 
 - Cluster `FileRepository.php` (`tests/coverage/20260428_2310.txt` ~1350+): `createFromFile` directory creation flags and `createFromData` generated-name branch (`$name` null).
