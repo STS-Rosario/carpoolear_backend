@@ -198,6 +198,26 @@ class AuthControllerApiTest extends TestCase
         $this->assertStringContainsString('OK', $response->getContent());
     }
 
+    public function test_logout_with_valid_session_logs_successful_invalidation(): void
+    {
+        Log::spy();
+
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $login = $this->postJson('api/login', [
+            'email' => $user->email,
+            'password' => '123456',
+        ])->assertOk();
+
+        $token = $login->json('token');
+
+        $this->postJson('api/logout', [], [
+            'Authorization' => 'Bearer '.$token,
+        ])->assertOk();
+
+        Log::shouldHaveReceived('info')->with('JWT token invalidated successfully');
+    }
+
     public function test_retoken_without_bearer_token_returns_unauthorized(): void
     {
         $this->postJson('api/retoken')->assertUnauthorized();
@@ -307,12 +327,18 @@ class AuthControllerApiTest extends TestCase
             'banned' => false,
         ]);
 
-        $this->postJson('api/login', [
+        $response = $this->postJson('api/login', [
             'email' => $user->email,
             'password' => '123456',
         ])
             ->assertOk()
             ->assertJsonPath('config.banner.url', 'https://banners.example/default');
+
+        $this->assertNotSame(
+            'https://banners.example/cordova-only',
+            $response->json('config.banner.url'),
+            'Login must use the non-Cordova banner branch when _getConfig() is called without Cordova detection.'
+        );
     }
 
     public function test_get_config_logs_environment_check_and_guest_warning(): void
@@ -322,9 +348,15 @@ class AuthControllerApiTest extends TestCase
         $this->getJson('api/config')->assertOk();
 
         Log::shouldHaveReceived('info')->withArgs(function ($message, $context): bool {
-            return (string) $message === 'Environment Check:'
-                && is_array($context)
-                && isset($context['raw_env'], $context['config_values'], $context['app_env'], $context['env_path']);
+            if ((string) $message !== 'Environment Check:' || ! is_array($context)) {
+                return false;
+            }
+            $raw = $context['raw_env'] ?? null;
+
+            return is_array($raw)
+                && array_key_exists('MODULE_USER_REQUEST_LIMITED_ENABLED', $raw)
+                && array_key_exists('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', $raw)
+                && isset($context['config_values'], $context['app_env'], $context['env_path']);
         });
 
         Log::shouldHaveReceived('warning')->with('getConfig called without authenticated user');
@@ -425,10 +457,10 @@ class AuthControllerApiTest extends TestCase
         $device = Mockery::mock(DeviceManager::class)->makePartial();
         $device->shouldReceive('updateBySession')
             ->once()
-            ->withArgs(function (string $sessionId, array $payload): bool {
+            ->withArgs(function (string $sessionId, array $payload) use ($token): bool {
                 return $sessionId !== ''
                     && ($payload['app_version'] ?? null) === '3.2.1'
-                    && isset($payload['session_id']);
+                    && ($payload['session_id'] ?? null) === $token;
             });
         $this->instance(DeviceManager::class, $device);
 
@@ -480,6 +512,63 @@ class AuthControllerApiTest extends TestCase
             ->assertJsonFragment([
                 'message' => 'Too many password reset attempts. Please try again later.',
             ]);
+
+        Log::shouldHaveReceived('error')->withArgs(fn ($message): bool => str_contains((string) $message, 'Password reset error'));
+    }
+
+    public function test_reset_password_maps_exception_with_450_code_even_without_rate_keyword(): void
+    {
+        Log::spy();
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('resetPassword')
+            ->once()
+            ->with('code450@example.com')
+            ->andThrow(new \Exception('upstream rejected with code 450'));
+        $this->instance(UsersManager::class, $users);
+
+        $this->postJson('api/reset-password', ['email' => 'code450@example.com'])
+            ->assertStatus(422)
+            ->assertJsonFragment([
+                'message' => 'Too many password reset attempts. Please try again later.',
+            ]);
+
+        Log::shouldHaveReceived('error')->withArgs(fn ($message): bool => str_contains((string) $message, 'Password reset error'));
+    }
+
+    public function test_reset_password_maps_exception_with_rate_keyword_even_without_450_code(): void
+    {
+        Log::spy();
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('resetPassword')
+            ->once()
+            ->with('ratetext@example.com')
+            ->andThrow(new \Exception('gateway rate limiting active'));
+        $this->instance(UsersManager::class, $users);
+
+        $this->postJson('api/reset-password', ['email' => 'ratetext@example.com'])
+            ->assertStatus(422)
+            ->assertJsonFragment([
+                'message' => 'Too many password reset attempts. Please try again later.',
+            ]);
+
+        Log::shouldHaveReceived('error')->withArgs(fn ($message): bool => str_contains((string) $message, 'Password reset error'));
+    }
+
+    public function test_reset_password_does_not_map_wait_only_messages_without_minutes(): void
+    {
+        Log::spy();
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('resetPassword')
+            ->once()
+            ->with('waitonly@example.com')
+            ->andThrow(new \Exception('Please wait before trying again'));
+        $this->instance(UsersManager::class, $users);
+
+        $this->postJson('api/reset-password', ['email' => 'waitonly@example.com'])
+            ->assertStatus(500);
 
         Log::shouldHaveReceived('error')->withArgs(fn ($message): bool => str_contains((string) $message, 'Password reset error'));
     }
