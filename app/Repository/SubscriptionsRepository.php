@@ -147,24 +147,11 @@ class SubscriptionsRepository
 
     public function getPotentialNode($n1, $n2)
     {
-        $maxLat = 0;
-        $minLat = 0;
-        $minLng = 0;
-        $maxLng = 0;
-        if ($n1->lat > $n2->lat) {
-            $maxLat = $n1->lat;
-            $minLat = $n2->lat;
-        } else {
-            $maxLat = $n2->lat;
-            $minLat = $n1->lat;
-        }
-        if ($n1->lng > $n2->lng) {
-            $maxLng = $n1->lng;
-            $minLng = $n2->lng;
-        } else {
-            $maxLng = $n2->lng;
-            $minLng = $n1->lng;
-        }
+        $minLat = min((float) $n1->lat, (float) $n2->lat);
+        $maxLat = max((float) $n1->lat, (float) $n2->lat);
+        $minLng = min((float) $n1->lng, (float) $n2->lng);
+        $maxLng = max((float) $n1->lng, (float) $n2->lng);
+
         $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
         $query->whereBetween('lng', [$minLng, $maxLng]);
 

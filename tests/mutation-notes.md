@@ -94,6 +94,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: a single pattern covered only one SQL branch; removing either OR clause could still pass when every fixture satisfied the surviving predicate.
   - Fix: added `test_search_with_path_requires_intermediate_segment_pattern_between_endpoints` (path `.from.mid.to.` requires the `%.from_id.%.to_id.%` branch) and `test_search_with_direct_path_segment_matches_adjacent_endpoints_without_waypoint` (compact `.from.to.` relies on the contiguous-id LIKE branch).
 
+- `Line 87: RemoveMethodCall`, `Line 88: RemoveMethodCall` (`search` path closure: adjacent `%.from_id.to_id.%` vs gap `%.from_id.%.to_id.%`).
+  - Cause: prior fixtures each satisfied **both** LIKE shapes on their own path, so removing one `whereRaw` could still return the seeded row and tests stayed green.
+  - Fix: `test_search_with_waypoint_path_requires_both_adjacent_and_gap_like_patterns` (same trip path `.A.mid.C.` with one subscription on edge `(A,mid)` and one on endpoints `(A,C)`; both must match ⇒ count 2; either branch removal drops one).
+
 - `SubscriptionsRepository.php` `search` no-path distance (`~93`): last trip vertex selection via `$points[count($points) - 1]`.
   - Cause: two-point trips did not prove the repository reads the **final** polyline vertex when an extra interior marker exists.
   - Fix: added `test_search_without_path_uses_last_trip_point_not_middle_marker` (three injected points; subscription keyed to true terminus only).
@@ -101,6 +105,10 @@ This file tracks mutants killed during the current hardening session, with the r
 - `SubscriptionsRepository.php` `getPotentialNode` (`~150–161`): latitude/longitude max/min branches when corners are **not** persisted rows.
   - Cause: bbox tests that seeded every corner as `NodeGeo` rows made `first()` ambiguous; comparator mutants could still return an arbitrary corner id inside the box.
   - Fix: added `test_get_potential_node_lat_ordering_uses_branch_assignments_not_swapped_extrema` and `test_get_potential_node_lng_bounds_require_strict_ordering_between_distinct_meridians` using plain `{lat,lng}` corner objects plus a single unambiguous interior `NodeGeo`.
+
+- `Line 150: DecrementInteger`, `Line 150: IncrementInteger`, `Line 151: DecrementInteger`, `Line 151: IncrementInteger`, `Line 152: DecrementInteger`, `Line 152: IncrementInteger`, `Line 153: DecrementInteger`, `Line 153: IncrementInteger`, `Line 154: GreaterToGreaterOrEqual`, `Line 161: GreaterToGreaterOrEqual` (`getPotentialNode` legacy bbox setup).
+  - Cause: initializing with literal `0` then assigning via `if ($n1->lat > $n2->lat)` duplicated `min`/`max` logic; `GreaterToGreaterOrEqual` vs `>` often stayed **observationally equivalent** because `whereBetween` normalizes reversed `[min,max]` pairs, so tests could not distinguish surviving mutants.
+  - Fix: replaced manual branches with `min`/`max` on cast floats (`SubscriptionsRepository::getPotentialNode`); existing bbox tests still guard behavior.
 
 ## ConversationRepository
 

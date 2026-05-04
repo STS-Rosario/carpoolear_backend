@@ -727,6 +727,53 @@ class SubscriptionsRepositoryTest extends TestCase
         $this->assertTrue($rows->first()->is($match));
     }
 
+    public function test_search_with_waypoint_path_requires_both_adjacent_and_gap_like_patterns(): void
+    {
+        // Mutation intent: one subscription matches only `%.from.to.%` (consecutive ids on path); another matches
+        // only `%.from.%.to.%` (non-adjacent endpoints on the same path). Dropping either `whereRaw` drops one row.
+        // Kills: `Line 87: RemoveMethodCall`, `Line 88: RemoveMethodCall`.
+        $a = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+        $mid = $this->makeNode(['lat' => -34.5, 'lng' => -58.5]);
+        $c = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
+        $subscriber = User::factory()->create();
+        $path = '.'.$a->id.'.'.$mid->id.'.'.$c->id.'.';
+
+        $adjacentOnPath = Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $a->id,
+            'to_id' => $mid->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+            'created_at' => Carbon::now()->subMonth(),
+        ]);
+
+        $endpointsSkippingMiddle = Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $a->id,
+            'to_id' => $c->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+            'created_at' => Carbon::now()->subMonth(),
+        ]);
+
+        $trip = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'path' => $path,
+            'trip_date' => Carbon::now()->addDays(4),
+            'is_passenger' => false,
+        ]);
+
+        $rows = $this->repo()->search(User::factory()->create(), $trip);
+
+        $this->assertCount(2, $rows);
+        $this->assertEqualsCanonicalizing(
+            [$adjacentOnPath->id, $endpointsSkippingMiddle->id],
+            $rows->pluck('id')->all()
+        );
+    }
+
     public function test_search_without_path_uses_last_trip_point_not_middle_marker(): void
     {
         // Mutation intent: destination distance uses `points[count($points) - 1]`; off-by-one includes the wrong vertex.
