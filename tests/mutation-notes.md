@@ -3237,3 +3237,27 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 - **Cause:** **`RemoveMethodCall`** on startup / dry-run / save / log lines (**`5b509000be785e24`**, **`f9f92d47d727eae9`**, **`9ee1c830bc2aa3c1`**, **`ff93a3ca49cb9391`**, **`0b0bac912e20b51a`**, **`05bdc0396c902a67`**); **`getTargetMonth` / `validateTargetMonth`** boolean and **`exit(1)`** mutants (**`b3289bddcfcabc7c`**, **`4601aa80dc2d7fe5`**, **`1be86f6f144df8f6`**, …); **`RemoveArrayItem`** on **`saved_at`** in **`create`** (**`29aee8e054cfa3d1`**); duplicate-key **`catch`** branch still relies on integration-only scenarios (**`ca0d9e0d39eae091`**, **`d550179f7701049d`**, …).
 - **Fix:** **`exit(1)`** replaced with **`throw new \\InvalidArgumentException`** from **`getTargetMonth` / `validateTargetMonth`**, caught in **`handle()`** returning **`1`** (testable exit code). **`tests/Unit/Console/Commands/CalculateActiveUsersPerMonthTest.php`** asserts startup / dry-run **`Year` / `Month` / `Value`** lines, **`assertExitCode(1)`** for invalid and current-month options, persisted **`saved_at`**, and **`MessageLogged`** for the post-save summary line.
+
+## TripPoint (`app/Models/TripPoint.php`)
+
+Pest mutation run (22 mutants, 100% score) identifies each survivor by **`Line N: MutatorName`**; stable **`--id=`** hashes are printed in the report mainly for **untested** or **uncovered** mutants. Below, **mutant ID** means that line/mutator descriptor unless a hash appears in a future failing run.
+
+- **`Line 14: AlwaysReturnNull`** (`newFactory`)
+  - **Cause:** Nothing asserted that **`TripPoint::newFactory()`** must return a real factory instance; returning **`null`** left tests green.
+  - **Fix:** **`test_new_factory_returns_trip_point_factory`** reflects **`newFactory`**, asserts **`TripPointFactory`**, and calls **`TripPoint::factory()`**.
+
+- **`Line 24: AlwaysReturnEmptyArray`**, **`Line 25–33: RemoveArrayItem`** (`getFillable`)
+  - **Cause:** Fillable lived on a **`$fillable`** property, so **`RemoveArrayItem`** on individual keys was not executed as PHP code paths (no per-element statements), and **`AlwaysReturnEmptyArray`** on the whole list was easy to miss without an explicit full-list assertion and a create that uses every key.
+  - **Fix:** **`getFillable()`** returns the nine keys explicitly; **`test_fillable_lists_point_payload_columns`** pins the ordered list; **`test_mass_assignment_persists_all_fillable_columns`** creates a row whose keys match **`getFillable()`** exactly (with trig aligned to **`lat`/`lng`**).
+
+- **`Line 42: AlwaysReturnEmptyArray`**, **`Line 43–48: RemoveArrayItem`** (`getHidden`)
+  - **Cause:** Same pattern as fillable: property-based **`$hidden`** did not surface per-key **`RemoveArrayItem`** mutants as testable branches; empty hidden was untested.
+  - **Fix:** **`getHidden()`** returns the six attributes; **`test_hidden_lists_serialization_suppressed_attributes`** asserts the full list (existing tests still assert **`toArray()`** omits those keys).
+
+- **`Line 54: AlwaysReturnEmptyArray`**, **`Line 55–56: RemoveArrayItem`** (`casts`)
+  - **Cause:** **`casts()`** could be emptied or trimmed without failing tests that only relied on incidental JSON behavior.
+  - **Fix:** **`test_casts_include_json_address_and_is_passenger_flag`** asserts **`getCasts()`** includes **`json_address` => array** and **`is_passenger` => boolean**; **`test_is_passenger_cast_coerces_to_boolean_without_persisting`** uses **`forceFill`** so the boolean cast is exercised without requiring an **`is_passenger`** DB column.
+
+- **`Line 76: AlwaysReturnNull`** (`trip`)
+  - **Cause:** Relation method could return **`null`** while higher-level tests still passed.
+  - **Fix:** **`test_trip_relation_returns_belongs_to`** asserts **`BelongsTo`** from **`(new TripPoint)->trip()`** (alongside existing **`Trip`** association tests).
