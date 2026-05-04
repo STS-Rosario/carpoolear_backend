@@ -96,4 +96,42 @@ class ExceptionWithErrorsTest extends TestCase
         $exception = new ExceptionWithErrors('Log me');
         $exception->report();
     }
+
+    public function test_constructor_string_cast_allows_resource_message_for_parent(): void
+    {
+        $handle = fopen('php://memory', 'r');
+        $this->assertIsResource($handle);
+
+        $exception = new ExceptionWithErrors($handle);
+
+        $this->assertStringStartsWith('Resource id #', $exception->getMessage());
+        fclose($handle);
+    }
+
+    public function test_render_wraps_string_errors_under_error_key_with_list_value(): void
+    {
+        $exception = new ExceptionWithErrors('Failed', 'simple detail');
+        $response = $exception->render(Request::create('/', 'POST'));
+
+        $errors = $response->getData(true)['errors'];
+        $this->assertSame(['error' => ['simple detail']], $errors);
+        $this->assertSame(['error'], array_keys($errors));
+        $this->assertSame(['simple detail'], $errors['error']);
+    }
+
+    public function test_render_wraps_scalar_errors_as_string_list_under_error_key(): void
+    {
+        $exception = new ExceptionWithErrors('Failed', 42);
+        $response = $exception->render(Request::create('/', 'GET'));
+
+        $this->assertSame(['error' => ['42']], $response->getData(true)['errors']);
+    }
+
+    public function test_render_wraps_false_scalar_as_empty_string_under_error_key(): void
+    {
+        $exception = new ExceptionWithErrors('Failed', false);
+        $response = $exception->render(Request::create('/', 'GET'));
+
+        $this->assertSame(['error' => ['']], $response->getData(true)['errors']);
+    }
 }
