@@ -3,8 +3,18 @@
 namespace Tests\Unit\Repository;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use STS\Repository\FileRepository;
 use Tests\TestCase;
+
+/** Forces the GD branch so thumbnail math is covered even when Imagick is installed. */
+final class FileRepositoryUsingGdThumbnails extends FileRepository
+{
+    protected function usesImagickForThumbnails(): bool
+    {
+        return false;
+    }
+}
 
 class FileRepositoryTest extends TestCase
 {
@@ -54,6 +64,8 @@ class FileRepositoryTest extends TestCase
         $this->assertFileDoesNotExist($tmp);
         $this->assertTrue(File::exists($this->testing_folder_path().$newName));
         $this->assertStringEndsWith('.txt', $newName);
+        // Mutation intent: `date('mdYHis')` + microtime digits + extension (~54–56 str_replace / concat).
+        $this->assertMatchesRegularExpression('/^\d{14}\d+\.txt$/', $newName);
     }
 
     public function test_create_from_file_creates_nested_folder_recursively(): void
@@ -78,9 +90,6 @@ class FileRepositoryTest extends TestCase
         if (! function_exists('imagecreatetruecolor')) {
             $this->markTestSkipped('GD extension not available.');
         }
-        if (class_exists(\Imagick::class)) {
-            $this->markTestSkipped('Imagick is installed; repository uses Imagick branch instead of GD.');
-        }
 
         $image = imagecreatetruecolor(2, 2);
         ob_start();
@@ -88,12 +97,18 @@ class FileRepositoryTest extends TestCase
         $binary = ob_get_clean();
         imagedestroy($image);
 
-        $repo = new FileRepository;
+        $repo = new FileRepositoryUsingGdThumbnails;
         $name = $repo->createFromData($binary, 'jpg', $this->testing_folder(), 'unit-thumb');
 
         $this->assertSame('unit-thumb.jpg', $name);
         $this->assertTrue(File::exists($this->testing_folder_path().$name));
         $this->assertGreaterThan(0, File::size($this->testing_folder_path().$name));
+
+        $info = getimagesize($this->testing_folder_path().$name);
+        $this->assertNotFalse($info);
+        $this->assertSame(400, $info[0]);
+        $this->assertSame(400, $info[1]);
+        $this->assertSame(IMAGETYPE_JPEG, $info[2]);
     }
 
     public function test_create_from_data_generates_filename_when_name_is_null(): void
@@ -108,11 +123,12 @@ class FileRepositoryTest extends TestCase
         $binary = ob_get_clean();
         imagedestroy($image);
 
-        $name = (new FileRepository)->createFromData($binary, 'jpg', $this->testing_folder(), null);
+        $name = (new FileRepositoryUsingGdThumbnails)->createFromData($binary, 'jpg', $this->testing_folder(), null);
 
         // Mutation intent: keep generated-name branch (microtime/date concatenation) and non-empty return.
         $this->assertStringEndsWith('.jpg', $name);
         $this->assertNotSame('.jpg', $name);
+        $this->assertMatchesRegularExpression('/^\d{14}\d+\.jpg$/', $name);
         $this->assertTrue(File::exists($this->testing_folder_path().$name));
     }
 
@@ -150,5 +166,92 @@ class FileRepositoryTest extends TestCase
 
         $expectedPrefix = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'carpoolear-test-uploads-'.getmypid().DIRECTORY_SEPARATOR;
         $this->assertStringStartsWith($expectedPrefix, $resolved);
+    }
+
+    public function test_resolve_upload_folder_does_not_insert_double_directory_separator_after_temp(): void
+    {
+        // Mutation intent: `UnwrapRtrim` on `sys_get_temp_dir()` yields `…/T//carpoolear…` when the OS temp path already ends with a separator.
+        $resolved = (new FileRepository)->resolveUploadFolder($this->testing_folder());
+        $normalized = str_replace('\\', '/', $resolved);
+
+        $this->assertStringNotContainsString('//', $normalized);
+    }
+
+    public function test_resolve_upload_folder_trims_slashes_around_folder_argument_before_joining(): void
+    {
+        // Mutation intent: `trim($normalized, '/')` (~25 UnwrapTrim / concat mutants) strips outer slashes; inner `//` between segments is preserved from the input.
+        $resolved = (new FileRepository)->resolveUploadFolder('///segment-one//segment-two///');
+        $flat = str_replace('\\', '/', $resolved);
+
+        $this->assertStringEndsWith('segment-one//segment-two/', $flat);
+    }
+
+    public function test_nomalize_trailing_slash_detection_uses_strict_slash_character(): void
+    {
+        // Mutation intent: `EqualToIdentical` on `$str[strlen($str) - 1] == '/'` (~39) — keep `/` byte as the only accepted “already normalized” sentinel.
+        $repo = new FileRepository;
+        $withSlash = public_path('nom-slash-test').'/';
+
+        $this->assertSame($withSlash, $repo->nomalize($withSlash));
+        $this->assertStringEndsWith('/', $repo->nomalize(rtrim($withSlash, '/')));
+    }
+
+    public function test_create_from_data_imagick_writes_400_square_when_imagick_available(): void
+    {
+        if (! class_exists(\Imagick::class)) {
+            $this->markTestSkipped('Imagick extension not available.');
+        }
+
+        $binary = $this->minimalValidPngBytes();
+        $name = (new FileRepository)->createFromData($binary, 'png', $this->testing_folder(), 'imagick-square');
+
+        $this->assertSame('imagick-square.png', $name);
+        $path = $this->testing_folder_path().$name;
+        $this->assertTrue(File::exists($path));
+
+        $info = getimagesize($path);
+        $this->assertNotFalse($info);
+        $this->assertSame(400, $info[0]);
+        $this->assertSame(400, $info[1]);
+    }
+
+    public function test_create_from_data_logs_error_when_imagick_cannot_read_blob(): void
+    {
+        if (! class_exists(\Imagick::class)) {
+            $this->markTestSkipped('Imagick extension not available.');
+        }
+
+        Log::spy();
+
+        $name = (new FileRepository)->createFromData('not-a-valid-image-binary-'.random_bytes(8), 'jpg', $this->testing_folder(), 'broken-input');
+
+        $this->assertSame('broken-input.jpg', $name);
+        Log::shouldHaveReceived('error')->once();
+
+        $path = $this->testing_folder_path().$name;
+        if (File::exists($path)) {
+            $this->assertLessThanOrEqual(1, File::size($path));
+        }
+    }
+
+    public function test_create_from_data_logs_error_when_gd_cannot_decode_payload(): void
+    {
+        if (! function_exists('imagecreatetruecolor')) {
+            $this->markTestSkipped('GD extension not available.');
+        }
+
+        Log::spy();
+
+        $name = (new FileRepositoryUsingGdThumbnails)->createFromData('not-a-valid-image-binary', 'jpg', $this->testing_folder(), 'gd-bad');
+
+        $this->assertSame('gd-bad.jpg', $name);
+        Log::shouldHaveReceived('error')->once();
+    }
+
+    /** @return non-empty-string */
+    private function minimalValidPngBytes(): string
+    {
+        // 1×1 transparent PNG (binary).
+        return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', true);
     }
 }

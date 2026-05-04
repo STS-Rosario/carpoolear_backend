@@ -8,6 +8,12 @@ class FileRepository
 {
     public function __construct() {}
 
+    /** @internal Overridden in tests to exercise the GD thumbnail path when Imagick is installed. */
+    protected function usesImagickForThumbnails(): bool
+    {
+        return class_exists('Imagick');
+    }
+
     /**
      * Writable uploads directory. In testing, avoid writing under `public/` (may be non-writable in CI/sandbox).
      */
@@ -77,7 +83,7 @@ class FileRepository
         $imgPath = $folder_path.$newfilename;
 
         try {
-            if (class_exists('Imagick')) {
+            if ($this->usesImagickForThumbnails()) {
                 // Create Imagick object
                 $im = new \Imagick;
 
@@ -99,7 +105,7 @@ class FileRepository
 
                 imagejpeg($thumb, $imgPath, 100);
             }
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error($e);
         }
 
