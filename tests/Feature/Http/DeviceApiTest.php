@@ -131,7 +131,10 @@ class DeviceApiTest extends TestCase
 
         $this->postJson('api/devices/logout')
             ->assertUnprocessable()
-            ->assertJsonPath('message', 'Device not found');
+            ->assertExactJson([
+                'errors' => ['device_not_found'],
+                'message' => 'Device not found',
+            ]);
     }
 
     public function test_index()

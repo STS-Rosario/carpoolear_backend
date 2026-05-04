@@ -1243,6 +1243,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: no HTTP test hit `POST /api/devices/logout` with a real `DeviceManager::logoutDevice` outcome; success/failure JSON mutants stayed UNCOVERED.
   - Fix: `test_logout_returns_success_when_device_registered_for_same_session` registers with the same bearer token then posts logout and expects `Device logged out successfully` plus zero rows for the user; `test_logout_returns_unprocessable_when_session_has_no_registered_device` expects `422` + `Device not found`.
 
+- **`logout()` failure `errors` array literal** (`logout()` ~80 `RemoveArrayItem` on `['device_not_found']`).
+  - Cause: `DeviceApiTest::test_logout_returns_unprocessable_when_device_not_found` only pinned `message`, so mutating away the `device_not_found` entry (or the whole `errors` item) still satisfied `assertJsonPath('message', 'Device not found')`.
+  - Fix: same test now uses `assertExactJson` so the `422` body must include `errors` = `['device_not_found']` alongside the message (matches `ExceptionWithErrors::render()` for array payloads). Re-run Pest mutate for the current hash if line numbers shift.
+  - Mutant ID: Pest only prints stable `xxh3` IDs in `UNTESTED`/`UNCOVERED` summaries; once killed, the CLI line is `Line 80: RemoveArrayItem` without an ID. Use `pest --mutate --path=… --id=<id>` after a failing run if you need to replay a specific hash.
+
 - **Production fix:** `delete()` called `DeviceManager::delete($user, $id)` with arguments reversed versus the manager signature `delete($session_id, $user)` and `is_int($session_id)` branching. The controller now calls `delete((int) $id, $user)` so route ids resolve by primary key instead of misrouting the `User` instance through the `session_id` branch.
 
 ## DeviceManager (`app/Services/Logic/DeviceManager.php`)
