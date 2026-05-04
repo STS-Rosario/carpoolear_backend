@@ -26,6 +26,9 @@
 |   discover fails).
 | - `tests/bootstrap.php` skips MySQL lock + DROP/CREATE when `PEST_MUTATION_TESTING` is set
 |   (mutant children); otherwise they block on the same `flock` as the parent and every mutant times out (`t`).
+| - Two local Pest runs on the same default DB block each other on the MySQL bootstrap lock.
+|   Use a separate schema: `DB_DATABASE=testing1 ./vendor/bin/pest …` (MySQL user needs
+|   CREATE DATABASE; bootstrap creates the schema if missing).
 */
 if (! defined('PHPUNIT_COMPOSER_INSTALL')) {
     if (isset($GLOBALS['_composer_autoload_path']) && is_string($GLOBALS['_composer_autoload_path']) && $GLOBALS['_composer_autoload_path'] !== '') {

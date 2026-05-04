@@ -25,9 +25,9 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
-        <!-- MySQL required (migrations use stored procedures). Host/credentials from .env; database name fixed for isolation. -->
+        <!-- MySQL required (migrations use stored procedures). Host/credentials from .env. Default schema `testing`; override from the shell for a second concurrent run (separate flock file + schema), e.g. DB_DATABASE=testing1 ./vendor/bin/pest … -->
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="testing"/>
+        <env name="DB_DATABASE" value="testing" force="false"/>
         <!-- Single-process suite: avoid artisan test parallel mode on the same DB (ParaTest tokens need separate DBs). -->
         <env name="LARAVEL_PARALLEL_TESTING" value=""/>
         <env name="MAIL_MAILER" value="array"/>

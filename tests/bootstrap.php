@@ -7,10 +7,14 @@ declare(strict_types=1);
 | PHPUnit bootstrap (runs before the test suite)
 |--------------------------------------------------------------------------
 |
-| Loads Composer autoload and ensures the MySQL schema named in phpunit.xml exists.
+| Loads Composer autoload and ensures the MySQL schema named by DB_DATABASE exists.
 | Without this, the first PDO connection to DB_DATABASE can fail with "Unknown database".
-| PHPUnit’s phpunit.xml only sets some DB_* vars; Dotenv loads .env / .env.testing so host,
-| username, and password match local MySQL before Laravel boots.
+| PHPUnit’s phpunit.xml sets a default DB_DATABASE (`testing`) unless the variable is
+| already set in the environment (force=false). Prefix commands with DB_DATABASE=testing1
+| (or any safe identifier) to run a second suite/mutate in parallel without blocking on
+| the same phpunit-mysql-*.lock file as another process using `testing`.
+| Dotenv loads .env / .env.testing so host, username, and password match local MySQL
+| before Laravel boots (existing env vars are not overwritten).
 | DROP DATABASE IF EXISTS + CREATE DATABASE resets the named schema to an empty catalog so
 | RefreshDatabase / migrate:fresh start from a known state (needs DROP privilege on that schema).
 |
