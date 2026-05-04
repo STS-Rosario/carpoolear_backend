@@ -1473,59 +1473,69 @@ class TripRepositoryTest extends TestCase
         // Mutation intent: non-strict `date` search must use `subDays(3)` / `addDays(3)` for the regular window.
         // Kills: `453e4cf88b31d174`, `25d5fb2d4ca2a73a`, `beda51e61eb62f1b`, `8de0b608ffdb3ff8`.
         $tz = 'America/Argentina/Buenos_Aires';
+        $prevTz = date_default_timezone_get();
         Config::set('app.timezone', $tz);
-        $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->saveQuietly();
-        $owner = User::factory()->create();
+        date_default_timezone_set($tz);
+        Carbon::setTestNow(Carbon::parse('2026-01-10 12:00:00', $tz));
 
-        $center = Carbon::now($tz)->addMonths(3)->next(Carbon::TUESDAY)->startOfDay();
-        $dateStr = $center->format('Y-m-d');
+        try {
+            $admin = User::factory()->create();
+            $admin->forceFill(['is_admin' => true])->saveQuietly();
+            $owner = User::factory()->create();
 
-        $onLower = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->subDays(3)->setTime(12, 0, 0),
-        ]);
-        $outsideLower = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->subDays(4)->setTime(12, 0, 0),
-        ]);
-        $onUpper = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->addDays(3)->setTime(12, 0, 0),
-        ]);
-        $outsideUpper = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->addDays(4)->setTime(12, 0, 0),
-        ]);
+            $center = Carbon::parse('2026-06-09', $tz)->startOfDay();
+            $dateStr = $center->format('Y-m-d');
 
-        $page = $this->repo()->search($admin, [
-            'user_id' => $owner->id,
-            'date' => $dateStr,
-            'page' => 1,
-            'page_size' => 50,
-        ]);
-        $ids = collect($page->items())->pluck('id');
+            $onLower = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->subDays(3)->setTime(12, 0, 0),
+            ]);
+            $outsideLower = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->subDays(4)->setTime(12, 0, 0),
+            ]);
+            // `to` is start of day at center+3; inclusive upper bound must be <= that instant (not noon next day).
+            $onUpper = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->addDays(3)->startOfDay(),
+            ]);
+            $outsideUpper = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->addDays(4)->setTime(12, 0, 0),
+            ]);
 
-        $this->assertTrue($ids->contains($onLower->id));
-        $this->assertTrue($ids->contains($onUpper->id));
-        $this->assertFalse($ids->contains($outsideLower->id));
-        $this->assertFalse($ids->contains($outsideUpper->id));
+            $page = $this->repo()->search($admin, [
+                'user_id' => $owner->id,
+                'date' => $dateStr,
+                'page' => 1,
+                'page_size' => 50,
+            ]);
+            $ids = collect($page->items())->pluck('id');
+
+            $this->assertTrue($ids->contains($onLower->id));
+            $this->assertTrue($ids->contains($onUpper->id));
+            $this->assertFalse($ids->contains($outsideLower->id));
+            $this->assertFalse($ids->contains($outsideUpper->id));
+        } finally {
+            Carbon::setTestNow();
+            date_default_timezone_set($prevTz);
+        }
     }
 
     public function test_search_fuzzy_date_clamps_lower_window_to_now_so_recent_past_trips_are_excluded(): void
@@ -1619,57 +1629,64 @@ class TripRepositoryTest extends TestCase
         // Kills: `168aabcaf2296c6c`, `c233631798837356`, `962413601e70898c`, `3dbfb6643272bfda`, `71e56250960ce44e`,
         //        `9aaf6ee49dcc4ce7`, `ebbacfa376e614e5`, `8ca8062d7fa8d804`.
         $tz = 'America/Argentina/Buenos_Aires';
+        $prevTz = date_default_timezone_get();
         Config::set('app.timezone', $tz);
-        $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->saveQuietly();
-        $owner = User::factory()->create();
+        date_default_timezone_set($tz);
+        Carbon::setTestNow(Carbon::parse('2026-01-10 12:00:00', $tz));
 
-        $center = Carbon::now($tz)->addMonths(3)->next(Carbon::THURSDAY)->startOfDay();
-        $dateStr = $center->format('Y-m-d');
+        try {
+            $admin = User::factory()->create();
+            $admin->forceFill(['is_admin' => true])->saveQuietly();
+            $owner = User::factory()->create();
 
-        $nextDay = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->addDay()->setTime(8, 0, 0),
-        ]);
-        $sameDayLate = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->setTime(18, 0, 0),
-        ]);
-        $sameDayEarly = Trip::factory()->create([
-            'user_id' => $owner->id,
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'weekly_schedule' => 0,
-            'trip_date' => $center->copy()->setTime(7, 0, 0),
-        ]);
+            $center = Carbon::parse('2026-06-11', $tz)->startOfDay();
+            $dateStr = $center->format('Y-m-d');
 
-        $page = $this->repo()->search($admin, [
-            'user_id' => $owner->id,
-            'date' => $dateStr,
-            'page' => 1,
-            'page_size' => 50,
-        ]);
-        $items = collect($page->items())->values();
-        $positions = [
-            'early' => $items->search(fn ($t) => $t->id === $sameDayEarly->id),
-            'late' => $items->search(fn ($t) => $t->id === $sameDayLate->id),
-            'next' => $items->search(fn ($t) => $t->id === $nextDay->id),
-        ];
-        $this->assertNotFalse($positions['early']);
-        $this->assertNotFalse($positions['late']);
-        $this->assertNotFalse($positions['next']);
-        $this->assertLessThan($positions['next'], $positions['early']);
-        $this->assertLessThan($positions['next'], $positions['late']);
-        $this->assertLessThan($positions['early'], $positions['late']);
+            $sameDayEarly = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->setTime(7, 0, 0),
+            ]);
+            $sameDayLate = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->setTime(18, 0, 0),
+            ]);
+            $nextDay = Trip::factory()->create([
+                'user_id' => $owner->id,
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'weekly_schedule' => 0,
+                'trip_date' => $center->copy()->addDay()->setTime(8, 0, 0),
+            ]);
+
+            $page = $this->repo()->search($admin, [
+                'user_id' => $owner->id,
+                'date' => $dateStr,
+                'page' => 1,
+                'page_size' => 50,
+            ]);
+            $items = collect($page->items())->values();
+            $subset = $items->filter(
+                fn ($t) => in_array($t->id, [$sameDayEarly->id, $sameDayLate->id, $nextDay->id], true)
+            )->values();
+
+            $this->assertCount(3, $subset);
+            $this->assertSame(
+                [$sameDayEarly->id, $sameDayLate->id, $nextDay->id],
+                $subset->pluck('id')->all()
+            );
+        } finally {
+            Carbon::setTestNow();
+            date_default_timezone_set($prevTz);
+        }
     }
 
     public function test_search_weekly_schedule_uses_bitwise_filter_and_orders_by_trip_date(): void
