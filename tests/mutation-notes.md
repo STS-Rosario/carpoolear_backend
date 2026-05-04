@@ -377,6 +377,26 @@ This file tracks mutants killed during the current hardening session, with the r
 
 ## TripRepository (current batch)
 
+- **Batch (escaped `TripRepository.php` mutants, line refs from Pest report before refactor):** `Line 41–45: IncrementFloat`, `Line 46–49: DecrementInteger` / `IncrementInteger`, `Line 50: GreaterToGreaterOrEqual`, `Line 57` (lng swap), `Line 65: RemoveMethodCall` (second `whereBetween`).
+  - Cause: temporary `NodeGeo` corners plus hand-rolled min/max swaps duplicated the bounding box; many arithmetic and “init to zero” mutations were behavior-neutral or only weakly asserted by “pick this id”.
+  - Fix: **`getPotentialNode`** rewritten to a single query: `whereBetween('lat', [lat±0.05])` and `whereBetween('lng', [lng±0.1])` (equivalent rectangle, fewer mutable branches). Tests **`test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges`** (numeric interval checks) and **`test_get_potential_node_lng_bound_excludes_same_lat_outside_longitude_window`** prove both axes constrain results.
+
+- **`Line 69: SmallerToSmallerOrEqual`**, **`Line 70: EqualToIdentical`**, inner privacy branches on `generateTripFriendVisibility`.
+  - Cause: loose `friendship_type_id < 2` / `== 1` left room for strictness and type mutants without a discriminating scenario in all DB modes.
+  - Fix: normalize with **`(int) $trip->friendship_type_id`**, compare to **`Trip::PRIVACY_PUBLIC`** / **`Trip::PRIVACY_FOF`** / **`Trip::PRIVACY_FRIENDS`** with **`===`**, and use **`elseif`** for the friends-only insert so only the intended branch runs.
+
+- **`Line 101–116` (create)** and **`Line 226` (update):** `RoundToFloor` / `RoundToCeil`, **`GreaterToGreaterOrEqual`** on seat vs cap, `BooleanAndToBooleanOr` on the max-price gate.
+  - Cause: caps were mostly tested with values strictly above the ceiling; `round(a/3)` vs `floor`/`ceil` agreed on some divisors; equality at the cap did not fail if `>` became `>=`.
+  - Fix: **`test_create_caps_seat_price_using_round_not_floor_when_maximum_divisor_three`** (`335 / 3 → 112`), **`test_create_does_not_lower_seat_price_when_it_equals_computed_maximum`**, **`test_update_does_not_lower_seat_price_when_it_equals_computed_maximum`**.
+
+- **`Line 389: RemoveMethodCall`** (`getOldTrips` passenger join + **`whereNull('trips.deleted_at')`**).
+  - Cause: passenger **`getTrips`** already asserted count excluding a soft-deleted accepted trip; **`getOldTrips`** did not mirror that guard, so dropping `whereNull` could still leave two past rows in other tests.
+  - Fix: **`test_get_old_trips_passenger_excludes_soft_deleted_trip_even_when_accepted`**.
+
+- **`Line 591–594: EqualToIdentical`** (`whereLocation` `$way == 'origin'|'destination'`).
+  - Cause: loose equality vs strict string identity was mutation-equivalent for current callers.
+  - Fix: use **`===`** for `$way` in **`whereLocation`**.
+
 - `47a4022bfb577c5a`, `a50255ec77726d09`, `33b99591f429010d`, `7ab8d1032746dbfa`, `c971ded4c0583849`, `dd8743ead8f87fde`, `14701d7b0afa6c43`, `9e6cb9312e8e70ea`, `e0900113fa619282`, `fce18506ce2a3b67`, `2f31f58e34bc7f68`, `bbdfa6dd5309dc76`, `b687fb0c758f9ff7`, `1294a7e0b757765f`, `13bffdc93611a1bd`, `2561f9ba60928e7c`, `aa1ba96b77874b63`, `bb988e6606ef287b`, `64854536d7731d76`, `926f5eb76fa1c5d2`, `ee8770e106619a2a`, `86a3522102bd856b`, `4abda33c3ccae2f5`, `0280f49e5e9aa5f6`, `168a1c682d274fec`, `9332ef5aa60d7c7b`, `726f02044afec66a`, `74f70ee8c58fdc8d`
   - Cause: private `getPotentialNode` math and bbox comparator branches were not directly exercised.
   - Fix: added `test_get_potential_node_private_bbox_logic_uses_lat_lng_ranges` (reflection call to validate returned node is inside bbox only).

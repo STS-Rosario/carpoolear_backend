@@ -2,27 +2,30 @@
 
 namespace STS\Repository;
 
-use DB;
-use STS\Models\User;
 use Carbon\Carbon;
-use STS\Models\Trip;
-use STS\Models\Passenger;
-use STS\Models\Route;
-use STS\Models\NodeGeo;
-use STS\Models\TripPoint;
-use STS\Events\Trip\Create  as CreateEvent;
+use DB;
 use Illuminate\Support\Facades\Http;
+use STS\Events\Trip\Create as CreateEvent;
+use STS\Models\NodeGeo;
+use STS\Models\Passenger;
+use STS\Models\PaymentAttempt;
+use STS\Models\Route;
+use STS\Models\RouteCache;
+use STS\Models\Trip;
+use STS\Models\TripPoint;
+use STS\Models\User;
 use STS\Services\GeoService;
 use STS\Services\MapboxDirectionsRouteService;
 use STS\Services\MercadoPagoService;
-use STS\Models\RouteCache;
-use STS\Models\PaymentAttempt;
 
 class TripRepository
 {
     private $paidRegions;
+
     private $geoService;
+
     private $mercadoPagoService;
+
     private $mapboxDirectionsRouteService;
 
     public function __construct(
@@ -36,38 +39,23 @@ class TripRepository
         $this->mapboxDirectionsRouteService = $mapboxDirectionsRouteService;
     }
 
-    private function getPotentialNode ($point) {
-        $n1 = new NodeGeo;
-        $n1->lat = $point['lat'] - 0.05;
-        $n1->lng = $point['lng'] - 0.1;
-        $n2 = new NodeGeo;
-        $n2->lat = $point['lat'] + 0.05;
-        $n2->lng = $point['lng'] + 0.1;
-        $maxLat = 0;
-        $minLat = 0;
-        $minLng = 0;
-        $maxLng = 0;
-        if ($n1->lat > $n2->lat) {
-            $maxLat = $n1->lat;
-            $minLat = $n2->lat;
-        } else {
-            $maxLat = $n2->lat;
-            $minLat = $n1->lat;
-        }
-        if ($n1->lng > $n2->lng) {
-            $maxLng = $n1->lng;
-            $minLng = $n2->lng;
-        } else {
-            $maxLng = $n2->lng;
-            $minLng = $n1->lng;
-        }
-        $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
-        $query->whereBetween('lng', [$minLng, $maxLng]);
-        return $query->first();
+    private function getPotentialNode($point)
+    {
+        $minLat = $point['lat'] - 0.05;
+        $maxLat = $point['lat'] + 0.05;
+        $minLng = $point['lng'] - 0.1;
+        $maxLng = $point['lng'] + 0.1;
+
+        return NodeGeo::whereBetween('lat', [$minLat, $maxLat])
+            ->whereBetween('lng', [$minLng, $maxLng])
+            ->first();
     }
-    public function generateTripFriendVisibility ($trip) {
-        if ($trip->friendship_type_id < 2) {
-            if ($trip->friendship_type_id == 1) {
+
+    public function generateTripFriendVisibility($trip)
+    {
+        $privacy = (int) $trip->friendship_type_id;
+        if ($privacy < Trip::PRIVACY_PUBLIC) {
+            if ($privacy === Trip::PRIVACY_FOF) {
                 // friend of friends
                 $query = 'INSERT INTO user_visibility_trip
                             (SELECT f.uid2, t.id
@@ -86,7 +74,7 @@ class TripRepository
                             )
                 ';
                 DB::insert($query, [$trip->id, $trip->id]);
-            } else {
+            } elseif ($privacy === Trip::PRIVACY_FRIENDS) {
                 // only friends
                 $query = 'INSERT INTO user_visibility_trip
                                 SELECT f.uid2, t.id
@@ -107,7 +95,7 @@ class TripRepository
 
         // Get trip info for price calculations and route data
         $tripInfo = $this->getTripInfo($points);
-        
+
         // Calculate maximum allowed price if seat_price_cents is provided
         if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
             $total_seats = $data['total_seats'];
@@ -122,13 +110,13 @@ class TripRepository
 
         $trip = Trip::create($data);
         \Log::info('TripRepository::create trip', [$trip]);
-        
+
         // Save recommended trip price if available from trip info
         if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
             $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
             $trip->save();
         }
-        
+
         $this->addPoints($trip, $points);
         \Log::info('TripRepository::create trip after add points', [$trip]);
 
@@ -142,12 +130,12 @@ class TripRepository
         // if route is paid, and user should pay, create payment
         if (config('carpoolear.module_trip_creation_payment_enabled') && $routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
             $trip->state = Trip::STATE_AWAITING_PAYMENT;
-            
+
             // Create MercadoPago payment preference
             $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
             $trip->payment_id = $preference->id;
             $trip->needs_sellado = true;
-            
+
             $trip->save();
 
             // Return the preference URL to redirect the user
@@ -157,24 +145,24 @@ class TripRepository
         // obtener ruta o crear
         $routeIds = [];
         for ($i = 1; $i < count($points); $i++) {
-            $origin = is_array($points[$i - 1]['json_address']) ? (object)$points[$i - 1]['json_address'] : json_decode($points[$i - 1]['json_address']);
-            $destiny = is_array($points[$i]['json_address']) ? (object)$points[$i]['json_address'] : json_decode($points[$i]['json_address']);
-            if (!isset($origin->id) || !isset($destiny->id)) {
+            $origin = is_array($points[$i - 1]['json_address']) ? (object) $points[$i - 1]['json_address'] : json_decode($points[$i - 1]['json_address']);
+            $destiny = is_array($points[$i]['json_address']) ? (object) $points[$i]['json_address'] : json_decode($points[$i]['json_address']);
+            if (! isset($origin->id) || ! isset($destiny->id)) {
                 $origin = $this->getPotentialNode($points[$i - 1]);
                 $destiny = $this->getPotentialNode($points[$i]);
             }
             if (isset($origin->id) && $origin->id > 0 && isset($destiny->id) && $destiny->id > 0) {
                 $route = Route::where('from_id', $origin->id)->where('to_id', $destiny->id)->first();
-                if (!$route) {
-                    $route = new Route();
+                if (! $route) {
+                    $route = new Route;
                     $route->from_id = $origin->id;
                     $route->to_id = $destiny->id;
                     $route->processed = false;
                     $route->save();
-                    
+
                     $nodes = [$origin->id, $destiny->id];
                     $route->nodes()->sync($nodes);
-                    
+
                 } else {
                     if ($route->processed) {
                         event(new CreateEvent($trip));
@@ -188,8 +176,9 @@ class TripRepository
         }
 
         $this->generateTripFriendVisibility($trip);
-        // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay 
-        // for this trip (origin and destination in paid cities), 
+
+        // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay
+        // for this trip (origin and destination in paid cities),
         // if so, mark trip as awaiting_payment, create payment_id and return it to the frontend so it can redirect
         return $trip;
     }
@@ -201,7 +190,7 @@ class TripRepository
             $points = $data['points'];
             unset($data['points']);
         }
-        
+
         // Store old points to compare if route changed from non-paid to paid
         $oldPoints = null;
         $oldRouteNeedsPayment = false;
@@ -212,12 +201,12 @@ class TripRepository
                 $oldRouteNeedsPayment = $this->geoService->doStopsRequireSellado($oldPointsToCheck);
             }
         }
-        
+
         // Get trip info for price calculations and route data if points are being updated
         $tripInfo = null;
         if ($points) {
             $tripInfo = $this->getTripInfo($points);
-            
+
             // Calculate maximum allowed price if seat_price_cents is provided
             if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
                 $total_seats = $data['total_seats'] ?? $trip->total_seats;
@@ -230,31 +219,31 @@ class TripRepository
                 }
             }
         }
-        
+
         $trip->update($data);
-        
+
         // Save recommended trip price if available from trip info
         if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
             $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
             $trip->save();
         }
-        
+
         if ($points) {
             $this->deletePoints($trip);
             $this->addPoints($trip, $points);
             $this->generateTripPath($trip);
-            
+
             // Check if the updated route needs payment (2+ stops in paid zones)
             $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
             $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
             \Log::info('TripRepository::update routeNeedsPayment', [$routeNeedsPayment, 'oldRouteNeedsPayment' => $oldRouteNeedsPayment]);
 
             $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
-            
+
             // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
             if (config('carpoolear.module_trip_creation_payment_enabled') &&
                 $routeNeedsPayment &&
-                !$oldRouteNeedsPayment &&
+                ! $oldRouteNeedsPayment &&
                 $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold') &&
                 $trip->state !== Trip::STATE_AWAITING_PAYMENT) {
 
@@ -271,7 +260,7 @@ class TripRepository
                     $trip->state = Trip::STATE_AWAITING_PAYMENT;
 
                     // Only create payment preference if one doesn't exist
-                    if (!$trip->payment_id) {
+                    if (! $trip->payment_id) {
                         // Create MercadoPago payment preference
                         $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
                         $trip->payment_id = $preference->id;
@@ -281,7 +270,7 @@ class TripRepository
                     $trip->needs_sellado = true;
                     $trip->save();
                 }
-            } elseif (config('carpoolear.module_trip_creation_payment_enabled') && !$routeNeedsPayment) {
+            } elseif (config('carpoolear.module_trip_creation_payment_enabled') && ! $routeNeedsPayment) {
                 // Route was edited so it no longer needs Sellado (fewer than 2 points in paid zone)
                 $trip->needs_sellado = false;
                 $paymentStates = [Trip::STATE_AWAITING_PAYMENT, Trip::STATE_PENDING_PAYMENT, Trip::STATE_PAYMENT_FAILED];
@@ -302,23 +291,23 @@ class TripRepository
         $nodeIds = $trip->points()
             ->orderBy('id')
             ->get()
-            ->map(fn($point) => ((object)$point->json_address)->id ?? null)
-            ->filter(fn($id) => $id > 0)
+            ->map(fn ($point) => ((object) $point->json_address)->id ?? null)
+            ->filter(fn ($id) => $id > 0)
             ->values();
 
         if ($nodeIds->isNotEmpty()) {
-            $trip->path = '.' . $nodeIds->implode('.') . '.';
+            $trip->path = '.'.$nodeIds->implode('.').'.';
             $trip->save();
         }
 
         return $trip->path;
     }
 
-
     public function show($user, $id)
     {
         if ($user->is_admin) {
             $trip = Trip::with(['user', 'points', 'car', 'passenger', 'ratings'])->withTrashed()->whereId($id)->first();
+
             return $trip;
         } else {
             return Trip::with(['user', 'points'])->whereId($id)->first();
@@ -408,18 +397,18 @@ class TripRepository
         if (isset($data['is_admin']) && strval($data['is_admin']) === 'true') {
             $trips->withTrashed();
         }
-        
+
         if (isset($data['from_date']) || isset($data['to_date'])) {
             if (isset($data['from_date'])) {
                 $date_from = parse_date($data['from_date']);
-                
+
                 $trips = $trips->where('trip_date', '>=', date_to_string($date_from, 'Y-m-d H:i:s'));
                 $trips->orderBy('trip_date');
             }
             if (isset($data['to_date'])) {
                 $date_to = parse_date($data['to_date']);
-                
-                $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));             
+
+                $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));
                 $trips->orderBy('trip_date');
             }
         } else {
@@ -446,22 +435,22 @@ class TripRepository
                         $query->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'))
                             ->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'))
                             // Also include weekly schedule trips that run on this day of the week
-                            ->orWhere(function($query) use ($dayBit) {
+                            ->orWhere(function ($query) use ($dayBit) {
                                 $query->where('weekly_schedule', '>', 0)
-                                      ->whereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
+                                    ->whereRaw('(weekly_schedule & ?) > 0', [$dayBit]);
                             });
                     });
 
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
                     $trips->orderBy('trip_date');
                 }
-            } else if (isset($data['weekly_schedule'])) {
+            } elseif (isset($data['weekly_schedule'])) {
                 // Search by weekly schedule flag using bitwise AND operation
                 $weeklyScheduleFlag = intval($data['weekly_schedule']);
                 $trips->whereRaw('(weekly_schedule & ?) > 0', [$weeklyScheduleFlag]);
                 $trips->orderBy('trip_date');
             } else {
-                if (!isset($data['history'])) {
+                if (! isset($data['history'])) {
                     // Include active trips OR weekly schedule trips
                     $this->filterActiveTrips($trips);
                     $trips->orderBy('trip_date');
@@ -476,42 +465,42 @@ class TripRepository
         if ($user) {
             $trips->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
-                  ->orWhere('needs_sellado', '=', 0)
-                  ->orWhereNull('needs_sellado')
-                  ->orWhere('state', '=', Trip::STATE_READY);
+                    ->orWhere('needs_sellado', '=', 0)
+                    ->orWhereNull('needs_sellado')
+                    ->orWhere('state', '=', Trip::STATE_READY);
             });
         }
-        
-        if ($user && !$user->is_admin) {
+
+        if ($user && ! $user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 if ($user) {
                     // only show trips that are ready (paid by driver) or have no state
-                    $q->where(function($q) use ($user) {
+                    $q->where(function ($q) use ($user) {
                         $q->where('state', '=', Trip::STATE_READY)
-                          ->orWhere('state', '=', Trip::STATE_PAID)
-                          ->orWhereNull('state')
-                          ->orWhere('user_id', $user->id);
+                            ->orWhere('state', '=', Trip::STATE_PAID)
+                            ->orWhereNull('state')
+                            ->orWhere('user_id', $user->id);
                     });
 
                     $q->where(function ($q) use ($user) {
                         $q->whereUserId($user->id)
-                          ->orWhere(function ($q) use ($user) {
-                              $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
-                                ->orWhere(function ($q) use ($user) {
-                                    $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
-                                      ->whereHas('userVisibility', function ($q) use ($user) {
-                                          $q->where('user_id', $user->id);
-                                      });
-                                });
-                          });
+                            ->orWhere(function ($q) use ($user) {
+                                $q->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC)
+                                    ->orWhere(function ($q) use ($user) {
+                                        $q->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC)
+                                            ->whereHas('userVisibility', function ($q) use ($user) {
+                                                $q->where('user_id', $user->id);
+                                            });
+                                    });
+                            });
                     });
                 } else {
-                    $q->where(function($q) {
+                    $q->where(function ($q) {
                         $q->where('state', '=', Trip::STATE_READY)
-                          ->orWhere('state', '=', Trip::STATE_PAID)
-                          ->orWhereNull('state');
+                            ->orWhere('state', '=', Trip::STATE_PAID)
+                            ->orWhereNull('state');
                     })
-                      ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
+                        ->whereFriendshipTypeId(Trip::PRIVACY_PUBLIC);
                 }
             });
         }
@@ -554,20 +543,21 @@ class TripRepository
         }
 
         $trips->with([
-            'user', 
-            'user.accounts', 
-            'points', 
+            'user',
+            'user.accounts',
+            'points',
             'passenger',
-            'passengerAccepted', 
-            'car', 
-            'ratings'
+            'passengerAccepted',
+            'car',
+            'ratings',
         ]);
-        
+
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
-        
+
         // DB::enableQueryLog();
         $pagination = make_pagination($trips, $pageNumber, $pageSize);
+
         // $pagination = $trips->take(7)->get();
         // \Log::info(DB::getQueryLog());
         return $pagination;
@@ -588,16 +578,15 @@ class TripRepository
         $dist = str_replace(',', '.', $dist);
 
         $trips->whereHas('points', function ($q) use ($way, $sin_lat, $sin_lng, $cos_lat, $cos_lng, $dist) {
-            if ($way == 'origin') {
+            if ($way === 'origin') {
                 $q->where('id', DB::Raw('(select min(`id`) from trips_points where trip_id = `trips`.`id`)'));
             }
-            if ($way == 'destination') {
+            if ($way === 'destination') {
                 $q->where('id', DB::Raw('(select max(`id`) from trips_points where trip_id = `trips`.`id`)'));
             }
             $q->whereRaw('sin_lat * '.$sin_lat.' + cos_lat * '.$cos_lat.' *  (cos_lng * '.$cos_lng.' + sin_lng * '.$sin_lng.') > '.$dist);
         });
     }
-
 
     private function filterActiveTrips($query)
     {
@@ -616,7 +605,7 @@ class TripRepository
     public function addPoints($trip, $points)
     {
         foreach ($points as $point) {
-            $p = new TripPoint();
+            $p = new TripPoint;
             if (isset($point['address'])) {
                 $p->address = $point['address'];
             } else {
@@ -638,7 +627,8 @@ class TripRepository
         }
     }
 
-    public function shareTrip($user, $other) {
+    public function shareTrip($user, $other)
+    {
         $trip = Trip::with(['user']);
         $trip = $trip->where('user_id', '=', $user->id);
         // Include weekly schedule trips since they never expire
@@ -650,6 +640,7 @@ class TripRepository
         if ($trip->first()) {
             return true;
         }
+
         return false;
     }
 
@@ -681,7 +672,7 @@ class TripRepository
         // Check cache first (unless bypass is enabled for debugging)
         if (! $cacheBypass) {
             $cachedRoute = RouteCache::where('hashed_points', $hashedPoints)
-                ->where(function($query) {
+                ->where(function ($query) {
                     $query->whereNull('expires_at')
                         ->orWhere('expires_at', '>', now());
                 })
@@ -964,22 +955,25 @@ class TripRepository
             'trip_creation_payment_enabled' => config('carpoolear.module_trip_creation_payment_enabled'),
             'free_trips_amount' => $freeTripsAmount,
             'trips_created_by_user_amount' => $tripsCreatedByUser,
-            'user_over_free_limit' => $userOverFreeLimit
+            'user_over_free_limit' => $userOverFreeLimit,
         ];
     }
-    
-    public function getTripByTripPassenger ($transaction_id)
+
+    public function getTripByTripPassenger($transaction_id)
     {
         return Passenger::where('id', $transaction_id)->first();
     }
 
-    public function hideTrips ($user) {
+    public function hideTrips($user)
+    {
         $trips = Trip::where('user_id', $user->id);
         $this->filterActiveTrips($trips);
+
         return $trips->update(['deleted_at' => '2000-01-01']);
     }
 
-    public function unhideTrips ($user) {
+    public function unhideTrips($user)
+    {
         return Trip::onlyTrashed()
             ->where('user_id', $user->id)
             ->where('trip_date', '>=', Carbon::Now())

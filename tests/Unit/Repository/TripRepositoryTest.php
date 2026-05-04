@@ -1250,6 +1250,28 @@ class TripRepositoryTest extends TestCase
         ));
     }
 
+    public function test_get_old_trips_passenger_excludes_soft_deleted_trip_even_when_accepted(): void
+    {
+        // Mutation intent: passenger branch must keep `whereNull('trips.deleted_at')` on the join query.
+        // Kills: `Line 389: RemoveMethodCall` (getOldTrips soft-delete guard; line ref before edits may shift).
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $past = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $past->id,
+            'user_id' => $passenger->id,
+        ]);
+        $past->delete();
+
+        $rows = $this->repo()->getOldTrips($passenger, $passenger->id, false);
+
+        $this->assertFalse($rows->pluck('id')->contains($past->id));
+    }
+
     public function test_search_filters_by_user_id_and_paginates(): void
     {
         $owner = User::factory()->create();
@@ -2240,6 +2262,28 @@ class TripRepositoryTest extends TestCase
         $this->assertSame($inside->id, $found->id);
         $this->assertNotSame($outsideLat->id, $found->id);
         $this->assertNotSame($outsideLng->id, $found->id);
+
+        $dLat = 0.05;
+        $dLng = 0.1;
+        $this->assertGreaterThanOrEqual($point['lat'] - $dLat, (float) $found->lat);
+        $this->assertLessThanOrEqual($point['lat'] + $dLat, (float) $found->lat);
+        $this->assertGreaterThanOrEqual($point['lng'] - $dLng, (float) $found->lng);
+        $this->assertLessThanOrEqual($point['lng'] + $dLng, (float) $found->lng);
+    }
+
+    public function test_get_potential_node_lng_bound_excludes_same_lat_outside_longitude_window(): void
+    {
+        // Mutation intent: both lat and lng windows must apply (second `whereBetween`); lat-only match must not win.
+        $point = ['lat' => 10.0, 'lng' => 20.0];
+        $inside = $this->makeNode(['lat' => 10.02, 'lng' => 20.05, 'name' => 'LngIn'.substr(uniqid('', true), 0, 6)]);
+        $this->makeNode(['lat' => 10.02, 'lng' => 20.25, 'name' => 'LngOut'.substr(uniqid('', true), 0, 6)]);
+
+        $method = new \ReflectionMethod(TripRepository::class, 'getPotentialNode');
+        $method->setAccessible(true);
+        $found = $method->invoke($this->repo(), $point);
+
+        $this->assertNotNull($found);
+        $this->assertSame($inside->id, $found->id);
     }
 
     public function test_generate_trip_friend_visibility_fof_and_friends_only_branches_insert_rows(): void
@@ -2321,6 +2365,83 @@ class TripRepositoryTest extends TestCase
         $trip->refresh();
         $this->assertSame(500, (int) $trip->seat_price_cents);
         $this->assertSame(700, (int) $trip->recommended_trip_price_cents);
+    }
+
+    public function test_create_caps_seat_price_using_round_not_floor_when_maximum_divisor_three(): void
+    {
+        // Mutation intent: `round(maximum / (total_seats + 1))` must stay `round` (335/3 → 112, not floor 111).
+        // Kills: `Line 115: RoundToFloor`, `Line 115: RoundToCeil` (create cap), `Line 101: IncrementInteger` on divisor.
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 335,
+                'recommended_trip_price_cents' => 300,
+            ],
+        ], false);
+        $user = User::factory()->create();
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 2,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 400,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 601, 'ciudad' => 'Origen']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertSame(112, (int) $trip->seat_price_cents);
+    }
+
+    public function test_create_does_not_lower_seat_price_when_it_equals_computed_maximum(): void
+    {
+        // Mutation intent: cap uses strict `>` so equality must not rewrite (`Line 116: GreaterToGreaterOrEqual`).
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 700,
+            ],
+        ], false);
+        $user = User::factory()->create();
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 500,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 602, 'ciudad' => 'Origen']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertSame(500, (int) $trip->seat_price_cents);
     }
 
     public function test_create_keeps_seat_price_when_cap_not_required_or_module_disabled(): void
@@ -2903,6 +3024,52 @@ class TripRepositoryTest extends TestCase
         ]);
         $updated3->refresh();
         $this->assertSame(240, (int) $updated3->seat_price_cents);
+    }
+
+    public function test_update_does_not_lower_seat_price_when_it_equals_computed_maximum(): void
+    {
+        // Mutation intent: update cap branch must keep strict `>` (`Line 226: GreaterToGreaterOrEqual` cluster).
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn([
+            'status' => true,
+            'data' => ['maximum_trip_price_cents' => 1000, 'recommended_trip_price_cents' => 700],
+        ]);
+
+        $trip = Trip::factory()->create([
+            'total_seats' => 1,
+            'seat_price_cents' => 500,
+            'state' => Trip::STATE_READY,
+        ]);
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 811, 'ciudad' => 'A']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 812, 'ciudad' => 'B']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'total_seats' => 1,
+            'seat_price_cents' => 500,
+            'points' => [
+                ['lat' => -34.61, 'lng' => -58.41, 'json_address' => ['id' => 813, 'ciudad' => 'C']],
+                ['lat' => -34.58, 'lng' => -58.38, 'json_address' => ['id' => 814, 'ciudad' => 'D']],
+            ],
+        ]);
+
+        $updated->refresh();
+        $this->assertSame(500, (int) $updated->seat_price_cents);
     }
 
     public function test_update_replaces_points_persists_recommended_price_and_maps_payment_coords(): void
