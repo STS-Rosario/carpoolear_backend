@@ -35,3 +35,4 @@ storage/firebase*.json
 .lesshst
 storage/logs/*
 tests/coverage/*
+cert
