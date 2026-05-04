@@ -17,6 +17,12 @@
 |   Pest reports UNCOVERED for mutants even when tests exist. Run `pest --mutate` without
 |   `--parallel` so the initial `--coverage-php` pass stays single-process and each mutant
 |   gets correct test filters.
+| - **PCOV `pcov.directory` must cover this checkout**: if php.ini points elsewhere (e.g. a
+|   template path like `/Users/you/Work/...`), PHPUnit still records files/lines but **per-line
+|   test ids stay empty** (`[]`), so Pest shows every mutant as UNCOVERED (0 tested). `ini_set`
+|   cannot override this (SYSTEM). Fix Herd/PHP ini, or prefix PHP with `-d pcov.directory=.`
+|   from `carpoolear_backend` (or pass an absolute project path). Use `composer test:mutate -- -- …`
+|   which applies that flag for you.
 | - Scoped runs finish the initial suite in a few seconds; Pest’s per-mutant timeout is
 |   derived from that duration (~initial + 5s), which is too low for Laravel bootstrap.
 |   `scripts/patch-pest-mutate-subprocess.php` (composer post-autoload-dump) floors the
