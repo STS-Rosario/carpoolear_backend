@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Mockery as m;
+use ReflectionMethod;
 use STS\Http\Controllers\Api\v1\TripController;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -31,6 +32,37 @@ class TripApiTest extends TestCase
     protected function parseJson($response)
     {
         return json_decode($response->getContent());
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private function withOldCordovaUserAgent(callable $callback)
+    {
+        $keys = ['HTTP_SEC_CH_UA', 'HTTP_USER_AGENT', 'HTTP_X_APP_PLATFORM', 'HTTP_X_APP_VERSION'];
+        $saved = [];
+        foreach ($keys as $key) {
+            $saved[$key] = $_SERVER[$key] ?? null;
+        }
+
+        $_SERVER['HTTP_SEC_CH_UA'] = '"Chromium";v="110", "WebView"';
+        $_SERVER['HTTP_USER_AGENT'] = 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Mobile Safari/537.36';
+        unset($_SERVER['HTTP_X_APP_PLATFORM'], $_SERVER['HTTP_X_APP_VERSION']);
+
+        try {
+            return $callback();
+        } finally {
+            foreach ($keys as $key) {
+                if ($saved[$key] === null) {
+                    unset($_SERVER[$key]);
+                } else {
+                    $_SERVER[$key] = $saved[$key];
+                }
+            }
+        }
     }
 
     public function test_constructor_registers_expected_logged_middleware_scopes(): void
@@ -176,6 +208,22 @@ class TripApiTest extends TestCase
         $this->assertTrue($trip->id == $response->data->id);
     }
 
+    public function test_show_returns_legacy_placeholder_for_old_cordova_without_hitting_trips_logic(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+        $this->actingAs($user, 'api');
+
+        $this->tripsLogic->shouldReceive('show')->never();
+
+        $this->withOldCordovaUserAgent(function () use ($trip) {
+            $this->getJson('api/trips/'.$trip->id)
+                ->assertOk()
+                ->assertJsonPath('data.id', 0)
+                ->assertJsonPath('data.from_town', 'ACTUALIZA TU APP');
+        });
+    }
+
     public function test_index()
     {
         $u1 = \STS\Models\User::factory()->create();
@@ -248,6 +296,43 @@ class TripApiTest extends TestCase
             ->assertOk();
     }
 
+    public function test_search_tracking_passes_web_platform_zero_and_passenger_false_when_flags_omitted(): void
+    {
+        $this->instance(TripSearchRepository::class, m::mock(TripSearchRepository::class, function ($m) {
+            $m->shouldReceive('trackSearch')
+                ->once()
+                ->with(
+                    null,
+                    42,
+                    null,
+                    m::any(),
+                    0,
+                    null,
+                    false
+                );
+        }));
+
+        $this->tripsLogic->shouldReceive('search')->once()->andReturn(Trip::paginate(10));
+
+        $this->getJson('api/trips?origin_id=42')
+            ->assertOk();
+    }
+
+    public function test_search_returns_exact_legacy_meta_pagination_for_old_cordova_clients(): void
+    {
+        $this->withOldCordovaUserAgent(function () {
+            $this->getJson('api/trips')
+                ->assertOk()
+                ->assertJsonPath('meta.pagination.total', 1)
+                ->assertJsonPath('meta.pagination.count', 1)
+                ->assertJsonPath('meta.pagination.per_page', 20)
+                ->assertJsonPath('meta.pagination.current_page', 1)
+                ->assertJsonPath('meta.pagination.total_pages', 1)
+                ->assertJsonPath('meta.pagination.links.previous', null)
+                ->assertJsonPath('meta.pagination.links.next', null);
+        });
+    }
+
     public function test_search_survives_tracking_failure_and_logs_error(): void
     {
         Log::spy();
@@ -261,11 +346,7 @@ class TripApiTest extends TestCase
         $this->getJson('api/trips?destination_id=7')
             ->assertOk();
 
-        Log::shouldHaveReceived('error')->once()->withArgs(function ($message) {
-            return is_string($message)
-                && str_contains($message, 'Error tracking trip search:')
-                && str_contains($message, 'tracking failed');
-        });
+        Log::shouldHaveReceived('error')->once()->with('Error tracking trip search: tracking failed');
     }
 
     public function test_get_trips_defaults_as_driver_true_and_ignores_user_id_for_non_admin(): void
@@ -418,5 +499,49 @@ class TripApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Could not update trip.')
             ->assertJsonPath('errors.error.0', 'visibility');
+    }
+
+    public function test_create_returns_default_message_when_create_fails_and_errors_are_null(): void
+    {
+        $user = User::factory()->create(['identity_validated' => true]);
+        $this->actingAs($user, 'api');
+
+        $this->tripsLogic->shouldReceive('create')->once()->andReturn(null);
+        $this->tripsLogic->shouldReceive('getErrors')->atLeast()->once()->andReturn(null);
+
+        $this->postJson('api/trips', [])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not create new trip.');
+    }
+
+    public function test_errors_contain_code_casts_dynamic_stdclass_errors_to_array(): void
+    {
+        $controller = new TripController(
+            Request::create('/'),
+            $this->tripsLogic,
+            m::mock(TripSearchRepository::class),
+        );
+
+        $payload = new \stdClass;
+        $payload->error = 'routing_service_unavailable';
+
+        $method = new ReflectionMethod(TripController::class, 'errorsContainCode');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke($controller, $payload, 'routing_service_unavailable'));
+    }
+
+    public function test_errors_contain_code_returns_false_when_error_key_is_explicitly_null(): void
+    {
+        $controller = new TripController(
+            Request::create('/'),
+            $this->tripsLogic,
+            m::mock(TripSearchRepository::class),
+        );
+
+        $method = new ReflectionMethod(TripController::class, 'errorsContainCode');
+        $method->setAccessible(true);
+
+        $this->assertFalse($method->invoke($controller, ['error' => null], 'routing_service_unavailable'));
     }
 }
