@@ -25,11 +25,11 @@ class ImageUploadValidator
         $errors = [];
 
         if (! in_array($mime, $allowedMimes, true)) {
-            $errors[$field] = ['Invalid image type. Allowed: jpeg, png, webp, heic.'];
+            $errors[$field] = ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'];
         }
 
         if (! in_array($extension, $allowedExtensions, true)) {
-            $errors[$field] = $errors[$field] ?? ['Invalid image type. Allowed: jpeg, png, webp, heic.'];
+            $errors[$field] = $errors[$field] ?? ['Invalid image file extension. Allowed: jpeg, png, webp, heic.'];
         }
 
         if ($size === null || $size > $maxBytes) {

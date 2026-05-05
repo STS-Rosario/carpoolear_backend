@@ -37,7 +37,10 @@ class ImageUploadValidatorTest extends TestCase
         $result = $this->validator->validate($file);
         $this->assertFalse($result['valid']);
         $this->assertArrayHasKey('errors', $result);
-        $this->assertNotEmpty($result['errors']);
+        $this->assertSame(
+            ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'],
+            $result['errors']['image']
+        );
     }
 
     public function test_disallowed_extension_fails(): void
@@ -46,6 +49,10 @@ class ImageUploadValidatorTest extends TestCase
         $result = $this->validator->validate($file);
         $this->assertFalse($result['valid']);
         $this->assertArrayHasKey('errors', $result);
+        $this->assertSame(
+            ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'],
+            $result['errors']['image']
+        );
     }
 
     public function test_file_over_size_limit_fails(): void
@@ -90,7 +97,7 @@ class ImageUploadValidatorTest extends TestCase
 
         $this->assertFalse($result['valid']);
         $this->assertSame(
-            ['Invalid image type. Allowed: jpeg, png, webp, heic.'],
+            ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'],
             $result['errors']['avatar']
         );
     }
@@ -146,8 +153,23 @@ class ImageUploadValidatorTest extends TestCase
 
         $this->assertFalse($result['valid']);
         $this->assertSame(
-            ['Invalid image type. Allowed: jpeg, png, webp, heic.'],
+            ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'],
             $result['errors']['document']
+        );
+    }
+
+    public function test_extension_only_failure_returns_extension_message_when_mime_is_allowed(): void
+    {
+        config()->set('carpoolear.image_upload_allowed_mimes', ['image/jpeg']);
+        config()->set('carpoolear.image_upload_allowed_extensions', ['jpg']);
+
+        $file = UploadedFile::fake()->create('photo.jpeg', 100, 'image/jpeg');
+        $result = $this->validator->validate($file, 'cover');
+
+        $this->assertFalse($result['valid']);
+        $this->assertSame(
+            ['Invalid image file extension. Allowed: jpeg, png, webp, heic.'],
+            $result['errors']['cover']
         );
     }
 }
