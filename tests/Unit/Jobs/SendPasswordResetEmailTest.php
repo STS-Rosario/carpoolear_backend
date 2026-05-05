@@ -22,6 +22,29 @@ class SendPasswordResetEmailTest extends TestCase
         $this->assertSame(30, $job->timeout);
     }
 
+    public function test_handle_when_log_emails_key_is_absent_does_not_use_email_logs_channel(): void
+    {
+        Mail::fake();
+        $carpoolear = config('carpoolear');
+        unset($carpoolear['log_emails']);
+        config(['carpoolear' => $carpoolear]);
+
+        $user = User::factory()->create();
+
+        Log::shouldReceive('info')
+            ->once()
+            ->with('Sending password reset email', Mockery::type('array'));
+        Log::shouldReceive('info')
+            ->once()
+            ->with('Password reset email sent successfully', Mockery::type('array'));
+        Log::shouldReceive('channel')->never();
+
+        $job = new SendPasswordResetEmail($user, 'token-value', 'https://app.example/r', 'App', 'example.com');
+        $job->handle();
+
+        Mail::assertSent(ResetPassword::class);
+    }
+
     public function test_handle_sends_reset_password_mailable(): void
     {
         Mail::fake();
@@ -58,17 +81,22 @@ class SendPasswordResetEmailTest extends TestCase
         $emailChannel->shouldReceive('info')
             ->once()
             ->with('PASSWORD_RESET_EMAIL_SENDING', Mockery::on(function (array $context) use ($user) {
+                $expectedPreview = substr('abcdefghijklmnop', 0, 10).'...';
+
                 return $context['user_id'] === $user->id
                     && $context['email'] === $user->email
-                    && str_starts_with($context['token'], 'abcdefghij')
-                    && str_ends_with($context['token'], '...')
+                    && ($context['token'] ?? '') === $expectedPreview
+                    && strlen((string) ($context['token'] ?? '')) === 13
                     && $context['url'] === 'https://app.example/r'
                     && $context['name_app'] === 'App';
             }));
         $emailChannel->shouldReceive('info')
             ->once()
             ->with('PASSWORD_RESET_EMAIL_SUCCESS', Mockery::on(function (array $context) use ($user) {
-                return $context['user_id'] === $user->id && $context['email'] === $user->email;
+                return $context['user_id'] === $user->id
+                    && $context['email'] === $user->email
+                    && array_key_exists('timestamp', $context)
+                    && $context['timestamp'] !== '';
             }));
 
         Log::shouldReceive('info')
@@ -119,7 +147,10 @@ class SendPasswordResetEmailTest extends TestCase
         Log::shouldReceive('error')->once()->with('Failed to send password reset email', Mockery::on(function (array $context) use ($user) {
             return $context['user_id'] === $user->id
                 && $context['email'] === $user->email
-                && $context['error'] === 'mail transport down';
+                && $context['error'] === 'mail transport down'
+                && array_key_exists('error_code', $context)
+                && array_key_exists('attempt', $context)
+                && array_key_exists('timestamp', $context);
         }));
 
         $job = new SendPasswordResetEmail($user, 't', 'https://x', 'App', 'x.com');
@@ -127,6 +158,62 @@ class SendPasswordResetEmailTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('mail transport down');
 
+        $job->handle();
+    }
+
+    public function test_handle_when_mail_fails_and_email_logging_merges_stack_trace_on_channel(): void
+    {
+        config(['carpoolear.log_emails' => true]);
+
+        $user = User::factory()->create();
+
+        Mail::shouldReceive('to')
+            ->once()
+            ->with($user->email)
+            ->andReturnSelf();
+        Mail::shouldReceive('send')
+            ->once()
+            ->with(Mockery::type(ResetPassword::class))
+            ->andThrow(new \RuntimeException('smtp failed', 502));
+
+        $emailChannel = Mockery::mock();
+        $emailChannel->shouldReceive('info')
+            ->once()
+            ->with('PASSWORD_RESET_EMAIL_SENDING', Mockery::type('array'));
+        $emailChannel->shouldReceive('error')
+            ->once()
+            ->with('PASSWORD_RESET_EMAIL_FAILED', Mockery::on(function (array $context) use ($user) {
+                return $context['user_id'] === $user->id
+                    && $context['email'] === $user->email
+                    && $context['error'] === 'smtp failed'
+                    && (int) $context['error_code'] === 502
+                    && array_key_exists('attempt', $context)
+                    && array_key_exists('stack_trace', $context)
+                    && strlen((string) $context['stack_trace']) > 0;
+            }));
+
+        Log::shouldReceive('info')
+            ->once()
+            ->ordered()
+            ->with('Sending password reset email', Mockery::type('array'));
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+        Log::shouldReceive('error')
+            ->once()
+            ->ordered()
+            ->with('Failed to send password reset email', Mockery::type('array'));
+        Log::shouldReceive('channel')
+            ->once()
+            ->ordered()
+            ->with('email_logs')
+            ->andReturn($emailChannel);
+
+        $job = new SendPasswordResetEmail($user, 'tok', 'https://x', 'App', 'x.com');
+
+        $this->expectException(\RuntimeException::class);
         $job->handle();
     }
 
@@ -141,6 +228,8 @@ class SendPasswordResetEmailTest extends TestCase
             ->once()
             ->with('PASSWORD_RESET_EMAIL_PERMANENTLY_FAILED', Mockery::on(function (array $context) use ($user) {
                 return $context['user_id'] === $user->id
+                    && $context['email'] === $user->email
+                    && array_key_exists('attempts', $context)
                     && isset($context['stack_trace'])
                     && strlen((string) $context['stack_trace']) > 0;
             }));
@@ -150,7 +239,9 @@ class SendPasswordResetEmailTest extends TestCase
             ->with('Password reset email job failed permanently', Mockery::on(function (array $context) use ($user) {
                 return $context['user_id'] === $user->id
                     && $context['email'] === $user->email
-                    && $context['error'] === 'exhausted';
+                    && $context['error'] === 'exhausted'
+                    && array_key_exists('attempts', $context)
+                    && array_key_exists('timestamp', $context);
             }));
         Log::shouldReceive('channel')
             ->once()
@@ -159,5 +250,22 @@ class SendPasswordResetEmailTest extends TestCase
 
         $job = new SendPasswordResetEmail($user, 't', 'https://x', 'App', 'x.com');
         $job->failed(new \RuntimeException('exhausted'));
+    }
+
+    public function test_failed_when_log_emails_key_is_absent_does_not_use_email_logs_channel(): void
+    {
+        $carpoolear = config('carpoolear');
+        unset($carpoolear['log_emails']);
+        config(['carpoolear' => $carpoolear]);
+
+        $user = User::factory()->create();
+
+        Log::shouldReceive('error')
+            ->once()
+            ->with('Password reset email job failed permanently', Mockery::type('array'));
+        Log::shouldReceive('channel')->never();
+
+        $job = new SendPasswordResetEmail($user, 't', 'https://x', 'App', 'x.com');
+        $job->failed(new \RuntimeException('permanent'));
     }
 }
