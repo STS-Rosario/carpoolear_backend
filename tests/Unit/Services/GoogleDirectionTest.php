@@ -7,6 +7,14 @@ use STS\Models\TripPoint;
 use STS\Services\GoogleDirection;
 use Tests\TestCase;
 
+final class GoogleDirectionGeocodeProbe extends GoogleDirection
+{
+    public function callFetchGeocodeJson(string $url): ?array
+    {
+        return parent::fetchGeocodeJson($url);
+    }
+}
+
 final class GoogleDirectionHarness extends GoogleDirection
 {
     /** @var list<array<string, mixed>|null> */
@@ -139,5 +147,72 @@ class GoogleDirectionTest extends TestCase
                 ],
             ]],
         ];
+    }
+
+    public function test_fetch_geocode_json_returns_null_when_body_is_not_json_object(): void
+    {
+        $tmp = storage_path('app/geocode_not_array_'.uniqid('', true).'.json');
+        file_put_contents($tmp, '"just-a-string"');
+
+        try {
+            $probe = new GoogleDirectionGeocodeProbe;
+            $this->assertNull($probe->callFetchGeocodeJson('file://'.$tmp));
+        } finally {
+            unlink($tmp);
+        }
+    }
+
+    public function test_fetch_geocode_json_returns_null_when_file_missing(): void
+    {
+        $probe = new GoogleDirectionGeocodeProbe;
+        $this->assertNull($probe->callFetchGeocodeJson('file:///no-such-path-'.uniqid('', true)));
+    }
+
+    public function test_donwload_point_builds_url_with_encoded_address_before_fetch(): void
+    {
+        $svc = new GoogleDirectionHarness;
+        $svc->setResponseQueue([null]);
+
+        $trip = new \stdClass;
+
+        $svc->donwloadPoint($trip, 'A & B, Córdoba');
+
+        $this->assertCount(1, $svc->fetchedUrls);
+        $this->assertStringContainsString(urlencode('A & B, Córdoba'), $svc->fetchedUrls[0]);
+        $this->assertStringContainsString('http://maps.google.com/maps/api/geocode/json?address=', $svc->fetchedUrls[0]);
+    }
+
+    public function test_donwload_point_maps_only_country_component_when_fixture_has_single_type(): void
+    {
+        $fixture = [
+            'status' => 'OK',
+            'results' => [[
+                'geometry' => [
+                    'location' => ['lat' => -33.0, 'lng' => -60.0],
+                ],
+                'address_components' => [
+                    ['long_name' => 'Argentina', 'types' => ['country', 'political']],
+                ],
+            ]],
+        ];
+
+        $svc = new GoogleDirectionHarness;
+        $svc->setResponseQueue([$fixture]);
+
+        $relation = Mockery::mock();
+        $relation->shouldReceive('save')
+            ->once()
+            ->with(Mockery::on(function (TripPoint $point): bool {
+                return $point->address === 'Only Country'
+                    && ($point->json_address['pais'] ?? null) === 'Argentina'
+                    && count($point->json_address) === 1;
+            }));
+
+        $trip = Mockery::mock(\stdClass::class);
+        $trip->shouldReceive('points')->once()->andReturn($relation);
+
+        $svc->donwloadPoint($trip, 'Only Country');
+
+        $this->assertCount(1, $svc->fetchedUrls);
     }
 }
