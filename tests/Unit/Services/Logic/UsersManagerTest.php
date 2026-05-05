@@ -38,6 +38,20 @@ class UsersManagerTest extends TestCase
         return $this->app->make(UsersManager::class);
     }
 
+    public function test_manager_resolves_default_cars_repository_and_editable_properties_service(): void
+    {
+        $manager = $this->manager();
+        $ref = new \ReflectionClass($manager);
+
+        $carsProp = $ref->getProperty('carsRepository');
+        $carsProp->setAccessible(true);
+        $this->assertInstanceOf(\STS\Repository\CarsRepository::class, $carsProp->getValue($manager));
+
+        $propsProp = $ref->getProperty('userEditablePropertiesService');
+        $propsProp->setAccessible(true);
+        $this->assertInstanceOf(UserEditablePropertiesService::class, $propsProp->getValue($manager));
+    }
+
     /**
      * @return array<string, mixed>
      */
