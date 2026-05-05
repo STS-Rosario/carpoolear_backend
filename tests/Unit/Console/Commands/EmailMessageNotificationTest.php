@@ -12,6 +12,15 @@ use Tests\TestCase;
 
 class EmailMessageNotificationTest extends TestCase
 {
+    public function test_command_is_resolvable_and_exposes_expected_contract(): void
+    {
+        /** @var EmailMessageNotification $command */
+        $command = app(EmailMessageNotification::class);
+
+        $this->assertSame('messages:email', $command->getName());
+        $this->assertStringContainsString('Notify by email pending messages', $command->getDescription());
+    }
+
     public function test_handle_marks_only_pending_messages_as_notified(): void
     {
         Event::fake([MessageLogged::class]);
@@ -63,6 +72,59 @@ class EmailMessageNotificationTest extends TestCase
         $this->assertSame(1, (int) $pendingOne->fresh()->already_notified);
         $this->assertSame(1, (int) $pendingTwo->fresh()->already_notified);
         $this->assertSame(1, (int) $alreadyNotified->fresh()->already_notified);
+    }
+
+    public function test_handle_marks_pending_messages_across_multiple_conversations_and_authors(): void
+    {
+        Event::fake([MessageLogged::class]);
+
+        $authorA = User::factory()->create();
+        $authorB = User::factory()->create();
+        $recipient = User::factory()->create();
+
+        $conversationOne = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Conversation one',
+            'trip_id' => null,
+        ]);
+        $conversationTwo = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Conversation two',
+            'trip_id' => null,
+        ]);
+
+        $messageOne = Message::query()->create([
+            'text' => 'one',
+            'estado' => Message::STATE_NOLEIDO,
+            'user_id' => $authorA->id,
+            'conversation_id' => $conversationOne->id,
+        ]);
+        $messageTwo = Message::query()->create([
+            'text' => 'two',
+            'estado' => Message::STATE_NOLEIDO,
+            'user_id' => $authorA->id,
+            'conversation_id' => $conversationTwo->id,
+        ]);
+        $messageThree = Message::query()->create([
+            'text' => 'three',
+            'estado' => Message::STATE_NOLEIDO,
+            'user_id' => $authorB->id,
+            'conversation_id' => $conversationOne->id,
+        ]);
+
+        $messageOne->users()->attach($recipient->id, ['read' => false]);
+        $messageTwo->users()->attach($recipient->id, ['read' => false]);
+        $messageThree->users()->attach($recipient->id, ['read' => false]);
+
+        $messageOne->forceFill(['already_notified' => 0])->saveQuietly();
+        $messageTwo->forceFill(['already_notified' => 0])->saveQuietly();
+        $messageThree->forceFill(['already_notified' => 0])->saveQuietly();
+
+        $this->artisan('messages:email')->assertExitCode(0);
+
+        $this->assertSame(1, (int) $messageOne->fresh()->already_notified);
+        $this->assertSame(1, (int) $messageTwo->fresh()->already_notified);
+        $this->assertSame(1, (int) $messageThree->fresh()->already_notified);
     }
 
     public function test_command_contract_is_defined(): void

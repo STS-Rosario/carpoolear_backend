@@ -23,16 +23,6 @@ class EmailMessageNotification extends Command
     protected $description = 'Notify by email pending messages';
 
     /**
-     * Create a new command instance.
-     *
-     * @returnactiveRatings void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
      * Execute the console command.
      *
      * @return mixed
@@ -58,14 +48,6 @@ class EmailMessageNotification extends Command
                 $notification = new NewMessageNotification;
                 $notification->setAttribute('from', $from);
                 $notification->setAttribute('messages', $message);
-                foreach ($message->users as $to) {
-                    try {
-                        // $notification->notify($to);
-                    } catch (\Exception $e) {
-                        \Log::info('Error on sending notification');
-                        \Log::info($e);
-                    }
-                }
             }
         }
     }
