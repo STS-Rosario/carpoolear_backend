@@ -7,24 +7,13 @@ namespace STS\Services\HttpClients;
  */
 final class DevFacebookCurlSsl
 {
-    /**
-     * PHP 8+ returns {@see \CurlHandle} objects from curl_init(); older PHP used resources.
-     */
     public static function isUsableCurlHandle(mixed $handle): bool
     {
-        if ($handle === null) {
-            return false;
-        }
-
-        if (is_resource($handle) && get_resource_type($handle) === 'curl') {
-            return true;
-        }
-
         return $handle instanceof \CurlHandle;
     }
 
     /**
-     * @param  \CurlHandle|resource|null  $curlHandle
+     * @param  \CurlHandle|null  $curlHandle
      */
     public static function applyInsecureSslOrLogMissing(mixed $curlHandle): void
     {

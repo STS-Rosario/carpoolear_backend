@@ -38,11 +38,16 @@ class DevFacebookCurlSslTest extends TestCase
         });
     }
 
-    public function test_is_usable_curl_handle_accepts_curl_handle_and_curl_resource(): void
+    public function test_is_usable_curl_handle_accepts_only_real_curl_handles(): void
     {
         $ch = curl_init('https://example.test/');
         $this->assertTrue(DevFacebookCurlSsl::isUsableCurlHandle($ch));
         curl_close($ch);
+
+        $stream = fopen('php://temp', 'rb');
+        $this->assertIsResource($stream);
+        $this->assertFalse(DevFacebookCurlSsl::isUsableCurlHandle($stream));
+        fclose($stream);
 
         $this->assertFalse(DevFacebookCurlSsl::isUsableCurlHandle(null));
         $this->assertFalse(DevFacebookCurlSsl::isUsableCurlHandle('not-a-handle'));
