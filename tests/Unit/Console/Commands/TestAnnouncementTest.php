@@ -33,6 +33,14 @@ class TestAnnouncementTest extends TestCase
         ];
     }
 
+    public function test_command_contract_is_exposed(): void
+    {
+        $command = app(\STS\Console\Commands\TestAnnouncement::class);
+
+        $this->assertSame('announcement:test', $command->getName());
+        $this->assertStringContainsString('Test the announcement system with a single user', $command->getDescription());
+    }
+
     public function test_handle_prints_error_when_specific_user_does_not_exist(): void
     {
         $service = Mockery::mock(AnnouncementService::class);
@@ -171,6 +179,40 @@ class TestAnnouncementTest extends TestCase
 
         $this->artisan('announcement:test')
             ->expectsOutputToContain('Testing with user: Eligible Driver')
+            ->assertExitCode(0);
+    }
+
+    public function test_handle_prints_error_when_no_eligible_user_is_found_without_user_id_option(): void
+    {
+        $service = Mockery::mock(AnnouncementService::class);
+        $service->shouldReceive('getUserStats')->once()->andReturn($this->stats());
+        $service->shouldNotReceive('sendToUser');
+        $this->app->instance(AnnouncementService::class, $service);
+
+        $inactive = User::factory()->create(['active' => false, 'banned' => false]);
+        Device::query()->create([
+            'user_id' => $inactive->id,
+            'session_id' => 'sess-inactive-only',
+            'device_id' => 'dev-inactive-only',
+            'device_type' => 'android',
+            'app_version' => 1,
+            'notifications' => true,
+            'last_activity' => Carbon::now()->toDateTimeString(),
+        ]);
+
+        $banned = User::factory()->create(['active' => true, 'banned' => true]);
+        Device::query()->create([
+            'user_id' => $banned->id,
+            'session_id' => 'sess-banned-only',
+            'device_id' => 'dev-banned-only',
+            'device_type' => 'ios',
+            'app_version' => 1,
+            'notifications' => true,
+            'last_activity' => Carbon::now()->toDateTimeString(),
+        ]);
+
+        $this->artisan('announcement:test')
+            ->expectsOutput('No suitable test user found with active devices.')
             ->assertExitCode(0);
     }
 
