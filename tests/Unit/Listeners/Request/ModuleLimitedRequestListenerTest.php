@@ -43,15 +43,36 @@ class ModuleLimitedRequestListenerTest extends TestCase
 
         Event::fake([AutoCancel::class]);
 
-        $driver = User::factory()->create();
+        $driverA = User::factory()->create();
+        $driverB = User::factory()->create();
         $passenger = User::factory()->create();
-        $trip = Trip::factory()->create([
-            'user_id' => $driver->id,
+
+        $base = Carbon::parse('2030-06-15 10:00:00');
+
+        $acceptedTrip = Trip::factory()->create([
+            'user_id' => $driverA->id,
             'to_town' => 'SharedTown',
-            'trip_date' => Carbon::parse('2030-06-01 10:00:00'),
+            'trip_date' => $base->copy(),
         ]);
 
-        (new ModuleLimitedRequest)->handle(new PassengerAccepted($trip, $driver, $passenger));
+        $otherTrip = Trip::factory()->create([
+            'user_id' => $driverB->id,
+            'to_town' => 'SharedTown',
+            'trip_date' => $base->copy()->addHour(),
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $acceptedTrip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $otherTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        (new ModuleLimitedRequest)->handle(new PassengerAccepted($acceptedTrip->fresh(), $driverA, $passenger->fresh()));
 
         Event::assertNotDispatched(AutoCancel::class);
     }
@@ -234,5 +255,97 @@ class ModuleLimitedRequestListenerTest extends TestCase
 
         Event::assertNotDispatched(AutoCancel::class);
         $this->assertSame(Passenger::STATE_PENDING, $otherRequest->fresh()->request_state);
+    }
+
+    public function test_handle_dispatches_auto_cancel_within_default_two_hour_window_when_hours_range_key_is_absent(): void
+    {
+        $carpoolear = config('carpoolear');
+        unset($carpoolear['module_user_request_limited_hours_range']);
+        $carpoolear['module_user_request_limited_enabled'] = true;
+        config(['carpoolear' => $carpoolear]);
+
+        Event::fake([AutoCancel::class]);
+
+        $driverA = User::factory()->create();
+        $driverB = User::factory()->create();
+        $passenger = User::factory()->create();
+
+        $base = Carbon::parse('2030-10-01 12:00:00');
+
+        $acceptedTrip = Trip::factory()->create([
+            'user_id' => $driverA->id,
+            'to_town' => 'La Plata',
+            'trip_date' => $base->copy(),
+        ]);
+
+        $otherTrip = Trip::factory()->create([
+            'user_id' => $driverB->id,
+            'to_town' => 'La Plata',
+            'trip_date' => $base->copy()->addMinutes(90),
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $acceptedTrip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        $pendingElsewhere = Passenger::factory()->create([
+            'trip_id' => $otherTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        (new ModuleLimitedRequest)->handle(new PassengerAccepted($acceptedTrip->fresh(), $driverA, $passenger->fresh()));
+
+        Event::assertDispatched(AutoCancel::class, function (AutoCancel $event) use ($otherTrip, $driverB, $passenger) {
+            return $event->trip->is($otherTrip)
+                && $event->from->is($driverB)
+                && $event->to->is($passenger);
+        });
+
+        $this->assertSame(Passenger::STATE_CANCELED, $pendingElsewhere->fresh()->request_state);
+    }
+
+    public function test_handle_casts_hours_range_config_to_integer_so_string_fraction_does_not_widen_time_window(): void
+    {
+        config([
+            'carpoolear.module_user_request_limited_enabled' => true,
+            'carpoolear.module_user_request_limited_hours_range' => '3.7',
+        ]);
+
+        Event::fake([AutoCancel::class]);
+
+        $driverA = User::factory()->create();
+        $driverB = User::factory()->create();
+        $passenger = User::factory()->create();
+
+        $base = Carbon::parse('2030-11-01 08:00:00');
+
+        $acceptedTrip = Trip::factory()->create([
+            'user_id' => $driverA->id,
+            'to_town' => 'Mar del Plata',
+            'trip_date' => $base->copy(),
+        ]);
+
+        $otherTrip = Trip::factory()->create([
+            'user_id' => $driverB->id,
+            'to_town' => 'Mar del Plata',
+            'trip_date' => $base->copy()->addHours(3)->addMinutes(12),
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $acceptedTrip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $otherTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        (new ModuleLimitedRequest)->handle(new PassengerAccepted($acceptedTrip->fresh(), $driverA, $passenger->fresh()));
+
+        Event::assertNotDispatched(AutoCancel::class);
     }
 }
