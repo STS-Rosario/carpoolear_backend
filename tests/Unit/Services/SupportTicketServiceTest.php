@@ -92,7 +92,10 @@ class SupportTicketServiceTest extends TestCase
             $attachment->path
         );
         $this->assertSame('image/png', $attachment->mime);
-        $this->assertSame(20480, (int) $attachment->size_bytes);
+        $this->assertIsInt($attachment->fresh()->size_bytes);
+        $this->assertSame(20480, $attachment->fresh()->size_bytes);
+        $this->assertArrayHasKey('ticket_id', $attachment->fresh()->getAttributes());
+        $this->assertNull($attachment->fresh()->ticket_id);
         Storage::disk('public')->assertExists($attachment->path);
     }
 
