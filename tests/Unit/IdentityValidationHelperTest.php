@@ -320,6 +320,18 @@ class IdentityValidationHelperTest extends TestCase
         $this->assertFalse(IdentityValidationHelper::canPerformRestrictedActions($user));
     }
 
+    public function test_is_user_created_on_or_after_cutoff_false_when_created_at_is_null(): void
+    {
+        config(['carpoolear.identity_validation_new_users_date' => '2020-01-01']);
+
+        $user = User::factory()->create();
+        DB::table('users')->where('id', $user->id)->update(['created_at' => null]);
+        $user->refresh();
+
+        $this->assertNull($user->created_at);
+        $this->assertFalse(IdentityValidationHelper::isUserCreatedOnOrAfterCutoff($user));
+    }
+
     public function test_is_user_created_on_or_after_cutoff_respects_date(): void
     {
         config(['carpoolear.identity_validation_new_users_date' => '2024-01-01']);
