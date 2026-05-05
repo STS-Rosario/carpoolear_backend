@@ -93,12 +93,6 @@ class UncoveredEndpointsSmokeTest extends TestCase
         );
     }
 
-    public function test_transbank_entry_without_tp_id_is_handled(): void
-    {
-        $response = $this->get('/transbank');
-        $this->assertTrue(in_array($response->status(), [200, 500], true));
-    }
-
     public function test_social_login_with_invalid_provider_returns_client_or_server_error(): void
     {
         $status = $this->postJson('api/social/login/not-a-real-provider', [

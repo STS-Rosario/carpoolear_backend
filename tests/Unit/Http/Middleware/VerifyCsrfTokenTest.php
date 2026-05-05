@@ -15,12 +15,10 @@ class VerifyCsrfTokenTest extends TestCase
         return new VerifyCsrfToken($this->app, $this->app->make('encrypter'));
     }
 
-    public function test_excluded_paths_include_payment_and_webhook_routes(): void
+    public function test_excluded_paths_include_webhook_routes(): void
     {
         $paths = $this->middleware()->getExcludedPaths();
 
-        $this->assertContains('transbank-respuesta', $paths);
-        $this->assertContains('transbank-final', $paths);
         $this->assertContains('webhooks/mercadopago', $paths);
     }
 
@@ -39,8 +37,6 @@ class VerifyCsrfTokenTest extends TestCase
     public static function exceptedPathProvider(): array
     {
         return [
-            'transbank respuesta' => ['/transbank-respuesta'],
-            'transbank final' => ['/transbank-final'],
             'mercadopago webhook' => ['/webhooks/mercadopago'],
         ];
     }

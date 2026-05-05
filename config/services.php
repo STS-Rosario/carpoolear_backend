@@ -62,10 +62,4 @@ return [
         'access_token' => env('WHATSAPP_ACCESS_TOKEN'),
     ],
 
-    'transbank' => [
-        'webpay_plus' => [
-            'commerce_code' => env('TRANSBANK_WEBPAY_PLUS_COMMERCE_CODE'),
-            'api_key' => env('TRANSBANK_WEBPAY_PLUS_API_KEY'),
-        ],
-    ],
 ];

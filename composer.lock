@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3cfeb21d3ab91a18ad590145c23e738a",
+    "content-hash": "889b76c5f42a64ac9dbb4466353cc4e7",
     "packages": [
         {
             "name": "brick/math",
@@ -6604,57 +6604,6 @@
                 "source": "https://github.com/tijsverkoyen/CssToInlineStyles/tree/v2.4.0"
             },
             "time": "2025-12-02T11:56:42+00:00"
-        },
-        {
-            "name": "transbank/transbank-sdk",
-            "version": "4.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/TransbankDevelopers/transbank-sdk-php.git",
-                "reference": "0f25b383d6162ccdc9f7676a8e44fde874694873"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/TransbankDevelopers/transbank-sdk-php/zipball/0f25b383d6162ccdc9f7676a8e44fde874694873",
-                "reference": "0f25b383d6162ccdc9f7676a8e44fde874694873",
-                "shasum": ""
-            },
-            "require": {
-                "ext-curl": "*",
-                "ext-json": "*",
-                "ext-mbstring": "*",
-                "guzzlehttp/guzzle": "^5.3.1|^6.5.8|^7.4.5",
-                "php": ">=7.0"
-            },
-            "require-dev": {
-                "dms/phpunit-arraysubset-asserts": "^0.2.1",
-                "phpunit/phpunit": "^9",
-                "squizlabs/php_codesniffer": "~2.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Transbank\\": [
-                        "src/"
-                    ]
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "Transbank SDK",
-            "keywords": [
-                "api",
-                "payments",
-                "sdk",
-                "transbank"
-            ],
-            "support": {
-                "issues": "https://github.com/TransbankDevelopers/transbank-sdk-php/issues",
-                "source": "https://github.com/TransbankDevelopers/transbank-sdk-php/tree/4.0.0"
-            },
-            "time": "2023-12-12T18:01:53+00:00"
         },
         {
             "name": "tymon/jwt-auth",

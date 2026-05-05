@@ -5,7 +5,6 @@ use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
 use STS\Http\Controllers\Api\v1\WhatsAppWebhookController;
 use STS\Http\Controllers\HomeController;
-use STS\Http\Controllers\PaymentController;
 
 Route::get('/', [HomeController::class, 'home']);
 Route::get('/home', [HomeController::class, 'home']);
@@ -39,10 +38,6 @@ Route::get('/derrumbe', [HomeController::class, 'derrumbe']);
 Route::get('/lucro', [HomeController::class, 'lucro']);
 Route::get('/covid', [HomeController::class, 'covid']);
 Route::get('/colabora-programando', [HomeController::class, 'programar']);
-
-Route::get('/transbank', [PaymentController::class, 'transbank']);
-Route::any('/transbank-respuesta', [PaymentController::class, 'transbankResponse']);
-Route::any('/transbank-final', [PaymentController::class, 'transbankFinal']);
 
 // MercadoPago webhook
 Route::any('/webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle'])
