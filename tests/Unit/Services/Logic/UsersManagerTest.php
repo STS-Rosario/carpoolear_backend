@@ -4,10 +4,14 @@ namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Events\User\Create as CreateEvent;
@@ -21,6 +25,7 @@ use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
+use STS\Services\ImageUploadValidator;
 use STS\Services\Logic\UsersManager;
 use STS\Services\UserEditablePropertiesService;
 use Tests\TestCase;
@@ -1707,5 +1712,228 @@ class UsersManagerTest extends TestCase
         $errors = $manager->getErrors();
         $this->assertIsObject($errors);
         $this->assertSame('error_uploading_image', $errors->error);
+    }
+
+    public function test_bank_data_returns_decoded_json_from_storage_banks_and_cc_paths(): void
+    {
+        $country = 'ARG';
+        Config::set('carpoolear.osm_country', $country);
+        $banksDir = storage_path('banks');
+        $ccDir = storage_path('cc');
+        File::ensureDirectoryExists($banksDir);
+        File::ensureDirectoryExists($ccDir);
+        $bankFile = $banksDir.DIRECTORY_SEPARATOR.$country.'.json';
+        $ccFile = $ccDir.DIRECTORY_SEPARATOR.$country.'.json';
+        $hadBank = File::exists($bankFile);
+        $hadCc = File::exists($ccFile);
+        $oldBank = $hadBank ? File::get($bankFile) : null;
+        $oldCc = $hadCc ? File::get($ccFile) : null;
+        try {
+            File::put($bankFile, json_encode([['id' => 'b1']]));
+            File::put($ccFile, json_encode(['k' => 'cc']));
+
+            $out = $this->manager()->bankData();
+
+            $this->assertIsObject($out);
+            $this->assertSame([['id' => 'b1']], $out->banks);
+            $this->assertSame(['k' => 'cc'], $out->cc);
+        } finally {
+            if ($hadBank) {
+                File::put($bankFile, $oldBank);
+            } else {
+                File::delete($bankFile);
+            }
+            if ($hadCc) {
+                File::put($ccFile, $oldCc);
+            } else {
+                File::delete($ccFile);
+            }
+        }
+    }
+
+    public function test_update_returns_when_validator_fails_and_sets_password_errors(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->create();
+
+        $manager = $this->manager();
+        $this->assertNull($manager->update($user, [
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ]));
+
+        $this->assertTrue($manager->getErrors()->has('password'));
+        Event::assertNotDispatched(UpdateEvent::class);
+    }
+
+    public function test_create_with_recaptcha_token_creates_active_user_when_siteverify_succeeds(): void
+    {
+        Event::fake([CreateEvent::class]);
+        $email = 'captcha-ok-'.uniqid('', true).'@example.com';
+        $payload = $this->validRegistrationPayload($email);
+        $payload['token'] = 't-'.uniqid('', true);
+
+        $prevPost = $_POST;
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $_POST['token'] = $payload['token'];
+
+        try {
+            $manager = new class(app(UserRepository::class), app(TripRepository::class)) extends UsersManager
+            {
+                protected function fetchRecaptchaVerificationResponse(string $url, array $options): string|false
+                {
+                    return json_encode(['success' => true, 'score' => 0.9], JSON_THROW_ON_ERROR);
+                }
+            };
+
+            $user = $manager->create($payload);
+
+            $this->assertInstanceOf(User::class, $user);
+            $this->assertTrue((bool) $user->fresh()->active);
+            Event::assertDispatched(CreateEvent::class);
+        } finally {
+            $_POST = $prevPost;
+        }
+    }
+
+    public function test_create_with_recaptcha_token_returns_false_when_siteverify_reports_failure(): void
+    {
+        Event::fake([CreateEvent::class]);
+        $email = 'captcha-fail-'.uniqid('', true).'@example.com';
+        $payload = $this->validRegistrationPayload($email);
+        $payload['token'] = 't-'.uniqid('', true);
+
+        $prevPost = $_POST;
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $_POST['token'] = $payload['token'];
+
+        try {
+            $manager = new class(app(UserRepository::class), app(TripRepository::class)) extends UsersManager
+            {
+                protected function fetchRecaptchaVerificationResponse(string $url, array $options): string|false
+                {
+                    return json_encode(['success' => false, 'score' => 0.1], JSON_THROW_ON_ERROR);
+                }
+            };
+
+            $this->assertFalse($manager->create($payload));
+            $this->assertNull(User::query()->where('email', $email)->first());
+            Event::assertNotDispatched(CreateEvent::class);
+        } finally {
+            $_POST = $prevPost;
+        }
+    }
+
+    public function test_create_with_recaptcha_marks_banned_when_name_matches_config_banned_word(): void
+    {
+        Event::fake([CreateEvent::class]);
+        Config::set('carpoolear.banned_words_names', ['badword']);
+
+        $email = 'captcha-ban-'.uniqid('', true).'@example.com';
+        $payload = $this->validRegistrationPayload($email);
+        $payload['name'] = 'User badword Here';
+        $payload['token'] = 't-'.uniqid('', true);
+
+        $prevPost = $_POST;
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $_POST['token'] = $payload['token'];
+
+        try {
+            $manager = new class(app(UserRepository::class), app(TripRepository::class)) extends UsersManager
+            {
+                protected function fetchRecaptchaVerificationResponse(string $url, array $options): string|false
+                {
+                    return json_encode(['success' => true, 'score' => 0.9], JSON_THROW_ON_ERROR);
+                }
+            };
+
+            $user = $manager->create($payload);
+
+            $this->assertInstanceOf(User::class, $user);
+            $this->assertSame(1, (int) $user->fresh()->banned);
+            Event::assertDispatched(CreateEvent::class);
+        } finally {
+            $_POST = $prevPost;
+            Config::set('carpoolear.banned_words_names', []);
+        }
+    }
+
+    public function test_upload_doc_returns_false_when_image_validator_rejects_file(): void
+    {
+        $mock = Mockery::mock(ImageUploadValidator::class);
+        $mock->shouldReceive('validate')
+            ->once()
+            ->andReturn(['valid' => false, 'errors' => ['image' => ['invalid']]]);
+        $this->app->instance(ImageUploadValidator::class, $mock);
+
+        $manager = $this->manager();
+        $this->assertFalse($manager->uploadDoc(UploadedFile::fake()->image('x.jpg')));
+
+        $errors = $manager->getErrors();
+        $this->assertIsArray($errors);
+        $this->assertArrayHasKey('image', $errors);
+    }
+
+    public function test_upload_doc_moves_png_to_docs_when_heic_conversion_returns_null(): void
+    {
+        $this->app->instance(ImageUploadValidator::class, new ImageUploadValidator);
+        $manager = $this->manager();
+        $file = UploadedFile::fake()->image('driver.png', 20, 20);
+
+        $name = $manager->uploadDoc($file);
+
+        $this->assertIsString($name);
+        $this->assertStringEndsWith('.png', $name);
+        $path = base_path('public/image/docs/'.$name);
+        $this->assertFileExists($path);
+        File::delete($path);
+    }
+
+    public function test_update_photo_updates_profile_from_valid_jpeg_data_uri(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->create();
+        $tmp = UploadedFile::fake()->image('profile.jpg', 2, 2);
+        $binary = file_get_contents($tmp->getRealPath());
+        $this->assertNotFalse($binary);
+        $uri = 'data:image/jpeg;base64,'.base64_encode($binary);
+
+        $out = $this->manager()->updatePhoto($user, ['profile' => $uri]);
+
+        $this->assertInstanceOf(User::class, $out);
+        Event::assertDispatched(UpdateEvent::class);
+    }
+
+    public function test_update_sends_driver_request_email_when_admin_configured_and_docs_present(): void
+    {
+        Config::set('carpoolear.admin_email', 'fleet-admin@example.test');
+
+        $user = User::factory()->create(['driver_is_verified' => false]);
+        $docs = [storage_path('app/.driver_doc_test_placeholder.jpg')];
+        File::put($docs[0], 'x');
+
+        try {
+            Event::fake([UpdateEvent::class]);
+            Mail::shouldReceive('send')
+                ->once()
+                ->with(
+                    'email.user_be_driver',
+                    Mockery::on(function ($data) use ($user) {
+                        return ($data['title'] ?? '') === 'Usuario quiere ser conductor'
+                            && isset($data['user'])
+                            && (int) $data['user']->id === (int) $user->id;
+                    }),
+                    Mockery::type('Closure')
+                );
+
+            $out = $this->manager()->update($user, [
+                'driver_data_docs' => $docs,
+            ], is_driver: true);
+
+            $this->assertInstanceOf(User::class, $out);
+        } finally {
+            File::delete($docs[0]);
+            Config::set('carpoolear.admin_email', '');
+        }
     }
 }
