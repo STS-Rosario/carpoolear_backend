@@ -3820,3 +3820,37 @@ Scoped mutation command (both test files): **`PEST_PHP=…` `DB_DATABASE=testing
   - **Cause:** **`UnwrapStrtolower`** leaves **`ucfirst($provider)`** only; for **`tEsT`**, PHP returns **`TEsT`**, resolving the wrong class **`TEsTSocialProvider`** instead of **`TestSocialProvider`** (correct path is **`strtolower` → `test` → `ucfirst` → `Test`**).
   - **Mutant ID:** **`Line 33:UnwrapStrtolower`**.
   - **Fix:** **`test_social_login_resolves_studly_provider_via_strtolower_before_ucfirst`** — **`POST api/social/login/tEsT`** with a valid test **`access_token`** must return **`200`** and a **`token`**.
+
+## MSI batch — `SupportTicketService`, `ImageUploadValidator`, `ReferencesManager`, `RatingManager` (report 2026-04-30)
+
+### `SupportTicketService` (`app/Services/SupportTicketService.php`)
+
+- **`RemoveArrayItem` @ L26 (`ticket_id`)**, **`RemoveIntegerCast` @ L31 (`size_bytes`)**
+  - **Cause:** Dropping the **`ticket_id`** key from the **`create([...])`** payload can still yield **`NULL`** in the DB (observationally equivalent to explicit **`null`**), so **`assertNull` alone** did not prove the column was written as part of the intended payload. **`RemoveIntegerCast`** on **`(int) $file->getSize()`** could survive if assertions only loosely coerced stored sizes.
+  - **Fix:** **`SupportTicketServiceTest::test_store_reply_attachments_persists_only_uploaded_files`** now **`assertArrayHasKey('ticket_id', …)`** plus **`assertNull`** on a fresh row, and **`assertIsInt`** with an exact **`20480`** byte expectation for **`size_bytes`**.
+  - **Mutant IDs:** report operators **`RemoveArrayItem@L26`**, **`RemoveIntegerCast@L31`**.
+
+### `ImageUploadValidator` (`app/Services/ImageUploadValidator.php`)
+
+- **`RemoveIntegerCast` @ L19**, **`CoalesceRemoveLeft` / `RemoveArrayItem` @ L32**
+  - **Cause:** MIME and extension failures reused the **same** error string, so **`??`-preservation** mutants on the extension branch could still look identical to the healthy code when MIME failed first. **`(int)`** on **`$maxBytesRaw`** was not pinned against a pure extension-only failure path.
+  - **Fix:** Distinct user-facing strings for **MIME** vs **file extension** failures; **`ImageUploadValidatorTest::test_extension_only_failure_returns_extension_message_when_mime_is_allowed`** (JPEG MIME allowed, **`.jpeg`** not in extension allow-list) asserts the extension message; MIME-only assertions updated in **`test_disallowed_mime_fails`**, **`test_disallowed_extension_fails`** (MIME fails first for **`.exe`**), **`test_custom_config_restricts_mime`**, and **`test_existing_type_error_is_not_overwritten_by_extension_or_size_errors`**.
+  - **Mutant IDs:** **`RemoveIntegerCast@L19`**, **`CoalesceRemoveLeft@L32`**, **`RemoveArrayItem@L32`**.
+
+### `ReferencesManager` (`app/Services/Logic/ReferencesManager.php`)
+
+- **`EqualToIdentical` @ L39** (`$userTo->id == $user->id`)
+  - **Cause:** Loose equality could mask subtle identity bugs; the MSI **`EqualToIdentical`** flip needed a single, normalization-friendly guard.
+  - **Fix:** Compare with **`(int) $userTo->id === (int) $user->id`** so self-reference detection is stable for numeric **`User`** ids regardless of scalar subtype from **`find()`** / in-memory models.
+  - **Mutant ID:** **`EqualToIdentical@L39`**.
+
+### `RatingManager` (`app/Services/Logic/RatingManager.php`)
+
+- **`RemoveArrayItem` @ L31 (`comment` rule)**, **`RemoveMethodCall` @ L98**, **`RemoveArrayItem` / integer mutants @ L131–L155** (`activeRatings` passenger loop)
+  - **Cause:** Without a **`comment`** rule, array payloads slip past **`nullable|string`**. **`activeRatings`** used **`==`** on **`request_state`** / **`canceled_state`**, so **`EqualToIdentical`**, **`BooleanAndToBooleanOr`**, and boundary mutants could survive against weak typing. The stray **`in:0,1,`** fragment was a typo risk for **`in:`** mutants.
+  - **Fix:** **`RatingManagerTest::test_validator_rejects_array_comment_when_rating_is_present`**; cast **`request_state`** / **`canceled_state`** to **`int`** and compare with **`===`** against **`Passenger::*`** constants; **`'rating' => 'required|integer|in:0,1'`** (drop trailing comma in the **`in`** list).
+  - **Mutant IDs:** **`RemoveArrayItem@L31`**, **`RemoveMethodCall@L98`** (still relies on **`update_rating_availability`** side effects in integration; loop mutants: **`EqualToIdentical` / `EqualToNotEqual` @ L143–L147**, **`DecrementInteger` / `IncrementInteger` @ L135–L136**, **`RemoveArrayItem` @ L131**, etc., per report).
+
+### Deferred from the same report (not changed in this batch)
+
+Large escaped clusters remain in **`SocialManager`**, **`SubscriptionsManager`**, **`ConversationsManager`**, **`CarsManager`**, **`FriendsManager`**, **`PhoneVerificationManager`**, **`RoutesManager`**, **`TripsManager`**, and deeper branches of **`RatingManager::getRate`** — address in follow-up focused PRs with **`Http::fake`**, repository test doubles, or small production normalizers as needed.
