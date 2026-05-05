@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use ReflectionMethod;
 use STS\Models\Badge;
@@ -322,5 +323,80 @@ class BadgeEvaluatorServiceTest extends TestCase
         $other = Mockery::mock(User::class);
         $other->shouldReceive('getAttribute')->with('id')->andReturn(999_001);
         $this->assertFalse($method->invoke($service, $other, $badge));
+    }
+
+    public function test_meets_conditions_logs_warning_when_rules_missing_type_key(): void
+    {
+        Log::shouldReceive('warning')
+            ->once()
+            ->with(
+                'Badge has no rules or invalid rules',
+                Mockery::on(function (array $ctx): bool {
+                    return array_key_exists('badge_id', $ctx)
+                        && ($ctx['rules'] ?? null) === ['slug_only' => true];
+                })
+            );
+
+        $service = new BadgeEvaluatorService;
+        $method = new ReflectionMethod(BadgeEvaluatorService::class, 'meetsConditions');
+        $method->setAccessible(true);
+
+        $user = User::factory()->create();
+        $badge = new Badge([
+            'rules' => ['slug_only' => true],
+        ]);
+
+        $this->assertFalse($method->invoke($service, $user, $badge));
+    }
+
+    public function test_meets_conditions_registration_duration_requires_days_parameter(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('days');
+
+        $service = new BadgeEvaluatorService;
+        $method = new ReflectionMethod(BadgeEvaluatorService::class, 'meetsConditions');
+        $method->setAccessible(true);
+
+        $user = User::factory()->create();
+        $badge = new Badge([
+            'rules' => ['type' => 'registration_duration'],
+        ]);
+
+        $method->invoke($service, $user, $badge);
+    }
+
+    public function test_meets_conditions_total_donated_requires_amount_parameter(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('amount');
+
+        $service = new BadgeEvaluatorService;
+        $method = new ReflectionMethod(BadgeEvaluatorService::class, 'meetsConditions');
+        $method->setAccessible(true);
+
+        $user = User::factory()->create();
+        $badge = new Badge([
+            'rules' => ['type' => 'total_donated'],
+        ]);
+
+        $method->invoke($service, $user, $badge);
+    }
+
+    public function test_meets_conditions_campaign_donation_requires_campaign_id(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('campaign_id');
+
+        $service = new BadgeEvaluatorService;
+        $method = new ReflectionMethod(BadgeEvaluatorService::class, 'meetsConditions');
+        $method->setAccessible(true);
+
+        $user = User::factory()->create();
+        $badge = new Badge([
+            'rules' => ['type' => 'donated_to_campaign'],
+        ]);
+
+        $method->invoke($service, $user, $badge);
     }
 }
