@@ -188,6 +188,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'user_id' => $admin->id,
             'is_admin' => true,
             'message_markdown' => 'We are looking into this.',
+            'created_by' => $admin->id,
         ]);
     }
 
@@ -328,6 +329,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'user_id' => $admin->id,
             'is_admin' => true,
             'message_markdown' => 'Fixed on our side.',
+            'created_by' => $admin->id,
         ]);
     }
 
@@ -482,11 +484,38 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'user_id' => $admin->id,
             'is_admin' => true,
             'message_markdown' => 'Closing after confirmation.',
+            'created_by' => $admin->id,
         ]);
 
         $fresh = $ticket->fresh();
         $this->assertNotNull($fresh->closed_at);
         $this->assertSame($admin->id, (int) $fresh->closed_by);
+    }
+
+    public function test_reply_rejects_more_than_three_attachments(): void
+    {
+        Storage::fake('public');
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $files = [
+            UploadedFile::fake()->image('a.png', 10, 10),
+            UploadedFile::fake()->image('b.png', 10, 10),
+            UploadedFile::fake()->image('c.png', 10, 10),
+            UploadedFile::fake()->image('d.png', 10, 10),
+        ];
+
+        $this->withHeaders(['Accept' => 'application/json'])
+            ->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
+                'message_markdown' => 'Four files.',
+                'attachments' => $files,
+            ])
+            ->assertUnprocessable();
     }
 
     public function test_reply_rejects_attachment_with_disallowed_mime(): void
