@@ -18,33 +18,27 @@ class DatesTest extends TestCase
 
     public function test_parse_date_uses_default_format(): void
     {
-        $result = parse_date('2026-04-28');
-
-        $this->assertNotNull($result);
-        $this->assertInstanceOf(Carbon::class, $result);
-        $this->assertSame('2026-04-28', $result->format('Y-m-d'));
+        $this->assertSame('2026-04-28', parse_date('2026-04-28')->format('Y-m-d'));
     }
 
     public function test_parse_date_supports_custom_format(): void
     {
-        $result = parse_date('28/04/2026 09:15', 'd/m/Y H:i');
-
-        $this->assertInstanceOf(Carbon::class, $result);
-        $this->assertSame('2026-04-28 09:15:00', $result->format('Y-m-d H:i:s'));
+        $this->assertSame(
+            '2026-04-28 09:15:00',
+            parse_date('28/04/2026 09:15', 'd/m/Y H:i')->format('Y-m-d H:i:s')
+        );
     }
 
     public function test_date_to_string_uses_given_format(): void
     {
         $date = Carbon::create(2026, 4, 28, 9, 30, 5);
 
-        $this->assertNotNull(date_to_string($date));
         $this->assertSame('2026-04-28', date_to_string($date));
         $this->assertSame('28/04/2026 09:30', date_to_string($date, 'd/m/Y H:i'));
     }
 
     public function test_parse_boolean_handles_common_true_and_false_values(): void
     {
-        $this->assertNotNull(parse_boolean('true'));
         $this->assertTrue(parse_boolean('true'));
         $this->assertTrue(parse_boolean('1'));
         $this->assertTrue(parse_boolean('yes'));
@@ -53,5 +47,8 @@ class DatesTest extends TestCase
         $this->assertFalse(parse_boolean('0'));
         $this->assertFalse(parse_boolean('no'));
         $this->assertFalse(parse_boolean('unexpected-value'));
+
+        $this->assertSame(true, parse_boolean('on'));
+        $this->assertSame(false, parse_boolean('off'));
     }
 }
