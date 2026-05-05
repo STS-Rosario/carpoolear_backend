@@ -45,6 +45,17 @@ if (is_string($pestMutation) && $pestMutation !== '') {
     return;
 }
 
+// Laravel parallel testing spawns workers with a tokenized DB strategy.
+// In that mode, this bootstrap must not serialize workers via a shared flock
+// nor DROP/CREATE the base DB, otherwise workers can appear stuck at startup.
+$parallelToken = $_ENV['TEST_TOKEN'] ?? false;
+if ($parallelToken === false && function_exists('getenv')) {
+    $parallelToken = getenv('TEST_TOKEN');
+}
+if ($parallelToken !== false && $parallelToken !== null && $parallelToken !== '') {
+    return;
+}
+
 $env = static function (string $key, string $default = ''): string {
     if (array_key_exists($key, $_ENV)) {
         return (string) $_ENV[$key];
