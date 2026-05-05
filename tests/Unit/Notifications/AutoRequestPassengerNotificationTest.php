@@ -59,6 +59,20 @@ class AutoRequestPassengerNotificationTest extends TestCase
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
     }
 
+    public function test_to_email_url_has_no_suffix_after_trips_when_trip_is_missing(): void
+    {
+        config([
+            'carpoolear.name_app' => 'Carpoolear Test',
+            'app.url' => 'https://app.test',
+        ]);
+
+        $notification = new AutoRequestPassengerNotification;
+        $notification->setAttribute('trip', null);
+        $notification->setAttribute('from', User::factory()->make(['name' => 'Solo']));
+
+        $this->assertSame('https://app.test/app/trips/', $notification->toEmail(null)['url']);
+    }
+
     public function test_get_extras_and_push_include_trip_id_when_trip_exists(): void
     {
         $trip = Trip::factory()->create();
