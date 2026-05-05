@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Mockery;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Http\Controllers\Api\v1\ConversationController;
+use STS\Http\ExceptionWithErrors;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\User;
@@ -539,5 +540,72 @@ class ConversationApiTest extends TestCase
         $pivotRead = $reader->conversations->firstWhere('id', $conversation->id)?->pivot?->read;
         $this->assertNotNull($pivotRead);
         $this->assertTrue((bool) $pivotRead);
+    }
+
+    public function test_users_method_returns_manager_payload_when_available(): void
+    {
+        $actor = User::factory()->create();
+        $peer = User::factory()->create();
+        $expected = collect([$actor, $peer]);
+
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldReceive('getUsersFromConversation')
+            ->once()
+            ->withArgs(fn ($u, $id) => $u instanceof User && $u->id === $actor->id && $id === 77)
+            ->andReturn($expected);
+
+        $users = Mockery::mock(UsersManager::class);
+        $controller = new ConversationController(new Request, $logic, $users);
+
+        $this->actingAs($actor, 'api');
+        $response = $controller->users(new Request, 77);
+
+        $this->assertSame($expected, $response);
+    }
+
+    public function test_add_user_returns_ok_json_when_manager_accepts_operation(): void
+    {
+        $actor = User::factory()->create();
+
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldReceive('addUserToConversation')
+            ->once()
+            ->withArgs(fn ($u, $id, $users) => $u instanceof User && $u->id === $actor->id && $id === 15 && $users === [2, 3])
+            ->andReturn(true);
+
+        $usersManager = Mockery::mock(UsersManager::class);
+        $controller = new ConversationController(new Request, $logic, $usersManager);
+
+        $this->actingAs($actor, 'api');
+        $response = $controller->addUser(new Request(['users' => [2, 3]]), 15);
+
+        $this->assertSame('OK', $response->getData(true));
+    }
+
+    public function test_delete_user_throws_when_manager_rejects_operation(): void
+    {
+        $actor = User::factory()->create();
+        $toDelete = User::factory()->create();
+
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldReceive('removeUserFromConversation')
+            ->once()
+            ->andReturn(false);
+        $logic->shouldReceive('getErrors')
+            ->once()
+            ->andReturn(['cannot_remove_user']);
+
+        $usersManager = Mockery::mock(UsersManager::class);
+        $usersManager->shouldReceive('find')
+            ->once()
+            ->with($toDelete->id)
+            ->andReturn($toDelete);
+
+        $controller = new ConversationController(new Request, $logic, $usersManager);
+        $this->actingAs($actor, 'api');
+
+        $this->expectException(ExceptionWithErrors::class);
+        $this->expectExceptionMessage('Bad request exceptions');
+        $controller->deleteUser(new Request, 300, $toDelete->id);
     }
 }
