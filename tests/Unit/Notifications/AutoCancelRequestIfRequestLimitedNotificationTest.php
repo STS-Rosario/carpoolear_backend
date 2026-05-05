@@ -62,6 +62,23 @@ class AutoCancelRequestIfRequestLimitedNotificationTest extends TestCase
         $this->assertNull($push['extras']['id']);
     }
 
+    public function test_to_email_uses_base_trips_url_when_trip_missing(): void
+    {
+        config([
+            'carpoolear.name_app' => 'Carpoolear Test',
+            'app.url' => 'https://app.test',
+        ]);
+
+        $notification = new AutoCancelRequestIfRequestLimitedNotification;
+        $email = $notification->toEmail(null);
+
+        $this->assertSame(
+            __('notifications.auto_cancel_request.title', ['destination' => __('notifications.destination_unknown')]),
+            $email['title']
+        );
+        $this->assertSame('https://app.test/app/trips/', $email['url']);
+    }
+
     public function test_get_extras_and_push_include_trip_id_when_trip_exists(): void
     {
         $trip = Trip::factory()->create();
