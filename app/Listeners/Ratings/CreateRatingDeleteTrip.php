@@ -3,10 +3,10 @@
 namespace STS\Listeners\Ratings;
 
 use Illuminate\Support\Str;
-use STS\Models\Passenger;
 use STS\Events\Trip\Delete as DeleteEvent;
+use STS\Models\Passenger;
 use STS\Notifications\DeleteTripNotification;
-use STS\Repository\RatingRepository; 
+use STS\Repository\RatingRepository;
 
 class CreateRatingDeleteTrip
 {
@@ -33,12 +33,12 @@ class CreateRatingDeleteTrip
         $trip = $event->trip;
 
         $passengers = $trip->passengerAccepted;
-        if ($passengers->count() > 0) {
+        if ($passengers->isNotEmpty()) {
             foreach ($passengers as $passenger) {
                 $passenger_hash = Str::random(40);
                 $rate = $this->ratingRepository->create($passenger->user_id, $trip->user_id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
 
-                $notification = new DeleteTripNotification();
+                $notification = new DeleteTripNotification;
                 $notification->setAttribute('trip', $trip);
                 $notification->setAttribute('from', $trip->user);
                 $notification->setAttribute('hash', $passenger_hash);
