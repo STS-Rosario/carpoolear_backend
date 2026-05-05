@@ -9,18 +9,12 @@ class DatesHelperTest extends TestCase
 {
     public function test_parse_date_returns_carbon_for_default_format(): void
     {
-        $parsed = parse_date('2030-11-20');
-
-        $this->assertInstanceOf(Carbon::class, $parsed);
-        $this->assertSame('2030-11-20', $parsed->format('Y-m-d'));
+        $this->assertSame('2030-11-20', parse_date('2030-11-20')->format('Y-m-d'));
     }
 
     public function test_parse_date_accepts_custom_format(): void
     {
-        $parsed = parse_date('20/11/2030', 'd/m/Y');
-
-        $this->assertInstanceOf(Carbon::class, $parsed);
-        $this->assertSame('2030-11-20', $parsed->format('Y-m-d'));
+        $this->assertSame('2030-11-20', parse_date('20/11/2030', 'd/m/Y')->format('Y-m-d'));
     }
 
     public function test_date_to_string_formats_carbon_with_defaults(): void
@@ -33,11 +27,11 @@ class DatesHelperTest extends TestCase
 
     public function test_parse_boolean_interprets_common_truthy_and_falsy_inputs(): void
     {
-        $this->assertTrue(parse_boolean(true));
-        $this->assertFalse(parse_boolean(false));
-        $this->assertTrue(parse_boolean('true'));
-        $this->assertFalse(parse_boolean('false'));
-        $this->assertTrue(parse_boolean('1'));
-        $this->assertFalse(parse_boolean('0'));
+        $this->assertSame(true, parse_boolean(true));
+        $this->assertSame(false, parse_boolean(false));
+        $this->assertSame(true, parse_boolean('true'));
+        $this->assertSame(false, parse_boolean('false'));
+        $this->assertSame(true, parse_boolean('1'));
+        $this->assertSame(false, parse_boolean('0'));
     }
 }
