@@ -242,4 +242,23 @@ class DataApiTest extends TestCase
         $this->assertArrayHasKey('ranking_conductores', $payload);
         $this->assertArrayHasKey('ranking_pasajeros', $payload);
     }
+
+    public function test_data_web_returns_500_when_dependencies_fail(): void
+    {
+        DB::shouldReceive('select')->andThrow(new \Exception('dashboard query failed'));
+
+        $this->get('/data-web')
+            ->assertStatus(500)
+            ->assertJson(['error' => 'Error retrieving data']);
+    }
+
+    public function test_more_data_returns_500_when_query_fails(): void
+    {
+        DB::shouldReceive('select')->andThrow(new \Exception('ranking query failed'));
+
+        $response = app(DataController::class)->moreData();
+
+        $this->assertSame(500, $response->getStatusCode());
+        $this->assertSame(['error' => 'Error retrieving rankings data'], $response->getData(true));
+    }
 }
