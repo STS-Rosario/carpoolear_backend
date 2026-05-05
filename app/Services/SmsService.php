@@ -134,7 +134,10 @@ class SmsService
                     }
                 } catch (\Exception $e) {
                     Log::error('Laravel HTTP client failed: '.$e->getMessage());
-                    // Fall back to Facebook SDK
+                    // Fall back to Facebook SDK (requires facebook/graph-sdk + curl client stack).
+                    if (! class_exists(\Facebook\HttpClients\FacebookCurlHttpClient::class)) {
+                        return false;
+                    }
                     $fbConfig['http_client_handler'] = new DevCurlHttpClient;
                 }
             } else {
@@ -142,7 +145,7 @@ class SmsService
                 $fbConfig['http_client_handler'] = 'stream';
             }
 
-            $fb = new Facebook($fbConfig);
+            $fb = $this->createFacebookSdk($fbConfig);
 
             // Debug logging
             Log::info('WhatsApp API request details', [
@@ -348,6 +351,16 @@ class SmsService
         file_put_contents(storage_path('logs/sms.log'), $logMessage, FILE_APPEND | LOCK_EX);
 
         return true;
+    }
+
+    /**
+     * Facebook Graph client used for WhatsApp template sends (non–HTTP-client path).
+     *
+     * @param  array<string, mixed>  $fbConfig
+     */
+    protected function createFacebookSdk(array $fbConfig): object
+    {
+        return new Facebook($fbConfig);
     }
 
     /**

@@ -6,8 +6,19 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use STS\Services\SmsService;
 use Tests\TestCase;
+
+final class SmsServiceWhatsAppFacebookHarness extends SmsService
+{
+    public object $facebookDouble;
+
+    protected function createFacebookSdk(array $fbConfig): object
+    {
+        return $this->facebookDouble;
+    }
+}
 
 class SmsServiceTest extends TestCase
 {
@@ -44,6 +55,10 @@ class SmsServiceTest extends TestCase
     {
         Config::set('sms.default', 'unknown-provider');
         Config::set('sms.providers.unknown-provider', []);
+
+        Log::shouldReceive('error')
+            ->once()
+            ->with('SMS provider not configured: unknown-provider');
 
         $service = new SmsService;
 
@@ -104,6 +119,37 @@ class SmsServiceTest extends TestCase
         $service = new SmsService;
 
         $this->assertFalse($service->send('1122223333', 'code 654321'));
+    }
+
+    /**
+     * @return iterable<string, array{0: array<string, mixed>}>
+     */
+    public static function incompleteWhatsappConfigs(): iterable
+    {
+        $base = [
+            'app_id' => 'a',
+            'app_secret' => 'b',
+            'access_token' => 'c',
+            'phone_number_id' => 'p',
+        ];
+
+        yield 'missing_app_id' => [array_merge($base, ['app_id' => null])];
+        yield 'missing_app_secret' => [array_merge($base, ['app_secret' => null])];
+        yield 'missing_access_token' => [array_merge($base, ['access_token' => null])];
+        yield 'missing_phone_number_id' => [array_merge($base, ['phone_number_id' => null])];
+    }
+
+    #[DataProvider('incompleteWhatsappConfigs')]
+    public function test_send_whatsapp_returns_false_when_any_required_credential_is_missing(array $whatsappConfig): void
+    {
+        Config::set('sms.default', 'whatsapp');
+        Config::set('sms.providers.whatsapp', $whatsappConfig);
+
+        Log::shouldReceive('error')->once()->with('WhatsApp configuration missing');
+
+        $service = new SmsService;
+
+        $this->assertFalse($service->send('1122223333', 'code 777777'));
     }
 
     public function test_send_whatsapp_uses_local_http_branch_with_full_graph_template_payload(): void
@@ -490,5 +536,229 @@ class SmsServiceTest extends TestCase
             });
 
         $this->assertSame('123', $h->exposeSmsMasivos('123'));
+    }
+
+    public function test_send_via_local_appends_line_to_sms_log_and_returns_true(): void
+    {
+        Config::set('sms.default', 'local');
+        Config::set('sms.providers.local', []);
+
+        $path = storage_path('logs/sms.log');
+        if (is_file($path)) {
+            unlink($path);
+        }
+
+        Log::shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $message): bool {
+                return str_starts_with($message, 'SMS would be sent to: ')
+                    && str_contains($message, ' with message: ');
+            });
+
+        $service = new SmsService;
+        $this->assertTrue($service->send('+54 11 2222-3333', 'Hello local'));
+
+        $this->assertFileExists($path);
+        $line = (string) file_get_contents($path);
+        $this->assertStringContainsString('SMS to +54 11 2222-3333', $line);
+        $this->assertStringContainsString(': Hello local', $line);
+        unlink($path);
+    }
+
+    public function test_send_whatsapp_non_local_env_uses_facebook_sdk_success_path(): void
+    {
+        $previousEnv = $this->app['env'];
+
+        try {
+            $this->app['env'] = 'production';
+
+            Config::set('sms.default', 'whatsapp');
+            Config::set('sms.verification.expires_in_minutes', 7);
+            Config::set('sms.providers.whatsapp', [
+                'app_id' => 'app',
+                'app_secret' => 'secret',
+                'access_token' => 'tok',
+                'phone_number_id' => 'pn-prod',
+                'default_graph_version' => 'v20.0',
+            ]);
+
+            $fbResponse = Mockery::mock();
+            $fbResponse->shouldReceive('getDecodedBody')->once()->andReturn([
+                'messages' => [['id' => 'wamid.prod']],
+            ]);
+
+            $facebook = Mockery::mock();
+            $facebook->shouldReceive('post')
+                ->once()
+                ->withArgs(function (string $path, array $payload, string $token): bool {
+                    if ($path !== '/pn-prod/messages' || $token !== 'tok') {
+                        return false;
+                    }
+                    if (($payload['messaging_product'] ?? null) !== 'whatsapp') {
+                        return false;
+                    }
+                    if (($payload['to'] ?? null) !== '541122223333') {
+                        return false;
+                    }
+                    $params = $payload['template']['components'][0]['parameters'] ?? [];
+
+                    return ($params[0]['text'] ?? null) === '888888'
+                        && ($params[1]['text'] ?? null) === '7';
+                })
+                ->andReturn($fbResponse);
+
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function (string $message, array $context): bool {
+                    return $message === 'WhatsApp API request details'
+                        && ($context['http_client_handler'] ?? null) === 'stream'
+                        && ($context['environment'] ?? null) === 'production';
+                });
+            Log::shouldReceive('info')
+                ->once()
+                ->withArgs(function (string $message): bool {
+                    return str_starts_with($message, 'WhatsApp message sent successfully to: 541122223333');
+                });
+
+            $service = new SmsServiceWhatsAppFacebookHarness;
+            $service->facebookDouble = $facebook;
+
+            $this->assertTrue($service->send('1122223333', 'Código 888888'));
+        } finally {
+            $this->app['env'] = $previousEnv;
+        }
+    }
+
+    public function test_send_whatsapp_non_local_env_returns_false_when_graph_body_has_no_message_id(): void
+    {
+        $previousEnv = $this->app['env'];
+
+        try {
+            $this->app['env'] = 'staging';
+
+            Config::set('sms.default', 'whatsapp');
+            Config::set('sms.providers.whatsapp', [
+                'app_id' => 'app',
+                'app_secret' => 'secret',
+                'access_token' => 'tok',
+                'phone_number_id' => 'pn-st',
+            ]);
+
+            $fbResponse = Mockery::mock();
+            $fbResponse->shouldReceive('getDecodedBody')->once()->andReturn(['errors' => [['message' => 'nope']]]);
+
+            $facebook = Mockery::mock();
+            $facebook->shouldReceive('post')->once()->andReturn($fbResponse);
+
+            Log::shouldReceive('info')->once()->with('WhatsApp API request details', Mockery::type('array'));
+            Log::shouldReceive('error')
+                ->once()
+                ->withArgs(function (string $message): bool {
+                    return str_starts_with($message, 'WhatsApp API error:');
+                });
+
+            $service = new SmsServiceWhatsAppFacebookHarness;
+            $service->facebookDouble = $facebook;
+
+            $this->assertFalse($service->send('1122223333', 'code 999999'));
+        } finally {
+            $this->app['env'] = $previousEnv;
+        }
+    }
+
+    public function test_send_whatsapp_local_logs_laravel_http_failure_when_graph_request_throws(): void
+    {
+        $previousEnv = $this->app['env'];
+
+        try {
+            $this->app['env'] = 'local';
+
+            Config::set('sms.default', 'whatsapp');
+            Config::set('sms.providers.whatsapp', [
+                'app_id' => 'app',
+                'app_secret' => 'secret',
+                'access_token' => 'tok',
+                'phone_number_id' => 'pn-throw',
+            ]);
+
+            Http::fake(function () {
+                throw new \RuntimeException('upstream refused');
+            });
+
+            Log::shouldReceive('info')->once()->with('WhatsApp API URL being called', Mockery::type('array'));
+            Log::shouldReceive('error')
+                ->once()
+                ->with('Laravel HTTP client failed: upstream refused');
+
+            $service = new SmsService;
+
+            $this->assertFalse($service->send('1122223333', 'code 606060'));
+        } finally {
+            $this->app['env'] = $previousEnv;
+        }
+    }
+
+    public function test_send_whatsapp_facebook_post_exception_logs_context_and_returns_false(): void
+    {
+        $previousEnv = $this->app['env'];
+
+        try {
+            $this->app['env'] = 'staging';
+
+            Config::set('sms.default', 'whatsapp');
+            Config::set('sms.providers.whatsapp', [
+                'app_id' => 'app',
+                'app_secret' => 'secret',
+                'access_token' => 'tok',
+                'phone_number_id' => 'pn-x',
+            ]);
+
+            $facebook = Mockery::mock();
+            $facebook->shouldReceive('post')->once()->andThrow(new \RuntimeException('graph down'));
+
+            Log::shouldReceive('info')->once()->with('WhatsApp API request details', Mockery::type('array'));
+            Log::shouldReceive('error')
+                ->once()
+                ->with(
+                    'WhatsApp sending failed',
+                    Mockery::on(function (array $ctx): bool {
+                        return ($ctx['error'] ?? '') === 'graph down'
+                            && ($ctx['to'] ?? null) === '1122223333'
+                            && ($ctx['formatted_phone'] ?? null) === '541122223333'
+                            && str_contains((string) ($ctx['message'] ?? ''), '202020');
+                    })
+                );
+
+            $service = new SmsServiceWhatsAppFacebookHarness;
+            $service->facebookDouble = $facebook;
+
+            $this->assertFalse($service->send('1122223333', 'code 202020'));
+        } finally {
+            $this->app['env'] = $previousEnv;
+        }
+    }
+
+    public function test_format_phone_for_sms_masivos_normalizes_thirteen_digit_international_with_fifteen_prefix(): void
+    {
+        $h = new class extends SmsService
+        {
+            public function exposeSmsMasivos(string $phone): string
+            {
+                return $this->formatPhoneForSmsMasivos($phone);
+            }
+        };
+
+        // 54 + 11 digits starting with 15 → strip country, then strip mobile prefix 15.
+        $this->assertSame('111222233', $h->exposeSmsMasivos('5415111222233'));
+    }
+
+    public function test_generate_verification_code_is_always_six_digits_with_left_padding(): void
+    {
+        $service = new SmsService;
+        for ($i = 0; $i < 30; $i++) {
+            $code = $service->generateVerificationCode();
+            $this->assertMatchesRegularExpression('/^\d{6}$/', $code);
+            $this->assertSame(6, strlen($code));
+        }
     }
 }
