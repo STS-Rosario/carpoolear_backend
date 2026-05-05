@@ -3866,3 +3866,61 @@ Scoped mutation command (both test files): **`PEST_PHP=…` `DB_DATABASE=testing
 ### Deferred from the same report (not changed in this batch)
 
 Large escaped clusters remain in **`SocialManager`**, **`SubscriptionsManager`**, **`ConversationsManager`**, **`CarsManager`**, **`FriendsManager`**, **`PhoneVerificationManager`**, **`RoutesManager`**, **`TripsManager`**, and deeper branches of **`RatingManager::getRate`** — address in follow-up focused PRs with **`Http::fake`**, repository test doubles, or small production normalizers as needed.
+
+## MSI batch — `SmsService`, `FirebaseService`, `GoogleDirection`, social providers, `BadgeEvaluatorService` (2026-04-30)
+
+### `SmsService` (`app/Services/SmsService.php`)
+
+- **`Line 40: RemoveMethodCall` / `Concat*`** on **`Log::error('SMS provider not configured: '.$this->provider)`**
+  - **Cause:** Default-branch logging was never asserted, so concat / **`getMessage()`** mutants could survive.
+  - **Fix:** **`SmsServiceTest::test_send_returns_false_when_provider_is_not_configured`** now expects **`Log::error('SMS provider not configured: unknown-provider')`**.
+- **`Line 62: BooleanOrToBooleanAnd`** on **`if (! $appId || ! $appSecret || ! $accessToken || ! $phoneNumberId)`**
+  - **Cause:** Only one “missing credential” scenario was covered; **`&&`** mutants still allow partial config through.
+  - **Fix:** **`SmsServiceTest::test_send_whatsapp_returns_false_when_any_required_credential_is_missing`** (**`#[DataProvider('incompleteWhatsappConfigs')]`**) covers **`app_id`**, **`app_secret`**, **`access_token`**, and **`phone_number_id`** each missing alone.
+- **`Line 136: RemoveMethodCall` / `Concat*`** on **`Log::error('Laravel HTTP client failed: '.$e->getMessage())`**
+  - **Cause:** The local **`Http::`** branch’s **`catch`** was unreachable in CI when **`DevCurlHttpClient`**’s parent (**`FacebookCurlHttpClient`**) is absent, so line **136** never executed and concat mutants escaped.
+  - **Fix:** **`SmsService`**: after logging, **`if (! class_exists(\Facebook\HttpClients\FacebookCurlHttpClient::class)) { return false; }`** before **`new DevCurlHttpClient`**. **`SmsServiceTest::test_send_whatsapp_local_logs_laravel_http_failure_when_graph_request_throws`** drives **`Http::fake`** to throw and asserts the full log line.
+- **WhatsApp Graph SDK path (`createFacebookSdk`, non-local env, Facebook post / errors)**
+  - **Cause:** **`new Facebook($fbConfig)`** could not be doubled in unit tests; production-only branches for **`http_client_handler === 'stream'`** and failure logging were weakly observed.
+  - **Fix:** **`protected function createFacebookSdk(array $fbConfig): object`** (returns **`new Facebook($fbConfig)`**); **`SmsServiceWhatsAppFacebookHarness`** injects a Mockery double. Tests: **`test_send_whatsapp_non_local_env_uses_facebook_sdk_success_path`**, **`test_send_whatsapp_non_local_env_returns_false_when_graph_body_has_no_message_id`**, **`test_send_whatsapp_facebook_post_exception_logs_context_and_returns_false`**.
+- **`sendViaLocal` / `formatPhoneForSmsMasivos` / `generateVerificationCode`**
+  - **Fix:** **`test_send_via_local_appends_line_to_sms_log_and_returns_true`**, **`test_format_phone_for_sms_masivos_normalizes_thirteen_digit_international_with_fifteen_prefix`**, **`test_generate_verification_code_is_always_six_digits_with_left_padding`**.
+
+Scoped command: **`PEST_PHP="$HOME/Library/Application Support/Herd/bin/php85" DB_DATABASE=testing1 composer test:mutate -- --path=app/Services/SmsService.php tests/Unit/Services/SmsServiceTest.php`** → **100%** MSI in the successful run.
+
+### `FirebaseService` (`app/Services/FirebaseService.php`)
+
+- **`Line 25: RemoveStringCast`**, **`Line 29: BooleanAndToBooleanOr`**, **`Line 30: RemoveMethodCall`**, **`Line 50: AlwaysReturnEmptyArray`**, **`Line 14–16: EmptyStringToNotEmpty`** (property defaults)
+  - **Cause:** Constructor and **`fetchMessagingAccessToken`** were only exercised indirectly; default **`''`** property mutants are invisible once **`config()`** overwrites them.
+  - **Fix:** Optional **`?Google\Client $googleClient`** constructor parameter for tests; **`$firebaseFile` / `$firebaseName`** no longer use **`= ''`** initializers (values come only from **`config()`**). **`FirebaseServiceTest::test_constructor_calls_set_auth_config_when_json_file_exists`** (minimal **`installed`** OAuth JSON under **`storage/app/`**), **`test_fetch_messaging_access_token_returns_google_client_payload`**, **`test_constructor_accepts_numeric_firebase_path_from_config`**, **`test_send_notification_web_lowercase_posts_webpush_payload`**, **`test_get_access_token_throws_type_error_when_token_payload_missing_access_token`** (expects **`ErrorException`** for missing key), **`test_unregister_device_returns_true`**.
+
+Scoped command: **`PEST_PHP="$HOME/Library/Application Support/Herd/bin/php85" DB_DATABASE=testing1 composer test:mutate -- --path=app/Services/FirebaseService.php tests/Unit/Services/FirebaseServiceTest.php`** → **100%** MSI.
+
+### `GoogleDirection` (`app/Services/GoogleDirection.php`)
+
+- **`fetchGeocodeJson`**, URL construction, single-component geocode save
+  - **Cause:** Real **`file_get_contents` / `json_decode`** path and some **`donwloadPoint`** branches were only covered via the harness queue.
+  - **Fix:** **`GoogleDirectionGeocodeProbe`** + **`test_fetch_geocode_json_returns_null_when_body_is_not_json_object`** / **`test_fetch_geocode_json_returns_null_when_file_missing`**; **`test_donwload_point_builds_url_with_encoded_address_before_fetch`**; **`test_donwload_point_maps_only_country_component_when_fixture_has_single_type`**.
+
+Scoped command: **`PEST_PHP=… DB_DATABASE=testing1 composer test:mutate -- --path=app/Services/GoogleDirection.php tests/Unit/Services/GoogleDirectionTest.php`** → **100%** MSI.
+
+### `FacebookSocialProvider` (`app/Services/Social/FacebookSocialProvider.php`)
+
+- **Gender / birthday / return payload / URI**
+  - **Fix:** **`FacebookSocialProviderTest`** — **`test_get_user_data_maps_female_gender`**, **`test_get_user_data_sets_gender_na_when_field_absent`**, **`test_get_user_data_leaves_birthday_untransformed_when_parts_fewer_than_three`**, assertions on **`banned`** / **`terms_and_conditions`**, and **`access_token=`** in the Graph URI matcher (still matches **`…?fields=…&access_token=`**).
+
+Scoped command: **`PEST_PHP=… DB_DATABASE=testing1 composer test:mutate -- --path=app/Services/Social/FacebookSocialProvider.php tests/Unit/Services/Social/FacebookSocialProviderTest.php`** → **100%** MSI.
+
+### `TestSocialProvider` (`app/Services/Social/TestSocialProvider.php`)
+
+- **`banned`**, synthetic email, empty **`friend_ids`**
+  - **Fix:** **`TestSocialProviderTest::test_get_user_data_sets_banned_from_token_and_default_email_uses_md5_of_provider_id`**, **`test_get_user_friends_returns_empty_when_friend_ids_key_is_empty_array`**.
+
+Scoped command: **`PEST_PHP=… DB_DATABASE=testing1 composer test:mutate -- --path=app/Services/Social/TestSocialProvider.php tests/Unit/Services/Social/TestSocialProviderTest.php`** → **100%** MSI.
+
+### `BadgeEvaluatorService` (`app/Services/BadgeEvaluatorService.php`)
+
+- **`meetsConditions`**: invalid rules warning, **`registration_duration` / `total_donated` / `donated_to_campaign`** missing required keys
+  - **Fix:** **`BadgeEvaluatorServiceTest::test_meets_conditions_logs_warning_when_rules_missing_type_key`**, **`test_meets_conditions_registration_duration_requires_days_parameter`**, **`test_meets_conditions_total_donated_requires_amount_parameter`**, **`test_meets_conditions_campaign_donation_requires_campaign_id`**.
+
+Scoped command: **`PEST_PHP=… DB_DATABASE=testing1 composer test:mutate -- --path=app/Services/BadgeEvaluatorService.php tests/Unit/Services/BadgeEvaluatorServiceTest.php`** → **100%** MSI.
