@@ -46,11 +46,19 @@ class HourLeftNotificationTest extends TestCase
 
     public function test_to_string_and_push_fallback_to_unknown_destination_without_trip(): void
     {
+        config([
+            'carpoolear.name_app' => 'Carpoolear Test',
+            'app.url' => 'https://app.test',
+        ]);
+
         $notification = new HourLeftNotification;
         $unknown = __('notifications.destination_unknown');
 
         $expected = __('notifications.hour_left.message', ['destination' => $unknown]);
         $this->assertSame($expected, $notification->toString());
+
+        $email = $notification->toEmail(null);
+        $this->assertSame('https://app.test/app/trips/', $email['url']);
 
         $push = $notification->toPush(null, null);
         $this->assertSame($expected, $push['message']);
