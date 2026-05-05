@@ -55,4 +55,27 @@ class TestSocialProviderTest extends TestCase
 
         $this->assertSame(['10', '20'], (new TestSocialProvider($token))->getUserFriends());
     }
+
+    public function test_get_user_data_sets_banned_from_token_and_default_email_uses_md5_of_provider_id(): void
+    {
+        $token = json_encode([
+            'provider_user_id' => 'uid-77',
+            'banned' => true,
+        ]);
+        $row = (new TestSocialProvider($token))->getUserData([]);
+
+        $this->assertTrue($row['banned']);
+        $expectedLocal = 'social+'.md5('uid-77').'@example.test';
+        $this->assertSame($expectedLocal, $row['email']);
+    }
+
+    public function test_get_user_friends_returns_empty_when_friend_ids_key_is_empty_array(): void
+    {
+        $token = json_encode([
+            'provider_user_id' => '1',
+            'friend_ids' => [],
+        ]);
+
+        $this->assertSame([], (new TestSocialProvider($token))->getUserFriends());
+    }
 }
