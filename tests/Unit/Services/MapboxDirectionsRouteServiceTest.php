@@ -15,9 +15,11 @@ class MapboxDirectionsRouteServiceTest extends TestCase
         config(['carpoolear.mapbox_access_token' => '']);
         $service = new MapboxDirectionsRouteService;
         $this->assertFalse($service->isEnabled());
+        $this->assertIsBool($service->isEnabled());
 
         config(['carpoolear.mapbox_access_token' => 'pk.test-token']);
         $this->assertTrue($service->isEnabled());
+        $this->assertIsBool($service->isEnabled());
     }
 
     public function test_driving_distance_returns_null_when_disabled(): void
@@ -59,6 +61,28 @@ class MapboxDirectionsRouteServiceTest extends TestCase
             return str_contains($message, 'too many coordinates')
                 && ($context['count'] ?? 0) === 26;
         });
+    }
+
+    public function test_driving_distance_succeeds_with_exactly_twenty_five_coordinates(): void
+    {
+        config(['carpoolear.mapbox_access_token' => 'pk.x']);
+        Http::fake([
+            '*' => Http::response([
+                'routes' => [
+                    ['distance' => 10.0, 'duration' => 2.0],
+                ],
+            ], 200),
+        ]);
+
+        $points = [];
+        for ($i = 0; $i < 25; $i++) {
+            $points[] = ['lat' => $i * 0.01, 'lng' => $i * 0.01];
+        }
+
+        $service = new MapboxDirectionsRouteService;
+        $result = $service->drivingDistanceAndDuration($points);
+
+        $this->assertSame(['distance' => 10, 'duration' => 2], $result);
     }
 
     public function test_driving_distance_returns_rounded_meters_and_seconds_on_successful_response(): void

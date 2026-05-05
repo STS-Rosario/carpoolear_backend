@@ -1543,6 +1543,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: `test_to_email_and_to_string_use_trip_destination_when_present` now asserts both email URL and push URL include the exact trip id under configured base URL.
   - Mutant IDs: `d6773c261f189342`, `6d6c1c4dd9b09a75`, `9c9e70bb13c4c552`.
 
+- **Executable `via` + missing-trip email URL (MSI report 2026-04-30: `RemoveArrayItem` L15–17, `EmptyStringToNotEmpty` L30)**.
+  - Cause: Channel defaults still uncovered; push fallback **`/trips/`** was tested but **`toEmail()`** **`url`** with no trip was not asserted, so mutants replacing **`''`** with a non-empty suffix could survive.
+  - Fix: **`__construct()`** assigns **`$this->via`**; **`AutoCancelRequestIfRequestLimitedNotificationTest::test_to_email_uses_base_trips_url_when_trip_missing`** asserts **`{app.url}/app/trips/`** exactly.
+  - Mutant IDs: report operators **`RemoveArrayItem@L15–L17`**, **`EmptyStringToNotEmpty@L30`**.
+
 ## `FriendRequestNotification` (`app/Notifications/FriendRequestNotification.php`)
 
 - **Delivery channels and envelope keys** (`via` list and payload metadata in `toEmail()` / `toPush()`; report RUN ~6307 and UNTESTED/UNCOVERED ~65887–65947).
@@ -1696,6 +1701,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts `toPush()` always includes the static logo `image`.
   - Mutant IDs: `b7b0eb54270a7495`.
 
+- **Executable `via` (MSI report 2026-04-30: `RemoveArrayItem` L14–16)**.
+  - Cause: **`protected $via`** default array literal remained MSI-**UNCOVERED** despite **`getVia()`** assertions (same as **`AcceptPassengerNotification`** pattern).
+  - Fix: **`__construct()`** assigns **`$this->via`** after **`parent::__construct()`**; removed unused **`FacebookChannel`** import.
+  - Mutant IDs: report operators **`RemoveArrayItem@L14–L16`**.
+
 ## `AcceptPassengerNotification` (`app/Notifications/AcceptPassengerNotification.php`)
 
 - **Channels + email/push metadata contract** (`via` list, `toEmail()` metadata, and `toPush().image`; report RUN ~6814 and UNTESTED/UNCOVERED ~67075–67231).
@@ -1731,6 +1741,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now asserts push `type` (`conversation`) and static `image` in both fallback and populated cases, keeping explicit `/conversations/` fallback behavior checks.
   - Mutant IDs: `a174e60ca2ab6723`, `8b08f5a36c8f657e`, `696fd8f6c68c78c4`, `ba9683b63103a225`.
 
+- **Executable `via` init, dead `toPush()` branch, missing-message email URL (MSI report 2026-04-30: `RemoveArrayItem` L14–16, `EmptyStringToNotEmpty` L56)**.
+  - Cause: `protected $via = [...]` stayed MSI-**UNCOVERED**; `$message ? $message->text : ''` was never read, so `EmptyStringToNotEmpty` on the empty-string branch did not change any asserted output; email URL without a message was not pinned.
+  - Fix: **`__construct()`** assigns **`$this->via`** after **`parent::__construct()`**; removed the unused message-text assignment; **`NewMessageNotificationTest::test_to_email_uses_conversations_base_path_when_message_missing`** asserts **`{app.url}/app/conversations/`** with no trailing id when **`messages`** is unset.
+  - Mutant IDs: report operators **`RemoveArrayItem@via-default`**, **`EmptyStringToNotEmpty@L56`** (pre-fix line numbers).
+
 ## `NewUserNotification` (`app/Notifications/NewUserNotification.php`)
 
 - **Mail-only channel and `force_email` contract** (`via` + `force_email`; report RUN ~6960 and UNTESTED/UNCOVERED ~67465–67501).
@@ -1742,6 +1757,11 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: activation URL/title were asserted, but metadata fields were not pinned.
   - Fix: same test class now sets config and asserts `name_app` and `domain` in addition to activation URL behavior.
   - Mutant IDs: `9b540537bce228fa`, `84a60d616e6af51f`.
+
+- **Executable `via` + `force_email` (MSI report 2026-04-30: `RemoveArrayItem` L12, `TrueToFalse` L15)**.
+  - Cause: Default **`$via`** / **`$force_email`** literals were still MSI-**UNCOVERED** (same pattern as other **`BaseNotification`** subclasses), so channel removal and boolean-flip mutants could escape without executable assignments.
+  - Fix: **`__construct()`** assigns **`$this->via = [MailChannel::class]`** and **`$this->force_email = true`** after **`parent::__construct()`**; removed redundant property initializers.
+  - Mutant IDs: report operators **`RemoveArrayItem@L12`**, **`TrueToFalse@L15`**.
 
 ## `ResetPasswordNotification` (`app/Notifications/ResetPasswordNotification.php`)
 
@@ -1755,12 +1775,22 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: same test class now sets config and asserts `name_app` and `domain` along with reset URL/token behavior.
   - Mutant IDs: `eeb54f354e08d6d2`, `0ee36a74ac31f8dc`.
 
+- **Executable `via` + `force_email` (MSI report 2026-04-30: `RemoveArrayItem` L11, `TrueToFalse` L14)**.
+  - Cause: Same uncovered-default pattern for mail-only delivery and forced email flag.
+  - Fix: **`__construct()`** assigns **`$this->via`** and **`$this->force_email = true`** after **`parent::__construct()`**; removed redundant property initializers.
+  - Mutant IDs: report operators **`RemoveArrayItem@L11`**, **`TrueToFalse@L14`**.
+
 ## `DummyNotification` (`app/Notifications/DummyNotification.php`)
 
 - **Channel list contract** (`via` array; report RUN ~7003 and UNCOVERED ~67561–67573).
   - Cause: tests asserted email/text/extras behavior but did not pin the `via` array, so `RemoveArrayItem` mutants on `DatabaseChannel`/`MailChannel` survived.
   - Fix: `Tests\Unit\Notifications\DummyNotificationTest` now asserts `getVia()` is exactly `[DatabaseChannel::class, MailChannel::class]`.
   - Mutant IDs: `277a17cb78db227a`, `df82baf8af57be87`.
+
+- **Executable `via` (MSI report 2026-04-30: `RemoveArrayItem` L11 ×2)**.
+  - Cause: Inline **`protected $via = [DatabaseChannel::class, MailChannel::class]`** stayed MSI-**UNCOVERED** for both entries.
+  - Fix: **`__construct()`** assigns the same two channel classes after **`parent::__construct()`**; removed the property default array.
+  - Mutant IDs: report operators **`RemoveArrayItem@L11`**.
 
 ## `MercadoPagoService` (`app/Services/MercadoPagoService.php`)
 
@@ -2976,6 +3006,11 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 - **Cause (HTTP path / parsing / rounding batch):** Mutants emptied the coordinate **`foreach`**, dropped **`(float)`** casts on **`lng`/`lat`**, broke coordinate or URL concatenation, removed query keys or **`access_token`** string cast, changed **`Http::timeout(45)`**, removed **`Log`** context on errors, negated **`successful()` / `is_array` / route guards**, changed **`routes[0]`** index, removed **`return null`** early exits, altered **`round`/`(int)`** on the final tuple (`f3e59e8603a8e224`, `05936d6851d9a91f`, `7b978ce7c5d6c65c`, `c99ae75116f36a2a`, `d2ecdb358ba3ec90`, `f1d3eb1ba67e3f87`, `0bb43d0f43976bc3`, `84350c740908e890`, `e9b89b9d08aa548b`, `506cb45785e9e96d`, `1927c9c9db87c3ad`, `e1a3fd24960fc22d`, `5e7592f29e651ab8`, `366028df21f3defa`, `4727585cfc95ecc3`, `12f8673bda85c3e1`, `a72225aae9438757`, `040190690af00ccd`, `b64c20bc4e653743`, `b21d8ee919684fc0`, `e2d778107add2ea0`, `8bf7d501f63f6547`, `08ecad99257409bc`, `85c1d5db8c9bf985`, `f7b2c193cc5311c2`, `306a37aa404c3756`, `99c91130da649693`, `ff25ba01e81e82a2`, `857b28c11154bce4`, `a3d60f7536c72b4c`, `5c49cd95b3af9b6a`, `74a30e1f332405d3`, `1d5104c1b733dfb2`, `8773b7a9528af03a`, `025b1178402ad8f9`, `a34224c9c6260290`, `b81f732b3206a6d0`, `1b60b64da96661a2`, `2f22f899e7cd3aa8`, `0e926b9e4c7e5c69`, `90095be89d609842`, `5d8f99dd668c347a`, `52e945d8ea080188`, `dae04a0bc74b5f3e`, `ba6be8e1bc27b1b7`, `7eb8ce0eb156496c`, `18c0d1916adcf7cc`, `2b73345fdc27059f`, `a361fc8f3894e8d1`, `29619d293b9a4aab`, `2a32d154eaf7de0c`, `84f682adfa3d80f4`, `e27d4b8aea4e330f`, `9806068c142d41a4`, `f612bb36aac014bc`, `e835aec9f7e87018`, `68f8eba15344e834`, `01ada71d39df03ba`, `9f00f517b901973d`, `9328a9c806faf1ef`, `d2ddd55e71c47bcf`, `f0647589a99919ae`, `39eed37466f8425f`, `219d8d5755283288`, `5a9fa03ba696c10e`, `68d02986b2679da8`, `1cb54aea17438e98`, `c1f35b74af8a7075`, `6ab0bf29cdd3d66d`, `c63c42d4d6a8df66`).
 - **Fix:** **`test_successful_request_uses_lng_lat_path_and_query_parameters`** (**`Http::assertSent`**: **`lng,lat`** path segment, **`overview`/`alternatives`/`access_token`** in URL, string coords coerced); **`test_http_error_logs_status_and_bounded_body_preview_then_returns_null`**; **`test_connection_exception_logs_message_and_returns_null`**; **`test_non_json_success_body_returns_null`**; **`test_empty_routes_logs_no_route_and_returns_null`**; **`test_route_missing_distance_or_duration_returns_null`**; **`test_success_response_requires_first_route_index_zero`** (survives only if **`routes[0]`** is used).
+
+- **MSI report 2026-04-30 (`isEnabled` strict bool, 25-point boundary)**.
+  - Cause: **`RemoveBooleanCast`** / cast-stripping on **`isEnabled()`** could return a truthy integer without failing **`assertTrue`/`assertFalse`** in older PHPUnit expectations; **`> 25`** vs **`>= 25`** (or integer nudges on **`25`**) was only exercised from above with 26 points, not from the inclusive edge with a successful HTTP body.
+  - Fix: **`test_is_enabled_requires_non_empty_mapbox_token`** now **`assertIsBool`** on both branches; **`test_driving_distance_succeeds_with_exactly_twenty_five_coordinates`** fakes a 200 response and asserts a non-null rounded tuple for 25 coordinates (must not hit the “too many coordinates” guard).
+  - Mutant IDs: report operators **`RemoveBooleanCast@L16`**, **`DecrementInteger`/`IncrementInteger`/`GreaterToGreaterOrEqual` @ point-count threshold** (line ~30–34 in report).
 
 ## `Registrar` (`app/Services/Registrar.php`)
 
