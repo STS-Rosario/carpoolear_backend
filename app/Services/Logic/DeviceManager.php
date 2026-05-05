@@ -6,15 +6,19 @@ use Carbon\Carbon;
 use STS\Models\Device;
 use STS\Models\User;
 use STS\Repository\DeviceRepository;
+use STS\Services\FirebaseService;
 use Validator;
 
 class DeviceManager extends BaseManager
 {
     protected $deviceRepo;
 
-    public function __construct(DeviceRepository $deviceRepo)
+    protected FirebaseService $firebase;
+
+    public function __construct(DeviceRepository $deviceRepo, ?FirebaseService $firebase = null)
     {
         $this->deviceRepo = $deviceRepo;
+        $this->firebase = $firebase ?? new FirebaseService;
     }
 
     public function validator(array $data)
@@ -209,8 +213,7 @@ class DeviceManager extends BaseManager
         $device = $this->deviceRepo->getDeviceBy('session_id', $session_id);
         if ($device && (int) $device->user_id === (int) $user->id) {
             // First, unregister from FCM to stop notifications
-            $firebaseService = new \STS\Services\FirebaseService;
-            $firebaseService->unregisterDevice($device->device_id);
+            $this->firebase->unregisterDevice($device->device_id);
 
             // Then delete the device record
             $this->deviceRepo->delete($device);
@@ -246,8 +249,7 @@ class DeviceManager extends BaseManager
                 ]);
 
                 // Unregister from FCM first
-                $firebaseService = new \STS\Services\FirebaseService;
-                $unregisterResult = $firebaseService->unregisterDevice($device->device_id);
+                $unregisterResult = $this->firebase->unregisterDevice($device->device_id);
 
                 \Log::info('FCM unregister result', [
                     'device_token' => $device->device_id,

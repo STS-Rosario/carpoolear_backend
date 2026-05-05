@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use STS\Models\Device;
 use STS\Models\User;
 use STS\Repository\DeviceRepository;
+use STS\Services\FirebaseService;
 use STS\Services\Logic\DeviceManager;
 use Tests\TestCase;
 
@@ -375,6 +376,38 @@ class DeviceManagerTest extends TestCase
             return $e->level === 'info'
                 && str_contains($e->message, 'Logout all devices completed')
                 && isset($e->context['user_id'], $e->context['devices_removed']);
+        });
+    }
+
+    public function test_logout_all_devices_when_fcm_unregister_throws_still_deletes_and_logs_error(): void
+    {
+        Event::fake([MessageLogged::class]);
+        $user = User::factory()->create();
+        $throwingFirebase = new class extends FirebaseService
+        {
+            public function __construct() {}
+
+            public function unregisterDevice($deviceToken)
+            {
+                throw new \RuntimeException('simulated FCM failure');
+            }
+        };
+        $m = new DeviceManager(new DeviceRepository, $throwingFirebase);
+        $payload = $this->validPayload();
+        $device = $m->register($user, $payload);
+
+        $this->assertNotNull($device);
+
+        $count = $m->logoutAllDevices($user);
+
+        $this->assertSame(1, $count);
+        $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e) use ($device, $payload): bool {
+            return $e->level === 'error'
+                && str_contains($e->message, 'Failed to logout device')
+                && ($e->context['device_id'] ?? null) === $device->id
+                && ($e->context['device_token'] ?? null) === $payload['device_id']
+                && ($e->context['error'] ?? null) === 'simulated FCM failure';
         });
     }
 }
