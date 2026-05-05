@@ -2,7 +2,9 @@
 
 namespace Tests\Unit\Helpers;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use STS\Models\User;
 use Tests\TestCase;
 
@@ -13,6 +15,8 @@ class QueriesTest extends TestCase
         $items = ['a', 'b'];
         $this->assertSame($items, match_array($items));
         $this->assertSame(['single'], match_array('single'));
+        $this->assertSame([], match_array([]));
+        $this->assertSame([1, 2], match_array([1, 2]));
     }
 
     public function test_make_pagination_returns_paginated_structure_when_page_size_is_provided(): void
@@ -51,6 +55,30 @@ class QueriesTest extends TestCase
         $this->assertSame(1, (int) $decoded->current_page);
     }
 
+    public function test_make_pagination_honors_explicit_second_page(): void
+    {
+        User::factory()->count(5)->create();
+
+        $query = User::orderBy('email');
+        $paginated = make_pagination($query, 2, 2);
+        $decoded = json_decode(json_encode($paginated), false, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(2, (int) $decoded->current_page);
+        $this->assertCount(2, $decoded->data);
+    }
+
+    public function test_make_pagination_uses_twenty_per_page_when_size_argument_is_omitted(): void
+    {
+        User::factory()->count(25)->create();
+
+        $query = User::orderBy('email');
+        $paginated = make_pagination($query, 1);
+        $decoded = json_decode(json_encode($paginated), false, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertSame(1, (int) $decoded->current_page);
+        $this->assertCount(20, $decoded->data);
+    }
+
     public function test_make_pagination_returns_all_rows_when_page_size_is_null(): void
     {
         User::factory()->count(5)->create();
@@ -77,6 +105,45 @@ class QueriesTest extends TestCase
         $this->assertStringContainsString('"%@%"', $latest);
         $this->assertStringContainsString('select', strtolower($first));
         $this->assertStringContainsString('[1]', $first);
+
+        $decodeBindings = static function (string $line): array {
+            $open = strrpos($line, '[');
+            self::assertNotFalse($open);
+
+            return json_decode(substr($line, $open), true, 512, JSON_THROW_ON_ERROR);
+        };
+
+        $this->assertIsArray($decodeBindings($latest));
+        $this->assertContains('%@%', $decodeBindings($latest));
+        $this->assertSame([1], $decodeBindings($first));
+    }
+
+    public function test_console_log_prints_json_when_environment_is_testing(): void
+    {
+        $this->assertTrue(app()->environment('testing'));
+
+        ob_start();
+        console_log(['trace' => 'x']);
+        $buffer = ob_get_clean();
+
+        $this->assertStringContainsString('"trace"', $buffer);
+        $this->assertStringContainsString('x', $buffer);
+    }
+
+    public function test_console_log_uses_log_info_when_not_in_testing_environment(): void
+    {
+        Log::shouldReceive('info')
+            ->once()
+            ->withArgs(function (string $message): bool {
+                return str_contains($message, '"n"') && str_contains($message, '5');
+            });
+
+        App::shouldReceive('environment')
+            ->once()
+            ->with('testing')
+            ->andReturn(false);
+
+        console_log(['n' => 5]);
     }
 
     public function test_stop_log_query_disables_logging_for_subsequent_queries(): void
