@@ -16,9 +16,9 @@ class NotificationManager
     public function getNotifications($user, $data)
     {
         $mark = false;
-        if (isset($data['page']) && isset($data['page_size'])) {
-            $pageNumber = isset($data['page']) ? $data['page'] : null;
-            $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
+        if (isset($data['page'], $data['page_size'])) {
+            $pageNumber = $data['page'] ?? null;
+            $pageSize = $data['page_size'] ?? null;
             $notifications = $this->repo->getNotifications($user, false, $pageSize, $pageNumber);
         } else {
             $notifications = $this->repo->getNotifications($user, false);
@@ -36,7 +36,7 @@ class NotificationManager
 
             $row = [
                 'id' => $n->id,
-                'readed' => $n->read_at != null,
+                'readed' => $n->read_at !== null,
                 'created_at' => $n->created_at->toDateTimeString(),
                 'text' => $texto,
                 'extras' => $extras,

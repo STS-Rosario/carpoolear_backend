@@ -47,6 +47,24 @@ class NotificationManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_get_notifications_readed_is_true_when_database_read_at_is_set(): void
+    {
+        Carbon::setTestNow('2026-04-10 08:00:00');
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'marked-read');
+
+        $notification = $user->notifications()->orderByDesc('id')->first();
+        $this->assertNotNull($notification);
+        $notification->forceFill(['read_at' => Carbon::now()])->saveQuietly();
+
+        $rows = $this->manager()->getNotifications($user, []);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($rows[0]['readed']);
+
+        Carbon::setTestNow();
+    }
+
     public function test_get_notifications_with_mark_marks_every_notification(): void
     {
         Carbon::setTestNow('2026-04-02 10:00:00');
