@@ -96,6 +96,7 @@ class AcceptPassengerNotificationTest extends TestCase
         $extras = $notification->getExtras();
 
         $this->assertSame('my-trips', $extras['type']);
+        $this->assertIsInt($extras['trip_id']);
         $this->assertSame($trip->id, $extras['trip_id']);
     }
 
@@ -127,6 +128,19 @@ class AcceptPassengerNotificationTest extends TestCase
         $notification = new AcceptPassengerNotification;
         $notification->setAttribute('trip', $trip->fresh());
         $notification->setAttribute('token', []);
+
+        $extras = $notification->getExtras();
+
+        $this->assertSame('trip', $extras['type']);
+        $this->assertSame($trip->id, $extras['trip_id']);
+    }
+
+    public function test_get_extras_returns_trip_when_token_object_has_no_id_property(): void
+    {
+        $trip = Trip::factory()->create();
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('trip', $trip->fresh());
+        $notification->setAttribute('token', new \stdClass);
 
         $extras = $notification->getExtras();
 
