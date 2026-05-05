@@ -1375,9 +1375,9 @@ This file tracks mutants killed during the current hardening session, with the r
 
 ## `SendPasswordResetEmail` (`app/Jobs/SendPasswordResetEmail.php`)
 
-- **Public queue contract (`$tries`, `$backoff`, `$timeout`)** (`~19–21`; report `tests/coverage/20260428_2310.txt` ~61097–61241, e.g. `f9e4a26bc8ccf1f1`, `671183cb081f3b2f`, `a97b7bd6cd0acedb` `RemoveArrayItem` on backoff elements).
-  - **Cause:** Only `Queue::assertPushed` existed from password-reset HTTP tests; nothing read those properties from the mutated class during `handle()`, so integer/array mutants on retry metadata often stay **UNCOVERED** in job-only MSI runs.
-  - **Fix:** `Tests\Unit\Jobs\SendPasswordResetEmailTest::test_job_exposes_retry_and_timeout_settings` instantiates the job and asserts `3`, `[60, 300, 900]`, and `30`.
+- **Public queue contract (`$tries`, `$backoff`, `$timeout`)** (historical report ~`L19–21` on property defaults; e.g. `f9e4a26bc8ccf1f1` `DecrementInteger`, `671183cb081f3b2f` `IncrementInteger`, `a97b7bd6cd0acedb` / `adde29b63eef7989` / `c4101d80e28d73af` `RemoveArrayItem` on backoff, `e53de75a09efe60a` / `a4d1252dd465ee0a` on `$timeout`).
+  - **Cause:** MSI / coverage often marks **class property default initializers** as not executed, so mutants on `public $tries = 3` etc. stayed **UNCOVERED** even when a unit test read `(new Job)->tries` after construction.
+  - **Fix:** **`SendPasswordResetEmail`**: assign **`$this->tries` / `$this->backoff` / `$this->timeout` in `__construct()`** (properties declared without inline defaults). Same pattern for **`SendDeleteAccountRequestEmail`**. **`test_job_exposes_retry_and_timeout_settings`** (both jobs) still asserts `3`, `[60, 300, 900]`, and `30` so constructor mutants fail tests.
 
 - **`handle()` logging + mail** (`~44–88`; report ~61253–61555, e.g. `1852deb5736b67a4` `FalseToTrue` on `log_emails`, `5dea70580896df65` / `b842307513ce3f0d` `RemoveMethodCall` on `Log::info` / `Mail::send`, `57236eb0f8acc0b6` / `fd65cf8322b5fd73` `IfNegated` on the `email_logs` branch, `3a7da4ccd46ce8c5` / `394d9637b800a7c1` on `array_merge` / `substr` token masking, `e47e26da3d6ffe79` on success `Log::info`). User-report line:operator survivors included **`L46`/`L120`** `FalseToTrue`, **`L62`** `UnwrapSubstr` / int mutants on `substr`, **`L77–L79`** / **`L92–L97`** `RemoveArrayItem`, **`L105–L106`** `UnwrapArrayMerge` on `PASSWORD_RESET_EMAIL_FAILED`.
   - **Cause:** `log_emails` default when the config key is missing was not pinned; token preview allowed loose `str_starts_with`; catch / `failed()` did not assert every context key.
@@ -1389,9 +1389,9 @@ This file tracks mutants killed during the current hardening session, with the r
 
 ## `SendDeleteAccountRequestEmail` (`app/Jobs/SendDeleteAccountRequestEmail.php`)
 
-- **Public queue contract (`$tries`, `$backoff`, `$timeout`)** (`~18–20`; report `tests/coverage/20260428_2310.txt` ~61859–62003, e.g. `284a59845f5c8988`, `29134191d95c5bb4` `RemoveArrayItem` on backoff entries).
-  - **Cause:** Same as password-reset job: queue metadata mutants can remain **UNCOVERED** when MSI mutates property initializers without tests reading them from the mutated compilation unit during `handle()`.
-  - **Fix:** `Tests\Unit\Jobs\SendDeleteAccountRequestEmailTest::test_job_exposes_retry_and_timeout_settings` asserts `3`, `[60, 300, 900]`, and `30`.
+- **Public queue contract (`$tries`, `$backoff`, `$timeout`)** (historical ~`L18–20` default-line UNCOVERED; same MSI behavior as password-reset).
+  - **Cause:** Property-default lines not attributed as covered.
+  - **Fix:** Constructor assignments (see **`SendPasswordResetEmail`** note). **`SendDeleteAccountRequestEmailTest::test_job_exposes_retry_and_timeout_settings`** asserts values after `new SendDeleteAccountRequestEmail(...)`.
 
 - **`handle()` logging + `DeleteAccountRequestNotification`** (`~37–73`; report ~62015–62185, e.g. `3673e288fb7e2f34` `FalseToTrue` on `log_emails`, `6772304b906e7571` / `24b2e43e22820204` `RemoveMethodCall` on `Log::info` / `Mail::send`, `70c7460f8acccb61` / `72706fac5c64878f` `IfNegated` on `email_logs`, `d319341e339f64e0` / `b08d800737e931b7` on `array_merge` / channel `info`, `e5f437421ef30893` / `e33f84f1f5b56116` on success logging).
   - **Cause:** No synchronous execution of `handle()` under test; mutants could drop log keys, skip mail, or strip `admin_url` from the `email_logs` payload.
