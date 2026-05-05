@@ -64,6 +64,15 @@ class PaymentControllerWebTest extends TestCase
         $this->assertSame((string) $passenger->id, $this->webpay->lastInit->buyOrder);
         $this->assertStringEndsWith('/transbank-respuesta', $this->webpay->lastInit->returnUrl);
         $this->assertStringEndsWith('/transbank-final', $this->webpay->lastInit->finalUrl);
+
+        $returnParts = parse_url($this->webpay->lastInit->returnUrl);
+        $finalParts = parse_url($this->webpay->lastInit->finalUrl);
+        $this->assertIsArray($returnParts);
+        $this->assertIsArray($finalParts);
+        $this->assertSame($returnParts['scheme'] ?? null, $finalParts['scheme'] ?? null);
+        $this->assertSame($returnParts['host'] ?? null, $finalParts['host'] ?? null);
+        $this->assertSame('/transbank-respuesta', $returnParts['path'] ?? null);
+        $this->assertSame('/transbank-final', $finalParts['path'] ?? null);
     }
 
     public function test_transbank_response_marks_passenger_paid_on_approved_code(): void
@@ -94,6 +103,142 @@ class PaymentControllerWebTest extends TestCase
         $this->assertSame(Passenger::STATE_ACCEPTED, (int) $passenger->request_state);
         $this->assertSame('ok', $passenger->payment_status);
         $this->assertNotNull($passenger->payment_info);
+    }
+
+    public function test_transbank_passes_string_cast_buy_order_and_session_id_to_webpay(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id, 'seat_price_cents' => 100]);
+        $passengerUser = User::factory()->create();
+        $passenger = Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $this->get('/transbank?tp_id='.$passenger->id)->assertOk();
+
+        $this->assertNotNull($this->webpay->lastInit);
+        $this->assertIsString($this->webpay->lastInit->buyOrder);
+        $this->assertIsString($this->webpay->lastInit->sessionId);
+        $this->assertSame((string) $passenger->id, $this->webpay->lastInit->buyOrder);
+        $this->assertSame((string) $passenger->id, $this->webpay->lastInit->sessionId);
+    }
+
+    public function test_transbank_response_accepts_numeric_string_zero_response_code_as_success(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id, 'seat_price_cents' => 500]);
+        $passengerUser = User::factory()->create();
+        $passenger = Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $detail = new \stdClass;
+        $detail->responseCode = '0';
+        $payload = new \stdClass;
+        $payload->buyOrder = (string) $passenger->id;
+        $payload->detailOutput = $detail;
+        $payload->urlRedirection = 'https://webpay.test-wsp/voucher';
+        $this->webpay->transactionResult = $payload;
+
+        $this->post('/transbank-respuesta', ['token_ws' => 'tbk-token-str-zero'])
+            ->assertOk()
+            ->assertViewIs('transbank');
+
+        $passenger->refresh();
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) $passenger->request_state);
+        $this->assertSame('ok', $passenger->payment_status);
+    }
+
+    public function test_transbank_response_records_known_retry_message_for_response_code_minus_two(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passengerUser = User::factory()->create();
+        $passenger = Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $detail = new \stdClass;
+        $detail->responseCode = -2;
+        $payload = new \stdClass;
+        $payload->buyOrder = (string) $passenger->id;
+        $payload->detailOutput = $detail;
+        $this->webpay->transactionResult = $payload;
+
+        $this->post('/transbank-respuesta', ['token_ws' => 'tbk-token-minus-two'])
+            ->assertOk()
+            ->assertViewIs('transbank-final');
+
+        $passenger->refresh();
+        $this->assertSame('error:-2:Transacción debe reintentarse.', $passenger->payment_status);
+    }
+
+    public function test_transbank_response_unknown_response_code_records_error_code_with_empty_message_segment(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passengerUser = User::factory()->create();
+        $passenger = Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $detail = new \stdClass;
+        $detail->responseCode = 999;
+        $payload = new \stdClass;
+        $payload->buyOrder = (string) $passenger->id;
+        $payload->detailOutput = $detail;
+        $this->webpay->transactionResult = $payload;
+
+        $this->post('/transbank-respuesta', ['token_ws' => 'tbk-unknown-code'])
+            ->assertOk()
+            ->assertViewIs('transbank-final');
+
+        $passenger->refresh();
+        $this->assertSame('error:999:', $passenger->payment_status);
+    }
+
+    public function test_transbank_response_maps_negative_decline_codes_minus_three_through_minus_eight(): void
+    {
+        $cases = [
+            [-3, 'Error en transacción.'],
+            [-4, 'Rechazo de transacción.'],
+            [-5, 'Rechazo por error de tasa.'],
+            [-6, 'Excede cupo máximo mensual.'],
+            [-7, 'Excede límite diario por transacción.'],
+            [-8, 'Rubro no autorizado.'],
+        ];
+
+        foreach ($cases as $index => [$code, $expectedSuffix]) {
+            $driver = User::factory()->create();
+            $trip = Trip::factory()->create(['user_id' => $driver->id]);
+            $passengerUser = User::factory()->create();
+            $passenger = Passenger::factory()->create([
+                'trip_id' => $trip->id,
+                'user_id' => $passengerUser->id,
+            ]);
+
+            $detail = new \stdClass;
+            $detail->responseCode = $code;
+            $payload = new \stdClass;
+            $payload->buyOrder = (string) $passenger->id;
+            $payload->detailOutput = $detail;
+            $this->webpay->transactionResult = $payload;
+
+            $this->post('/transbank-respuesta', ['token_ws' => 'tbk-decline-suite-'.$index])
+                ->assertOk()
+                ->assertViewIs('transbank-final');
+
+            $passenger->refresh();
+            $this->assertSame(
+                'error:'.$code.':'.$expectedSuffix,
+                $passenger->payment_status,
+                'Wrong decline mapping for response code '.$code
+            );
+        }
     }
 
     public function test_transbank_response_records_declined_payment_status(): void

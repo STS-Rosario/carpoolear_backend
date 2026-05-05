@@ -67,7 +67,6 @@ class PaymentController extends Controller
                     'tokenWs' => $request->input('token_ws'),
                 ]);
             } else {
-                $responseMessage = '';
                 /*
                     -1 = Rechazo de transacción.
                     -2 = Transacción debe reintentarse.
@@ -78,35 +77,18 @@ class PaymentController extends Controller
                     -7 = Excede límite diario por transacción.
                     -8 = Rubro no autorizado.
                 */
-                switch ($output->responseCode) {
-                    case -1:
-                        $responseMessage = 'Rechazo de transacción.';
-                        break;
-                    case -2:
-                        $responseMessage = 'Transacción debe reintentarse.';
-                        break;
-                    case -3:
-                        $responseMessage = 'Error en transacción.';
-                        break;
-                    case -4:
-                        $responseMessage = 'Rechazo de transacción.';
-                        break;
-                    case -5:
-                        $responseMessage = 'Rechazo por error de tasa.';
-                        break;
-                    case -6:
-                        $responseMessage = 'Excede cupo máximo mensual.';
-                        break;
-                    case -7:
-                        $responseMessage = 'Excede límite diario por transacción.';
-                        break;
-                    case -8:
-                        $responseMessage = 'Excede límite diario por transacción.';
-                        break;
-                    default:
-                        // code...
-                        break;
-                }
+                $code = (int) $output->responseCode;
+                $declineMessages = [
+                    -1 => 'Rechazo de transacción.',
+                    -2 => 'Transacción debe reintentarse.',
+                    -3 => 'Error en transacción.',
+                    -4 => 'Rechazo de transacción.',
+                    -5 => 'Rechazo por error de tasa.',
+                    -6 => 'Excede cupo máximo mensual.',
+                    -7 => 'Excede límite diario por transacción.',
+                    -8 => 'Rubro no autorizado.',
+                ];
+                $responseMessage = $declineMessages[$code] ?? '';
                 $passengerRequest->payment_status = 'error:'.$output->responseCode.':'.$responseMessage;
                 $passengerRequest->payment_info = json_encode($transactionResultOutput);
                 $passengerRequest->save();
