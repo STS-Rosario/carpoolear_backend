@@ -43,7 +43,7 @@ class FacebookSocialProviderTest extends TestCase
             ->withArgs(function (string $method, string $uri): bool {
                 return $method === 'GET'
                     && str_starts_with($uri, 'https://graph.facebook.com/v3.3/me?fields=')
-                    && str_contains($uri, '&access_token=my-token');
+                    && str_contains($uri, 'access_token=my-token');
             })
             ->andReturn(new Response(200, [], json_encode($body)));
 
@@ -57,6 +57,70 @@ class FacebookSocialProviderTest extends TestCase
         $this->assertSame('Masculino', $row['gender']);
         $this->assertSame('1988-03-21', $row['birthday']);
         $this->assertSame('https://cdn.example/p.png', $row['image']);
+        $this->assertFalse($row['banned']);
+        $this->assertFalse($row['terms_and_conditions']);
+    }
+
+    public function test_get_user_data_maps_female_gender(): void
+    {
+        Log::shouldReceive('info')->once()->with(Mockery::type('string'));
+
+        $female = [
+            'id' => 'fb-2',
+            'email' => 'f@example.test',
+            'name' => 'F User',
+            'gender' => 'female',
+            'picture' => ['data' => ['url' => 'https://img.example/f.png']],
+        ];
+
+        $httpF = Mockery::mock(Client::class);
+        $httpF->shouldReceive('request')->once()->andReturn(new Response(200, [], json_encode($female)));
+        $pF = new FacebookSocialProvider('t-f');
+        $this->injectClient($pF, $httpF);
+        $rowF = $pF->getUserData([]);
+        $this->assertSame('Femenino', $rowF['gender']);
+    }
+
+    public function test_get_user_data_sets_gender_na_when_field_absent(): void
+    {
+        Log::shouldReceive('info')->once()->with(Mockery::type('string'));
+
+        $noGender = [
+            'id' => 'fb-3',
+            'email' => 'ng@example.test',
+            'name' => 'No Gender',
+            'picture' => ['data' => ['url' => 'https://img.example/n.png']],
+        ];
+
+        $httpNg = Mockery::mock(Client::class);
+        $httpNg->shouldReceive('request')->once()->andReturn(new Response(200, [], json_encode($noGender)));
+        $pNg = new FacebookSocialProvider('t-ng');
+        $this->injectClient($pNg, $httpNg);
+        $rowNg = $pNg->getUserData([]);
+        $this->assertSame('N/A', $rowNg['gender']);
+    }
+
+    public function test_get_user_data_leaves_birthday_untransformed_when_parts_fewer_than_three(): void
+    {
+        Log::shouldReceive('info')->once()->with(Mockery::type('string'));
+
+        $body = [
+            'id' => 'fb-4',
+            'email' => 'b@example.test',
+            'name' => 'Birth',
+            'gender' => 'male',
+            'picture' => ['data' => ['url' => 'https://img.example/b.png']],
+            'birthday' => '03/1988',
+        ];
+
+        $http = Mockery::mock(Client::class);
+        $http->shouldReceive('request')->once()->andReturn(new Response(200, [], json_encode($body)));
+
+        $provider = new FacebookSocialProvider('t-b');
+        $this->injectClient($provider, $http);
+
+        $row = $provider->getUserData([]);
+        $this->assertSame('03/1988', $row['birthday']);
     }
 
     public function test_get_user_data_sets_error_and_null_when_status_not_200(): void
