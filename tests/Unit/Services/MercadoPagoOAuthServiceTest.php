@@ -35,6 +35,44 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertSame('mp', $q['platform_id']);
     }
 
+    public function test_constructor_reads_pkce_flag_from_config_as_boolean(): void
+    {
+        Config::set('services.mercadopago.client_id', 'a');
+        Config::set('services.mercadopago.client_secret', 'b');
+        Config::set('services.mercadopago.oauth_redirect_uri', 'c');
+        Config::set('services.mercadopago.oauth_frontend_redirect', 'https://f.test');
+        Config::set('services.mercadopago.oauth_pkce_enabled', 1);
+
+        $ref = new \ReflectionClass(MercadoPagoOAuthService::class);
+        $prop = $ref->getProperty('pkceEnabled');
+        $prop->setAccessible(true);
+
+        $this->assertTrue($prop->getValue(new MercadoPagoOAuthService));
+
+        Config::set('services.mercadopago.oauth_pkce_enabled', 0);
+        $this->assertFalse($prop->getValue(new MercadoPagoOAuthService));
+    }
+
+    public function test_constructor_rtrims_frontend_redirect_and_auth_base(): void
+    {
+        Config::set('services.mercadopago.client_id', 'a');
+        Config::set('services.mercadopago.client_secret', 'b');
+        Config::set('services.mercadopago.oauth_redirect_uri', 'c');
+        Config::set('services.mercadopago.oauth_frontend_redirect', 'https://spa.example///');
+        Config::set('services.mercadopago.oauth_pkce_enabled', false);
+        Config::set('services.mercadopago.oauth_auth_url_base', 'https://custom.auth/mp//');
+
+        $ref = new \ReflectionClass(MercadoPagoOAuthService::class);
+        $base = $ref->getProperty('frontendRedirectBase');
+        $base->setAccessible(true);
+
+        $this->assertSame('https://spa.example', $base->getValue(new MercadoPagoOAuthService));
+
+        $svc = new MercadoPagoOAuthService;
+        $url = $svc->getAuthorizationUrl('s');
+        $this->assertStringStartsWith('https://custom.auth/mp/authorization?', $url);
+    }
+
     public function test_get_authorization_url_trims_trailing_slash_on_auth_base(): void
     {
         Config::set('services.mercadopago.client_id', 'x');
@@ -71,6 +109,22 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9._~-]{43,64}$/', $out['code_verifier']);
         $expectedChallenge = rtrim(strtr(base64_encode(hash('sha256', $out['code_verifier'], true)), '+/', '-_'), '=');
         $this->assertSame($expectedChallenge, $q['code_challenge']);
+    }
+
+    public function test_generate_code_verifier_length_and_charset(): void
+    {
+        $svc = new MercadoPagoOAuthService;
+        $m = new ReflectionMethod(MercadoPagoOAuthService::class, 'generateCodeVerifier');
+        $m->setAccessible(true);
+        $allowed = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+
+        for ($i = 0; $i < 25; $i++) {
+            $v = $m->invoke($svc);
+            $len = strlen($v);
+            $this->assertGreaterThanOrEqual(43, $len);
+            $this->assertLessThanOrEqual(64, $len);
+            $this->assertSame($len, strspn($v, $allowed));
+        }
     }
 
     public function test_generate_code_challenge_uses_binary_sha256(): void
@@ -146,6 +200,17 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertSame('ok-null', $svc->exchangeCodeForToken('c', null)['access_token']);
     }
 
+    public function test_exchange_code_for_token_returns_empty_array_when_json_body_not_array(): void
+    {
+        $this->configureMercadoPagoService(pkce: false);
+
+        Http::fake([
+            'https://api.mercadopago.com/oauth/token' => Http::response('"not-json-object"', 200),
+        ]);
+
+        $this->assertSame([], (new MercadoPagoOAuthService)->exchangeCodeForToken('code', null));
+    }
+
     public function test_exchange_code_for_token_omits_code_verifier_when_empty_string(): void
     {
         $this->configureMercadoPagoService(pkce: false);
@@ -161,6 +226,17 @@ class MercadoPagoOAuthServiceTest extends TestCase
 
         $svc = new MercadoPagoOAuthService;
         $this->assertSame('ok-empty', $svc->exchangeCodeForToken('c', '')['access_token']);
+    }
+
+    public function test_get_user_me_returns_empty_array_when_json_not_array(): void
+    {
+        $this->configureMercadoPagoService(pkce: false);
+
+        Http::fake([
+            'https://api.mercadopago.com/users/me' => Http::response('"scalar"', 200),
+        ]);
+
+        $this->assertSame([], (new MercadoPagoOAuthService)->getUserMe('tok'));
     }
 
     public function test_get_user_me_logs_and_throws_on_non_success(): void
@@ -194,6 +270,11 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertSame('12345678', MercadoPagoOAuthService::normalizeDni('12.345.678'));
     }
 
+    public function test_normalize_dni_returns_letters_when_no_digits_remain_after_strip(): void
+    {
+        $this->assertSame('ABC', MercadoPagoOAuthService::normalizeDni('A B.C'));
+    }
+
     public function test_extract_dni_for_comparison_strips_cuil_wrapper(): void
     {
         $this->assertSame(
@@ -205,9 +286,63 @@ class MercadoPagoOAuthServiceTest extends TestCase
         );
     }
 
+    public function test_extract_dni_for_comparison_returns_empty_for_short_cuil_number(): void
+    {
+        $this->assertSame('', MercadoPagoOAuthService::extractDniForComparison([
+            'type' => 'CUIL',
+            'number' => '201',
+        ]));
+    }
+
+    public function test_extract_dni_for_comparison_defaults_missing_type_to_dni(): void
+    {
+        $this->assertSame(
+            '30123456',
+            MercadoPagoOAuthService::extractDniForComparison(['number' => '30.123.456'])
+        );
+    }
+
+    public function test_extract_dni_for_comparison_trims_and_uppercases_type_label(): void
+    {
+        $this->assertSame(
+            '123456789',
+            MercadoPagoOAuthService::extractDniForComparison([
+                'type' => '  cuil  ',
+                'number' => '201234567896',
+            ])
+        );
+    }
+
+    public function test_extract_dni_for_comparison_returns_empty_when_number_missing(): void
+    {
+        $this->assertSame('', MercadoPagoOAuthService::extractDniForComparison(['type' => 'DNI']));
+    }
+
     public function test_normalize_name_for_comparison_lowercases_and_strips_accents(): void
     {
         $this->assertSame('gonzalez', MercadoPagoOAuthService::normalizeNameForComparison('  González  '));
+    }
+
+    public function test_normalize_name_for_comparison_returns_empty_for_whitespace_only(): void
+    {
+        $this->assertSame('', MercadoPagoOAuthService::normalizeNameForComparison("  \t  \n  "));
+    }
+
+    public function test_latin_accent_fallback_replaces_each_mapped_character(): void
+    {
+        $mapMethod = new ReflectionMethod(MercadoPagoOAuthService::class, 'latinAccentMap');
+        $mapMethod->setAccessible(true);
+        $fallbackMethod = new ReflectionMethod(MercadoPagoOAuthService::class, 'normalizeNameAccentFallback');
+        $fallbackMethod->setAccessible(true);
+
+        $map = $mapMethod->invoke(null);
+        $this->assertNotEmpty($map);
+
+        foreach ($map as $from => $to) {
+            $this->assertSame($to, $fallbackMethod->invoke(null, $from), 'accent key '.$from);
+        }
+
+        $this->assertSame('cafe', $fallbackMethod->invoke(null, 'café'));
     }
 
     public function test_name_matches_accepts_subset_of_multi_word_first_name(): void
@@ -217,8 +352,12 @@ class MercadoPagoOAuthServiceTest extends TestCase
             'last_name' => 'Caso',
         ];
         $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Santiago Caso'));
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Santiago Ignacio Caso'));
         $this->assertFalse(MercadoPagoOAuthService::nameMatches($me, 'Pedro Caso'));
         $this->assertFalse(MercadoPagoOAuthService::nameMatches(['first_name' => '', 'last_name' => 'X'], 'A B'));
+        $this->assertFalse(MercadoPagoOAuthService::nameMatches(['first_name' => '   ', 'last_name' => 'Pérez'], 'Juan Pérez'));
+        $this->assertFalse(MercadoPagoOAuthService::nameMatches(['first_name' => 'Ana', 'last_name' => '   '], 'Ana López'));
+        $this->assertFalse(MercadoPagoOAuthService::nameMatches($me, 'Santiago Cas'));
     }
 
     public function test_filter_me_payload_for_storage_keeps_only_allowlisted_keys(): void
@@ -233,6 +372,29 @@ class MercadoPagoOAuthServiceTest extends TestCase
             ['email' => 'a@b.c', 'first_name' => 'F', 'identification' => ['type' => 'DNI', 'number' => '1']],
             MercadoPagoOAuthService::filterMePayloadForStorage($me)
         );
+    }
+
+    public function test_filter_me_payload_for_storage_preserves_each_allowlisted_field_when_present(): void
+    {
+        $me = [
+            'email' => 'e@e.e',
+            'phone' => ['area_code' => '11'],
+            'address' => ['city' => 'X'],
+            'first_name' => 'A',
+            'last_name' => 'B',
+            'country_id' => 'AR',
+            'identification' => ['type' => 'DNI', 'number' => '1'],
+            'registration_date' => '2020-01-01',
+            'extra' => 'strip',
+        ];
+        $out = MercadoPagoOAuthService::filterMePayloadForStorage($me);
+        foreach ([
+            'email', 'phone', 'address', 'first_name', 'last_name',
+            'country_id', 'identification', 'registration_date',
+        ] as $key) {
+            $this->assertArrayHasKey($key, $out);
+        }
+        $this->assertArrayNotHasKey('extra', $out);
     }
 
     public function test_get_frontend_redirect_url_appends_encoded_result(): void

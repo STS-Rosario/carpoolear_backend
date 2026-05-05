@@ -207,25 +207,36 @@ class MercadoPagoOAuthService
             return '';
         }
         // Prefer intl Normalizer (NFD + strip combining marks) for full Unicode accent support
-        if (class_exists(\Normalizer::class)) {
+        if (extension_loaded('intl') && class_exists(\Normalizer::class)) {
             $decomposed = \Normalizer::normalize($s, \Normalizer::FORM_D);
             if ($decomposed !== false) {
                 $s = preg_replace('/\p{M}/u', '', $decomposed);
             }
         } else {
-            // Fallback: common Latin accents so González matches Gonzalez without intl
-            $accents = [
-                'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a', 'æ' => 'ae',
-                'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
-                'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
-                'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o', 'œ' => 'oe',
-                'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
-                'ý' => 'y', 'ÿ' => 'y', 'ñ' => 'n', 'ç' => 'c',
-            ];
-            $s = strtr($s, $accents);
+            $s = self::normalizeNameAccentFallback($s);
         }
 
         return $s;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function latinAccentMap(): array
+    {
+        return [
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a', 'æ' => 'ae',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o', 'œ' => 'oe',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ý' => 'y', 'ÿ' => 'y', 'ñ' => 'n', 'ç' => 'c',
+        ];
+    }
+
+    private static function normalizeNameAccentFallback(string $s): string
+    {
+        return strtr($s, self::latinAccentMap());
     }
 
     /**

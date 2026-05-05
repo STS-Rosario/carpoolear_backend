@@ -3206,8 +3206,26 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 ## `MercadoPagoOAuthService` — unit (`app/Services/MercadoPagoOAuthService.php`, Apr 2026 report)
 
-- **Cause:** mutants on **`getAuthorizationUrl`** (missing **`client_id` / `response_type` / `state` / `redirect_uri`**, inverted **`pkceEnabled`** branches, broken **`rtrim`** / URL concatenation, wrong PKCE return shape, **`random_int`** bounds, verifier loop, **`hash(..., true)`**, **`generateCodeChallenge`** **`rtrim`**, **`exchangeCodeForToken`** body keys and **`code_verifier`** guard, inverted **`successful()`**, empty **`json()`** returns, **`getUserMe`** error handling, **`normalizeDni`**, **`extractDniForComparison`**, **`normalizeNameForComparison`**, **`nameMatches`**, **`filterMePayloadForStorage`**, **`getFrontendRedirectUrl`** — representative IDs from the report include **`5e2e26041b50cc93`**–**`b81ec007009e2149`**, **`c6f622132fd2c13b`**–**`c4dbd40f42fe4db4`**, **`b9db2a51772dc021`**, **`bf8c2428ad3fa306`**–**`4fb2aff38b8f4c82`**, **`0100e7cf04300d05`**–**`2c2e338eef8cce6e`**, **`57d8530206188532`**–**`d14ccfef7d403fc7`**, **`dc0a6818e4376d04`**–**`ea959c1a47c93e16`**, **`95d05ed6d4952b9b`**–**`aff133b84fbff67c`**, **`c6795c1bb9a10f9d`**–**`f674f645bbc5d201`**, plus **`getFrontendRedirectUrl`** if present in the same class.
-- **Fix:** **`tests/Unit/Services/MercadoPagoOAuthServiceTest.php`** asserts query string keys and values (including **`platform_id`**), PKCE URL + **`code_challenge_method`** **`S256`** + verifier length, **`hash('sha256', $verifier, true)`** for the challenge, **`exchangeCodeForToken`** POST body (with and without **`code_verifier`** for **`null`** vs **`''`** separately), failure logging + exception, **`getUserMe`** failure path, static helpers (**`normalizeDni`**, CUIL **`extractDniForComparison`**, accent **`normalizeNameForComparison`**, **`nameMatches`** positive/negative), allowlist **`filterMePayloadForStorage`**, and **`getFrontendRedirectUrl`** encoding.
+- **MSI:** **100%** (**199** mutations, scoped run: source + **`tests/Unit/Services/MercadoPagoOAuthServiceTest.php`**).
+- **Mutant IDs (Infection operator @ line, from report):** `EmptyStringToNotEmpty` @L22–L24; `UnwrapRtrim` @L25; `RemoveBooleanCast` / `FalseToTrue` @L26; `DecrementInteger` / `IncrementInteger` @L73–L77; `RemoveArrayItem` @L106–L110 and @L218–L223 (pre-refactor inline accent map); `BooleanOrToBooleanAnd` @L164, @L246; `EmptyStringToNotEmpty` @L164–L169, @L182–L185, @L206, @L242–L244, @L265; `RemoveEarlyReturn` @L165, @L186, @L192, @L207, @L247, @L256, @L261; `FalseToTrue` @L212, @L256, @L266; `RemoveStringCast` / `CoalesceRemoveLeft` @L182–L183, @L242–L244; `UnwrapTrim` / `UnwrapStrtoupper` @L183, @L242–L244; `SmallerOrEqualToGreater` @L191; `DecrementInteger` / `IncrementInteger` @L191, @L263; `Concat*` @L298, @L309; plus `IfNegated`, `IdenticalToNotIdentical`, `NotIdenticalToIdentical` on guards.
+- **Constructor / URL builders (`~L22–66`):** **`EmptyStringToNotEmpty`**, **`UnwrapRtrim`**, **`RemoveBooleanCast`**, **`FalseToTrue`** on **`pkceEnabled`**; **`Concat*`** on auth URL; PKCE vs scalar return.
+  - **Cause:** defaults from **`config()`** and **`rtrim`** matter for valid redirect bases; boolean cast distinguishes **`0`/`1`** from truthiness mutants.
+  - **Fix:** tests set explicit config values, assert trimmed bases and query params, PKCE array keys vs scalar URL.
+- **`generateCodeVerifier` / `generateCodeChallenge` (`~L71–91`):** **`DecrementInteger`/`IncrementInteger`** on **`random_int`** bounds and charset index; **`hash(..., true)`**; **`rtrim`** on base64url.
+  - **Cause:** off-by-one in loop or challenge encoding could slip without byte-level assertions.
+  - **Fix:** **`Http::fake`** + **`with`** callback captures verifier; assert length charset, binary hash argument, challenge padding stripped.
+- **`exchangeCodeForToken` / `getUserMe`:** non-array JSON, **`successful()`** inversion, scalar JSON body, logging.
+  - **Cause:** mutants on **`json()`** type checks and error branches.
+  - **Fix:** **`Http::fake`** responses with string/invalid JSON; assert thrown **`RuntimeException`** and log when configured.
+- **`normalizeDni` / `extractDniForComparison`:** digit stripping, CUIL vs DNI types, trim.
+  - **Cause:** **`RemoveStringCast`**, **`CoalesceRemoveLeft`**, **`EmptyStringToNotEmpty`** on normalized output.
+  - **Fix:** table-style cases including short CUIL, spaced **`cuil`** numbers, and missing identification.
+- **`normalizeNameForComparison` / `nameMatches`:** intl vs fallback, accent map, substring rules for first/last names.
+  - **Cause:** large inline **`strtr`** maps produced many **`RemoveArrayItem`** survivors (**`L218–L223`**); **`FalseToTrue`**, **`RemoveEarlyReturn`** on **`nameMatches`** (**`~L256`**) allowed false positives when the MP string omitted part of the stored last name (e.g. **`Cas`** vs **`Caso`**).
+  - **Fix:** gate **`Normalizer::normalize`** on **`extension_loaded('intl') && class_exists(\\Normalizer::class)`**, move Latin map to **`latinAccentMap()`** + **`normalizeNameAccentFallback()`**; **`test_latin_accent_fallback_replaces_each_mapped_character`** (reflection over the full map + **`café`**) and **`nameMatches`** rejects **`Santiago Cas`** for last name **`Caso`**.
+- **`filterMePayloadForStorage` / `getFrontendRedirectUrl`:** allowlist keys, encoding, query concatenation.
+  - **Cause:** **`RemoveArrayItem`**, **`Concat*`** on stored payload or URL fragments.
+  - **Fix:** assert exact preserved keys and encoded parameters in redirect URL tests.
 
 ## `GeoService` (`app/Services/GeoService.php`)
 
