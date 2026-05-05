@@ -1699,13 +1699,12 @@ This file tracks mutants killed during the current hardening session, with the r
 ## `AcceptPassengerNotification` (`app/Notifications/AcceptPassengerNotification.php`)
 
 - **Channels + email/push metadata contract** (`via` list, `toEmail()` metadata, and `toPush().image`; report RUN ~6814 and UNTESTED/UNCOVERED ~67075–67231).
-  - Cause: previous tests validated message/url and `getExtras()` branching, but did not pin channel list plus metadata keys (`name_app`, `domain`, `image`), so `RemoveArrayItem` mutants on those payloads survived.
-  - Fix: `Tests\Unit\Notifications\AcceptPassengerNotificationTest` now asserts exact `getVia()` channels, config-driven email metadata keys, and static push image in both present and fallback flows.
-  - Mutant IDs: `4a12efbfa910faad`, `470e4f7fd1bba29e`, `10585b418562ac66`, `a645d18f25efcf9d`, `9ff998c76c09454b`, `c0d7babbc2413be8`.
+  - Cause: **`protected $via`** default array literals were MSI-**UNCOVERED** (same pattern as queue job **`$tries`** defaults); email **`url`** empty-trip suffix allowed **`EmptyStringToNotEmpty`** on the **`''`** branch.
+  - Fix: **`__construct()`** assigns **`$this->via`** so channel class strings execute under coverage. **`getExtras()`** uses **`(int) $request->request_state === Passenger::STATE_WAITING_PAYMENT`**. **`AcceptPassengerNotificationTest`** adds **`test_get_extras_returns_trip_when_token_object_has_no_id_property`**, **`assertIsInt`** on **`my-trips`** **`trip_id`**, and **`NotificationPayloadShapingTest`** already pins **`…/app/trips/`** with no trailing id when trip is null.
 
 - **`getExtras()` waiting-payment branch guard semantics** (`getExtras()` ~48–53; report UNTESTED ~67159–67219).
-  - Cause: this method has compound guards (`is_object($to) && isset($to->id)`, request lookup, and waiting-payment state checks) where weak assertions can miss operator/equality mutants.
-  - Fix: existing branch tests are kept behavior-first and explicit: no matching token request => `type=trip`; token user with `STATE_WAITING_PAYMENT` => `type=my-trips` and correct `trip_id`, which exercises object/id guard, state gate, and id propagation through the public payload.
+  - Cause: compound **`&&`** / loose **`== 4`** vs DB string state allowed **`BooleanAndToBooleanOr`**, **`EqualToIdentical`**, and int mutants to survive.
+  - Fix: strict state check + object-without-**`id`** regression above; DB string **`'4'`** case retained.
   - Mutant IDs: `a5dbb5bd35d432b9`, `fdfb561b3809b6b1`, `f12e359ff30e9720`, `0dbb922329f39783`, `07d8ea2961b27a1d`, `0c0994b3db973a35`, `7ef3481701a3fa15`, `4caac72f000a9181`.
 
 ## `DeleteTripNotification` (`app/Notifications/DeleteTripNotification.php`)
@@ -1834,18 +1833,30 @@ This file tracks mutants killed during the current hardening session, with the r
 
 - **`match_array` scalar/array contract** (`match_array()` ~5–8; report UNTESTED ~65213–65237).
   - Cause: helper was only used indirectly, so mutants could invert the ternary, drop the wrapped scalar element, or return null without a direct failure.
-  - Fix: `Tests\Unit\Helpers\QueriesTest::test_match_array_keeps_arrays_and_wraps_scalars` asserts arrays are preserved and scalar input is wrapped as a one-item array.
+  - Fix: **`Tests\Unit\Helpers\QueriesTest::test_match_array_keeps_arrays_and_wraps_scalars`** also pins **`[]`** passthrough and nested list preservation.
   - Mutant IDs: `7d3c776dcf75f9fb`, `5446cf7fc9701b8f`, `56a09c36274f34e7`.
 
 - **`make_pagination` default page + null-size behavior** (`make_pagination()` ~10–23; report UNTESTED/UNCOVERED ~65249–65357).
-  - Cause: prior coverage only exercised one happy path and the null-size path once, leaving defaults (`$pageNumber`, `$pageSize`) and branching under-asserted.
-  - Fix: tests assert paginated metadata for explicit page/size, implicit first page when page is omitted, and full collection return when `pageSize` is null.
-  - Mutant IDs: `77545dd59c2e3a1d`, `32f8e0b230b37983`, `f2edd3082cce9a74`, `ee9938632436ab79`, `305f7314d2bcf2af`, `51cdc5d5ef65d4bf`, `a92eb851ecdfdca7`, `0c5999fe8ba56177`, `d02df906b2a441dc`, `18bab9b912252d5a`.
+  - Cause: **`$pageSize == null`** vs **`===`** and default **`20`** on the **signature line** were MSI-**UNCOVERED** / weakly observed; **`console_log`** non-testing branch **`info()`** was never executed under **`App::environment('testing')`**.
+  - Fix: **`make_pagination`** uses **`func_num_args() < 3`** to apply default **20** inside the function body (executable literals), **`$pageSize === null`** for the “return all rows” path, and **`test_make_pagination_uses_twenty_per_page_when_size_argument_is_omitted`**. **`console_log`** uses **`Log::info`** in the non-testing branch; **`test_console_log_uses_log_info_when_not_in_testing_environment`** mocks **`App::environment('testing')`** false. **`get_query`** assertions **`json_decode`** the trailing bindings slice.
+  - Mutant IDs: `77545dd59c2e3a1d`, `32f8e0b230b37983`, `f2edd3082cce9a74`, `ee9938632436ab79`, `305f7314d2bcf2af`, `51cdc5d5ef65d4bf`, `a92eb851ecdfdca7`, `0c5999fe8ba56177`, `d02df906b2a441dc`, `18bab9b912252d5a`; **`console_log`** / **`get_query`** line mutants from user batch (e.g. **`a043b39c831705db`** / **`3d1411ee348c418a`** on historical line numbers).
 
 - **Query-log helpers** (`start_log_query()` / `stop_log_query()` / `get_query()` ~40–61; report UNCOVERED ~65443–65593).
   - Cause: helper trio had no direct assertions, so mutants could remove DB log toggles, break default-index selection, or change returned query+bindings string concatenation undetected.
   - Fix: tests execute real queries with logging enabled, assert `get_query()` returns latest/default and indexed entries with serialized bindings, then confirm `stop_log_query()` prevents later query capture.
   - Mutant IDs: `5583578a1672f7fe`, `1d61bbf8f6ae5be0`, `0b3f2006b446c90a`, `07b0165921fc1387`, `d593cc1897745b4e`, `5b3b2a1ed2038d59`, `103545b1dbbb78e8`, `b832d935011ee03f`, `cd679eeeb69abba2`, `d81cf3272b76c748`, `3c1ae3aa0cb7c3e8`, `20812a3f768098d0`, `1c8cb4223cb340f0`, `e4662202e9725faa`.
+
+## `Mails` helper (`app/Helpers/Mails.php`)
+
+- **`ssmtp_send_mail` startup log** (~`L6` **`RemoveMethodCall`** on **`\\Log::info('ssmtp_send_mail: START')`**).
+  - Cause: **`Log::spy()`** did not always register an expectation MSI treated as killing the **`info`** removal.
+  - Fix: **`tests/Unit/Helpers/MailsTest.php`** — **`Log::shouldReceive('info')->once()->with('ssmtp_send_mail: START')`** before invoking **`ssmtp_send_mail`**.
+
+## `AutoRequestPassengerNotification` / `SubscriptionMatchNotification` / `HourLeftNotification` (`app/Notifications/…`)
+
+- **`toEmail()['url']` empty-trip segment** (~`L28–L29` **`EmptyStringToNotEmpty`** on **`''`** after **`/app/trips/`**); **`protected $via`** **`RemoveArrayItem`** MSI-**UNCOVERED** on channel rows.
+  - Cause: Assertions did not require an **exact** URL ending when **`$trip`** is null; **`via`** lived only on property default lines.
+  - Fix: **`__construct()`** assigns **`$this->via`** in each class. Unit tests assert **`https://{app.url}/app/trips/`** with **no** extra characters when trip is missing (**`AutoRequestPassengerNotificationTest`**, **`SubscriptionMatchNotificationTest`**, **`HourLeftNotificationTest`**).
 
 ## `OldCordovaAppHelper` (`app/Helpers/OldCordovaAppHelper.php`)
 
@@ -1864,6 +1875,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Cause: prior tests mostly set explicit config values, so mutants that changed config defaults (`false` -> `true`) or removed early returns could survive when keys were absent.
   - Fix: `Tests\Unit\IdentityValidationHelperTest` now covers key-absence behavior by unsetting `carpoolear` keys and asserting the public policy outcome: enforcement is only active when enabled and not optional, and "required new users" is only enforced when the flag is truly present/enabled.
   - Mutant IDs: `b924252c1257bfea`, `aafc60cad9afc335`, `8aaa4d2bcfe1983d`, `b37ec49361d780e6`, `a7f3fc988e442dbb`, `7356795a65c6e5ce`, `b9dd022ccc45468a`, `1709889203edf6eb`.
+
+- **`canPerformRestrictedActions()` early-return cluster** (~`L110–L126` user report: **`RemoveEarlyReturn`** on validated / inactive-enforcement shortcuts; **`FalseToTrue`** / **`RemoveEarlyReturn`** on **`isUserCreatedOnOrAfterCutoff`** when **`created_at`** is null ~`L48`).
+  - Cause: sequential **`if`/`return true`** blocks were observationally equivalent to merged logic for many user states, so **`RemoveEarlyReturn`** survived; **`created_at = null`** was not asserted for cutoff helper.
+  - Fix: **`canPerformRestrictedActions`** rewritten as a **single boolean return** (`validated || !enforcement || (!newUserReq && !pastDeadline)`). **`test_is_user_created_on_or_after_cutoff_false_when_created_at_is_null`** pins **`false`** when **`created_at`** is **NULL** in the database.
 
 - **Date cutoff and deadline semantics** (`newUsersCutoffDate()` ~31–36, `isUserCreatedOnOrAfterCutoff()` ~40–52, `isCurrentUserPastDeadline()` ~86–103; report UNCOVERED/UNTESTED ~64889–65129).
   - Cause: uncovered null/empty cutoff and deadline boundaries let early-return mutants survive (`return null/false` removals, inverted guards).
