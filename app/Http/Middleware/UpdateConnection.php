@@ -2,10 +2,10 @@
 
 namespace STS\Http\Middleware;
 
-use Closure;
 use Carbon\Carbon;
-use Tymon\JWTAuth\JWTAuth;
+use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use Tymon\JWTAuth\JWTAuth;
 
 class UpdateConnection
 {
@@ -21,24 +21,18 @@ class UpdateConnection
     /**
      * Create a new filter instance.
      *
-     * @param Guard $auth
-     *
+     * @param  Guard  $auth
      * @return void
      */
     public function __construct(JWTAuth $auth)
     {
-        if (! \App::environment('testing')) {
-            $this->auth = $auth;
-            
-        }
+        $this->auth = $auth;
     }
 
     /**
      * Handle an incoming request.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \Closure                 $next
-     *
+     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function handle($request, Closure $next)
@@ -53,7 +47,7 @@ class UpdateConnection
                 }
             }
         } catch (\Exception $e) {
-            \Log::warning('UpdateConnection middleware error: ' . $e->getMessage());
+            \Log::warning('UpdateConnection middleware error: '.$e->getMessage());
         }
 
         return $next($request);

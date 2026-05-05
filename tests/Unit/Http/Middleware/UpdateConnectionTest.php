@@ -26,7 +26,12 @@ class UpdateConnectionTest extends TestCase
 
         $jwt = Mockery::mock(JWTAuth::class);
         $middleware = new UpdateConnection($jwt);
-        $this->assertNull($this->readAuthProperty($middleware));
+        $this->assertSame($jwt, $this->readAuthProperty($middleware));
+
+        $parser = Mockery::mock();
+        $parser->shouldReceive('hasToken')->once()->andReturn(false);
+        $jwt->shouldReceive('parser')->once()->andReturn($parser);
+        $jwt->shouldNotReceive('parseToken');
 
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('through', 200));
 
