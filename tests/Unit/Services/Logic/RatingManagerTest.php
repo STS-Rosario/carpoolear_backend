@@ -35,6 +35,15 @@ class RatingManagerTest extends TestCase
         $this->assertFalse($okOne->fails());
     }
 
+    public function test_validator_rejects_array_comment_when_rating_is_present(): void
+    {
+        $manager = $this->manager();
+        $v = $manager->validator(['rating' => 1, 'comment' => ['not', 'a', 'string']]);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('comment'));
+    }
+
     public function test_get_ratings_delegates_to_repository(): void
     {
         $driver = User::factory()->create();

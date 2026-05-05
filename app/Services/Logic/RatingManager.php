@@ -29,7 +29,7 @@ class RatingManager extends BaseManager
     {
         return Validator::make($data, [
             'comment' => 'nullable|string',
-            'rating' => 'required|integer|in:0,1,',
+            'rating' => 'required|integer|in:0,1',
         ]);
     }
 
@@ -140,11 +140,12 @@ class RatingManager extends BaseManager
             $passenger_ids_rates_created = [];
 
             foreach ($passengers as $passenger) {
-                $inRatingState = $passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED;
+                $requestState = (int) $passenger->request_state;
+                $inRatingState = $requestState === Passenger::STATE_ACCEPTED || $requestState === Passenger::STATE_CANCELED;
 
                 $canceledButAccepted = true;
-                if ($passenger->request_state == Passenger::STATE_CANCELED) {
-                    if (isset($passenger->canceled_state) && $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
+                if ($requestState === Passenger::STATE_CANCELED) {
+                    if (isset($passenger->canceled_state) && (int) $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
                         $canceledButAccepted = false;
                     }
                 }
