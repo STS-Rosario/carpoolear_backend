@@ -3,9 +3,10 @@
 namespace STS\Services\Logic;
 
 use STS\Models\References as ReferencesModel;
-use STS\Repository\ReferencesRepository;
-use Validator; 
 use STS\Models\User as UserModel;
+use STS\Repository\ReferencesRepository;
+use Validator;
+
 class ReferencesManager extends BaseManager
 {
     protected $referencesRepo;
@@ -19,11 +20,11 @@ class ReferencesManager extends BaseManager
     {
         return Validator::make($data, [
             'comment' => 'required|string|max:260',
-            'user_id_to' => 'required'
+            'user_id_to' => 'required',
         ]);
     }
 
-    public function create(UserModel $user, $data) 
+    public function create(UserModel $user, $data)
     {
         $v = $this->validator($data);
         if ($v->fails()) {
@@ -32,12 +33,14 @@ class ReferencesManager extends BaseManager
             return;
         }
         $userTo = UserModel::find($data['user_id_to']);
-        if (!$userTo) {
+        if (! $userTo) {
             $this->setErrors(['error' => 'user_doesnt_exist']);
+
             return;
         }
-        if ($userTo->id == $user->id) {
+        if ((int) $userTo->id === (int) $user->id) {
             $this->setErrors(['error' => 'reference_same_user']);
+
             return;
         }
 
@@ -46,14 +49,16 @@ class ReferencesManager extends BaseManager
 
         if ($referenceExist && count($referenceExist)) {
             $this->setErrors(['error' => 'reference_exist']);
+
             return;
         }
 
-        $reference = new ReferencesModel();
+        $reference = new ReferencesModel;
         $reference->user_id_from = $user->id;
         $reference->user_id_to = $data['user_id_to'];
         $reference->comment = $data['comment'];
         $this->referencesRepo->create($reference);
+
         return $reference;
     }
 }
