@@ -13,10 +13,10 @@ class MailsTest extends TestCase
             require_once app_path('Helpers/Mails.php');
         }
 
-        Log::spy();
+        Log::shouldReceive('info')
+            ->once()
+            ->with('ssmtp_send_mail: START');
 
         ssmtp_send_mail('Subject', 'test@example.com', 'Body');
-
-        Log::shouldHaveReceived('info')->once()->with('ssmtp_send_mail: START');
     }
 }
