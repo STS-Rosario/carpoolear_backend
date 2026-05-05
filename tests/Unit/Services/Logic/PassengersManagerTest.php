@@ -284,7 +284,7 @@ class PassengersManagerTest extends TestCase
             'passenger_type' => Passenger::TYPE_PASAJERO,
         ]);
 
-        $this->manager()->cancelRequest($trip->id, $passenger->id, $passenger, []);
+        $this->manager()->cancelRequest($trip->id, (string) $passenger->id, $passenger, []);
 
         Event::assertDispatched(CancelEvent::class);
         $this->assertSame(Passenger::STATE_CANCELED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
@@ -500,6 +500,32 @@ class PassengersManagerTest extends TestCase
         $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
 
         $this->manager()->sendFullTripMessage($trip);
+
+        $this->assertCount(1, $trip->passengerAccepted);
+    }
+
+    public function test_send_full_trip_message_skips_when_accepted_count_is_below_total_seats(): void
+    {
+        Config::set('carpoolear.module_send_full_trip_message', true);
+        $driver = User::factory()->create(['send_full_trip_message' => 1]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'total_seats' => 4,
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+        $trip->load(['user', 'passengerAccepted']);
+
+        $conversationManagerMock = \Mockery::mock(\STS\Services\Logic\ConversationsManager::class);
+        $conversationManagerMock->shouldReceive('sendFullTripMessage')->never();
+        $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
+
+        $this->manager()->sendFullTripMessage($trip);
+
+        $this->assertGreaterThan(count($trip->passengerAccepted), (int) $trip->seats_available);
     }
 
     public function test_send_full_trip_message_skips_when_module_is_disabled(): void
@@ -522,6 +548,8 @@ class PassengersManagerTest extends TestCase
         $this->app->instance(\STS\Services\Logic\ConversationsManager::class, $conversationManagerMock);
 
         $this->manager()->sendFullTripMessage($trip);
+
+        $this->assertCount(1, $trip->passengerAccepted);
     }
 
     public function test_pay_request_completes_waiting_payment_and_dispatches_reject_event(): void

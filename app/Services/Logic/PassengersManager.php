@@ -173,12 +173,12 @@ class PassengersManager extends BaseManager
 
         $canceledState = null;
 
-        if ($this->isUserRequestPending($tripId, $cancelUserId) && $cancelUserId == $user->id) {
+        if ($this->isUserRequestPending($tripId, $cancelUserId) && (int) $cancelUserId === (int) $user->id) {
             $canceledState = Passenger::CANCELED_REQUEST;
         }
 
         if ($this->isUserRequestAccepted($tripId, $cancelUserId) || $this->isUserRequestWaitingPayment($tripId, $cancelUserId)) {
-            if ($cancelUserId == $user->id) {
+            if ((int) $cancelUserId === (int) $user->id) {
                 if ($this->isUserRequestWaitingPayment($tripId, $cancelUserId)) {
                     $canceledState = Passenger::CANCELED_PASSENGER_WHILE_PAYING;
                 } else {
@@ -191,7 +191,7 @@ class PassengersManager extends BaseManager
 
         if ($canceledState !== null) {
             if ($result = $this->passengerRepository->cancelRequest($tripId, $cancelUser, $canceledState)) {
-                if ($trip->user_id == $user->id) {
+                if ((int) $trip->user_id === (int) $user->id) {
                     event(new CancelEvent($trip, $trip->user, $cancelUser, $canceledState));
                 } else {
                     event(new CancelEvent($trip, $cancelUser, $trip->user, $canceledState));
@@ -232,7 +232,7 @@ class PassengersManager extends BaseManager
         $acceptedUser = $this->uRepo->show($acceptedUserId);
         $trip = $this->tripLogic->show($user, $tripId);
         if ($this->isUserRequestPending($tripId, $acceptedUserId) && $this->tripLogic->tripOwner($user, $trip)) {
-            if ($trip->seats_available == 0) {
+            if ((int) $trip->seats_available === 0) {
                 $this->setErrors(['error' => 'not_seat_available']);
 
                 return;
