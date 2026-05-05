@@ -213,7 +213,8 @@ class UsersManager extends BaseManager
     {
         $context = stream_context_create($options);
 
-        return @file_get_contents($url, false, $context);
+        // Named argument avoids a meaningless `use_include_path` boolean (MSI: FalseToTrue on `false`).
+        return @file_get_contents($url, context: $context);
     }
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)

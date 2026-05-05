@@ -5,6 +5,7 @@ namespace Tests\Unit\Services\Logic;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Mail\Message as MailMessage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -25,6 +26,7 @@ use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
+use STS\Services\HeicToJpegConverter;
 use STS\Services\ImageUploadValidator;
 use STS\Services\Logic\UsersManager;
 use STS\Services\UserEditablePropertiesService;
@@ -1889,6 +1891,114 @@ class UsersManagerTest extends TestCase
         File::delete($path);
     }
 
+    public function test_upload_doc_writes_jpeg_when_converter_returns_non_null_bytes(): void
+    {
+        $this->app->instance(ImageUploadValidator::class, new ImageUploadValidator);
+        $converter = Mockery::mock(HeicToJpegConverter::class);
+        $converter->shouldReceive('convert')->once()->andReturn('JPEG_BYTES_FROM_CONVERTER');
+        $this->app->instance(HeicToJpegConverter::class, $converter);
+
+        $manager = $this->manager();
+        $file = UploadedFile::fake()->image('driver.png', 12, 12);
+
+        $name = $manager->uploadDoc($file);
+
+        $this->assertIsString($name);
+        $this->assertStringEndsWith('.jpg', $name);
+        $path = base_path('public/image/docs/'.$name);
+        $this->assertFileExists($path);
+        $this->assertSame('JPEG_BYTES_FROM_CONVERTER', file_get_contents($path));
+        File::delete($path);
+    }
+
+    public function test_upload_doc_calls_make_directory_recursive_when_docs_folder_missing(): void
+    {
+        $this->app->instance(ImageUploadValidator::class, new ImageUploadValidator);
+        $converter = Mockery::mock(HeicToJpegConverter::class);
+        $converter->shouldReceive('convert')->once()->andReturn('DIR_TEST_BYTES');
+        $this->app->instance(HeicToJpegConverter::class, $converter);
+
+        $docsDir = base_path('public/image/docs/');
+        File::shouldReceive('isDirectory')->once()->with($docsDir)->andReturn(false);
+        File::shouldReceive('makeDirectory')->once()->with($docsDir, 0755, true)->andReturn(true);
+        File::shouldReceive('put')->once()->andReturnUsing(function (string $path, string $contents) {
+            return file_put_contents($path, $contents);
+        });
+
+        $manager = $this->manager();
+        $file = UploadedFile::fake()->image('mkdir_probe.png', 5, 5);
+        $name = $manager->uploadDoc($file);
+
+        $this->assertStringEndsWith('.jpg', $name);
+        $full = $docsDir.$name;
+        $this->assertFileExists($full);
+        $this->assertSame('DIR_TEST_BYTES', file_get_contents($full));
+        unlink($full);
+    }
+
+    public function test_fetch_recaptcha_verification_response_reads_local_file_via_context(): void
+    {
+        $tmp = storage_path('app/recaptcha_ctx_'.uniqid('', true).'.txt');
+        File::put($tmp, '{"success":true}');
+        try {
+            $manager = new class($this->app->make(UserRepository::class), $this->app->make(TripRepository::class)) extends UsersManager
+            {
+                public function exposeFetch(string $url, array $options): string|false
+                {
+                    return parent::fetchRecaptchaVerificationResponse($url, $options);
+                }
+            };
+            $body = $manager->exposeFetch($tmp, []);
+            $this->assertSame('{"success":true}', $body);
+        } finally {
+            File::delete($tmp);
+        }
+    }
+
+    public function test_update_returns_null_when_driver_upload_doc_fails_validation(): void
+    {
+        Config::set('carpoolear.module_validated_drivers', true);
+        try {
+            $user = User::factory()->create([
+                'driver_data_docs' => json_encode(['kept.jpg']),
+            ]);
+            $before = $user->fresh()->driver_data_docs;
+
+            $mock = Mockery::mock(ImageUploadValidator::class);
+            $mock->shouldReceive('validate')
+                ->once()
+                ->andReturn(['valid' => false, 'errors' => ['image' => ['bad']]]);
+            $this->app->instance(ImageUploadValidator::class, $mock);
+
+            Event::fake([UpdateEvent::class]);
+            $out = $this->manager()->update($user, [
+                'driver_data_docs' => [UploadedFile::fake()->image('doc.jpg', 8, 8)],
+            ], is_driver: true);
+
+            $this->assertNull($out);
+            $this->assertSame($before, $user->fresh()->driver_data_docs);
+            Event::assertNotDispatched(UpdateEvent::class);
+        } finally {
+            Config::set('carpoolear.module_validated_drivers', false);
+        }
+    }
+
+    public function test_update_non_driver_json_encodes_driver_data_docs_string_paths(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->create(['driver_data_docs' => null]);
+        $paths = ['/image/docs/a.jpg', '/image/docs/b.jpg'];
+
+        $out = $this->manager()->update($user, [
+            'driver_data_docs' => $paths,
+        ], is_driver: false);
+
+        $this->assertInstanceOf(User::class, $out);
+        $decoded = json_decode($user->fresh()->driver_data_docs, true);
+        $this->assertSame($paths, $decoded);
+        Event::assertDispatched(UpdateEvent::class);
+    }
+
     public function test_update_photo_updates_profile_from_valid_jpeg_data_uri(): void
     {
         Event::fake([UpdateEvent::class]);
@@ -1923,7 +2033,14 @@ class UsersManagerTest extends TestCase
                             && isset($data['user'])
                             && (int) $data['user']->id === (int) $user->id;
                     }),
-                    Mockery::type('Closure')
+                    Mockery::on(function ($callback) {
+                        $message = Mockery::mock(MailMessage::class);
+                        $message->shouldReceive('to')->once()->with('fleet-admin@example.test', 'Admin')->andReturnSelf();
+                        $message->shouldReceive('subject')->once()->with('Usuario quiere ser conductor');
+                        $callback($message);
+
+                        return true;
+                    })
                 );
 
             $out = $this->manager()->update($user, [
