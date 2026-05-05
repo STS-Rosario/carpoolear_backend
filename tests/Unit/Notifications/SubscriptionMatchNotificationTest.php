@@ -42,6 +42,19 @@ class SubscriptionMatchNotificationTest extends TestCase
         $this->assertSame('https://app.test', $email['domain']);
     }
 
+    public function test_to_email_url_has_no_suffix_after_trips_when_trip_is_missing(): void
+    {
+        config([
+            'carpoolear.name_app' => 'CarpTest',
+            'app.url' => 'https://app.test',
+        ]);
+
+        $notification = new SubscriptionMatchNotification;
+        $notification->setAttribute('trip', null);
+
+        $this->assertSame('https://app.test/app/trips/', $notification->toEmail(null)['url']);
+    }
+
     public function test_to_string_and_push_use_subscription_match_message(): void
     {
         $notification = new SubscriptionMatchNotification;
