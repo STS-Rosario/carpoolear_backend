@@ -9,19 +9,24 @@ use GuzzleHttp\Exception\RequestException;
 
 class FirebaseService
 {
-    private $googleClient;
+    /** @var mixed */
+    private $firebaseFile;
 
-    private $firebaseFile = '';
+    /** @var mixed */
+    private $firebaseName;
 
-    private $firebaseName = '';
+    private Client $googleClient;
 
-    public function __construct()
+    /**
+     * @param  Client|null  $googleClient  Optional Google client (tests); default constructs a real {@see Client}.
+     */
+    public function __construct(?Client $googleClient = null)
     {
         $this->firebaseFile = config('firebase.firebase_path');
         $this->firebaseName = config('firebase.firebase_project_name');
 
         // Inicializamos el cliente de Google con la cuenta de servicio
-        $this->googleClient = new Client;
+        $this->googleClient = $googleClient ?? new Client;
         $firebasePath = storage_path((string) $this->firebaseFile);
 
         // In test/CI or local setups the env can point to a directory (or be empty).

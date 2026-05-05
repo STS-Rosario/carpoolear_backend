@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use Google\Client as GoogleClient;
 use GuzzleHttp\Client as HttpClient;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
@@ -483,5 +484,101 @@ class FirebaseServiceTest extends TestCase
         $m->setAccessible(true);
 
         $this->assertFalse($m->invoke($service, 'any'));
+    }
+
+    public function test_send_notification_web_lowercase_posts_webpush_payload(): void
+    {
+        $http = Mockery::mock(HttpClient::class);
+        $http->shouldReceive('post')
+            ->once()
+            ->withArgs(function (string $url, array $options): bool {
+                $msg = $options['json']['message'] ?? [];
+                $wp = $msg['webpush'] ?? [];
+
+                return ($wp['notification']['title'] ?? null) === 'WebT'
+                    && ($wp['notification']['body'] ?? null) === 'WebB'
+                    && ($wp['data']['k'] ?? null) === 'v';
+            })
+            ->andReturn(new Response(200, [], '{"name":"web"}'));
+
+        $service = new FirebaseServiceHarness($http, ['access_token' => 't'], 'wpproj');
+        $out = $service->sendNotification('tok-w', ['title' => 'WebT', 'body' => 'WebB'], ['k' => 'v'], 'web');
+
+        $this->assertSame(['name' => 'web'], $out);
+    }
+
+    public function test_get_access_token_throws_when_token_payload_missing_access_token(): void
+    {
+        $http = Mockery::mock(HttpClient::class);
+        $service = new FirebaseServiceHarness($http, [], 'x');
+
+        $this->expectException(\ErrorException::class);
+        $service->getAccessToken();
+    }
+
+    public function test_unregister_device_returns_true(): void
+    {
+        $http = Mockery::mock(HttpClient::class);
+        $service = new FirebaseServiceHarness($http, ['access_token' => 't'], 'p');
+
+        $this->assertTrue($service->unregisterDevice('any-token'));
+    }
+
+    public function test_constructor_accepts_numeric_firebase_path_from_config(): void
+    {
+        Config::set('firebase.firebase_path', 0);
+        Config::set('firebase.firebase_project_name', 'numeric-path-proj');
+
+        $this->assertInstanceOf(FirebaseService::class, new FirebaseService);
+    }
+
+    public function test_constructor_calls_set_auth_config_when_json_file_exists(): void
+    {
+        $relative = 'app/firebase_auth_probe_'.uniqid('', true).'.json';
+        $full = storage_path($relative);
+        file_put_contents($full, json_encode([
+            'installed' => [
+                'client_id' => 'unit-client-id.apps.googleusercontent.com',
+                'client_secret' => 'unit-secret',
+                'redirect_uris' => ['http://localhost'],
+            ],
+        ]));
+
+        try {
+            $mock = Mockery::mock(GoogleClient::class);
+            $mock->shouldReceive('setAuthConfig')->once()->with($full);
+            $mock->shouldReceive('addScope')
+                ->once()
+                ->with('https://www.googleapis.com/auth/firebase.messaging');
+
+            Config::set('firebase.firebase_path', $relative);
+            Config::set('firebase.firebase_project_name', 'auth-proj');
+
+            $this->assertInstanceOf(FirebaseService::class, new FirebaseService($mock));
+        } finally {
+            @unlink($full);
+            Config::set('firebase.firebase_path', '');
+        }
+    }
+
+    public function test_fetch_messaging_access_token_returns_google_client_payload(): void
+    {
+        $mock = Mockery::mock(GoogleClient::class);
+        $mock->shouldReceive('addScope')->once();
+        $mock->shouldReceive('fetchAccessTokenWithAssertion')
+            ->once()
+            ->andReturn(['access_token' => 'from-assertion', 'expires_in' => 3600]);
+
+        Config::set('firebase.firebase_path', '');
+        Config::set('firebase.firebase_project_name', 'tok-proj');
+
+        $service = new FirebaseService($mock);
+        $m = new ReflectionMethod(FirebaseService::class, 'fetchMessagingAccessToken');
+        $m->setAccessible(true);
+
+        $this->assertSame(
+            ['access_token' => 'from-assertion', 'expires_in' => 3600],
+            $m->invoke($service)
+        );
     }
 }
