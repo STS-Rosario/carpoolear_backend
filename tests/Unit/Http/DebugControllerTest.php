@@ -9,6 +9,13 @@ use Tests\TestCase;
 
 class DebugControllerTest extends TestCase
 {
+    public function test_controller_is_instantiable(): void
+    {
+        $controller = new DebugController;
+
+        $this->assertInstanceOf(DebugController::class, $controller);
+    }
+
     public function test_log_does_not_emit_when_log_key_is_absent(): void
     {
         Log::spy();
