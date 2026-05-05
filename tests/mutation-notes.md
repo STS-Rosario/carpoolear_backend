@@ -1475,9 +1475,9 @@ This file tracks mutants killed during the current hardening session, with the r
 ## `CreateRatingDeleteTrip` listener (`app/Listeners/Ratings/CreateRatingDeleteTrip.php`)
 
 - **`handle()` accepted-passenger gate, rating row, and delete-trip notification** (`handle()` ~31–46; report `tests/coverage/20260428_2310.txt` ~5887–5899 and UNTESTED ~63168–63266).
-  - Cause: nothing exercised `handle()` after a trip delete, so mutants could change `$passengers->count() > 0`, nudge `Str::random(40)`, drop `RatingRepository::create`, or strip `DeleteTripNotification` `setAttribute` / `notify` calls without failing CI.
-  - Fix: `Tests\Unit\Listeners\Ratings\CreateRatingDeleteTripListenerTest` uses a mocked `RatingRepository` plus `NotificationServices`: pending-only passengers leave `create` and `send` uncalled; one or two `STATE_ACCEPTED` passengers (not the driver) assert `create` with passenger→driver ids, trip id, `Passenger::TYPE_CONDUCTOR`, `Passenger::STATE_ACCEPTED`, and a 40-character hash, and three `send` invocations per passenger with `DeleteTripNotification` carrying the trip, owner as `from`, and a 40-char `hash`.
-  - Mutant IDs: `74f05dc5aa0b13e8` (`GreaterToGreaterOrEqual` on `> 0`), `6ab70a2b5915437a` / `4e1e20b437dcc725` (`DecrementInteger` / `IncrementInteger` on that comparison), `372d7bdf3c838ec8` / `2c95141ca503b1e0` (`DecrementInteger` / `IncrementInteger` on `Str::random(40)`), `fc82d10befeead8f` / `0b04659f7c2820f1` / `57399622bc3b96b7` / `6f19fd7e497198ef` (`RemoveMethodCall` on `setAttribute('trip'|'from'|'hash')` and `notify`).
+  - Cause: nothing exercised `handle()` after a trip delete, so mutants could change **`$passengers->count() > 0`** (**`GreaterToGreaterOrEqual` / `DecrementInteger` / `IncrementInteger`** are observationally equivalent to **`>= 0` / `> -1`** when the relation is empty—no loop body runs), nudge **`Str::random(40)`**, drop **`RatingRepository::create`**, or strip **`DeleteTripNotification`** **`setAttribute` / `notify`** without failing CI.
+  - Fix: **`CreateRatingDeleteTrip`**: gate with **`$passengers->isNotEmpty()`** (distinct MSI surface from **`count() > 0`**). **`Tests\Unit\Listeners\Ratings\CreateRatingDeleteTripListenerTest`**: mocked **`RatingRepository`**; pending-only passengers leave **`create`** uncalled; one or two **`STATE_ACCEPTED`** passengers assert **`create`** (40-char hash) and notification wiring.
+  - Mutant IDs (historical on **`> 0`**): `74f05dc5aa0b13e8` (`GreaterToGreaterOrEqual`), `6ab70a2b5915437a` / `4e1e20b437dcc725` (ints on comparison); plus `372d7bdf3c838ec8` / `2c95141ca503b1e0` on **`Str::random(40)`**, `fc82d10befeead8f` / `0b04659f7c2820f1` / `57399622bc3b96b7` / `6f19fd7e497198ef` on **`setAttribute` / `notify`**.
 
 ## `CreateHandler` listener (`app/Listeners/User/CreateHandler.php`)
 
@@ -1496,8 +1496,8 @@ This file tracks mutants killed during the current hardening session, with the r
 ## `ModuleLimitedRequest` listener (`app/Listeners/Request/ModuleLimitedRequest.php`)
 
 - **`handle()` module gate, hour window, destination filter, `AutoCancel`, and passenger persistence** (`handle()` ~29–60; report `tests/coverage/20260428_2310.txt` ~5938–5950 and UNCOVERED ~63693–63825, including line ~63753 onward).
-  - Cause: the listener was never executed under test, so mutants could flip `module_user_request_limited_enabled`, negate inner `if`s, strip the `(int)` cast or hour literal, weaken the `to_town` strict check, skip the `AutoCancel` dispatch, or drop `$request->save()` without detection.
-  - Fix: `Tests\Unit\Listeners\Request\ModuleLimitedRequestListenerTest` toggles `carpoolear.module_user_request_limited_enabled` / `module_user_request_limited_hours_range`, seeds two drivers, one traveler with an accepted seat on trip A plus a pending seat request on trip B, and `Event::fake([AutoCancel::class])`: module off ⇒ no `AutoCancel`; module on with matching `to_town` and trip dates inside the window ⇒ `AutoCancel` carries trip B, B’s owner, and the traveler, and the pending `Passenger` row becomes `STATE_CANCELED` with `CANCELED_SYSTEM`; different `to_town` or a trip date five hours away ⇒ no dispatch; and with `module_user_request_limited_hours_range` removed from config, a trip at +3h stays untouched, pinning the default `2`-hour fallback (covers the `===` / `&&` filter, hours-range default/cast, and `tripsRequested` window).
+  - Cause: the listener was never executed under test, so mutants could flip **`module_user_request_limited_enabled`** default, strip the **`(int)`** cast on **`module_user_request_limited_hours_range`** (string **`'3.7'`** widens the Carbon window vs **`(int)3`**), decrement the default **`2`** hour literal (window shrinks to **1h**), negate inner **`if`s**, or skip **`AutoCancel` / `save()`** without detection.
+  - Fix: **`tests/Unit/Listeners/Request/ModuleLimitedRequestListenerTest`** — **`test_handle_does_nothing_when_module_enabled_config_key_is_absent`** now seeds a second pending trip that **would** auto-cancel if the flag were incorrectly **true** (**`FalseToTrue`** on **`config(..., false)`**). **`test_handle_dispatches_auto_cancel_within_default_two_hour_window_when_hours_range_key_is_absent`** pins default **±2h** vs **`DecrementInteger`** on the **`2`** default. **`test_handle_casts_hours_range_config_to_integer_so_string_fraction_does_not_widen_time_window`** uses **`'3.7'`** in config with a peer trip at **+3h12m** (inside a **3.7h** float window, outside **(int)3**). Existing cases still cover destination mismatch, **`+5h`** out of window, and **`+3h`** with absent hours key.
   - Mutant IDs: `aac707563ebfa2d0` (`FalseToTrue` on module flag ~34), `8870297e10179d77` (`IfNegated` ~36), `4991968c16c84348` / `272b2e1e3ed3d15c` / `d531bd4c640305e7` (`RemoveIntegerCast` / `DecrementInteger` / `IncrementInteger` on hours ~37), `dd16f55a9357d574` / `b47f592825c06a3f` (`IdenticalToNotIdentical` / `BooleanAndToBooleanOr` on destination ~45), `290d004bc5e24baa` / `2a9e55fabed5705e` (`IfNegated` / `ForeachEmptyIterable` ~48–49), `b730794301ff566b` (`IfNegated` ~53), `995ae0a7af6d0762` (`RemoveFunctionCall` on `event(new AutoCancel…)` ~55), `5e6b49ecc35a9024` (`RemoveMethodCall` on `$request->save()` ~57).
 
 ## `FriendCancelNotification` (`app/Notifications/FriendCancelNotification.php`)
@@ -1826,8 +1826,8 @@ This file tracks mutants killed during the current hardening session, with the r
 ## `Dates` helpers (`app/Helpers/Dates.php`)
 
 - **`parse_date` / `date_to_string` / `parse_boolean` return values** (`parse_date()` ~5–8, `date_to_string()` ~10–13, `parse_boolean()` ~15–18; report `tests/coverage/20260428_2310.txt` ~5966–5969 and UNTESTED ~63878–63904).
-  - Cause: global helpers were never invoked from tests, so `AlwaysReturnNull` mutants on each `return` stayed green.
-  - Fix: `Tests\Unit\Helpers\DatesHelperTest` (plain `PHPUnit\Framework\TestCase`, composer autoload only) asserts `parse_date` yields a `Carbon` instance for default and custom formats, `date_to_string` honors default and overridden formats, and `parse_boolean` matches `FILTER_VALIDATE_BOOLEAN` semantics for booleans and common string/integer inputs.
+  - Cause: **`assertNotNull` / `assertInstanceOf`** alone can leave **`AlwaysReturnNull`** effectively unobserved in some MSI runs; mutants replace the **`return`** with **`null`**.
+  - Fix: **`tests/Unit/Helpers/DatesTest.php`** and **`tests/Unit/Helpers/DatesHelperTest.php`** chain **`->format(…)`** on **`parse_date`** results and use **`assertSame`** for strict booleans on **`parse_boolean`**, so **`null`** fails immediately.
   - Mutant IDs: `34562addc83b7af7` (`parse_date` ~7), `7b45cc5826adac98` (`date_to_string` ~12), `d0d36613e717f4a0` (`parse_boolean` ~17).
 
 ## `Queries` helpers (`app/Helpers/Queries.php`)
@@ -1850,13 +1850,13 @@ This file tracks mutants killed during the current hardening session, with the r
 ## `OldCordovaAppHelper` (`app/Helpers/OldCordovaAppHelper.php`)
 
 - **`isOldCordovaApp()` UA / WebView detection** (`isOldCordovaApp()` ~12–24; report `tests/coverage/20260428_2310.txt` ~5971–5985 and UNTESTED ~63914–63926).
-  - Cause: helper was never executed, so `BooleanAndToBooleanOr` on the Capacitor short-circuit (`! empty(X_APP_PLATFORM) && ! empty(X_APP_VERSION)`) and `FalseToTrue` on the WebView / Instagram guard could survive.
-  - Fix: `Tests\Unit\Helpers\OldCordovaAppHelperTest` snapshots/restores `$_SERVER` around scenarios: missing `HTTP_SEC_CH_UA` / `HTTP_USER_AGENT` ⇒ `false`; both `HTTP_X_APP_PLATFORM` + `HTTP_X_APP_VERSION` set ⇒ `false`; only `HTTP_X_APP_VERSION` with WebView headers ⇒ `true` (proves both empties are required for the early exit); `Instagram` substring in `HTTP_USER_AGENT` ⇒ `false`; WebView `sec-ch-ua` without Instagram ⇒ `true`.
+  - Cause: helper was never executed, so **`BooleanAndToBooleanOr`** on the Capacitor short-circuit (**`! empty(X_APP_PLATFORM) && ! empty(X_APP_VERSION)`**) and **`FalseToTrue`** on the **`strpos(...) !== false` / `=== false`** compound guard could survive.
+  - Fix: **`tests/Unit/Helpers/OldCordovaAppHelperTest`** — existing matrix for missing headers, Capacitor, Instagram, and WebView; **`test_is_old_cordova_app_returns_false_when_client_hints_lack_webview_token`** pins the first **`strpos`** conjunct (**Chrome** client hints without **`WebView`** ⇒ **`false`**).
 
 - **`getFakeTripData()` update-banner payload** (`getFakeTripData()` ~30–92; report UNTESTED ~63938–64830).
-  - Cause: the fake trip envelope was never asserted, so `RemoveArrayItem`, integer nudges on zeros, `FalseToTrue` on boolean literals, and `EmptyStringToNotEmpty` on `request` stayed green.
-  - Fix: same test class asserts stable Spanish banner strings, numeric counters, boolean flags, datetime-shaped `updated_at` / `last_connection`, and `assertArrayHasKey` over the full top-level and nested `user` key sets promised to API clients.
-  - Mutant IDs: `d49ba8167ef10c8a` (`BooleanAndToBooleanOr` ~17), `ee1f1e9cba2f03d7` (`FalseToTrue` on WebView/Instagram line ~23); `getFakeTripData` cluster (representative IDs from the report listing): `92087f7c0588322d`, `9ae3fed2d63935a3`, `b93a1ce4d8856532`, `611fbb558182d263`, `48b0d1a589832710`, `70dd2b6177502360`, `c1d6e8b2f43ffa0a` (`EmptyStringToNotEmpty` ~88), `8b2f1c70ee7db199` — plus parallel `RemoveArrayItem` / `DecrementInteger` / `IncrementInteger` / `FalseToTrue` IDs on the same method through ~64830 in `tests/coverage/20260428_2310.txt`.
+  - Cause: **`assertArrayHasKey`** alone does not pin numeric **`0`/`1`** scalars or **`is_passenger`**, so **`DecrementInteger` / `IncrementInteger` / `FalseToTrue`** on those literals survived.
+  - Fix: same test class adds **`assertSame`** on **`weekly_schedule`**, **`friendship_type_id`**, **`distance`**, **`seat_price_cents`**, **`recommended_trip_price_cents`**, **`is_passenger`**, **`passenger_count`**, plus existing banner / seat / flag coverage.
+  - Mutant IDs: `d49ba8167ef10c8a` (`BooleanAndToBooleanOr` ~17), `ee1f1e9cba2f03d7` (`FalseToTrue` ~23); `getFakeTripData` cluster (representative): `92087f7c0588322d`, `9ae3fed2d63935a3`, `b93a1ce4d8856532`, `611fbb558182d263`, `48b0d1a589832710`, `70dd2b6177502360`, `c1d6e8b2f43ffa0a` (`EmptyStringToNotEmpty` ~88), `8b2f1c70ee7db199` — plus parallel **`RemoveArrayItem` / `DecrementInteger` / `IncrementInteger` / `FalseToTrue`** IDs on the same method through ~64830 in **`tests/coverage/20260428_2310.txt`**.
 
 ## `IdentityValidationHelper` (`app/Helpers/IdentityValidationHelper.php`)
 
@@ -2896,9 +2896,8 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 
 ## `ModuleLimitedRequest` (`app/Listeners/Request/ModuleLimitedRequest.php`)
 
-- **Mutant IDs (user report):** ~`L34` **`FalseToTrue`** on **`config(..., false)`**; ~`L37` **`RemoveIntegerCast` / `DecrementInteger` / `IncrementInteger`** (hour window).
-  - **Cause:** Disabled path was covered by setting **`false`**, not by **omitting** the config key (mutation can flip only the **default** argument). Hour-window edge cases already exist; this adds an absence check for the **enabled** flag.
-  - **Fix:** **`tests/Unit/Listeners/Request/ModuleLimitedRequestListenerTest.php`** — **`test_handle_does_nothing_when_module_enabled_config_key_is_absent`**.
+- **Mutant IDs (user report):** ~`L34` **`FalseToTrue`**; ~`L37` **`RemoveIntegerCast` / `DecrementInteger` / `IncrementInteger`**.
+  - **Cause / fix:** See the canonical **`ModuleLimitedRequest` listener** section above — **`test_handle_does_nothing_when_module_enabled_config_key_is_absent`** (fixture that would cancel if the default flipped), **`test_handle_dispatches_auto_cancel_within_default_two_hour_window_when_hours_range_key_is_absent`**, **`test_handle_casts_hours_range_config_to_integer_so_string_fraction_does_not_widen_time_window`**.
 
 ## `Queries` helper (`app/Helpers/Queries.php`)
 
@@ -2909,8 +2908,7 @@ Re-run Pest mutation / Infection to capture fresh hashes; below records **mutato
 ## `Dates` helper (`app/Helpers/Dates.php`)
 
 - **Mutant IDs (user report):** ~`L7`, `L12`, `L17` **`AlwaysReturnNull`**.
-  - **Cause:** Functions already had format tests; explicit **`assertNotNull`** on return values pins non-null contracts for **`parse_date`**, **`date_to_string`**, **`parse_boolean`**.
-  - **Fix:** **`tests/Unit/Helpers/DatesTest.php`**.
+  - **Cause / fix:** See **`Dates` helpers** section — strict **`->format()`** / **`assertSame`** usage in **`DatesTest`** and **`DatesHelperTest`**.
 
 ## `AutoCancelPassengerRequestIfRequestLimitedNotification` (`app/Notifications/AutoCancelPassengerRequestIfRequestLimitedNotification.php`)
 

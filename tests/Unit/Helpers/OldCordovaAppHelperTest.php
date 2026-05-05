@@ -73,6 +73,16 @@ class OldCordovaAppHelperTest extends TestCase
         $this->assertTrue(OldCordovaAppHelper::isOldCordovaApp());
     }
 
+    public function test_is_old_cordova_app_returns_false_when_client_hints_lack_webview_token(): void
+    {
+        $_SERVER = array_merge($this->originalServer, [
+            'HTTP_SEC_CH_UA' => '"Chromium";v="119", "Google Chrome";v="119"',
+            'HTTP_USER_AGENT' => 'Mozilla/5.0 (Linux; Android 12) AppleWebKit/537.36 Chrome/119 Safari/537.36',
+        ]);
+
+        $this->assertFalse(OldCordovaAppHelper::isOldCordovaApp());
+    }
+
     public function test_get_fake_trip_data_exposes_stable_update_banner_contract(): void
     {
         $data = OldCordovaAppHelper::getFakeTripData();
@@ -81,7 +91,15 @@ class OldCordovaAppHelperTest extends TestCase
         $this->assertSame('ACTUALIZA TU APP', $data['from_town']);
         $this->assertSame('para usar Carpoolear', $data['to_town']);
         $this->assertSame('2026-12-31 12:00:00', $data['trip_date']);
+        $this->assertSame(0, $data['weekly_schedule']);
+        $this->assertNull($data['weekly_schedule_time']);
+        $this->assertSame(0, $data['friendship_type_id']);
+        $this->assertSame(0, $data['distance']);
+        $this->assertSame(0, $data['seat_price_cents']);
+        $this->assertSame(0, $data['recommended_trip_price_cents']);
         $this->assertSame('ready', $data['state']);
+        $this->assertFalse($data['is_passenger']);
+        $this->assertSame(0, $data['passenger_count']);
         $this->assertSame('', $data['request']);
         $this->assertSame(1, $data['total_seats']);
         $this->assertSame(1, $data['seats_available']);
