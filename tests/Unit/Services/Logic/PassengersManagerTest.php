@@ -478,6 +478,28 @@ class PassengersManagerTest extends TestCase
         Event::assertDispatched(RejectEvent::class);
     }
 
+    public function test_reject_request_non_owner_cannot_reject_pending_passenger(): void
+    {
+        Event::fake([RejectEvent::class]);
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->rejectRequest($trip->id, $passenger->id, $stranger, []));
+
+        $this->assertSame('not_valid_request', $manager->getErrors()['error']);
+        $this->assertSame(Passenger::STATE_PENDING, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+        Event::assertNotDispatched(RejectEvent::class);
+    }
+
     public function test_send_full_trip_message_calls_conversation_manager_when_module_enabled_and_trip_is_full(): void
     {
         Config::set('carpoolear.module_send_full_trip_message', true);
