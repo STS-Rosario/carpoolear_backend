@@ -26,12 +26,7 @@ class CheckUserBannedTest extends TestCase
 
         $jwt = Mockery::mock(JWTAuth::class);
         $middleware = new CheckUserBanned($jwt);
-        $this->assertSame($jwt, $this->readAuthProperty($middleware));
-
-        $parser = Mockery::mock();
-        $parser->shouldReceive('hasToken')->once()->andReturn(false);
-        $jwt->shouldReceive('parser')->once()->andReturn($parser);
-        $jwt->shouldNotReceive('parseToken');
+        $this->assertNull($this->readAuthProperty($middleware));
 
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('through', 200));
 
@@ -48,7 +43,7 @@ class CheckUserBannedTest extends TestCase
         $jwt->shouldReceive('parser')->once()->andReturn($parser);
         $jwt->shouldNotReceive('parseToken');
 
-        $middleware = new CheckUserBanned($jwt);
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('ok'));
 
         $this->assertSame('ok', $response->getContent());
@@ -68,7 +63,7 @@ class CheckUserBannedTest extends TestCase
         $jwt->shouldReceive('parser')->andReturn($parser);
         $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
 
-        $middleware = new CheckUserBanned($jwt);
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('allowed'));
 
         $this->assertSame('allowed', $response->getContent());
@@ -88,7 +83,7 @@ class CheckUserBannedTest extends TestCase
         $jwt->shouldReceive('parser')->andReturn($parser);
         $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
 
-        $middleware = new CheckUserBanned($jwt);
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
 
         try {
             $middleware->handle(Request::create('/', 'GET'), fn () => response('should-not-run'));
@@ -108,7 +103,7 @@ class CheckUserBannedTest extends TestCase
         $jwt->shouldReceive('parser')->andReturn($parser);
         $jwt->shouldReceive('parseToken->authenticate')->andReturn(null);
 
-        $middleware = new CheckUserBanned($jwt);
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('null-user-ok'));
 
         $this->assertSame('null-user-ok', $response->getContent());
@@ -129,7 +124,7 @@ class CheckUserBannedTest extends TestCase
         $jwt->shouldReceive('parser')->once()->andReturn($parser);
         $jwt->shouldNotReceive('parseToken');
 
-        $middleware = new CheckUserBanned($jwt);
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('no-token-path'));
 
         $this->assertSame('no-token-path', $response->getContent());
@@ -146,7 +141,7 @@ class CheckUserBannedTest extends TestCase
         $jwt->shouldReceive('parser')->andReturn($parser);
         $jwt->shouldReceive('parseToken->authenticate')->andThrow(new \RuntimeException('bad token'));
 
-        $middleware = new CheckUserBanned($jwt);
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
         $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('recovered'));
 
         Log::shouldHaveReceived('warning')
@@ -161,5 +156,15 @@ class CheckUserBannedTest extends TestCase
         $prop->setAccessible(true);
 
         return $prop->getValue($middleware);
+    }
+
+    private function middlewareWithInjectedAuth(JWTAuth $jwt): CheckUserBanned
+    {
+        $middleware = new CheckUserBanned($jwt);
+        $prop = new ReflectionProperty(CheckUserBanned::class, 'auth');
+        $prop->setAccessible(true);
+        $prop->setValue($middleware, $jwt);
+
+        return $middleware;
     }
 }

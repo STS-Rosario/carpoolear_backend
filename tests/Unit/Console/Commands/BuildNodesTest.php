@@ -7,6 +7,7 @@ use GuzzleHttp\Psr7\Response;
 use Mockery;
 use ReflectionClass;
 use STS\Console\Commands\BuildNodes;
+use STS\Models\NodeGeo;
 use Tests\TestCase;
 
 class BuildNodesTest extends TestCase
@@ -65,5 +66,50 @@ class BuildNodesTest extends TestCase
         $command = $this->commandWithoutConstructorWithClient($client);
 
         $this->assertSame(0, $command->geocodeState(-31.4, -64.2));
+    }
+
+    public function test_handle_creates_node_and_maps_arg_state_short_code(): void
+    {
+        $tmpDir = sys_get_temp_dir().'/buildnodes_'.uniqid();
+        mkdir($tmpDir, 0777, true);
+
+        file_put_contents($tmpDir.'/ARG.json', json_encode([
+            'features' => [[
+                'properties' => [
+                    'name' => 'Cordoba Capital',
+                    'place' => 'city',
+                ],
+                'geometry' => [
+                    'coordinates' => [-64.1888, -31.4201],
+                ],
+            ]],
+        ]));
+
+        $command = new class($tmpDir) extends BuildNodes
+        {
+            private string $fixtureDir;
+
+            public function __construct(string $fixtureDir)
+            {
+                $this->fixtureDir = $fixtureDir;
+                parent::__construct();
+                $this->dir = rtrim($fixtureDir, '/').'/';
+                $this->files = ['ARG.json'];
+            }
+
+            public function geocodeState($lat, $long)
+            {
+                return 'PBA';
+            }
+
+            public function info($string, $verbosity = null): void {}
+        };
+
+        $command->handle();
+
+        $node = NodeGeo::query()->where('name', 'Cordoba Capital')->first();
+        $this->assertNotNull($node);
+        $this->assertSame('Buenos Aires', $node->state);
+        $this->assertSame('ARG', $node->country);
     }
 }

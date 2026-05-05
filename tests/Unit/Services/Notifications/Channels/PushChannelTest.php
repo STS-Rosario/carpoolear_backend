@@ -4,14 +4,83 @@ namespace Tests\Unit\Services\Notifications\Channels;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Mockery;
 use STS\Models\Device;
 use STS\Models\User;
 use STS\Notifications\AnnouncementNotification;
+use STS\Services\FirebaseService;
 use STS\Services\Notifications\Channels\PushChannel;
 use Tests\TestCase;
 
 class PushChannelTest extends TestCase
 {
+    public function test_send_android_uses_firebase_service_with_expected_payload(): void
+    {
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->withArgs(function (string $token, array $message, array $data, string $platform): bool {
+                return $token === 'android-direct-token'
+                    && $platform === 'android'
+                    && $message['title'] === 'Title A'
+                    && $message['body'] === 'Body A'
+                    && $message['icon'] === 'https://img.example/icon.png'
+                    && $message['sound'] === 'default'
+                    && $data['type'] === 'conversation'
+                    && $data['conversation_id'] === '42'
+                    && $data['url'] === 'https://example.com/app';
+            })
+            ->andReturn(['ok' => true]);
+
+        $channel = new PushChannel(fn () => $firebase);
+        $device = new Device([
+            'id' => 5001,
+            'device_id' => 'android-direct-token',
+            'device_type' => 'android',
+        ]);
+
+        $result = $channel->sendAndroid($device, [
+            'message' => 'Body A',
+            'title' => 'Title A',
+            'image' => 'https://img.example/icon.png',
+            'type' => 'conversation',
+            'extras' => ['conversation_id' => 42],
+            'url' => 'https://example.com/app',
+        ]);
+
+        $this->assertSame(['ok' => true], $result);
+    }
+
+    public function test_send_browser_uses_firebase_service_with_click_action_when_url_present(): void
+    {
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->withArgs(function (string $token, array $message, array $extras, string $platform): bool {
+                return $token === 'browser-direct-token'
+                    && $platform === 'browser'
+                    && $message['title'] === 'Carpoolear'
+                    && $message['body'] === 'Browser body'
+                    && $message['click_action'] === 'https://example.com/browser'
+                    && $extras['k'] === 'v';
+            })
+            ->andReturn(['ok' => true]);
+
+        $channel = new PushChannel(fn () => $firebase);
+        $device = new Device([
+            'device_id' => 'browser-direct-token',
+            'device_type' => 'browser',
+        ]);
+
+        $channel->sendBrowser($device, [
+            'message' => 'Browser body',
+            'url' => 'https://example.com/browser',
+            'extras' => ['k' => 'v'],
+        ]);
+
+        $this->assertTrue(true);
+    }
+
     public function test_send_skips_push_pipeline_when_device_notifications_disabled(): void
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
