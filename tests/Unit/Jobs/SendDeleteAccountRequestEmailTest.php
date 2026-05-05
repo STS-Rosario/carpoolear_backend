@@ -198,6 +198,9 @@ class SendDeleteAccountRequestEmailTest extends TestCase
             ->once()
             ->with('DELETE_ACCOUNT_REQUEST_EMAIL_PERMANENTLY_FAILED', Mockery::on(function (array $context) use ($adminEmail) {
                 return $context['admin_email'] === $adminEmail
+                    && $context['error'] === 'queue exhausted'
+                    && array_key_exists('attempts', $context)
+                    && array_key_exists('timestamp', $context)
                     && isset($context['stack_trace'])
                     && strlen((string) $context['stack_trace']) > 0;
             }));
@@ -218,5 +221,22 @@ class SendDeleteAccountRequestEmailTest extends TestCase
 
         $job = new SendDeleteAccountRequestEmail($adminEmail, 'https://x');
         $job->failed(new \RuntimeException('queue exhausted'));
+    }
+
+    public function test_failed_when_log_emails_key_is_absent_does_not_use_email_logs_channel(): void
+    {
+        $carpoolear = config('carpoolear');
+        unset($carpoolear['log_emails']);
+        config(['carpoolear' => $carpoolear]);
+
+        $adminEmail = 'ops@example.com';
+
+        Log::shouldReceive('error')
+            ->once()
+            ->with('Delete account request email job failed permanently', Mockery::type('array'));
+        Log::shouldReceive('channel')->never();
+
+        $job = new SendDeleteAccountRequestEmail($adminEmail, 'https://x');
+        $job->failed(new \RuntimeException('permanent'));
     }
 }
