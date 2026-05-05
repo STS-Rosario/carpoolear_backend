@@ -3,7 +3,10 @@
 namespace Tests\Feature\Http;
 
 use Mockery;
+use STS\Contracts\Logic\Social;
+use STS\Contracts\SocialProvider;
 use STS\Http\Controllers\Api\v1\SocialController;
+use STS\Http\ExceptionWithErrors;
 use STS\Models\SocialAccount;
 use STS\Models\User;
 use STS\Services\Logic\DeviceManager;
@@ -275,5 +278,57 @@ class SocialApiTest extends TestCase
         $friends = $this->postJson('api/social/friends/test', ['access_token' => $accessToken]);
         $friends->assertOk();
         $this->assertSame('OK', $friends->json());
+    }
+
+    public function test_install_provider_binds_test_social_provider_case_insensitively(): void
+    {
+        $controller = new SocialController(
+            Mockery::mock(UsersManager::class),
+            Mockery::mock(DeviceManager::class)
+        );
+
+        $token = $this->encodeTestAccessToken(['provider_user_id' => 'pid-123']);
+        $controller->installProvider('TeSt', $token);
+
+        $provider = app(SocialProvider::class);
+        $this->assertSame('test', $provider->getProviderName());
+    }
+
+    public function test_update_method_returns_ok_when_social_service_succeeds_directly(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user, 'api');
+
+        $social = Mockery::mock(Social::class);
+        $social->shouldReceive('updateProfile')->once()->with($user)->andReturn(true);
+        app()->instance(Social::class, $social);
+
+        $controller = new SocialController(
+            Mockery::mock(UsersManager::class),
+            Mockery::mock(DeviceManager::class)
+        );
+
+        $response = $controller->update(new \Illuminate\Http\Request(['access_token' => '{"provider_user_id":"x"}']), 'test');
+        $this->assertSame('OK', $response->getData(true));
+    }
+
+    public function test_friends_method_throws_when_social_service_fails_directly(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user, 'api');
+
+        $social = Mockery::mock(Social::class);
+        $social->shouldReceive('makeFriends')->once()->with($user)->andReturn(false);
+        $social->shouldReceive('getErrors')->once()->andReturn(['sync_failed']);
+        app()->instance(Social::class, $social);
+
+        $controller = new SocialController(
+            Mockery::mock(UsersManager::class),
+            Mockery::mock(DeviceManager::class)
+        );
+
+        $this->expectException(ExceptionWithErrors::class);
+        $this->expectExceptionMessage('Could not refresh for friends.');
+        $controller->friends(new \Illuminate\Http\Request(['access_token' => '{"provider_user_id":"x"}']), 'test');
     }
 }

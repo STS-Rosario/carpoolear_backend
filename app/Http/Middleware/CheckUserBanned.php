@@ -26,9 +26,7 @@ class CheckUserBanned
      */
     public function __construct(JWTAuth $auth)
     {
-        if (! \App::environment('testing')) {
-            $this->auth = $auth;
-        }
+        $this->auth = \App::environment('testing') ? null : $auth;
     }
 
     /**
