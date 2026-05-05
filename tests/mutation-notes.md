@@ -3229,8 +3229,19 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 ## `GeoService` (`app/Services/GeoService.php`)
 
-- **Cause:** **`RemoveNot`** / **`RemoveArrayItem`** / early-return / loop / boolean mutants on **`arePointsInPaidRegions`** and **`arePointsInPaidRoutes`** (e.g. **`4e7317f20032f19b`**, **`7190459d3264bef8`**, **`fc00b0481ca94565`**, **`27bd7b26ad63d695`**, **`44cf6ecd221f26ef`**, **`ddd4e192532fa61c`**, **`8b76e8f182fcc736`**).
-- **Fix:** **`tests/Unit/Services/GeoServiceTest.php`** builds **`GeoService`** with small in-memory **`paidRegions`** / **`paidRoutes`** fixtures: all points inside vs one outside for regions; a valid region pair vs a pair that should not match a paid route.
+- **MSI:** **100%** (**380** mutations, scoped run: source + **`tests/Unit/Services/GeoServiceTest.php`**).
+- **Mutant IDs (Apr 2026 report, constructor literals @L12–L48):** **`DecrementFloat`**, **`IncrementFloat`**, **`RemoveArrayItem`** on every **`[$lat,$lng]`** vertex of **`$buenosAires`**, **`$rosario`**, **`$cordoba`**, and the first vertices of **`$marDelPlata`** (same operator pattern on each line through **~L48**).
+  - **Cause:** behavioral tests only sampled interior points, so nudging a boundary coordinate or dropping a vertex could still leave those samples inside/outside unchanged.
+  - **Fix:** **`test_get_paid_regions_matches_billing_polygon_vertices`** compares **`getPaidRegions()`** to **`expectedPaidRegionRings()`** — a frozen copy of the constructor polygons — with **`assertSame`** on every latitude/longitude and ring length (documented in-test as intentionally aligned with **`GeoService::__construct()`**).
+- **`doStopsRequireSellado` (`~L105–L114`):** **`DecrementInteger`/`IncrementInteger`** on **`$stopsInPaidZone = 0`**; **`ForeachEmptyIterable`**; **`IfNegated`** on **`isPointInPaidZone`**; **`PostIncrementToPostDecrement`** on **`++`**; **`IfNegated`/`GreaterOrEqual*`/`DecrementInteger`/`IncrementInteger`** on **`>= 2`**; **`TrueToFalse`/`RemoveEarlyReturn`** on early **`return true`**; **`FalseToTrue`** on final **`return false`**.
+  - **Cause:** no direct coverage of the sellado stop counter; mutants could change thresholds or control flow without failing the old suite.
+  - **Fix:** **`test_do_stops_require_sellado_requires_two_distinct_stops_in_a_paid_zone`** — empty / all-outside / single in-zone / one in-zone with padding outside → **`false`**; two in-zone stops (with trailing outside) → **`true`**.
+- **`arePointsInPaidRoutes` final `return false` (`~L188` post-edit):** **`FalseToTrue`** (was **`~L193`** before guard removal).
+  - **Cause:** only a valid configured pair (**Rosario ↔ Buenos Aires**) and an outside point were exercised, so “always true” at the end of the route scan stayed observationally equivalent.
+  - **Fix:** **`test_are_points_in_paid_routes_false_when_regions_have_no_billing_route_pair`** — interior **Córdoba** + **Mar del Plata** points pass **`arePointsInPaidRegions`** but no **`paidRoutes`** row links those two polygons, so the method must stay **`false`**.
+- **Unreachable null guard (`~L182–184` pre-refactor):** **`FalseToTrue`** **`ddd4e192532fa61c`**, **`RemoveEarlyReturn`** **`f40ec11d8007c2ad`** on the removed **`region1`/`region2` null** check.
+  - **Cause:** after **`arePointsInPaidRegions`**, the following loop always assigns both region references for valid points, so the guard was dead; mutants were not distinguishable from real behavior.
+  - **Fix:** removed the redundant **`if`** block — behavior unchanged because a **`null`** region would still fail every **`$route[0] === $region1`** check and fall through to **`return false`**.
 
 ## `UserEditablePropertiesService` (`app/Services/UserEditablePropertiesService.php`)
 
