@@ -298,43 +298,49 @@ class SubscriptionsRepositoryTest extends TestCase
     {
         // Mutation intent: keep lower date boundary clamped to "now" when searching today.
         // Kills: d67ef5e7ca5b898b (Line 49 IfNegated).
-        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
-        $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
-        $subscriber = User::factory()->create();
-        $path = '.'.$n1->id.'.'.$n2->id.'.';
-        $now = Carbon::now('America/Argentina/Buenos_Aires');
+        $now = Carbon::parse('2026-03-15 14:30:00', 'America/Argentina/Buenos_Aires');
+        Carbon::setTestNow($now);
 
-        Subscription::factory()->create([
-            'user_id' => $subscriber->id,
-            'from_id' => $n1->id,
-            'to_id' => $n2->id,
-            'trip_date' => $now->copy()->subMinutes(5),
-            'state' => true,
-            'is_passenger' => false,
-            'created_at' => Carbon::now()->subDay(),
-        ]);
+        try {
+            $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+            $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
+            $subscriber = User::factory()->create();
+            $path = '.'.$n1->id.'.'.$n2->id.'.';
 
-        $future = Subscription::factory()->create([
-            'user_id' => $subscriber->id,
-            'from_id' => $n1->id,
-            'to_id' => $n2->id,
-            'trip_date' => $now->copy()->addMinutes(20),
-            'state' => true,
-            'is_passenger' => false,
-            'created_at' => Carbon::now()->subDay(),
-        ]);
+            Subscription::factory()->create([
+                'user_id' => $subscriber->id,
+                'from_id' => $n1->id,
+                'to_id' => $n2->id,
+                'trip_date' => $now->copy()->subMinutes(5),
+                'state' => true,
+                'is_passenger' => false,
+                'created_at' => Carbon::now()->subDay(),
+            ]);
 
-        $trip = Trip::factory()->create([
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'path' => $path,
-            'trip_date' => $now->copy()->setTime(23, 0),
-            'is_passenger' => false,
-        ]);
+            $future = Subscription::factory()->create([
+                'user_id' => $subscriber->id,
+                'from_id' => $n1->id,
+                'to_id' => $n2->id,
+                'trip_date' => $now->copy()->addMinutes(20),
+                'state' => true,
+                'is_passenger' => false,
+                'created_at' => Carbon::now()->subDay(),
+            ]);
 
-        $rows = $this->repo()->search(User::factory()->create(), $trip);
+            $trip = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'path' => $path,
+                'trip_date' => $now->copy()->setTime(23, 0),
+                'is_passenger' => false,
+            ]);
 
-        $this->assertCount(1, $rows);
-        $this->assertTrue($rows->first()->is($future));
+            $rows = $this->repo()->search(User::factory()->create(), $trip);
+
+            $this->assertCount(1, $rows);
+            $this->assertTrue($rows->first()->is($future));
+        } finally {
+            Carbon::setTestNow();
+        }
     }
 
     public function test_search_friends_trip_only_includes_subscriptions_from_friends(): void
@@ -725,6 +731,45 @@ class SubscriptionsRepositoryTest extends TestCase
 
         $this->assertCount(1, $rows);
         $this->assertTrue($rows->first()->is($match));
+    }
+
+    public function test_search_with_nonempty_path_executes_both_adjacent_and_gap_where_raw_fragments(): void
+    {
+        // Mutation intent: `RemoveMethodCall` on either `whereRaw` / `orWhereRaw` (~87–88) can leave row counts
+        // unchanged when fixtures satisfy both LIKE shapes; the emitted SQL must still contain both CONCAT forms.
+        $n1 = $this->makeNode(['lat' => -34.0, 'lng' => -58.0]);
+        $n2 = $this->makeNode(['lat' => -35.0, 'lng' => -59.0]);
+        $subscriber = User::factory()->create();
+        $path = '.'.$n1->id.'.'.$n2->id.'.';
+
+        Subscription::factory()->create([
+            'user_id' => $subscriber->id,
+            'from_id' => $n1->id,
+            'to_id' => $n2->id,
+            'state' => true,
+            'is_passenger' => false,
+            'trip_date' => null,
+            'created_at' => Carbon::now()->subMonth(),
+        ]);
+
+        $trip = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'path' => $path,
+            'trip_date' => Carbon::now()->addDays(3),
+            'is_passenger' => false,
+        ]);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->repo()->search(User::factory()->create(), $trip);
+
+        $log = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $sql = strtolower(implode(' ', array_column($log, 'query')));
+        $this->assertStringContainsString("concat('%.', from_id, '.', to_id, '.%')", $sql);
+        $this->assertStringContainsString("concat('%.', from_id, '.%.', to_id, '.%')", $sql);
     }
 
     public function test_search_with_waypoint_path_requires_both_adjacent_and_gap_like_patterns(): void

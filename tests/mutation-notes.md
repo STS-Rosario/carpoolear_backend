@@ -95,8 +95,10 @@ This file tracks mutants killed during the current hardening session, with the r
   - Fix: added `test_search_with_path_requires_intermediate_segment_pattern_between_endpoints` (path `.from.mid.to.` requires the `%.from_id.%.to_id.%` branch) and `test_search_with_direct_path_segment_matches_adjacent_endpoints_without_waypoint` (compact `.from.to.` relies on the contiguous-id LIKE branch).
 
 - `Line 87: RemoveMethodCall`, `Line 88: RemoveMethodCall` (`search` path closure: adjacent `%.from_id.to_id.%` vs gap `%.from_id.%.to_id.%`).
-  - Cause: prior fixtures each satisfied **both** LIKE shapes on their own path, so removing one `whereRaw` could still return the seeded row and tests stayed green.
-  - Fix: `test_search_with_waypoint_path_requires_both_adjacent_and_gap_like_patterns` (same trip path `.A.mid.C.` with one subscription on edge `(A,mid)` and one on endpoints `(A,C)`; both must match ⇒ count 2; either branch removal drops one).
+  - Cause: row-count tests could still pass when **both** `whereRaw` clauses were removed if every seeded subscription matched the surviving LIKE (or when fixtures satisfied both shapes independently); Infection’s `RemoveMethodCall` on **either** `whereRaw` / `orWhereRaw` then stayed green.
+  - Fix: **`test_search_with_nonempty_path_executes_both_adjacent_and_gap_where_raw_fragments`** enables **`DB::enableQueryLog()`** on a minimal public path search and asserts the concatenated SQL (lowercased) still contains **`concat('%.', from_id, '.', to_id, '.%')`** and **`concat('%.', from_id, '.%.', to_id, '.%')`**. Keeps **`test_search_with_waypoint_path_requires_both_adjacent_and_gap_like_patterns`** as the behavioral guard (two subscriptions, two shapes).
+- **`test_search_public_uses_now_when_trip_day_is_today`** (`search` `~L49` clamp): wall-clock drift between factory timestamps and **`Carbon::now('America/Argentina/Buenos_Aires')`** inside **`search()`** could flip expected row count.
+  - Fix: wrap the test in **`Carbon::setTestNow()`** with a fixed **`America/Argentina/Buenos_Aires`** instant so “today” vs clamped **`$from`** stays deterministic.
 
 - `SubscriptionsRepository.php` `search` no-path distance (`~93`): last trip vertex selection via `$points[count($points) - 1]`.
   - Cause: two-point trips did not prove the repository reads the **final** polyline vertex when an extra interior marker exists.
