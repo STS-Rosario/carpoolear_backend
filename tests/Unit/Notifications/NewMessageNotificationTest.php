@@ -47,6 +47,23 @@ class NewMessageNotificationTest extends TestCase
         $this->assertSame('https://app.test', $email['domain']);
     }
 
+    public function test_to_email_uses_conversations_base_path_when_message_missing(): void
+    {
+        config([
+            'carpoolear.name_app' => 'Carpoolear Test',
+            'app.url' => 'https://app.test',
+        ]);
+
+        $from = User::factory()->create(['name' => 'Solo Sender']);
+        $notification = new NewMessageNotification;
+        $notification->setAttribute('from', $from);
+
+        $email = $notification->toEmail(null);
+
+        $this->assertSame(__('notifications.new_message.title', ['name' => 'Solo Sender']), $email['title']);
+        $this->assertSame('https://app.test/app/conversations/', $email['url']);
+    }
+
     public function test_to_string_and_to_push_fallback_to_someone_when_sender_is_missing(): void
     {
         $notification = new NewMessageNotification;
