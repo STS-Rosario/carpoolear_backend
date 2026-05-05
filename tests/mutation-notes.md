@@ -3187,8 +3187,22 @@ Consolidated **`RemoveArrayItem`**, **`EmptyStringToNotEmpty`**, **`RemoveArrayI
 
 ## `GoogleDrivingRouteService` (`app/Services/GoogleDrivingRouteService.php`)
 
-- **Cause:** **`RemoveArrayItem`** / **`RemoveMethodCall`** on **`\\Log::warning('[google_routes] request exception', ['message' => …])`** in the **`Http::post`** **`catch`** (**`39776b1046a3576a`**, **`b1c86b5390cca078`**).
-- **Fix:** **`tests/Unit/Services/GoogleDrivingRouteServiceTest.php`** fakes **`Http`** to throw, asserts **`Log::warning`** receives **`message`** matching the exception and the service returns **`null`**.
+- **MSI:** **100%** (**113** mutations, scoped run: source + **`tests/Unit/Services/GoogleDrivingRouteServiceTest.php`**).
+- **`Line 17: RemoveBooleanCast`**, **`RemoveStringCast`**, **`EmptyStringToNotEmpty`** (**`isEnabled`**).
+  - **Cause:** config values coerced with **`(bool)`** / **`(string)`** before **`strlen`**; mutants dropped casts or swapped empty checks so “disabled” vs “enabled” collapsed.
+  - **Fix:** tests set **`services.google.routes_api_key`** to **`''`**, a non-empty string, and a numeric value (must still stringify for length), and assert **`true`**/**`false`** accordingly.
+- **`Line 26–45`**: **`IfNegated`**, **`RemoveNot`**, point-count guards, **`DecrementInteger`/`IncrementInteger`** on caps, loop / **`ForAlwaysFalse`**, **`RemoveArrayItem`** on **`intermediates`** payload.
+  - **Cause:** **`drivingDistanceAndDuration`** must short-circuit when disabled, require **≥2** points, cap intermediates at **25** from **27** total waypoints, and omit **`intermediates`** when only two points exist.
+  - **Fix:** **`Log::fake`** + **`Http::fake`** assert **`warning`** reasons, POST JSON shape (exactly **25** intermediate objects for **27** points, key absent for **2** points), and **`regionCode`** only when region is a non-empty string.
+- **`Line 50–73`**: HTTP **`successful()`**, route array, **`distanceMeters`/`duration`**, error logging body preview.
+  - **Cause:** weak assertions let mutants drop keys, invert success checks, or change string slicing on logged bodies.
+  - **Fix:** assert **`null`** return, **`Log::warning`** message/substring cap, empty routes, missing metrics, bad duration strings, and a happy path with rounded seconds + integer distance.
+- **`Line 78–134`**: **`parseDurationSeconds`**, **`waypointFromPoint`**, trailing **`s`**, **`substr`/`trim`** edge cases.
+  - **Cause:** regex and numeric parsing branches were not pinned; mutants flipped comparators or removed returns.
+  - **Fix:** reflection tests on **`parseDurationSeconds`** and **`waypointFromPoint`** for **`1s`**, **`0s`**, composite durations, and invalid input.
+- **`RemoveArrayItem`/`RemoveMethodCall`** on **`\\Log::warning('[google_routes] request exception', …)`** in the **`Http::post`** **`catch`**.
+  - **Cause:** logging context could be deleted without failing tests.
+  - **Fix:** **`Http::fake`** sequence throws; assert **`Log::warning`** includes the exception **`message`** and service returns **`null`**.
 
 ## `MercadoPagoOAuthService` — unit (`app/Services/MercadoPagoOAuthService.php`, Apr 2026 report)
 
