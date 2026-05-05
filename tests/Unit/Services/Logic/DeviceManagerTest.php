@@ -276,6 +276,37 @@ class DeviceManagerTest extends TestCase
         $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
     }
 
+    public function test_cleanup_inactive_devices_respects_custom_day_threshold(): void
+    {
+        Carbon::setTestNow('2028-06-01 15:00:00');
+        $user = User::factory()->create();
+        $device = $this->manager()->register($user, $this->validPayload());
+        $device->forceFill(['last_activity' => Carbon::now()->copy()->subDays(10)])->saveQuietly();
+
+        $this->assertSame(1, $this->manager()->cleanupInactiveDevices($user, 5));
+        $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_register_same_session_keeps_single_database_row(): void
+    {
+        $user = User::factory()->create();
+        $session = 'sess-dedup-'.uniqid('', true);
+        $this->manager()->register($user, $this->validPayload([
+            'session_id' => $session,
+            'device_id' => 'd-a-'.uniqid('', true),
+            'app_version' => 1,
+        ]));
+        $this->manager()->register($user, $this->validPayload([
+            'session_id' => $session,
+            'device_id' => 'd-b-'.uniqid('', true),
+            'app_version' => 2,
+        ]));
+
+        $this->assertSame(1, Device::query()->where('user_id', $user->id)->where('session_id', $session)->count());
+    }
+
     public function test_get_active_devices_count_counts_notifications_enabled(): void
     {
         $user = User::factory()->create();
