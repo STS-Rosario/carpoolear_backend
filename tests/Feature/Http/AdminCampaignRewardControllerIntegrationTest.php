@@ -266,6 +266,50 @@ class AdminCampaignRewardControllerIntegrationTest extends TestCase
         ]);
     }
 
+    public function test_update_rejects_zero_donation_amount_cents(): void
+    {
+        $this->actingAs($this->adminUser(), 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $campaign = $this->makeCampaign();
+        $reward = CampaignReward::create([
+            'campaign_id' => $campaign->id,
+            'title' => 'Tier',
+            'description' => 'D',
+            'donation_amount_cents' => 900,
+            'quantity_available' => null,
+            'is_active' => true,
+        ]);
+
+        $this->putJson($this->rewardMemberUrl($campaign, $reward), [
+            'donation_amount_cents' => 0,
+        ])->assertUnprocessable();
+
+        $this->assertSame(900, (int) $reward->fresh()->donation_amount_cents);
+    }
+
+    public function test_update_rejects_non_string_description_payload(): void
+    {
+        $this->actingAs($this->adminUser(), 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $campaign = $this->makeCampaign();
+        $reward = CampaignReward::create([
+            'campaign_id' => $campaign->id,
+            'title' => 'Tier',
+            'description' => 'Original body',
+            'donation_amount_cents' => 900,
+            'quantity_available' => null,
+            'is_active' => true,
+        ]);
+
+        $this->putJson($this->rewardMemberUrl($campaign, $reward), [
+            'description' => 12345,
+        ])->assertUnprocessable();
+
+        $this->assertSame('Original body', $reward->fresh()->description);
+    }
+
     public function test_update_returns_not_found_when_reward_belongs_to_another_campaign(): void
     {
         $this->actingAs($this->adminUser(), 'api');
