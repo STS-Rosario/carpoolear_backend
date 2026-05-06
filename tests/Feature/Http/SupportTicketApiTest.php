@@ -504,6 +504,23 @@ class SupportTicketApiTest extends TestCase
         $contactTicket->assertJsonPath('data.priority', 'normal');
     }
 
+    public function test_account_verification_type_is_allowed_and_forced_to_high_priority(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticket = $this->post('api/support/tickets', [
+            'type' => 'account_verification',
+            'subject' => 'Validacion de identidad',
+            'message_markdown' => 'Necesito ayuda con mi verificacion.',
+            'priority' => 'low',
+        ]);
+
+        $ticket->assertStatus(200);
+        $ticket->assertJsonPath('data.type', 'account_verification');
+        $ticket->assertJsonPath('data.priority', 'high');
+    }
+
     private function createUser(bool $isAdmin = false): User
     {
         return User::query()->create([

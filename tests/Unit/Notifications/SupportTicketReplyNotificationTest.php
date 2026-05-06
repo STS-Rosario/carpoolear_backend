@@ -45,13 +45,13 @@ class SupportTicketReplyNotificationTest extends TestCase
 
         $pushWithTicket = $withTicket->toPush(null, null);
         $this->assertSame('Tenes una nueva respuesta de Carpoolear', $pushWithTicket['message']);
-        $this->assertSame('/tickets/987', $pushWithTicket['url']);
+        $this->assertSame('/soporte/987', $pushWithTicket['url']);
         $this->assertSame('ticket', $pushWithTicket['type']);
         $this->assertSame(987, $pushWithTicket['extras']['id']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $pushWithTicket['image']);
 
         $pushWithoutTicket = $notification->toPush(null, null);
-        $this->assertSame('/tickets/', $pushWithoutTicket['url']);
+        $this->assertSame('/soporte/', $pushWithoutTicket['url']);
         $this->assertNull($pushWithoutTicket['extras']['id']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $pushWithoutTicket['image']);
     }
