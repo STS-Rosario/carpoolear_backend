@@ -35,7 +35,9 @@ class SupportTicketService
 
     public function applyUserReplyTransition(SupportTicket $ticket, int $actorUserId): void
     {
-        $ticket->status = 'Esperando respuesta';
+        if (! in_array($ticket->status, ['Resuelto', 'Cerrado'], true)) {
+            $ticket->status = 'En revision';
+        }
         $ticket->unread_for_admin++;
         $ticket->unread_for_user = 0;
         $ticket->last_reply_at = now();
@@ -44,8 +46,8 @@ class SupportTicketService
 
     public function applyAdminReplyTransition(SupportTicket $ticket, int $actorUserId): void
     {
-        if (in_array($ticket->status, ['Open', 'Esperando respuesta'], true)) {
-            $ticket->status = 'En revision';
+        if (in_array($ticket->status, ['Open', 'Esperando respuesta', 'En revision'], true)) {
+            $ticket->status = 'Esperando respuesta';
         }
         $ticket->unread_for_user++;
         $ticket->unread_for_admin = 0;
