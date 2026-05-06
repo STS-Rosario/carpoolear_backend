@@ -290,7 +290,10 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         ]);
 
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=name-empty-state')
-            ->assertRedirect($this->identityRedirect('name_mismatch'));
+            ->assertRedirect($this->identityRedirectWith('name_mismatch', [
+                'user_name' => '',
+                'mp_name' => 'Jane Doe',
+            ]));
     }
 
     public function test_redirects_dni_mismatch_and_records_rejection(): void
