@@ -305,6 +305,45 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertNull($ticket->fresh()->internal_note_markdown);
     }
 
+    public function test_admin_can_create_account_verification_ticket_for_user_with_high_priority(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets', [
+            'user_id' => $owner->id,
+            'type' => 'account_verification',
+            'subject' => 'Verificacion de cuenta',
+            'message_markdown' => 'Te pedimos actualizar tu documentacion.',
+        ])->assertOk();
+
+        $this->assertSame($owner->id, (int) $response->json('data.user_id'));
+        $this->assertSame('account_verification', $response->json('data.type'));
+        $this->assertSame('high', $response->json('data.priority'));
+        $this->assertSame(1, (int) $response->json('data.unread_for_user'));
+        $this->assertSame(0, (int) $response->json('data.unread_for_admin'));
+
+        $this->assertDatabaseHas('support_tickets', [
+            'user_id' => $owner->id,
+            'type' => 'account_verification',
+            'subject' => 'Verificacion de cuenta',
+            'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+
+        $ticketId = (int) $response->json('data.id');
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticketId,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Te pedimos actualizar tu documentacion.',
+            'created_by' => $admin->id,
+        ]);
+    }
+
     public function test_resolve_with_message_creates_admin_reply(): void
     {
         $admin = $this->adminUser();
