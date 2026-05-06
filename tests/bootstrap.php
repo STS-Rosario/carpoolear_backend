@@ -9,8 +9,9 @@ declare(strict_types=1);
 |
 | Loads Composer autoload and ensures the MySQL schema named by DB_DATABASE exists.
 | Without this, the first PDO connection to DB_DATABASE can fail with "Unknown database".
-| PHPUnit’s phpunit.xml sets a default DB_DATABASE (`testing`) unless the variable is
-| already set in the environment (force=false). Prefix commands with DB_DATABASE=testing1
+| PHPUnit’s phpunit.xml forces DB_DATABASE=`testing` (force=true) so a developer shell
+| or IDE cannot inherit DB_DATABASE from `.env` and accidentally DROP the app schema.
+| Prefix commands with DB_DATABASE=testing1
 | (or any safe identifier) to run a second suite/mutate in parallel without blocking on
 | the same phpunit-mysql-*.lock file as another process using `testing`.
 | Dotenv loads .env / .env.testing so host, username, and password match local MySQL
@@ -74,6 +75,13 @@ if ($dbDriver !== 'mysql' || $dbName === '' || $dbName === ':memory:') {
 
 if (! preg_match('/^[a-zA-Z0-9_-]+$/', $dbName)) {
     fwrite(STDERR, "tests/bootstrap: refusing unsafe DB_DATABASE identifier.\n");
+
+    exit(1);
+}
+
+// Never DROP a schema that is not clearly dedicated to automated tests (blocks .env names like `carpoolear`).
+if (! preg_match('/^testing[a-zA-Z0-9_-]*$/', $dbName)) {
+    fwrite(STDERR, 'tests/bootstrap: refusing DROP/CREATE on `'.$dbName.'`: DB_DATABASE must match /^testing[a-zA-Z0-9_-]*$/ so app databases from .env are never wiped.'.PHP_EOL);
 
     exit(1);
 }
