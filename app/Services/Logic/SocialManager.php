@@ -2,14 +2,15 @@
 
 namespace STS\Services\Logic;
 
+use STS\Contracts\Logic\Social;
+use STS\Contracts\SocialProvider;
+use STS\Models\User as UserModel;
 use STS\Repository\FileRepository;
 use STS\Repository\SocialRepository;
-use Validator;
-use STS\Models\User as UserModel;
-use STS\Contracts\SocialProvider;
 use STS\Services\UserEditablePropertiesService;
+use Validator;
 
-class SocialManager extends BaseManager
+class SocialManager extends BaseManager implements Social
 {
     protected $friendsRepo;
 
@@ -22,7 +23,6 @@ class SocialManager extends BaseManager
     protected $provider;
 
     protected $userData;
-
 
     // [TODO] social provider
     public function __construct(SocialProvider $provider, UsersManager $userRep, FriendsManager $friendsRepo, FileRepository $files, SocialRepository $social)
@@ -39,12 +39,12 @@ class SocialManager extends BaseManager
     {
         if ($id) {
             return Validator::make($data, [
-                'name'  => 'max:255',
+                'name' => 'max:255',
                 'email' => 'email|max:255|unique:users,email'.$id,
             ]);
         } else {
             return Validator::make($data, [
-                'name'  => 'required|max:255',
+                'name' => 'required|max:255',
                 'email' => 'required|email|max:255|unique:users',
             ]);
         }
@@ -72,7 +72,8 @@ class SocialManager extends BaseManager
     {
         $account = $this->getAccounts(null);
         if ($account && $user->id == $account->user->id) {
-            return $this->syncFriends($account->user);
+            // Use the hydrated `$user` from the caller; `$account->user` may be a partial object from providers/tests.
+            return $this->syncFriends($user);
         } else {
             $this->setErrors(['error' => 'No tiene asociado ningun perfil']);
         }
@@ -103,7 +104,7 @@ class SocialManager extends BaseManager
 
     public function linkAccount(UserModel $user)
     {
-        $account = $this->getAccounts();
+        $account = $this->getAccounts(null);
         $userAccounts = $this->socialRepo->get($user, $this->socialRepo->getProvider());
         if (! $account && $userAccounts->count() == 0) {
             $this->socialRepo->create($user, $this->provider_user_id);
@@ -114,7 +115,7 @@ class SocialManager extends BaseManager
         }
     }
 
-    private function getAccounts($data)
+    private function getAccounts($data = null)
     {
         $this->userData = $this->provider->getUserData($data);
         $this->provider_user_id = $this->userData['provider_user_id'];
@@ -125,12 +126,42 @@ class SocialManager extends BaseManager
 
     private function syncFriends($user)
     {
-        $friends = $this->getUserFriends();
-        foreach ($friends as $friend) {
-            $this->friendsRepo->make($user, $friend);
+        foreach ($this->getUserFriends() as $friendIdentifier) {
+            $friendUser = $this->resolveFriendUser($friendIdentifier);
+            if ($friendUser instanceof UserModel) {
+                $this->friendsRepo->make($user, $friendUser);
+            }
         }
 
         return true;
+    }
+
+    private function resolveFriendUser(mixed $friendIdentifier): ?UserModel
+    {
+        if ($friendIdentifier instanceof UserModel) {
+            return $friendIdentifier;
+        }
+
+        $account = $this->socialRepo->find((string) $friendIdentifier);
+        if ($account !== null) {
+            $linked = $account->user;
+            if ($linked instanceof UserModel) {
+                return $linked;
+            }
+            if (is_object($linked) && isset($linked->id)) {
+                $resolved = $this->userLogic->show(null, (int) $linked->id);
+
+                return $resolved instanceof UserModel ? $resolved : null;
+            }
+        }
+
+        if (is_numeric($friendIdentifier)) {
+            $loaded = $this->userLogic->show(null, (int) $friendIdentifier);
+
+            return $loaded instanceof UserModel ? $loaded : null;
+        }
+
+        return null;
     }
 
     private function create($provider_user_id, $data)

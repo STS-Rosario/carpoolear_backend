@@ -2,8 +2,9 @@
 
 namespace STS\Services\Notifications\Models;
 
-use STS\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use STS\Models\User;
 use STS\Services\Notifications\Collections\NotificationCollection;
 
 class DatabaseNotification extends Model

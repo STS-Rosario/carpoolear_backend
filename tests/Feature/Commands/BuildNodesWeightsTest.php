@@ -2,16 +2,13 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
+use Illuminate\Support\Facades\DB;
 use STS\Models\NodeGeo;
 use STS\Models\Route;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 
 class BuildNodesWeightsTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected function createNode(string $name, string $type): NodeGeo
     {
         return NodeGeo::create([
@@ -31,7 +28,7 @@ class BuildNodesWeightsTest extends TestCase
         ]);
     }
 
-    public function testCityNodeGetsBaseImportance1000()
+    public function test_city_node_gets_base_importance1000()
     {
         $city = $this->createNode('Rosario', 'city');
 
@@ -41,7 +38,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(1000, $city->importance);
     }
 
-    public function testTownNodeGetsBaseImportance500()
+    public function test_town_node_gets_base_importance500()
     {
         $town = $this->createNode('Funes', 'town');
 
@@ -51,7 +48,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(500, $town->importance);
     }
 
-    public function testVillageNodeGetsBaseImportance200()
+    public function test_village_node_gets_base_importance200()
     {
         $village = $this->createNode('Ibarlucea', 'village');
 
@@ -61,7 +58,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(200, $village->importance);
     }
 
-    public function testRouteOriginGets1000PerRoute()
+    public function test_route_origin_gets1000_per_route()
     {
         $origin = $this->createNode('Origin', 'hamlet');
         $dest = $this->createNode('Dest', 'hamlet');
@@ -76,7 +73,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(2000, $origin->importance);
     }
 
-    public function testRouteDestinationGets1000PerRoute()
+    public function test_route_destination_gets1000_per_route()
     {
         $origin = $this->createNode('Origin', 'hamlet');
         $dest = $this->createNode('Dest', 'hamlet');
@@ -92,7 +89,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(3000, $dest->importance);
     }
 
-    public function testIntermediateRouteNodeGets10PerOccurrence()
+    public function test_intermediate_route_node_gets10_per_occurrence()
     {
         $origin = $this->createNode('Origin', 'hamlet');
         $dest = $this->createNode('Dest', 'hamlet');
@@ -114,7 +111,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(20, $waypoint->importance);
     }
 
-    public function testCombinesAllImportanceSources()
+    public function test_combines_all_importance_sources()
     {
         // A city that is also a route origin and destination
         $city = $this->createNode('Rosario', 'city');
@@ -142,7 +139,7 @@ class BuildNodesWeightsTest extends TestCase
         $this->assertEquals(6010, $city->importance);
     }
 
-    public function testNodeWithNoFactorsKeepsZeroImportance()
+    public function test_node_with_no_factors_keeps_zero_importance()
     {
         // A node type that isn't city/town/village and has no routes
         $node = $this->createNode('Unknown', 'hamlet');

@@ -2,19 +2,25 @@
 
 namespace STS\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 
 class ActiveUsersPerMonth extends Model
 {
     protected $table = 'active_users_per_month';
 
-    protected $fillable = [
-        'year',
-        'month',
-        'saved_at',
-        'value'
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'year',
+            'month',
+            'saved_at',
+            'value',
+        ];
+    }
 
     protected function casts(): array
     {
@@ -22,7 +28,7 @@ class ActiveUsersPerMonth extends Model
             'year' => 'integer',
             'month' => 'integer',
             'saved_at' => 'datetime',
-            'value' => 'integer'
+            'value' => 'integer',
         ];
     }
 

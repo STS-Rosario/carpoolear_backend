@@ -15,7 +15,6 @@
         "laravel/tinker": "^2.9",
         "league/fractal": "^0.20.1",
         "mercadopago/dx-php": "^3.5",
-        "transbank/transbank-sdk": "^4.0",
         "tymon/jwt-auth": "^2.1"
     },
     "require-dev": {
@@ -24,7 +23,9 @@
         "laravel/sail": "^1.26",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.0",
-        "phpunit/phpunit": "^11.0.1"
+        "pestphp/pest": "^3.8.6",
+        "pestphp/pest-plugin-laravel": "^3.2",
+        "phpunit/phpunit": "11.5.50"
     },
     "autoload": {
         "psr-4": {
@@ -44,9 +45,14 @@
         }
     },
     "scripts": {
+        "test": "php artisan test",
+        "test:coverage": "php -d memory_limit=512M artisan test --coverage",
+        "test:coverage:ci": "php -d memory_limit=512M artisan test --coverage --min=50",
+        "test:mutate": "bash scripts/pest-mutate.sh",
         "setup-git-hooks": "@php -r \"if (file_exists('.git')) { passthru('git config core.hooksPath .githooks'); }\"",
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php scripts/patch-pest-mutate-subprocess.php",
             "@php artisan package:discover --ansi"
         ],
         "post-install-cmd": [

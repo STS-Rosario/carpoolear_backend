@@ -9,6 +9,15 @@ class CampaignDonation extends Model
 {
     protected $table = 'campaign_donations';
 
+    protected static function booted(): void
+    {
+        static::creating(function (CampaignDonation $donation): void {
+            if (! array_key_exists('status', $donation->getAttributes())) {
+                throw new \InvalidArgumentException('CampaignDonation must be created with an explicit status.');
+            }
+        });
+    }
+
     protected $fillable = [
         'campaign_id',
         'campaign_reward_id',

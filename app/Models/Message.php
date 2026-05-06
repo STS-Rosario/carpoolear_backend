@@ -18,7 +18,6 @@ class Message extends Model
         'text',
         'estado',
         'conversation_id',
-        'time',
     ];
 
     protected $touches = ['conversation'];

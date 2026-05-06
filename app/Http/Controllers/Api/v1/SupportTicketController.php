@@ -12,12 +12,15 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
-    private const TYPE_DEFAULT_PRIORITY = [
-        'report' => 'high',
-        'bug_report' => 'normal',
-        'contact' => 'normal',
-        'feedback' => 'low',
-    ];
+    private static function typeDefaultPriorities(): array
+    {
+        return [
+            'report' => 'high',
+            'bug_report' => 'normal',
+            'contact' => 'normal',
+            'feedback' => 'low',
+        ];
+    }
 
     public function __construct(private readonly SupportTicketService $supportTicketService)
     {
@@ -62,7 +65,7 @@ class SupportTicketController extends Controller
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
                 'status' => 'Open',
-                'priority' => self::TYPE_DEFAULT_PRIORITY[$validated['type']] ?? 'normal',
+                'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
                 'unread_for_user' => 0,
                 'unread_for_admin' => 1,
                 'created_by' => $user->id,

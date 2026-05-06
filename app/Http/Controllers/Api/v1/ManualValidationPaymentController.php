@@ -2,9 +2,10 @@
 
 namespace STS\Http\Controllers\Api\v1;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
-use Illuminate\Http\Request;
 
 class ManualValidationPaymentController extends Controller
 {
@@ -20,7 +21,7 @@ class ManualValidationPaymentController extends Controller
         $paymentId = $request->query('payment_id') ?: $request->query('collection_id');
 
         $frontendBase = rtrim(config('services.mercadopago.oauth_frontend_redirect', config('app.url')), '/');
-        $redirectUrl = $frontendBase . '/setting/identity-validation/manual';
+        $redirectUrl = $frontendBase.'/setting/identity-validation/manual';
 
         if ($requestId) {
             $validationRequest = ManualIdentityValidation::find($requestId);
@@ -31,15 +32,15 @@ class ManualValidationPaymentController extends Controller
                     $validationRequest->payment_id = (string) $paymentId;
                 }
                 $validationRequest->save();
-                \Log::info('Manual identity validation payment success', [
+                Log::info('Manual identity validation payment success', [
                     'request_id' => $requestId,
                     'user_id' => $validationRequest->user_id,
                     'payment_id' => $paymentId ?? $validationRequest->payment_id,
                 ]);
             }
-            $redirectUrl .= '?request_id=' . $requestId;
+            $redirectUrl .= '?request_id='.$requestId;
             if ($result !== 'success') {
-                $redirectUrl .= '&payment_result=' . urlencode($result);
+                $redirectUrl .= '&payment_result='.urlencode($result);
             } else {
                 $redirectUrl .= '&payment_success=1';
             }

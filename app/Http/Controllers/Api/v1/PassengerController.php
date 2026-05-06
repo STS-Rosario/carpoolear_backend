@@ -3,9 +3,9 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller; 
-use STS\Http\ExceptionWithErrors;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\PassengersManager;
 use STS\Transformers\PassengerTransformer;
 
@@ -26,7 +26,7 @@ class PassengerController extends Controller
         $this->user = auth()->user();
         $data = $request->all();
 
-        $passengers = $this->passengerLogic->index($tripId, $this->user, $data);
+        $passengers = $this->passengerLogic->getPassengers($tripId, $this->user, $data);
 
         return $this->collection($passengers, new PassengerTransformer($this->user));
     }
@@ -78,11 +78,14 @@ class PassengerController extends Controller
         return response()->json(['data' => $request]);
     }
 
-    public function transactions(Request $request) {
+    public function transactions(Request $request)
+    {
         $user = auth()->user();
+
         return $this->passengerLogic->transactions($user);
 
     }
+
     public function cancelRequest($tripId, $userId, Request $request)
     {
         $this->user = auth()->user();
@@ -90,7 +93,7 @@ class PassengerController extends Controller
 
         $request = $this->passengerLogic->cancelRequest($tripId, $userId, $this->user, $data);
 
-        if (!$request) {
+        if (! $request) {
             throw new ExceptionWithErrors('Could not cancel request.', $this->passengerLogic->getErrors());
         }
 
@@ -113,7 +116,6 @@ class PassengerController extends Controller
 
         return response()->json(['data' => $request]);
     }
-
 
     public function payRequest($tripId, $userId, Request $request)
     {

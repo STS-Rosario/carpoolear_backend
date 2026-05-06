@@ -57,10 +57,9 @@ class SupportTicketController extends Controller
             $ticket->save();
         });
 
-        $notification = new SupportTicketReplyNotification([
-            'ticket' => $ticket->fresh(),
-            'from' => $admin,
-        ]);
+        $notification = new SupportTicketReplyNotification;
+        $notification->setAttribute('ticket', $ticket->fresh());
+        $notification->setAttribute('from', $admin);
         try {
             $notification->notify($ticket->user);
         } catch (\Throwable $e) {

@@ -2,25 +2,19 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
 use Mockery as m;
-use STS\Models\Trip;
-use STS\Models\Passenger;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 
 class RequestNotAnswerTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $carsLogic;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         m::close();
         parent::tearDown();
@@ -31,7 +25,7 @@ class RequestNotAnswerTest extends TestCase
         return json_decode($response->getContent());
     }
 
-    public function testThreeDays()
+    public function test_three_days()
     {
         $driver = \STS\Models\User::factory()->create();
         $passengerA = \STS\Models\User::factory()->create();
@@ -41,7 +35,7 @@ class RequestNotAnswerTest extends TestCase
         $this->artisan('trip:requestnotanswer')->assertSuccessful();
     }
 
-    public function testNotSend()
+    public function test_not_send()
     {
         $driver = \STS\Models\User::factory()->create();
         $passengerA = \STS\Models\User::factory()->create();

@@ -1,0 +1,765 @@
+<?php
+
+namespace Tests\Unit\Services\Logic;
+
+use Mockery;
+use STS\Contracts\SocialProvider;
+use STS\Models\SocialAccount;
+use STS\Models\User;
+use STS\Repository\FileRepository;
+use STS\Repository\SocialRepository;
+use STS\Services\Logic\FriendsManager;
+use STS\Services\Logic\SocialManager;
+use STS\Services\Logic\UsersManager;
+use STS\Services\UserEditablePropertiesService;
+use Tests\TestCase;
+
+final class FakeSocialProvider implements SocialProvider
+{
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  list<string>  $friendProviderIds
+     */
+    public function __construct(
+        private string $providerName,
+        private array $userData,
+        private array $friendProviderIds = [],
+    ) {}
+
+    public function getProviderName(): string
+    {
+        return $this->providerName;
+    }
+
+    public function getUserData($data): ?array
+    {
+        return $this->userData;
+    }
+
+    public function getUserFriends(): array
+    {
+        return $this->friendProviderIds;
+    }
+
+    public function getError(): ?array
+    {
+        return null;
+    }
+}
+
+class SocialManagerTest extends TestCase
+{
+    protected function tearDown(): void
+    {
+        Mockery::close();
+        parent::tearDown();
+    }
+
+    /**
+     * @return array{SocialManager, SocialRepository, \Mockery\MockInterface, \Mockery\MockInterface, \Mockery\MockInterface}
+     */
+    private function makeManager(
+        SocialProvider $provider,
+        ?SocialRepository $social = null,
+    ): array {
+        $social = $social ?? new SocialRepository($provider->getProviderName());
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+
+        return [$manager, $social, $users, $friends, $files];
+    }
+
+    public function test_validator_create_requires_name_email(): void
+    {
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', []));
+
+        $v = $manager->validator([]);
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('name'));
+        $this->assertTrue($v->errors()->has('email'));
+
+        $ok = $manager->validator([
+            'name' => 'Ada Lovelace',
+            'email' => 'ada-'.uniqid('', true).'@example.com',
+        ]);
+        $this->assertFalse($ok->fails());
+    }
+
+    public function test_validator_update_allows_partial_and_unique_email_rule_suffix(): void
+    {
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', []));
+        $user = User::factory()->create();
+
+        $v = $manager->validator(['email' => 'not-an-email'], $user->id);
+        $this->assertTrue($v->fails());
+
+        $v2 = $manager->validator(['name' => 'Short'], $user->id);
+        $emailRules = $v2->getRules()['email'];
+        $this->assertIsArray($emailRules);
+        $this->assertStringContainsString((string) $user->id, implode('|', $emailRules));
+    }
+
+    public function test_login_or_create_returns_existing_linked_user(): void
+    {
+        $user = User::factory()->create(['image' => 'existing-avatar.jpg']);
+        $pid = 'fb-'.substr(uniqid('', true), 0, 12);
+
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, $friends, $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldNotReceive('create');
+        $friends->shouldNotReceive('make');
+        $files->shouldNotReceive('createFromData');
+
+        $result = $manager->loginOrCreate(['token' => 'ignored']);
+        $this->assertTrue($result->is($user));
+    }
+
+    public function test_login_or_create_populates_missing_image_for_existing_user(): void
+    {
+        $user = User::factory()->create(['image' => null]);
+        $pid = 'fb-img-'.substr(uniqid('', true), 0, 10);
+
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'image' => 'data://text/plain;base64,'.base64_encode('fake-image-bytes'),
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, $friends, $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldNotReceive('create');
+        $friends->shouldNotReceive('make');
+        $files->shouldReceive('createFromData')
+            ->once()
+            ->with('fake-image-bytes', 'jpg', 'image/profile/')
+            ->andReturn('social/avatar.jpg');
+
+        $result = $manager->loginOrCreate(['token' => 'ignored']);
+
+        $this->assertTrue($result->is($user->fresh()));
+        $this->assertSame('social/avatar.jpg', $result->fresh()->image);
+    }
+
+    public function test_login_or_create_creates_user_and_social_when_no_account(): void
+    {
+        $pid = 'fb-new-'.substr(uniqid('', true), 0, 12);
+        $email = 'social-new-'.uniqid('', true).'@example.com';
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $email,
+            'name' => 'Social Created',
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        $created = User::factory()->create(['email' => $email, 'name' => 'Social Created']);
+
+        [$manager, $social, $users, $friends] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldReceive('create')
+            ->once()
+            ->with(Mockery::on(fn ($d) => is_array($d)), false, true)
+            ->andReturn($created);
+
+        $friends->shouldReceive('make')->never();
+
+        $result = $manager->loginOrCreate([]);
+        $this->assertTrue($result->is($created));
+
+        $this->assertNotNull($social->find($pid, 'facebook'));
+    }
+
+    public function test_link_account_creates_row_when_pid_free_and_user_has_no_accounts(): void
+    {
+        $user = User::factory()->create();
+        $pid = 'link-'.substr(uniqid('', true), 0, 12);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', $userData));
+
+        $this->assertTrue($manager->linkAccount($user));
+
+        $this->assertDatabaseHas('social_accounts', [
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+    }
+
+    public function test_link_account_fails_when_user_already_has_social_account(): void
+    {
+        $user = User::factory()->create();
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => 'existing-pid',
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => 'other-pid',
+            'email' => $user->email,
+            'name' => $user->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', $userData));
+
+        $this->assertNull($manager->linkAccount($user));
+        $this->assertSame('Ya tienes asociado un perfil', $manager->getErrors()['error']);
+    }
+
+    public function test_link_account_fails_when_provider_user_id_is_already_linked(): void
+    {
+        $existingOwner = User::factory()->create();
+        $user = User::factory()->create();
+        $pid = 'taken-pid-'.substr(uniqid('', true), 0, 8);
+        SocialAccount::create([
+            'user_id' => $existingOwner->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', $userData));
+
+        $this->assertNull($manager->linkAccount($user));
+        $this->assertSame('Ya tienes asociado un perfil', $manager->getErrors()['error']);
+    }
+
+    public function test_update_profile_updates_when_account_matches_user(): void
+    {
+        $user = User::factory()->create(['name' => 'Before']);
+        $pid = 'upd-'.substr(uniqid('', true), 0, 10);
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => 'After',
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, , $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $files->shouldNotReceive('createFromData');
+
+        $filter = Mockery::mock(UserEditablePropertiesService::class);
+        $filter->shouldReceive('filterForUser')
+            ->once()
+            ->with(Mockery::type('array'), false)
+            ->andReturn(['name' => 'After']);
+        $this->app->instance(UserEditablePropertiesService::class, $filter);
+
+        $users->shouldReceive('update')
+            ->once()
+            ->with(
+                Mockery::on(fn ($u) => $u->is($user)),
+                Mockery::on(fn ($data) => isset($data['name']) && $data['name'] === 'After')
+            )
+            ->andReturnUsing(function ($u, $data) {
+                $u->forceFill(['name' => $data['name']])->save();
+
+                return $u->fresh();
+            });
+
+        $out = $manager->updateProfile($user->fresh());
+        $this->assertSame('After', $out->name);
+    }
+
+    public function test_update_profile_propagates_errors_when_user_update_fails(): void
+    {
+        $user = User::factory()->create(['name' => 'Before']);
+        $pid = 'upd-fail-'.substr(uniqid('', true), 0, 8);
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => 'After',
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, , $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $files->shouldNotReceive('createFromData');
+
+        $filter = Mockery::mock(UserEditablePropertiesService::class);
+        $filter->shouldReceive('filterForUser')
+            ->once()
+            ->with(Mockery::type('array'), false)
+            ->andReturn(['name' => 'After']);
+        $this->app->instance(UserEditablePropertiesService::class, $filter);
+
+        $users->shouldReceive('update')
+            ->once()
+            ->andReturn(null);
+        $users->shouldReceive('getErrors')
+            ->once()
+            ->andReturn(['error' => 'update_failed']);
+
+        $out = $manager->updateProfile($user->fresh());
+
+        $this->assertNull($out);
+        $this->assertSame('update_failed', $manager->getErrors()['error']);
+    }
+
+    public function test_make_friends_calls_friends_manager_for_each_resolved_friend(): void
+    {
+        $user = User::factory()->create();
+        $friendUser = User::factory()->create();
+        $friendPid = 'f-'.substr(uniqid('', true), 0, 10);
+
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => 'self-pid',
+            'provider' => 'facebook',
+        ]);
+        SocialAccount::create([
+            'user_id' => $friendUser->id,
+            'provider_user_id' => $friendPid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => 'self-pid',
+            'email' => $user->email,
+            'name' => $user->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, $friends] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData, [$friendPid]),
+        );
+
+        $users->shouldReceive('show')
+            ->once()
+            ->with(null, $friendUser->id)
+            ->andReturn($friendUser);
+
+        $friends->shouldReceive('make')
+            ->once()
+            ->with(
+                Mockery::on(fn ($u) => $u->is($user)),
+                Mockery::on(fn ($f) => $f->is($friendUser))
+            )
+            ->andReturn(true);
+
+        $this->assertTrue($manager->makeFriends($user));
+    }
+
+    public function test_make_friends_sets_error_when_session_user_mismatch(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        SocialAccount::create([
+            'user_id' => $other->id,
+            'provider_user_id' => 'other-pid',
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => 'other-pid',
+            'email' => $other->email,
+            'name' => $other->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , , $friends] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $friends->shouldReceive('make')->never();
+
+        $this->assertNull($manager->makeFriends($user));
+        $this->assertSame('No tiene asociado ningun perfil', $manager->getErrors()['error']);
+    }
+
+    public function test_constructor_sets_default_provider_in_social_repository(): void
+    {
+        $provider = Mockery::mock(SocialProvider::class);
+        $provider->shouldReceive('getProviderName')->atLeast()->once()->andReturn('facebook');
+
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once()->with('facebook');
+
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        new SocialManager($provider, $users, $friends, $files, $social);
+
+        $this->assertTrue(true);
+    }
+
+    public function test_validator_update_also_keeps_name_max_rule(): void
+    {
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', []));
+        $user = User::factory()->create();
+
+        $rules = $manager->validator(['name' => 'x'], $user->id)->getRules();
+
+        $this->assertArrayHasKey('name', $rules);
+        $this->assertContains('max:255', $rules['name']);
+    }
+
+    public function test_login_or_create_does_not_replace_existing_image_even_when_provider_sends_image(): void
+    {
+        $user = User::factory()->create(['image' => 'already-set.jpg']);
+        $pid = 'fb-'.substr(uniqid('', true), 0, 10);
+
+        SocialAccount::create([
+            'user_id' => $user->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $user->email,
+            'name' => $user->name,
+            'image' => 'data://text/plain;base64,'.base64_encode('new-image-bytes'),
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, , $users, $friends, $files] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldNotReceive('create');
+        $friends->shouldNotReceive('make');
+        $files->shouldNotReceive('createFromData');
+
+        $result = $manager->loginOrCreate(['token' => 'ignored']);
+        $this->assertSame('already-set.jpg', $result->fresh()->image);
+    }
+
+    public function test_make_friends_accepts_equivalent_string_and_integer_user_ids(): void
+    {
+        $user = User::factory()->create();
+        $friend = User::factory()->create();
+
+        $provider = new FakeSocialProvider('facebook', ['provider_user_id' => 'pid-self'], ['friend-pid']);
+        $social = Mockery::mock(SocialRepository::class);
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->with('pid-self')->once()->andReturn((object) [
+            'user' => (object) ['id' => (string) $user->id],
+        ]);
+        $social->shouldReceive('find')->with('friend-pid')->once()->andReturn((object) [
+            'user' => $friend,
+            'user_id' => $friend->id,
+        ]);
+
+        $users->shouldReceive('show')->once()->with(null, $friend->id)->andReturn($friend);
+        $friends->shouldReceive('make')->once()->withArgs(function ($u, $f) use ($user, $friend) {
+            return $u->is($user) && $f->is($friend);
+        })->andReturn(true);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $this->assertTrue($manager->makeFriends($user));
+    }
+
+    public function test_update_profile_accepts_equivalent_string_and_integer_user_ids(): void
+    {
+        $user = User::factory()->create(['name' => 'Before']);
+        $provider = new FakeSocialProvider('facebook', [
+            'provider_user_id' => 'pid-upd',
+            'name' => 'After',
+            'email' => $user->email,
+        ]);
+
+        $social = Mockery::mock(SocialRepository::class);
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->with('pid-upd')->once()->andReturn((object) [
+            'user' => (object) ['id' => (string) $user->id],
+        ]);
+
+        $filter = Mockery::mock(UserEditablePropertiesService::class);
+        $filter->shouldReceive('filterForUser')->once()->andReturn(['name' => 'After']);
+        $this->app->instance(UserEditablePropertiesService::class, $filter);
+
+        $users->shouldReceive('update')->once()->andReturn($user->forceFill(['name' => 'After']));
+        $users->shouldNotReceive('getErrors');
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $updated = $manager->updateProfile($user);
+
+        $this->assertInstanceOf(User::class, $updated);
+        $this->assertSame('After', $updated->name);
+    }
+
+    public function test_update_profile_sets_error_when_provider_account_belongs_to_another_user(): void
+    {
+        $me = User::factory()->create();
+        $other = User::factory()->create();
+        $pid = 'pid-mismatch-'.substr(uniqid('', true), 0, 10);
+        SocialAccount::create([
+            'user_id' => $other->id,
+            'provider_user_id' => $pid,
+            'provider' => 'facebook',
+        ]);
+
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $other->email,
+            'name' => $other->name,
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', $userData));
+
+        $this->assertNull($manager->updateProfile($me));
+        $this->assertSame('No tiene asociado ningun perfil', $manager->getErrors()['error']);
+    }
+
+    public function test_login_or_create_propagates_errors_when_user_creation_fails(): void
+    {
+        $pid = 'fb-fail-'.substr(uniqid('', true), 0, 10);
+        $email = 'fail-'.uniqid('', true).'@example.com';
+        $userData = [
+            'provider_user_id' => $pid,
+            'email' => $email,
+            'name' => 'Will Fail',
+            'gender' => 'N/A',
+            'birthday' => null,
+            'banned' => false,
+            'terms_and_conditions' => true,
+        ];
+
+        [$manager, $social, $users, $friends] = $this->makeManager(
+            new FakeSocialProvider('facebook', $userData),
+        );
+
+        $users->shouldReceive('create')
+            ->once()
+            ->with(Mockery::type('array'), false, true)
+            ->andReturn(null);
+        $users->shouldReceive('getErrors')
+            ->once()
+            ->andReturn(['error' => 'user_creation_failed']);
+
+        $friends->shouldReceive('make')->never();
+
+        $this->assertNull($manager->loginOrCreate([]));
+        $this->assertSame('user_creation_failed', $manager->getErrors()['error']);
+        $this->assertNull($social->find($pid, 'facebook'));
+    }
+
+    /**
+     * @return mixed
+     */
+    private function invokeResolveFriendUser(SocialManager $manager, mixed $friendIdentifier)
+    {
+        $m = new \ReflectionMethod(SocialManager::class, 'resolveFriendUser');
+        $m->setAccessible(true);
+
+        return $m->invoke($manager, $friendIdentifier);
+    }
+
+    public function test_resolve_friend_user_returns_same_user_model_instance(): void
+    {
+        $user = User::factory()->create();
+        [$manager] = $this->makeManager(new FakeSocialProvider('facebook', []));
+
+        $this->assertTrue($this->invokeResolveFriendUser($manager, $user)->is($user));
+    }
+
+    public function test_resolve_friend_user_queries_social_repo_with_string_cast_provider_id(): void
+    {
+        $provider = new FakeSocialProvider('facebook', []);
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->once()->with('42')->andReturn(null);
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('show')->once()->with(null, 42)->andReturn(null);
+
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+
+        $this->assertNull($this->invokeResolveFriendUser($manager, 42));
+    }
+
+    public function test_resolve_friend_user_returns_linked_user_model_from_social_account(): void
+    {
+        $linked = User::factory()->create();
+        $provider = new FakeSocialProvider('facebook', []);
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->once()->with('fid')->andReturn((object) [
+            'user' => $linked,
+        ]);
+
+        $users = Mockery::mock(UsersManager::class);
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $resolved = $this->invokeResolveFriendUser($manager, 'fid');
+
+        $this->assertInstanceOf(User::class, $resolved);
+        $this->assertTrue($resolved->is($linked));
+    }
+
+    public function test_resolve_friend_user_loads_user_via_show_when_account_user_is_partial_object(): void
+    {
+        $loaded = User::factory()->create();
+        $provider = new FakeSocialProvider('facebook', []);
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->once()->with('fid2')->andReturn((object) [
+            'user' => (object) ['id' => (string) $loaded->id],
+        ]);
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('show')->once()->with(null, $loaded->id)->andReturn($loaded);
+
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $resolved = $this->invokeResolveFriendUser($manager, 'fid2');
+
+        $this->assertInstanceOf(User::class, $resolved);
+        $this->assertTrue($resolved->is($loaded));
+    }
+
+    public function test_resolve_friend_user_falls_back_to_numeric_user_id_when_no_social_account(): void
+    {
+        $loaded = User::factory()->create();
+        $provider = new FakeSocialProvider('facebook', []);
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->once()->with('77')->andReturn(null);
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('show')->once()->with(null, 77)->andReturn($loaded);
+
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+        $resolved = $this->invokeResolveFriendUser($manager, 77);
+
+        $this->assertInstanceOf(User::class, $resolved);
+        $this->assertTrue($resolved->is($loaded));
+    }
+
+    public function test_resolve_friend_user_returns_null_when_show_returns_non_user_for_numeric_id(): void
+    {
+        $provider = new FakeSocialProvider('facebook', []);
+        $social = Mockery::mock(SocialRepository::class);
+        $social->shouldReceive('setDefaultProvider')->once();
+        $social->shouldReceive('find')->once()->with('88')->andReturn(null);
+
+        $users = Mockery::mock(UsersManager::class);
+        $users->shouldReceive('show')->once()->with(null, 88)->andReturn((object) ['id' => 88]);
+
+        $friends = Mockery::mock(FriendsManager::class);
+        $files = Mockery::mock(FileRepository::class);
+
+        $manager = new SocialManager($provider, $users, $friends, $files, $social);
+
+        $this->assertNull($this->invokeResolveFriendUser($manager, 88));
+    }
+}

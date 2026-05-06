@@ -2,8 +2,8 @@
 
 namespace STS\Transformers;
 
-use STS\Models\Trip;
 use League\Fractal\TransformerAbstract;
+use STS\Models\Trip;
 
 class TripTransformer extends TransformerAbstract
 {
@@ -47,18 +47,18 @@ class TripTransformer extends TransformerAbstract
             'allow_animals' => $trip->allow_animals,
             'allow_smoking' => $trip->allow_smoking,
             'payment_id' => $trip->payment_id,
-            'needs_sellado' => $trip->needs_sellado
+            'needs_sellado' => $trip->needs_sellado,
         ];
 
         // Flag for frontend: show faded (e.g. 80% opacity) and "Falta pagar Sellado" when sellado is unpaid
-        $data['sellado_pending'] = (bool) ($trip->needs_sellado && $trip->state !== Trip::STATE_READY);
+        $data['sellado_pending'] = ($trip->needs_sellado && $trip->state !== Trip::STATE_READY) ? true : false;
         $data['sellado_pending_label'] = $data['sellado_pending'] ? 'Falta pagar Sellado' : null;
 
         if ($trip->deleted_at) {
             $data['deleted_at'] = $trip->deleted_at->toDateTimeString();
             if ($trip->deleted_at->toDateTimeString() === '2000-01-01 00:00:00') {
                 $data['hidden'] = true;
-            } else{
+            } else {
                 $data['deleted'] = true;
             }
         }
@@ -82,13 +82,11 @@ class TripTransformer extends TransformerAbstract
                 $data['car'] = $trip->car;
                 $data['request_count'] = count($trip->passenger);
                 $data['passengerAccepted_count'] = count($trip->passengerAccepted);
-                if (count($trip->passenger) > 0) {
-                    foreach ($trip->passenger as $prequest) {
-                        $prequest->request_id = $prequest->id;
-                        $prequest->id = $prequest->user->id;
-                        $prequest->name = $prequest->user->name;
-                        $prequest->email = $prequest->user->email;
-                    }
+                foreach ($trip->passenger as $prequest) {
+                    $prequest->request_id = $prequest->id;
+                    $prequest->id = $prequest->user->id;
+                    $prequest->name = $prequest->user->name;
+                    $prequest->email = $prequest->user->email;
                 }
             } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';

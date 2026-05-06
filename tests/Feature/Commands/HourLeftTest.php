@@ -2,26 +2,20 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
 use Mockery as m;
-use STS\Models\Trip;
-use STS\Models\Passenger;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 
 class HourLeftTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $carsLogic;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
-        //$this->carsLogic = $this->mock(\STS\Services\Logic\CarsManager::class);
+        // $this->carsLogic = $this->mock(\STS\Services\Logic\CarsManager::class);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         m::close();
         parent::tearDown();
@@ -32,7 +26,7 @@ class HourLeftTest extends TestCase
         return json_decode($response->getContent());
     }
 
-    public function testSomeMatch()
+    public function test_some_match()
     {
         $driver = \STS\Models\User::factory()->create();
         $passengerA = \STS\Models\User::factory()->create();
@@ -45,7 +39,7 @@ class HourLeftTest extends TestCase
         $this->artisan('trip:remainder')->assertSuccessful();
     }
 
-    public function testNoMatch()
+    public function test_no_match()
     {
         $driver = \STS\Models\User::factory()->create();
         $passengerA = \STS\Models\User::factory()->create();

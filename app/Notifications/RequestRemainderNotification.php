@@ -2,19 +2,22 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class RequestRemainderNotification extends BaseNotification
 {
-    protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class, 
-        PushChannel::class,
-    ];
+    public function __construct()
+    {
+        parent::__construct();
+        $this->via = [
+            DatabaseChannel::class,
+            MailChannel::class,
+            PushChannel::class,
+        ];
+    }
 
     public function toEmail($user)
     {
@@ -26,9 +29,9 @@ class RequestRemainderNotification extends BaseNotification
         return [
             'title' => __('notifications.request_remainder.title'),
             'email_view' => 'request_remainder',
-            'url' =>  config('app.url').'/app/profile/me#0',
+            'url' => config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
+            'domain' => config('app.url'),
         ];
     }
 
@@ -40,6 +43,7 @@ class RequestRemainderNotification extends BaseNotification
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
+
         return [
             'type' => 'my-trips',
             'trip_id' => $trip ? $trip->id : null,

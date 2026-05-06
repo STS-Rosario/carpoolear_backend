@@ -2,16 +2,19 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\MailChannel;
 
 class ResetPasswordNotification extends BaseNotification
 {
-    protected $via = [
-        MailChannel::class,
-    ];
-
-    public $force_email = true;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->via = [
+            MailChannel::class,
+        ];
+        $this->force_email = true;
+    }
 
     public function toEmail($user)
     {
@@ -24,7 +27,7 @@ class ResetPasswordNotification extends BaseNotification
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url'),
             'token' => $token ?: '',
-            'url' => config('app.url').'/app/password/reset/'.($token ?: '')
+            'url' => config('app.url').'/app/password/reset/'.($token ?: ''),
         ];
     }
 

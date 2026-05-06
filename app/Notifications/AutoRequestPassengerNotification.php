@@ -2,20 +2,22 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class AutoRequestPassengerNotification extends BaseNotification
 {
-    protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class, 
-        PushChannel::class, 
-        // FacebookChannel::class
-    ];
+    public function __construct()
+    {
+        parent::__construct();
+        $this->via = [
+            DatabaseChannel::class,
+            MailChannel::class,
+            PushChannel::class,
+        ];
+    }
 
     public function toEmail($user)
     {
@@ -28,7 +30,7 @@ class AutoRequestPassengerNotification extends BaseNotification
             'email_view' => 'auto_request_passenger',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
+            'domain' => config('app.url'),
         ];
     }
 
@@ -36,12 +38,14 @@ class AutoRequestPassengerNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : __('notifications.someone');
+
         return __('notifications.auto_request_passenger.message', ['name' => $senderName]);
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
+
         return [
             'type' => 'trip',
             'trip_id' => $trip ? $trip->id : null,

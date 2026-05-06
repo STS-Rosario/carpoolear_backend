@@ -2,17 +2,14 @@
 
 namespace Tests\Feature;
 
-use Mockery as m;
-use Tests\TestCase;
-use STS\Models\User;
-use Tymon\JWTAuth\Token;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Mockery as m;
+use STS\Models\User;
+use Tests\TestCase;
+use Tymon\JWTAuth\Token;
 
 class ApiAuthTest extends TestCase
 {
-    use DatabaseTransactions;
-
     protected $userManager;
 
     protected $userLogic;
@@ -22,12 +19,12 @@ class ApiAuthTest extends TestCase
         return json_decode($response->getContent());
     }
 
-    public function testCreateUser()
+    public function test_create_user()
     {
         $data = [
-            'name'                  => 'Mariano',
-            'email'                 => 'mariano@g1.com',
-            'password'              => '123456',
+            'name' => 'Mariano',
+            'email' => 'mariano@g1.com',
+            'password' => '123456',
             'password_confirmation' => '123456',
         ];
         $response = $this->call('POST', 'api/users', $data);
@@ -41,7 +38,7 @@ class ApiAuthTest extends TestCase
     /**
      * After registration, active users should receive a JWT so the client can log them in without a separate login call.
      */
-    public function testRegistrationReturnsJwtTokenWhenUserIsActiveForAutoLogin()
+    public function test_registration_returns_jwt_token_when_user_is_active_for_auto_login()
     {
         $user = User::factory()->create([
             'active' => 1,
@@ -53,12 +50,12 @@ class ApiAuthTest extends TestCase
         });
 
         $data = [
-            'name'                  => 'Auto Login Test',
-            'email'                 => 'auto-login-test@example.com',
-            'password'              => '123456',
+            'name' => 'Auto Login Test',
+            'email' => 'auto-login-test@example.com',
+            'password' => '123456',
             'password_confirmation' => '123456',
-            'terms_and_conditions'  => '1',
-            'token'                 => 'test-recaptcha-token',
+            'terms_and_conditions' => '1',
+            'token' => 'test-recaptcha-token',
         ];
         $response = $this->call('POST', 'api/users', $data);
 
@@ -70,14 +67,14 @@ class ApiAuthTest extends TestCase
         $this->assertIsString($json->token);
     }
 
-    public function testLogin()
+    public function test_login()
     {
         $user = \STS\Models\User::factory()->create();
 
         $data = [
-            'email'       => $user->email,
-            'password'    => '123456',
-            'device_id'   => 123456,
+            'email' => $user->email,
+            'password' => '123456',
+            'device_id' => 123456,
             'device_type' => 'Android',
             'app_version' => 1,
 
@@ -89,13 +86,13 @@ class ApiAuthTest extends TestCase
         $this->assertTrue($json->token != null);
     }
 
-    public function testRetoken()
+    public function test_retoken()
     {
         $user = \STS\Models\User::factory()->create();
         $data = [
-            'email'       => $user->email,
-            'password'    => '123456',
-            'device_id'   => 123456,
+            'email' => $user->email,
+            'password' => '123456',
+            'device_id' => 123456,
             'device_type' => 'Android',
             'app_version' => 1,
         ];
@@ -107,7 +104,7 @@ class ApiAuthTest extends TestCase
 
         \JWTAuth::shouldReceive('getToken')->once()->andReturn(new Token('a.b.c'));
         \JWTAuth::shouldReceive('setToken')->andReturnSelf();
-        \JWTAuth::shouldReceive('checkOrFail')->andReturn(new \stdClass());
+        \JWTAuth::shouldReceive('checkOrFail')->andReturn(new \stdClass);
         \JWTAuth::shouldReceive('user')->andReturn($user);
 
         $response = $this->call('POST', 'api/retoken?token='.$json->token);
@@ -119,7 +116,7 @@ class ApiAuthTest extends TestCase
         m::close();
     }
 
-    public function testUpdateProfile()
+    public function test_update_profile()
     {
         $user = \STS\Models\User::factory()->create();
         $id = $user->id;
@@ -142,7 +139,7 @@ class ApiAuthTest extends TestCase
      * Forbidden/flagged properties are silently ignored (no error) for backward compatibility.
      * Backend filters them out, persists only allowed props, and sends Slack alert when value actually changes.
      */
-    public function testUpdateProfileBlocksForbiddenProperties()
+    public function test_update_profile_blocks_forbidden_properties()
     {
         $user = \STS\Models\User::factory()->create(['name' => 'Original', 'banned' => 0]);
         $this->actingAs($user, 'api');
@@ -171,7 +168,7 @@ class ApiAuthTest extends TestCase
         $this->assertEquals($user->email, $reloaded->email);
     }
 
-    public function testShowProfile()
+    public function test_show_profile()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();
@@ -184,7 +181,7 @@ class ApiAuthTest extends TestCase
         $this->assertEquals($profile->data->name, $u2->name);
     }
 
-    public function testActive()
+    public function test_active()
     {
         $u1 = \STS\Models\User::factory()->create();
         $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
@@ -199,7 +196,7 @@ class ApiAuthTest extends TestCase
         m::close();
     }
 
-    public function testResetPassword()
+    public function test_reset_password()
     {
         $u1 = \STS\Models\User::factory()->create();
         $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
@@ -212,20 +209,20 @@ class ApiAuthTest extends TestCase
         m::close();
     }
 
-    public function testChagePassword()
+    public function test_chage_password()
     {
         $u1 = \STS\Models\User::factory()->create();
         $this->userLogic = $this->mock(\STS\Services\Logic\UsersManager::class);
         $this->userLogic->shouldReceive('changePassword')->once()->andReturn(true);
 
         $response = $this->call('POST', 'api/change-password/1234567890');
-        //\Log::info($response->getContent());
+        // \Log::info($response->getContent());
         $this->assertTrue($response->status() == 200);
 
         m::close();
     }
 
-    public function testIndex()
+    public function test_index()
     {
         $u1 = \STS\Models\User::factory()->create();
         $u2 = \STS\Models\User::factory()->create();

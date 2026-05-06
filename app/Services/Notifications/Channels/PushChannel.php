@@ -2,35 +2,40 @@
 
 namespace STS\Services\Notifications\Channels;
 
-use STS\Services\FirebaseService;
-use STS\Models\Device;
 use Carbon\Carbon;
+use STS\Models\Device;
+use STS\Services\FirebaseService;
 
 class PushChannel
 {
     protected $android_actions = [];
 
-    public function __construct()
+    /** @var callable */
+    protected $firebaseFactory;
+
+    public function __construct(?callable $firebaseFactory = null)
     {
+        $this->firebaseFactory = $firebaseFactory ?? fn () => new FirebaseService;
     }
 
     public function send($notification, $user)
     {
-        $devicesFiltered = $user->devices->filter(function ($device)  {
+        $devicesFiltered = $user->devices->filter(function ($device) {
             $activity_days = \Config::get('carpoolear.send_push_notifications_to_device_activity_days');
-            if ($activity_days==0) {
-               return true;
+            if ($activity_days == 0) {
+                return true;
             }
-            if ($device->last_activity==null) {
+            if ($device->last_activity == null) {
                 return false;
             }
+
             return $device->last_activity->greaterThan(Carbon::now()->subDays($activity_days));
         });
 
         foreach ($devicesFiltered as $device) {
             $data = $this->getData($notification, $user, $device);
             $data['extras'] = $this->getExtraData($notification);
-          
+
             if ($device->notifications) {
                 try {
                     if ($device->isAndroid()) {
@@ -44,10 +49,10 @@ class PushChannel
                     \Log::error('PushChannel: Error sending push notification', [
                         'user_id' => $user->id ?? null,
                         'device_id' => $device->id ?? null,
-                        'device_token' => substr($device->device_id ?? '', 0, 20) . '...',
+                        'device_token' => substr($device->device_id ?? '', 0, 20).'...',
                         'device_type' => $device->device_type,
                         'error' => $e->getMessage(),
-                        'error_trace' => $e->getTraceAsString()
+                        'error_trace' => $e->getTraceAsString(),
                     ]);
                 }
             }
@@ -71,38 +76,37 @@ class PushChannel
     }
 
     public function sendBrowser($device, $data)
-    { 
-        $firebase = new FirebaseService();
-       
+    {
+        $firebase = $this->makeFirebaseService();
+
         $device_token = $device->device_id;
-      
-        $message = array(
+
+        $message = [
             'title' => 'Carpoolear',
-            'body' => $data["message"],
-            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png'
-        ); 
+            'body' => $data['message'],
+            'icon' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
+        ];
 
         if (isset($data['url'])) {
             $message['click_action'] = $data['url'];
-        } 
-        
-        $firebase->sendNotification($device_token, $message, $data["extras"], 'browser');
-    }
+        }
 
+        $firebase->sendNotification($device_token, $message, $data['extras'], 'browser');
+    }
 
     public function sendAndroid($device, $data)
     {
         try {
-            $firebase = new FirebaseService();
-            
+            $firebase = $this->makeFirebaseService();
+
             $device_token = $device->device_id;
-            
-            $message = array(
+
+            $message = [
                 'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
                 'body' => $data['message'],
                 'icon' => isset($data['image']) ? $data['image'] : 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
-                'sound' => 'default'
-            ); 
+                'sound' => 'default',
+            ];
 
             // For FCM v1, click_action should match an Android intent filter
             // If the URL is a path (not an intent action), don't set click_action
@@ -125,15 +129,15 @@ class PushChannel
             }
 
             $response = $firebase->sendNotification($device_token, $message, $dataPayload, 'android');
-            
+
             return $response;
         } catch (\Exception $e) {
             \Log::error('PushChannel: sendAndroid error', [
                 'device_id' => $device->id ?? null,
-                'device_token' => substr($device->device_id ?? '', 0, 20) . '...',
+                'device_token' => substr($device->device_id ?? '', 0, 20).'...',
                 'error' => $e->getMessage(),
                 'error_trace' => $e->getTraceAsString(),
-                'input_data' => $data ?? null
+                'input_data' => $data ?? null,
             ]);
             throw $e;
         }
@@ -147,11 +151,11 @@ class PushChannel
                 'aps' => [
                     'alert' => [
                         'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
-                        'body' => $data['message']
+                        'body' => $data['message'],
                     ],
                     'sound' => 'default',
-                    'badge' => 1
-                ]
+                    'badge' => 1,
+                ],
             ];
 
             // Add custom data at root level (not inside aps) so Capacitor can access it
@@ -169,13 +173,13 @@ class PushChannel
 
             // Send via APNs
             $result = $this->sendAPNsNotification($device->device_id, $payload);
-            
+
             return $result;
         } catch (\Exception $e) {
             \Log::error('PushChannel: sendIOS error', [
                 'device_id' => $device->id,
                 'device_token' => $device->device_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -189,24 +193,24 @@ class PushChannel
         $apnsEnvironment = config('push-notification.ios.environment');
 
         // Check if certificate exists
-        if (!file_exists($apnsCert)) {
+        if (! file_exists($apnsCert)) {
             throw new \Exception("APNs certificate not found: {$apnsCert}");
         }
-        
+
         // Use HTTP/2 APNs (more modern and reliable)
-        $url = ($apnsEnvironment === 'production') 
-            ? 'https://api.push.apple.com/3/device/' . $deviceToken
-            : 'https://api.development.push.apple.com/3/device/' . $deviceToken;
+        $url = ($apnsEnvironment === 'production')
+            ? 'https://api.push.apple.com/3/device/'.$deviceToken
+            : 'https://api.development.push.apple.com/3/device/'.$deviceToken;
 
         // Validate device token format
-        if (!ctype_xdigit($deviceToken) || strlen($deviceToken) != 64) {
-            throw new \Exception("Invalid APNs device token format. Expected 64 hex characters, got: " . strlen($deviceToken));
+        if (! ctype_xdigit($deviceToken) || strlen($deviceToken) != 64) {
+            throw new \Exception('Invalid APNs device token format. Expected 64 hex characters, got: '.strlen($deviceToken));
         }
 
         try {
             // Use cURL for HTTP/2 APNs
             $ch = curl_init();
-            
+
             // Check if we have a PEM or P12 file
             $isPem = pathinfo($apnsCert, PATHINFO_EXTENSION) === 'pem';
             $isP12 = pathinfo($apnsCert, PATHINFO_EXTENSION) === 'p12';
@@ -218,11 +222,11 @@ class PushChannel
                 CURLOPT_HTTPHEADER => [
                     'Content-Type: application/json',
                     'apns-topic: com.sts.carpoolear', // Your app bundle ID
-                    'apns-priority: 10'
+                    'apns-priority: 10',
                 ],
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_2_0,
                 CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30
+                CURLOPT_TIMEOUT => 30,
             ];
 
             if ($isPem) {
@@ -233,7 +237,7 @@ class PushChannel
                 $curlOptions[CURLOPT_SSLCERT] = $apnsCert;
                 $curlOptions[CURLOPT_SSLCERTPASSWD] = $apnsPassphrase ?: '';
             } else {
-                throw new \Exception("Unsupported certificate format. Use .pem or .p12 files.");
+                throw new \Exception('Unsupported certificate format. Use .pem or .p12 files.');
             }
 
             curl_setopt_array($ch, $curlOptions);
@@ -259,4 +263,10 @@ class PushChannel
         }
     }
 
+    protected function makeFirebaseService(): FirebaseService
+    {
+        $factory = $this->firebaseFactory;
+
+        return $factory();
+    }
 }

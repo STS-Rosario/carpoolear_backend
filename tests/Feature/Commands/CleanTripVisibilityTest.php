@@ -2,18 +2,28 @@
 
 namespace Tests\Feature\Commands;
 
-use Tests\TestCase;
-use STS\Models\User;
-use STS\Models\Trip;
 use Carbon\Carbon;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Event;
+use STS\Models\Trip;
+use STS\Models\User;
+use Tests\TestCase;
 
 class CleanTripVisibilityTest extends TestCase
 {
-    use DatabaseTransactions;
+    public function test_logs_command_identifier_when_visibility_clean_runs(): void
+    {
+        Event::fake([MessageLogged::class]);
 
-    public function testDeletesVisibilityForPastTrips()
+        $this->artisan('trip:visibilityclean')->assertSuccessful();
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
+            return $e->level === 'info' && $e->message === 'COMMAND CleanTripVisibility';
+        });
+    }
+
+    public function test_deletes_visibility_for_past_trips()
     {
         $user = User::factory()->create();
 
@@ -51,7 +61,7 @@ class CleanTripVisibilityTest extends TestCase
         ]);
     }
 
-    public function testDeletesVisibilityForPublicTrips()
+    public function test_deletes_visibility_for_public_trips()
     {
         $user = User::factory()->create();
 
@@ -89,7 +99,7 @@ class CleanTripVisibilityTest extends TestCase
         ]);
     }
 
-    public function testRunsSuccessfullyWithNoVisibilityRecords()
+    public function test_runs_successfully_with_no_visibility_records()
     {
         $this->artisan('trip:visibilityclean')->assertSuccessful();
     }
