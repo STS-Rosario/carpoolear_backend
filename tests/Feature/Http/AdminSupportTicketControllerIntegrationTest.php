@@ -181,7 +181,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
         $this->assertSame(['data'], array_keys($response->json()));
         $this->assertSame($ticket->id, $response->json('data.id'));
-        $this->assertSame('En revision', $response->json('data.status'));
+        $this->assertSame('Esperando respuesta', $response->json('data.status'));
 
         $this->assertDatabaseHas('support_ticket_replies', [
             'ticket_id' => $ticket->id,
@@ -215,7 +215,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ])->assertOk();
 
         $this->assertSame(['data'], array_keys($response->json()));
-        $this->assertSame('En revision', $response->json('data.status'));
+        $this->assertSame('Esperando respuesta', $response->json('data.status'));
         $this->assertDatabaseHas('support_ticket_replies', [
             'ticket_id' => $ticket->id,
             'user_id' => $admin->id,

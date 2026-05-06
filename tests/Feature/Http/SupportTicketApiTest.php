@@ -135,7 +135,7 @@ class SupportTicketApiTest extends TestCase
             'message_markdown' => 'We are reviewing it.',
         ]);
         $adminReply->assertStatus(200);
-        $adminReply->assertJsonPath('data.status', 'En revision');
+        $adminReply->assertJsonPath('data.status', 'Esperando respuesta');
         $adminReply->assertJsonPath('data.unread_for_user', 1);
         $adminReply->assertJsonPath('data.unread_for_admin', 0);
     }
@@ -410,7 +410,7 @@ class SupportTicketApiTest extends TestCase
         $replyIds = SupportTicketReply::query()->where('ticket_id', $ticketId)->pluck('id');
         $this->assertGreaterThan(0, SupportTicketAttachment::query()->whereIn('reply_id', $replyIds)->count());
 
-        $this->assertSame('Esperando respuesta', SupportTicket::query()->findOrFail($ticketId)->status);
+        $this->assertSame('En revision', SupportTicket::query()->findOrFail($ticketId)->status);
     }
 
     public function test_close_without_message_does_not_add_second_reply(): void
