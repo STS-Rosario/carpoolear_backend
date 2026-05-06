@@ -90,6 +90,7 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
         $this->assertNull($data['reviewed_at']);
         $this->assertNull($data['reviewed_by']);
         $this->assertNull($data['reviewed_by_name']);
+        $this->assertNull($data['private_admin_note']);
         $this->assertFalse($data['user_identity_validated']);
 
         $approved = $this->postJson('api/admin/mercado-pago-rejected-validations/'.$row->id.'/review', [
@@ -302,5 +303,26 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
             ->assertJsonPath('data.review_status', 'approved');
 
         $this->assertTrue($user->fresh()->identity_validated);
+    }
+
+    public function test_private_note_can_be_updated_by_admin_and_returned_in_show(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => [],
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/mercado-pago-rejected-validations/'.$row->id.'/private-note', [
+            'private_admin_note' => 'Contacto por telefono, revisar en 48hs.',
+        ])->assertOk()->assertJsonPath('data.private_admin_note', 'Contacto por telefono, revisar en 48hs.');
+
+        $show = $this->getJson('api/admin/mercado-pago-rejected-validations/'.$row->id)->assertOk();
+        $this->assertSame('Contacto por telefono, revisar en 48hs.', $show->json('data.private_admin_note'));
     }
 }
