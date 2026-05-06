@@ -2,10 +2,10 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
-use STS\Http\Controllers\Controller;
-use STS\Models\MercadoPagoRejectedValidation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use STS\Http\Controllers\Controller;
+use STS\Models\MercadoPagoRejectedValidation;
 
 class MercadoPagoRejectedValidationController extends Controller
 {
@@ -57,6 +57,7 @@ class MercadoPagoRejectedValidationController extends Controller
                 'approved_by_name' => $item->approvedBy ? $item->approvedBy->name : null,
                 'review_status' => $item->review_status,
                 'review_note' => $item->review_note,
+                'private_admin_note' => $item->private_admin_note,
                 'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
                 'reviewed_by' => $item->reviewed_by,
                 'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
@@ -77,7 +78,7 @@ class MercadoPagoRejectedValidationController extends Controller
 
         $item = MercadoPagoRejectedValidation::with('user')->findOrFail($id);
         $user = $item->user;
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found.'], 404);
         }
 
@@ -123,6 +124,7 @@ class MercadoPagoRejectedValidationController extends Controller
             'approved_by_name' => $item->approvedBy ? $item->approvedBy->name : null,
             'review_status' => $item->review_status,
             'review_note' => $item->review_note,
+            'private_admin_note' => $item->private_admin_note,
             'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
             'reviewed_by' => $item->reviewed_by,
             'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
@@ -131,12 +133,26 @@ class MercadoPagoRejectedValidationController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    public function updatePrivateNote(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'private_admin_note' => 'nullable|string',
+        ]);
+
+        $item = MercadoPagoRejectedValidation::findOrFail($id);
+        $item->private_admin_note = $validated['private_admin_note'] ?? null;
+        $item->save();
+
+        return $this->show($id);
+    }
+
     /**
      * POST /api/admin/mercado-pago-rejected-validations/{id}/approve - validate the user manually (legacy shortcut; use review with action=approve).
      */
     public function approve(Request $request, int $id): JsonResponse
     {
         $request->merge(['action' => 'approve', 'note' => '']);
+
         return $this->review($request, $id);
     }
 }

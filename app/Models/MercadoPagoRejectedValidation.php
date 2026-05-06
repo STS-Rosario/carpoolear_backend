@@ -17,6 +17,7 @@ class MercadoPagoRejectedValidation extends Model
         'approved_by',
         'review_status',
         'review_note',
+        'private_admin_note',
         'reviewed_at',
         'reviewed_by',
     ];
