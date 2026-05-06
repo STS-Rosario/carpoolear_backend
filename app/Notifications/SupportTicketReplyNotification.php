@@ -34,7 +34,7 @@ class SupportTicketReplyNotification extends BaseNotification
 
         return [
             'message' => 'Tenes una nueva respuesta de Carpoolear',
-            'url' => '/tickets/'.($ticket ? $ticket->id : ''),
+            'url' => '/soporte/'.($ticket ? $ticket->id : ''),
             'type' => 'ticket',
             'extras' => [
                 'id' => $ticket ? $ticket->id : null,
