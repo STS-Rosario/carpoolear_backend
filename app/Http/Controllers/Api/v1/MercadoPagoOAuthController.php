@@ -84,9 +84,7 @@ class MercadoPagoOAuthController extends Controller
             $dniMismatch = $userDni === '' || $mpDni === '' || $mpDni !== $userDni;
 
             if ($nameMismatch || $dniMismatch) {
-                $rejectReason = $nameMismatch && $dniMismatch
-                    ? 'both_mismatch'
-                    : ($nameMismatch ? 'name_mismatch' : 'dni_mismatch');
+                $rejectReason = $this->resolveRejectReason($nameMismatch, $dniMismatch);
                 $user->identity_validated = false;
                 $user->identity_validated_at = null;
                 $user->identity_validation_type = null;
@@ -106,15 +104,14 @@ class MercadoPagoOAuthController extends Controller
                     'user_dni_normalized' => $userDni,
                     'mp_dni_normalized' => $mpDni,
                 ]);
-                $details = [];
-                if ($nameMismatch) {
-                    $details['user_name'] = $userName;
-                    $details['mp_name'] = $mpName;
-                }
-                if ($dniMismatch) {
-                    $details['user_dni'] = $userDni;
-                    $details['mp_dni'] = $mpDni;
-                }
+                $details = $this->buildMismatchRedirectDetails(
+                    $nameMismatch,
+                    $dniMismatch,
+                    $userName,
+                    $mpName,
+                    $userDni,
+                    $mpDni
+                );
 
                 return redirect($oauthService->getFrontendRedirectUrl($rejectReason, $details));
             }
@@ -133,5 +130,38 @@ class MercadoPagoOAuthController extends Controller
 
             return redirect($oauthService->getFrontendRedirectUrl('error'));
         }
+    }
+
+    private function resolveRejectReason(bool $nameMismatch, bool $dniMismatch): string
+    {
+        if ($nameMismatch && $dniMismatch) {
+            return 'both_mismatch';
+        }
+        if ($nameMismatch) {
+            return 'name_mismatch';
+        }
+
+        return 'dni_mismatch';
+    }
+
+    private function buildMismatchRedirectDetails(
+        bool $nameMismatch,
+        bool $dniMismatch,
+        string $userName,
+        string $mpName,
+        string $userDni,
+        string $mpDni
+    ): array {
+        $details = [];
+        if ($nameMismatch) {
+            $details['user_name'] = $userName;
+            $details['mp_name'] = $mpName;
+        }
+        if ($dniMismatch) {
+            $details['user_dni'] = $userDni;
+            $details['mp_dni'] = $mpDni;
+        }
+
+        return $details;
     }
 }
