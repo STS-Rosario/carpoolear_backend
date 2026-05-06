@@ -13,6 +13,17 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
+    private static function typeDefaultPriorities(): array
+    {
+        return [
+            'report' => 'high',
+            'bug_report' => 'normal',
+            'contact' => 'normal',
+            'feedback' => 'low',
+            'account_verification' => 'high',
+        ];
+    }
+
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
 
     public function index(): JsonResponse
@@ -25,6 +36,53 @@ class SupportTicketController extends Controller
     public function show(int $id): JsonResponse
     {
         $ticket = SupportTicket::with(['replies.attachments', 'attachments', 'user'])->findOrFail($id);
+
+        return response()->json(['data' => $ticket]);
+    }
+
+    public function create(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'type' => 'required|in:bug_report,contact,feedback,report,account_verification',
+            'subject' => 'required|string|min:3|max:160',
+            'message_markdown' => 'required|string|min:1',
+        ]);
+
+        $admin = auth()->user();
+        $ticket = DB::transaction(function () use ($validated, $admin) {
+            $ticket = SupportTicket::create([
+                'user_id' => (int) $validated['user_id'],
+                'type' => $validated['type'],
+                'subject' => $validated['subject'],
+                'status' => 'Open',
+                'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
+                'unread_for_user' => 1,
+                'unread_for_admin' => 0,
+                'created_by' => $admin->id,
+                'updated_by' => $admin->id,
+                'last_reply_at' => now(),
+            ]);
+
+            SupportTicketReply::create([
+                'ticket_id' => $ticket->id,
+                'user_id' => $admin->id,
+                'is_admin' => true,
+                'message_markdown' => $validated['message_markdown'],
+                'created_by' => $admin->id,
+            ]);
+
+            return $ticket->fresh();
+        });
+
+        $notification = new SupportTicketReplyNotification;
+        $notification->setAttribute('ticket', $ticket);
+        $notification->setAttribute('from', $admin);
+        try {
+            $notification->notify($ticket->user);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return response()->json(['data' => $ticket]);
     }

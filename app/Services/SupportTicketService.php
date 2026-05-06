@@ -10,6 +10,15 @@ use STS\Models\SupportTicketAttachment;
 
 class SupportTicketService
 {
+    /** Statuses where neither party may add replies via normal flows. */
+    private const TERMINAL_USER_REPLY_STATUSES = ['Resuelto', 'Cerrado'];
+
+    /**
+     * Open conversation states: after an admin reply we wait on the ticket owner.
+     * {@see applyAdminReplyTransition}
+     */
+    private const ADMIN_REPLY_SETS_WAITING_FOR_USER = ['Open', 'Esperando respuesta', 'En revision'];
+
     public function storeReplyAttachments(array $files, int $userId, int $replyId): void
     {
         foreach ($files as $file) {
@@ -33,19 +42,23 @@ class SupportTicketService
         }
     }
 
+    /** Marks unread for admins and moves active tickets to pending team review. */
     public function applyUserReplyTransition(SupportTicket $ticket, int $actorUserId): void
     {
-        $ticket->status = 'Esperando respuesta';
+        if (! in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true)) {
+            $ticket->status = 'En revision';
+        }
         $ticket->unread_for_admin++;
         $ticket->unread_for_user = 0;
         $ticket->last_reply_at = now();
         $ticket->updated_by = $actorUserId;
     }
 
+    /** Bumps unread for the ticket owner and sets waiting-for-user when applicable. */
     public function applyAdminReplyTransition(SupportTicket $ticket, int $actorUserId): void
     {
-        if (in_array($ticket->status, ['Open', 'Esperando respuesta'], true)) {
-            $ticket->status = 'En revision';
+        if (in_array($ticket->status, self::ADMIN_REPLY_SETS_WAITING_FOR_USER, true)) {
+            $ticket->status = 'Esperando respuesta';
         }
         $ticket->unread_for_user++;
         $ticket->unread_for_admin = 0;

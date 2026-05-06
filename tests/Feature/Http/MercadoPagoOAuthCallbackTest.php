@@ -35,6 +35,13 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         return 'https://app.example/setting/identity-validation?result='.urlencode($result);
     }
 
+    private function identityRedirectWith(string $result, array $params): string
+    {
+        $query = array_merge(['result' => $result], $params);
+
+        return 'https://app.example/setting/identity-validation?'.http_build_query($query);
+    }
+
     public function test_redirects_to_error_when_mp_error_query_is_present(): void
     {
         Log::spy();
@@ -237,7 +244,10 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         Log::spy();
 
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=name-state')
-            ->assertRedirect($this->identityRedirect('name_mismatch'));
+            ->assertRedirect($this->identityRedirectWith('name_mismatch', [
+                'user_name' => 'Jane Doe',
+                'mp_name' => 'Other Person',
+            ]));
 
         $user->refresh();
         $this->assertFalse($user->identity_validated);
@@ -255,8 +265,9 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         })->once();
 
         Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: name mismatch'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id;
+            return ($args[0] ?? null) === 'MercadoPago OAuth callback: mismatch'
+                && (int) ($args[1]['user_id'] ?? 0) === $user->id
+                && ($args[1]['reject_reason'] ?? null) === 'name_mismatch';
         })->once();
     }
 
@@ -279,7 +290,10 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         ]);
 
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=name-empty-state')
-            ->assertRedirect($this->identityRedirect('name_mismatch'));
+            ->assertRedirect($this->identityRedirectWith('name_mismatch', [
+                'user_name' => '',
+                'mp_name' => 'Jane Doe',
+            ]));
     }
 
     public function test_redirects_dni_mismatch_and_records_rejection(): void
@@ -303,7 +317,10 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         Log::spy();
 
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=dni-state')
-            ->assertRedirect($this->identityRedirect('dni_mismatch'));
+            ->assertRedirect($this->identityRedirectWith('dni_mismatch', [
+                'user_dni' => '30123456',
+                'mp_dni' => '30999999',
+            ]));
 
         $user->refresh();
         $this->assertFalse($user->identity_validated);
@@ -315,8 +332,9 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         ]);
 
         Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: DNI mismatch'
+            return ($args[0] ?? null) === 'MercadoPago OAuth callback: mismatch'
                 && (int) ($args[1]['user_id'] ?? 0) === $user->id
+                && ($args[1]['reject_reason'] ?? null) === 'dni_mismatch'
                 && ($args[1]['user_dni_normalized'] ?? null) === '30123456'
                 && ($args[1]['mp_dni_normalized'] ?? null) === '30999999';
         })->once();
@@ -379,5 +397,32 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             ->assertRedirect($this->identityRedirect('success'));
 
         $this->assertTrue($user->fresh()->identity_validated);
+    }
+
+    public function test_redirects_both_mismatch_when_name_and_dni_do_not_match(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Jane Doe',
+            'nro_doc' => '30123456',
+            'identity_validated' => false,
+        ]);
+        Cache::put('mp_oauth_state:both-state', ['user_id' => $user->id], 600);
+
+        Http::fake([
+            '*oauth/token*' => Http::response(['access_token' => 'tok'], 200),
+            '*users/me*' => Http::response([
+                'first_name' => 'Other',
+                'last_name' => 'Person',
+                'identification' => ['type' => 'DNI', 'number' => '30999999'],
+            ], 200),
+        ]);
+
+        $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=both-state')
+            ->assertRedirect($this->identityRedirectWith('both_mismatch', [
+                'user_name' => 'Jane Doe',
+                'mp_name' => 'Other Person',
+                'user_dni' => '30123456',
+                'mp_dni' => '30999999',
+            ]));
     }
 }

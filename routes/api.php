@@ -232,9 +232,11 @@ Route::middleware(['api'])->group(function () {
         Route::get('mercado-pago-rejected-validations', [AdminMercadoPagoRejectedValidationController::class, 'index']);
         Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
         Route::post('mercado-pago-rejected-validations/{id}/review', [AdminMercadoPagoRejectedValidationController::class, 'review']);
+        Route::post('mercado-pago-rejected-validations/{id}/private-note', [AdminMercadoPagoRejectedValidationController::class, 'updatePrivateNote']);
         Route::post('mercado-pago-rejected-validations/{id}/approve', [AdminMercadoPagoRejectedValidationController::class, 'approve']);
 
         Route::get('support/tickets', [AdminSupportTicketController::class, 'index']);
+        Route::post('support/tickets', [AdminSupportTicketController::class, 'create']);
         Route::get('support/tickets/{id}', [AdminSupportTicketController::class, 'show']);
         Route::post('support/tickets/{id}/replies', [AdminSupportTicketController::class, 'reply'])->middleware('throttle:support-ticket-admin-reply');
         Route::match(['patch', 'put'], 'support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
