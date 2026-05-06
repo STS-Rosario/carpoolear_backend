@@ -13,12 +13,26 @@ use Tests\TestCase;
 
 class RatingRepositoryTest extends TestCase
 {
+    private static bool $availablesRatingsViewPrepared = false;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         // `getRatingsCount` queries `availables_ratings`, which is not shipped in repo migrations (production view).
-        DB::statement('CREATE OR REPLACE VIEW availables_ratings AS SELECT id, user_id_to, rating FROM rating WHERE available = 1');
+        // Create once per process, and recreate only if a database refresh dropped it.
+        if (! self::$availablesRatingsViewPrepared || ! $this->hasAvailablesRatingsView()) {
+            DB::statement('CREATE OR REPLACE VIEW availables_ratings AS SELECT id, user_id_to, rating FROM rating WHERE available = 1');
+            self::$availablesRatingsViewPrepared = true;
+        }
+    }
+
+    private function hasAvailablesRatingsView(): bool
+    {
+        return DB::table('information_schema.VIEWS')
+            ->where('TABLE_SCHEMA', DB::getDatabaseName())
+            ->where('TABLE_NAME', 'availables_ratings')
+            ->exists();
     }
 
     /**
