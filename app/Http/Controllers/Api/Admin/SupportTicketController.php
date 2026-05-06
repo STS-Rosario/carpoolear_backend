@@ -13,6 +13,17 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
+    private static function typeDefaultPriorities(): array
+    {
+        return [
+            'report' => 'high',
+            'bug_report' => 'normal',
+            'contact' => 'normal',
+            'feedback' => 'low',
+            'account_verification' => 'high',
+        ];
+    }
+
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
 
     public function index(): JsonResponse
@@ -45,7 +56,7 @@ class SupportTicketController extends Controller
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
                 'status' => 'Open',
-                'priority' => $validated['type'] === 'account_verification' ? 'high' : 'normal',
+                'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
                 'unread_for_user' => 1,
                 'unread_for_admin' => 0,
                 'created_by' => $admin->id,
