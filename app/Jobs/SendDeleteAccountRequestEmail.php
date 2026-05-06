@@ -7,19 +7,25 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use STS\Mail\DeleteAccountRequestNotification;
 
 class SendDeleteAccountRequestEmail implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $tries = 3; // Maximum number of attempts
-    public $backoff = [60, 300, 900]; // Wait times between retries: 1 min, 5 min, 15 min
-    public $timeout = 30; // Job timeout in seconds
+    /** @var int Maximum number of attempts */
+    public $tries;
+
+    /** @var array<int, int> Wait seconds between retries: 1 min, 5 min, 15 min */
+    public $backoff;
+
+    /** @var int Job timeout in seconds */
+    public $timeout;
 
     protected $adminEmail;
+
     protected $adminUrl;
 
     /**
@@ -27,6 +33,10 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
      */
     public function __construct(string $adminEmail, string $adminUrl)
     {
+        $this->tries = 3;
+        $this->backoff = [60, 300, 900];
+        $this->timeout = 30;
+
         $this->adminEmail = $adminEmail;
         $this->adminUrl = $adminUrl;
     }
@@ -42,7 +52,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
             $logData = [
                 'admin_email' => $this->adminEmail,
                 'attempt' => $this->attempts(),
-                'timestamp' => now()->toIso8601String()
+                'timestamp' => now()->toIso8601String(),
             ];
 
             // Log to regular log
@@ -51,7 +61,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('DELETE_ACCOUNT_REQUEST_EMAIL_SENDING', array_merge($logData, [
-                    'admin_url' => $this->adminUrl
+                    'admin_url' => $this->adminUrl,
                 ]));
             }
 
@@ -61,7 +71,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
 
             $successData = [
                 'admin_email' => $this->adminEmail,
-                'timestamp' => now()->toIso8601String()
+                'timestamp' => now()->toIso8601String(),
             ];
 
             // Log to regular log
@@ -78,7 +88,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
                 'error' => $e->getMessage(),
                 'error_code' => $e->getCode(),
                 'attempt' => $this->attempts(),
-                'timestamp' => now()->toIso8601String()
+                'timestamp' => now()->toIso8601String(),
             ];
 
             // Log to regular log
@@ -87,7 +97,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->error('DELETE_ACCOUNT_REQUEST_EMAIL_FAILED', array_merge($errorData, [
-                    'stack_trace' => $e->getTraceAsString()
+                    'stack_trace' => $e->getTraceAsString(),
                 ]));
             }
 
@@ -107,7 +117,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
             'admin_email' => $this->adminEmail,
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
-            'timestamp' => now()->toIso8601String()
+            'timestamp' => now()->toIso8601String(),
         ];
 
         // Log to regular log
@@ -116,7 +126,7 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
         // Log to email_logs channel if enabled
         if ($enableEmailLogging) {
             Log::channel('email_logs')->critical('DELETE_ACCOUNT_REQUEST_EMAIL_PERMANENTLY_FAILED', array_merge($failureData, [
-                'stack_trace' => $exception->getTraceAsString()
+                'stack_trace' => $exception->getTraceAsString(),
             ]));
         }
     }

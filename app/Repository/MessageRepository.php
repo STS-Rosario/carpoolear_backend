@@ -2,11 +2,11 @@
 
 namespace STS\Repository;
 
-use DB;
-use STS\Models\User;
 use Carbon\Carbon;
-use STS\Models\Message;
+use DB;
 use STS\Models\Conversation;
+use STS\Models\Message;
+use STS\Models\User;
 
 class MessageRepository
 {
@@ -22,7 +22,9 @@ class MessageRepository
 
     public function getMessages(Conversation $conversation, $timestamp, $pageSize)
     {
-        $conversationMessages = $conversation->messages()->orderBy('created_at', 'desc');
+        $conversationMessages = $conversation->messages()
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
         if ($timestamp) {
             $conversationMessages->where('created_at', '<', $timestamp);
         }
@@ -37,7 +39,7 @@ class MessageRepository
         return $conversation->messages()->whereHas('users', function ($q) use ($user) {
             $q->where('user_id', $user->id)
                 ->where('read', false);
-        })->orderBy('created_at', 'desc')->get();
+        })->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
     }
 
     public function changeMessageReadState(Message $message, User $user, $read_state)
@@ -74,25 +76,25 @@ class MessageRepository
         }
 
         return $msgs->orderBy('conversation_id')
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+            ->orderBy('created_at', 'desc')
+            ->get();
     }
 
     public function markMessages(User $user, $conversation_id)
     {
         $msgs = Message::where('conversation_id', $conversation_id)
-                    ->whereHas('users',
-                        function ($q) use ($user) {
-                            $q->where('user_id', $user->id)
-                                ->where('read', false);
-                        })
-                    ->pluck('id');
+            ->whereHas('users',
+                function ($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                        ->where('read', false);
+                })
+            ->pluck('id');
         DB::table('user_message_read')
-          ->whereIn('message_id', $msgs)
-          ->where('user_id', $user->id)
-          ->update([
-              'read' => true,
-              'updated_at' => Carbon::Now(),
-          ]);
+            ->whereIn('message_id', $msgs)
+            ->where('user_id', $user->id)
+            ->update([
+                'read' => true,
+                'updated_at' => Carbon::Now(),
+            ]);
     }
 }

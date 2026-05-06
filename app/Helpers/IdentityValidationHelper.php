@@ -107,23 +107,12 @@ class IdentityValidationHelper
      */
     public static function canPerformRestrictedActions(User $user): bool
     {
-        if ($user->identity_validated) {
-            return true;
-        }
-
-        if (! self::enforcementIsActive()) {
-            return true;
-        }
-
-        if (self::isNewUserRequiringValidation($user)) {
-            return false;
-        }
-
-        if (self::isCurrentUserPastDeadline($user)) {
-            return false;
-        }
-
-        return true;
+        return $user->identity_validated
+            || ! self::enforcementIsActive()
+            || (
+                ! self::isNewUserRequiringValidation($user)
+                && ! self::isCurrentUserPastDeadline($user)
+            );
     }
 
     /**

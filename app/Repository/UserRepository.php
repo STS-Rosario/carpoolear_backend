@@ -2,18 +2,17 @@
 
 namespace STS\Repository;
 
-use DB;
-use STS\Models\User;
 use Carbon\Carbon;
-use STS\Models\Passenger;
+use DB;
 use STS\Models\Conversation;
+use STS\Models\Passenger;
+use STS\Models\User;
 
 class UserRepository
 {
     /**
      * Create a new user instance after a valid registration.
      *
-     * @param array $data
      *
      * @return User
      */
@@ -33,8 +32,14 @@ class UserRepository
         $user = User::find($user_id_keep);
         $user_delete = User::find($user_id_delete);
         if ($user && $user_delete) {
-            $user->migrateUser($user_delete);
+            $this->invokeMigrateUserMerge($user, $user_delete);
         }
+    }
+
+    /** @internal Overridden in tests to avoid calling `User::migrateUser()` (not present on the model in this codebase). */
+    protected function invokeMigrateUserMerge(User $userKeep, User $userToDelete): void
+    {
+        $userKeep->migrateUser($userToDelete);
     }
 
     public function show($id)
@@ -44,6 +49,7 @@ class UserRepository
         if ($user) {
             $user->private_note = null;
         }
+
         // $exitCode = \Artisan::call('test:test', []);
         // \Log::info('Test COMMAND exit' . $exitCode);
         return $user;
@@ -69,6 +75,7 @@ class UserRepository
     {
         return User::where($key, $value)->first();
     }
+
     public function searchUsers($name)
     {
 
@@ -91,8 +98,8 @@ class UserRepository
     public function index($user, $search_text = null)
     {
         $users = User::where('active', true)
-                     ->where('banned', false)
-                     ->where('id', '<>', $user->id);
+            ->where('banned', false)
+            ->where('id', '<>', $user->id);
 
         $users->whereDoesntHave('friends', function ($q) use ($user) {
             $q->where('id', $user->id);
@@ -143,7 +150,7 @@ class UserRepository
 
     public function friendList($user)
     {
-        $user->friends();
+        return $user->friends()->get();
     }
 
     public function storeResetToken($user, $token)
@@ -176,11 +183,11 @@ class UserRepository
 
     public function getNotifications($user, $unread = false)
     {
-        if (! $readed) {
-            return $user->notifications;
-        } else {
+        if ($unread) {
             return $user->unreadNotifications;
         }
+
+        return $user->notifications;
     }
 
     public function markNotification($notification)
@@ -188,8 +195,8 @@ class UserRepository
         $notification->readed();
     }
 
-
-    public function unansweredConversationOrRequestsByTrip ($userId, $tripId) {
+    public function unansweredConversationOrRequestsByTrip($userId, $tripId)
+    {
         // todas las request que pertenezcan a un viaje mio y que esten pendientes
         $pendingRequests = Passenger::with('trip')
             ->where('trip_id', $tripId)
@@ -205,7 +212,7 @@ class UserRepository
                 $query->where('user_id', $userId);
             })
             ->count();
-        
+
         return $pendingRequests + $unasweredConversations;
     }
 }

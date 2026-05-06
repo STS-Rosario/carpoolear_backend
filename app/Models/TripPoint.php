@@ -13,21 +13,47 @@ class TripPoint extends Model
     {
         return \Database\Factories\TripPointFactory::new();
     }
+
     protected $table = 'trips_points';
 
-    protected $fillable = [
-        'address', 'json_address', 'lat', 'lng', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng', 'trip_id',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'address',
+            'json_address',
+            'lat',
+            'lng',
+            'sin_lat',
+            'sin_lng',
+            'cos_lat',
+            'cos_lng',
+            'trip_id',
+        ];
+    }
 
-    protected $hidden = [
-        'created_at', 'updated_at', 'sin_lat', 'sin_lng', 'cos_lat', 'cos_lng',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getHidden(): array
+    {
+        return [
+            'created_at',
+            'updated_at',
+            'sin_lat',
+            'sin_lng',
+            'cos_lat',
+            'cos_lng',
+        ];
+    }
 
     protected function casts(): array
     {
         return [
             'json_address' => 'array',
-            'is_passenger' => 'boolean'
+            'is_passenger' => 'boolean',
         ];
     }
 

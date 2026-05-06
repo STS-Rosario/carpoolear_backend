@@ -63,4 +63,45 @@ class HeicToJpegConverterTest extends TestCase
             $this->assertNull($result);
         }
     }
+
+    public function test_heic_extension_with_non_heic_mime_does_not_convert(): void
+    {
+        $file = UploadedFile::fake()->create('photo.heic', 100, 'application/octet-stream');
+        $result = $this->converter->convert($file);
+
+        $this->assertNull($result);
+    }
+
+    public function test_create_valid_heic_file_returns_expected_shape_or_null_when_unavailable(): void
+    {
+        $file = HeicToJpegConverter::createValidHeicFile();
+
+        if ($file === null) {
+            $this->assertNull($file);
+
+            return;
+        }
+
+        $this->assertSame('image/heic', $file->getMimeType());
+        $this->assertSame('heic', strtolower($file->getClientOriginalExtension()));
+        $this->assertFileExists($file->getRealPath());
+    }
+
+    public function test_is_available_reports_boolean_and_matches_real_conversion_capability(): void
+    {
+        $available = HeicToJpegConverter::isAvailable();
+        $this->assertIsBool($available);
+
+        $file = HeicToJpegConverter::createValidHeicFile();
+        if ($file === null) {
+            $this->assertFalse($available);
+
+            return;
+        }
+
+        $result = $this->converter->convert($file);
+        @unlink($file->getRealPath());
+
+        $this->assertSame($result !== null && $result !== '', $available);
+    }
 }

@@ -38,11 +38,11 @@ class ConversationRepository
     public function getConversationFromId($conversation_id, ?User $user = null)
     {
         $conversation = Conversation::where('id', $conversation_id)->first();
-        if ($conversation == null) {
+        if ($conversation === null) {
             return; // el viaje no existe;
         }
-        if ($user != null) {
-            if ($conversation->users()->where('user_id', $user->id)->count() == 0) {
+        if ($user !== null) {
+            if (! $conversation->users()->whereKey($user->id)->exists()) {
                 return; // handlear error
             }
         }
@@ -52,9 +52,7 @@ class ConversationRepository
 
     public function getConversationByTripId($tripId, ?User $user = null)
     {
-        $query = Conversation::query()
-            ->where('trip_id', $tripId)
-            ->where('type', Conversation::TYPE_TRIP_CONVERSATION);
+        $query = Conversation::query()->where('trip_id', $tripId);
 
         if ($user !== null) {
             $query->whereHas('users', fn ($q) => $q->whereKey($user->id));
@@ -96,7 +94,6 @@ class ConversationRepository
             $query->where('id', $user2ID);
         })->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)->first(); */
 
-        \Log::info('estamos aca');
         /*
 
         select * from `conversations` where exists (

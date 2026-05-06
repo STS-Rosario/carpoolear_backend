@@ -8,9 +8,13 @@ use Illuminate\Support\Facades\Log;
 class MercadoPagoOAuthService
 {
     protected string $clientId;
+
     protected string $clientSecret;
+
     protected string $redirectUri;
+
     protected string $frontendRedirectBase;
+
     protected bool $pkceEnabled;
 
     public function __construct()
@@ -49,7 +53,7 @@ class MercadoPagoOAuthService
         }
 
         $authBase = rtrim(config('services.mercadopago.oauth_auth_url_base', 'https://auth.mercadopago.com'), '/');
-        $url = $authBase . '/authorization?' . http_build_query($params);
+        $url = $authBase.'/authorization?'.http_build_query($params);
 
         if ($this->pkceEnabled) {
             return [
@@ -72,6 +76,7 @@ class MercadoPagoOAuthService
         for ($i = 0; $i < $length; $i++) {
             $verifier .= $chars[random_int(0, strlen($chars) - 1)];
         }
+
         return $verifier;
     }
 
@@ -81,6 +86,7 @@ class MercadoPagoOAuthService
     protected function generateCodeChallenge(string $codeVerifier): string
     {
         $hash = hash('sha256', $codeVerifier, true);
+
         return rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
     }
 
@@ -88,9 +94,10 @@ class MercadoPagoOAuthService
      * Exchange authorization code for access token.
      * Per Mercado Pago API reference: POST with Content-Type: application/json and body with client_id, client_secret, code, grant_type, redirect_uri; optional code_verifier when PKCE.
      *
-     * @param string $code Authorization code from redirect
-     * @param string|null $codeVerifier PKCE code_verifier (required if app has PKCE enabled)
+     * @param  string  $code  Authorization code from redirect
+     * @param  string|null  $codeVerifier  PKCE code_verifier (required if app has PKCE enabled)
      * @return array{access_token?: string, refresh_token?: string} Response from MP
+     *
      * @throws \Exception
      */
     public function exchangeCodeForToken(string $code, ?string $codeVerifier = null): array
@@ -110,7 +117,7 @@ class MercadoPagoOAuthService
             ->contentType('application/json')
             ->post('https://api.mercadopago.com/oauth/token', $body);
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('MercadoPago OAuth token exchange failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -118,7 +125,9 @@ class MercadoPagoOAuthService
             throw new \Exception('Failed to exchange code for token');
         }
 
-        return $response->json();
+        $payload = $response->json();
+
+        return is_array($payload) ? $payload : [];
     }
 
     /**
@@ -126,6 +135,7 @@ class MercadoPagoOAuthService
      * Uses api.mercadopago.com/users/me as per plan.
      *
      * @return array identification.type, identification.number, etc.
+     *
      * @throws \Exception
      */
     public function getUserMe(string $accessToken): array
@@ -133,7 +143,7 @@ class MercadoPagoOAuthService
         $response = Http::withToken($accessToken)
             ->get('https://api.mercadopago.com/users/me');
 
-        if (!$response->successful()) {
+        if (! $response->successful()) {
             Log::error('MercadoPago users/me failed', [
                 'status' => $response->status(),
                 'body' => $response->body(),
@@ -141,7 +151,9 @@ class MercadoPagoOAuthService
             throw new \Exception('Failed to get user info from Mercado Pago');
         }
 
-        return $response->json();
+        $payload = $response->json();
+
+        return is_array($payload) ? $payload : [];
     }
 
     /**
@@ -153,6 +165,7 @@ class MercadoPagoOAuthService
             return '';
         }
         $normalized = preg_replace('/[\s.]/', '', $value);
+
         return preg_replace('/\D/', '', $normalized) ?: $normalized;
     }
 
@@ -161,7 +174,7 @@ class MercadoPagoOAuthService
      * - DNI: use the number as-is (normalized).
      * - CUIL/CUIT: number is longer; strip first 2 chars and last char to get the DNI part, then normalize.
      *
-     * @param array $identification Must have 'type' and 'number' (type can be missing, defaults to DNI behaviour).
+     * @param  array  $identification  Must have 'type' and 'number' (type can be missing, defaults to DNI behaviour).
      * @return string Normalized DNI string to compare with user nro_doc.
      */
     public static function extractDniForComparison(array $identification): string
@@ -194,24 +207,36 @@ class MercadoPagoOAuthService
             return '';
         }
         // Prefer intl Normalizer (NFD + strip combining marks) for full Unicode accent support
-        if (class_exists(\Normalizer::class)) {
+        if (extension_loaded('intl') && class_exists(\Normalizer::class)) {
             $decomposed = \Normalizer::normalize($s, \Normalizer::FORM_D);
             if ($decomposed !== false) {
                 $s = preg_replace('/\p{M}/u', '', $decomposed);
             }
         } else {
-            // Fallback: common Latin accents so González matches Gonzalez without intl
-            $accents = [
-                'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a', 'æ' => 'ae',
-                'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
-                'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
-                'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o', 'œ' => 'oe',
-                'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
-                'ý' => 'y', 'ÿ' => 'y', 'ñ' => 'n', 'ç' => 'c',
-            ];
-            $s = strtr($s, $accents);
+            $s = self::normalizeNameAccentFallback($s);
         }
+
         return $s;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function latinAccentMap(): array
+    {
+        return [
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a', 'æ' => 'ae',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o', 'œ' => 'oe',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ý' => 'y', 'ÿ' => 'y', 'ñ' => 'n', 'ç' => 'c',
+        ];
+    }
+
+    private static function normalizeNameAccentFallback(string $s): string
+    {
+        return strtr($s, self::latinAccentMap());
     }
 
     /**
@@ -219,8 +244,8 @@ class MercadoPagoOAuthService
      * MP may return more names (e.g. first_name "Santiago Ignacio"); we accept if the user has at least one first-name
      * part and the full last name. Comparison is case-insensitive with normalized spaces and accent-insensitive.
      *
-     * @param array $me Full /users/me response (first_name, last_name).
-     * @param string $userName Our user's name field.
+     * @param  array  $me  Full /users/me response (first_name, last_name).
+     * @param  string  $userName  Our user's name field.
      * @return bool True if user name matches (e.g. "Santiago Caso" matches first_name "Santiago Ignacio", last_name "Caso").
      */
     public static function nameMatches(array $me, string $userName): bool
@@ -272,6 +297,7 @@ class MercadoPagoOAuthService
             'identification',
             'registration_date',
         ];
+
         return array_intersect_key($me, array_flip($allowed));
     }
 
@@ -280,6 +306,6 @@ class MercadoPagoOAuthService
      */
     public function getFrontendRedirectUrl(string $result): string
     {
-        return $this->frontendRedirectBase . '/setting/identity-validation?result=' . urlencode($result);
+        return $this->frontendRedirectBase.'/setting/identity-validation?result='.urlencode($result);
     }
 }

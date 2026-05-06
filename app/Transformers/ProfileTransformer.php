@@ -2,6 +2,7 @@
 
 namespace STS\Transformers;
 
+use Carbon\Carbon;
 use League\Fractal\TransformerAbstract;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Models\User;
@@ -36,6 +37,11 @@ class ProfileTransformer extends TransformerAbstract
      */
     public function transform(User $user)
     {
+        $lastConnection = $user->last_connection;
+        $lastConnectionSerialized = ($lastConnection instanceof Carbon && $lastConnection->year > 0)
+            ? $lastConnection->toDateTimeString()
+            : '';
+
         $data = [
             'id' => $user->id,
             'name' => $user->name,
@@ -50,14 +56,13 @@ class ProfileTransformer extends TransformerAbstract
             'gender' => $user->gender,
             // 'mobile_phone' => $user->mobile_phone,
             // 'nro_doc' => $user->nro_doc,
-            'last_connection' => $user->last_connection ? $user->last_connection->toDateTimeString() : '',
+            'last_connection' => $lastConnectionSerialized,
             'accounts' => $user->accounts,
             'donations' => $user->donations,
             'has_pin' => intval($user->has_pin),
             'is_member' => intval($user->is_member),
             'banned' => intval($user->banned),
             'active' => intval($user->active),
-            'monthly_donate' => $user->monthly_donate,
             'do_not_alert_request_seat' => intval($user->do_not_alert_request_seat),
             'do_not_alert_accept_passenger' => intval($user->do_not_alert_accept_passenger),
             'do_not_alert_pending_rates' => intval($user->do_not_alert_pending_rates),
@@ -71,7 +76,7 @@ class ProfileTransformer extends TransformerAbstract
             'data_visibility' => $user->data_visibility,
             'references_data' => $user->referencesReceived,
             // Identity validation: exposed to every user (all viewers of the profile)
-            'identity_validated' => (bool) $user->identity_validated,
+            'identity_validated' => $user->identity_validated ? true : false,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
             'identity_validation_type' => $user->identity_validation_type,
         ];

@@ -3,9 +3,10 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
+use STS\Models\NodeGeo;
+use STS\Models\Subscription as SubscriptionModel;
 use STS\Models\Trip;
 use STS\Models\User as UserModel;
-use STS\Models\Subscription as SubscriptionModel;
 
 class SubscriptionsRepository
 {
@@ -31,36 +32,30 @@ class SubscriptionsRepository
 
     public function list(UserModel $user, $active = null)
     {
-        if ($active == null) {
+        if ($active === null) {
             return $user->subscriptions;
-        } else {
-            return $user->subscriptions()->where('state', $active)->get();
         }
+
+        return $user->subscriptions()->where('state', $active)->get();
     }
 
-    public function search ($user, $trip)
+    public function search($user, $trip)
     {
-        if (isset($data['strict'])) {
-            // Por las dudas
-            // $trips = Trip::where(DB::Raw('DATE(trip_date)'), $data['date']);
-            // $trips->orderBy('trip_date');
-        } else {
-            $date_search = $trip->trip_date;
-            $from = $date_search->copy()->startOfDay();
-            $to = $date_search->copy()->endOfDay();
+        $date_search = $trip->trip_date;
+        $from = $date_search->copy()->startOfDay();
+        $to = $date_search->copy()->endOfDay();
 
-            $now = Carbon::now('America/Argentina/Buenos_Aires');
-            if ($from->lte($now)) {
-                $from = $now;
-            }
-            $query = SubscriptionModel::with('user')->where(function ($q) use ($from, $to) {
-                $q->whereNull('trip_date');
-                $q->orWhere(function ($q) use ($from, $to) {
-                    $q->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
-                    $q->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
-                });
-            });
+        $now = Carbon::now('America/Argentina/Buenos_Aires');
+        if ($from->lte($now)) {
+            $from = $now;
         }
+        $query = SubscriptionModel::with('user')->where(function ($q) use ($from, $to) {
+            $q->whereNull('trip_date');
+            $q->orWhere(function ($q) use ($from, $to) {
+                $q->where('trip_date', '>=', date_to_string($from, 'Y-m-d H:i:s'));
+                $q->where('trip_date', '<=', date_to_string($to, 'Y-m-d H:i:s'));
+            });
+        });
 
         $query->where('state', true);
 
@@ -88,7 +83,7 @@ class SubscriptionsRepository
                 break;
         }
 
-        if (!empty($trip->path)) {
+        if (! empty($trip->path)) {
             $query->where(function ($q) use ($trip) {
                 $q->whereRaw("? LIKE CONCAT('%.', from_id, '.', to_id, '.%')", [$trip->path])
                     ->orWhereRaw("? LIKE CONCAT('%.', from_id, '.%.', to_id, '.%')", [$trip->path]);
@@ -131,11 +126,9 @@ class SubscriptionsRepository
             }
         }); */
 
-
         $query->where('is_passenger', $trip->is_passenger);
+
         return $query->get();
-        return [];
-        
     }
 
     private function makeDistance($query, $point, $name)
@@ -152,29 +145,16 @@ class SubscriptionsRepository
         });
     }
 
+    public function getPotentialNode($n1, $n2)
+    {
+        $minLat = min((float) $n1->lat, (float) $n2->lat);
+        $maxLat = max((float) $n1->lat, (float) $n2->lat);
+        $minLng = min((float) $n1->lng, (float) $n2->lng);
+        $maxLng = max((float) $n1->lng, (float) $n2->lng);
 
-
-    public function getPotentialNode ($n1, $n2) {
-        $maxLat = 0;
-        $minLat = 0;
-        $minLng = 0;
-        $maxLng = 0;
-        if ($n1->lat > $n2->lat) {
-            $maxLat = $n1->lat;
-            $minLat = $n2->lat;
-        } else {
-            $maxLat = $n2->lat;
-            $minLat = $n1->lat;
-        }
-        if ($n1->lng > $n2->lng) {
-            $maxLng = $n1->lng;
-            $minLng = $n2->lng;
-        } else {
-            $maxLng = $n2->lng;
-            $minLng = $n1->lng;
-        }
         $query = NodeGeo::whereBetween('lat', [$minLat, $maxLat]);
         $query->whereBetween('lng', [$minLng, $maxLng]);
+
         return $query->first();
     }
 

@@ -3,33 +3,34 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller;
-use STS\Models\Trip;
-use STS\Models\PaymentAttempt;
-use STS\Models\Campaign;
-use STS\Models\CampaignDonation;
-use STS\Models\CampaignReward;
-use STS\Models\ManualIdentityValidation;
-use STS\Services\Logic\TripsManager;
-use STS\Services\Logic\ConversationsManager;
+use Log;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
-use Log;
+use STS\Http\Controllers\Controller;
+use STS\Models\Campaign;
+use STS\Models\CampaignDonation;
+use STS\Models\ManualIdentityValidation;
+use STS\Models\PaymentAttempt;
+use STS\Models\Trip;
+use STS\Services\Logic\ConversationsManager;
+use STS\Services\Logic\TripsManager;
 
 class MercadoPagoWebhookController extends Controller
 {
     protected $tripLogic;
+
     protected $conversationManager;
+
     protected $paymentClient;
 
     public function __construct(TripsManager $tripLogic, ConversationsManager $conversationManager)
     {
         $this->tripLogic = $tripLogic;
         $this->conversationManager = $conversationManager;
-        
+
         // Initialize Mercado Pago SDK
         MercadoPagoConfig::setAccessToken(config('services.mercadopago.access_token'));
-        $this->paymentClient = new PaymentClient();
+        $this->paymentClient = new PaymentClient;
     }
 
     public function handle(Request $request)
@@ -41,7 +42,7 @@ class MercadoPagoWebhookController extends Controller
             'data' => $request->all(),
             'content' => $request->getContent(),
             'headers' => $request->headers->all(),
-            'content_type' => $request->header('Content-Type')
+            'content_type' => $request->header('Content-Type'),
         ]);
 
         \Log::info('MercadoPago webhook received', ['action' => $request->input('action')]);
@@ -57,23 +58,26 @@ class MercadoPagoWebhookController extends Controller
         }
 
         // Verify the request is from Mercado Pago
-        if (!$this->verifyMercadoPagoRequest($request)) {
+        if (! $this->verifyMercadoPagoRequest($request)) {
             Log::error('Invalid MercadoPago webhook request');
+
             return response()->json(['error' => 'Invalid request'], 400);
         }
         Log::info('MercadoPago webhook request verified');
 
         $paymentId = $request->input('data_id');
-        if (!$paymentId) {
+        if (! $paymentId) {
             Log::error('No payment ID in webhook request');
+
             return response()->json(['error' => 'No payment ID'], 400);
         }
         \Log::info('MercadoPago $paymentId', ['payment_id' => $paymentId]);
 
         // Get the payment status from Mercado Pago
         $mpPayment = $this->getMercadoPagoPayment($paymentId);
-        if (!$mpPayment) {
+        if (! $mpPayment) {
             Log::error('Could not fetch payment from MercadoPago', ['payment_id' => $paymentId]);
+
             return response()->json(['error' => 'Could not fetch payment'], 500);
         }
         Log::info('MP WEBHOOK payment', ['payment' => $mpPayment]);
@@ -87,12 +91,13 @@ class MercadoPagoWebhookController extends Controller
 
         // parse external reference to determine payment type
         $decodedReference = $this->parseExternalReference($externalReference);
-        
-        if (!$decodedReference) {
+
+        if (! $decodedReference) {
             Log::error('Failed to parse external reference', ['external_reference' => $externalReference]);
+
             return response()->json(['error' => 'Invalid external reference'], 400);
         }
-        
+
         if (stripos($decodedReference, 'sellado') !== false) {
             return $this->handleTripPayment($mpPayment);
         } elseif (stripos($decodedReference, 'campaña') !== false) {
@@ -100,6 +105,7 @@ class MercadoPagoWebhookController extends Controller
         }
 
         Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
+
         return response()->json(['error' => 'Unknown payment type'], 400);
     }
 
@@ -115,37 +121,40 @@ class MercadoPagoWebhookController extends Controller
             $parts = explode(':', $externalReference, 2);
             if (count($parts) !== 2) {
                 Log::error('Invalid external reference format', ['external_reference' => $externalReference]);
+
                 return null;
             }
-            
+
             $hash = $parts[0];
             $encodedData = $parts[1];
-            
+
             // Verify hash
             $referenceString = base64_decode($encodedData);
             $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
-            $expectedHash = hash('sha256', $referenceString . $salt);
-            
-            if (!hash_equals($hash, $expectedHash)) {
+            $expectedHash = hash('sha256', $referenceString.$salt);
+
+            if (! hash_equals($hash, $expectedHash)) {
                 Log::error('Invalid external reference hash', [
                     'external_reference' => $externalReference,
                     'calculated_hash' => $expectedHash,
-                    'received_hash' => $hash
+                    'received_hash' => $hash,
                 ]);
+
                 return null;
             }
-            
+
             return $referenceString;
         }
-        
+
         // Legacy format (plain text) - return as is
         return $externalReference;
     }
 
     /**
      * Verify webhook signature from MercadoPago.
-     * @param bool $isOrderWebhook True for Orders API (QR), false for Payments API (Checkout Pro / Sellado).
-     *                            Orders API uses data.id in query (lowercased); Payments API uses data_id.
+     *
+     * @param  bool  $isOrderWebhook  True for Orders API (QR), false for Payments API (Checkout Pro / Sellado).
+     *                                Orders API uses data.id in query (lowercased); Payments API uses data_id.
      */
     protected function verifyMercadoPagoRequest(Request $request, bool $isOrderWebhook = false)
     {
@@ -163,12 +172,13 @@ class MercadoPagoWebhookController extends Controller
             $dataId = $request->query('data_id');
         }
 
-        if (!$xSignature || !$xRequestId || !$dataId) {
+        if (! $xSignature || ! $xRequestId || ! $dataId) {
             Log::error('Missing required headers or parameters in webhook request', [
-                'has_signature' => !empty($xSignature),
-                'has_request_id' => !empty($xRequestId),
-                'has_data_id' => !empty($dataId)
+                'has_signature' => ! empty($xSignature),
+                'has_request_id' => ! empty($xRequestId),
+                'has_data_id' => ! empty($dataId),
             ]);
+
             return false;
         }
 
@@ -182,16 +192,17 @@ class MercadoPagoWebhookController extends Controller
             if (count($keyValue) == 2) {
                 $key = trim($keyValue[0]);
                 $value = trim($keyValue[1]);
-                if ($key === "ts") {
+                if ($key === 'ts') {
                     $ts = $value;
-                } elseif ($key === "v1") {
+                } elseif ($key === 'v1') {
                     $hash = $value;
                 }
             }
         }
 
-        if (!$ts || !$hash) {
+        if (! $ts || ! $hash) {
             Log::error('Invalid x-signature format', ['signature' => $xSignature]);
+
             return false;
         }
 
@@ -199,8 +210,9 @@ class MercadoPagoWebhookController extends Controller
         $secret = $isOrderWebhook
             ? config('services.mercadopago.webhook_secret_qr_payment')
             : config('services.mercadopago.webhook_secret');
-        if (!$secret) {
+        if (! $secret) {
             Log::error('Mercado Pago webhook secret not configured');
+
             return false;
         }
 
@@ -211,11 +223,12 @@ class MercadoPagoWebhookController extends Controller
         $calculatedHash = hash_hmac('sha256', $manifest, $secret);
 
         // Compare signatures
-        if (!hash_equals($calculatedHash, $hash)) {
+        if (! hash_equals($calculatedHash, $hash)) {
             Log::error('Invalid webhook signature', [
                 'calculated' => $calculatedHash,
-                'received' => $hash
+                'received' => $hash,
             ]);
+
             return false;
         }
 
@@ -228,9 +241,10 @@ class MercadoPagoWebhookController extends Controller
             \Log::info('MP WEBHOOK fetching payment', ['payment_id' => $paymentId]);
             // Use the SDK client to fetch payment details
             $payment = $this->paymentClient->get($paymentId);
-            
-            if (!$payment) {
+
+            if (! $payment) {
                 Log::error('Payment not found in MercadoPago', ['payment_id' => $paymentId]);
+
                 return null;
             }
 
@@ -249,11 +263,13 @@ class MercadoPagoWebhookController extends Controller
                 'date_last_updated' => $payment->date_last_updated,
             ];
         } catch (\Exception $e) {
+            $apiResponse = method_exists($e, 'getApiResponse') ? $e->getApiResponse() : null;
             Log::error('Error fetching MercadoPago payment', [
                 'payment_id' => $paymentId,
                 'error' => $e->getMessage(),
-                'api_response' => $e->getApiResponse() ? $e->getApiResponse()->getContent() : 'No API response'
+                'api_response' => $apiResponse ? $apiResponse->getContent() : 'No API response',
             ]);
+
             return null;
         }
     }
@@ -262,7 +278,7 @@ class MercadoPagoWebhookController extends Controller
     {
         $oldStatus = $payment->payment_status;
         $newStatus = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
-        
+
         if ($oldStatus === $newStatus) {
             return $newStatus;
         }
@@ -278,7 +294,7 @@ class MercadoPagoWebhookController extends Controller
             'mp_date_created' => $mpPayment['date_created'],
             'mp_date_approved' => $mpPayment['date_approved'],
             'mp_date_updated' => $mpPayment['date_last_updated'],
-            'last_webhook' => now()->toIso8601String()
+            'last_webhook' => now()->toIso8601String(),
         ]);
 
         if ($newStatus === PaymentAttempt::STATUS_COMPLETED) {
@@ -290,7 +306,7 @@ class MercadoPagoWebhookController extends Controller
         Log::info('Payment status updated', [
             'payment_id' => $payment->payment_id,
             'old_status' => $oldStatus,
-            'new_status' => $newStatus
+            'new_status' => $newStatus,
         ]);
 
         return $newStatus;
@@ -317,7 +333,7 @@ class MercadoPagoWebhookController extends Controller
             'cancelled' => PaymentAttempt::STATUS_FAILED,
             'refunded' => PaymentAttempt::STATUS_FAILED,
             'in_mediation' => PaymentAttempt::STATUS_PENDING,
-            'charged_back' => PaymentAttempt::STATUS_FAILED
+            'charged_back' => PaymentAttempt::STATUS_FAILED,
         ];
 
         return $statusMap[$mpStatus] ?? PaymentAttempt::STATUS_PENDING;
@@ -333,7 +349,7 @@ class MercadoPagoWebhookController extends Controller
             'cancelled' => Trip::STATE_PAYMENT_FAILED,
             'refunded' => Trip::STATE_PAYMENT_FAILED,
             'in_mediation' => Trip::STATE_PENDING_PAYMENT,
-            'charged_back' => Trip::STATE_PAYMENT_FAILED
+            'charged_back' => Trip::STATE_PAYMENT_FAILED,
         ];
 
         return $statusMap[$mpStatus] ?? Trip::STATE_PENDING_PAYMENT;
@@ -344,27 +360,29 @@ class MercadoPagoWebhookController extends Controller
         // parse tripId from external reference
         $externalReference = $mpPayment['external_reference'];
         $decodedReference = $this->parseExternalReference($externalReference);
-        
-        if (!$decodedReference) {
+
+        if (! $decodedReference) {
             Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+
             return response()->json(['error' => 'Invalid external reference'], 400);
         }
-        
+
         $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
 
         // get the trip for this payment
         $trip = Trip::where('id', $tripId)->first();
-        if (!$trip) {
+        if (! $trip) {
             Log::error('Trip not found', [
                 'payment_id' => $mpPayment['id'],
                 'external_reference' => $externalReference,
-                'trip_id' => $tripId
+                'trip_id' => $tripId,
             ]);
+
             return response()->json(['error' => 'Trip not found'], 404);
         }
 
         // create the payment attempt in the database
-        $paymentAttempt = new PaymentAttempt();
+        $paymentAttempt = new PaymentAttempt;
         $paymentAttempt->payment_id = $mpPayment['id'];
         $paymentAttempt->payment_status = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
         $paymentAttempt->payment_data = $mpPayment;
@@ -374,7 +392,7 @@ class MercadoPagoWebhookController extends Controller
 
         // Update payment status
         $newStatus = $this->updatePaymentStatus($paymentAttempt, $mpPayment);
-        
+
         // Update trip status based on payment status
         $this->updateTripStatus($trip, $newStatus);
 
@@ -386,17 +404,19 @@ class MercadoPagoWebhookController extends Controller
         // Parse campaign ID, reward ID, user ID and donation ID from external reference
         $externalReference = $mpPayment['external_reference'];
         $decodedReference = $this->parseExternalReference($externalReference);
-        
-        if (!$decodedReference) {
+
+        if (! $decodedReference) {
             Log::error('Failed to parse campaign donation external reference', ['external_reference' => $externalReference]);
+
             return response()->json(['error' => 'Invalid external reference'], 400);
         }
-        
+
         // Parse the decoded reference
         preg_match('/Donación Campaña ID: (\d+); Slug: ([^;]+); Reward ID: (\d+); User ID: ([^;]+); Donation ID: (\d+)/', $decodedReference, $matches);
-        
+
         if (count($matches) !== 6) {
             Log::error('Invalid campaign donation external reference format', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
+
             return response()->json(['error' => 'Invalid external reference format'], 400);
         }
 
@@ -407,12 +427,13 @@ class MercadoPagoWebhookController extends Controller
 
         // Find the existing donation
         $donation = CampaignDonation::find($donationId);
-        if (!$donation) {
+        if (! $donation) {
             Log::error('Campaign donation not found', [
                 'payment_id' => $mpPayment['id'],
                 'donation_id' => $donationId,
-                'external_reference' => $externalReference
+                'external_reference' => $externalReference,
             ]);
+
             return response()->json(['error' => 'Campaign donation not found'], 404);
         }
 
@@ -424,18 +445,19 @@ class MercadoPagoWebhookController extends Controller
                 'donation_campaign_id' => $donation->campaign_id,
                 'donation_reward_id' => $donation->campaign_reward_id,
                 'expected_campaign_id' => $campaignId,
-                'expected_reward_id' => $rewardId
+                'expected_reward_id' => $rewardId,
             ]);
+
             return response()->json(['error' => 'Campaign donation mismatch'], 400);
         }
 
         // Update the donation status based on payment status
         $newStatus = $this->mapMercadoPagoStatusToDonationStatus($mpPayment['status']);
         $donation->status = $newStatus;
-        
+
         // Update payment_id with the actual payment ID
         $donation->payment_id = $mpPayment['id'];
-        
+
         $donation->save();
 
         Log::info('Campaign donation status updated', [
@@ -445,7 +467,7 @@ class MercadoPagoWebhookController extends Controller
             'reward_id' => $rewardId,
             'old_status' => $donation->getOriginal('status'),
             'new_status' => $newStatus,
-            'user_id' => $userId
+            'user_id' => $userId,
         ]);
 
         return response()->json(['status' => 'success']);
@@ -457,14 +479,16 @@ class MercadoPagoWebhookController extends Controller
      */
     protected function handleOrderProcessed(Request $request)
     {
-        if (!$this->verifyMercadoPagoRequest($request, true)) {
+        if (! $this->verifyMercadoPagoRequest($request, true)) {
             Log::error('Invalid MercadoPago order webhook request');
+
             return response()->json(['error' => 'Invalid request'], 400);
         }
 
         $orderData = $request->input('data');
-        if (!$orderData || !isset($orderData['external_reference'])) {
+        if (! $orderData || ! isset($orderData['external_reference'])) {
             Log::error('Invalid order.processed webhook: missing data or external_reference');
+
             return response()->json(['error' => 'Invalid payload'], 400);
         }
 
@@ -478,6 +502,7 @@ class MercadoPagoWebhookController extends Controller
                 'status' => $orderStatus,
                 'status_detail' => $orderStatusDetail,
             ]);
+
             return response()->json(['status' => 'success']);
         }
 
@@ -486,13 +511,14 @@ class MercadoPagoWebhookController extends Controller
             Log::info('Order processed webhook: external_reference not manual_validation', [
                 'external_reference' => $externalReference,
             ]);
+
             return response()->json(['status' => 'success']);
         }
 
         // Get payment ID from first payment in transactions
         $paymentId = null;
         $payments = $orderData['transactions']['payments'] ?? [];
-        if (!empty($payments) && isset($payments[0]['id'])) {
+        if (! empty($payments) && isset($payments[0]['id'])) {
             $paymentId = $payments[0]['id'];
         }
 
@@ -517,21 +543,23 @@ class MercadoPagoWebhookController extends Controller
         $requestId = (int) substr($externalReference, strlen($prefix));
         if ($requestId <= 0) {
             Log::error('Invalid manual_validation external reference', ['external_reference' => $externalReference]);
+
             return response()->json(['error' => 'Invalid external reference'], 400);
         }
 
         $validationRequest = ManualIdentityValidation::find($requestId);
-        if (!$validationRequest) {
+        if (! $validationRequest) {
             Log::error('Manual identity validation request not found', [
                 'payment_id' => $mpPayment['id'],
                 'request_id' => $requestId,
             ]);
+
             return response()->json(['error' => 'Request not found'], 404);
         }
 
         $status = $mpPayment['status'] ?? '';
         if ($status === 'approved') {
-            if (!$validationRequest->paid) {
+            if (! $validationRequest->paid) {
                 $validationRequest->paid = true;
                 $validationRequest->paid_at = now();
                 $validationRequest->payment_id = (string) $mpPayment['id'];
@@ -557,9 +585,9 @@ class MercadoPagoWebhookController extends Controller
             'cancelled' => 'failed',
             'refunded' => 'failed',
             'in_mediation' => 'pending',
-            'charged_back' => 'failed'
+            'charged_back' => 'failed',
         ];
 
         return $statusMap[$mpStatus] ?? 'pending';
     }
-} 
+}

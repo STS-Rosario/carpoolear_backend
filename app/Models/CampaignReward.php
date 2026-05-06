@@ -8,26 +8,54 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CampaignReward extends Model
 {
-    protected $fillable = [
-        'campaign_id',
-        'title',
-        'description',
-        'donation_amount_cents',
-        'quantity_available',
-        'is_active'
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'campaign_id',
+            'title',
+            'description',
+            'donation_amount_cents',
+            'quantity_available',
+            'is_active',
+        ];
+    }
 
-    protected $casts = [
-        'donation_amount_cents' => 'integer',
-        'quantity_available' => 'integer',
-        'is_active' => 'boolean'
-    ];
+    protected function casts(): array
+    {
+        return [
+            'donation_amount_cents' => 'integer',
+            'quantity_available' => 'integer',
+            'is_active' => 'boolean',
+        ];
+    }
 
-    protected $appends = [
-        'donation_amount',
-        'is_sold_out',
-        'quantity_remaining'
-    ];
+    public function getAppends(): array
+    {
+        return [
+            'donation_amount',
+            'is_sold_out',
+            'quantity_remaining',
+        ];
+    }
+
+    public function hasAppended($attribute): bool
+    {
+        return in_array($attribute, $this->getAppends(), true);
+    }
+
+    protected function getArrayableAppends()
+    {
+        $appends = $this->getAppends();
+
+        $keys = count($appends) === 0
+            ? []
+            : array_combine($appends, $appends);
+
+        return $this->getArrayableItems($keys);
+    }
 
     public function campaign(): BelongsTo
     {
@@ -51,6 +79,7 @@ class CampaignReward extends Model
         }
 
         $soldQuantity = $this->donations()->where('status', 'paid')->count();
+
         return $soldQuantity >= $this->quantity_available;
     }
 
@@ -61,6 +90,7 @@ class CampaignReward extends Model
         }
 
         $soldQuantity = $this->donations()->where('status', 'paid')->count();
+
         return max(0, $this->quantity_available - $soldQuantity);
     }
-} 
+}

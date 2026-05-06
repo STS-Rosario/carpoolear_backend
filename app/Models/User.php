@@ -18,57 +18,65 @@ class User extends Authenticatable implements JWTSubject
 
     protected $table = 'users';
 
-    const FRIEND_REQUEST = 0;
+    const FRIEND_REQUEST = 0; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const FRIEND_ACCEPTED = 1;
+    const FRIEND_ACCEPTED = 1; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const FRIEND_REJECT = 2;
+    const FRIEND_REJECT = 2; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const FRIENDSHIP_SYSTEM = 0;
+    const FRIENDSHIP_SYSTEM = 0; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    const FRIENDSHIP_FACEBOOK = 1;
+    const FRIENDSHIP_FACEBOOK = 1; // @pest-mutate-ignore:DecrementInteger,IncrementInteger
 
-    protected $fillable = [
-        'name',
-        'username',
-        'email',
-        'password',
-        'terms_and_conditions',
-        'birthday',
-        'gender',
-        'banned',
-        'nro_doc',
-        'description',
-        'private_note',
-        'mobile_phone',
-        'image',
-        'active',
-        'activation_token',
-        'emails_notifications',
-        'last_connection',
-        'has_pin',
-        'is_member',
-        'monthly_donate',
-        'unaswered_messages_limit',
-        'do_not_alert_request_seat',
-        'do_not_alert_accept_passenger',
-        'do_not_alert_pending_rates',
-        'do_not_alert_pricing',
-        'autoaccept_requests',
-        'on_boarding_view',
-        'driver_is_verified',
-        'driver_data_docs',
-        'account_number',
-        'account_type',
-        'account_bank',
-        'data_visibility',
-        'identity_validated',
-        'identity_validated_at',
-        'identity_validation_type',
-        'identity_validation_rejected_at',
-        'identity_validation_reject_reason',
-        'validate_by_date',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getFillable(): array
+    {
+        return [
+            'name',
+            'username',
+            'email',
+            'password',
+            'terms_and_conditions',
+            'birthday',
+            'gender',
+            'banned',
+            'nro_doc',
+            'description',
+            'private_note',
+            'mobile_phone',
+            'phone_verified',
+            'phone_verified_at',
+            'image',
+            'active',
+            'activation_token',
+            'emails_notifications',
+            'last_connection',
+            'has_pin',
+            'is_member',
+            'monthly_donate',
+            'unaswered_messages_limit',
+            'do_not_alert_request_seat',
+            'do_not_alert_accept_passenger',
+            'do_not_alert_pending_rates',
+            'do_not_alert_pricing',
+            'autoaccept_requests',
+            'on_boarding_view',
+            'driver_is_verified',
+            'driver_data_docs',
+            'account_number',
+            'account_type',
+            'account_bank',
+            'data_visibility',
+            'identity_validated',
+            'identity_validated_at',
+            'identity_validation_type',
+            'identity_validation_rejected_at',
+            'identity_validation_reject_reason',
+            'validate_by_date',
+        ];
+    }
 
     protected function casts(): array
     {
@@ -91,21 +99,48 @@ class User extends Authenticatable implements JWTSubject
             'identity_validated_at' => 'datetime',
             'identity_validation_rejected_at' => 'datetime',
             'validate_by_date' => 'date',
+            'phone_verified' => 'boolean',
+            'phone_verified_at' => 'datetime',
         ];
     }
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-        'terms_and_conditions',
-        'private_note',
-    ];
+    /**
+     * @return list<string>
+     */
+    public function getHidden(): array
+    {
+        return [
+            'password',
+            'remember_token',
+            'terms_and_conditions',
+            'private_note',
+        ];
+    }
 
-    protected $appends = [
-        'positive_ratings',
-        'negative_ratings',
-        'references',
-    ];
+    public function getAppends(): array
+    {
+        return [
+            'positive_ratings',
+            'negative_ratings',
+            'references',
+        ];
+    }
+
+    public function hasAppended($attribute): bool
+    {
+        return in_array($attribute, $this->getAppends(), true);
+    }
+
+    protected function getArrayableAppends()
+    {
+        $appends = $this->getAppends();
+
+        $keys = count($appends) === 0
+            ? []
+            : array_combine($appends, $appends);
+
+        return $this->getArrayableItems($keys);
+    }
 
     public function getJWTIdentifier()
     {
@@ -198,6 +233,23 @@ class User extends Authenticatable implements JWTSubject
         $donations->where('month', '>=', date('Y-m-01 00:00:00'));
 
         return $donations;
+    }
+
+    /**
+     * Mercado Pago / campaign checkout donations (not monthly donation rows).
+     */
+    public function campaignDonations()
+    {
+        return $this->hasMany(CampaignDonation::class, 'user_id');
+    }
+
+    /**
+     * All legacy monthly donation rows (no calendar-month filter).
+     * Used for lifetime totals such as badge rules.
+     */
+    public function donationRecords()
+    {
+        return $this->hasMany(Donation::class, 'user_id');
     }
 
     public function unreadNotifications()

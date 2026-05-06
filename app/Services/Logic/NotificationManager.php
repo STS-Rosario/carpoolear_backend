@@ -1,8 +1,8 @@
 <?php
 
 namespace STS\Services\Logic;
+
 use STS\Repository\NotificationRepository;
- 
 
 class NotificationManager
 {
@@ -16,9 +16,9 @@ class NotificationManager
     public function getNotifications($user, $data)
     {
         $mark = false;
-        if (isset($data['page']) && isset($data['page_size'])) {
-            $pageNumber = isset($data['page']) ? $data['page'] : null;
-            $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
+        if (isset($data['page'], $data['page_size'])) {
+            $pageNumber = $data['page'] ?? null;
+            $pageSize = $data['page_size'] ?? null;
             $notifications = $this->repo->getNotifications($user, false, $pageSize, $pageNumber);
         } else {
             $notifications = $this->repo->getNotifications($user, false);
@@ -34,14 +34,14 @@ class NotificationManager
             $texto = $noti->toString();
             $extras = $noti->getExtras();
 
-            $data = [
+            $row = [
                 'id' => $n->id,
-                'readed' => $n->read_at != null,
+                'readed' => $n->read_at !== null,
                 'created_at' => $n->created_at->toDateTimeString(),
                 'text' => $texto,
                 'extras' => $extras,
             ];
-            $response[] = $data; // array_merge($data, $n->attributes());
+            $response[] = $row;
 
             if ($mark) {
                 $this->repo->markAsRead($n);
@@ -60,9 +60,11 @@ class NotificationManager
     {
         $notification = $this->repo->find($user, $id);
         if ($notification) {
-            return $this->repo->delete($notification);
-        } else {
-            return;
+            $this->repo->delete($notification);
+
+            return true;
         }
+
+        return false;
     }
 }

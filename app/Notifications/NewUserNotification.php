@@ -2,18 +2,20 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\MailChannel;
 
 class NewUserNotification extends BaseNotification
 {
-    protected $via = [
-        MailChannel::class,
-    ];
+    public function __construct()
+    {
+        parent::__construct();
+        $this->via = [
+            MailChannel::class,
+        ];
+        $this->force_email = true;
+    }
 
-    public $force_email = true;
-    
     public function toEmail($user)
     {
         $from = $this->getAttribute('from');
@@ -24,7 +26,7 @@ class NewUserNotification extends BaseNotification
             'email_view' => 'create_account',
             'name_app' => config('carpoolear.name_app'),
             'domain' => config('app.url'),
-            'url' => config('app.url').'/app/activate/'.($token ?: '')
+            'url' => config('app.url').'/app/activate/'.($token ?: ''),
         ];
     }
 

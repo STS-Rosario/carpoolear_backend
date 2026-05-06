@@ -1,11 +1,10 @@
 <?php
 
 namespace STS\Transformers;
- 
+
 use League\Fractal\TransformerAbstract;
 use STS\Models\Conversation;
 use STS\Models\Trip;
-use STS\Transformers\TripTransformer;
 
 class ConversationsTransformer extends TransformerAbstract
 {
@@ -28,7 +27,10 @@ class ConversationsTransformer extends TransformerAbstract
             'type' => $conversation->type,
         ];
 
-        $module_module_coordinate_by_message = config('carpoolear.module_coordinate_by_message', false);
+        $module_module_coordinate_by_message = filter_var(
+            config('carpoolear.module_coordinate_by_message'),
+            FILTER_VALIDATE_BOOLEAN
+        );
         if ($module_module_coordinate_by_message) {
             $trip = Trip::find($conversation->trip_id);
             // old client, maybe null

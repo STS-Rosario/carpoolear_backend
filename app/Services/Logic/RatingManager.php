@@ -2,16 +2,16 @@
 
 namespace STS\Services\Logic;
 
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use STS\Events\Rating\PendingRate as PendingEvent;
+use STS\Models\Passenger;
+use STS\Models\Rating;
 use STS\Models\User;
 use STS\Repository\RatingRepository;
 use STS\Repository\TripRepository;
 use Validator;
-use Carbon\Carbon;
-use STS\Models\Rating;
-use STS\Models\Passenger;
-use Illuminate\Database\Eloquent\Collection; 
-use STS\Events\Rating\PendingRate as PendingEvent;
 
 class RatingManager extends BaseManager
 {
@@ -29,7 +29,7 @@ class RatingManager extends BaseManager
     {
         return Validator::make($data, [
             'comment' => 'nullable|string',
-            'rating' => 'required|integer|in:0,1,',
+            'rating' => 'required|integer|in:0,1',
         ]);
     }
 
@@ -40,11 +40,15 @@ class RatingManager extends BaseManager
         } elseif (is_int($userOrHash)) {
             $rate = $this->ratingRepository->getRating($userOrHash, $user_to_id, $trip_id);
         } else {
-            $rate = $this->ratingRepository->findBy('voted_hash', $userOrHash)
-                         ->where('user_to_id', $user_to_id)
-                         ->where('trip_id', $trip_id)
-                         ->where('created_at', '>=', Carbon::Now()->subDays(Rating::RATING_INTERVAL))
-                         ->first();
+            $rate = Rating::query()
+                ->where('voted_hash', $userOrHash)
+                ->where('user_id_to', $user_to_id)
+                ->where('trip_id', $trip_id)
+                ->where('created_at', '>=', Carbon::now()->subDays(Rating::RATING_INTERVAL))
+                ->first();
+        }
+        if (! $rate) {
+            return null;
         }
         if (! $rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
             return $rate;
@@ -136,11 +140,12 @@ class RatingManager extends BaseManager
             $passenger_ids_rates_created = [];
 
             foreach ($passengers as $passenger) {
-                $inRatingState = $passenger->request_state == Passenger::STATE_ACCEPTED || $passenger->request_state == Passenger::STATE_CANCELED;
+                $requestState = (int) $passenger->request_state;
+                $inRatingState = $requestState === Passenger::STATE_ACCEPTED || $requestState === Passenger::STATE_CANCELED;
 
                 $canceledButAccepted = true;
-                if ($passenger->request_state == Passenger::STATE_CANCELED) {
-                    if (isset($passenger->canceled_state) && $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
+                if ($requestState === Passenger::STATE_CANCELED) {
+                    if (isset($passenger->canceled_state) && (int) $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
                         $canceledButAccepted = false;
                     }
                 }

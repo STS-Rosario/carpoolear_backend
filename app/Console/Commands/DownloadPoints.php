@@ -3,12 +3,14 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Models\Trip;
 use Illuminate\Console\Command;
+use STS\Models\Trip;
 use STS\Services\GoogleDirection;
 
 class DownloadPoints extends Command
 {
+    protected GoogleDirection $download;
+
     /**
      * The name and signature of the console command.
      *
@@ -26,12 +28,12 @@ class DownloadPoints extends Command
     /**
      * Create a new command instance.
      *
-     * @returnactiveRatings void
+     * @param  GoogleDirection|null  $download  Optional downloader (for tests); defaults to a new instance.
      */
-    public function __construct()
+    public function __construct(?GoogleDirection $download = null)
     {
         parent::__construct();
-        $this->download = new GoogleDirection();
+        $this->download = $download ?? new GoogleDirection;
     }
 
     /**
@@ -41,12 +43,12 @@ class DownloadPoints extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND DownloadPoints");
+        \Log::info('COMMAND DownloadPoints');
         $trips = Trip::where('trip_date', '>=', Carbon::now()->toDateTimeString());
         // $trips->has('points', '=', 0);
         // $trips->limit(1);
         foreach ($trips->get() as $trip) {
-            if ($trip->points->count() == 0) {
+            if ($trip->points->count() === 0) {
                 $this->download->download($trip);
             }
         }

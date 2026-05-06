@@ -15,7 +15,8 @@ class ImageUploadValidator
     {
         $allowedMimes = config('carpoolear.image_upload_allowed_mimes', []);
         $allowedExtensions = config('carpoolear.image_upload_allowed_extensions', []);
-        $maxBytes = (int) config('carpoolear.image_upload_max_bytes', 10 * 1024 * 1024);
+        $maxBytesRaw = config('carpoolear.image_upload_max_bytes');
+        $maxBytes = (int) ($maxBytesRaw ?? 10 * 1024 * 1024);
 
         $mime = $file->getMimeType();
         $extension = strtolower($file->getClientOriginalExtension());
@@ -24,15 +25,15 @@ class ImageUploadValidator
         $errors = [];
 
         if (! in_array($mime, $allowedMimes, true)) {
-            $errors[$field] = ['Invalid image type. Allowed: jpeg, png, webp, heic.'];
+            $errors[$field] = ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'];
         }
 
         if (! in_array($extension, $allowedExtensions, true)) {
-            $errors[$field] = $errors[$field] ?? ['Invalid image type. Allowed: jpeg, png, webp, heic.'];
+            $errors[$field] = $errors[$field] ?? ['Invalid image file extension. Allowed: jpeg, png, webp, heic.'];
         }
 
         if ($size === null || $size > $maxBytes) {
-            $errors[$field] = $errors[$field] ?? ['File too large. Maximum size: ' . ($maxBytes / (1024 * 1024)) . ' MB.'];
+            $errors[$field] = $errors[$field] ?? ['File too large. Maximum size: '.($maxBytes / (1024 * 1024)).' MB.'];
         }
 
         if ($errors !== []) {

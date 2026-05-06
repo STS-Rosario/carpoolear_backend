@@ -110,7 +110,7 @@ class UserController extends Controller
                 $user_phone = $data['mobile_phone'];
                 foreach ($banned_phones as $banned_phone) {
                     if (str_contains($user_phone, $banned_phone)) {
-                        $this->userLogic->update($profile, ['banned' => 1]);
+                        $this->userLogic->update($profile, ['banned' => 1], false, true);
                         \Log::info('User banned due to phone number containing banned number: '.$user_phone.' (matched: '.$banned_phone.')');
                         break;
                     }

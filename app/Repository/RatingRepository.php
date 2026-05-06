@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use DB;
 use Carbon\Carbon;
+use DB;
 use STS\Models\Rating as RatingModel;
 
 class RatingRepository
@@ -46,15 +46,11 @@ class RatingRepository
     public function getRatingsCount($user, $data)
     {
         $value = parse_boolean($data['value']);
-        $results = DB::select(DB::raw("SELECT count(*) AS 'count' FROM availables_ratings WHERE user_id_to = :user_id AND rating = :rating"), [
-            'user_id' => $user->id,
-            'rating' => $value,
-        ]);
-        if (count($results) && isset($results[0]->count)) {
-            return $results[0]->count;
-        }
 
-        return 0;
+        return (int) DB::table('availables_ratings')
+            ->where('user_id_to', $user->id)
+            ->where('rating', $value)
+            ->count();
     }
 
     public function getPendingRatings($user)
@@ -111,5 +107,4 @@ class RatingRepository
 
         return DB::select('CALL update_rating_availability (?,?,?,?)', $params);
     }
-
 }

@@ -2,11 +2,11 @@
 
 namespace STS\Console\Commands;
 
-use Illuminate\Console\Command;
-use STS\Models\User;
-use STS\Models\ActiveUsersPerMonth;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use STS\Models\ActiveUsersPerMonth;
+use STS\Models\User;
 
 class CalculateActiveUsersPerMonth extends Command
 {
@@ -34,19 +34,23 @@ class CalculateActiveUsersPerMonth extends Command
     {
         $this->info('Starting active users calculation...');
 
-        // Determine which month to calculate
-        $targetMonth = $this->getTargetMonth();
+        try {
+            $targetMonth = $this->getTargetMonth();
+        } catch (\InvalidArgumentException) {
+            return 1;
+        }
         $this->info("Calculating active users for: {$targetMonth->format('F Y')}");
 
         // Check if data already exists for this month
-        if (!$this->option('force') && $this->dataExistsForMonth($targetMonth)) {
+        if (! $this->option('force') && $this->dataExistsForMonth($targetMonth)) {
             $this->warn("Data already exists for {$targetMonth->format('F Y')}. Use --force to recalculate.");
+
             return 0;
         }
 
         // Calculate active users
         $activeUsersCount = $this->calculateActiveUsers($targetMonth);
-        
+
         $this->info("Found {$activeUsersCount} active users for {$targetMonth->format('F Y')}");
 
         if ($this->option('dry-run')) {
@@ -54,6 +58,7 @@ class CalculateActiveUsersPerMonth extends Command
             $this->line("  Year: {$targetMonth->year}");
             $this->line("  Month: {$targetMonth->month}");
             $this->line("  Value: {$activeUsersCount}");
+
             return 0;
         }
 
@@ -61,6 +66,7 @@ class CalculateActiveUsersPerMonth extends Command
         $this->saveActiveUsersData($targetMonth, $activeUsersCount);
 
         $this->info('Active users calculation completed successfully!');
+
         return 0;
     }
 
@@ -72,26 +78,19 @@ class CalculateActiveUsersPerMonth extends Command
         if ($monthOption = $this->option('month')) {
             try {
                 $targetMonth = Carbon::createFromFormat('Y-m', $monthOption);
-                if (!$targetMonth) {
-                    throw new \Exception('Invalid date format');
-                }
-                
-                // Validate that we're not calculating for current or future months
-                $this->validateTargetMonth($targetMonth);
-                
-                return $targetMonth;
-            } catch (\Exception $e) {
-                $this->error("Invalid month format. Use YYYY-MM (e.g., 2024-01)");
-                exit(1);
+            } catch (\Throwable) {
+                $this->error('Invalid month format. Use YYYY-MM (e.g., 2024-01)');
+                throw new \InvalidArgumentException('Invalid month format');
             }
+
+            $this->validateTargetMonth($targetMonth);
+
+            return $targetMonth;
         }
 
-        // Default to previous month
         $targetMonth = Carbon::now()->subMonth()->startOfMonth();
-        
-        // Validate that we're not calculating for current or future months
         $this->validateTargetMonth($targetMonth);
-        
+
         return $targetMonth;
     }
 
@@ -101,12 +100,12 @@ class CalculateActiveUsersPerMonth extends Command
     protected function validateTargetMonth(Carbon $targetMonth): void
     {
         $currentMonth = Carbon::now()->startOfMonth();
-        
+
         if ($targetMonth->greaterThanOrEqualTo($currentMonth)) {
             $this->error("Cannot calculate active users for current month ({$targetMonth->format('F Y')}) or future months.");
-            $this->line("Current month data is incomplete and future months will always be 0.");
-            $this->line("Please specify a past month or use the default (previous month).");
-            exit(1);
+            $this->line('Current month data is incomplete and future months will always be 0.');
+            $this->line('Please specify a past month or use the default (previous month).');
+            throw new \InvalidArgumentException('Target month must be strictly before the current month');
         }
     }
 
@@ -149,26 +148,27 @@ class CalculateActiveUsersPerMonth extends Command
                 'year' => $month->year,
                 'month' => $month->month,
                 'saved_at' => Carbon::now(),
-                'value' => $count
+                'value' => $count,
             ]);
 
             $this->info("Data saved successfully for {$month->format('F Y')}");
-            
+
             Log::info("Active users calculated for {$month->format('F Y')}: {$count} users");
         } catch (\Illuminate\Database\QueryException $e) {
             // Handle unique constraint violation
             if ($e->getCode() == 23000 && strpos($e->getMessage(), 'unique_year_month') !== false) {
                 $this->warn("Data already exists for {$month->format('F Y')}. This is likely a duplicate run.");
                 Log::warning("Duplicate active users calculation attempted for {$month->format('F Y')}");
+
                 return;
             }
-            
-            $this->error("Database error: " . $e->getMessage());
-            Log::error("Database error in active users calculation: " . $e->getMessage());
+
+            $this->error('Database error: '.$e->getMessage());
+            Log::error('Database error in active users calculation: '.$e->getMessage());
             throw $e;
         } catch (\Exception $e) {
-            $this->error("Failed to save data: " . $e->getMessage());
-            Log::error("Failed to save active users data: " . $e->getMessage());
+            $this->error('Failed to save data: '.$e->getMessage());
+            Log::error('Failed to save active users data: '.$e->getMessage());
             throw $e;
         }
     }

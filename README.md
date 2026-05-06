@@ -96,6 +96,10 @@ You can still run Pint manually anytime:
 
 ## Troubleshooting
 
+### Testing and parallel workers
+
+For local testing commands, coverage usage, and what to do when `artisan test --parallel` appears stuck, see [docs/TESTING_RUNBOOK.md](docs/TESTING_RUNBOOK.md).
+
 ### Production / staging: file cache and `storage` permissions
 
 If logs show `fopen(...storage/framework/cache/data/...)` with `ThrottleRequests` or `FileStore`, PHP (usually `www-data`) cannot write Laravel’s **file** cache under `storage`. See [docs/PRODUCTION_STORAGE_AND_CACHE.md](docs/PRODUCTION_STORAGE_AND_CACHE.md) for diagnosis and the fix (ownership + directory modes). Same steps apply when preparing a staging server.

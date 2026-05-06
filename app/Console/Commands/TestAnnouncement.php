@@ -2,10 +2,9 @@
 
 namespace STS\Console\Commands;
 
-use STS\Models\User;
-use STS\Models\Device;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use STS\Models\User;
 use STS\Services\AnnouncementService;
 
 class TestAnnouncement extends Command
@@ -24,19 +23,6 @@ class TestAnnouncement extends Command
      */
     protected $description = 'Test the announcement system with a single user';
 
-    protected $announcementService;
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct(AnnouncementService $announcementService)
-    {
-        parent::__construct();
-        $this->announcementService = $announcementService;
-    }
-
     /**
      * Execute the console command.
      *
@@ -44,13 +30,14 @@ class TestAnnouncement extends Command
      */
     public function handle()
     {
+        $announcementService = app(AnnouncementService::class);
         $userId = $this->option('user-id');
 
-        $this->info("=== Testing Announcement System ===");
+        $this->info('=== Testing Announcement System ===');
 
         // Get user statistics
-        $stats = $this->announcementService->getUserStats();
-        $this->info("System Statistics:");
+        $stats = $announcementService->getUserStats();
+        $this->info('System Statistics:');
         $this->info("- Total users: {$stats['total_users']}");
         $this->info("- Active users: {$stats['active_users']}");
         $this->info("- Users with devices: {$stats['users_with_devices']}");
@@ -60,21 +47,23 @@ class TestAnnouncement extends Command
         // Test with specific user or find a test user
         if ($userId) {
             $user = User::find($userId);
-            if (!$user) {
+            if (! $user) {
                 $this->error("User with ID {$userId} not found.");
+
                 return;
             }
         } else {
             // Find a user with devices for testing
             $user = User::where('active', true)
-                       ->where('banned', false)
-                       ->whereHas('devices', function($query) {
-                           $query->where('notifications', true);
-                       })
-                       ->first();
+                ->where('banned', false)
+                ->whereHas('devices', function ($query) {
+                    $query->where('notifications', true);
+                })
+                ->first();
 
-            if (!$user) {
-                $this->error("No suitable test user found with active devices.");
+            if (! $user) {
+                $this->error('No suitable test user found with active devices.');
+
                 return;
             }
         }
@@ -89,33 +78,34 @@ class TestAnnouncement extends Command
             $this->line("- Device ID: {$device->device_id}");
             $this->line("  Type: {$device->device_type}");
             $this->line("  Last Activity: {$device->last_activity}");
-            $this->line("  Notifications: " . ($device->notifications ? 'Enabled' : 'Disabled'));
+            $this->line('  Notifications: '.($device->notifications ? 'Enabled' : 'Disabled'));
         }
 
         if ($devices->isEmpty()) {
-            $this->warn("User has no devices with notifications enabled.");
+            $this->warn('User has no devices with notifications enabled.');
+
             return;
         }
 
         // Test notification sending
         $this->info("\nTesting notification sending...");
-        
-        $testMessage = "Test announcement - " . Carbon::now()->format('Y-m-d H:i:s');
+
+        $testMessage = 'Test announcement - '.Carbon::now()->format('Y-m-d H:i:s');
         $testOptions = [
             'title' => 'Test Announcement',
             'external_url' => 'https://carpoolear.com.ar',
         ];
 
-        $result = $this->announcementService->sendToUser($user, $testMessage, $testOptions);
+        $result = $announcementService->sendToUser($user, $testMessage, $testOptions);
 
         if ($result['success']) {
-            $this->info("✓ Test notification sent successfully!");
+            $this->info('✓ Test notification sent successfully!');
             $this->info("Message: {$testMessage}");
             $this->info("Devices: {$result['devices_count']}");
         } else {
-            $this->error("✗ Test notification failed: " . $result['message']);
+            $this->error('✗ Test notification failed: '.$result['message']);
         }
 
         $this->info("\nTest completed!");
     }
-} 
+}

@@ -3,6 +3,7 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use STS\Helpers\OldCordovaAppHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
@@ -58,7 +59,7 @@ class AuthController extends Controller
             'identity_validation_new_users_date', // backend only; profile exposes identity_validation_required_for_user
         ];
         $allConfigs = config('carpoolear');
-        \Log::info('Environment Check:', [
+        Log::info('Environment Check:', [
             'raw_env' => [
                 'MODULE_USER_REQUEST_LIMITED_ENABLED' => env('MODULE_USER_REQUEST_LIMITED_ENABLED'),
                 'MODULE_USER_REQUEST_LIMITED_HOURS_RANGE' => env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE'),
@@ -89,7 +90,7 @@ class AuthController extends Controller
         if ($user) {
             $user_id = $user->id;
         } else {
-            \Log::warning('getConfig called without authenticated user');
+            Log::warning('getConfig called without authenticated user');
         }
 
         $isCordova = OldCordovaAppHelper::isOldCordovaApp();
@@ -190,10 +191,10 @@ class AuthController extends Controller
             $token = JWTAuth::getToken();
             if ($token) {
                 JWTAuth::invalidate($token);
-                \Log::info('JWT token invalidated successfully');
+                Log::info('JWT token invalidated successfully');
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to invalidate JWT token: '.$e->getMessage());
+            Log::error('Failed to invalidate JWT token: '.$e->getMessage());
         }
 
         return response()->json('OK');
@@ -233,7 +234,7 @@ class AuthController extends Controller
                 throw new ExceptionWithErrors('User not found');
             }
         } catch (\Exception $e) {
-            \Log::error('Password reset error: '.$e->getMessage());
+            Log::error('Password reset error: '.$e->getMessage());
 
             // Check if it's a rate limiting error
             if (strpos($e->getMessage(), '450') !== false || strpos($e->getMessage(), 'rate') !== false) {
