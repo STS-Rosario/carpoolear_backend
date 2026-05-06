@@ -42,26 +42,7 @@ class MercadoPagoRejectedValidationController extends Controller
             ->findOrFail($id);
 
         return response()->json([
-            'data' => [
-                'id' => $item->id,
-                'user_id' => $item->user_id,
-                'user_name' => $item->user ? $item->user->name : null,
-                'user_nro_doc' => $item->user ? $item->user->nro_doc : null,
-                'user_email' => $item->user ? $item->user->email : null,
-                'user_identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
-                'reject_reason' => $item->reject_reason,
-                'created_at' => $item->created_at->toDateTimeString(),
-                'mp_payload' => $item->mp_payload,
-                'approved_at' => $item->approved_at ? $item->approved_at->toDateTimeString() : null,
-                'approved_by' => $item->approved_by,
-                'approved_by_name' => $item->approvedBy ? $item->approvedBy->name : null,
-                'review_status' => $item->review_status,
-                'review_note' => $item->review_note,
-                'private_admin_note' => $item->private_admin_note,
-                'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
-                'reviewed_by' => $item->reviewed_by,
-                'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
-            ],
+            'data' => $this->serializeItem($item),
         ]);
     }
 
@@ -109,28 +90,7 @@ class MercadoPagoRejectedValidationController extends Controller
         $item->save();
         $item->load(['user:id,name,nro_doc,email,identity_validated', 'approvedBy:id,name', 'reviewedBy:id,name']);
 
-        $data = [
-            'id' => $item->id,
-            'user_id' => $item->user_id,
-            'user_name' => $item->user ? $item->user->name : null,
-            'user_nro_doc' => $item->user ? $item->user->nro_doc : null,
-            'user_email' => $item->user ? $item->user->email : null,
-            'user_identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
-            'reject_reason' => $item->reject_reason,
-            'created_at' => $item->created_at->toDateTimeString(),
-            'mp_payload' => $item->mp_payload,
-            'approved_at' => $item->approved_at ? $item->approved_at->toDateTimeString() : null,
-            'approved_by' => $item->approved_by,
-            'approved_by_name' => $item->approvedBy ? $item->approvedBy->name : null,
-            'review_status' => $item->review_status,
-            'review_note' => $item->review_note,
-            'private_admin_note' => $item->private_admin_note,
-            'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
-            'reviewed_by' => $item->reviewed_by,
-            'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
-        ];
-
-        return response()->json(['data' => $data]);
+        return response()->json(['data' => $this->serializeItem($item)]);
     }
 
     public function updatePrivateNote(Request $request, int $id): JsonResponse
@@ -154,5 +114,29 @@ class MercadoPagoRejectedValidationController extends Controller
         $request->merge(['action' => 'approve', 'note' => '']);
 
         return $this->review($request, $id);
+    }
+
+    private function serializeItem(MercadoPagoRejectedValidation $item): array
+    {
+        return [
+            'id' => $item->id,
+            'user_id' => $item->user_id,
+            'user_name' => $item->user ? $item->user->name : null,
+            'user_nro_doc' => $item->user ? $item->user->nro_doc : null,
+            'user_email' => $item->user ? $item->user->email : null,
+            'user_identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
+            'reject_reason' => $item->reject_reason,
+            'created_at' => $item->created_at->toDateTimeString(),
+            'mp_payload' => $item->mp_payload,
+            'approved_at' => $item->approved_at ? $item->approved_at->toDateTimeString() : null,
+            'approved_by' => $item->approved_by,
+            'approved_by_name' => $item->approvedBy ? $item->approvedBy->name : null,
+            'review_status' => $item->review_status,
+            'review_note' => $item->review_note,
+            'private_admin_note' => $item->private_admin_note,
+            'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
+            'reviewed_by' => $item->reviewed_by,
+            'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
+        ];
     }
 }
