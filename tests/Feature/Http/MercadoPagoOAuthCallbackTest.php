@@ -265,8 +265,9 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         })->once();
 
         Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: name mismatch'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id;
+            return ($args[0] ?? null) === 'MercadoPago OAuth callback: mismatch'
+                && (int) ($args[1]['user_id'] ?? 0) === $user->id
+                && ($args[1]['reject_reason'] ?? null) === 'name_mismatch';
         })->once();
     }
 
@@ -328,8 +329,9 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         ]);
 
         Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: DNI mismatch'
+            return ($args[0] ?? null) === 'MercadoPago OAuth callback: mismatch'
                 && (int) ($args[1]['user_id'] ?? 0) === $user->id
+                && ($args[1]['reject_reason'] ?? null) === 'dni_mismatch'
                 && ($args[1]['user_dni_normalized'] ?? null) === '30123456'
                 && ($args[1]['mp_dni_normalized'] ?? null) === '30999999';
         })->once();

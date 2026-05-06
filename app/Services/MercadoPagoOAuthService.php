@@ -302,10 +302,12 @@ class MercadoPagoOAuthService
     }
 
     /**
-     * Build frontend redirect URL with result query param.
+     * Build frontend redirect URL with result and optional details.
      */
-    public function getFrontendRedirectUrl(string $result): string
+    public function getFrontendRedirectUrl(string $result, array $details = []): string
     {
-        return $this->frontendRedirectBase.'/setting/identity-validation?result='.urlencode($result);
+        $query = array_merge(['result' => $result], $details);
+
+        return $this->frontendRedirectBase.'/setting/identity-validation?'.http_build_query($query);
     }
 }
