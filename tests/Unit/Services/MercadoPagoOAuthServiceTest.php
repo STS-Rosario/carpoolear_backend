@@ -313,6 +313,24 @@ class MercadoPagoOAuthServiceTest extends TestCase
         );
     }
 
+    public function test_extract_dni_for_comparison_strips_hyphens_and_formatting_before_cuil_slice(): void
+    {
+        $this->assertSame(
+            '25459950',
+            MercadoPagoOAuthService::extractDniForComparison([
+                'type' => 'CUIT',
+                'number' => '27-25459950-1',
+            ])
+        );
+        $this->assertSame(
+            '25459950',
+            MercadoPagoOAuthService::extractDniForComparison([
+                'type' => 'CUIT',
+                'number' => '27254599501',
+            ])
+        );
+    }
+
     public function test_extract_dni_for_comparison_returns_empty_when_number_missing(): void
     {
         $this->assertSame('', MercadoPagoOAuthService::extractDniForComparison(['type' => 'DNI']));
@@ -358,6 +376,60 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertFalse(MercadoPagoOAuthService::nameMatches(['first_name' => '   ', 'last_name' => 'Pérez'], 'Juan Pérez'));
         $this->assertFalse(MercadoPagoOAuthService::nameMatches(['first_name' => 'Ana', 'last_name' => '   '], 'Ana López'));
         $this->assertFalse(MercadoPagoOAuthService::nameMatches($me, 'Santiago Cas'));
+    }
+
+    public function test_name_matches_accepts_real_world_placeholder_last_name_and_extended_first(): void
+    {
+        $me = [
+            'first_name' => 'VICTOR AGUSTIN SORBA',
+            'last_name' => '.-',
+        ];
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Víctor Sorba'));
+    }
+
+    public function test_name_matches_accepts_secondary_first_name_when_user_has_single_last_family_name(): void
+    {
+        $me = [
+            'first_name' => 'Liliana',
+            'last_name' => 'Noemi Hovanyecz',
+        ];
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Liliana Hovanyecz'));
+    }
+
+    public function test_name_matches_accepts_small_mp_first_name_typo_when_tokens_align(): void
+    {
+        $me = [
+            'first_name' => 'Joserina',
+            'last_name' => 'Oliveri',
+        ];
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Josefina Oliveri'));
+    }
+
+    public function test_name_matches_accepts_split_surname_tokenization_from_mp(): void
+    {
+        $me = [
+            'first_name' => 'CASTA O CARLOS DANIEL',
+            'last_name' => 'CASTA O CARLOS DANIEL',
+        ];
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'carlos daniel Castaño'));
+    }
+
+    public function test_name_matches_accepts_subset_of_compound_mp_names(): void
+    {
+        $me = [
+            'first_name' => 'MARISOL DEL',
+            'last_name' => 'VALLE GOMEZ',
+        ];
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Marisol Gomez'));
+    }
+
+    public function test_name_matches_accepts_user_first_and_primary_last_within_multi_part_mp_last_name(): void
+    {
+        $me = [
+            'first_name' => 'Raimar Ermanueli',
+            'last_name' => 'Coelho Dos Santos',
+        ];
+        $this->assertTrue(MercadoPagoOAuthService::nameMatches($me, 'Raimar Coelho'));
     }
 
     public function test_filter_me_payload_for_storage_keeps_only_allowlisted_keys(): void
