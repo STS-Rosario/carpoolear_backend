@@ -15,6 +15,7 @@ use STS\Models\User;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
+use STS\Support\UserSearchFilter;
 use STS\Transformers\ProfileTransformer;
 
 class UserController extends Controller
@@ -54,12 +55,7 @@ class UserController extends Controller
         $query = User::query();
 
         if ($name) {
-            $query->where(function ($q) use ($name) {
-                $q->where('name', 'like', '%'.$name.'%')
-                    ->orWhere('email', 'like', '%'.$name.'%')
-                    ->orWhere('nro_doc', 'like', '%'.$name.'%')
-                    ->orWhere('mobile_phone', 'like', '%'.$name.'%');
-            });
+            UserSearchFilter::apply($query, $name);
         }
 
         $query->orderBy($sort, $direction);
