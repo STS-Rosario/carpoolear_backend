@@ -47,16 +47,14 @@ class SupportReplyTemplateController extends Controller
         return response()->json(['data' => $this->serializeTemplate($template)], Response::HTTP_CREATED);
     }
 
-    public function show(int $id): JsonResponse
+    public function show(SupportReplyTemplate $reply_template): JsonResponse
     {
-        $template = SupportReplyTemplate::query()
-            ->with(['creator:id,name', 'updater:id,name'])
-            ->findOrFail($id);
+        $reply_template->load(['creator:id,name', 'updater:id,name']);
 
-        return response()->json(['data' => $this->serializeTemplate($template)]);
+        return response()->json(['data' => $this->serializeTemplate($reply_template)]);
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(Request $request, SupportReplyTemplate $reply_template): JsonResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|min:1|max:255',
@@ -64,39 +62,36 @@ class SupportReplyTemplateController extends Controller
             'body_markdown' => 'required|string|min:1',
         ]);
 
-        $template = SupportReplyTemplate::query()->findOrFail($id);
         $admin = auth()->user();
 
-        $template->fill([
+        $reply_template->fill([
             'name' => $validated['name'],
             'short_description' => $validated['short_description'] ?? null,
             'body_markdown' => $validated['body_markdown'],
             'updated_by' => $admin->id,
         ]);
-        $template->save();
+        $reply_template->save();
 
-        $template->load(['creator:id,name', 'updater:id,name']);
+        $reply_template->load(['creator:id,name', 'updater:id,name']);
 
-        return response()->json(['data' => $this->serializeTemplate($template)]);
+        return response()->json(['data' => $this->serializeTemplate($reply_template)]);
     }
 
-    public function destroy(int $id): Response
+    public function destroy(SupportReplyTemplate $reply_template): Response
     {
-        $template = SupportReplyTemplate::query()->findOrFail($id);
-        $template->delete();
+        $reply_template->delete();
 
         return response()->noContent();
     }
 
-    public function duplicate(int $id): JsonResponse
+    public function duplicate(SupportReplyTemplate $reply_template): JsonResponse
     {
-        $original = SupportReplyTemplate::query()->findOrFail($id);
         $admin = auth()->user();
 
         $copy = SupportReplyTemplate::create([
-            'name' => $original->name.' (copy)',
-            'short_description' => $original->short_description,
-            'body_markdown' => $original->body_markdown,
+            'name' => $reply_template->name.' (copy)',
+            'short_description' => $reply_template->short_description,
+            'body_markdown' => $reply_template->body_markdown,
             'created_by' => $admin->id,
             'updated_by' => $admin->id,
         ]);

@@ -247,12 +247,8 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
 
-        Route::get('support/reply-templates', [AdminSupportReplyTemplateController::class, 'index']);
-        Route::post('support/reply-templates', [AdminSupportReplyTemplateController::class, 'store']);
-        Route::get('support/reply-templates/{id}', [AdminSupportReplyTemplateController::class, 'show']);
-        Route::put('support/reply-templates/{id}', [AdminSupportReplyTemplateController::class, 'update']);
-        Route::delete('support/reply-templates/{id}', [AdminSupportReplyTemplateController::class, 'destroy']);
-        Route::post('support/reply-templates/{id}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
+        Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
+        Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
