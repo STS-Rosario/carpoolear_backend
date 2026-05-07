@@ -380,10 +380,17 @@ class MercadoPagoOAuthService
                 $userTokens,
                 static fn (string $t): bool => strlen($t) >= 2 || str_contains($mpNorm, $t)
             ));
-            $allMatch = $significant !== []
-                && collect($significant)->every(
-                    static fn (string $t): bool => self::userTokenMatchesMercadoPagoComparable($mpNorm, $t)
-                );
+            $allMatch = false;
+            if ($significant !== []) {
+                $allMatch = true;
+                foreach ($significant as $t) {
+                    if (! self::userTokenMatchesMercadoPagoComparable($mpNorm, $t)) {
+                        $allMatch = false;
+
+                        break;
+                    }
+                }
+            }
 
             if ($allMatch) {
                 return true;
