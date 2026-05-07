@@ -11,6 +11,7 @@ use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as Ad
 use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
 use STS\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
+use STS\Http\Controllers\Api\Admin\UserMigrationController as AdminUserMigrationController;
 use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
@@ -214,6 +215,8 @@ Route::middleware(['api'])->group(function () {
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
         Route::get('users', [AdminUserController::class, 'index']);
+        Route::get('user-migrations', [AdminUserMigrationController::class, 'index']);
+        Route::post('user-migrations', [AdminUserMigrationController::class, 'store']);
         Route::get('users/account-delete-list', [AdminUserController::class, 'accountDeleteList']);
         Route::post('users/account-delete-update', [AdminUserController::class, 'accountDeleteUpdate']);
         Route::get('banned-users', [AdminUserController::class, 'bannedUsersList']);

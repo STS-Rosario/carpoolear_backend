@@ -221,6 +221,7 @@ class UserRepositoryTest extends TestCase
     {
         $this->assertNull($this->repo()->searchUsers(null));
         $this->assertNull($this->repo()->searchUsers(''));
+        $this->assertNull($this->repo()->searchUsers('   '));
 
         $needle = 'SearchNeedleXy'.substr(uniqid('', true), 0, 8);
         User::factory()->count(10)->create(['name' => $needle.' Person']);
@@ -234,9 +235,13 @@ class UserRepositoryTest extends TestCase
         $uByName = User::factory()->create(['name' => 'AlphaNeedleName']);
         $uByEmail = User::factory()->create(['email' => 'needle-email-777@example.com']);
         $uByDoc = User::factory()->create(['nro_doc' => 'DOC-NEEDLE-777']);
-        $uByPhone = User::factory()->create(['mobile_phone' => '+54911-NEEDLE-777']);
+        $phoneDigits = '998877'.str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $uByPhone = User::factory()->create([
+            'mobile_phone' => '+54911-'.$phoneDigits,
+            'nro_doc' => '10000002',
+        ]);
 
-        // Mutation intent: preserve each OR where in searchUsers(name/email/nro_doc/mobile_phone).
+        // Alpha branch: name, email, nro_doc (not mobile_phone).
         $byName = $this->repo()->searchUsers('NeedleName');
         $this->assertCount(1, $byName);
         $this->assertSame($uByName->id, $byName->first()->id);
@@ -249,8 +254,64 @@ class UserRepositoryTest extends TestCase
         $this->assertCount(1, $byDoc);
         $this->assertSame($uByDoc->id, $byDoc->first()->id);
 
-        $byPhone = $this->repo()->searchUsers('NEEDLE-777');
+        // Numeric branch: mobile_phone only (digit-only term).
+        $byPhone = $this->repo()->searchUsers($phoneDigits);
         $this->assertTrue($byPhone->pluck('id')->contains($uByPhone->id));
+    }
+
+    public function test_search_users_numeric_term_matches_user_id_fragment(): void
+    {
+        $u = User::factory()->create(['name' => 'UnrelatedNameForIdSearch']);
+        $idStr = (string) $u->id;
+
+        $rows = $this->repo()->searchUsers($idStr);
+
+        $this->assertTrue($rows->pluck('id')->contains($u->id));
+    }
+
+    public function test_search_users_numeric_term_does_not_match_email_only_substring(): void
+    {
+        $digits = '884422'.str_pad((string) random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+        User::factory()->create([
+            'name' => 'EmailOnlyNumeric',
+            'email' => 'zzz'.$digits.'@only-in-email.example.com',
+            'nro_doc' => '11111111',
+            'mobile_phone' => '0000000000',
+        ]);
+
+        $rows = $this->repo()->searchUsers($digits);
+
+        $this->assertCount(0, $rows);
+    }
+
+    public function test_search_users_alpha_term_matches_name_email_and_nro_doc(): void
+    {
+        $t = 'tok'.substr(preg_replace('/\D/', '', uniqid('', true)), 0, 5);
+        $uName = User::factory()->create(['name' => 'P'.$t.'N']);
+        $uEmail = User::factory()->create(['email' => $t.'@ma.example.com']);
+        $uDoc = User::factory()->create(['nro_doc' => 'X'.$t.'Y']);
+
+        $rows = $this->repo()->searchUsers($t);
+        $ids = $rows->pluck('id');
+
+        $this->assertTrue($ids->contains($uName->id));
+        $this->assertTrue($ids->contains($uEmail->id));
+        $this->assertTrue($ids->contains($uDoc->id));
+    }
+
+    public function test_search_users_alpha_term_does_not_match_mobile_phone_only(): void
+    {
+        $t = 'onlyMobTok'.substr(uniqid('', true), 0, 10);
+        User::factory()->create([
+            'name' => 'PlainJane',
+            'email' => 'pj-'.uniqid('', true).'@example.com',
+            'nro_doc' => '22222222',
+            'mobile_phone' => '+54911_'.$t.'_99',
+        ]);
+
+        $rows = $this->repo()->searchUsers($t);
+
+        $this->assertCount(0, $rows);
     }
 
     public function test_search_users_returns_empty_collection_when_no_matches(): void

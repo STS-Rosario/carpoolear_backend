@@ -7,6 +7,7 @@ use DB;
 use STS\Models\Conversation;
 use STS\Models\Passenger;
 use STS\Models\User;
+use STS\Support\UserSearchFilter;
 
 class UserRepository
 {
@@ -78,15 +79,16 @@ class UserRepository
 
     public function searchUsers($name)
     {
-
-        if ($name) {
-            $users = User::where('name', 'like', '%'.$name.'%');
-            $users->orWhere('email', 'like', '%'.$name.'%');
-            $users->orWhere('nro_doc', 'like', '%'.$name.'%');
-            $users->orWhere('mobile_phone', 'like', '%'.$name.'%');
-        } else {
+        if (! is_string($name)) {
             return null;
         }
+        $term = trim($name);
+        if ($term === '') {
+            return null;
+        }
+
+        $users = User::query();
+        UserSearchFilter::apply($users, $term);
         $users->with(['accounts', 'cars']);
         $users->orderBy('name');
         $users->limit(9);
