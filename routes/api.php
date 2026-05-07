@@ -8,6 +8,7 @@ use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
+use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
 use STS\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use STS\Http\Controllers\Api\v1\AuthController;
@@ -245,6 +246,13 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
+
+        Route::get('support/reply-templates', [AdminSupportReplyTemplateController::class, 'index']);
+        Route::post('support/reply-templates', [AdminSupportReplyTemplateController::class, 'store']);
+        Route::get('support/reply-templates/{id}', [AdminSupportReplyTemplateController::class, 'show']);
+        Route::put('support/reply-templates/{id}', [AdminSupportReplyTemplateController::class, 'update']);
+        Route::delete('support/reply-templates/{id}', [AdminSupportReplyTemplateController::class, 'destroy']);
+        Route::post('support/reply-templates/{id}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');

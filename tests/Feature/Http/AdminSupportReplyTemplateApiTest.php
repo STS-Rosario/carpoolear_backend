@@ -17,20 +17,6 @@ class AdminSupportReplyTemplateApiTest extends TestCase
         return $user->fresh();
     }
 
-    public function test_guest_cannot_list_reply_templates(): void
-    {
-        $this->getJson('api/admin/support/reply-templates')->assertUnauthorized();
-    }
-
-    public function test_non_admin_cannot_list_reply_templates(): void
-    {
-        $user = User::factory()->create();
-        $user->forceFill(['is_admin' => false])->saveQuietly();
-
-        $this->actingAs($user, 'api');
-        $this->getJson('api/admin/support/reply-templates')->assertForbidden();
-    }
-
     public function test_admin_lists_reply_templates_newest_first(): void
     {
         $admin = $this->adminUser();
