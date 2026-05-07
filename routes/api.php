@@ -8,6 +8,7 @@ use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
+use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
 use STS\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use STS\Http\Controllers\Api\v1\AuthController;
@@ -245,6 +246,9 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
+
+        Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
+        Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
