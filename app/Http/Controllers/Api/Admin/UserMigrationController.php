@@ -1,0 +1,87 @@
+<?php
+
+namespace STS\Http\Controllers\Api\Admin;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use STS\Http\Controllers\Controller;
+use STS\Models\UserMigration;
+
+class UserMigrationController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        $perPage = min(max((int) $request->get('per_page', 20), 1), 100);
+
+        $paginator = UserMigration::query()
+            ->with(['admin:id,name'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        $items = collect($paginator->items())->map(function (UserMigration $m) {
+            return [
+                'id' => $m->id,
+                'admin_user_id' => $m->admin_user_id,
+                'admin' => $m->admin ? [
+                    'id' => $m->admin->id,
+                    'name' => $m->admin->name,
+                ] : null,
+                'user_id_kept' => $m->user_id_kept,
+                'user_id_removed' => $m->user_id_removed,
+                'created_at' => $m->created_at?->toAtomString(),
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'data' => $items,
+            'meta' => [
+                'pagination' => [
+                    'current_page' => $paginator->currentPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'total_pages' => $paginator->lastPage(),
+                ],
+            ],
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'user_id_kept' => 'required|integer|exists:users,id',
+            'user_id_removed' => 'required|integer|exists:users,id|different:user_id_kept',
+        ]);
+
+        $keptId = (int) $validated['user_id_kept'];
+        $removedId = (int) $validated['user_id_removed'];
+
+        Artisan::call('user:update', [
+            'original' => (string) $removedId,
+            'new' => (string) $keptId,
+        ]);
+
+        $row = UserMigration::query()->create([
+            'admin_user_id' => (int) $request->user()->id,
+            'user_id_kept' => $keptId,
+            'user_id_removed' => $removedId,
+        ]);
+
+        $row->load('admin:id,name');
+
+        return response()->json([
+            'data' => [
+                'id' => $row->id,
+                'admin_user_id' => $row->admin_user_id,
+                'admin' => $row->admin ? [
+                    'id' => $row->admin->id,
+                    'name' => $row->admin->name,
+                ] : null,
+                'user_id_kept' => $row->user_id_kept,
+                'user_id_removed' => $row->user_id_removed,
+                'created_at' => $row->created_at?->toAtomString(),
+            ],
+        ]);
+    }
+}
