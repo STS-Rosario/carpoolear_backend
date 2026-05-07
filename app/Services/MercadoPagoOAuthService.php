@@ -187,11 +187,12 @@ class MercadoPagoOAuthService
         }
 
         if ($type === 'CUIL' || $type === 'CUIT') {
-            // CUIL/CUIT: ignore first 2 and last 1 character to get the DNI part
-            if (strlen($number) <= 3) {
+            $digits = preg_replace('/\D/', '', $number) ?? '';
+            if (strlen($digits) <= 3) {
                 return '';
             }
-            $number = substr($number, 2, -1);
+            // CUIL/CUIT: strip type + check digits (11) and derive the 8-digit block
+            $number = substr($digits, 2, -1);
         }
 
         return self::normalizeDni($number);
@@ -240,13 +241,112 @@ class MercadoPagoOAuthService
     }
 
     /**
-     * Check if our user's name matches MP's first_name and last_name (avoids false negatives when user omits middle name).
-     * MP may return more names (e.g. first_name "Santiago Ignacio"); we accept if the user has at least one first-name
-     * part and the full last name. Comparison is case-insensitive with normalized spaces and accent-insensitive.
+     * True if the Mercado Pago name part carries no letters or digits (e.g. blank, ".-", "---").
+     */
+    private static function isPlaceholderNamePart(string $s): bool
+    {
+        $s = trim($s);
+
+        return $s !== '' && ! preg_match('/\p{L}|\p{N}/u', $s);
+    }
+
+    /**
+     * Build a single comparable string from MP first_name and last_name, ignoring placeholder last names.
+     */
+    private static function mergeMercadoPagoDisplayName(string $firstName, string $lastName): ?string
+    {
+        $firstName = trim($firstName);
+        $lastName = trim($lastName);
+        $firstPlaceholder = $firstName === '' || self::isPlaceholderNamePart($firstName);
+        $lastPlaceholder = $lastName === '' || self::isPlaceholderNamePart($lastName);
+
+        if ($firstPlaceholder && $lastPlaceholder) {
+            return null;
+        }
+        if (! $firstPlaceholder && ! $lastPlaceholder) {
+            return trim($firstName.' '.$lastName);
+        }
+        if (! $firstPlaceholder) {
+            return $firstName;
+        }
+
+        // Missing first name in MP: do not fall back to last-only (too many false positives).
+        return null;
+    }
+
+    /**
+     * Whether two same-script name tokens are close enough (Mercado Pago typos like "Joserina"/"Josefina").
+     */
+    private static function nameTokensRoughlyEqual(string $a, string $b): bool
+    {
+        if ($a === $b) {
+            return true;
+        }
+
+        $la = strlen($a);
+        $lb = strlen($b);
+        $maxLen = max($la, $lb);
+        if ($maxLen < 5 || $la > 255 || $lb > 255) {
+            return false;
+        }
+
+        $lev = levenshtein($a, $b);
+
+        return $maxLen >= 8 ? $lev <= 2 : $lev <= 1;
+    }
+
+    /**
+     * True if $needle appears as a full word segment in normalized MP name (avoid "cas" ⊆ "caso").
+     */
+    private static function mercadoTokenAppearsAsWord(string $haystackWords, string $needle): bool
+    {
+        if ($needle === '') {
+            return true;
+        }
+
+        return (bool) preg_match(
+            '/(?:^|\s)'.preg_quote($needle, '/').'(?:\s|$)/u',
+            $haystackWords
+        );
+    }
+
+    private static function userTokenMatchesMercadoPagoComparable(string $mpComparableNorm, string $userToken): bool
+    {
+        if ($userToken === '') {
+            return true;
+        }
+        if (self::mercadoTokenAppearsAsWord($mpComparableNorm, $userToken)) {
+            return true;
+        }
+
+        $words = preg_split('/\s+/', $mpComparableNorm, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        foreach ($words as $w) {
+            if ($userToken === $w || self::nameTokensRoughlyEqual($userToken, $w)) {
+                return true;
+            }
+        }
+
+        for ($i = 0, $n = count($words); $i + 1 < $n; $i++) {
+            if (strlen((string) $words[$i + 1]) !== 1) {
+                continue;
+            }
+            $glue = $words[$i].$words[$i + 1];
+            if ($glue !== '' && ($userToken === $glue || self::nameTokensRoughlyEqual($userToken, $glue))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if our user's name matches MP's first_name and last_name.
+     * When DNI already matches, accepts: user tokens all present in the combined MP display name (with typo/glue tolerance),
+     * or the prior rule (user string contains full MP last name and a first-name part). Accent- and case-insensitive.
      *
      * @param  array  $me  Full /users/me response (first_name, last_name).
      * @param  string  $userName  Our user's name field.
-     * @return bool True if user name matches (e.g. "Santiago Caso" matches first_name "Santiago Ignacio", last_name "Caso").
+     * @return bool True when display names are consistent for identity validation.
      */
     public static function nameMatches(array $me, string $userName): bool
     {
@@ -254,23 +354,66 @@ class MercadoPagoOAuthService
         $lastName = trim((string) ($me['last_name'] ?? ''));
         $name = trim((string) $userName);
 
-        if ($firstName === '' || $lastName === '') {
+        if ($name === '') {
+            return false;
+        }
+
+        $mpMerged = self::mergeMercadoPagoDisplayName($firstName, $lastName);
+        if ($mpMerged === null) {
             return false;
         }
 
         $nameNorm = self::normalizeNameForComparison($name);
+        $mpNorm = self::normalizeNameForComparison($mpMerged);
+        if ($nameNorm === '' || $mpNorm === '') {
+            return false;
+        }
+
+        // Only MP ⊇ user as a contiguous string; the reverse would accept "Ana López" vs MP first_name "Ana" only.
+        if (str_contains($mpNorm, $nameNorm)) {
+            return true;
+        }
+
+        $userTokens = preg_split('/\s+/', $nameNorm, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if ($userTokens !== []) {
+            $significant = array_values(array_filter(
+                $userTokens,
+                static fn (string $t): bool => strlen($t) >= 2 || str_contains($mpNorm, $t)
+            ));
+            $allMatch = false;
+            if ($significant !== []) {
+                $allMatch = true;
+                foreach ($significant as $t) {
+                    if (! self::userTokenMatchesMercadoPagoComparable($mpNorm, $t)) {
+                        $allMatch = false;
+
+                        break;
+                    }
+                }
+            }
+
+            if ($allMatch) {
+                return true;
+            }
+        }
+
+        $firstPlaceholder = $firstName === '' || self::isPlaceholderNamePart($firstName);
+        $lastPlaceholder = $lastName === '' || self::isPlaceholderNamePart($lastName);
+        if ($firstPlaceholder || $lastPlaceholder) {
+            return false;
+        }
+
         $firstNorm = self::normalizeNameForComparison($firstName);
         $lastNorm = self::normalizeNameForComparison($lastName);
 
-        // User must contain full last name
         if (! str_contains($nameNorm, $lastNorm)) {
             return false;
         }
 
-        // User must contain full first name, or at least one word from first name (e.g. "Santiago" from "Santiago Ignacio")
         if (str_contains($nameNorm, $firstNorm)) {
             return true;
         }
+
         $firstWords = preg_split('/\s+/', $firstNorm, -1, PREG_SPLIT_NO_EMPTY);
         foreach ($firstWords as $word) {
             if ($word !== '' && str_contains($nameNorm, $word)) {
