@@ -35,7 +35,12 @@ class SupportTicketController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $ticket = SupportTicket::with(['replies.attachments', 'attachments', 'user'])->findOrFail($id);
+        $ticket = SupportTicket::with([
+            'replies.attachments',
+            'replies.user:id,name',
+            'attachments',
+            'user',
+        ])->findOrFail($id);
 
         return response()->json(['data' => $ticket]);
     }
