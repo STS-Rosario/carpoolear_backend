@@ -60,6 +60,23 @@ class SupportTicketController extends Controller
         ]);
 
         $user = auth()->user();
+
+        $existingDuplicate = SupportTicket::query()
+            ->where('user_id', $user->id)
+            ->where('subject', $validated['subject'])
+            ->whereExists(function ($query) use ($validated) {
+                $query->selectRaw('1')
+                    ->from('support_ticket_replies as str')
+                    ->whereColumn('str.ticket_id', 'support_tickets.id')
+                    ->where('str.message_markdown', $validated['message_markdown'])
+                    ->whereRaw('str.id = (select min(s.id) from support_ticket_replies as s where s.ticket_id = support_tickets.id)');
+            })
+            ->orderBy('id')
+            ->first();
+        if ($existingDuplicate) {
+            return response()->json(['data' => $existingDuplicate->fresh()]);
+        }
+
         $ticket = DB::transaction(function () use ($validated, $user) {
             $ticket = SupportTicket::create([
                 'user_id' => $user->id,
