@@ -219,6 +219,30 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame('30123456', $payload['nro_doc']);
     }
 
+    public function test_transform_exposes_created_at_for_admin_viewing_other_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create([
+            'email' => 'with-created-at@example.test',
+            'created_at' => '2024-03-15 12:34:56',
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayHasKey('created_at', $payload);
+        $this->assertSame('2024-03-15 12:34:56', $payload['created_at']);
+    }
+
+    public function test_transform_does_not_expose_created_at_for_non_admin_viewing_other_user(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['data_visibility' => '2']);
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('created_at', $payload);
+    }
+
     public function test_transform_admin_branch_uses_loose_id_equality_for_string_subject_id(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
