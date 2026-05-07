@@ -237,6 +237,31 @@ class SupportTicketApiTest extends TestCase
             ->assertExactJson(['error' => 'Ticket not found']);
     }
 
+    public function test_show_does_not_include_reply_user_for_ticket_owner_so_admin_identity_stays_private(): void
+    {
+        $owner = $this->createUser();
+        $admin = $this->createUser(true);
+
+        $this->actingAs($owner, 'api');
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Need assistance',
+            'message_markdown' => 'Hello support',
+        ])->json(), 'data.id');
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(\STS\Http\Middleware\UserAdmin::class);
+        $this->postJson("api/admin/support/tickets/{$ticketId}/replies", [
+            'message_markdown' => 'Staff answer',
+        ])->assertOk();
+
+        $this->actingAs($owner, 'api');
+        $payload = $this->getJson("api/support/tickets/{$ticketId}")->assertOk()->json('data');
+        $adminReply = collect($payload['replies'])->firstWhere('is_admin', true);
+        $this->assertNotNull($adminReply);
+        $this->assertArrayNotHasKey('user', $adminReply);
+    }
+
     public function test_show_returns_replies_with_nested_attachments_when_present(): void
     {
         $user = $this->createUser();
