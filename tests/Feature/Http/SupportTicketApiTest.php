@@ -360,6 +360,37 @@ class SupportTicketApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_create_returns_existing_ticket_when_subject_and_opening_message_duplicate(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $payload = [
+            'type' => 'contact',
+            'subject' => 'Same title for duplicate check',
+            'message_markdown' => 'Same opening description body.',
+        ];
+
+        $first = $this->postJson('api/support/tickets', $payload);
+        $first->assertOk();
+        $firstId = (int) data_get($first->json(), 'data.id');
+        $this->assertGreaterThan(0, $firstId);
+
+        $beforeTicketCount = SupportTicket::query()->where('user_id', $user->id)->count();
+
+        $second = $this->postJson('api/support/tickets', $payload);
+        $second->assertOk();
+        $this->assertSame($firstId, (int) data_get($second->json(), 'data.id'));
+        $this->assertSame($beforeTicketCount, SupportTicket::query()->where('user_id', $user->id)->count());
+
+        $third = $this->postJson('api/support/tickets', array_merge($payload, [
+            'message_markdown' => 'Different opening body.',
+        ]));
+        $third->assertOk();
+        $this->assertNotSame($firstId, (int) data_get($third->json(), 'data.id'));
+        $this->assertSame($beforeTicketCount + 1, SupportTicket::query()->where('user_id', $user->id)->count());
+    }
+
     public function test_create_persists_created_by_and_last_reply_at(): void
     {
         $user = $this->createUser();
