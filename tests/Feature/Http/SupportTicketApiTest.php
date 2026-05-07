@@ -391,6 +391,25 @@ class SupportTicketApiTest extends TestCase
         $this->assertSame($beforeTicketCount + 1, SupportTicket::query()->where('user_id', $user->id)->count());
     }
 
+    public function test_create_duplicate_detection_is_scoped_to_same_user(): void
+    {
+        $payload = [
+            'type' => 'feedback',
+            'subject' => 'Shared wording subject',
+            'message_markdown' => 'Shared opening text.',
+        ];
+
+        $userA = $this->createUser();
+        $this->actingAs($userA, 'api');
+        $idA = (int) data_get($this->postJson('api/support/tickets', $payload)->json(), 'data.id');
+
+        $userB = $this->createUser();
+        $this->actingAs($userB, 'api');
+        $idB = (int) data_get($this->postJson('api/support/tickets', $payload)->json(), 'data.id');
+
+        $this->assertNotSame($idA, $idB);
+    }
+
     public function test_create_persists_created_by_and_last_reply_at(): void
     {
         $user = $this->createUser();
