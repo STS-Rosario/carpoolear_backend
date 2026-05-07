@@ -94,6 +94,9 @@ class ProfileTransformer extends TransformerAbstract
             $data['email'] = $user->email;
             $data['mobile_phone'] = $user->mobile_phone;
             $data['nro_doc'] = $user->nro_doc;
+            $data['created_at'] = $user->created_at instanceof Carbon
+                ? $user->created_at->toDateTimeString()
+                : null;
             // bank data
             $data['account_number'] = $user->account_number;
             $data['account_type'] = $user->account_type;
