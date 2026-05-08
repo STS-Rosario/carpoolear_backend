@@ -13,6 +13,8 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
+    private const ADMIN_CREATED_TICKET_STATUS = 'Esperando respuesta';
+
     /**
      * @return list<string>
      */
@@ -68,7 +70,7 @@ class SupportTicketController extends Controller
                 'user_id' => (int) $validated['user_id'],
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
-                'status' => 'Open',
+                'status' => self::ADMIN_CREATED_TICKET_STATUS,
                 'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
                 'unread_for_user' => 1,
                 'unread_for_admin' => 0,
