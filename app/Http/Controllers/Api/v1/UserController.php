@@ -174,6 +174,11 @@ class UserController extends Controller
             throw new ExceptionWithErrors('Users not found.', $this->userLogic->getErrors());
         }
 
+        // UserRepository::show masks private_note by default; admins need it in admin edit flows.
+        if ($me && $me->is_admin) {
+            $profile->private_note = User::query()->whereKey($profile->id)->value('private_note');
+        }
+
         // Set validate_by_date for pre-cutoff users on first /users/me when grace days apply and enforcement is on (not optional-only; new users use cutoff, not this date)
         if ($profile->id === $me->id) {
             $days = (int) config('carpoolear.identity_validation_days_for_current_users', 0);
