@@ -237,6 +237,31 @@ class SupportTicketApiTest extends TestCase
             ->assertExactJson(['error' => 'Ticket not found']);
     }
 
+    public function test_show_does_not_include_reply_user_for_ticket_owner_so_admin_identity_stays_private(): void
+    {
+        $owner = $this->createUser();
+        $admin = $this->createUser(true);
+
+        $this->actingAs($owner, 'api');
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Need assistance',
+            'message_markdown' => 'Hello support',
+        ])->json(), 'data.id');
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(\STS\Http\Middleware\UserAdmin::class);
+        $this->postJson("api/admin/support/tickets/{$ticketId}/replies", [
+            'message_markdown' => 'Staff answer',
+        ])->assertOk();
+
+        $this->actingAs($owner, 'api');
+        $payload = $this->getJson("api/support/tickets/{$ticketId}")->assertOk()->json('data');
+        $adminReply = collect($payload['replies'])->firstWhere('is_admin', true);
+        $this->assertNotNull($adminReply);
+        $this->assertArrayNotHasKey('user', $adminReply);
+    }
+
     public function test_show_returns_replies_with_nested_attachments_when_present(): void
     {
         $user = $this->createUser();
@@ -358,6 +383,56 @@ class SupportTicketApiTest extends TestCase
                 UploadedFile::fake()->create('notes.pdf', 12, 'application/pdf'),
             ],
         ])->assertStatus(422);
+    }
+
+    public function test_create_returns_existing_ticket_when_subject_and_opening_message_duplicate(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $payload = [
+            'type' => 'contact',
+            'subject' => 'Same title for duplicate check',
+            'message_markdown' => 'Same opening description body.',
+        ];
+
+        $first = $this->postJson('api/support/tickets', $payload);
+        $first->assertOk();
+        $firstId = (int) data_get($first->json(), 'data.id');
+        $this->assertGreaterThan(0, $firstId);
+
+        $beforeTicketCount = SupportTicket::query()->where('user_id', $user->id)->count();
+
+        $second = $this->postJson('api/support/tickets', $payload);
+        $second->assertOk();
+        $this->assertSame($firstId, (int) data_get($second->json(), 'data.id'));
+        $this->assertSame($beforeTicketCount, SupportTicket::query()->where('user_id', $user->id)->count());
+
+        $third = $this->postJson('api/support/tickets', array_merge($payload, [
+            'message_markdown' => 'Different opening body.',
+        ]));
+        $third->assertOk();
+        $this->assertNotSame($firstId, (int) data_get($third->json(), 'data.id'));
+        $this->assertSame($beforeTicketCount + 1, SupportTicket::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_create_duplicate_detection_is_scoped_to_same_user(): void
+    {
+        $payload = [
+            'type' => 'feedback',
+            'subject' => 'Shared wording subject',
+            'message_markdown' => 'Shared opening text.',
+        ];
+
+        $userA = $this->createUser();
+        $this->actingAs($userA, 'api');
+        $idA = (int) data_get($this->postJson('api/support/tickets', $payload)->json(), 'data.id');
+
+        $userB = $this->createUser();
+        $this->actingAs($userB, 'api');
+        $idB = (int) data_get($this->postJson('api/support/tickets', $payload)->json(), 'data.id');
+
+        $this->assertNotSame($idA, $idB);
     }
 
     public function test_create_persists_created_by_and_last_reply_at(): void

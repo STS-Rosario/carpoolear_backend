@@ -13,6 +13,19 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
+    /**
+     * @return list<string>
+     */
+    private static function ticketDetailRelationships(): array
+    {
+        return [
+            'replies.attachments',
+            'replies.user:id,name',
+            'attachments',
+            'user',
+        ];
+    }
+
     private static function typeDefaultPriorities(): array
     {
         return [
@@ -35,7 +48,7 @@ class SupportTicketController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $ticket = SupportTicket::with(['replies.attachments', 'attachments', 'user'])->findOrFail($id);
+        $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
 
         return response()->json(['data' => $ticket]);
     }

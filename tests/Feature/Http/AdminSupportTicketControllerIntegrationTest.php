@@ -117,6 +117,31 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame('reply.jpg', $replyWithFile['attachments'][0]['original_name']);
     }
 
+    public function test_show_includes_reply_user_with_id_and_name_for_admin_replies(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Respuesta del equipo',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $payload = $this->getJson('api/admin/support/tickets/'.$ticket->id)->assertOk()->json('data');
+        $adminReply = collect($payload['replies'])->firstWhere('is_admin', true);
+        $this->assertNotNull($adminReply);
+        $this->assertIsArray($adminReply['user']);
+        $this->assertSame($admin->id, $adminReply['user']['id']);
+        $this->assertSame($admin->name, $adminReply['user']['name']);
+    }
+
     public function test_reply_without_message_is_unprocessable(): void
     {
         Storage::fake('public');
