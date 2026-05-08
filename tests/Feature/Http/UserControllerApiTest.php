@@ -803,6 +803,22 @@ class UserControllerApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_admin_can_view_private_note_for_target_user_profile(): void
+    {
+        $admin = User::factory()->create(['active' => true, 'banned' => false, 'is_admin' => true]);
+        $target = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'private_note' => 'Admin-only note fixture',
+        ]);
+
+        $this->actingAs($admin, 'api');
+
+        $this->getJson('api/users/'.$target->id)
+            ->assertOk()
+            ->assertJsonPath('data.private_note', 'Admin-only note fixture');
+    }
+
     public function test_update_photo_accepts_base64_profile_payload(): void
     {
         $user = User::factory()->create(['active' => true, 'banned' => false]);
