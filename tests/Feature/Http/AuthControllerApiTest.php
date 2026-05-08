@@ -15,6 +15,7 @@ use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
+use STS\Services\Maintenance\MaintenanceStateService;
 use Tests\TestCase;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -87,7 +88,7 @@ class AuthControllerApiTest extends TestCase
 
     public function test_get_config_reflects_active_maintenance_payload(): void
     {
-        app(\STS\Services\Maintenance\MaintenanceStateService::class)->applyManualActive(
+        app(MaintenanceStateService::class)->applyManualActive(
             true,
             'flexible',
             'DB upgrade',
@@ -105,7 +106,7 @@ class AuthControllerApiTest extends TestCase
         $this->assertSame('DB upgrade', $response->json('maintenance.message'));
         $this->assertNull($response->json('maintenance.ends_at'));
 
-        app(\STS\Services\Maintenance\MaintenanceStateService::class)->applyManualActive(
+        app(MaintenanceStateService::class)->applyManualActive(
             false,
             null,
             null,

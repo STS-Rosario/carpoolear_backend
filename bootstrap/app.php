@@ -3,8 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use STS\Http\Middleware\UserLoggin;
 use STS\Http\Middleware\AuthOptional;
+use STS\Http\Middleware\UserLoggin;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,8 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'update.connection' => \STS\Http\Middleware\UpdateConnection::class,
             'check.userbanned' => \STS\Http\Middleware\CheckUserBanned::class,
-            'throttle'    => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-            'user.admin'  => \STS\Http\Middleware\UserAdmin::class,
+            'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            'user.admin' => \STS\Http\Middleware\UserAdmin::class,
         ]);
 
         $middleware->group('logged', [
@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
             AuthOptional::class,
             \STS\Http\Middleware\UpdateConnection::class,
             \STS\Http\Middleware\CheckUserBanned::class,
+        ]);
+
+        $middleware->appendToGroup('api', [
+            \STS\Http\Middleware\CheckMaintenanceMode::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
