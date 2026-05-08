@@ -6,6 +6,7 @@ use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
 use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
@@ -232,6 +233,17 @@ Route::middleware(['api'])->group(function () {
         Route::get('manual-identity-validations/{id}', [AdminManualIdentityValidationController::class, 'show']);
         Route::post('manual-identity-validations/{id}/review', [AdminManualIdentityValidationController::class, 'review']);
         Route::post('manual-identity-validations/{id}/purge', [AdminManualIdentityValidationController::class, 'purge']);
+
+        Route::prefix('maintenance')->group(function () {
+            Route::get('schedules', [MaintenanceController::class, 'schedulesIndex']);
+            Route::post('schedules', [MaintenanceController::class, 'schedulesStore']);
+            Route::patch('schedules/{schedule}', [MaintenanceController::class, 'schedulesUpdate']);
+            Route::delete('schedules/{schedule}', [MaintenanceController::class, 'schedulesCancel']);
+            Route::get('state', [MaintenanceController::class, 'stateShow']);
+            Route::put('state', [MaintenanceController::class, 'stateUpdate']);
+            Route::get('audit-logs', [MaintenanceController::class, 'auditLogs']);
+        });
+
         // Mercado Pago rejected validations (OAuth validation failures)
         Route::get('mercado-pago-rejected-validations', [AdminMercadoPagoRejectedValidationController::class, 'index']);
         Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
