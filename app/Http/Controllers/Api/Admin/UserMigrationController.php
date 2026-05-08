@@ -118,13 +118,7 @@ class UserMigrationController extends Controller
 
         try {
             $this->userDeletionService->deleteUser($removed);
-
-            AdminActionLog::create([
-                'admin_user_id' => $admin->id,
-                'action' => AdminActionLog::ACTION_USER_DELETE,
-                'target_user_id' => $removedId,
-                'details' => ['source' => 'user_migration'],
-            ]);
+            $this->logAdminAction($admin, $removedId, AdminActionLog::ACTION_USER_DELETE);
 
             return 'deleted';
         } catch (Throwable $e) {
@@ -134,18 +128,24 @@ class UserMigrationController extends Controller
             ]);
 
             $this->anonymizationService->anonymize($removed);
-
-            AdminActionLog::create([
-                'admin_user_id' => $admin->id,
-                'action' => AdminActionLog::ACTION_USER_ANONYMIZE,
-                'target_user_id' => $removedId,
-                'details' => [
-                    'source' => 'user_migration',
-                    'fallback_reason' => $e->getMessage(),
-                ],
+            $this->logAdminAction($admin, $removedId, AdminActionLog::ACTION_USER_ANONYMIZE, [
+                'fallback_reason' => $e->getMessage(),
             ]);
 
             return 'anonymized';
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $extraDetails
+     */
+    private function logAdminAction(User $admin, int $targetUserId, string $action, array $extraDetails = []): void
+    {
+        AdminActionLog::create([
+            'admin_user_id' => $admin->id,
+            'action' => $action,
+            'target_user_id' => $targetUserId,
+            'details' => array_merge(['source' => 'user_migration'], $extraDetails),
+        ]);
     }
 }
