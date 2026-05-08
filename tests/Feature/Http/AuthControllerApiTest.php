@@ -76,6 +76,44 @@ class AuthControllerApiTest extends TestCase
         $this->assertArrayNotHasKey('banner_url', $response->json());
         $this->assertArrayNotHasKey('banner_image', $response->json());
         $this->assertArrayNotHasKey('identity_validation_new_users_date', $response->json());
+        $this->assertArrayHasKey('maintenance', $response->json());
+        $maintenance = $response->json('maintenance');
+        $this->assertFalse($maintenance['enabled']);
+        $this->assertNull($maintenance['mode']);
+        $this->assertNull($maintenance['message']);
+        $this->assertNull($maintenance['ends_at']);
+        $this->assertSame(config('carpoolear.maintenance_admin_path'), $maintenance['admin_path']);
+    }
+
+    public function test_get_config_reflects_active_maintenance_payload(): void
+    {
+        app(\STS\Services\Maintenance\MaintenanceStateService::class)->applyManualActive(
+            true,
+            'flexible',
+            'DB upgrade',
+            null,
+            'manual',
+            null,
+            null
+        );
+
+        $response = $this->getJson('api/config');
+
+        $response->assertOk();
+        $this->assertTrue($response->json('maintenance.enabled'));
+        $this->assertSame('flexible', $response->json('maintenance.mode'));
+        $this->assertSame('DB upgrade', $response->json('maintenance.message'));
+        $this->assertNull($response->json('maintenance.ends_at'));
+
+        app(\STS\Services\Maintenance\MaintenanceStateService::class)->applyManualActive(
+            false,
+            null,
+            null,
+            null,
+            'manual',
+            null,
+            null
+        );
     }
 
     public function test_get_config_uses_cordova_banner_urls_when_old_webview_headers_present(): void
