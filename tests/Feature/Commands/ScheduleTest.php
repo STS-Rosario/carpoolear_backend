@@ -62,6 +62,12 @@ class ScheduleTest extends TestCase
         $this->assertEquals('* * * * *', $event->expression);
     }
 
+    public function test_maintenance_tick_is_scheduled_every_minute()
+    {
+        $event = $this->findEvent('maintenance:tick');
+        $this->assertEquals('* * * * *', $event->expression);
+    }
+
     public function test_messages_email_is_scheduled_every_ten_minutes()
     {
         $event = $this->findEvent('messages:email');
@@ -125,6 +131,7 @@ class ScheduleTest extends TestCase
             'rate:create',
             'trip:remainder',
             'rating:availables',
+            'maintenance:tick',
             'trip:request',
             'trip:visibilityclean',
             'node:buildweights',

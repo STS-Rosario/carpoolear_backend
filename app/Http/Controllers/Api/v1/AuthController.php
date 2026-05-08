@@ -9,6 +9,7 @@ use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
+use STS\Services\Maintenance\MaintenanceStateService;
 use STS\User;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -78,6 +79,15 @@ class AuthController extends Controller
             && config('carpoolear.identity_validation_manual_qr_enabled')
             && ! empty(config('services.mercadopago.qr_payment_access_token'))
             && ! empty(config('carpoolear.qr_payment_pos_external_id'));
+
+        $maintenancePayload = app(MaintenanceStateService::class)->publicPayload();
+        $config->maintenance = (object) [
+            'enabled' => $maintenancePayload['enabled'],
+            'mode' => $maintenancePayload['mode'],
+            'message' => $maintenancePayload['message'],
+            'ends_at' => $maintenancePayload['ends_at'],
+            'admin_path' => config('carpoolear.maintenance_admin_path'),
+        ];
 
         return $config;
     }

@@ -15,6 +15,7 @@ use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
+use STS\Services\Maintenance\MaintenanceStateService;
 use Tests\TestCase;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -76,6 +77,44 @@ class AuthControllerApiTest extends TestCase
         $this->assertArrayNotHasKey('banner_url', $response->json());
         $this->assertArrayNotHasKey('banner_image', $response->json());
         $this->assertArrayNotHasKey('identity_validation_new_users_date', $response->json());
+        $this->assertArrayHasKey('maintenance', $response->json());
+        $maintenance = $response->json('maintenance');
+        $this->assertFalse($maintenance['enabled']);
+        $this->assertNull($maintenance['mode']);
+        $this->assertNull($maintenance['message']);
+        $this->assertNull($maintenance['ends_at']);
+        $this->assertSame(config('carpoolear.maintenance_admin_path'), $maintenance['admin_path']);
+    }
+
+    public function test_get_config_reflects_active_maintenance_payload(): void
+    {
+        app(MaintenanceStateService::class)->applyManualActive(
+            true,
+            'flexible',
+            'DB upgrade',
+            null,
+            'manual',
+            null,
+            null
+        );
+
+        $response = $this->getJson('api/config');
+
+        $response->assertOk();
+        $this->assertTrue($response->json('maintenance.enabled'));
+        $this->assertSame('flexible', $response->json('maintenance.mode'));
+        $this->assertSame('DB upgrade', $response->json('maintenance.message'));
+        $this->assertNull($response->json('maintenance.ends_at'));
+
+        app(MaintenanceStateService::class)->applyManualActive(
+            false,
+            null,
+            null,
+            null,
+            'manual',
+            null,
+            null
+        );
     }
 
     public function test_get_config_uses_cordova_banner_urls_when_old_webview_headers_present(): void

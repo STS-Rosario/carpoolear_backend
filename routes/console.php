@@ -16,6 +16,8 @@ Schedule::command('trip:remainder')->hourly();
 
 Schedule::command('rating:availables')->everyMinute();
 
+Schedule::command('maintenance:tick')->everyMinute();
+
 Schedule::command('trip:request')->dailyAt('12:00')->timezone('America/Argentina/Buenos_Aires');
 
 Schedule::command('trip:request')->dailyAt('19:00')->timezone('America/Argentina/Buenos_Aires');
