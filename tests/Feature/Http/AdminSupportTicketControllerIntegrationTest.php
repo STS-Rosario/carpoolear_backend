@@ -347,6 +347,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
         $this->assertSame($owner->id, (int) $response->json('data.user_id'));
         $this->assertSame('account_verification', $response->json('data.type'));
+        $this->assertSame('Esperando respuesta', $response->json('data.status'));
         $this->assertSame('high', $response->json('data.priority'));
         $this->assertSame(1, (int) $response->json('data.unread_for_user'));
         $this->assertSame(0, (int) $response->json('data.unread_for_admin'));
@@ -355,6 +356,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'user_id' => $owner->id,
             'type' => 'account_verification',
             'subject' => 'Verificacion de cuenta',
+            'status' => 'Esperando respuesta',
             'priority' => 'high',
             'created_by' => $admin->id,
         ]);
