@@ -68,7 +68,7 @@ class SupportTicketController extends Controller
                 'user_id' => (int) $validated['user_id'],
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
-                'status' => 'Open',
+                'status' => 'Esperando respuesta',
                 'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
                 'unread_for_user' => 1,
                 'unread_for_admin' => 0,
