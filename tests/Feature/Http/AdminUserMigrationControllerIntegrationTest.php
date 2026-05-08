@@ -3,9 +3,12 @@
 namespace Tests\Feature\Http;
 
 use STS\Http\Middleware\UserAdmin;
+use STS\Models\AdminActionLog;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Models\UserMigration;
+use STS\Services\Logic\DeviceManager;
+use STS\Services\UserDeletionService;
 use Tests\TestCase;
 
 class AdminUserMigrationControllerIntegrationTest extends TestCase
@@ -110,5 +113,82 @@ class AdminUserMigrationControllerIntegrationTest extends TestCase
             'user_id_kept' => $kept->id,
             'user_id_removed' => $removed->id,
         ]);
+    }
+
+    public function test_store_deletes_removed_user_when_deletion_succeeds(): void
+    {
+        $this->spy(DeviceManager::class);
+
+        $admin = $this->admin();
+        $kept = User::factory()->create();
+        $removed = User::factory()->create();
+        Trip::factory()->create(['user_id' => $removed->id]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.removal_action', 'deleted');
+
+        $this->assertDatabaseMissing('users', ['id' => $removed->id]);
+
+        $this->assertDatabaseHas('admin_action_logs', [
+            'admin_user_id' => $admin->id,
+            'action' => AdminActionLog::ACTION_USER_DELETE,
+            'target_user_id' => $removed->id,
+        ]);
+
+        app(DeviceManager::class)->shouldHaveReceived('logoutAllDevices')->once();
+    }
+
+    public function test_store_falls_back_to_anonymize_when_deletion_throws(): void
+    {
+        $this->spy(DeviceManager::class);
+
+        $this->mock(UserDeletionService::class, function ($mock) {
+            $mock->shouldReceive('deleteUser')->andThrow(new \RuntimeException('cannot delete: foreign key constraint'));
+        });
+
+        $admin = $this->admin();
+        $kept = User::factory()->create();
+        $removed = User::factory()->create([
+            'name' => 'Original Name',
+            'email' => 'original@example.test',
+        ]);
+        Trip::factory()->create(['user_id' => $removed->id]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.removal_action', 'anonymized');
+
+        $this->assertDatabaseHas('users', [
+            'id' => $removed->id,
+            'name' => 'Usuario anónimo',
+            'active' => 0,
+        ]);
+        $this->assertDatabaseMissing('users', [
+            'id' => $removed->id,
+            'email' => 'original@example.test',
+        ]);
+
+        $this->assertDatabaseHas('admin_action_logs', [
+            'admin_user_id' => $admin->id,
+            'action' => AdminActionLog::ACTION_USER_ANONYMIZE,
+            'target_user_id' => $removed->id,
+        ]);
+
+        app(DeviceManager::class)->shouldHaveReceived('logoutAllDevices')->once();
     }
 }
