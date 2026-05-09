@@ -64,6 +64,25 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertLessThan($olderIdx, $newerIdx, 'Higher-id ticket should appear before lower-id (descending order)');
     }
 
+    public function test_index_includes_ticket_owner_user_with_id_and_name(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create(['name' => 'Ticket Owner Person']);
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $indexResponse = $this->getJson('api/admin/support/tickets')->assertOk();
+        $row = collect($indexResponse->json('data'))->firstWhere('id', $ticket->id);
+
+        $this->assertIsArray($row);
+        $this->assertArrayHasKey('user', $row);
+        $this->assertIsArray($row['user']);
+        $this->assertSame($owner->id, (int) $row['user']['id']);
+        $this->assertSame('Ticket Owner Person', $row['user']['name']);
+    }
+
     public function test_show_includes_user_ticket_attachments_and_reply_attachments(): void
     {
         $admin = $this->adminUser();
