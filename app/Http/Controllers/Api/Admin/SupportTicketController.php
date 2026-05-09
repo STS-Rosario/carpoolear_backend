@@ -28,6 +28,14 @@ class SupportTicketController extends Controller
         ];
     }
 
+    /**
+     * @return list<string>
+     */
+    private static function ticketIndexRelationships(): array
+    {
+        return ['user:id,name'];
+    }
+
     private static function typeDefaultPriorities(): array
     {
         return [
@@ -45,7 +53,7 @@ class SupportTicketController extends Controller
     {
         return response()->json([
             'data' => SupportTicket::query()
-                ->with(['user:id,name'])
+                ->with(self::ticketIndexRelationships())
                 ->orderByDesc('id')
                 ->get(),
         ]);
