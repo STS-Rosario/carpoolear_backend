@@ -124,6 +124,13 @@ class SupportTicketController extends Controller
         $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
 
+        if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
+            $ticket->id,
+            $validated['message_markdown'],
+        )) {
+            return response()->json(['error' => 'Duplicate reply'], 422);
+        }
+
         DB::transaction(function () use ($validated, $admin, $ticket) {
             $reply = SupportTicketReply::create([
                 'ticket_id' => $ticket->id,
