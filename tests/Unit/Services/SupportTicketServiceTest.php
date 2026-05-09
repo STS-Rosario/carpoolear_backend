@@ -13,6 +13,30 @@ use Tests\TestCase;
 
 class SupportTicketServiceTest extends TestCase
 {
+    public function test_ticket_already_has_reply_with_message_markdown_detects_existing_body(): void
+    {
+        $user = User::factory()->create();
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $user->id,
+            'type' => 'feedback',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $user->id,
+            'is_admin' => false,
+            'message_markdown' => 'Already posted',
+            'created_by' => $user->id,
+        ]);
+
+        $service = new SupportTicketService;
+
+        $this->assertTrue($service->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, 'Already posted'));
+        $this->assertFalse($service->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, 'New content'));
+    }
+
     public function test_store_reply_attachments_continues_after_invalid_item_and_processes_next_file(): void
     {
         Storage::fake('public');
