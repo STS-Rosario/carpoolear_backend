@@ -134,6 +134,13 @@ class SupportTicketController extends Controller
             return response()->json(['error' => 'Ticket is closed for replies'], 422);
         }
 
+        if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
+            $ticket->id,
+            $validated['message_markdown'],
+        )) {
+            return response()->json(['error' => 'Duplicate reply'], 422);
+        }
+
         DB::transaction(function () use ($validated, $user, $ticket) {
             $reply = SupportTicketReply::create([
                 'ticket_id' => $ticket->id,

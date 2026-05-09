@@ -236,6 +236,33 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ]);
     }
 
+    public function test_reply_returns_422_when_message_duplicates_existing_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+
+        $duplicateBody = 'Exact duplicate message on this thread.';
+        SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => $duplicateBody,
+            'created_by' => $owner->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => $duplicateBody,
+        ])
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Duplicate reply']);
+
+        $this->assertSame(1, SupportTicketReply::query()->where('ticket_id', $ticket->id)->count());
+    }
+
     public function test_reply_returns_success_when_notification_delivery_fails(): void
     {
         $this->mock(NotificationServices::class, function ($mock) {
