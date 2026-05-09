@@ -358,6 +358,27 @@ class SupportTicketApiTest extends TestCase
             ->assertExactJson(['error' => 'Ticket is closed for replies']);
     }
 
+    public function test_reply_returns_422_when_message_duplicates_existing_reply(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $duplicateBody = 'Exact same reply body as before.';
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Duplicate reply test',
+            'message_markdown' => $duplicateBody,
+        ])->json(), 'data.id');
+
+        $this->postJson("api/support/tickets/{$ticketId}/replies", [
+            'message_markdown' => $duplicateBody,
+        ])
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Duplicate reply']);
+
+        $this->assertSame(1, SupportTicketReply::query()->where('ticket_id', $ticketId)->count());
+    }
+
     public function test_create_succeeds_when_attachments_key_is_omitted(): void
     {
         $user = $this->createUser();
