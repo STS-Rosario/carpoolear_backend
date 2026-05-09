@@ -7,11 +7,20 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
+use STS\Models\SupportTicketReply;
 
 class SupportTicketService
 {
     /** Statuses where neither party may add replies via normal flows. */
     private const TERMINAL_USER_REPLY_STATUSES = ['Resuelto', 'Cerrado'];
+
+    public function ticketAlreadyHasReplyWithMessageMarkdown(int $ticketId, string $messageMarkdown): bool
+    {
+        return SupportTicketReply::query()
+            ->where('ticket_id', $ticketId)
+            ->where('message_markdown', $messageMarkdown)
+            ->exists();
+    }
 
     /**
      * Open conversation states: after an admin reply we wait on the ticket owner.
