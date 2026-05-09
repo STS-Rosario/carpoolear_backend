@@ -44,7 +44,10 @@ class SupportTicketController extends Controller
     public function index(): JsonResponse
     {
         return response()->json([
-            'data' => SupportTicket::orderByDesc('id')->get(),
+            'data' => SupportTicket::query()
+                ->with(['user:id,name'])
+                ->orderByDesc('id')
+                ->get(),
         ]);
     }
 
