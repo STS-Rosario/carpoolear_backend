@@ -244,4 +244,26 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $fresh = ManualIdentityValidation::query()->findOrFail($row->id);
         $this->assertNull($fresh->front_image_path);
     }
+
+    public function test_private_note_endpoint_updates_field_and_show_returns_it(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/private-note', [
+            'private_admin_note' => 'Internal follow-up next week.',
+        ])->assertOk()->assertJsonPath('data.private_admin_note', 'Internal follow-up next week.');
+
+        $show = $this->getJson('api/admin/manual-identity-validations/'.$row->id)->assertOk();
+        $this->assertSame('Internal follow-up next week.', $show->json('data.private_admin_note'));
+    }
 }
