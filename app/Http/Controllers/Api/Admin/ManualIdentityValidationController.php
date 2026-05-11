@@ -2,11 +2,11 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManualIdentityValidationController extends Controller
@@ -49,7 +49,7 @@ class ManualIdentityValidationController extends Controller
         $item = ManualIdentityValidation::with('user:id,name,nro_doc', 'reviewedBy:id,name')->findOrFail($id);
 
         $baseUrl = rtrim(config('app.url'), '/');
-        $imageUrl = fn ($type) => $baseUrl . '/api/admin/manual-identity-validations/' . $id . '/image/' . $type;
+        $imageUrl = fn ($type) => $baseUrl.'/api/admin/manual-identity-validations/'.$id.'/image/'.$type;
 
         return response()->json([
             'data' => [
@@ -62,6 +62,7 @@ class ManualIdentityValidationController extends Controller
                 'paid' => $item->paid,
                 'review_status' => $item->review_status,
                 'review_note' => $item->review_note,
+                'private_admin_note' => $item->private_admin_note,
                 'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
                 'reviewed_by' => $item->reviewed_by,
                 'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
@@ -79,7 +80,7 @@ class ManualIdentityValidationController extends Controller
     public function image(int $id, string $type): StreamedResponse|JsonResponse
     {
         $allowed = ['front', 'back', 'selfie'];
-        if (!in_array($type, $allowed, true)) {
+        if (! in_array($type, $allowed, true)) {
             return response()->json(['error' => 'Invalid image type'], 404);
         }
 
@@ -87,11 +88,12 @@ class ManualIdentityValidationController extends Controller
         $pathColumn = $type === 'front' ? 'front_image_path' : ($type === 'back' ? 'back_image_path' : 'selfie_image_path');
         $path = $item->$pathColumn;
 
-        if (!$path || !Storage::disk('local')->exists($path)) {
+        if (! $path || ! Storage::disk('local')->exists($path)) {
             return response()->json(['error' => 'Image not found'], 404);
         }
 
         $mime = Storage::disk('local')->mimeType($path) ?: 'image/jpeg';
+
         return response()->stream(function () use ($path) {
             $stream = Storage::disk('local')->readStream($path);
             if ($stream) {
@@ -116,7 +118,7 @@ class ManualIdentityValidationController extends Controller
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
 
-        if (!$item->paid) {
+        if (! $item->paid) {
             return response()->json(['error' => 'Unpaid request cannot be reviewed'], 422);
         }
 
@@ -149,6 +151,19 @@ class ManualIdentityValidationController extends Controller
         }
 
         return response()->json(['data' => $item->fresh(['user:id,name,nro_doc'])]);
+    }
+
+    public function updatePrivateNote(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'private_admin_note' => 'nullable|string',
+        ]);
+
+        $item = ManualIdentityValidation::findOrFail($id);
+        $item->private_admin_note = $validated['private_admin_note'] ?? null;
+        $item->save();
+
+        return $this->show($id);
     }
 
     /**

@@ -10,7 +10,9 @@ class ManualIdentityValidation extends Model
     protected $table = 'manual_identity_validations';
 
     const REVIEW_STATUS_PENDING = 'pending';
+
     const REVIEW_STATUS_APPROVED = 'approved';
+
     const REVIEW_STATUS_REJECTED = 'rejected';
 
     protected $fillable = [
@@ -26,6 +28,7 @@ class ManualIdentityValidation extends Model
         'reviewed_by',
         'reviewed_at',
         'review_note',
+        'private_admin_note',
         'manual_validation_started_at',
     ];
 
@@ -52,6 +55,6 @@ class ManualIdentityValidation extends Model
 
     public function hasImages(): bool
     {
-        return !empty($this->front_image_path) || !empty($this->back_image_path) || !empty($this->selfie_image_path);
+        return ! empty($this->front_image_path) || ! empty($this->back_image_path) || ! empty($this->selfie_image_path);
     }
 }

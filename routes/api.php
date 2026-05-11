@@ -232,6 +232,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('manual-identity-validations/{id}/image/{type}', [AdminManualIdentityValidationController::class, 'image'])->where('type', 'front|back|selfie');
         Route::get('manual-identity-validations/{id}', [AdminManualIdentityValidationController::class, 'show']);
         Route::post('manual-identity-validations/{id}/review', [AdminManualIdentityValidationController::class, 'review']);
+        Route::post('manual-identity-validations/{id}/private-note', [AdminManualIdentityValidationController::class, 'updatePrivateNote']);
         Route::post('manual-identity-validations/{id}/purge', [AdminManualIdentityValidationController::class, 'purge']);
 
         Route::prefix('maintenance')->group(function () {
