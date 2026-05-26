@@ -141,16 +141,7 @@ class RatingManager extends BaseManager
 
             foreach ($passengers as $passenger) {
                 $requestState = (int) $passenger->request_state;
-                $inRatingState = $requestState === Passenger::STATE_ACCEPTED || $requestState === Passenger::STATE_CANCELED;
-
-                $canceledButAccepted = true;
-                if ($requestState === Passenger::STATE_CANCELED) {
-                    if (isset($passenger->canceled_state) && (int) $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
-                        $canceledButAccepted = false;
-                    }
-                }
-
-                if ($inRatingState && $canceledButAccepted) {
+                if ($requestState === Passenger::STATE_ACCEPTED) {
                     // the passenger could be make more than one trip request
                     if (! in_array($passenger->user->id, $passenger_ids_rates_created)) {
                         $passenger_hash = Str::random(40);
