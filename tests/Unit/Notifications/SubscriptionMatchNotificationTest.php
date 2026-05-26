@@ -64,12 +64,12 @@ class SubscriptionMatchNotificationTest extends TestCase
 
         $push = $notification->toPush(null, null);
         $this->assertSame($expected, $push['message']);
-        $this->assertSame('/trips/', $push['url']);
+        $this->assertSame('/my-trips', $push['url']);
         $this->assertNull($push['extras']['id']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
     }
 
-    public function test_get_extras_and_push_include_expected_payload(): void
+    public function test_get_extras_and_push_send_trip_alerts_to_my_trips(): void
     {
         $trip = Trip::factory()->create();
         $notification = new SubscriptionMatchNotification;
@@ -80,6 +80,6 @@ class SubscriptionMatchNotificationTest extends TestCase
 
         $this->assertSame('subscription', $extras['type']);
         $this->assertSame($trip->id, $push['extras']['id']);
-        $this->assertSame('/trips/'.$trip->id, $push['url']);
+        $this->assertSame('/my-trips', $push['url']);
     }
 }
