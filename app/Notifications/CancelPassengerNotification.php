@@ -20,15 +20,9 @@ class CancelPassengerNotification extends BaseNotification
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
-        $from = $this->getAttribute('from');
-        $isDriver = $this->getAttribute('is_driver');
-        $senderName = $from ? $from->name : __('notifications.someone');
-        $title = $isDriver
-            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
-            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
 
         return [
-            'title' => $title,
+            'title' => $this->message(),
             'email_view' => 'cancel_passenger',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
@@ -38,13 +32,7 @@ class CancelPassengerNotification extends BaseNotification
 
     public function toString()
     {
-        $from = $this->getAttribute('from');
-        $isDriver = $this->getAttribute('is_driver');
-        $senderName = $from ? $from->name : __('notifications.someone');
-
-        return $isDriver
-            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
-            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
+        return $this->message();
     }
 
     public function getExtras()
@@ -61,20 +49,25 @@ class CancelPassengerNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $trip = $this->getAttribute('trip');
-        $from = $this->getAttribute('from');
         $isDriver = $this->getAttribute('is_driver');
-        $senderName = $from ? $from->name : __('notifications.someone');
-        $message = $isDriver
-            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
-            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
 
         return [
-            'message' => $message,
+            'message' => $this->message(),
             'url' => $isDriver ? '/trips/'.($trip ? $trip->id : '') : '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
+    }
+
+    private function message(): string
+    {
+        $from = $this->getAttribute('from');
+        $senderName = $from ? $from->name : __('notifications.someone');
+
+        return $this->getAttribute('is_driver')
+            ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
+            : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
     }
 }
