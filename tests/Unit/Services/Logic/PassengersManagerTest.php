@@ -15,7 +15,9 @@ use STS\Events\Passenger\Request as RequestEvent;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Notifications\CancelPassengerNotification;
 use STS\Services\Logic\PassengersManager;
+use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
 class PassengersManagerTest extends TestCase
@@ -287,6 +289,32 @@ class PassengersManagerTest extends TestCase
         $this->manager()->cancelRequest($trip->id, (string) $passenger->id, $passenger, []);
 
         Event::assertDispatched(CancelEvent::class);
+        $this->assertSame(Passenger::STATE_CANCELED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
+    }
+
+    public function test_cancel_request_passenger_self_cancel_notifies_driver(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->aceptado()->create(['trip_id' => $trip->id, 'user_id' => $passenger->id]);
+
+        $this->mock(NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(3)
+            ->withArgs(function ($notification, $users, $channel) use ($trip, $passenger, $driver) {
+                return $notification instanceof CancelPassengerNotification
+                    && $notification->getAttribute('trip')->is($trip)
+                    && $notification->getAttribute('from')->is($passenger)
+                    && $notification->getAttribute('is_driver') === false
+                    && $notification->getAttribute('canceledState') === Passenger::CANCELED_PASSENGER
+                    && $users instanceof User
+                    && $users->is($driver)
+                    && is_string($channel);
+            });
+
+        $this->manager()->cancelRequest($trip->id, $passenger->id, $passenger, []);
+
         $this->assertSame(Passenger::STATE_CANCELED, (int) Passenger::where('trip_id', $trip->id)->where('user_id', $passenger->id)->value('request_state'));
     }
 

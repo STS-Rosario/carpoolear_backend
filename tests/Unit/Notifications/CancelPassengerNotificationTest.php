@@ -65,6 +65,23 @@ class CancelPassengerNotificationTest extends TestCase
         $this->assertSame($expected, $notification->toPush(null, null)['message']);
     }
 
+    public function test_passenger_left_push_points_driver_to_my_trips(): void
+    {
+        $from = User::factory()->create(['name' => 'Passenger B']);
+        $trip = Trip::factory()->create();
+        $notification = new CancelPassengerNotification;
+        $notification->setAttribute('from', $from);
+        $notification->setAttribute('trip', $trip);
+        $notification->setAttribute('is_driver', false);
+
+        $push = $notification->toPush(null, null);
+        $extras = $notification->getExtras();
+
+        $this->assertSame('/my-trips', $push['url']);
+        $this->assertSame('my-trips', $extras['type']);
+        $this->assertSame($trip->id, $extras['trip_id']);
+    }
+
     public function test_fallbacks_apply_when_sender_and_trip_are_missing(): void
     {
         config(['app.url' => 'https://app.test']);
@@ -79,9 +96,9 @@ class CancelPassengerNotificationTest extends TestCase
 
         $this->assertSame($expected, $email['title']);
         $this->assertSame('https://app.test/app/trips/', $email['url']);
-        $this->assertSame('trip', $extras['type']);
+        $this->assertSame('my-trips', $extras['type']);
         $this->assertNull($extras['trip_id']);
-        $this->assertSame('/trips/', $push['url']);
+        $this->assertSame('/my-trips', $push['url']);
         $this->assertNull($push['extras']['id']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
     }
