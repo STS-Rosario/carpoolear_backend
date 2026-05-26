@@ -406,14 +406,16 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_active_ratings_deduplicates_same_passenger_and_excludes_canceled_request_type(): void
+    public function test_active_ratings_creates_pending_rows_only_for_accepted_passengers(): void
     {
         Event::fake([PendingRateEvent::class]);
         Carbon::setTestNow('2026-11-21 10:00:00');
 
         $driver = User::factory()->create();
         $samePassenger = User::factory()->create();
-        $excludedPassenger = User::factory()->create();
+        $driverCanceledPassenger = User::factory()->create();
+        $waitingPaymentCanceledPassenger = User::factory()->create();
+        $requestCanceledPassenger = User::factory()->create();
 
         $trip = Trip::factory()->create([
             'user_id' => $driver->id,
@@ -434,7 +436,19 @@ class RatingManagerTest extends TestCase
         ]);
         Passenger::factory()->create([
             'trip_id' => $trip->id,
-            'user_id' => $excludedPassenger->id,
+            'user_id' => $driverCanceledPassenger->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_DRIVER,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $waitingPaymentCanceledPassenger->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_PASSENGER_WHILE_PAYING,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $requestCanceledPassenger->id,
             'request_state' => Passenger::STATE_CANCELED,
             'canceled_state' => Passenger::CANCELED_REQUEST,
         ]);
@@ -445,8 +459,12 @@ class RatingManagerTest extends TestCase
         $this->assertCount(2, $ratings);
         $this->assertTrue($ratings->contains(fn ($row) => (int) $row->user_id_from === $driver->id && (int) $row->user_id_to === $samePassenger->id));
         $this->assertTrue($ratings->contains(fn ($row) => (int) $row->user_id_from === $samePassenger->id && (int) $row->user_id_to === $driver->id));
-        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_to === $excludedPassenger->id));
-        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_from === $excludedPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_to === $driverCanceledPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_from === $driverCanceledPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_to === $waitingPaymentCanceledPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_from === $waitingPaymentCanceledPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_to === $requestCanceledPassenger->id));
+        $this->assertFalse($ratings->contains(fn ($row) => (int) $row->user_id_from === $requestCanceledPassenger->id));
 
         Event::assertDispatched(PendingRateEvent::class, 2);
         $this->assertSame(1, (int) $trip->fresh()->mail_send);
