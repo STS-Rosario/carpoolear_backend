@@ -50,7 +50,7 @@ class SubscriptionMatchNotification extends BaseNotification
 
         return [
             'message' => __('notifications.subscription_match.message'),
-            'url' => '/trips/'.($trip ? $trip->id : ''),
+            'url' => '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],
