@@ -118,6 +118,7 @@ class ManualIdentityValidationTest extends TestCase
             'reviewed_by',
             'reviewed_at',
             'review_note',
+            'private_admin_note',
             'manual_validation_started_at',
         ], (new ManualIdentityValidation)->getFillable());
     }

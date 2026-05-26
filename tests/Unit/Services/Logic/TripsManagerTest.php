@@ -67,6 +67,24 @@ class TripsManagerTest extends TestCase
         ], $overrides);
     }
 
+    private function completeUser(array $overrides = []): User
+    {
+        return User::factory()->create(array_merge([
+            'description' => 'Completed test profile',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ], $overrides));
+    }
+
+    private function carWithPlateFor(User $user, array $overrides = []): Car
+    {
+        return Car::factory()->create(array_merge([
+            'user_id' => $user->id,
+            'patente' => 'ABC123',
+        ], $overrides));
+    }
+
     public function test_validator_create_requires_core_fields(): void
     {
         Carbon::setTestNow('2028-01-01 12:00:00');
@@ -164,7 +182,8 @@ class TripsManagerTest extends TestCase
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
         config(['carpoolear.module_validated_drivers' => true]);
-        $user = User::factory()->create(['driver_is_verified' => false]);
+        $user = $this->completeUser(['driver_is_verified' => false]);
+        $this->carWithPlateFor($user);
         $manager = $this->manager();
 
         $result = $manager->create($user, $this->minimalCreatePayload([
@@ -183,7 +202,8 @@ class TripsManagerTest extends TestCase
             'carpoolear.trip_creation_limits.max_trips' => 0,
             'carpoolear.trip_creation_limits.time_window_hours' => 24,
         ]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
         Trip::factory()->create([
             'user_id' => $user->id,
             'trip_date' => Carbon::now()->addDays(1),
@@ -203,7 +223,8 @@ class TripsManagerTest extends TestCase
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
         config(['carpoolear.banned_words_trip_description' => ['whatsapp']]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
         $manager = $this->manager();
 
         $result = $manager->create($user, $this->minimalCreatePayload([
@@ -220,7 +241,8 @@ class TripsManagerTest extends TestCase
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
         config(['carpoolear.banned_phones' => ['1234567890']]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
         $manager = $this->manager();
 
         $result = $manager->create($user, $this->minimalCreatePayload([
@@ -430,7 +452,8 @@ class TripsManagerTest extends TestCase
     public function test_create_aborts_when_get_trip_info_returns_routing_service_unavailable(): void
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
 
         $repo = Mockery::mock(TripRepository::class);
         $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([]));
@@ -481,7 +504,8 @@ class TripsManagerTest extends TestCase
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
         config(['carpoolear.module_validated_drivers' => true]);
-        $user = User::factory()->create(['driver_is_verified' => false]);
+        $user = $this->completeUser(['driver_is_verified' => false]);
+        $this->carWithPlateFor($user);
         $manager = $this->manager();
 
         $payload = $this->minimalCreatePayload(['is_passenger' => '0']);
@@ -499,7 +523,8 @@ class TripsManagerTest extends TestCase
             'carpoolear.trip_creation_limits.max_trips' => 2,
             'carpoolear.trip_creation_limits.time_window_hours' => 24,
         ]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
 
         $repo = Mockery::mock(TripRepository::class);
         $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([1, 2]));
@@ -531,7 +556,8 @@ class TripsManagerTest extends TestCase
             'carpoolear.trip_creation_limits.max_trips' => 2,
             'carpoolear.trip_creation_limits.time_window_hours' => 24,
         ]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
 
         $repo = Mockery::mock(TripRepository::class);
         $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([1, 2, 3]));
@@ -554,7 +580,8 @@ class TripsManagerTest extends TestCase
             'carpoolear.trip_creation_limits.max_trips' => 1,
             'carpoolear.trip_creation_limits.time_window_hours' => 24,
         ]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
 
         $repo = Mockery::mock(TripRepository::class);
         $repo->shouldReceive('getRecentTrips')->andReturn(collect([1, 2]));
@@ -591,7 +618,8 @@ class TripsManagerTest extends TestCase
 
         Carbon::setTestNow('2028-02-01 10:00:00');
         config(['carpoolear.banned_words_trip_description' => ['WhatsApp']]);
-        $user = User::factory()->create(['banned' => 0]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
         $manager = $this->manager();
 
         $result = $manager->create($user, $this->minimalCreatePayload([
@@ -623,8 +651,8 @@ class TripsManagerTest extends TestCase
 
         Carbon::setTestNow('2028-02-01 10:00:00');
         Event::fake([CreateEvent::class]);
-        $user = User::factory()->create();
-        $car = Car::factory()->create(['user_id' => $user->id]);
+        $user = $this->completeUser();
+        $car = $this->carWithPlateFor($user);
         $manager = $this->manager();
 
         $parent = $manager->create($user, $this->minimalCreatePayload([
