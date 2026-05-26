@@ -27,6 +27,11 @@ Generate laravel key
 php artisan key:generate
 ```
 
+Generate JWT secret for API authentication. This writes `JWT_SECRET` to your `.env` file and prevents the `Secret not set` error.
+```bash
+php artisan jwt:secret
+```
+
 Give read/write access to the storage folder
 ```bash
 chmod -R ugo+rw storage/
