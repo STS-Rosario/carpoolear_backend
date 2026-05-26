@@ -11,6 +11,8 @@ use Tests\TestCase;
 
 class SubscriptionMatchNotificationTest extends TestCase
 {
+    private const MY_TRIPS_URL = '/my-trips';
+
     public function test_via_contains_database_mail_and_push_channels(): void
     {
         $notification = new SubscriptionMatchNotification;
@@ -64,7 +66,7 @@ class SubscriptionMatchNotificationTest extends TestCase
 
         $push = $notification->toPush(null, null);
         $this->assertSame($expected, $push['message']);
-        $this->assertSame('/my-trips', $push['url']);
+        $this->assertSame(self::MY_TRIPS_URL, $push['url']);
         $this->assertNull($push['extras']['id']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
     }
@@ -80,6 +82,6 @@ class SubscriptionMatchNotificationTest extends TestCase
 
         $this->assertSame('subscription', $extras['type']);
         $this->assertSame($trip->id, $push['extras']['id']);
-        $this->assertSame('/my-trips', $push['url']);
+        $this->assertSame(self::MY_TRIPS_URL, $push['url']);
     }
 }
