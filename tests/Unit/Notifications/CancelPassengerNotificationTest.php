@@ -96,9 +96,9 @@ class CancelPassengerNotificationTest extends TestCase
 
         $this->assertSame($expected, $email['title']);
         $this->assertSame('https://app.test/app/trips/', $email['url']);
-        $this->assertSame('trip', $extras['type']);
+        $this->assertSame('my-trips', $extras['type']);
         $this->assertNull($extras['trip_id']);
-        $this->assertSame('/trips/', $push['url']);
+        $this->assertSame('/my-trips', $push['url']);
         $this->assertNull($push['extras']['id']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
     }

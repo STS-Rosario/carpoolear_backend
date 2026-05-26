@@ -2,21 +2,21 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class CancelPassengerNotification extends BaseNotification
 {
     protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class, 
-        PushChannel::class, 
+        DatabaseChannel::class,
+        MailChannel::class,
+        PushChannel::class,
         // FacebookChannel::class
     ];
-    
+
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
@@ -32,7 +32,7 @@ class CancelPassengerNotification extends BaseNotification
             'email_view' => 'cancel_passenger',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
+            'domain' => config('app.url'),
         ];
     }
 
@@ -41,6 +41,7 @@ class CancelPassengerNotification extends BaseNotification
         $from = $this->getAttribute('from');
         $isDriver = $this->getAttribute('is_driver');
         $senderName = $from ? $from->name : __('notifications.someone');
+
         return $isDriver
             ? __('notifications.cancel_passenger.driver_removed', ['name' => $senderName])
             : __('notifications.cancel_passenger.passenger_left', ['name' => $senderName]);
@@ -49,8 +50,10 @@ class CancelPassengerNotification extends BaseNotification
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
+        $isDriver = $this->getAttribute('is_driver');
+
         return [
-            'type' => 'trip',
+            'type' => $isDriver ? 'trip' : 'my-trips',
             'trip_id' => $trip ? $trip->id : null,
         ];
     }
@@ -67,7 +70,7 @@ class CancelPassengerNotification extends BaseNotification
 
         return [
             'message' => $message,
-            'url' => '/trips/'.($trip ? $trip->id : ''),
+            'url' => $isDriver ? '/trips/'.($trip ? $trip->id : '') : '/my-trips',
             'extras' => [
                 'id' => $trip ? $trip->id : null,
             ],
