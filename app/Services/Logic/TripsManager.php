@@ -76,12 +76,29 @@ class TripsManager extends BaseManager
 
     public function create($user, array $data)
     {
+        $this->assignDriverCarWhenPossible($user, $data);
         $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
 
             return;
         } else {
+            if (! $this->userHasRequiredProfileFields($user)) {
+                $messageBag = new MessageBag;
+                $messageBag->add('profile_required', 'The user profile must be complete.');
+                $this->setErrors($messageBag);
+
+                return;
+            }
+
+            if ($this->isDriverTrip($data) && ! $this->driverTripHasPlate($user, $data)) {
+                $messageBag = new MessageBag;
+                $messageBag->add('car_id', 'The driver must have a car with a plate.');
+                $this->setErrors($messageBag);
+
+                return;
+            }
+
             if (config('carpoolear.module_validated_drivers', false) && ! $user->driver_is_verified && $data['is_passenger'] == 0) {
                 $messageBag = new MessageBag;
                 $messageBag->add('driver_is_verified', 'The driver must be verified.');
@@ -169,6 +186,59 @@ class TripsManager extends BaseManager
 
             return $trip;
         }
+    }
+
+    private function assignDriverCarWhenPossible($user, array &$data): void
+    {
+        if (! $this->isDriverTrip($data) || ! empty($data['car_id'])) {
+            return;
+        }
+
+        $car = $this->firstUserCarWithPlate($user);
+        if ($car) {
+            $data['car_id'] = $car->id;
+        }
+    }
+
+    private function isDriverTrip(array $data): bool
+    {
+        return array_key_exists('is_passenger', $data) && (string) $data['is_passenger'] === '0';
+    }
+
+    private function userHasRequiredProfileFields($user): bool
+    {
+        foreach (['image', 'description', 'nro_doc', 'mobile_phone'] as $field) {
+            if (! $this->hasValue($user->{$field} ?? null)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function driverTripHasPlate($user, array $data): bool
+    {
+        if (! empty($data['car_id'])) {
+            $car = $user->cars()->whereKey($data['car_id'])->first();
+
+            return $car && $this->hasValue($car->patente);
+        }
+
+        return (bool) $this->firstUserCarWithPlate($user);
+    }
+
+    private function firstUserCarWithPlate($user)
+    {
+        return $user->cars()
+            ->get()
+            ->first(function ($car) {
+                return $this->hasValue($car->patente);
+            });
+    }
+
+    private function hasValue($value): bool
+    {
+        return $value !== null && trim((string) $value) !== '';
     }
 
     public function update($user, $trip_id, array $data)
