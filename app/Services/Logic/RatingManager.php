@@ -137,21 +137,21 @@ class RatingManager extends BaseManager
 
             $passengers = $trip->passenger()->orderBy('created_at', 'desc')->get();
 
-            $passenger_ids_rates_created = [];
+            $ratedPassengerIds = [];
 
             foreach ($passengers as $passenger) {
                 $requestState = (int) $passenger->request_state;
                 if ($requestState === Passenger::STATE_ACCEPTED) {
                     // the passenger could be make more than one trip request
-                    if (! in_array($passenger->user->id, $passenger_ids_rates_created)) {
+                    if (! in_array($passenger->user->id, $ratedPassengerIds)) {
                         $passenger_hash = Str::random(40);
-                        $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
+                        $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
 
-                        $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
+                        $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
                         $has_passenger = true;
                         event(new PendingEvent($passenger->user, $trip, $passenger_hash));
 
-                        $passenger_ids_rates_created[] = $passenger->user->id;
+                        $ratedPassengerIds[] = $passenger->user->id;
                     }
                 }
             }
