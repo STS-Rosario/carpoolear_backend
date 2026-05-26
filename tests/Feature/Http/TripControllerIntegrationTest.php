@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Models\Car;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\RouteCache;
@@ -231,12 +232,101 @@ class TripControllerIntegrationTest extends TestCase
     public function test_create_returns_unprocessable_when_validation_fails(): void
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
-        $user = User::factory()->create(['identity_validated' => true]);
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OK123',
+        ]);
 
         $this->actingAs($user, 'api')
             ->postJson('/api/trips', [])
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Could not create new trip.');
+
+        Carbon::setTestNow();
+    }
+
+    public function test_create_returns_unprocessable_when_required_profile_fields_are_missing(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $this->seedRouteCacheForMinimalCreatePoints();
+        Http::fake();
+
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => null,
+            'mobile_phone' => null,
+        ]);
+
+        $this->actingAs($user, 'api')
+            ->postJson('/api/trips', array_merge($this->minimalCreatePayload(), [
+                'is_passenger' => 1,
+            ]))
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not create new trip.')
+            ->assertJsonPath('errors.profile_required.0', 'The user profile must be complete.');
+
+        Carbon::setTestNow();
+    }
+
+    public function test_create_returns_unprocessable_when_driver_has_no_plate(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $this->seedRouteCacheForMinimalCreatePoints();
+        Http::fake();
+
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+
+        $this->actingAs($user, 'api')
+            ->postJson('/api/trips', $this->minimalCreatePayload())
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not create new trip.')
+            ->assertJsonPath('errors.car_id.0', 'The driver must have a car with a plate.');
+
+        Carbon::setTestNow();
+    }
+
+    public function test_create_driver_trip_uses_existing_car_plate_when_car_id_is_omitted(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $this->seedRouteCacheForMinimalCreatePoints();
+        Http::fake();
+
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'ABC123',
+        ]);
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/trips', $this->minimalCreatePayload());
+
+        $response->assertOk();
+        $this->assertDatabaseHas('trips', [
+            'id' => (int) $response->json('data.id'),
+            'user_id' => $user->id,
+            'car_id' => $car->id,
+        ]);
 
         Carbon::setTestNow();
     }
@@ -247,7 +337,17 @@ class TripControllerIntegrationTest extends TestCase
         $this->seedRouteCacheForMinimalCreatePoints();
         Http::fake();
 
-        $user = User::factory()->create(['identity_validated' => true]);
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OK123',
+        ]);
 
         $response = $this->actingAs($user, 'api')
             ->postJson('/api/trips', $this->minimalCreatePayload());

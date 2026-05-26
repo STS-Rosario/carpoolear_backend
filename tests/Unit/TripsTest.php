@@ -43,7 +43,12 @@ class TripsTest extends TestCase
             Event::fake();
             Carbon::setTestNow('2026-01-01 12:00:00');
 
-            $user = User::factory()->create();
+            $user = User::factory()->create([
+                'description' => 'Completed test profile',
+                'image' => 'profile.jpg',
+                'nro_doc' => '30111222',
+                'mobile_phone' => '+5493415551234',
+            ]);
             $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
             $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
