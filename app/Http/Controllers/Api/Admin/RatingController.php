@@ -11,7 +11,6 @@ use STS\Models\User;
 use STS\Repository\RatingRepository;
 use STS\Services\AdminActionLogger;
 use STS\Transformers\AdminRatingTransformer;
-use STS\Transformers\RatingTransformer;
 
 class RatingController extends Controller
 {
@@ -87,6 +86,9 @@ class RatingController extends Controller
             ]
         );
 
-        return $this->item($model->fresh(), new RatingTransformer(auth()->user()));
+        return $this->item(
+            $model->fresh(['from', 'to', 'trip']),
+            new AdminRatingTransformer(auth()->user())
+        );
     }
 }
