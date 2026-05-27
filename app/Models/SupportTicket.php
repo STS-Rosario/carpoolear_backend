@@ -9,6 +9,31 @@ class SupportTicket extends Model
 {
     use HasFactory;
 
+    /** @var list<string> */
+    public const TYPES = [
+        'bug_report',
+        'contact',
+        'feedback',
+        'report',
+        'account_verification',
+        'account_recovery',
+    ];
+
+    /** @var array<string, string> */
+    public const TYPE_DEFAULT_PRIORITIES = [
+        'report' => 'high',
+        'bug_report' => 'normal',
+        'contact' => 'normal',
+        'feedback' => 'low',
+        'account_verification' => 'high',
+        'account_recovery' => 'high',
+    ];
+
+    public static function typeValidationRule(): string
+    {
+        return 'required|in:'.implode(',', self::TYPES);
+    }
+
     protected $fillable = [
         'user_id',
         'type',

@@ -12,18 +12,6 @@ use STS\Services\SupportTicketService;
 
 class SupportTicketController extends Controller
 {
-    private static function typeDefaultPriorities(): array
-    {
-        return [
-            'report' => 'high',
-            'bug_report' => 'normal',
-            'contact' => 'normal',
-            'feedback' => 'low',
-            'account_verification' => 'high',
-            'account_recovery' => 'high',
-        ];
-    }
-
     public function __construct(private readonly SupportTicketService $supportTicketService)
     {
         $this->middleware('logged');
@@ -53,7 +41,7 @@ class SupportTicketController extends Controller
     public function create(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'type' => 'required|in:bug_report,contact,feedback,report,account_verification,account_recovery',
+            'type' => SupportTicket::typeValidationRule(),
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
@@ -77,7 +65,7 @@ class SupportTicketController extends Controller
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
                 'status' => 'Open',
-                'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
+                'priority' => SupportTicket::TYPE_DEFAULT_PRIORITIES[$validated['type']] ?? 'normal',
                 'unread_for_user' => 0,
                 'unread_for_admin' => 1,
                 'created_by' => $user->id,
