@@ -10,6 +10,7 @@ use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
 use STS\Http\Controllers\Api\Admin\RatingController as AdminRatingController;
+use STS\Http\Controllers\Api\Admin\ReferencesController as AdminReferencesController;
 use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
 use STS\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
@@ -217,6 +218,7 @@ Route::middleware(['api'])->group(function () {
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
         Route::patch('ratings/{rating}', [AdminRatingController::class, 'update']);
+        Route::patch('references/{reference}', [AdminReferencesController::class, 'update']);
         Route::get('users', [AdminUserController::class, 'index']);
         Route::get('user-migrations', [AdminUserMigrationController::class, 'index']);
         Route::post('user-migrations', [AdminUserMigrationController::class, 'store']);
