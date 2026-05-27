@@ -3,19 +3,20 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller;
-use STS\Http\ExceptionWithErrors;
-use STS\Services\Logic\TripsManager;
-use STS\Transformers\TripTransformer;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Helpers\OldCordovaAppHelper;
+use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Repository\TripSearchRepository;
+use STS\Services\Logic\TripsManager;
+use STS\Transformers\TripTransformer;
 
 class TripController extends Controller
 {
     protected $user;
 
     protected $tripsLogic;
+
     protected $tripSearchRepository;
 
     public function __construct(Request $r, TripsManager $tripsLogic, TripSearchRepository $tripSearchRepository)
@@ -42,7 +43,7 @@ class TripController extends Controller
         }
 
         return $this->item($trip, new TripTransformer($this->user));
-        //return response()->json(['data' => $trip]);
+        // return response()->json(['data' => $trip]);
     }
 
     public function update($id, Request $request)
@@ -58,7 +59,7 @@ class TripController extends Controller
         }
 
         return $this->item($trip, new TripTransformer($this->user));
-        //return response()->json(['data' => $trip]);
+        // return response()->json(['data' => $trip]);
     }
 
     public function changeTripSeats($id, Request $request)
@@ -99,7 +100,7 @@ class TripController extends Controller
         }
 
         return $this->item($trip, new TripTransformer($this->user));
-        //return response()->json(['data' => $trip]);
+        // return response()->json(['data' => $trip]);
     }
 
     public function search(Request $request)
@@ -125,17 +126,17 @@ class TripController extends Controller
 
         $data = $request->all();
 
-        if (!isset($data['page_size'])) {
+        if (! isset($data['page_size'])) {
             $data['page_size'] = 20;
         }
 
         $this->user = auth('api')->user();
         $trips = $this->tripsLogic->search($this->user, $data);
-        
+
         // Track the search for advertising purposes
         $this->trackSearch($data, $trips);
-        
-        /// return $trips;
+
+        // / return $trips;
         return $this->paginator($trips, new TripTransformer($this->user));
     }
 
@@ -146,7 +147,7 @@ class TripController extends Controller
             $destinationId = isset($data['destination_id']) ? $data['destination_id'] : null;
             $searchDate = isset($data['date']) ? $data['date'] : null;
             $isPassenger = isset($data['is_passenger']) ? parse_boolean($data['is_passenger']) : false;
-            
+
             // Track searches with either origin, destination, or both
             if ($originId || $destinationId) {
                 $clientPlatform = 0; // Default to web for now
@@ -154,7 +155,7 @@ class TripController extends Controller
             }
         } catch (\Exception $e) {
             // Log error but don't break the search functionality
-            \Log::error('Error tracking trip search: ' . $e->getMessage());
+            \Log::error('Error tracking trip search: '.$e->getMessage());
         }
     }
 
@@ -167,37 +168,39 @@ class TripController extends Controller
         } else {
             $asDriver = true;
         }
-        if ($request->has('user_id')  && $this->user->is_admin) {
-            $trips = $this->tripsLogic->getTrips($this->user,$request->get('user_id'), $asDriver);
-        } else {
-            $trips = $this->tripsLogic->getTrips($this->user,$this->user->id, $asDriver);
-        }
+        $targetUserId = $this->resolveTargetUserId($request);
+        $trips = $this->tripsLogic->getTrips($this->user, $targetUserId, $asDriver);
 
         return $this->collection($trips, new TripTransformer($this->user));
-        //return response()->json(['data' => $trips]);
+        // return response()->json(['data' => $trips]);
     }
 
     public function getOldTrips(Request $request)
     {
         $this->user = auth()->user();
 
-        
         if ($request->has('as_driver')) {
             $asDriver = parse_boolean($request->get('as_driver'));
         } else {
             $asDriver = true;
         }
-        
-        if ($request->has('user_id')) {
-            $trips = $this->tripsLogic->getOldTrips($this->user,$request->get('user_id'), $asDriver);
-        } else {
-            $trips = $this->tripsLogic->getOldTrips($this->user,$this->user->id, $asDriver);
-        }
+
+        $targetUserId = $this->resolveTargetUserId($request);
+        $trips = $this->tripsLogic->getOldTrips($this->user, $targetUserId, $asDriver);
 
         return $this->collection($trips, new TripTransformer($this->user));
     }
 
-    public function price(Request $request) 
+    private function resolveTargetUserId(Request $request): int
+    {
+        if ($request->has('user_id') && $this->user->is_admin) {
+            return (int) $request->get('user_id');
+        }
+
+        return $this->user->id;
+    }
+
+    public function price(Request $request)
     {
         $data = $request->all();
 
@@ -205,14 +208,14 @@ class TripController extends Controller
         $to = isset($data['to']) ? $data['to'] : null;
         $distance = isset($data['distance']) ? $data['distance'] : null;
 
-        
-        return $this->tripsLogic->price($from, $to, $distance);       
+        return $this->tripsLogic->price($from, $to, $distance);
     }
 
     public function getTripInfo(Request $request)
     {
         $data = $request->all();
         $points = isset($data['points']) ? $data['points'] : null;
+
         return $this->tripsLogic->getTripInfo($points);
     }
 
@@ -223,12 +226,12 @@ class TripController extends Controller
         $infoSelladoViaje = $this->tripsLogic->selladoViaje($this->user);
 
         return response()->json([
-            'success' => true, 
-            'data' => $infoSelladoViaje
+            'success' => true,
+            'data' => $infoSelladoViaje,
         ]);
     }
 
-    public function changeVisibility($id, Request $request) 
+    public function changeVisibility($id, Request $request)
     {
         $this->user = auth()->user();
         $trip = $this->tripsLogic->changeVisibility($this->user, $id);

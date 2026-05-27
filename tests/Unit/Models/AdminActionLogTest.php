@@ -64,6 +64,8 @@ class AdminActionLogTest extends TestCase
         $this->assertSame('user_delete', AdminActionLog::ACTION_USER_DELETE);
         $this->assertSame('user_anonymize', AdminActionLog::ACTION_USER_ANONYMIZE);
         $this->assertSame('user_ban_and_anonymize', AdminActionLog::ACTION_USER_BAN_AND_ANONYMIZE);
+        $this->assertSame('rating_update', AdminActionLog::ACTION_RATING_UPDATE);
+        $this->assertSame('reference_update', AdminActionLog::ACTION_REFERENCE_UPDATE);
     }
 
     public function test_table_name_is_admin_action_logs(): void

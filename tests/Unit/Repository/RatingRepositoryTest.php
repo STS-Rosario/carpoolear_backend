@@ -416,4 +416,34 @@ class RatingRepositoryTest extends TestCase
         $this->assertTrue($ratingA->is($repo->getRating($passenger->id, $driver->id, $tripA->id)));
         $this->assertTrue($ratingB->is($repo->getRating($passenger->id, $driver->id, $tripB->id)));
     }
+
+    public function test_get_received_ratings_for_user_filters_by_user_id_to(): void
+    {
+        $profile = User::factory()->create();
+        $rater = User::factory()->create();
+        $other = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $rater->id]);
+        $received = $this->seedRating($rater, $profile, $trip);
+        $this->seedRating($profile, $other, $trip);
+
+        $rows = (new RatingRepository)->getReceivedRatingsForUser($profile->id);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($received->is($rows->first()));
+    }
+
+    public function test_get_given_ratings_by_user_filters_by_user_id_from(): void
+    {
+        $profile = User::factory()->create();
+        $rated = User::factory()->create();
+        $other = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $profile->id]);
+        $given = $this->seedRating($profile, $rated, $trip);
+        $this->seedRating($other, $profile, $trip);
+
+        $rows = (new RatingRepository)->getGivenRatingsByUser($profile->id);
+
+        $this->assertCount(1, $rows);
+        $this->assertTrue($given->is($rows->first()));
+    }
 }

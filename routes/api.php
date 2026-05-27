@@ -9,6 +9,8 @@ use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
+use STS\Http\Controllers\Api\Admin\RatingController as AdminRatingController;
+use STS\Http\Controllers\Api\Admin\ReferencesController as AdminReferencesController;
 use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
 use STS\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
@@ -215,6 +217,9 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
+        Route::get('users/{user}/ratings', [AdminRatingController::class, 'index']);
+        Route::patch('ratings/{rating}', [AdminRatingController::class, 'update']);
+        Route::patch('references/{reference}', [AdminReferencesController::class, 'update']);
         Route::get('users', [AdminUserController::class, 'index']);
         Route::get('user-migrations', [AdminUserMigrationController::class, 'index']);
         Route::post('user-migrations', [AdminUserMigrationController::class, 'store']);
