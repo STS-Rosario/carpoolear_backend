@@ -172,10 +172,15 @@ class SupportTicketController extends Controller
         return response()->json(['data' => $ticket]);
     }
 
+    public function markNeedsReview(int $id, Request $request): JsonResponse
+    {
+        return $this->applyActionStatus($id, $request, 'Necesita revisión');
+    }
+
     public function updateStatus(int $id, Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|in:Open,Esperando respuesta,En revision,Resuelto,Cerrado',
+            'status' => 'required|in:Open,Esperando respuesta,En revision,Necesita revisión,Resuelto,Cerrado',
         ]);
         $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);

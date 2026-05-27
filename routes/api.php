@@ -267,6 +267,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
+        Route::post('support/tickets/{id}/needs-review', [AdminSupportTicketController::class, 'markNeedsReview']);
 
         Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
         Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
