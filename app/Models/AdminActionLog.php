@@ -7,8 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class AdminActionLog extends Model
 {
     const ACTION_USER_DELETE = 'user_delete';
+
     const ACTION_USER_ANONYMIZE = 'user_anonymize';
+
     const ACTION_USER_BAN_AND_ANONYMIZE = 'user_ban_and_anonymize';
+
+    const ACTION_RATING_UPDATE = 'rating_update';
+
+    const ACTION_REFERENCE_UPDATE = 'reference_update';
 
     protected $table = 'admin_action_logs';
 
