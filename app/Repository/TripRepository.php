@@ -350,7 +350,7 @@ class TripRepository
             }); */
             $trips->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
             $trips->whereNull('trips.deleted_at');
-            $trips->where('trip_passengers.user_id', $user->id);
+            $trips->where('trip_passengers.user_id', $userId);
             $trips->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
         }
 
@@ -376,7 +376,7 @@ class TripRepository
             }); */
             $trips->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
             $trips->whereNull('trips.deleted_at');
-            $trips->where('trip_passengers.user_id', $user->id);
+            $trips->where('trip_passengers.user_id', $userId);
             $trips->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
         }
 
