@@ -209,6 +209,22 @@ class SupportTicketServiceTest extends TestCase
         $this->assertNotNull($ticket->last_reply_at);
     }
 
+    public function test_apply_admin_reply_transition_keeps_necesita_revision_status(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Necesita revisión',
+            'unread_for_user' => 1,
+            'unread_for_admin' => 2,
+        ]);
+
+        $service = new SupportTicketService;
+        $service->applyAdminReplyTransition($ticket, 44);
+
+        $this->assertSame('Necesita revisión', $ticket->status);
+        $this->assertSame(2, $ticket->unread_for_user);
+        $this->assertSame(0, $ticket->unread_for_admin);
+    }
+
     public function test_apply_admin_reply_transition_keeps_non_transitionable_status(): void
     {
         $ticket = new SupportTicket([

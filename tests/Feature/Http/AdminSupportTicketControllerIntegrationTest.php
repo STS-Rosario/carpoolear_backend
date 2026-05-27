@@ -502,6 +502,47 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_mark_needs_review_sets_status_and_creates_optional_admin_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/needs-review', [
+            'message_markdown' => 'Seguimiento interno pendiente.',
+        ])->assertOk();
+
+        $this->assertSame('Necesita revisión', $response->json('data.status'));
+        $this->assertSame($before + 1, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Seguimiento interno pendiente.',
+        ]);
+    }
+
+    public function test_mark_needs_review_without_message_only_updates_status(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Esperando respuesta']);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/needs-review', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'Necesita revisión');
+
+        $this->assertSame($before, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+    }
+
     public function test_update_priority_persists_and_returns_ticket_payload(): void
     {
         $admin = $this->adminUser();
