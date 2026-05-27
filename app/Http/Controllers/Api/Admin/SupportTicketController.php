@@ -44,6 +44,7 @@ class SupportTicketController extends Controller
             'contact' => 'normal',
             'feedback' => 'low',
             'account_verification' => 'high',
+            'account_recovery' => 'high',
         ];
     }
 
@@ -70,7 +71,7 @@ class SupportTicketController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
-            'type' => 'required|in:bug_report,contact,feedback,report,account_verification',
+            'type' => 'required|in:bug_report,contact,feedback,report,account_verification,account_recovery',
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
         ]);

@@ -20,6 +20,7 @@ class SupportTicketController extends Controller
             'contact' => 'normal',
             'feedback' => 'low',
             'account_verification' => 'high',
+            'account_recovery' => 'high',
         ];
     }
 
@@ -52,7 +53,7 @@ class SupportTicketController extends Controller
     public function create(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'type' => 'required|in:bug_report,contact,feedback,report,account_verification',
+            'type' => 'required|in:bug_report,contact,feedback,report,account_verification,account_recovery',
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
