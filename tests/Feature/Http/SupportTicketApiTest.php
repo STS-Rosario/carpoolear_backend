@@ -618,6 +618,51 @@ class SupportTicketApiTest extends TestCase
         $ticket->assertJsonPath('data.priority', 'high');
     }
 
+    public function test_user_can_stream_own_ticket_attachment_image(): void
+    {
+        Storage::fake('local');
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'With image',
+            'message_markdown' => 'See attach',
+            'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+        ])->json(), 'data.id');
+
+        $attachment = SupportTicketAttachment::query()
+            ->whereIn('reply_id', SupportTicketReply::where('ticket_id', $ticketId)->pluck('id'))
+            ->firstOrFail();
+        $this->assertStringStartsWith('support_tickets/'.$ticketId.'/', $attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
+
+        $this->get('api/support/tickets/'.$ticketId.'/attachments/'.$attachment->id.'/image')
+            ->assertOk();
+    }
+
+    public function test_user_cannot_stream_another_users_ticket_attachment(): void
+    {
+        Storage::fake('local');
+        $owner = $this->createUser();
+        $stranger = $this->createUser();
+
+        $this->actingAs($owner, 'api');
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Private',
+            'message_markdown' => 'Mine',
+            'attachments' => [UploadedFile::fake()->image('mine.jpg')],
+        ])->json(), 'data.id');
+        $attachmentId = (int) SupportTicketAttachment::query()
+            ->whereIn('reply_id', SupportTicketReply::where('ticket_id', $ticketId)->pluck('id'))
+            ->value('id');
+
+        $this->actingAs($stranger, 'api');
+        $this->getJson('api/support/tickets/'.$ticketId.'/attachments/'.$attachmentId.'/image')
+            ->assertNotFound();
+    }
+
     public function test_user_created_ticket_includes_opening_auto_reply_after_user_message(): void
     {
         $user = $this->createUser();

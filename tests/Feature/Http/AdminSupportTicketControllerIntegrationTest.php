@@ -567,6 +567,96 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($before, SupportTicketReply::where('ticket_id', $ticket->id)->count());
     }
 
+    public function test_reply_with_image_stores_file_on_local_support_tickets_disk(): void
+    {
+        Storage::fake('local');
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'See screenshot',
+            'attachments' => [UploadedFile::fake()->image('screen.png')],
+        ])->assertOk();
+
+        $attachment = SupportTicketAttachment::query()->where('ticket_id', $ticket->id)
+            ->orWhereIn('reply_id', SupportTicketReply::where('ticket_id', $ticket->id)->pluck('id'))
+            ->first();
+        $this->assertNotNull($attachment);
+        $this->assertStringStartsWith('support_tickets/'.$ticket->id.'/', $attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
+    }
+
+    public function test_admin_can_stream_ticket_attachment_image(): void
+    {
+        Storage::fake('local');
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+        $path = 'support_tickets/'.$ticket->id.'/1/shot.png';
+        Storage::disk('local')->put($path, 'png-bytes');
+        $reply = SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'Hi',
+        ]);
+        $attachment = SupportTicketAttachment::create([
+            'ticket_id' => null,
+            'reply_id' => $reply->id,
+            'user_id' => $owner->id,
+            'path' => $path,
+            'original_name' => 'shot.png',
+            'mime' => 'image/png',
+            'size_bytes' => 9,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->get('api/admin/support/tickets/'.$ticket->id.'/attachments/'.$attachment->id.'/image')
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
+    }
+
+    public function test_purge_attachments_deletes_all_ticket_files_and_records(): void
+    {
+        Storage::fake('local');
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+        $path = 'support_tickets/'.$ticket->id.'/1/a.png';
+        Storage::disk('local')->put($path, 'x');
+        $reply = SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'Hi',
+        ]);
+        SupportTicketAttachment::create([
+            'ticket_id' => null,
+            'reply_id' => $reply->id,
+            'user_id' => $owner->id,
+            'path' => $path,
+            'original_name' => 'a.png',
+            'mime' => 'image/png',
+            'size_bytes' => 1,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/purge-attachments')
+            ->assertOk()
+            ->assertJsonPath('message', 'Attachments purged');
+
+        $this->assertFalse(Storage::disk('local')->exists($path));
+        $this->assertSame(0, SupportTicketAttachment::query()->where('reply_id', $reply->id)->count());
+    }
+
     public function test_update_priority_persists_and_returns_ticket_payload(): void
     {
         $admin = $this->adminUser();
