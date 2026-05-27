@@ -376,6 +376,30 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertNull($ticket->fresh()->internal_note_markdown);
     }
 
+    public function test_admin_created_ticket_does_not_include_opening_auto_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets', [
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Admin opened ticket',
+            'message_markdown' => 'Staff message only',
+        ])->assertOk();
+
+        $ticketId = (int) $response->json('data.id');
+        $replies = SupportTicketReply::query()->where('ticket_id', $ticketId)->orderBy('id')->get();
+
+        $this->assertCount(1, $replies);
+        $this->assertTrue((bool) $replies[0]->is_admin);
+        $this->assertSame('Staff message only', $replies[0]->message_markdown);
+        $this->assertStringNotContainsString('¡Hola!', $replies[0]->message_markdown);
+    }
+
     public function test_admin_can_create_account_verification_ticket_for_user_with_high_priority(): void
     {
         $admin = $this->adminUser();

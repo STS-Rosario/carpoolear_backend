@@ -617,6 +617,57 @@ class SupportTicketApiTest extends TestCase
         $ticket->assertJsonPath('data.priority', 'high');
     }
 
+    public function test_user_created_ticket_includes_opening_auto_reply_after_user_message(): void
+    {
+        $user = $this->createUser();
+        $admin = $this->createUser(true);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $this->actingAs($user, 'api');
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Need help with account',
+            'message_markdown' => 'My opening question',
+        ])->json(), 'data.id');
+
+        $replies = SupportTicketReply::query()
+            ->where('ticket_id', $ticketId)
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $replies);
+        $this->assertFalse((bool) $replies[0]->is_admin);
+        $this->assertSame('My opening question', $replies[0]->message_markdown);
+        $this->assertTrue((bool) $replies[1]->is_admin);
+        $this->assertStringContainsString('¡Hola!', $replies[1]->message_markdown);
+        $this->assertSame($admin->id, (int) $replies[1]->user_id);
+
+        $ticket = SupportTicket::query()->findOrFail($ticketId);
+        $this->assertSame('Esperando respuesta', $ticket->status);
+        $this->assertSame(1, (int) $ticket->unread_for_user);
+        $this->assertSame(0, (int) $ticket->unread_for_admin);
+    }
+
+    public function test_duplicate_user_ticket_create_does_not_append_second_opening_auto_reply(): void
+    {
+        $user = $this->createUser();
+        $admin = $this->createUser(true);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $payload = [
+            'type' => 'contact',
+            'subject' => 'Duplicate auto reply check',
+            'message_markdown' => 'Same opening body',
+        ];
+
+        $this->actingAs($user, 'api');
+        $firstId = (int) data_get($this->postJson('api/support/tickets', $payload)->json(), 'data.id');
+        $this->assertSame(2, SupportTicketReply::query()->where('ticket_id', $firstId)->count());
+
+        $this->postJson('api/support/tickets', $payload)->assertOk();
+        $this->assertSame(2, SupportTicketReply::query()->where('ticket_id', $firstId)->count());
+    }
+
     public function test_account_recovery_type_is_allowed_and_forced_to_high_priority(): void
     {
         $user = $this->createUser();

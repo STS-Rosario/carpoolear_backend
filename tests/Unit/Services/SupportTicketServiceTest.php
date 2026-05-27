@@ -9,10 +9,45 @@ use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Services\SupportTicketService;
+use STS\Support\SupportTicketOpeningAutoReply;
 use Tests\TestCase;
 
 class SupportTicketServiceTest extends TestCase
 {
+    public function test_append_opening_auto_reply_creates_admin_reply_after_user_message(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'unread_for_admin' => 1,
+            'unread_for_user' => 0,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User question',
+            'created_by' => $owner->id,
+        ]);
+
+        $service = new SupportTicketService;
+        $service->appendOpeningAutoReply($ticket->fresh());
+
+        $replies = SupportTicketReply::query()->where('ticket_id', $ticket->id)->orderBy('id')->get();
+        $this->assertCount(2, $replies);
+        $this->assertTrue((bool) $replies[1]->is_admin);
+        $this->assertSame(SupportTicketOpeningAutoReply::MARKDOWN, $replies[1]->message_markdown);
+        $this->assertSame($admin->id, (int) $replies[1]->user_id);
+        $this->assertSame('Esperando respuesta', $ticket->fresh()->status);
+    }
+
     public function test_ticket_already_has_reply_with_message_markdown_detects_existing_body(): void
     {
         $user = User::factory()->create();
