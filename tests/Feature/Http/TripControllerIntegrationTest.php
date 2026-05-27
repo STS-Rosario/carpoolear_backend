@@ -594,6 +594,41 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonFragment(['id' => $past->id]);
     }
 
+    public function test_admin_old_trips_as_passenger_returns_requested_user_not_admin(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $profileUser = User::factory()->create();
+        $driver = User::factory()->create();
+
+        $profilePastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $profilePastTrip->id,
+            'user_id' => $profileUser->id,
+        ]);
+
+        $adminPastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDays(2),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $adminPastTrip->id,
+            'user_id' => $admin->id,
+        ]);
+
+        $response = $this->actingAs($admin, 'api')
+            ->getJson('/api/users/my-old-trips?user_id='.$profileUser->id.'&as_driver=false')
+            ->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($profilePastTrip->id));
+        $this->assertFalse($ids->contains($adminPastTrip->id));
+    }
+
     public function test_price_endpoint_returns_numeric_estimate_for_distance(): void
     {
         $user = User::factory()->create();
