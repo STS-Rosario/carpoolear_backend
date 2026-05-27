@@ -394,20 +394,35 @@ class TripApiTest extends TestCase
             ->assertOk();
     }
 
-    public function test_get_old_trips_forwards_explicit_user_id_when_present(): void
+    public function test_get_old_trips_ignores_user_id_for_non_admin(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['is_admin' => false]);
         $other = User::factory()->create();
         $this->actingAs($user, 'api');
 
         $this->tripsLogic->shouldReceive('getOldTrips')
             ->once()
-            ->with($user, $other->id, true)
+            ->with($user, $user->id, true)
             ->andReturn(collect([]));
 
         $this->getJson('api/users/my-old-trips?user_id='.$other->id)
             ->assertOk()
             ->assertJsonStructure(['data']);
+    }
+
+    public function test_get_old_trips_admin_may_pass_explicit_user_id_target(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $member = User::factory()->create();
+        $this->actingAs($admin, 'api');
+
+        $this->tripsLogic->shouldReceive('getOldTrips')
+            ->once()
+            ->with($admin, $member->id, true)
+            ->andReturn(collect([]));
+
+        $this->getJson('api/users/my-old-trips?user_id='.$member->id)
+            ->assertOk();
     }
 
     public function test_get_old_trips_defaults_as_driver_true_when_omitted(): void
