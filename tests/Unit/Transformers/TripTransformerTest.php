@@ -97,7 +97,7 @@ class TripTransformerTest extends TestCase
 
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
-        $this->assertTrue($payload['rear_max_two_passengers']);
+        $this->assertSame(1, $payload['rear_max_two_passengers']);
     }
 
     public function test_transform_marks_sellado_pending_when_needed_and_not_ready(): void
