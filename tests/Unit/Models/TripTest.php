@@ -62,6 +62,7 @@ class TripTest extends TestCase
             'allow_smoking',
             'allow_kids',
             'allow_animals',
+            'rear_max_two_passengers',
             'state',
             'payment_id',
             'needs_sellado',

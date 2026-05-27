@@ -113,6 +113,7 @@ class OldCordovaAppHelperTest extends TestCase
         $this->assertFalse($data['allow_kids']);
         $this->assertFalse($data['allow_animals']);
         $this->assertFalse($data['allow_smoking']);
+        $this->assertFalse($data['rear_max_two_passengers']);
         $this->assertFalse($data['needs_sellado']);
 
         $user = $data['user'];
@@ -141,7 +142,7 @@ class OldCordovaAppHelperTest extends TestCase
             'description', 'total_seats', 'friendship_type_id', 'distance', 'estimated_time',
             'seat_price_cents', 'recommended_trip_price_cents', 'total_price', 'state', 'is_passenger',
             'passenger_count', 'seats_available', 'points', 'ratings', 'updated_at', 'allow_kids',
-            'allow_animals', 'allow_smoking', 'payment_id', 'needs_sellado', 'request', 'passenger',
+            'allow_animals', 'allow_smoking', 'rear_max_two_passengers', 'payment_id', 'needs_sellado', 'request', 'passenger',
             'user', 'passengerPending_count',
         ];
         foreach ($expectedTopLevel as $key) {
