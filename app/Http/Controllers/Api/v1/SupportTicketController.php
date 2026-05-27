@@ -8,7 +8,10 @@ use Illuminate\Support\Facades\DB;
 use STS\Http\Controllers\Controller;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
+use STS\Models\User;
+use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
+use STS\Support\SupportTicketOpeningAutoReply;
 
 class SupportTicketController extends Controller
 {
@@ -84,8 +87,17 @@ class SupportTicketController extends Controller
                 $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
             }
 
+            $this->supportTicketService->appendOpeningAutoReply($ticket);
+
             return $ticket->fresh();
         });
+
+        if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
+            $ticket->id,
+            SupportTicketOpeningAutoReply::MARKDOWN,
+        )) {
+            $this->notifyTicketOwnerOfAdminReply($ticket, $user);
+        }
 
         return response()->json(['data' => $ticket]);
     }
@@ -179,5 +191,27 @@ class SupportTicketController extends Controller
         });
 
         return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    private function notifyTicketOwnerOfAdminReply(SupportTicket $ticket, User $owner): void
+    {
+        $actorUserId = $this->supportTicketService->resolveAutoReplyActorUserId();
+        if ($actorUserId === null) {
+            return;
+        }
+
+        $actor = User::query()->find($actorUserId);
+        if ($actor === null) {
+            return;
+        }
+
+        $notification = new SupportTicketReplyNotification;
+        $notification->setAttribute('ticket', $ticket->fresh());
+        $notification->setAttribute('from', $actor);
+        try {
+            $notification->notify($owner);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 }

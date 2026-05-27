@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
+use STS\Models\User;
+use STS\Support\SupportTicketOpeningAutoReply;
 
 class SupportTicketService
 {
@@ -27,6 +29,41 @@ class SupportTicketService
      * {@see applyAdminReplyTransition}
      */
     private const ADMIN_REPLY_SETS_WAITING_FOR_USER = ['Open', 'Esperando respuesta', 'En revision'];
+
+    public function appendOpeningAutoReply(SupportTicket $ticket): void
+    {
+        $actorUserId = $this->resolveAutoReplyActorUserId();
+        if ($actorUserId === null) {
+            return;
+        }
+
+        if ($this->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, SupportTicketOpeningAutoReply::MARKDOWN)) {
+            return;
+        }
+
+        SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $actorUserId,
+            'is_admin' => true,
+            'message_markdown' => SupportTicketOpeningAutoReply::MARKDOWN,
+            'created_by' => null,
+        ]);
+
+        $this->applyAdminReplyTransition($ticket, $actorUserId);
+        $ticket->save();
+    }
+
+    public function resolveAutoReplyActorUserId(): ?int
+    {
+        $configured = config('carpoolear.support_ticket_auto_reply_user_id');
+        if ($configured) {
+            return (int) $configured;
+        }
+
+        $adminId = User::query()->where('is_admin', 1)->orderBy('id')->value('id');
+
+        return $adminId ? (int) $adminId : null;
+    }
 
     public function storeReplyAttachments(array $files, int $userId, int $replyId): void
     {
