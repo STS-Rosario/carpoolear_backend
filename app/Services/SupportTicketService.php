@@ -62,7 +62,7 @@ class SupportTicketService
             return (int) $configured;
         }
 
-        $adminId = User::query()->where('is_admin', 1)->orderBy('id')->value('id');
+        $adminId = User::query()->where('is_admin', true)->orderBy('id')->value('id');
 
         return $adminId ? (int) $adminId : null;
     }

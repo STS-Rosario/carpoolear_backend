@@ -109,6 +109,7 @@ class SupportTicketApiTest extends TestCase
 
         $user = $this->createUser();
         $admin = $this->createUser(true);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
 
         $this->actingAs($user, 'api');
         $createResponse = $this->post('api/support/tickets', [
@@ -124,10 +125,10 @@ class SupportTicketApiTest extends TestCase
         $createResponse->assertStatus(200);
         $ticketId = (int) data_get($createResponse->json(), 'data.id');
         $this->assertGreaterThan(0, $ticketId);
-        $this->assertSame('Open', data_get($createResponse->json(), 'data.status'));
+        $this->assertSame('Esperando respuesta', data_get($createResponse->json(), 'data.status'));
         $this->assertSame('normal', data_get($createResponse->json(), 'data.priority'));
-        $this->assertSame(0, data_get($createResponse->json(), 'data.unread_for_user'));
-        $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_admin'));
+        $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_user'));
+        $this->assertSame(0, data_get($createResponse->json(), 'data.unread_for_admin'));
 
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(\STS\Http\Middleware\UserAdmin::class);
@@ -136,7 +137,7 @@ class SupportTicketApiTest extends TestCase
         ]);
         $adminReply->assertStatus(200);
         $adminReply->assertJsonPath('data.status', 'Esperando respuesta');
-        $adminReply->assertJsonPath('data.unread_for_user', 1);
+        $adminReply->assertJsonPath('data.unread_for_user', 2);
         $adminReply->assertJsonPath('data.unread_for_admin', 0);
     }
 
