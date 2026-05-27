@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
@@ -223,15 +224,28 @@ class ManualIdentityValidationController extends Controller
             throw new ExceptionWithErrors('Payment is required before submitting images.', [], 422);
         }
 
-        $request->validate([
-            'front_image' => ImageAttachmentRules::requiredImage(),
-            'back_image' => ImageAttachmentRules::requiredImage(),
-            'selfie_image' => ImageAttachmentRules::requiredImage(),
-        ]);
-
         $front = $request->file('front_image');
         $back = $request->file('back_image');
         $selfie = $request->file('selfie_image');
+
+        if (! $front || ! $back || ! $selfie) {
+            throw new ExceptionWithErrors(
+                'All three images are required: front_image, back_image, selfie_image.',
+                []
+            );
+        }
+
+        $laravelValidator = Validator::make(
+            ['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie],
+            [
+                'front_image' => ImageAttachmentRules::FILE,
+                'back_image' => ImageAttachmentRules::FILE,
+                'selfie_image' => ImageAttachmentRules::FILE,
+            ],
+        );
+        if ($laravelValidator->fails()) {
+            throw new ExceptionWithErrors('Invalid image upload.', $laravelValidator->errors()->toArray());
+        }
 
         $validator = app(ImageUploadValidator::class);
         foreach (['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie] as $field => $file) {

@@ -11,18 +11,18 @@ fi
 
 mapfile -t files < <(git diff --cached --name-only --diff-filter=ACM | grep -E '\.php$' || true)
 
-if [[ ${#files[@]} -eq 0 ]]; then
-  exit 0
+if [[ ${#files[@]} -gt 0 ]]; then
+  existing=()
+  for f in "${files[@]}"; do
+    [[ -f "$f" ]] && existing+=("$f")
+  done
+
+  if [[ ${#existing[@]} -gt 0 ]]; then
+    echo "pre-commit: pint..."
+    vendor/bin/pint "${existing[@]}"
+    git add "${existing[@]}"
+  fi
 fi
 
-existing=()
-for f in "${files[@]}"; do
-  [[ -f "$f" ]] && existing+=("$f")
-done
-
-if [[ ${#existing[@]} -eq 0 ]]; then
-  exit 0
-fi
-
-vendor/bin/pint "${existing[@]}"
-git add "${existing[@]}"
+echo "pre-commit: php artisan test..."
+php artisan test

@@ -46,6 +46,10 @@
     },
     "scripts": {
         "test": "php artisan test",
+        "check": [
+            "@php vendor/bin/pint --test app tests routes database config bootstrap",
+            "@test"
+        ],
         "test:coverage": "php -d memory_limit=512M artisan test --coverage",
         "test:coverage:ci": "php -d memory_limit=512M artisan test --coverage --min=50",
         "test:mutate": "bash scripts/pest-mutate.sh",
