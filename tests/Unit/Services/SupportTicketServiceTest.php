@@ -38,7 +38,8 @@ class SupportTicketServiceTest extends TestCase
         ]);
 
         $service = new SupportTicketService;
-        $service->appendOpeningAutoReply($ticket->fresh());
+        $this->assertTrue($service->appendOpeningAutoReply($ticket->fresh()));
+        $this->assertFalse($service->appendOpeningAutoReply($ticket->fresh()));
 
         $replies = SupportTicketReply::query()->where('ticket_id', $ticket->id)->orderBy('id')->get();
         $this->assertCount(2, $replies);

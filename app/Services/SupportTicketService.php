@@ -30,15 +30,15 @@ class SupportTicketService
      */
     private const ADMIN_REPLY_SETS_WAITING_FOR_USER = ['Open', 'Esperando respuesta', 'En revision'];
 
-    public function appendOpeningAutoReply(SupportTicket $ticket): void
+    public function appendOpeningAutoReply(SupportTicket $ticket): bool
     {
         $actorUserId = $this->resolveAutoReplyActorUserId();
         if ($actorUserId === null) {
-            return;
+            return false;
         }
 
         if ($this->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, SupportTicketOpeningAutoReply::MARKDOWN)) {
-            return;
+            return false;
         }
 
         SupportTicketReply::create([
@@ -51,6 +51,8 @@ class SupportTicketService
 
         $this->applyAdminReplyTransition($ticket, $actorUserId);
         $ticket->save();
+
+        return true;
     }
 
     public function resolveAutoReplyActorUserId(): ?int

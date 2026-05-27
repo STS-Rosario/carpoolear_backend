@@ -11,7 +11,6 @@ use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
-use STS\Support\SupportTicketOpeningAutoReply;
 
 class SupportTicketController extends Controller
 {
@@ -62,7 +61,7 @@ class SupportTicketController extends Controller
             return response()->json(['data' => $existingDuplicate->fresh()]);
         }
 
-        $ticket = DB::transaction(function () use ($validated, $user) {
+        [$ticket, $addedOpeningAutoReply] = DB::transaction(function () use ($validated, $user) {
             $ticket = SupportTicket::create([
                 'user_id' => $user->id,
                 'type' => $validated['type'],
@@ -87,15 +86,12 @@ class SupportTicketController extends Controller
                 $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
             }
 
-            $this->supportTicketService->appendOpeningAutoReply($ticket);
+            $addedOpeningAutoReply = $this->supportTicketService->appendOpeningAutoReply($ticket);
 
-            return $ticket->fresh();
+            return [$ticket->fresh(), $addedOpeningAutoReply];
         });
 
-        if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
-            $ticket->id,
-            SupportTicketOpeningAutoReply::MARKDOWN,
-        )) {
+        if ($addedOpeningAutoReply) {
             $this->notifyTicketOwnerOfAdminReply($ticket, $user);
         }
 
