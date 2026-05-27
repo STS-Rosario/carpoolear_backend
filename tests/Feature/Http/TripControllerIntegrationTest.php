@@ -363,6 +363,65 @@ class TripControllerIntegrationTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_persists_rear_max_two_passengers_and_returns_it_in_payload(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $this->seedRouteCacheForMinimalCreatePoints();
+        Http::fake();
+
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OK123',
+        ]);
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/trips', array_merge($this->minimalCreatePayload(), [
+                'rear_max_two_passengers' => 1,
+            ]));
+
+        $response->assertOk()
+            ->assertJsonPath('data.rear_max_two_passengers', 1);
+
+        $tripId = (int) $response->json('data.id');
+        $this->assertDatabaseHas('trips', [
+            'id' => $tripId,
+            'rear_max_two_passengers' => 1,
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_update_persists_rear_max_two_passengers_and_returns_it_in_payload(): void
+    {
+        Carbon::setTestNow('2028-04-01 12:00:00');
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::parse('2028-05-15 10:00:00'),
+            'rear_max_two_passengers' => false,
+        ]);
+
+        $this->actingAs($owner, 'api')
+            ->putJson("/api/trips/{$trip->id}", ['rear_max_two_passengers' => 1])
+            ->assertOk()
+            ->assertJsonPath('data.rear_max_two_passengers', 1);
+
+        $this->assertDatabaseHas('trips', [
+            'id' => $trip->id,
+            'rear_max_two_passengers' => 1,
+        ]);
+
+        Carbon::setTestNow();
+    }
+
     public function test_update_returns_trip_payload_when_owner_updates_description(): void
     {
         Carbon::setTestNow('2028-04-01 12:00:00');

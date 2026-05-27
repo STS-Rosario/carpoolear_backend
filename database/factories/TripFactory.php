@@ -4,7 +4,6 @@ namespace Database\Factories;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use STS\Models\Trip;
 use STS\Models\User;
 
 /**
@@ -22,18 +21,19 @@ class TripFactory extends Factory
     public function definition(): array
     {
         return [
-            'is_passenger'       => 0,
-            'from_town'          => fake()->streetAddress(),
-            'to_town'            => fake()->streetAddress(),
-            'trip_date'          => Carbon::now()->addHour(),
-            'total_seats'        => 5,
+            'is_passenger' => 0,
+            'from_town' => fake()->streetAddress(),
+            'to_town' => fake()->streetAddress(),
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 5,
             'friendship_type_id' => 2,
-            'estimated_time'     => '05:00',
-            'distance'           => 365,
-            'co2'                => 50,
-            'description'        => 'hola mundo',
-            'mail_send'          => false,
-            'user_id'            => User::factory(),
+            'estimated_time' => '05:00',
+            'distance' => 365,
+            'co2' => 50,
+            'description' => 'hola mundo',
+            'mail_send' => false,
+            'rear_max_two_passengers' => false,
+            'user_id' => User::factory(),
         ];
     }
 }

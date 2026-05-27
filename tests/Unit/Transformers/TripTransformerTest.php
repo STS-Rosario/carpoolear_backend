@@ -71,6 +71,7 @@ class TripTransformerTest extends TestCase
             'allow_kids',
             'allow_animals',
             'allow_smoking',
+            'rear_max_two_passengers',
             'payment_id',
             'needs_sellado',
             'sellado_pending',
@@ -88,6 +89,15 @@ class TripTransformerTest extends TestCase
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
+    }
+
+    public function test_transform_includes_rear_max_two_passengers(): void
+    {
+        $trip = $this->makeTrip(['rear_max_two_passengers' => true]);
+
+        $payload = (new TripTransformer(null))->transform($trip->fresh());
+
+        $this->assertSame(1, $payload['rear_max_two_passengers']);
     }
 
     public function test_transform_marks_sellado_pending_when_needed_and_not_ready(): void
