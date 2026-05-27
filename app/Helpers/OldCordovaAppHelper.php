@@ -83,6 +83,7 @@ class OldCordovaAppHelper
             'allow_kids' => false,
             'allow_animals' => false,
             'allow_smoking' => false,
+            'rear_max_two_passengers' => false,
             'payment_id' => null,
             'needs_sellado' => false,
             'request' => '',
