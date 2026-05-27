@@ -258,4 +258,97 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame(101, (int) $ticket->updated_by);
         $this->assertNotNull($ticket->last_reply_at);
     }
+
+    public function test_status_after_undo_resolve_when_last_reply_is_admin(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin',
+        ]);
+
+        $this->assertSame(
+            'Esperando respuesta',
+            $this->service()->statusAfterUndoResolve($ticket->fresh())
+        );
+    }
+
+    public function test_status_after_undo_resolve_when_last_reply_is_user(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User follow-up',
+        ]);
+
+        $this->assertSame(
+            'En revision',
+            $this->service()->statusAfterUndoResolve($ticket->fresh())
+        );
+    }
+
+    public function test_unresolve_ticket_restores_status_from_last_reply(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Done',
+        ]);
+
+        $this->service()->unresolveTicket($ticket, $admin->id);
+
+        $this->assertSame('Esperando respuesta', $ticket->fresh()->status);
+        $this->assertSame($admin->id, (int) $ticket->fresh()->updated_by);
+    }
+
+    public function test_ticket_accepts_replies_is_false_for_resolved_and_closed(): void
+    {
+        $service = $this->service();
+
+        $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Resuelto'])));
+        $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Cerrado'])));
+        $this->assertTrue($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Open'])));
+    }
 }

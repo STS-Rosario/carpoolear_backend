@@ -11,6 +11,7 @@ use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
+use STS\Support\ImageAttachmentRules;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupportTicketController extends Controller
@@ -111,11 +112,15 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
-            'attachments.*' => 'file|max:10240',
+            'attachments.*' => ImageAttachmentRules::FILE,
         ]);
 
         $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
+
+        if (! $this->supportTicketService->ticketAcceptsReplies($ticket)) {
+            return response()->json(['error' => 'Ticket is closed for replies'], 422);
+        }
 
         if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
             $ticket->id,
@@ -174,6 +179,20 @@ class SupportTicketController extends Controller
         $ticket->save();
 
         return response()->json(['data' => $ticket]);
+    }
+
+    public function unresolve(int $id): JsonResponse
+    {
+        $admin = auth()->user();
+        $ticket = SupportTicket::findOrFail($id);
+
+        if ($ticket->status !== 'Resuelto') {
+            return response()->json(['error' => 'Ticket is not resolved'], 422);
+        }
+
+        $this->supportTicketService->unresolveTicket($ticket, $admin->id);
+
+        return response()->json(['data' => $ticket->fresh()]);
     }
 
     public function markNeedsReview(int $id, Request $request): JsonResponse

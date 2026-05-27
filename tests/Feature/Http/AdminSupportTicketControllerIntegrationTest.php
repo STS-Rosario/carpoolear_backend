@@ -340,6 +340,92 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($admin->id, (int) $fresh->updated_by);
     }
 
+    public function test_unresolve_restores_esperando_respuesta_when_last_reply_is_admin(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User message',
+            'created_by' => $owner->id,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unresolve')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'Esperando respuesta');
+    }
+
+    public function test_unresolve_restores_en_revision_when_last_reply_is_user(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User follow-up',
+            'created_by' => $owner->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unresolve')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'En revision');
+    }
+
+    public function test_unresolve_returns_422_when_ticket_is_not_resolved(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unresolve')
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Ticket is not resolved']);
+    }
+
+    public function test_admin_reply_returns_422_when_ticket_is_resolved(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Trying after resolve',
+        ])
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Ticket is closed for replies']);
+    }
+
     public function test_update_status_non_cerrado_does_not_set_closed_metadata(): void
     {
         $admin = $this->adminUser();

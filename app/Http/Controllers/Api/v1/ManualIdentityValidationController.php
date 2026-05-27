@@ -11,6 +11,7 @@ use STS\Models\ManualIdentityValidation;
 use STS\Services\HeicToJpegConverter;
 use STS\Services\ImageUploadValidator;
 use STS\Services\MercadoPagoService;
+use STS\Support\ImageAttachmentRules;
 
 class ManualIdentityValidationController extends Controller
 {
@@ -222,17 +223,24 @@ class ManualIdentityValidationController extends Controller
             throw new ExceptionWithErrors('Payment is required before submitting images.', [], 422);
         }
 
+        $request->validate([
+            'front_image' => ImageAttachmentRules::requiredImage(),
+            'back_image' => ImageAttachmentRules::requiredImage(),
+            'selfie_image' => ImageAttachmentRules::requiredImage(),
+        ]);
+
         $front = $request->file('front_image');
         $back = $request->file('back_image');
         $selfie = $request->file('selfie_image');
 
-        if (! $front || ! $back || ! $selfie) {
-            throw new ExceptionWithErrors('All three images are required: front_image, back_image, selfie_image.', []);
-        }
-
         $validator = app(ImageUploadValidator::class);
         foreach (['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie] as $field => $file) {
-            $result = $validator->validate($file, $field);
+            $result = $validator->validate(
+                $file,
+                $field,
+                ImageAttachmentRules::ALLOWED_MIMES,
+                ImageAttachmentRules::ALLOWED_EXTENSIONS,
+            );
             if (! ($result['valid'] ?? true)) {
                 throw new ExceptionWithErrors('Invalid image upload.', $result['errors'] ?? []);
             }

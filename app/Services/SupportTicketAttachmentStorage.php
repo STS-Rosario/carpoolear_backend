@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
+use STS\Support\ImageAttachmentRules;
 
 class SupportTicketAttachmentStorage
 {
@@ -21,7 +22,12 @@ class SupportTicketAttachmentStorage
 
     public function storeForReply(UploadedFile $file, int $ticketId, int $replyId, int $userId): SupportTicketAttachment
     {
-        $result = $this->imageUploadValidator->validate($file, 'attachments');
+        $result = $this->imageUploadValidator->validate(
+            $file,
+            'attachments',
+            ImageAttachmentRules::ALLOWED_MIMES,
+            ImageAttachmentRules::ALLOWED_EXTENSIONS,
+        );
         if (! ($result['valid'] ?? false)) {
             throw ValidationException::withMessages($result['errors'] ?? [
                 'attachments' => ['Invalid image upload.'],

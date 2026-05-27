@@ -268,6 +268,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
+        Route::post('support/tickets/{id}/unresolve', [AdminSupportTicketController::class, 'unresolve']);
         Route::post('support/tickets/{id}/needs-review', [AdminSupportTicketController::class, 'markNeedsReview']);
         Route::get('support/tickets/{ticketId}/attachments/{attachmentId}/image', [AdminSupportTicketController::class, 'attachmentImage']);
         Route::post('support/tickets/{id}/purge-attachments', [AdminSupportTicketController::class, 'purgeAttachments']);

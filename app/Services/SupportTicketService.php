@@ -120,4 +120,32 @@ class SupportTicketService
         $ticket->last_reply_at = now();
         $ticket->updated_by = $actorUserId;
     }
+
+    /**
+     * Status to restore when undoing "Resuelto", based on who sent the latest reply.
+     */
+    public function statusAfterUndoResolve(SupportTicket $ticket): string
+    {
+        $lastReply = $ticket->replies()
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastReply === null) {
+            return 'En revision';
+        }
+
+        return $lastReply->is_admin ? 'Esperando respuesta' : 'En revision';
+    }
+
+    public function unresolveTicket(SupportTicket $ticket, int $adminUserId): void
+    {
+        $ticket->status = $this->statusAfterUndoResolve($ticket);
+        $ticket->updated_by = $adminUserId;
+        $ticket->save();
+    }
+
+    public function ticketAcceptsReplies(SupportTicket $ticket): bool
+    {
+        return ! in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true);
+    }
 }
