@@ -617,6 +617,23 @@ class SupportTicketApiTest extends TestCase
         $ticket->assertJsonPath('data.priority', 'high');
     }
 
+    public function test_account_recovery_type_is_allowed_and_forced_to_high_priority(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticket = $this->post('api/support/tickets', [
+            'type' => 'account_recovery',
+            'subject' => 'Recuperacion de cuenta',
+            'message_markdown' => 'Tengo una cuenta duplicada y necesito recuperar el acceso.',
+            'priority' => 'low',
+        ]);
+
+        $ticket->assertStatus(200);
+        $ticket->assertJsonPath('data.type', 'account_recovery');
+        $ticket->assertJsonPath('data.priority', 'high');
+    }
+
     private function createUser(bool $isAdmin = false): User
     {
         return User::query()->create([
