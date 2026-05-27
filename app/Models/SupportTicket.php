@@ -29,9 +29,26 @@ class SupportTicket extends Model
         'account_recovery' => 'high',
     ];
 
+    public const STATUS_NEEDS_REVIEW = 'Necesita revisión';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        'Open',
+        'Esperando respuesta',
+        'En revision',
+        self::STATUS_NEEDS_REVIEW,
+        'Resuelto',
+        'Cerrado',
+    ];
+
     public static function typeValidationRule(): string
     {
         return 'required|in:'.implode(',', self::TYPES);
+    }
+
+    public static function statusValidationRule(): string
+    {
+        return 'required|in:'.implode(',', self::STATUSES);
     }
 
     protected $fillable = [
