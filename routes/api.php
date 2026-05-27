@@ -217,6 +217,7 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
+        Route::get('users/{user}/ratings', [AdminRatingController::class, 'index']);
         Route::patch('ratings/{rating}', [AdminRatingController::class, 'update']);
         Route::patch('references/{reference}', [AdminReferencesController::class, 'update']);
         Route::get('users', [AdminUserController::class, 'index']);

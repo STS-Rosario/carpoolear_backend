@@ -17,6 +17,24 @@ class RatingRepository
         return $rate->first();
     }
 
+    public function getReceivedRatingsForUser(int $userId)
+    {
+        return RatingModel::query()
+            ->where('user_id_to', $userId)
+            ->with(['from', 'to', 'trip'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    public function getGivenRatingsByUser(int $userId)
+    {
+        return RatingModel::query()
+            ->where('user_id_from', $userId)
+            ->with(['from', 'to', 'trip'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
     public function getRatings($user, $data = [])
     {
         // $inQuery = "id IN (SELECT id FROM availables_ratings WHERE user_id_to = '" . $user->id . "' )";

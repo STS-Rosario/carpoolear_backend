@@ -7,11 +7,38 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\AdminActionLog;
 use STS\Models\Rating;
+use STS\Models\User;
+use STS\Repository\RatingRepository;
 use STS\Services\AdminActionLogger;
+use STS\Transformers\AdminRatingTransformer;
 use STS\Transformers\RatingTransformer;
 
 class RatingController extends Controller
 {
+    public function __construct(protected RatingRepository $ratingRepository) {}
+
+    public function index(User $user): JsonResponse
+    {
+        if (! auth()->user()?->is_admin) {
+            return response()->json('Unauthorized.', 401);
+        }
+
+        $transformer = new AdminRatingTransformer(auth()->user());
+        $received = $this->ratingRepository->getReceivedRatingsForUser($user->id)
+            ->map(fn (Rating $rating) => $transformer->transform($rating))
+            ->values();
+        $given = $this->ratingRepository->getGivenRatingsByUser($user->id)
+            ->map(fn (Rating $rating) => $transformer->transform($rating))
+            ->values();
+
+        return response()->json([
+            'data' => [
+                'received' => $received,
+                'given' => $given,
+            ],
+        ]);
+    }
+
     public function update(Request $request, int $rating): JsonResponse
     {
         if (! auth()->user()?->is_admin) {
