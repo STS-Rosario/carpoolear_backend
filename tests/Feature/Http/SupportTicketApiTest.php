@@ -22,6 +22,8 @@ class SupportTicketApiTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', null);
+
         if (! Schema::hasTable('support_tickets')) {
             Schema::create('support_tickets', function (Blueprint $table) {
                 $table->increments('id');
@@ -105,7 +107,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_user_creates_ticket_with_attachments_and_admin_reply_updates_unread_counters(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = $this->createUser();
         $admin = $this->createUser(true);
@@ -475,7 +477,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_reply_persists_user_attachment_and_advances_ticket_status(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = $this->createUser();
         $this->actingAs($user, 'api');
@@ -486,7 +488,7 @@ class SupportTicketApiTest extends TestCase
             'message_markdown' => 'Initial',
         ])->json(), 'data.id');
 
-        $beforeFiles = count(Storage::disk('public')->allFiles());
+        $beforeFiles = count(Storage::disk('local')->allFiles());
 
         $this->post('api/support/tickets/'.$ticketId.'/replies', [
             'message_markdown' => 'Here is a screenshot',
@@ -495,7 +497,7 @@ class SupportTicketApiTest extends TestCase
             ],
         ])->assertStatus(200);
 
-        $this->assertGreaterThan($beforeFiles, count(Storage::disk('public')->allFiles()));
+        $this->assertGreaterThan($beforeFiles, count(Storage::disk('local')->allFiles()));
 
         $this->assertDatabaseHas('support_ticket_replies', [
             'ticket_id' => $ticketId,
@@ -532,7 +534,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_close_persists_status_and_optional_closing_message(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $user = $this->createUser();
         $this->actingAs($user, 'api');
 
@@ -733,14 +735,21 @@ class SupportTicketApiTest extends TestCase
 
     private function createUser(bool $isAdmin = false): User
     {
-        return User::query()->create([
+        $user = User::query()->create([
             'name' => 'Support Tester '.uniqid(),
             'email' => uniqid('support_', true).'@example.com',
             'password' => Hash::make('123456'),
             'active' => 1,
-            'is_admin' => $isAdmin ? 1 : 0,
             'terms_and_conditions' => 1,
             'emails_notifications' => 1,
         ]);
+
+        if ($isAdmin) {
+            $user->forceFill(['is_admin' => true])->saveQuietly();
+
+            return $user->fresh();
+        }
+
+        return $user;
     }
 }

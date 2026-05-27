@@ -106,6 +106,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/tickets', [SupportTicketController::class, 'index']);
         Route::post('/tickets', [SupportTicketController::class, 'create'])->middleware('throttle:support-ticket-create');
         Route::get('/tickets/{id}', [SupportTicketController::class, 'show']);
+        Route::get('/tickets/{ticketId}/attachments/{attachmentId}/image', [SupportTicketController::class, 'attachmentImage']);
         Route::post('/tickets/{id}/replies', [SupportTicketController::class, 'reply'])->middleware('throttle:support-ticket-reply');
         Route::post('/tickets/{id}/close', [SupportTicketController::class, 'close']);
     });
@@ -268,6 +269,8 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
         Route::post('support/tickets/{id}/needs-review', [AdminSupportTicketController::class, 'markNeedsReview']);
+        Route::get('support/tickets/{ticketId}/attachments/{attachmentId}/image', [AdminSupportTicketController::class, 'attachmentImage']);
+        Route::post('support/tickets/{id}/purge-attachments', [AdminSupportTicketController::class, 'purgeAttachments']);
 
         Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
         Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);

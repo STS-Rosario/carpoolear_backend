@@ -163,7 +163,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_without_message_is_unprocessable(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -178,7 +178,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_with_image_persists_attachment_for_reply(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -582,8 +582,8 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'attachments' => [UploadedFile::fake()->image('screen.png')],
         ])->assertOk();
 
-        $attachment = SupportTicketAttachment::query()->where('ticket_id', $ticket->id)
-            ->orWhereIn('reply_id', SupportTicketReply::where('ticket_id', $ticket->id)->pluck('id'))
+        $attachment = SupportTicketAttachment::query()
+            ->whereIn('reply_id', SupportTicketReply::where('ticket_id', $ticket->id)->pluck('id'))
             ->first();
         $this->assertNotNull($attachment);
         $this->assertStringStartsWith('support_tickets/'.$ticket->id.'/', $attachment->path);
@@ -761,7 +761,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_rejects_more_than_three_attachments(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -787,7 +787,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_rejects_attachment_with_disallowed_mime(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();

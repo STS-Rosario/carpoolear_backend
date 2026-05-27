@@ -5,15 +5,19 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupportTicketController extends Controller
 {
+    use StreamsSupportTicketAttachments;
+
     public function __construct(private readonly SupportTicketService $supportTicketService)
     {
         $this->middleware('logged');
@@ -47,7 +51,7 @@ class SupportTicketController extends Controller
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
-            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
+            'attachments.*' => 'file|max:10240',
         ]);
 
         $user = auth()->user();
@@ -83,7 +87,7 @@ class SupportTicketController extends Controller
             ]);
 
             foreach (($validated['attachments'] ?? []) as $file) {
-                $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
+                $this->supportTicketService->storeReplyAttachments([$file], $ticket->id, $user->id, $reply->id);
             }
 
             $addedOpeningAutoReply = $this->supportTicketService->appendOpeningAutoReply($ticket);
@@ -119,7 +123,7 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
-            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
+            'attachments.*' => 'file|max:10240',
         ]);
 
         $user = auth()->user();
@@ -147,7 +151,7 @@ class SupportTicketController extends Controller
                 'created_by' => $user->id,
             ]);
             foreach (($validated['attachments'] ?? []) as $file) {
-                $this->supportTicketService->storeReplyAttachments([$file], $user->id, $reply->id);
+                $this->supportTicketService->storeReplyAttachments([$file], $ticket->id, $user->id, $reply->id);
             }
 
             $this->supportTicketService->applyUserReplyTransition($ticket, $user->id);
@@ -187,6 +191,17 @@ class SupportTicketController extends Controller
         });
 
         return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    public function attachmentImage(int $ticketId, int $attachmentId): StreamedResponse|JsonResponse
+    {
+        $user = auth()->user();
+        $ticket = SupportTicket::where('user_id', $user->id)->find($ticketId);
+        if (! $ticket) {
+            return response()->json(['error' => 'Ticket not found'], 404);
+        }
+
+        return $this->streamSupportTicketAttachment($this->supportTicketService, $ticketId, $attachmentId);
     }
 
     private function notifyTicketOwnerOfAdminReply(SupportTicket $ticket, User $owner): void

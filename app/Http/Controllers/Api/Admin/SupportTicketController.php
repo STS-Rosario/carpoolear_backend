@@ -5,14 +5,18 @@ namespace STS\Http\Controllers\Api\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupportTicketController extends Controller
 {
+    use StreamsSupportTicketAttachments;
+
     private const ADMIN_CREATED_TICKET_STATUS = 'Esperando respuesta';
 
     /**
@@ -107,7 +111,7 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
-            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
+            'attachments.*' => 'file|max:10240',
         ]);
 
         $admin = auth()->user();
@@ -130,7 +134,7 @@ class SupportTicketController extends Controller
             ]);
 
             foreach (($validated['attachments'] ?? []) as $file) {
-                $this->supportTicketService->storeReplyAttachments([$file], $admin->id, $reply->id);
+                $this->supportTicketService->storeReplyAttachments([$file], $ticket->id, $admin->id, $reply->id);
             }
 
             $this->supportTicketService->applyAdminReplyTransition($ticket, $admin->id);
@@ -219,6 +223,21 @@ class SupportTicketController extends Controller
         $ticket->save();
 
         return response()->json(['data' => $ticket]);
+    }
+
+    public function attachmentImage(int $ticketId, int $attachmentId): StreamedResponse|JsonResponse
+    {
+        SupportTicket::query()->findOrFail($ticketId);
+
+        return $this->streamSupportTicketAttachment($this->supportTicketService, $ticketId, $attachmentId);
+    }
+
+    public function purgeAttachments(int $id): JsonResponse
+    {
+        SupportTicket::query()->findOrFail($id);
+        $this->supportTicketService->purgeTicketAttachments($id);
+
+        return response()->json(['message' => 'Attachments purged']);
     }
 
     private function applyActionStatus(int $id, Request $request, string $status): JsonResponse
