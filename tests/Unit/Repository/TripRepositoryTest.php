@@ -1272,6 +1272,72 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($rows->pluck('id')->contains($past->id));
     }
 
+    public function test_get_old_trips_passenger_filters_by_target_user_id_not_authenticated_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $profileUser = User::factory()->create();
+        $driver = User::factory()->create();
+
+        $profilePastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $profilePastTrip->id,
+            'user_id' => $profileUser->id,
+        ]);
+
+        $adminPastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDays(2),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $adminPastTrip->id,
+            'user_id' => $admin->id,
+        ]);
+
+        $rows = $this->repo()->getOldTrips($admin, $profileUser->id, false);
+
+        $ids = $rows->pluck('id');
+        $this->assertTrue($ids->contains($profilePastTrip->id));
+        $this->assertFalse($ids->contains($adminPastTrip->id));
+    }
+
+    public function test_get_trips_passenger_filters_by_target_user_id_not_authenticated_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $profileUser = User::factory()->create();
+        $driver = User::factory()->create();
+
+        $profileUpcomingTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $profileUpcomingTrip->id,
+            'user_id' => $profileUser->id,
+        ]);
+
+        $adminUpcomingTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(2),
+            'weekly_schedule' => 0,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $adminUpcomingTrip->id,
+            'user_id' => $admin->id,
+        ]);
+
+        $rows = $this->repo()->getTrips($admin, $profileUser->id, false);
+
+        $ids = $rows->pluck('id');
+        $this->assertTrue($ids->contains($profileUpcomingTrip->id));
+        $this->assertFalse($ids->contains($adminUpcomingTrip->id));
+    }
+
     public function test_search_filters_by_user_id_and_paginates(): void
     {
         $owner = User::factory()->create();

@@ -344,14 +344,7 @@ class TripRepository
         if ($asDriver) {
             $trips->where('user_id', $userId);
         } else {
-            /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
-                $q->where('request_state', Passenger::STATE_ACCEPTED);
-                $q->where('user_id', $user->id);
-            }); */
-            $trips->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
-            $trips->whereNull('trips.deleted_at');
-            $trips->where('trip_passengers.user_id', $user->id);
-            $trips->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
+            $this->applyAcceptedPassengerFilter($trips, $userId);
         }
 
         $trips->select('trips.*');
@@ -370,14 +363,7 @@ class TripRepository
         if ($asDriver) {
             $trips->where('user_id', $userId);
         } else {
-            /* $trips->whereHas('passengerAccepted', function ($q) use ($user) {
-                $q->where('request_state', Passenger::STATE_ACCEPTED);
-                $q->where('user_id', $user->id);
-            }); */
-            $trips->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
-            $trips->whereNull('trips.deleted_at');
-            $trips->where('trip_passengers.user_id', $user->id);
-            $trips->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
+            $this->applyAcceptedPassengerFilter($trips, $userId);
         }
 
         $trips->select('trips.*');
@@ -577,6 +563,14 @@ class TripRepository
             }
             $q->whereRaw('sin_lat * '.$sin_lat.' + cos_lat * '.$cos_lat.' *  (cos_lng * '.$cos_lng.' + sin_lng * '.$sin_lng.') > '.$dist);
         });
+    }
+
+    private function applyAcceptedPassengerFilter($query, $userId): void
+    {
+        $query->join('trip_passengers', 'trips.id', '=', 'trip_passengers.trip_id');
+        $query->whereNull('trips.deleted_at');
+        $query->where('trip_passengers.user_id', $userId);
+        $query->where('trip_passengers.request_state', Passenger::STATE_ACCEPTED);
     }
 
     private function filterActiveTrips($query)
