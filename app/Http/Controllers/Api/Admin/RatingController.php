@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\AdminActionLog;
 use STS\Models\Rating;
+use STS\Services\AdminActionLogger;
 use STS\Transformers\RatingTransformer;
 
 class RatingController extends Controller
@@ -47,17 +48,17 @@ class RatingController extends Controller
             'reply_comment' => $model->reply_comment,
         ];
 
-        AdminActionLog::create([
-            'admin_user_id' => auth()->id(),
-            'action' => AdminActionLog::ACTION_RATING_UPDATE,
-            'target_user_id' => $model->user_id_to,
-            'details' => [
+        AdminActionLogger::log(
+            auth()->user(),
+            AdminActionLog::ACTION_RATING_UPDATE,
+            $model->user_id_to,
+            [
                 'entity_id' => $model->id,
                 'entity_type' => 'rating',
                 'before' => $before,
                 'after' => $after,
-            ],
-        ]);
+            ]
+        );
 
         return $this->item($model->fresh(), new RatingTransformer(auth()->user()));
     }
