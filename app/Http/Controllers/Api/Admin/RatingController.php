@@ -1,0 +1,64 @@
+<?php
+
+namespace STS\Http\Controllers\Api\Admin;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use STS\Http\Controllers\Controller;
+use STS\Models\AdminActionLog;
+use STS\Models\Rating;
+use STS\Transformers\RatingTransformer;
+
+class RatingController extends Controller
+{
+    public function update(Request $request, int $rating): JsonResponse
+    {
+        if (! auth()->user()?->is_admin) {
+            return response()->json('Unauthorized.', 401);
+        }
+
+        $model = Rating::query()->find($rating);
+        if (! $model) {
+            return response()->json(['message' => 'Rating not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'rating' => 'sometimes|integer|in:0,1',
+            'comment' => 'nullable|string',
+            'reply_comment' => 'nullable|string',
+        ]);
+
+        if ($validated === []) {
+            return response()->json(['message' => 'No fields to update.'], 422);
+        }
+
+        $before = [
+            'rating' => (int) $model->rating,
+            'comment' => $model->comment,
+            'reply_comment' => $model->reply_comment,
+        ];
+
+        $model->fill($validated);
+        $model->save();
+
+        $after = [
+            'rating' => (int) $model->rating,
+            'comment' => $model->comment,
+            'reply_comment' => $model->reply_comment,
+        ];
+
+        AdminActionLog::create([
+            'admin_user_id' => auth()->id(),
+            'action' => AdminActionLog::ACTION_RATING_UPDATE,
+            'target_user_id' => $model->user_id_to,
+            'details' => [
+                'entity_id' => $model->id,
+                'entity_type' => 'rating',
+                'before' => $before,
+                'after' => $after,
+            ],
+        ]);
+
+        return $this->item($model->fresh(), new RatingTransformer(auth()->user()));
+    }
+}

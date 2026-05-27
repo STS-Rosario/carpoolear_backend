@@ -57,6 +57,7 @@ class AdminRatingControllerIntegrationTest extends TestCase
         ]);
 
         $this->actingAs($user, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
 
         $this->patchJson('api/admin/ratings/'.$rating->id, [
             'rating' => Rating::STATE_NEGATIVO,
