@@ -161,4 +161,107 @@ class AdminRatingControllerIntegrationTest extends TestCase
             'comment' => 'Nope',
         ])->assertNotFound();
     }
+
+    public function test_index_requires_admin(): void
+    {
+        $user = User::factory()->create();
+        $target = User::factory()->create();
+
+        $this->actingAs($user, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/users/'.$target->id.'/ratings')
+            ->assertUnauthorized();
+    }
+
+    public function test_index_returns_received_and_given_ratings_with_links(): void
+    {
+        $admin = $this->admin();
+        $profileUser = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $tripReceived = Trip::factory()->create([
+            'user_id' => $otherUser->id,
+            'from_town' => 'Rosario',
+            'to_town' => 'Buenos Aires',
+        ]);
+        $tripGiven = Trip::factory()->create([
+            'user_id' => $profileUser->id,
+            'from_town' => 'Córdoba',
+            'to_town' => 'Mendoza',
+        ]);
+
+        $received = $this->persistRating([
+            'trip_id' => $tripReceived->id,
+            'user_id_from' => $otherUser->id,
+            'user_id_to' => $profileUser->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Great passenger',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::now(),
+            'available' => 1,
+        ]);
+
+        $given = $this->persistRating([
+            'trip_id' => $tripGiven->id,
+            'user_id_from' => $profileUser->id,
+            'user_id_to' => $otherUser->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_NEGATIVO,
+            'comment' => 'Late arrival',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::now(),
+            'available' => 1,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->getJson('api/admin/users/'.$profileUser->id.'/ratings')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'received' => [['id', 'rating', 'comment', 'from', 'to', 'trip']],
+                    'given' => [['id', 'rating', 'comment', 'from', 'to', 'trip']],
+                ],
+            ]);
+
+        $response->assertJsonPath('data.received.0.id', $received->id)
+            ->assertJsonPath('data.received.0.rating', Rating::STATE_POSITIVO)
+            ->assertJsonPath('data.received.0.comment', 'Great passenger')
+            ->assertJsonPath('data.received.0.from.id', $otherUser->id)
+            ->assertJsonPath('data.received.0.to.id', $profileUser->id)
+            ->assertJsonPath('data.received.0.trip.id', $tripReceived->id)
+            ->assertJsonPath('data.received.0.trip.from_town', 'Rosario')
+            ->assertJsonPath('data.received.0.trip.to_town', 'Buenos Aires');
+
+        $response->assertJsonPath('data.given.0.id', $given->id)
+            ->assertJsonPath('data.given.0.rating', Rating::STATE_NEGATIVO)
+            ->assertJsonPath('data.given.0.comment', 'Late arrival')
+            ->assertJsonPath('data.given.0.from.id', $profileUser->id)
+            ->assertJsonPath('data.given.0.to.id', $otherUser->id)
+            ->assertJsonPath('data.given.0.trip.id', $tripGiven->id)
+            ->assertJsonPath('data.given.0.trip.from_town', 'Córdoba')
+            ->assertJsonPath('data.given.0.trip.to_town', 'Mendoza');
+    }
+
+    public function test_index_returns_empty_arrays_when_user_has_no_ratings(): void
+    {
+        $admin = $this->admin();
+        $target = User::factory()->create();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/users/'.$target->id.'/ratings')
+            ->assertOk()
+            ->assertJsonPath('data.received', [])
+            ->assertJsonPath('data.given', []);
+    }
 }
