@@ -8,6 +8,8 @@ use STS\Console\Commands\UpdateUser;
 use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\References;
+use STS\Models\SupportTicket;
+use STS\Models\SupportTicketReply;
 use STS\Models\Trip;
 use STS\Models\User;
 use Tests\TestCase;
@@ -66,6 +68,34 @@ class UpdateUserTest extends TestCase
         Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
             return $e->level === 'info' && $e->message === 'COMMAND UpdateUser';
         });
+    }
+
+    public function test_handle_reassigns_support_tickets_and_replies_to_new_user(): void
+    {
+        $original = User::factory()->create(['active' => true]);
+        $new = User::factory()->create(['active' => true]);
+
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $original->id,
+            'type' => 'contact',
+            'subject' => 'Help with account',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+        $reply = SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $original->id,
+            'is_admin' => false,
+            'message_markdown' => 'I need assistance',
+        ]);
+
+        $this->artisan('user:update', [
+            'original' => $original->id,
+            'new' => $new->id,
+        ])->assertExitCode(0);
+
+        $this->assertSame($new->id, (int) $ticket->fresh()->user_id);
+        $this->assertSame($new->id, (int) $reply->fresh()->user_id);
     }
 
     public function test_handle_with_remove_deactivates_original_user_after_confirmation(): void
