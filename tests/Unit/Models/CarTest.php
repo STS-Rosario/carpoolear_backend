@@ -81,6 +81,17 @@ class CarTest extends TestCase
         $this->assertSame('Blue hatchback', $car->description);
     }
 
+    public function test_soft_deleted_car_is_excluded_from_default_queries(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create(['user_id' => $user->id]);
+        $car->delete();
+
+        $this->assertNull(Car::query()->find($car->id));
+        $this->assertNotNull(Car::withTrashed()->find($car->id));
+        $this->assertNotNull($car->fresh()->deleted_at);
+    }
+
     public function test_table_name_is_cars(): void
     {
         $this->assertSame('cars', (new Car)->getTable());
