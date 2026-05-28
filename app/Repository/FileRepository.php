@@ -3,6 +3,7 @@
 namespace STS\Repository;
 
 use File;
+use STS\Services\ImageExifOrientationNormalizer;
 
 class FileRepository
 {
@@ -83,6 +84,8 @@ class FileRepository
         $imgPath = $folder_path.$newfilename;
 
         try {
+            $data = app(ImageExifOrientationNormalizer::class)->normalize($data);
+
             if ($this->usesImagickForThumbnails()) {
                 // Create Imagick object
                 $im = new \Imagick;

@@ -18,6 +18,7 @@ use STS\Repository\FileRepository;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
 use STS\Services\HeicToJpegConverter;
+use STS\Services\ImageExifOrientationNormalizer;
 use STS\Services\ImageUploadValidator;
 use STS\Services\UserEditablePropertiesService;
 use STS\Support\FacebookProfileUrl;
@@ -422,16 +423,17 @@ class UsersManager extends BaseManager
             File::makeDirectory($docsDir, 0755, true);
         }
 
-        if ($jpegContent !== null) {
-            $imageName = $newfilename.'.jpg';
-            File::put($docsDir.$imageName, $jpegContent);
+        $content = $jpegContent ?? file_get_contents($file->getRealPath());
+        if ($content === false) {
+            $this->setErrors(['image' => ['Could not read uploaded image.']]);
 
-            return $imageName;
+            return false;
         }
 
-        $extension = $file->getClientOriginalExtension();
+        $content = app(ImageExifOrientationNormalizer::class)->normalize($content);
+        $extension = $jpegContent !== null ? 'jpg' : $file->getClientOriginalExtension();
         $imageName = $newfilename.'.'.$extension;
-        $file->move($docsDir, $imageName);
+        File::put($docsDir.$imageName, $content);
 
         return $imageName;
     }
