@@ -2,12 +2,14 @@
 
 namespace STS\Console\Commands;
 
-use STS\Models\User;
-use STS\Models\Trip;
-use STS\Models\Rating;
-use STS\Models\Passenger;
 use Illuminate\Console\Command;
+use STS\Models\Passenger;
+use STS\Models\Rating;
 use STS\Models\References;
+use STS\Models\SupportTicket;
+use STS\Models\SupportTicketReply;
+use STS\Models\Trip;
+use STS\Models\User;
 
 class UpdateUser extends Command
 {
@@ -42,7 +44,7 @@ class UpdateUser extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND UpdateUser");
+        \Log::info('COMMAND UpdateUser');
         $originalId = $this->argument('original');
         $newId = $this->argument('new');
 
@@ -70,20 +72,29 @@ class UpdateUser extends Command
             $trip->save();
         }
 
-        
         $referencesFrom = References::where('user_id_from', '=', $originalId)->get();
         foreach ($referencesFrom as $reference) {
             $reference->user_id_from = $newId;
             $reference->save();
         }
 
-        
         $referencesTo = References::where('user_id_to', '=', $originalId)->get();
         foreach ($referencesTo as $reference) {
             $reference->user_id_to = $newId;
             $reference->save();
         }
 
+        $supportTickets = SupportTicket::where('user_id', '=', $originalId)->get();
+        foreach ($supportTickets as $supportTicket) {
+            $supportTicket->user_id = $newId;
+            $supportTicket->save();
+        }
+
+        $supportTicketReplies = SupportTicketReply::where('user_id', '=', $originalId)->get();
+        foreach ($supportTicketReplies as $supportTicketReply) {
+            $supportTicketReply->user_id = $newId;
+            $supportTicketReply->save();
+        }
 
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);
