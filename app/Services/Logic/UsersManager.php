@@ -32,6 +32,11 @@ class UsersManager extends BaseManager
 
     protected $userEditablePropertiesService;
 
+    private function isFacebookProfileUrlModuleEnabled(): bool
+    {
+        return (bool) config('carpoolear.module_facebook_profile_url_enabled', false);
+    }
+
     public function __construct(
         UserRepository $userRep,
         TripRepository $tripRepository,
@@ -46,7 +51,7 @@ class UsersManager extends BaseManager
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
     {
-        $facebookModuleEnabled = (bool) config('carpoolear.module_facebook_profile_url_enabled', false);
+        $facebookModuleEnabled = $this->isFacebookProfileUrlModuleEnabled();
 
         if ($id) {
             $rules = [
@@ -104,7 +109,7 @@ class UsersManager extends BaseManager
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
-        if (! config('carpoolear.module_facebook_profile_url_enabled', false)) {
+        if (! $this->isFacebookProfileUrlModuleEnabled()) {
             unset($data['facebook_profile_url']);
         }
         \Log::info('Create USER: '.$data['name']);
@@ -227,7 +232,7 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
-        if (! config('carpoolear.module_facebook_profile_url_enabled', false)) {
+        if (! $this->isFacebookProfileUrlModuleEnabled()) {
             unset($data['facebook_profile_url']);
         }
         $requestData = $data;
