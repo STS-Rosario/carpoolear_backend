@@ -97,7 +97,7 @@ class AdminCarControllerIntegrationTest extends TestCase
         $this->assertSame('FFF666', $target->fresh()->patente);
     }
 
-    public function test_destroy_removes_car_record(): void
+    public function test_destroy_soft_deletes_car_record(): void
     {
         $this->authenticateAsAdmin();
 
@@ -106,7 +106,8 @@ class AdminCarControllerIntegrationTest extends TestCase
         $this->deleteJson("api/admin/cars/{$car->id}")
             ->assertNoContent();
 
-        $this->assertDatabaseMissing('cars', ['id' => $car->id]);
+        $this->assertNull(Car::query()->find($car->id));
+        $this->assertNotNull(Car::withTrashed()->find($car->id)?->deleted_at);
     }
 
     public function test_user_cars_and_store_for_user_cover_admin_user_scoped_flow(): void
