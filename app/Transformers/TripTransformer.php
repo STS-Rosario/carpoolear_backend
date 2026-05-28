@@ -75,12 +75,12 @@ class TripTransformer extends TransformerAbstract
                     foreach ($trip->passengerAccepted as $passenger) {
                         $data['passenger'][] = $userTranforms->transform($passenger->user);
                     }
-                    $data['car'] = $trip->car;
+                    $data['car'] = $this->transformCar($trip->car);
                 } elseif ($trip->isPending($this->user)) {
                     $data['request'] = 'send';
                 }
 
-                $data['car'] = $trip->car;
+                $data['car'] = $this->transformCar($trip->car);
                 $data['request_count'] = count($trip->passenger);
                 $data['passengerAccepted_count'] = count($trip->passengerAccepted);
                 foreach ($trip->passenger as $prequest) {
@@ -98,5 +98,19 @@ class TripTransformer extends TransformerAbstract
         }
 
         return $data;
+    }
+
+    private function transformCar($car): ?array
+    {
+        if (! $car) {
+            return null;
+        }
+
+        $payload = $car->toArray();
+        if (method_exists($car, 'trashed') && $car->trashed()) {
+            $payload['deleted'] = true;
+        }
+
+        return $payload;
     }
 }

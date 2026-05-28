@@ -170,7 +170,7 @@ class Trip extends Model
 
     public function car()
     {
-        return $this->belongsTo('STS\Models\Car', 'car_id');
+        return $this->belongsTo('STS\Models\Car', 'car_id')->withTrashed();
     }
 
     public function passenger()

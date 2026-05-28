@@ -194,9 +194,9 @@ class TripsManager extends BaseManager
             return;
         }
 
-        $car = $this->firstUserCarWithPlate($user);
-        if ($car) {
-            $data['car_id'] = $car->id;
+        $cars = $this->activeCarsWithPlate($user);
+        if ($cars->count() === 1) {
+            $data['car_id'] = $cars->first()->id;
         }
     }
 
@@ -224,16 +224,17 @@ class TripsManager extends BaseManager
             return $car && $this->hasValue($car->patente);
         }
 
-        return (bool) $this->firstUserCarWithPlate($user);
+        return $this->activeCarsWithPlate($user)->count() === 1;
     }
 
-    private function firstUserCarWithPlate($user)
+    private function activeCarsWithPlate($user)
     {
         return $user->cars()
             ->get()
-            ->first(function ($car) {
+            ->filter(function ($car) {
                 return $this->hasValue($car->patente);
-            });
+            })
+            ->values();
     }
 
     private function hasValue($value): bool
