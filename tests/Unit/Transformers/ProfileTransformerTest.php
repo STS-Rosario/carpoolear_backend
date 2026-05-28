@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Transformers;
 
+use STS\Models\Car;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -338,5 +339,27 @@ class ProfileTransformerTest extends TestCase
         $payload = (new ProfileTransformer(null))->transform($user->fresh());
 
         $this->assertArrayNotHasKey('state', $payload);
+    }
+
+    public function test_transform_cars_for_own_profile_excludes_soft_deleted(): void
+    {
+        $user = User::factory()->create(['data_visibility' => '2']);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'ACT123',
+            'description' => 'Active',
+        ]);
+        $deleted = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'DEL456',
+            'description' => 'Removed',
+        ]);
+        $deleted->delete();
+
+        $payload = (new ProfileTransformer($user))->transform($user->fresh(['cars']));
+
+        $this->assertArrayHasKey('cars', $payload);
+        $patentes = collect($payload['cars'])->pluck('patente')->all();
+        $this->assertSame(['ACT123'], $patentes);
     }
 }
