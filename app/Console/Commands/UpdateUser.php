@@ -84,17 +84,7 @@ class UpdateUser extends Command
             $reference->save();
         }
 
-        $supportTickets = SupportTicket::where('user_id', '=', $originalId)->get();
-        foreach ($supportTickets as $supportTicket) {
-            $supportTicket->user_id = $newId;
-            $supportTicket->save();
-        }
-
-        $supportTicketReplies = SupportTicketReply::where('user_id', '=', $originalId)->get();
-        foreach ($supportTicketReplies as $supportTicketReply) {
-            $supportTicketReply->user_id = $newId;
-            $supportTicketReply->save();
-        }
+        $this->migrateSupportTicketOwnership($originalId, $newId);
 
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);
@@ -104,5 +94,16 @@ class UpdateUser extends Command
         }
 
         $this->info('Trips, references ratings and passenger have been updated.');
+    }
+
+    private function migrateSupportTicketOwnership(int|string $originalId, int|string $newId): void
+    {
+        SupportTicket::query()
+            ->where('user_id', '=', $originalId)
+            ->update(['user_id' => $newId]);
+
+        SupportTicketReply::query()
+            ->where('user_id', '=', $originalId)
+            ->update(['user_id' => $newId]);
     }
 }
