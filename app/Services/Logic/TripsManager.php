@@ -5,6 +5,7 @@ namespace STS\Services\Logic;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\MessageBag;
+use Illuminate\Validation\Rule;
 use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
@@ -40,7 +41,7 @@ class TripsManager extends BaseManager
                 'description' => 'string',
                 'return_trip_id' => 'exists:trips,id',
                 'parent_trip_id' => 'exists:trips,id',
-                'car_id' => 'exists:cars,id,user_id,'.$user_id,
+                'car_id' => $this->activeCarIdRule($user_id),
                 'weekly_schedule' => 'required_without:trip_date|nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
 
@@ -62,7 +63,7 @@ class TripsManager extends BaseManager
                 'co2' => 'numeric',
                 'return_trip_id' => 'exists:trips,id',
                 'parent_trip_id' => 'exists:trips,id',
-                'car_id' => 'exists:cars,id,user_id,'.$user_id,
+                'car_id' => $this->activeCarIdRule($user_id),
                 'weekly_schedule' => 'nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
 
@@ -76,7 +77,7 @@ class TripsManager extends BaseManager
 
     public function create($user, array $data)
     {
-        $this->assignDriverCarWhenPossible($user, $data);
+        $this->prepareDriverCarForSave($user, $data);
         $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
@@ -188,9 +189,44 @@ class TripsManager extends BaseManager
         }
     }
 
-    private function assignDriverCarWhenPossible($user, array &$data): void
+    private function activeCarIdRule($user_id): array
     {
-        if (! $this->isDriverTrip($data) || ! empty($data['car_id'])) {
+        return [
+            'nullable',
+            Rule::exists('cars', 'id')->where(function ($query) use ($user_id) {
+                $query->where('user_id', $user_id)->whereNull('deleted_at');
+            }),
+        ];
+    }
+
+    private function prepareDriverCarForSave($user, array &$data, ?Trip $existingTrip = null): void
+    {
+        if (! $this->isDriverTrip($data, $existingTrip)) {
+            return;
+        }
+
+        if (! empty($data['car_id'])) {
+            $car = $user->cars()->whereKey($data['car_id'])->first();
+            if (! $car || ! $this->hasValue($car->patente)) {
+                unset($data['car_id']);
+            }
+        }
+
+        if ($existingTrip && empty($data['car_id']) && $existingTrip->car_id) {
+            $tripCarStillActive = $user->cars()->whereKey($existingTrip->car_id)->first();
+            if (! $tripCarStillActive) {
+                $this->assignDriverCarWhenPossible($user, $data, $existingTrip);
+
+                return;
+            }
+        }
+
+        $this->assignDriverCarWhenPossible($user, $data, $existingTrip);
+    }
+
+    private function assignDriverCarWhenPossible($user, array &$data, ?Trip $existingTrip = null): void
+    {
+        if (! $this->isDriverTrip($data, $existingTrip) || ! empty($data['car_id'])) {
             return;
         }
 
@@ -200,9 +236,17 @@ class TripsManager extends BaseManager
         }
     }
 
-    private function isDriverTrip(array $data): bool
+    private function isDriverTrip(array $data, ?Trip $existingTrip = null): bool
     {
-        return array_key_exists('is_passenger', $data) && (string) $data['is_passenger'] === '0';
+        if (array_key_exists('is_passenger', $data)) {
+            return (string) $data['is_passenger'] === '0';
+        }
+
+        if ($existingTrip) {
+            return ! $existingTrip->is_passenger;
+        }
+
+        return false;
     }
 
     private function userHasRequiredProfileFields($user): bool
@@ -247,12 +291,21 @@ class TripsManager extends BaseManager
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
+                $this->prepareDriverCarForSave($user, $data, $trip);
                 $v = $this->validator($data, $user->id, $trip_id);
                 if ($v->fails()) {
                     $this->setErrors($v->errors());
 
                     return;
                 } else {
+                    if ($this->isDriverTrip($data, $trip) && ! $this->driverTripHasPlate($user, $data)) {
+                        $messageBag = new MessageBag;
+                        $messageBag->add('car_id', 'The driver must have a car with a plate.');
+                        $this->setErrors($messageBag);
+
+                        return;
+                    }
+
                     if (isset($data['total_seats']) && $data['total_seats'] < $trip->passengerAccepted()->count()) {
                         $this->setErrors(['error' => 'trip_invalid_seats']);
 

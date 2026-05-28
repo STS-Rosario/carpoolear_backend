@@ -90,6 +90,42 @@ class TripTransformerTest extends TestCase
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
+        $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_omits_car_for_unrelated_viewer_on_driver_trip(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $car = Car::factory()->create([
+            'user_id' => $owner->id,
+            'patente' => 'VIEW123',
+            'description' => 'Driver car',
+        ]);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'car_id' => $car->id,
+            'is_passenger' => false,
+        ]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh(['car']));
+
+        $this->assertArrayNotHasKey('car', $payload);
+        $this->assertArrayNotHasKey('allPassengerRequest', $payload);
+    }
+
+    public function test_transform_omits_car_on_passenger_trip(): void
+    {
+        $owner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'is_passenger' => true,
+        ]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh());
+
+        $this->assertArrayNotHasKey('car', $payload);
     }
 
     public function test_transform_includes_rear_max_two_passengers(): void
