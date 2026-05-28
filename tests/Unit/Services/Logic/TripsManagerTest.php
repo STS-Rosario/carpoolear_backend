@@ -680,6 +680,46 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_update_driver_trip_persists_selected_car_id(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 365_000, 'duration' => 18_000]],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = $this->completeUser();
+        $first = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'CAR001',
+            'description' => 'First',
+        ]);
+        $second = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'CAR002',
+            'description' => 'Second',
+        ]);
+        $manager = $this->manager();
+        $trip = $manager->create($user, $this->minimalCreatePayload([
+            'car_id' => $first->id,
+        ]));
+        $this->assertNotNull($trip);
+
+        $updated = $manager->update($user, $trip->id, [
+            'car_id' => $second->id,
+        ]);
+        $this->assertNotNull($updated);
+        $this->assertSame($second->id, (int) $updated->fresh()->car_id);
+        Carbon::setTestNow();
+    }
+
     public function test_create_driver_trip_uses_selected_car_when_user_has_multiple_active_cars(): void
     {
         Http::fake(function ($request) {
