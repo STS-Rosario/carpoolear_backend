@@ -46,6 +46,8 @@ class UsersManager extends BaseManager
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
     {
+        $facebookModuleEnabled = (bool) config('carpoolear.module_facebook_profile_url_enabled', false);
+
         if ($id) {
             $rules = [
                 'name' => 'max:255',
@@ -75,6 +77,9 @@ class UsersManager extends BaseManager
                 ];
             }
         }
+        if ($facebookModuleEnabled) {
+            $rules['facebook_profile_url'] = 'nullable|url|max:255';
+        }
         if (config('carpoolear.module_validated_drivers', false) && $is_driver) {
             $rules['driver_data_docs'] = 'required|array|min:1';
         }
@@ -99,6 +104,9 @@ class UsersManager extends BaseManager
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
+        if (! config('carpoolear.module_facebook_profile_url_enabled', false)) {
+            unset($data['facebook_profile_url']);
+        }
         \Log::info('Create USER: '.$data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
@@ -219,6 +227,9 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
+        if (! config('carpoolear.module_facebook_profile_url_enabled', false)) {
+            unset($data['facebook_profile_url']);
+        }
         $requestData = $data;
         $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin);
 

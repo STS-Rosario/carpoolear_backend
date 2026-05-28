@@ -74,6 +74,7 @@ class ProfileTransformer extends TransformerAbstract
             'driver_data_docs' => $user->driver_data_docs ? json_decode($user->driver_data_docs) : null,
             'references' => $user->references,
             'data_visibility' => $user->data_visibility,
+            'facebook_profile_url' => $user->facebook_profile_url,
             'references_data' => $user->referencesReceived,
             // Identity validation: exposed to every user (all viewers of the profile)
             'identity_validated' => $user->identity_validated ? true : false,

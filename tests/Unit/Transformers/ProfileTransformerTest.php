@@ -47,6 +47,7 @@ class ProfileTransformerTest extends TestCase
             'driver_data_docs',
             'references',
             'data_visibility',
+            'facebook_profile_url',
             'references_data',
             'identity_validated',
             'identity_validated_at',

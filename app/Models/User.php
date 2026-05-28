@@ -69,6 +69,7 @@ class User extends Authenticatable implements JWTSubject
             'account_type',
             'account_bank',
             'data_visibility',
+            'facebook_profile_url',
             'identity_validated',
             'identity_validated_at',
             'identity_validation_type',
