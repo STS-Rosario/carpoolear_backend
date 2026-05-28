@@ -20,6 +20,7 @@ use STS\Repository\UserRepository;
 use STS\Services\HeicToJpegConverter;
 use STS\Services\ImageUploadValidator;
 use STS\Services\UserEditablePropertiesService;
+use STS\Support\FacebookProfileUrl;
 use Validator;
 
 class UsersManager extends BaseManager
@@ -31,6 +32,32 @@ class UsersManager extends BaseManager
     protected $carsRepository;
 
     protected $userEditablePropertiesService;
+
+    private function isFacebookProfileUrlModuleEnabled(): bool
+    {
+        return (bool) config('carpoolear.module_facebook_profile_url_enabled', false);
+    }
+
+    private function prepareFacebookProfileUrl(array $data): array
+    {
+        if (! $this->isFacebookProfileUrlModuleEnabled() || ! array_key_exists('facebook_profile_url', $data)) {
+            return $data;
+        }
+
+        $raw = $data['facebook_profile_url'];
+        if ($raw === null || trim((string) $raw) === '') {
+            $data['facebook_profile_url'] = null;
+
+            return $data;
+        }
+
+        $normalized = FacebookProfileUrl::tryNormalize((string) $raw);
+        if ($normalized !== null) {
+            $data['facebook_profile_url'] = $normalized;
+        }
+
+        return $data;
+    }
 
     public function __construct(
         UserRepository $userRep,
@@ -46,6 +73,8 @@ class UsersManager extends BaseManager
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
     {
+        $facebookModuleEnabled = $this->isFacebookProfileUrlModuleEnabled();
+
         if ($id) {
             $rules = [
                 'name' => 'max:255',
@@ -75,6 +104,20 @@ class UsersManager extends BaseManager
                 ];
             }
         }
+        if ($facebookModuleEnabled) {
+            $rules['facebook_profile_url'] = [
+                'nullable',
+                'max:255',
+                function ($attribute, $value, $fail) {
+                    if ($value === null || trim((string) $value) === '') {
+                        return;
+                    }
+                    if (FacebookProfileUrl::tryNormalize((string) $value) === null) {
+                        $fail('El enlace debe ser un perfil de Facebook válido (por ejemplo facebook.com/tu-perfil).');
+                    }
+                },
+            ];
+        }
         if (config('carpoolear.module_validated_drivers', false) && $is_driver) {
             $rules['driver_data_docs'] = 'required|array|min:1';
         }
@@ -99,6 +142,11 @@ class UsersManager extends BaseManager
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
+        if (! $this->isFacebookProfileUrlModuleEnabled()) {
+            unset($data['facebook_profile_url']);
+        } else {
+            $data = $this->prepareFacebookProfileUrl($data);
+        }
         \Log::info('Create USER: '.$data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
@@ -219,6 +267,11 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
+        if (! $this->isFacebookProfileUrlModuleEnabled()) {
+            unset($data['facebook_profile_url']);
+        } else {
+            $data = $this->prepareFacebookProfileUrl($data);
+        }
         $requestData = $data;
         $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin);
 

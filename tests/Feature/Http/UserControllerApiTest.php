@@ -192,6 +192,109 @@ class UserControllerApiTest extends TestCase
         $this->assertSame('Bio without declaring driver intent.', $user->fresh()->description);
     }
 
+    public function test_registration_persists_facebook_profile_url_when_module_enabled(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $email = 'facebook-url-registration-'.uniqid('', true).'@example.com';
+        $facebookUrl = 'https://facebook.com/registro-fixture';
+
+        $response = $this->postJson('api/users/', [
+            'name' => 'Facebook Url Registration',
+            'email' => $email,
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'facebook_profile_url' => $facebookUrl,
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.facebook_profile_url', $facebookUrl);
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'facebook_profile_url' => $facebookUrl,
+        ]);
+    }
+
+    public function test_update_persists_facebook_profile_url_when_module_enabled(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $facebookUrl = 'https://facebook.com/update-fixture';
+        $this->putJson('api/users/', [
+            'description' => 'Bio update with facebook profile URL.',
+            'facebook_profile_url' => $facebookUrl,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.facebook_profile_url', $facebookUrl);
+
+        $this->assertSame($facebookUrl, $user->fresh()->facebook_profile_url);
+    }
+
+    public function test_admin_update_persists_facebook_profile_url_when_module_enabled(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $admin = User::factory()->create(['active' => true, 'banned' => false, 'is_admin' => true]);
+        $target = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $this->actingAs($admin, 'api');
+
+        $facebookUrl = 'https://facebook.com/admin-update-fixture';
+        $this->putJson('api/users/modify', [
+            'user' => ['id' => $target->id],
+            'facebook_profile_url' => $facebookUrl,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.facebook_profile_url', $facebookUrl);
+
+        $this->assertSame($facebookUrl, $target->fresh()->facebook_profile_url);
+    }
+
+    public function test_registration_normalizes_facebook_profile_url_without_scheme(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $email = 'facebook-url-normalize-'.uniqid('', true).'@example.com';
+        $expected = 'https://facebook.com/registro-fixture';
+
+        $response = $this->postJson('api/users/', [
+            'name' => 'Facebook Url Normalize',
+            'email' => $email,
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'facebook_profile_url' => 'facebook.com/registro-fixture',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.facebook_profile_url', $expected);
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'facebook_profile_url' => $expected,
+        ]);
+    }
+
+    public function test_registration_rejects_non_facebook_profile_url(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $email = 'facebook-url-invalid-'.uniqid('', true).'@example.com';
+
+        $this->postJson('api/users/', [
+            'name' => 'Facebook Url Invalid',
+            'email' => $email,
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'facebook_profile_url' => 'https://example.com/profile',
+        ])->assertStatus(422);
+    }
+
     public function test_update_bans_user_when_mobile_matches_configured_fragment(): void
     {
         config(['carpoolear.banned_phones' => ['0009']]);

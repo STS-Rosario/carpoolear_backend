@@ -86,6 +86,16 @@ class AuthControllerApiTest extends TestCase
         $this->assertSame(config('carpoolear.maintenance_admin_path'), $maintenance['admin_path']);
     }
 
+    public function test_get_config_exposes_facebook_profile_module_flag_defaulting_to_false(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => false]);
+
+        $response = $this->getJson('api/config');
+
+        $response->assertOk();
+        $response->assertJsonPath('module_facebook_profile_url_enabled', false);
+    }
+
     public function test_get_config_reflects_active_maintenance_payload(): void
     {
         app(MaintenanceStateService::class)->applyManualActive(

@@ -26,6 +26,7 @@ return [
     'module_trip_seats_payment' => env('MODULE_TRIP_SEATS_PAYMENT', false),
     'module_unique_doc_phone' => env('MODULE_UNIQUE_DOC_PHONE', false),
     'module_validated_drivers' => env('MODULE_VALIDATED_DRIVERS', false),
+    'module_facebook_profile_url_enabled' => env('MODULE_FACEBOOK_PROFILE_URL_ENABLED', false),
     'module_trip_creation_payment_enabled' => env('MODULE_TRIP_CREATION_PAYMENT_ENABLED', false),
     'module_trip_creation_payment_amount_cents' => (int) env('MODULE_TRIP_CREATION_PAYMENT_AMOUNT_CENTS', 1500),
     'module_trip_creation_payment_trips_threshold' => (int) env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
@@ -157,12 +158,14 @@ return [
             'on_boarding_view',
             'user_be_driver', 'driver_data_docs',
             'account_number', 'account_type', 'account_bank',
+            'facebook_profile_url',
         ],
 
         // Additional properties editable only by admin (name/email only at registration for users)
         'admin_allowed' => [
             'name', 'email', 'banned', 'active', 'driver_is_verified',
             'patente', 'car_description', 'private_note',
+            'facebook_profile_url',
             'identity_validated', 'identity_validated_at',
             'identity_validation_type', 'identity_validation_reject_reason',
             'validate_by_date',
