@@ -257,6 +257,44 @@ class UserControllerApiTest extends TestCase
         $this->assertSame($facebookUrl, $target->fresh()->facebook_profile_url);
     }
 
+    public function test_registration_normalizes_facebook_profile_url_without_scheme(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $email = 'facebook-url-normalize-'.uniqid('', true).'@example.com';
+        $expected = 'https://facebook.com/registro-fixture';
+
+        $response = $this->postJson('api/users/', [
+            'name' => 'Facebook Url Normalize',
+            'email' => $email,
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'facebook_profile_url' => 'facebook.com/registro-fixture',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.facebook_profile_url', $expected);
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'facebook_profile_url' => $expected,
+        ]);
+    }
+
+    public function test_registration_rejects_non_facebook_profile_url(): void
+    {
+        config(['carpoolear.module_facebook_profile_url_enabled' => true]);
+
+        $email = 'facebook-url-invalid-'.uniqid('', true).'@example.com';
+
+        $this->postJson('api/users/', [
+            'name' => 'Facebook Url Invalid',
+            'email' => $email,
+            'password' => 'secret12',
+            'password_confirmation' => 'secret12',
+            'facebook_profile_url' => 'https://example.com/profile',
+        ])->assertStatus(422);
+    }
+
     public function test_update_bans_user_when_mobile_matches_configured_fragment(): void
     {
         config(['carpoolear.banned_phones' => ['0009']]);
