@@ -291,6 +291,7 @@ class TripsManager extends BaseManager
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
+                $carIdWasInRequest = array_key_exists('car_id', $data);
                 $this->prepareDriverCarForSave($user, $data, $trip);
                 $v = $this->validator($data, $user->id, $trip_id);
                 if ($v->fails()) {
@@ -298,7 +299,11 @@ class TripsManager extends BaseManager
 
                     return;
                 } else {
-                    if ($this->isDriverTrip($data, $trip) && ! $this->driverTripHasPlate($user, $data)) {
+                    if (
+                        $this->isDriverTrip($data, $trip) &&
+                        $carIdWasInRequest &&
+                        ! $this->driverTripHasPlate($user, $data)
+                    ) {
                         $messageBag = new MessageBag;
                         $messageBag->add('car_id', 'The driver must have a car with a plate.');
                         $this->setErrors($messageBag);
