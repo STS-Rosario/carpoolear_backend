@@ -196,6 +196,30 @@ class FileRepositoryTest extends TestCase
         $this->assertStringEndsWith('/', $repo->nomalize(rtrim($withSlash, '/')));
     }
 
+    public function test_create_from_data_corrects_exif_orientation_before_thumbnail(): void
+    {
+        $fixture = base_path('tests/fixtures/orientation_6.jpg');
+        if (! File::exists($fixture)) {
+            $this->markTestSkipped('EXIF orientation fixture missing.');
+        }
+
+        $data = file_get_contents($fixture);
+        $this->assertNotFalse($data);
+
+        $repo = class_exists(\Imagick::class)
+            ? new FileRepository
+            : new FileRepositoryUsingGdThumbnails;
+
+        $name = $repo->createFromData($data, 'jpg', $this->testing_folder(), 'exif-oriented');
+        $path = $this->testing_folder_path().$name;
+        $this->assertTrue(File::exists($path));
+
+        $info = getimagesize($path);
+        $this->assertNotFalse($info);
+        // Fixture is portrait when oriented; thumbnail keeps aspect (max side 400).
+        $this->assertGreaterThan($info[0], $info[1]);
+    }
+
     public function test_create_from_data_imagick_writes_400_square_when_imagick_available(): void
     {
         if (! class_exists(\Imagick::class)) {
