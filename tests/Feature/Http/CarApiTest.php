@@ -79,6 +79,7 @@ class CarApiTest extends TestCase
             ->assertExactJson(['data' => 'ok']);
 
         $this->assertNull(Car::find($carId));
+        $this->assertNotNull(Car::withTrashed()->find($carId)?->deleted_at);
     }
 
     public function test_show_returns_unprocessable_when_car_missing_or_not_owned(): void
