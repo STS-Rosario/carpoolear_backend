@@ -11,6 +11,16 @@ use Tests\TestCase;
 
 class SupportTicketTest extends TestCase
 {
+    public function test_type_default_priorities_assigns_high_to_account_recovery(): void
+    {
+        $this->assertSame('high', SupportTicket::TYPE_DEFAULT_PRIORITIES['account_recovery']);
+    }
+
+    public function test_statuses_include_needs_review(): void
+    {
+        $this->assertContains(SupportTicket::STATUS_NEEDS_REVIEW, SupportTicket::STATUSES);
+    }
+
     public function test_fillable_contains_expected_mass_assignable_attributes(): void
     {
         $this->assertSame([

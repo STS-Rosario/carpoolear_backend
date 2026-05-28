@@ -22,6 +22,8 @@ class SupportTicketApiTest extends TestCase
     {
         parent::setUp();
 
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', null);
+
         if (! Schema::hasTable('support_tickets')) {
             Schema::create('support_tickets', function (Blueprint $table) {
                 $table->increments('id');
@@ -105,10 +107,11 @@ class SupportTicketApiTest extends TestCase
 
     public function test_user_creates_ticket_with_attachments_and_admin_reply_updates_unread_counters(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = $this->createUser();
         $admin = $this->createUser(true);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
 
         $this->actingAs($user, 'api');
         $createResponse = $this->post('api/support/tickets', [
@@ -124,10 +127,10 @@ class SupportTicketApiTest extends TestCase
         $createResponse->assertStatus(200);
         $ticketId = (int) data_get($createResponse->json(), 'data.id');
         $this->assertGreaterThan(0, $ticketId);
-        $this->assertSame('Open', data_get($createResponse->json(), 'data.status'));
+        $this->assertSame('Esperando respuesta', data_get($createResponse->json(), 'data.status'));
         $this->assertSame('normal', data_get($createResponse->json(), 'data.priority'));
-        $this->assertSame(0, data_get($createResponse->json(), 'data.unread_for_user'));
-        $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_admin'));
+        $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_user'));
+        $this->assertSame(0, data_get($createResponse->json(), 'data.unread_for_admin'));
 
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(\STS\Http\Middleware\UserAdmin::class);
@@ -136,7 +139,7 @@ class SupportTicketApiTest extends TestCase
         ]);
         $adminReply->assertStatus(200);
         $adminReply->assertJsonPath('data.status', 'Esperando respuesta');
-        $adminReply->assertJsonPath('data.unread_for_user', 1);
+        $adminReply->assertJsonPath('data.unread_for_user', 2);
         $adminReply->assertJsonPath('data.unread_for_admin', 0);
     }
 
@@ -474,7 +477,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_reply_persists_user_attachment_and_advances_ticket_status(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $user = $this->createUser();
         $this->actingAs($user, 'api');
@@ -485,7 +488,7 @@ class SupportTicketApiTest extends TestCase
             'message_markdown' => 'Initial',
         ])->json(), 'data.id');
 
-        $beforeFiles = count(Storage::disk('public')->allFiles());
+        $beforeFiles = count(Storage::disk('local')->allFiles());
 
         $this->post('api/support/tickets/'.$ticketId.'/replies', [
             'message_markdown' => 'Here is a screenshot',
@@ -494,7 +497,7 @@ class SupportTicketApiTest extends TestCase
             ],
         ])->assertStatus(200);
 
-        $this->assertGreaterThan($beforeFiles, count(Storage::disk('public')->allFiles()));
+        $this->assertGreaterThan($beforeFiles, count(Storage::disk('local')->allFiles()));
 
         $this->assertDatabaseHas('support_ticket_replies', [
             'ticket_id' => $ticketId,
@@ -531,7 +534,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_close_persists_status_and_optional_closing_message(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $user = $this->createUser();
         $this->actingAs($user, 'api');
 
@@ -617,16 +620,136 @@ class SupportTicketApiTest extends TestCase
         $ticket->assertJsonPath('data.priority', 'high');
     }
 
+    public function test_user_can_stream_own_ticket_attachment_image(): void
+    {
+        Storage::fake('local');
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'With image',
+            'message_markdown' => 'See attach',
+            'attachments' => [UploadedFile::fake()->image('proof.jpg')],
+        ])->json(), 'data.id');
+
+        $attachment = SupportTicketAttachment::query()
+            ->whereIn('reply_id', SupportTicketReply::where('ticket_id', $ticketId)->pluck('id'))
+            ->firstOrFail();
+        $this->assertStringStartsWith('support_tickets/'.$ticketId.'/', $attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
+
+        $this->get('api/support/tickets/'.$ticketId.'/attachments/'.$attachment->id.'/image')
+            ->assertOk();
+    }
+
+    public function test_user_cannot_stream_another_users_ticket_attachment(): void
+    {
+        Storage::fake('local');
+        $owner = $this->createUser();
+        $stranger = $this->createUser();
+
+        $this->actingAs($owner, 'api');
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Private',
+            'message_markdown' => 'Mine',
+            'attachments' => [UploadedFile::fake()->image('mine.jpg')],
+        ])->json(), 'data.id');
+        $attachmentId = (int) SupportTicketAttachment::query()
+            ->whereIn('reply_id', SupportTicketReply::where('ticket_id', $ticketId)->pluck('id'))
+            ->value('id');
+
+        $this->actingAs($stranger, 'api');
+        $this->getJson('api/support/tickets/'.$ticketId.'/attachments/'.$attachmentId.'/image')
+            ->assertNotFound();
+    }
+
+    public function test_user_created_ticket_includes_opening_auto_reply_after_user_message(): void
+    {
+        $user = $this->createUser();
+        $admin = $this->createUser(true);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $this->actingAs($user, 'api');
+        $ticketId = (int) data_get($this->post('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Need help with account',
+            'message_markdown' => 'My opening question',
+        ])->json(), 'data.id');
+
+        $replies = SupportTicketReply::query()
+            ->where('ticket_id', $ticketId)
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(2, $replies);
+        $this->assertFalse((bool) $replies[0]->is_admin);
+        $this->assertSame('My opening question', $replies[0]->message_markdown);
+        $this->assertTrue((bool) $replies[1]->is_admin);
+        $this->assertStringContainsString('¡Hola!', $replies[1]->message_markdown);
+        $this->assertSame($admin->id, (int) $replies[1]->user_id);
+
+        $ticket = SupportTicket::query()->findOrFail($ticketId);
+        $this->assertSame('Esperando respuesta', $ticket->status);
+        $this->assertSame(1, (int) $ticket->unread_for_user);
+        $this->assertSame(0, (int) $ticket->unread_for_admin);
+    }
+
+    public function test_duplicate_user_ticket_create_does_not_append_second_opening_auto_reply(): void
+    {
+        $user = $this->createUser();
+        $admin = $this->createUser(true);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $payload = [
+            'type' => 'contact',
+            'subject' => 'Duplicate auto reply check',
+            'message_markdown' => 'Same opening body',
+        ];
+
+        $this->actingAs($user, 'api');
+        $firstId = (int) data_get($this->postJson('api/support/tickets', $payload)->json(), 'data.id');
+        $this->assertSame(2, SupportTicketReply::query()->where('ticket_id', $firstId)->count());
+
+        $this->postJson('api/support/tickets', $payload)->assertOk();
+        $this->assertSame(2, SupportTicketReply::query()->where('ticket_id', $firstId)->count());
+    }
+
+    public function test_account_recovery_type_is_allowed_and_forced_to_high_priority(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $ticket = $this->post('api/support/tickets', [
+            'type' => 'account_recovery',
+            'subject' => 'Recuperacion de cuenta',
+            'message_markdown' => 'Tengo una cuenta duplicada y necesito recuperar el acceso.',
+            'priority' => 'low',
+        ]);
+
+        $ticket->assertStatus(200);
+        $ticket->assertJsonPath('data.type', 'account_recovery');
+        $ticket->assertJsonPath('data.priority', 'high');
+    }
+
     private function createUser(bool $isAdmin = false): User
     {
-        return User::query()->create([
+        $user = User::query()->create([
             'name' => 'Support Tester '.uniqid(),
             'email' => uniqid('support_', true).'@example.com',
             'password' => Hash::make('123456'),
             'active' => 1,
-            'is_admin' => $isAdmin ? 1 : 0,
             'terms_and_conditions' => 1,
             'emails_notifications' => 1,
         ]);
+
+        if ($isAdmin) {
+            $user->forceFill(['is_admin' => true])->saveQuietly();
+
+            return $user->fresh();
+        }
+
+        return $user;
     }
 }

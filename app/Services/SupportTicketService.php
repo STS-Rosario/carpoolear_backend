@@ -3,14 +3,18 @@
 namespace STS\Services;
 
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
+use STS\Models\User;
+use STS\Support\SupportTicketOpeningAutoReply;
 
 class SupportTicketService
 {
+    public function __construct(
+        private readonly SupportTicketAttachmentStorage $attachmentStorage,
+    ) {}
+
     /** Statuses where neither party may add replies via normal flows. */
     private const TERMINAL_USER_REPLY_STATUSES = ['Resuelto', 'Cerrado'];
 
@@ -28,27 +32,69 @@ class SupportTicketService
      */
     private const ADMIN_REPLY_SETS_WAITING_FOR_USER = ['Open', 'Esperando respuesta', 'En revision'];
 
-    public function storeReplyAttachments(array $files, int $userId, int $replyId): void
+    public function appendOpeningAutoReply(SupportTicket $ticket): bool
+    {
+        $actorUserId = $this->resolveAutoReplyActorUserId();
+        if ($actorUserId === null) {
+            return false;
+        }
+
+        if ($this->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, SupportTicketOpeningAutoReply::MARKDOWN)) {
+            return false;
+        }
+
+        SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $actorUserId,
+            'is_admin' => true,
+            'message_markdown' => SupportTicketOpeningAutoReply::MARKDOWN,
+            'created_by' => null,
+        ]);
+
+        $this->applyAdminReplyTransition($ticket, $actorUserId);
+        $ticket->save();
+
+        return true;
+    }
+
+    public function resolveAutoReplyActorUserId(): ?int
+    {
+        $configured = config('carpoolear.support_ticket_auto_reply_user_id');
+        if ($configured) {
+            $id = User::query()->whereKey((int) $configured)->value('id');
+
+            return $id ? (int) $id : null;
+        }
+
+        $adminId = User::query()->where('is_admin', true)->orderBy('id')->value('id');
+
+        return $adminId ? (int) $adminId : null;
+    }
+
+    public function storeReplyAttachments(array $files, int $ticketId, int $userId, int $replyId): void
     {
         foreach ($files as $file) {
             if (! ($file instanceof UploadedFile)) {
                 continue;
             }
 
-            $folder = 'support/'.date('Y').'/'.date('m');
-            $filename = Str::ulid().'_'.Str::random(20).'.'.$file->getClientOriginalExtension();
-            $path = Storage::disk('public')->putFileAs($folder, $file, $filename);
-
-            SupportTicketAttachment::create([
-                'reply_id' => $replyId,
-                'ticket_id' => null,
-                'user_id' => $userId,
-                'path' => $path,
-                'original_name' => $file->getClientOriginalName(),
-                'mime' => $file->getMimeType() ?? 'application/octet-stream',
-                'size_bytes' => (int) $file->getSize(),
-            ]);
+            $this->attachmentStorage->storeForReply($file, $ticketId, $replyId, $userId);
         }
+    }
+
+    public function purgeTicketAttachments(int $ticketId): int
+    {
+        return $this->attachmentStorage->purgeForTicket($ticketId);
+    }
+
+    public function findTicketAttachment(int $ticketId, int $attachmentId): ?SupportTicketAttachment
+    {
+        return $this->attachmentStorage->findForTicket($ticketId, $attachmentId);
+    }
+
+    public function diskForAttachmentPath(string $path): ?\Illuminate\Contracts\Filesystem\Filesystem
+    {
+        return $this->attachmentStorage->diskForPath($path);
     }
 
     /** Marks unread for admins and moves active tickets to pending team review. */
@@ -73,5 +119,33 @@ class SupportTicketService
         $ticket->unread_for_admin = 0;
         $ticket->last_reply_at = now();
         $ticket->updated_by = $actorUserId;
+    }
+
+    /**
+     * Status to restore when undoing "Resuelto", based on who sent the latest reply.
+     */
+    public function statusAfterUndoResolve(SupportTicket $ticket): string
+    {
+        $lastReply = $ticket->replies()
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastReply === null) {
+            return 'En revision';
+        }
+
+        return $lastReply->is_admin ? 'Esperando respuesta' : 'En revision';
+    }
+
+    public function unresolveTicket(SupportTicket $ticket, int $adminUserId): void
+    {
+        $ticket->status = $this->statusAfterUndoResolve($ticket);
+        $ticket->updated_by = $adminUserId;
+        $ticket->save();
+    }
+
+    public function ticketAcceptsReplies(SupportTicket $ticket): bool
+    {
+        return ! in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true);
     }
 }

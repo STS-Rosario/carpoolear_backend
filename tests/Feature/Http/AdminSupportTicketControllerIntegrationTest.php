@@ -163,7 +163,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_without_message_is_unprocessable(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -178,7 +178,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_with_image_persists_attachment_for_reply(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -340,6 +340,92 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($admin->id, (int) $fresh->updated_by);
     }
 
+    public function test_unresolve_restores_esperando_respuesta_when_last_reply_is_admin(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User message',
+            'created_by' => $owner->id,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unresolve')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'Esperando respuesta');
+    }
+
+    public function test_unresolve_restores_en_revision_when_last_reply_is_user(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User follow-up',
+            'created_by' => $owner->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unresolve')
+            ->assertOk()
+            ->assertJsonPath('data.status', 'En revision');
+    }
+
+    public function test_unresolve_returns_422_when_ticket_is_not_resolved(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unresolve')
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Ticket is not resolved']);
+    }
+
+    public function test_admin_reply_returns_422_when_ticket_is_resolved(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Resuelto']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Trying after resolve',
+        ])
+            ->assertStatus(422)
+            ->assertExactJson(['error' => 'Ticket is closed for replies']);
+    }
+
     public function test_update_status_non_cerrado_does_not_set_closed_metadata(): void
     {
         $admin = $this->adminUser();
@@ -374,6 +460,30 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             ->assertJsonPath('data.internal_note_markdown', null);
 
         $this->assertNull($ticket->fresh()->internal_note_markdown);
+    }
+
+    public function test_admin_created_ticket_does_not_include_opening_auto_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets', [
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Admin opened ticket',
+            'message_markdown' => 'Staff message only',
+        ])->assertOk();
+
+        $ticketId = (int) $response->json('data.id');
+        $replies = SupportTicketReply::query()->where('ticket_id', $ticketId)->orderBy('id')->get();
+
+        $this->assertCount(1, $replies);
+        $this->assertTrue((bool) $replies[0]->is_admin);
+        $this->assertSame('Staff message only', $replies[0]->message_markdown);
+        $this->assertStringNotContainsString('¡Hola!', $replies[0]->message_markdown);
     }
 
     public function test_admin_can_create_account_verification_ticket_for_user_with_high_priority(): void
@@ -502,6 +612,137 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_mark_needs_review_sets_status_and_creates_optional_admin_reply(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open']);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/needs-review', [
+            'message_markdown' => 'Seguimiento interno pendiente.',
+        ])->assertOk();
+
+        $this->assertSame('Necesita revisión', $response->json('data.status'));
+        $this->assertSame($before + 1, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+        $this->assertDatabaseHas('support_ticket_replies', [
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Seguimiento interno pendiente.',
+        ]);
+    }
+
+    public function test_mark_needs_review_without_message_only_updates_status(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Esperando respuesta']);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/needs-review', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'Necesita revisión');
+
+        $this->assertSame($before, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+    }
+
+    public function test_reply_with_image_stores_file_on_local_support_tickets_disk(): void
+    {
+        Storage::fake('local');
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'See screenshot',
+            'attachments' => [UploadedFile::fake()->image('screen.png')],
+        ])->assertOk();
+
+        $attachment = SupportTicketAttachment::query()
+            ->whereIn('reply_id', SupportTicketReply::where('ticket_id', $ticket->id)->pluck('id'))
+            ->first();
+        $this->assertNotNull($attachment);
+        $this->assertStringStartsWith('support_tickets/'.$ticket->id.'/', $attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
+    }
+
+    public function test_admin_can_stream_ticket_attachment_image(): void
+    {
+        Storage::fake('local');
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+        $path = 'support_tickets/'.$ticket->id.'/1/shot.png';
+        Storage::disk('local')->put($path, 'png-bytes');
+        $reply = SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'Hi',
+        ]);
+        $attachment = SupportTicketAttachment::create([
+            'ticket_id' => null,
+            'reply_id' => $reply->id,
+            'user_id' => $owner->id,
+            'path' => $path,
+            'original_name' => 'shot.png',
+            'mime' => 'image/png',
+            'size_bytes' => 9,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->get('api/admin/support/tickets/'.$ticket->id.'/attachments/'.$attachment->id.'/image')
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
+    }
+
+    public function test_purge_attachments_deletes_all_ticket_files_and_records(): void
+    {
+        Storage::fake('local');
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+        $path = 'support_tickets/'.$ticket->id.'/1/a.png';
+        Storage::disk('local')->put($path, 'x');
+        $reply = SupportTicketReply::create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'Hi',
+        ]);
+        SupportTicketAttachment::create([
+            'ticket_id' => null,
+            'reply_id' => $reply->id,
+            'user_id' => $owner->id,
+            'path' => $path,
+            'original_name' => 'a.png',
+            'mime' => 'image/png',
+            'size_bytes' => 1,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/purge-attachments')
+            ->assertOk()
+            ->assertJsonPath('message', 'Attachments purged');
+
+        $this->assertFalse(Storage::disk('local')->exists($path));
+        $this->assertSame(0, SupportTicketAttachment::query()->where('reply_id', $reply->id)->count());
+    }
+
     public function test_update_priority_persists_and_returns_ticket_payload(): void
     {
         $admin = $this->adminUser();
@@ -606,7 +847,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_rejects_more_than_three_attachments(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -632,7 +873,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
     public function test_reply_rejects_attachment_with_disallowed_mime(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();

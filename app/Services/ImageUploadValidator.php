@@ -9,12 +9,18 @@ class ImageUploadValidator
     /**
      * Validate an uploaded image file (MIME, extension, size).
      *
+     * @param  list<string>|null  $allowedMimes
+     * @param  list<string>|null  $allowedExtensions
      * @return array{valid: bool, errors?: array<string, array<string>>}
      */
-    public function validate(UploadedFile $file, ?string $field = 'image'): array
-    {
-        $allowedMimes = config('carpoolear.image_upload_allowed_mimes', []);
-        $allowedExtensions = config('carpoolear.image_upload_allowed_extensions', []);
+    public function validate(
+        UploadedFile $file,
+        ?string $field = 'image',
+        ?array $allowedMimes = null,
+        ?array $allowedExtensions = null,
+    ): array {
+        $allowedMimes = $allowedMimes ?? config('carpoolear.image_upload_allowed_mimes', []);
+        $allowedExtensions = $allowedExtensions ?? config('carpoolear.image_upload_allowed_extensions', []);
         $maxBytesRaw = config('carpoolear.image_upload_max_bytes');
         $maxBytes = (int) ($maxBytesRaw ?? 10 * 1024 * 1024);
 

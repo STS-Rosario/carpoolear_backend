@@ -36,3 +36,4 @@ storage/firebase*.json
 storage/logs/*
 tests/coverage/*
 cert
+storage/framework/phpunit-mysql-testing.lock

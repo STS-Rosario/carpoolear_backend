@@ -9,6 +9,48 @@ class SupportTicket extends Model
 {
     use HasFactory;
 
+    /** @var list<string> */
+    public const TYPES = [
+        'bug_report',
+        'contact',
+        'feedback',
+        'report',
+        'account_verification',
+        'account_recovery',
+    ];
+
+    /** @var array<string, string> */
+    public const TYPE_DEFAULT_PRIORITIES = [
+        'report' => 'high',
+        'bug_report' => 'normal',
+        'contact' => 'normal',
+        'feedback' => 'low',
+        'account_verification' => 'high',
+        'account_recovery' => 'high',
+    ];
+
+    public const STATUS_NEEDS_REVIEW = 'Necesita revisión';
+
+    /** @var list<string> */
+    public const STATUSES = [
+        'Open',
+        'Esperando respuesta',
+        'En revision',
+        self::STATUS_NEEDS_REVIEW,
+        'Resuelto',
+        'Cerrado',
+    ];
+
+    public static function typeValidationRule(): string
+    {
+        return 'required|in:'.implode(',', self::TYPES);
+    }
+
+    public static function statusValidationRule(): string
+    {
+        return 'required|in:'.implode(',', self::STATUSES);
+    }
+
     protected $fillable = [
         'user_id',
         'type',

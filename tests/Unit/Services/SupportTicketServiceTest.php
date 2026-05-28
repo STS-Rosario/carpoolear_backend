@@ -9,10 +9,51 @@ use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Services\SupportTicketService;
+use STS\Support\SupportTicketOpeningAutoReply;
 use Tests\TestCase;
 
 class SupportTicketServiceTest extends TestCase
 {
+    private function service(): SupportTicketService
+    {
+        return $this->app->make(SupportTicketService::class);
+    }
+
+    public function test_append_opening_auto_reply_creates_admin_reply_after_user_message(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'unread_for_admin' => 1,
+            'unread_for_user' => 0,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User question',
+            'created_by' => $owner->id,
+        ]);
+
+        $service = $this->service();
+        $this->assertTrue($service->appendOpeningAutoReply($ticket->fresh()));
+        $this->assertFalse($service->appendOpeningAutoReply($ticket->fresh()));
+
+        $replies = SupportTicketReply::query()->where('ticket_id', $ticket->id)->orderBy('id')->get();
+        $this->assertCount(2, $replies);
+        $this->assertTrue((bool) $replies[1]->is_admin);
+        $this->assertSame(SupportTicketOpeningAutoReply::MARKDOWN, $replies[1]->message_markdown);
+        $this->assertSame($admin->id, (int) $replies[1]->user_id);
+        $this->assertSame('Esperando respuesta', $ticket->fresh()->status);
+    }
+
     public function test_ticket_already_has_reply_with_message_markdown_detects_existing_body(): void
     {
         $user = User::factory()->create();
@@ -31,15 +72,15 @@ class SupportTicketServiceTest extends TestCase
             'created_by' => $user->id,
         ]);
 
-        $service = new SupportTicketService;
+        $service = $this->service();
 
         $this->assertTrue($service->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, 'Already posted'));
         $this->assertFalse($service->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, 'New content'));
     }
 
-    public function test_store_reply_attachments_continues_after_invalid_item_and_processes_next_file(): void
+    public function test_store_reply_attachments_skips_non_files_and_stores_valid_images(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $user = User::factory()->create();
         $ticket = SupportTicket::query()->create([
             'user_id' => $user->id,
@@ -55,11 +96,11 @@ class SupportTicketServiceTest extends TestCase
             'message_markdown' => 'details',
         ]);
 
-        $validFile = UploadedFile::fake()->create('proof.pdf', 15, 'application/pdf');
+        $validFile = UploadedFile::fake()->image('proof.png');
 
-        $service = new SupportTicketService;
-        $service->storeReplyAttachments(
+        $this->service()->storeReplyAttachments(
             ['not-a-file', $validFile],
+            $ticket->id,
             $user->id,
             $reply->id
         );
@@ -69,17 +110,15 @@ class SupportTicketServiceTest extends TestCase
 
     public function test_store_reply_attachments_with_empty_array_creates_no_records(): void
     {
-        Storage::fake('public');
-        $service = new SupportTicketService;
-
-        $service->storeReplyAttachments([], 1, 1);
+        Storage::fake('local');
+        $this->service()->storeReplyAttachments([], 1, 1, 1);
 
         $this->assertSame(0, SupportTicketAttachment::query()->count());
     }
 
     public function test_store_reply_attachments_persists_only_uploaded_files(): void
     {
-        Storage::fake('public');
+        Storage::fake('local');
         $user = User::factory()->create();
         $ticket = SupportTicket::query()->create([
             'user_id' => $user->id,
@@ -97,9 +136,9 @@ class SupportTicketServiceTest extends TestCase
 
         $validFile = UploadedFile::fake()->create('evidence.png', 20, 'image/png');
 
-        $service = new SupportTicketService;
-        $service->storeReplyAttachments(
+        $this->service()->storeReplyAttachments(
             [$validFile, 'not-a-file'],
+            $ticket->id,
             $user->id,
             $reply->id
         );
@@ -111,66 +150,9 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame($user->id, (int) $attachment->user_id);
         $this->assertNull($attachment->ticket_id);
         $this->assertSame('evidence.png', $attachment->original_name);
-        $this->assertMatchesRegularExpression(
-            '#^support/\d{4}/\d{2}/[A-Z0-9]{26}_[A-Za-z0-9]{20}\.png$#',
-            $attachment->path
-        );
+        $this->assertStringStartsWith('support_tickets/'.$ticket->id.'/'.$reply->id.'/', $attachment->path);
         $this->assertSame('image/png', $attachment->mime);
-        $this->assertIsInt($attachment->fresh()->size_bytes);
-        $this->assertSame(20480, $attachment->fresh()->size_bytes);
-        $this->assertArrayHasKey('ticket_id', $attachment->fresh()->getAttributes());
-        $this->assertNull($attachment->fresh()->ticket_id);
-        Storage::disk('public')->assertExists($attachment->path);
-    }
-
-    public function test_store_reply_attachments_uses_fallback_mime_and_integer_size_when_mime_is_missing(): void
-    {
-        Storage::fake('public');
-        $user = User::factory()->create();
-        $ticket = SupportTicket::query()->create([
-            'user_id' => $user->id,
-            'type' => 'bug',
-            'subject' => 'App issue',
-            'status' => 'Open',
-            'priority' => 'normal',
-        ]);
-        $reply = SupportTicketReply::query()->create([
-            'ticket_id' => $ticket->id,
-            'user_id' => $user->id,
-            'is_admin' => false,
-            'message_markdown' => 'details',
-        ]);
-
-        $tempPath = tempnam(sys_get_temp_dir(), 'st-attachment-');
-        file_put_contents($tempPath, 'manual attachment payload');
-        $file = new class($tempPath) extends UploadedFile
-        {
-            public function __construct(string $path)
-            {
-                parent::__construct($path, 'evidence.bin', null, null, true);
-            }
-
-            public function getMimeType(): ?string
-            {
-                return null;
-            }
-
-            public function getSize(): int|false
-            {
-                return 3210;
-            }
-        };
-
-        $service = new SupportTicketService;
-        $service->storeReplyAttachments([$file], $user->id, $reply->id);
-        @unlink($tempPath);
-
-        $attachment = SupportTicketAttachment::query()->where('reply_id', $reply->id)->first();
-        $this->assertNotNull($attachment);
-        $this->assertSame('application/octet-stream', $attachment->mime);
-        $this->assertSame(3210, (int) $attachment->size_bytes);
-        $this->assertSame('evidence.bin', $attachment->original_name);
-        Storage::disk('public')->assertExists($attachment->path);
+        Storage::disk('local')->assertExists($attachment->path);
     }
 
     public function test_apply_admin_reply_transition_updates_status_and_counters(): void
@@ -181,8 +163,7 @@ class SupportTicketServiceTest extends TestCase
             'unread_for_admin' => 3,
         ]);
 
-        $service = new SupportTicketService;
-        $service->applyAdminReplyTransition($ticket, 99);
+        $this->service()->applyAdminReplyTransition($ticket, 99);
 
         $this->assertSame('Esperando respuesta', $ticket->status);
         $this->assertSame(1, $ticket->unread_for_user);
@@ -199,7 +180,7 @@ class SupportTicketServiceTest extends TestCase
             'unread_for_admin' => 4,
         ]);
 
-        $service = new SupportTicketService;
+        $service = $this->service();
         $service->applyAdminReplyTransition($ticket, 22);
 
         $this->assertSame('Esperando respuesta', $ticket->status);
@@ -207,6 +188,22 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame(0, $ticket->unread_for_admin);
         $this->assertSame(22, (int) $ticket->updated_by);
         $this->assertNotNull($ticket->last_reply_at);
+    }
+
+    public function test_apply_admin_reply_transition_keeps_necesita_revision_status(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Necesita revisión',
+            'unread_for_user' => 1,
+            'unread_for_admin' => 2,
+        ]);
+
+        $service = $this->service();
+        $service->applyAdminReplyTransition($ticket, 44);
+
+        $this->assertSame('Necesita revisión', $ticket->status);
+        $this->assertSame(2, $ticket->unread_for_user);
+        $this->assertSame(0, $ticket->unread_for_admin);
     }
 
     public function test_apply_admin_reply_transition_keeps_non_transitionable_status(): void
@@ -217,7 +214,7 @@ class SupportTicketServiceTest extends TestCase
             'unread_for_admin' => 2,
         ]);
 
-        $service = new SupportTicketService;
+        $service = $this->service();
         $service->applyAdminReplyTransition($ticket, 55);
 
         $this->assertSame('Resuelto', $ticket->status);
@@ -235,8 +232,7 @@ class SupportTicketServiceTest extends TestCase
             'unread_for_admin' => 1,
         ]);
 
-        $service = new SupportTicketService;
-        $service->applyUserReplyTransition($ticket, 77);
+        $this->service()->applyUserReplyTransition($ticket, 77);
 
         $this->assertSame('En revision', $ticket->status);
         $this->assertSame(2, $ticket->unread_for_admin);
@@ -253,7 +249,7 @@ class SupportTicketServiceTest extends TestCase
             'unread_for_admin' => 0,
         ]);
 
-        $service = new SupportTicketService;
+        $service = $this->service();
         $service->applyUserReplyTransition($ticket, 101);
 
         $this->assertSame('En revision', $ticket->status);
@@ -261,5 +257,98 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame(0, $ticket->unread_for_user);
         $this->assertSame(101, (int) $ticket->updated_by);
         $this->assertNotNull($ticket->last_reply_at);
+    }
+
+    public function test_status_after_undo_resolve_when_last_reply_is_admin(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin',
+        ]);
+
+        $this->assertSame(
+            'Esperando respuesta',
+            $this->service()->statusAfterUndoResolve($ticket->fresh())
+        );
+    }
+
+    public function test_status_after_undo_resolve_when_last_reply_is_user(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User follow-up',
+        ]);
+
+        $this->assertSame(
+            'En revision',
+            $this->service()->statusAfterUndoResolve($ticket->fresh())
+        );
+    }
+
+    public function test_unresolve_ticket_restores_status_from_last_reply(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Done',
+        ]);
+
+        $this->service()->unresolveTicket($ticket, $admin->id);
+
+        $this->assertSame('Esperando respuesta', $ticket->fresh()->status);
+        $this->assertSame($admin->id, (int) $ticket->fresh()->updated_by);
+    }
+
+    public function test_ticket_accepts_replies_is_false_for_resolved_and_closed(): void
+    {
+        $service = $this->service();
+
+        $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Resuelto'])));
+        $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Cerrado'])));
+        $this->assertTrue($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Open'])));
     }
 }

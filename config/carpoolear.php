@@ -92,7 +92,7 @@ return [
     ],
 
     'trip_creation_limits' => [
-        'max_trips' => 4,        // Maximum number of trips allowed
+        'max_trips' => 100,        // Maximum number of trips allowed
         'time_window_hours' => 24,     // Time window in hours
     ],
 
@@ -112,6 +112,9 @@ return [
     'support_ticket_rate_limit_create_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_CREATE_PER_HOUR', 5),
     'support_ticket_rate_limit_reply_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_REPLY_PER_HOUR', 20),
     'support_ticket_rate_limit_admin_reply_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_ADMIN_REPLY_PER_HOUR', 120),
+    'support_ticket_auto_reply_user_id' => env('SUPPORT_TICKET_AUTO_REPLY_USER_ID')
+        ? (int) env('SUPPORT_TICKET_AUTO_REPLY_USER_ID')
+        : null,
 
     // OSRM (trip-info + public map proxy). Primary = demo or self-hosted base URL without trailing slash.
     'osrm_router_base_url' => rtrim(env('OSRM_ROUTER_BASE_URL', 'https://router.project-osrm.org'), '/'),

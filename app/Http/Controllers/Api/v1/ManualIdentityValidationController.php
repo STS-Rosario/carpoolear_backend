@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
@@ -11,6 +12,7 @@ use STS\Models\ManualIdentityValidation;
 use STS\Services\HeicToJpegConverter;
 use STS\Services\ImageUploadValidator;
 use STS\Services\MercadoPagoService;
+use STS\Support\ImageAttachmentRules;
 
 class ManualIdentityValidationController extends Controller
 {
@@ -227,12 +229,32 @@ class ManualIdentityValidationController extends Controller
         $selfie = $request->file('selfie_image');
 
         if (! $front || ! $back || ! $selfie) {
-            throw new ExceptionWithErrors('All three images are required: front_image, back_image, selfie_image.', []);
+            throw new ExceptionWithErrors(
+                'All three images are required: front_image, back_image, selfie_image.',
+                []
+            );
+        }
+
+        $laravelValidator = Validator::make(
+            ['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie],
+            [
+                'front_image' => ImageAttachmentRules::FILE,
+                'back_image' => ImageAttachmentRules::FILE,
+                'selfie_image' => ImageAttachmentRules::FILE,
+            ],
+        );
+        if ($laravelValidator->fails()) {
+            throw new ExceptionWithErrors('Invalid image upload.', $laravelValidator->errors()->toArray());
         }
 
         $validator = app(ImageUploadValidator::class);
         foreach (['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie] as $field => $file) {
-            $result = $validator->validate($file, $field);
+            $result = $validator->validate(
+                $file,
+                $field,
+                ImageAttachmentRules::ALLOWED_MIMES,
+                ImageAttachmentRules::ALLOWED_EXTENSIONS,
+            );
             if (! ($result['valid'] ?? true)) {
                 throw new ExceptionWithErrors('Invalid image upload.', $result['errors'] ?? []);
             }

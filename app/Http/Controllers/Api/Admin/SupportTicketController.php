@@ -5,14 +5,19 @@ namespace STS\Http\Controllers\Api\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
+use STS\Support\ImageAttachmentRules;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupportTicketController extends Controller
 {
+    use StreamsSupportTicketAttachments;
+
     private const ADMIN_CREATED_TICKET_STATUS = 'Esperando respuesta';
 
     /**
@@ -34,17 +39,6 @@ class SupportTicketController extends Controller
     private static function ticketIndexRelationships(): array
     {
         return ['user:id,name'];
-    }
-
-    private static function typeDefaultPriorities(): array
-    {
-        return [
-            'report' => 'high',
-            'bug_report' => 'normal',
-            'contact' => 'normal',
-            'feedback' => 'low',
-            'account_verification' => 'high',
-        ];
     }
 
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
@@ -70,7 +64,7 @@ class SupportTicketController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
-            'type' => 'required|in:bug_report,contact,feedback,report,account_verification',
+            'type' => SupportTicket::typeValidationRule(),
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
         ]);
@@ -82,7 +76,7 @@ class SupportTicketController extends Controller
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
                 'status' => self::ADMIN_CREATED_TICKET_STATUS,
-                'priority' => self::typeDefaultPriorities()[$validated['type']] ?? 'normal',
+                'priority' => SupportTicket::TYPE_DEFAULT_PRIORITIES[$validated['type']] ?? 'normal',
                 'unread_for_user' => 1,
                 'unread_for_admin' => 0,
                 'created_by' => $admin->id,
@@ -118,11 +112,15 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'message_markdown' => 'required|string|min:1',
             'attachments' => 'nullable|array|max:3',
-            'attachments.*' => 'file|mimes:jpg,jpeg,png,webp|max:10240',
+            'attachments.*' => ImageAttachmentRules::FILE,
         ]);
 
         $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
+
+        if (! $this->supportTicketService->ticketAcceptsReplies($ticket)) {
+            return response()->json(['error' => 'Ticket is closed for replies'], 422);
+        }
 
         if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
             $ticket->id,
@@ -141,7 +139,7 @@ class SupportTicketController extends Controller
             ]);
 
             foreach (($validated['attachments'] ?? []) as $file) {
-                $this->supportTicketService->storeReplyAttachments([$file], $admin->id, $reply->id);
+                $this->supportTicketService->storeReplyAttachments([$file], $ticket->id, $admin->id, $reply->id);
             }
 
             $this->supportTicketService->applyAdminReplyTransition($ticket, $admin->id);
@@ -183,10 +181,29 @@ class SupportTicketController extends Controller
         return response()->json(['data' => $ticket]);
     }
 
+    public function unresolve(int $id): JsonResponse
+    {
+        $admin = auth()->user();
+        $ticket = SupportTicket::findOrFail($id);
+
+        if ($ticket->status !== 'Resuelto') {
+            return response()->json(['error' => 'Ticket is not resolved'], 422);
+        }
+
+        $this->supportTicketService->unresolveTicket($ticket, $admin->id);
+
+        return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    public function markNeedsReview(int $id, Request $request): JsonResponse
+    {
+        return $this->applyActionStatus($id, $request, SupportTicket::STATUS_NEEDS_REVIEW);
+    }
+
     public function updateStatus(int $id, Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'status' => 'required|in:Open,Esperando respuesta,En revision,Resuelto,Cerrado',
+            'status' => SupportTicket::statusValidationRule(),
         ]);
         $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
@@ -225,6 +242,21 @@ class SupportTicketController extends Controller
         $ticket->save();
 
         return response()->json(['data' => $ticket]);
+    }
+
+    public function attachmentImage(int $ticketId, int $attachmentId): StreamedResponse|JsonResponse
+    {
+        SupportTicket::query()->findOrFail($ticketId);
+
+        return $this->streamSupportTicketAttachment($this->supportTicketService, $ticketId, $attachmentId);
+    }
+
+    public function purgeAttachments(int $id): JsonResponse
+    {
+        SupportTicket::query()->findOrFail($id);
+        $this->supportTicketService->purgeTicketAttachments($id);
+
+        return response()->json(['message' => 'Attachments purged']);
     }
 
     private function applyActionStatus(int $id, Request $request, string $status): JsonResponse
