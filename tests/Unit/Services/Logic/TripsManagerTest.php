@@ -720,6 +720,72 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_update_driver_trip_replaces_soft_deleted_car_with_new_active_car(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 365_000, 'duration' => 18_000]],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = $this->completeUser();
+        $deletedCar = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OLD001',
+            'description' => 'Removed',
+        ]);
+        $replacementCar = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'NEW002',
+            'description' => 'Replacement',
+        ]);
+        $manager = $this->manager();
+        $trip = $manager->create($user, $this->minimalCreatePayload([
+            'car_id' => $deletedCar->id,
+        ]));
+        $this->assertNotNull($trip);
+
+        $deletedCar->delete();
+        $this->assertSoftDeleted($deletedCar);
+
+        $updated = $manager->update($user, $trip->id, [
+            'car_id' => $replacementCar->id,
+        ]);
+
+        $this->assertNotNull($updated);
+        $fresh = $updated->fresh();
+        $this->assertSame($replacementCar->id, (int) $fresh->car_id);
+        $this->assertSame('NEW002', $fresh->car->patente);
+        Carbon::setTestNow();
+    }
+
+    public function test_validator_rejects_soft_deleted_car_id(): void
+    {
+        $user = $this->completeUser();
+        $deletedCar = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'OLD001',
+            'description' => 'Removed',
+        ]);
+        $deletedCar->delete();
+
+        $validator = $this->manager()->validator(
+            ['car_id' => $deletedCar->id],
+            $user->id,
+            1
+        );
+
+        $this->assertTrue($validator->fails());
+        $this->assertTrue($validator->errors()->has('car_id'));
+    }
+
     public function test_create_driver_trip_uses_selected_car_when_user_has_multiple_active_cars(): void
     {
         Http::fake(function ($request) {
