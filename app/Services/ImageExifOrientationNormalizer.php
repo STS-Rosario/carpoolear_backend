@@ -13,25 +13,35 @@ class ImageExifOrientationNormalizer
             return $imageData;
         }
 
-        if (class_exists(\Imagick::class)) {
-            try {
-                $image = new \Imagick;
-                $image->readImageBlob($imageData);
-                $image->autoOrient();
-                $image->setImageOrientation(\Imagick::ORIENTATION_TOPLEFT);
-                $blob = $image->getImageBlob();
-                $image->clear();
-                $image->destroy();
-
-                if ($blob !== '') {
-                    return $blob;
-                }
-            } catch (\Throwable $e) {
-                \Log::warning('Imagick EXIF orientation normalization failed: '.$e->getMessage());
-            }
+        $normalized = $this->normalizeWithImagick($imageData);
+        if ($normalized !== null) {
+            return $normalized;
         }
 
         return $this->normalizeWithExifAndGd($imageData);
+    }
+
+    private function normalizeWithImagick(string $imageData): ?string
+    {
+        if (! class_exists(\Imagick::class)) {
+            return null;
+        }
+
+        try {
+            $image = new \Imagick;
+            $image->readImageBlob($imageData);
+            $image->autoOrient();
+            $image->setImageOrientation(\Imagick::ORIENTATION_TOPLEFT);
+            $blob = $image->getImageBlob();
+            $image->clear();
+            $image->destroy();
+
+            return $blob !== '' ? $blob : null;
+        } catch (\Throwable $e) {
+            \Log::warning('Imagick EXIF orientation normalization failed: '.$e->getMessage());
+
+            return null;
+        }
     }
 
     private function normalizeWithExifAndGd(string $imageData): string
