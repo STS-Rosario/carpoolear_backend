@@ -631,6 +631,91 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_driver_trip_auto_assigns_car_when_user_has_single_active_car(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 365_000, 'duration' => 18_000]],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = $this->completeUser();
+        $car = $this->carWithPlateFor($user);
+        $manager = $this->manager();
+
+        $trip = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNotNull($trip);
+        $this->assertSame($car->id, (int) $trip->car_id);
+        Carbon::setTestNow();
+    }
+
+    public function test_create_driver_trip_requires_car_id_when_user_has_multiple_active_cars(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $user = $this->completeUser();
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'CAR001',
+            'description' => 'First',
+        ]);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'CAR002',
+            'description' => 'Second',
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('car_id'));
+        Carbon::setTestNow();
+    }
+
+    public function test_create_driver_trip_uses_selected_car_when_user_has_multiple_active_cars(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 365_000, 'duration' => 18_000]],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = $this->completeUser();
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'CAR001',
+            'description' => 'First',
+        ]);
+        $second = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'CAR002',
+            'description' => 'Second',
+        ]);
+
+        $trip = $this->manager()->create($user, $this->minimalCreatePayload([
+            'car_id' => $second->id,
+        ]));
+
+        $this->assertNotNull($trip);
+        $this->assertSame($second->id, (int) $trip->car_id);
+        Carbon::setTestNow();
+    }
+
     public function test_parent_trip_id_sets_return_trip_id_on_parent(): void
     {
         Http::fake(function ($request) {

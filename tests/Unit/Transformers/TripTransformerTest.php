@@ -3,6 +3,7 @@
 namespace Tests\Unit\Transformers;
 
 use Carbon\Carbon;
+use STS\Models\Car;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -143,6 +144,27 @@ class TripTransformerTest extends TestCase
         $this->assertSame('2026-05-01 12:00:00', $deletedPayload['deleted_at']);
         $this->assertTrue($deletedPayload['deleted']);
         $this->assertArrayNotHasKey('hidden', $deletedPayload);
+    }
+
+    public function test_transform_marks_soft_deleted_car_on_trip(): void
+    {
+        $owner = User::factory()->create(['is_admin' => true]);
+        $car = Car::factory()->create([
+            'user_id' => $owner->id,
+            'patente' => 'DEL123',
+            'description' => 'Removed car',
+        ]);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'car_id' => $car->id,
+        ]);
+        $car->delete();
+
+        $payload = (new TripTransformer($owner))->transform($trip->fresh(['car']));
+
+        $this->assertArrayHasKey('car', $payload);
+        $this->assertSame('DEL123', $payload['car']['patente']);
+        $this->assertTrue($payload['car']['deleted']);
     }
 
     public function test_transform_includes_owner_context_passenger_data_and_counts(): void
