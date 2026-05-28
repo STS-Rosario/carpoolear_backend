@@ -7,6 +7,7 @@ use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\References;
 use STS\Models\SupportTicket;
+use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -84,7 +85,7 @@ class UpdateUser extends Command
             $reference->save();
         }
 
-        $this->migrateSupportTicketOwnership($originalId, $newId);
+        $this->migrateSupportTicketData($originalId, $newId);
 
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);
@@ -96,13 +97,17 @@ class UpdateUser extends Command
         $this->info('Trips, references ratings and passenger have been updated.');
     }
 
-    private function migrateSupportTicketOwnership(int|string $originalId, int|string $newId): void
+    private function migrateSupportTicketData(int|string $originalId, int|string $newId): void
     {
         SupportTicket::query()
             ->where('user_id', '=', $originalId)
             ->update(['user_id' => $newId]);
 
         SupportTicketReply::query()
+            ->where('user_id', '=', $originalId)
+            ->update(['user_id' => $newId]);
+
+        SupportTicketAttachment::query()
             ->where('user_id', '=', $originalId)
             ->update(['user_id' => $newId]);
     }
