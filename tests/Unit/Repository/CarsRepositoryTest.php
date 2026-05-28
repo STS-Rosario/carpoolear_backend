@@ -63,7 +63,7 @@ class CarsRepositoryTest extends TestCase
         $this->assertNull($this->repo()->show(999_999_999));
     }
 
-    public function test_delete_removes_car(): void
+    public function test_delete_soft_deletes_car(): void
     {
         $user = User::factory()->create();
         $car = Car::factory()->create([
@@ -75,6 +75,26 @@ class CarsRepositoryTest extends TestCase
         $this->assertTrue((bool) $this->repo()->delete($car));
 
         $this->assertNull(Car::query()->find($id));
+        $this->assertNotNull(Car::withTrashed()->find($id)?->deleted_at);
+    }
+
+    public function test_index_excludes_soft_deleted_cars(): void
+    {
+        $user = User::factory()->create();
+        $active = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AC-'.substr(uniqid('', true), 0, 6),
+        ]);
+        $deleted = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'DL-'.substr(uniqid('', true), 0, 6),
+        ]);
+        $deleted->delete();
+
+        $cars = $this->repo()->index($user->fresh());
+
+        $this->assertCount(1, $cars);
+        $this->assertTrue($cars->first()->is($active));
     }
 
     public function test_index_returns_user_cars_relation(): void

@@ -3,7 +3,6 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 use STS\Console\Commands\CleanupDuplicateCars;
 use STS\Models\Car;
 use STS\Models\User;
@@ -11,17 +10,8 @@ use Tests\TestCase;
 
 class CleanupDuplicateCarsTest extends TestCase
 {
-    private bool $droppedCarsUserUniqueIndex = false;
-
     protected function tearDown(): void
     {
-        if ($this->droppedCarsUserUniqueIndex) {
-            DB::statement(
-                'DELETE c1 FROM cars c1 JOIN cars c2 ON c1.user_id = c2.user_id AND c1.id < c2.id WHERE c1.user_id IS NOT NULL'
-            );
-            DB::statement('ALTER TABLE cars DROP INDEX cars_user_id_index, ADD UNIQUE INDEX cars_user_id_unique (user_id)');
-        }
-
         Carbon::setTestNow();
         parent::tearDown();
     }
@@ -64,8 +54,6 @@ class CleanupDuplicateCarsTest extends TestCase
 
     public function test_handle_keeps_newest_car_deletes_older_duplicates_and_relinks_trips(): void
     {
-        $this->dropCarsUserUniqueIndex();
-
         $user = User::factory()->create(['name' => 'Driver Duplicate']);
 
         $oldestCar = Car::factory()->create([
@@ -108,8 +96,10 @@ class CleanupDuplicateCarsTest extends TestCase
         $this->assertCount(1, $remainingCars);
         $this->assertSame($newestCar->id, $remainingCars->first()->id);
 
-        $this->assertDatabaseMissing('cars', ['id' => $oldestCar->id]);
-        $this->assertDatabaseMissing('cars', ['id' => $middleCar->id]);
+        $this->assertNull(Car::query()->find($oldestCar->id));
+        $this->assertNull(Car::query()->find($middleCar->id));
+        $this->assertNotNull(Car::withTrashed()->find($oldestCar->id)?->deleted_at);
+        $this->assertNotNull(Car::withTrashed()->find($middleCar->id)?->deleted_at);
 
         $this->assertSame($newestCar->id, $tripUsingOldest->fresh()->car_id);
         $this->assertSame($newestCar->id, $tripUsingMiddle->fresh()->car_id);
@@ -117,8 +107,6 @@ class CleanupDuplicateCarsTest extends TestCase
 
     public function test_handle_dry_run_with_duplicates_reports_actions_without_mutating_data(): void
     {
-        $this->dropCarsUserUniqueIndex();
-
         $user = User::factory()->create(['name' => 'Dry Run Driver']);
 
         $oldCar = Car::factory()->create([
@@ -150,11 +138,5 @@ class CleanupDuplicateCarsTest extends TestCase
         $this->assertDatabaseHas('cars', ['id' => $oldCar->id]);
         $this->assertDatabaseHas('cars', ['id' => $newCar->id]);
         $this->assertSame($oldCar->id, $trip->fresh()->car_id);
-    }
-
-    private function dropCarsUserUniqueIndex(): void
-    {
-        DB::statement('ALTER TABLE cars DROP INDEX cars_user_id_unique, ADD INDEX cars_user_id_index (user_id)');
-        $this->droppedCarsUserUniqueIndex = true;
     }
 }

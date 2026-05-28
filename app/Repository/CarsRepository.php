@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Models\User as UserModel;
 use STS\Models\Car as CarModel;
+use STS\Models\User as UserModel;
 
 class CarsRepository
 {
