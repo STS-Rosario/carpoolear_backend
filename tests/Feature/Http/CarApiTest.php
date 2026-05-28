@@ -109,7 +109,7 @@ class CarApiTest extends TestCase
         ])->assertStatus(422);
     }
 
-    public function test_create_returns_unprocessable_when_user_already_has_a_car(): void
+    public function test_create_allows_second_car_for_same_user(): void
     {
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         Car::factory()->create(['user_id' => $user->id, 'patente' => 'HAS1']);
@@ -118,7 +118,22 @@ class CarApiTest extends TestCase
 
         $this->postJson('api/cars', [
             'patente' => 'HAS2',
-            'description' => 'Second car attempt',
+            'description' => 'Second car',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.patente', 'HAS2');
+    }
+
+    public function test_create_returns_unprocessable_when_patente_duplicates_active_car(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        Car::factory()->create(['user_id' => $user->id, 'patente' => 'DUP1']);
+
+        $this->actingAs($user, 'api');
+
+        $this->postJson('api/cars', [
+            'patente' => 'DUP1',
+            'description' => 'Duplicate patente',
         ])->assertStatus(422);
     }
 }

@@ -59,7 +59,7 @@ class CarsManagerTest extends TestCase
         $this->assertTrue($v->errors()->has('patente'));
     }
 
-    public function test_create_rejected_when_user_already_has_car(): void
+    public function test_create_allows_multiple_cars_for_same_user(): void
     {
         $user = User::factory()->create();
         Car::factory()->create([
@@ -69,13 +69,56 @@ class CarsManagerTest extends TestCase
         ]);
 
         $manager = $this->manager();
-        $result = $manager->create($user, $this->validCarData());
+        $data = $this->validCarData('SECOND');
+        $car = $manager->create($user, $data);
+
+        $this->assertInstanceOf(Car::class, $car);
+        $this->assertDatabaseHas('cars', [
+            'user_id' => $user->id,
+            'patente' => $data['patente'],
+        ]);
+        $this->assertSame(2, Car::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_create_rejects_duplicate_active_patente_for_same_user(): void
+    {
+        $user = User::factory()->create();
+        $patente = 'DU'.substr(uniqid('', true), 0, 6);
+        Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => $patente,
+            'description' => 'First',
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->create($user, [
+            'patente' => $patente,
+            'description' => 'Duplicate attempt',
+        ]);
 
         $this->assertNull($result);
-        $errors = $manager->getErrors();
-        $this->assertIsArray($errors);
-        $this->assertSame('user_already_has_car', $errors['error']);
-        $this->assertSame('User already has a car. Please update the existing one instead.', $errors['message']);
+        $this->assertTrue($manager->getErrors()->has('patente'));
+    }
+
+    public function test_create_allows_patente_reused_after_previous_car_was_soft_deleted(): void
+    {
+        $user = User::factory()->create();
+        $patente = 'RE'.substr(uniqid('', true), 0, 6);
+        $old = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => $patente,
+            'description' => 'Old car',
+        ]);
+        $old->delete();
+
+        $manager = $this->manager();
+        $car = $manager->create($user, [
+            'patente' => $patente,
+            'description' => 'Replacement car',
+        ]);
+
+        $this->assertInstanceOf(Car::class, $car);
+        $this->assertSame($patente, $car->patente);
     }
 
     public function test_create_persists_car_when_valid(): void
@@ -231,7 +274,7 @@ class CarsManagerTest extends TestCase
         $this->assertSame($car->id, $found->id);
     }
 
-    public function test_delete_removes_car_for_owner(): void
+    public function test_delete_soft_deletes_car_for_owner(): void
     {
         $user = User::factory()->create();
         $car = Car::factory()->create([
@@ -244,6 +287,7 @@ class CarsManagerTest extends TestCase
         $manager = $this->manager();
         $this->assertTrue($manager->delete($user, $id));
         $this->assertNull(Car::query()->find($id));
+        $this->assertNotNull(Car::withTrashed()->find($id)?->deleted_at);
     }
 
     public function test_delete_returns_null_when_not_found(): void
