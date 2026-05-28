@@ -18,6 +18,7 @@ class SupportTicketAttachmentStorage
     public function __construct(
         private readonly ImageUploadValidator $imageUploadValidator,
         private readonly HeicToJpegConverter $heicToJpegConverter,
+        private readonly ImageExifOrientationNormalizer $exifOrientationNormalizer,
     ) {}
 
     public function storeForReply(UploadedFile $file, int $ticketId, int $replyId, int $userId): SupportTicketAttachment
@@ -106,14 +107,19 @@ class SupportTicketAttachmentStorage
     private function storeImageFile(UploadedFile $file, string $basePath): string
     {
         $jpegContent = $this->heicToJpegConverter->convert($file);
-        if ($jpegContent !== null) {
-            $path = $basePath.'/'.Str::random(40).'.jpg';
-            Storage::disk('local')->put($path, $jpegContent);
-
-            return $path;
+        $content = $jpegContent ?? file_get_contents($file->getRealPath());
+        if ($content === false) {
+            throw ValidationException::withMessages([
+                'attachments' => ['Could not read uploaded image.'],
+            ]);
         }
 
-        return $file->store($basePath, 'local');
+        $content = $this->exifOrientationNormalizer->normalize($content);
+        $extension = $jpegContent !== null ? 'jpg' : $file->getClientOriginalExtension();
+        $path = $basePath.'/'.Str::random(40).'.'.$extension;
+        Storage::disk('local')->put($path, $content);
+
+        return $path;
     }
 
     private function deleteStoredFile(string $path): void

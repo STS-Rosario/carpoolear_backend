@@ -84,7 +84,7 @@ class FileRepository
         $imgPath = $folder_path.$newfilename;
 
         try {
-            $data = app(ImageExifOrientationNormalizer::class)->normalize($data);
+            $data = $this->normalizeImageOrientation($data);
 
             if ($this->usesImagickForThumbnails()) {
                 // Create Imagick object
@@ -119,5 +119,10 @@ class FileRepository
     {
         $folder_path = $this->uploadsFolder($folder);
         File::delete($folder_path.$filename);
+    }
+
+    protected function normalizeImageOrientation(string $data): string
+    {
+        return app(ImageExifOrientationNormalizer::class)->normalize($data);
     }
 }

@@ -10,6 +10,7 @@ use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Models\ManualIdentityValidation;
 use STS\Services\HeicToJpegConverter;
+use STS\Services\ImageExifOrientationNormalizer;
 use STS\Services\ImageUploadValidator;
 use STS\Services\MercadoPagoService;
 use STS\Support\ImageAttachmentRules;
@@ -285,13 +286,16 @@ class ManualIdentityValidationController extends Controller
     private function storeIdentityImage($file, string $basePath, HeicToJpegConverter $converter): string
     {
         $jpegContent = $converter->convert($file);
-        if ($jpegContent !== null) {
-            $path = $basePath.'/'.Str::random(40).'.jpg';
-            Storage::disk('local')->put($path, $jpegContent);
-
-            return $path;
+        $content = $jpegContent ?? file_get_contents($file->getRealPath());
+        if ($content === false) {
+            throw new ExceptionWithErrors('Could not read uploaded image.', ['image' => ['Could not read uploaded image.']]);
         }
 
-        return $file->store($basePath, 'local');
+        $content = app(ImageExifOrientationNormalizer::class)->normalize($content);
+        $extension = $jpegContent !== null ? 'jpg' : $file->getClientOriginalExtension();
+        $path = $basePath.'/'.Str::random(40).'.'.$extension;
+        Storage::disk('local')->put($path, $content);
+
+        return $path;
     }
 }
