@@ -9,6 +9,7 @@ use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\References;
 use STS\Models\SupportTicket;
+use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -88,6 +89,15 @@ class UpdateUserTest extends TestCase
             'is_admin' => false,
             'message_markdown' => 'I need assistance',
         ]);
+        $attachment = SupportTicketAttachment::query()->create([
+            'ticket_id' => $ticket->id,
+            'reply_id' => null,
+            'user_id' => $original->id,
+            'path' => 'tickets/'.$ticket->id.'/screenshot.png',
+            'original_name' => 'screenshot.png',
+            'mime' => 'image/png',
+            'size_bytes' => 100,
+        ]);
 
         $this->artisan('user:update', [
             'original' => $original->id,
@@ -96,6 +106,7 @@ class UpdateUserTest extends TestCase
 
         $this->assertSame($new->id, (int) $ticket->fresh()->user_id);
         $this->assertSame($new->id, (int) $reply->fresh()->user_id);
+        $this->assertSame($new->id, (int) $attachment->fresh()->user_id);
     }
 
     public function test_handle_with_remove_deactivates_original_user_after_confirmation(): void
