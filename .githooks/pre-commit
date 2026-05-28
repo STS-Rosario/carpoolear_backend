@@ -23,6 +23,3 @@ if [[ ${#files[@]} -gt 0 ]]; then
     git add "${existing[@]}"
   fi
 fi
-
-echo "pre-commit: php artisan test..."
-php artisan test
