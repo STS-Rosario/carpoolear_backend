@@ -2,10 +2,11 @@
 
 namespace STS\Services\Logic;
 
+use Illuminate\Validation\Rule;
+use STS\Models\Car as CarModel;
+use STS\Models\User as UserModel;
 use STS\Repository\CarsRepository;
 use Validator;
-use STS\Models\User as UserModel;
-use STS\Models\Car as CarModel;
 
 class CarsManager extends BaseManager
 {
@@ -19,18 +20,19 @@ class CarsManager extends BaseManager
     public function validator(array $data, $userId = null, $carId = null)
     {
         $rules = [
-            'patente'     => 'required|string|max:10',
+            'patente' => ['required', 'string', 'max:10'],
             'description' => 'required|string|max:255',
         ];
 
-        // Add unique validation for patente per user
         if ($userId) {
-            $rules['patente'] .= '|unique:cars,patente,NULL,id,user_id,' . $userId;
-        }
+            $uniquePatente = Rule::unique('cars', 'patente')
+                ->where(fn ($query) => $query->where('user_id', $userId)->whereNull('deleted_at'));
 
-        // If updating, ignore current car's patente
-        if ($carId) {
-            $rules['patente'] = 'required|string|max:10|unique:cars,patente,' . $carId . ',id,user_id,' . $userId;
+            if ($carId) {
+                $uniquePatente->ignore($carId);
+            }
+
+            $rules['patente'][] = $uniquePatente;
         }
 
         return Validator::make($data, $rules);
@@ -38,21 +40,13 @@ class CarsManager extends BaseManager
 
     public function create(UserModel $user, $data)
     {
-        // Check if user already has a car
-        $existingCar = $this->repo->getUserCar($user->id);
-        if ($existingCar) {
-            $this->setErrors(['error' => 'user_already_has_car', 'message' => 'User already has a car. Please update the existing one instead.']);
-
-            return;
-        }
-
         $v = $this->validator($data, $user->id);
         if ($v->fails()) {
             $this->setErrors($v->errors());
 
             return;
         } else {
-            $car = new CarModel();
+            $car = new CarModel;
             $car->description = $data['description'];
             $car->patente = $data['patente'];
             $car->user_id = $user->id;

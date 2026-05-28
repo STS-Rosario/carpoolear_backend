@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Models\User as UserModel;
 use STS\Models\Car as CarModel;
+use STS\Models\User as UserModel;
 
 class CarsRepository
 {
@@ -35,5 +35,10 @@ class CarsRepository
     public function getUserCar($userId)
     {
         return CarModel::where('user_id', $userId)->first();
+    }
+
+    public function activeCarsForUser($userId)
+    {
+        return CarModel::where('user_id', $userId)->get();
     }
 }

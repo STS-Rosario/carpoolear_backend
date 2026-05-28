@@ -97,7 +97,8 @@ class CarsManagerTest extends TestCase
         ]);
 
         $this->assertNull($result);
-        $this->assertTrue($manager->getErrors()->has('patente'));
+        $errors = $manager->getErrors();
+        $this->assertTrue(is_object($errors) ? $errors->has('patente') : isset($errors['patente']));
     }
 
     public function test_create_allows_patente_reused_after_previous_car_was_soft_deleted(): void
