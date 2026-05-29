@@ -225,4 +225,66 @@ class UserEditablePropertiesServiceTest extends TestCase
         $this->assertNotContains('banned', $keys);
         $this->assertNotContains('active', $keys);
     }
+
+    public function test_filter_for_user_includes_name_for_unverified_user(): void
+    {
+        $service = new UserEditablePropertiesService;
+        $user = User::factory()->make([
+            'identity_validated' => false,
+            'identity_validated_at' => null,
+        ]);
+
+        $filtered = $service->filterForUser(['name' => 'New Name', 'description' => 'Bio'], false, $user);
+
+        $this->assertSame(['name' => 'New Name', 'description' => 'Bio'], $filtered);
+    }
+
+    public function test_filter_for_user_excludes_name_for_identity_validated_user(): void
+    {
+        $service = new UserEditablePropertiesService;
+        $user = User::factory()->make([
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+        ]);
+
+        $filtered = $service->filterForUser(['name' => 'New Name', 'description' => 'Bio'], false, $user);
+
+        $this->assertSame(['description' => 'Bio'], $filtered);
+    }
+
+    public function test_filter_for_user_includes_name_for_admin_even_when_identity_validated(): void
+    {
+        $service = new UserEditablePropertiesService;
+        $user = User::factory()->make([
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+        ]);
+
+        $filtered = $service->filterForUser(['name' => 'Admin Name', 'description' => 'Bio'], true, $user);
+
+        $this->assertSame(['name' => 'Admin Name', 'description' => 'Bio'], $filtered);
+    }
+
+    public function test_is_name_locked_by_identity_validation_requires_both_flags(): void
+    {
+        $service = new UserEditablePropertiesService;
+
+        $validated = User::factory()->make([
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+        ]);
+        $this->assertTrue($service->isNameLockedByIdentityValidation($validated));
+
+        $flagOnly = User::factory()->make([
+            'identity_validated' => true,
+            'identity_validated_at' => null,
+        ]);
+        $this->assertFalse($service->isNameLockedByIdentityValidation($flagOnly));
+
+        $unverified = User::factory()->make([
+            'identity_validated' => false,
+            'identity_validated_at' => null,
+        ]);
+        $this->assertFalse($service->isNameLockedByIdentityValidation($unverified));
+    }
 }
