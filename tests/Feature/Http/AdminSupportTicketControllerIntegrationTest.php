@@ -776,6 +776,39 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_update_type_persists_and_returns_ticket_payload(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['type' => 'feedback']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/type', [
+            'type' => 'bug_report',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'bug_report');
+
+        $this->assertSame('bug_report', $ticket->fresh()->type);
+        $this->assertSame($admin->id, (int) $ticket->fresh()->updated_by);
+    }
+
+    public function test_update_type_rejects_invalid_value(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/type', [
+            'type' => 'invalid_category',
+        ])->assertUnprocessable();
+    }
+
     public function test_update_internal_note_persists_text_and_can_clear(): void
     {
         $admin = $this->adminUser();
