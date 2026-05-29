@@ -648,7 +648,7 @@ class UsersManagerTest extends TestCase
         $editableService = Mockery::mock(UserEditablePropertiesService::class);
         $editableService->shouldReceive('filterForUser')
             ->once()
-            ->with(Mockery::type('array'), false)
+            ->with(Mockery::type('array'), false, $user)
             ->andReturnUsing(fn ($data) => $data);
         $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
             ->once()
@@ -690,7 +690,7 @@ class UsersManagerTest extends TestCase
         $editableService = Mockery::mock(UserEditablePropertiesService::class);
         $editableService->shouldReceive('filterForUser')
             ->once()
-            ->with(Mockery::type('array'), false)
+            ->with(Mockery::type('array'), false, $user)
             ->andReturnUsing(fn ($data) => $data);
         $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
             ->once()
@@ -739,7 +739,7 @@ class UsersManagerTest extends TestCase
         $editableService = Mockery::mock(UserEditablePropertiesService::class);
         $editableService->shouldReceive('filterForUser')
             ->once()
-            ->with($requestData, false)
+            ->with($requestData, false, $user)
             ->andReturn($filteredData);
         $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
             ->once()
@@ -794,7 +794,7 @@ class UsersManagerTest extends TestCase
         $editableService = Mockery::mock(UserEditablePropertiesService::class);
         $editableService->shouldReceive('filterForUser')
             ->once()
-            ->with($requestData, true)
+            ->with($requestData, true, $user)
             ->andReturn($requestData);
         $editableService->shouldReceive('getBlockedFlaggedPropertiesThatDiffer')
             ->once()
