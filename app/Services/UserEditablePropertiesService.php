@@ -97,22 +97,11 @@ class UserEditablePropertiesService
     public function filterForUser(array $data, bool $isAdmin, ?User $user = null): array
     {
         $filtered = [];
-        $forbidden = $this->getForbiddenProperties();
-        $allowed = $this->getAllowedProperties();
-        $adminAllowed = $isAdmin ? $this->getAdminAllowedProperties() : [];
-        $editableKeys = array_merge($allowed, $adminAllowed);
 
         foreach ($data as $key => $value) {
-            if (in_array($key, $forbidden)) {
-                continue;
+            if ($this->isPropertyAllowed($key, $isAdmin, $user)) {
+                $filtered[$key] = $value;
             }
-            if (! in_array($key, $editableKeys)) {
-                continue;
-            }
-            if ($key === 'name' && ! $isAdmin && $user && $this->isNameLockedByIdentityValidation($user)) {
-                continue;
-            }
-            $filtered[$key] = $value;
         }
 
         return $filtered;
