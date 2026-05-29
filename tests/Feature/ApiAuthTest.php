@@ -154,17 +154,27 @@ class ApiAuthTest extends TestCase
         $this->assertTrue($response->status() == 200);
         $this->assertEquals(0, \STS\Models\User::find($user->id)->banned);
 
-        // Sending name: request succeeds, name is not persisted (still Original)
+        // Unverified user: name is persisted
+        $response = $this->call('PUT', 'api/users', ['name' => 'Updated Name']);
+        $this->assertTrue($response->status() == 200);
+        $this->assertEquals('Updated Name', \STS\Models\User::find($user->id)->name);
+
+        // After identity validation, name changes are blocked
+        $user->forceFill([
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+        ])->save();
+
         $response = $this->call('PUT', 'api/users', ['name' => 'Hacker']);
         $this->assertTrue($response->status() == 200);
-        $this->assertEquals('Original', \STS\Models\User::find($user->id)->name);
+        $this->assertEquals('Updated Name', \STS\Models\User::find($user->id)->name);
 
         // Mixed: allowed + forbidden in same request - allowed is saved, forbidden ignored
         $response = $this->call('PUT', 'api/users', ['description' => 'New desc', 'name' => 'IgnoredName', 'email' => 'other@x.com']);
         $this->assertTrue($response->status() == 200);
         $reloaded = \STS\Models\User::find($user->id);
         $this->assertEquals('New desc', $reloaded->description);
-        $this->assertEquals('Original', $reloaded->name);
+        $this->assertEquals('Updated Name', $reloaded->name);
         $this->assertEquals($user->email, $reloaded->email);
     }
 
