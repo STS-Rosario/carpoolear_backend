@@ -231,6 +231,19 @@ class SupportTicketController extends Controller
         return response()->json(['data' => $ticket]);
     }
 
+    public function updateType(int $id, Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'type' => SupportTicket::typeValidationRule(),
+        ]);
+        $ticket = SupportTicket::findOrFail($id);
+        $ticket->type = $validated['type'];
+        $ticket->updated_by = auth()->id();
+        $ticket->save();
+
+        return response()->json(['data' => $ticket]);
+    }
+
     public function updateInternalNote(int $id, Request $request): JsonResponse
     {
         $validated = $request->validate([
