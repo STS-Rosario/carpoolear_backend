@@ -238,6 +238,7 @@ class SupportTicketController extends Controller
         ]);
         $ticket = SupportTicket::findOrFail($id);
         $ticket->type = $validated['type'];
+        $ticket->priority = SupportTicket::TYPE_DEFAULT_PRIORITIES[$validated['type']] ?? 'normal';
         $ticket->updated_by = auth()->id();
         $ticket->save();
 
