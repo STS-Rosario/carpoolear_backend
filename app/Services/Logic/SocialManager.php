@@ -88,7 +88,7 @@ class SocialManager extends BaseManager implements Social
                 $img = file_get_contents($userData['image']);
                 $userData['image'] = $this->filesRepo->createFromData($img, 'jpg', 'image/profile/');
             }
-            $userData = app(UserEditablePropertiesService::class)->filterForUser($userData, false);
+            $userData = app(UserEditablePropertiesService::class)->filterForUser($userData, false, $user);
             $user = $this->userLogic->update($user, $userData);
             if (! $user) {
                 $this->setErrors($this->userLogic->getErrors());

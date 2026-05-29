@@ -315,7 +315,7 @@ class SocialManagerTest extends TestCase
         $filter = Mockery::mock(UserEditablePropertiesService::class);
         $filter->shouldReceive('filterForUser')
             ->once()
-            ->with(Mockery::type('array'), false)
+            ->with(Mockery::type('array'), false, Mockery::on(fn ($u) => $u->is($user)))
             ->andReturn(['name' => 'After']);
         $this->app->instance(UserEditablePropertiesService::class, $filter);
 
@@ -364,7 +364,7 @@ class SocialManagerTest extends TestCase
         $filter = Mockery::mock(UserEditablePropertiesService::class);
         $filter->shouldReceive('filterForUser')
             ->once()
-            ->with(Mockery::type('array'), false)
+            ->with(Mockery::type('array'), false, Mockery::on(fn ($u) => $u->is($user)))
             ->andReturn(['name' => 'After']);
         $this->app->instance(UserEditablePropertiesService::class, $filter);
 

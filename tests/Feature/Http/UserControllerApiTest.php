@@ -192,6 +192,51 @@ class UserControllerApiTest extends TestCase
         $this->assertSame('Bio without declaring driver intent.', $user->fresh()->description);
     }
 
+    public function test_update_persists_name_for_unverified_user(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Original Name',
+            'active' => true,
+            'banned' => false,
+            'identity_validated' => false,
+            'identity_validated_at' => null,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->putJson('api/users/', [
+            'name' => 'Updated Name',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Updated Name');
+
+        $this->assertSame('Updated Name', $user->fresh()->name);
+    }
+
+    public function test_update_ignores_name_change_for_identity_validated_user(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Verified Name',
+            'active' => true,
+            'banned' => false,
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->putJson('api/users/', [
+            'name' => 'Attempted Change',
+            'description' => 'Still editable bio.',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Verified Name')
+            ->assertJsonPath('data.description', 'Still editable bio.');
+
+        $this->assertSame('Verified Name', $user->fresh()->name);
+        $this->assertSame('Still editable bio.', $user->fresh()->description);
+    }
+
     public function test_registration_persists_facebook_profile_url_when_module_enabled(): void
     {
         config(['carpoolear.module_facebook_profile_url_enabled' => true]);
