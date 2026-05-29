@@ -273,7 +273,7 @@ class UsersManager extends BaseManager
             $data = $this->prepareFacebookProfileUrl($data);
         }
         $requestData = $data;
-        $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin);
+        $data = $this->userEditablePropertiesService->filterForUser($data, $is_admin, $user);
 
         // Alert when non-admin tries to change forbidden/flagged props (but don't block - allow old apps)
         $bannedProperties = $this->userEditablePropertiesService->getBlockedFlaggedPropertiesThatDiffer(

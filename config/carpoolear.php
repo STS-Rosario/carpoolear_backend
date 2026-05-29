@@ -147,9 +147,10 @@ return [
         // NEVER editable by anyone (including admins)
         'forbidden' => ['is_admin'],
 
-        // Editable by regular users (self-edit). name and email are only set at registration.
+        // Editable by regular users (self-edit). email is only set at registration.
+        // name is editable until identity is validated (see UserEditablePropertiesService).
         'allowed' => [
-            'password', 'password_confirmation', 'birthday', 'gender', 'description',
+            'name', 'password', 'password_confirmation', 'birthday', 'gender', 'description',
             'mobile_phone', 'emails_notifications', 'nro_doc',
             'data_visibility',
             'do_not_alert_request_seat', 'do_not_alert_accept_passenger',
@@ -161,9 +162,9 @@ return [
             'facebook_profile_url',
         ],
 
-        // Additional properties editable only by admin (name/email only at registration for users)
+        // Additional properties editable only by admin (email only at registration for users)
         'admin_allowed' => [
-            'name', 'email', 'banned', 'active', 'driver_is_verified',
+            'email', 'banned', 'active', 'driver_is_verified',
             'patente', 'car_description', 'private_note',
             'facebook_profile_url',
             'identity_validated', 'identity_validated_at',

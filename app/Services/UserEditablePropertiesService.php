@@ -2,8 +2,8 @@
 
 namespace STS\Services;
 
-use STS\Models\User;
 use Illuminate\Support\Facades\Http;
+use STS\Models\User;
 
 class UserEditablePropertiesService
 {
@@ -57,10 +57,14 @@ class UserEditablePropertiesService
     /**
      * Check if a property is allowed for the given role.
      */
-    public function isPropertyAllowed(string $property, bool $isAdmin): bool
+    public function isPropertyAllowed(string $property, bool $isAdmin, ?User $user = null): bool
     {
         $forbidden = $this->getForbiddenProperties();
         if (in_array($property, $forbidden)) {
+            return false;
+        }
+
+        if ($property === 'name' && ! $isAdmin && $user && $this->isNameLockedByIdentityValidation($user)) {
             return false;
         }
 
@@ -71,6 +75,7 @@ class UserEditablePropertiesService
 
         if ($isAdmin) {
             $adminAllowed = $this->getAdminAllowedProperties();
+
             return in_array($property, $adminAllowed);
         }
 
@@ -78,10 +83,18 @@ class UserEditablePropertiesService
     }
 
     /**
+     * Whether the user's name is locked because identity has been validated.
+     */
+    public function isNameLockedByIdentityValidation(User $user): bool
+    {
+        return (bool) $user->identity_validated && $user->identity_validated_at;
+    }
+
+    /**
      * Filter data to only include editable keys for the given role.
      * Returns the filtered array. Does not modify the input.
      */
-    public function filterForUser(array $data, bool $isAdmin): array
+    public function filterForUser(array $data, bool $isAdmin, ?User $user = null): array
     {
         $filtered = [];
         $forbidden = $this->getForbiddenProperties();
@@ -93,9 +106,13 @@ class UserEditablePropertiesService
             if (in_array($key, $forbidden)) {
                 continue;
             }
-            if (in_array($key, $editableKeys)) {
-                $filtered[$key] = $value;
+            if (! in_array($key, $editableKeys)) {
+                continue;
             }
+            if ($key === 'name' && ! $isAdmin && $user && $this->isNameLockedByIdentityValidation($user)) {
+                continue;
+            }
+            $filtered[$key] = $value;
         }
 
         return $filtered;
@@ -117,7 +134,7 @@ class UserEditablePropertiesService
         $actuallyChanged = [];
 
         foreach ($blockedKeys as $key) {
-            if (!array_key_exists($key, $requestData)) {
+            if (! array_key_exists($key, $requestData)) {
                 continue;
             }
             if (array_key_exists($key, $filteredData)) {
@@ -144,6 +161,7 @@ class UserEditablePropertiesService
         if (in_array($key, $booleanAttrs)) {
             $reqBool = filter_var($requested, FILTER_VALIDATE_BOOLEAN);
             $curBool = (bool) $current;
+
             return $reqBool !== $curBool;
         }
         if (is_string($requested)) {
@@ -158,6 +176,7 @@ class UserEditablePropertiesService
         if (is_string($requested) && preg_match('/^\d{4}-\d{2}-\d{2}/', $requested)) {
             $requested = substr($requested, 0, 10);
         }
+
         return $requested != $current;
     }
 
@@ -166,7 +185,7 @@ class UserEditablePropertiesService
      */
     public function frontendAdminProfileUrl(int $userId): string
     {
-        return rtrim(config('carpoolear.frontend_url'), '/') . '/app/profile/' . $userId;
+        return rtrim(config('carpoolear.frontend_url'), '/').'/app/profile/'.$userId;
     }
 
     /**
@@ -185,7 +204,7 @@ class UserEditablePropertiesService
 
         try {
             $response = Http::timeout(3)->post($webhookUrl, ['text' => $slackMessage]);
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 \Log::warning('Slack forbidden edit webhook failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
