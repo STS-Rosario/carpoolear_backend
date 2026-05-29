@@ -264,6 +264,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/replies', [AdminSupportTicketController::class, 'reply'])->middleware('throttle:support-ticket-admin-reply');
         Route::match(['patch', 'put'], 'support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
         Route::match(['patch', 'put'], 'support/tickets/{id}/priority', [AdminSupportTicketController::class, 'updatePriority']);
+        Route::match(['patch', 'put'], 'support/tickets/{id}/type', [AdminSupportTicketController::class, 'updateType']);
         Route::match(['patch', 'put'], 'support/tickets/{id}/internal-note', [AdminSupportTicketController::class, 'updateInternalNote']);
         Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
         Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);

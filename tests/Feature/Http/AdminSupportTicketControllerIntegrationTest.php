@@ -776,6 +776,80 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_update_type_persists_and_returns_ticket_payload(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['type' => 'feedback', 'priority' => 'low']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/type', [
+            'type' => 'bug_report',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'bug_report')
+            ->assertJsonPath('data.priority', 'normal');
+
+        $fresh = $ticket->fresh();
+        $this->assertSame('bug_report', $fresh->type);
+        $this->assertSame('normal', $fresh->priority);
+        $this->assertSame($admin->id, (int) $fresh->updated_by);
+    }
+
+    public function test_update_type_syncs_priority_to_category_default(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['type' => 'feedback', 'priority' => 'high']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/type', [
+            'type' => 'report',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'report')
+            ->assertJsonPath('data.priority', 'high');
+
+        $this->assertSame('high', $ticket->fresh()->priority);
+    }
+
+    public function test_update_type_downgrades_priority_when_new_category_defaults_lower(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['type' => 'account_verification', 'priority' => 'high']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/type', [
+            'type' => 'feedback',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'feedback')
+            ->assertJsonPath('data.priority', 'low');
+
+        $this->assertSame('low', $ticket->fresh()->priority);
+    }
+
+    public function test_update_type_rejects_invalid_value(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->putJson('api/admin/support/tickets/'.$ticket->id.'/type', [
+            'type' => 'invalid_category',
+        ])->assertUnprocessable();
+    }
+
     public function test_update_internal_note_persists_text_and_can_clear(): void
     {
         $admin = $this->adminUser();
