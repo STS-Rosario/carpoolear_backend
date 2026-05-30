@@ -53,6 +53,11 @@ class SupportTicketController extends Controller
             $query->where('type', $type);
         }
 
+        $priority = $request->query('priority');
+        if (is_string($priority) && in_array($priority, ['low', 'normal', 'high'], true)) {
+            $query->where('priority', $priority);
+        }
+
         return response()->json([
             'data' => $query->orderByDesc('id')->get(),
         ]);
