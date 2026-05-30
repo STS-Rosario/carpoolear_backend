@@ -41,6 +41,23 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ], $overrides));
     }
 
+    public function test_index_filters_by_type_when_type_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $feedback = $this->makeTicket($owner, ['type' => 'feedback', 'subject' => 'feedback-only']);
+        $this->makeTicket($owner, ['type' => 'bug_report', 'subject' => 'bug-only']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?type=feedback')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($feedback->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => $row['type'] === 'feedback'));
+    }
+
     public function test_index_returns_data_ordered_newest_first(): void
     {
         $admin = $this->adminUser();
