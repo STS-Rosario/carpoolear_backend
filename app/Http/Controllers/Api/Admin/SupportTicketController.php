@@ -43,13 +43,18 @@ class SupportTicketController extends Controller
 
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $query = SupportTicket::query()
+            ->with(self::ticketIndexRelationships());
+
+        $type = $request->query('type');
+        if (is_string($type) && $type !== '' && in_array($type, SupportTicket::TYPES, true)) {
+            $query->where('type', $type);
+        }
+
         return response()->json([
-            'data' => SupportTicket::query()
-                ->with(self::ticketIndexRelationships())
-                ->orderByDesc('id')
-                ->get(),
+            'data' => $query->orderByDesc('id')->get(),
         ]);
     }
 
