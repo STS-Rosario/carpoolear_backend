@@ -21,6 +21,50 @@ class SupportTicketTest extends TestCase
         $this->assertContains(SupportTicket::STATUS_NEEDS_REVIEW, SupportTicket::STATUSES);
     }
 
+    public function test_scope_admin_needs_attention_includes_unread_and_actionable_statuses(): void
+    {
+        $user = User::factory()->create();
+        $withUnread = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 1,
+        ]);
+        $needsReview = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => SupportTicket::STATUS_NEEDS_REVIEW,
+            'unread_for_admin' => 0,
+        ]);
+        $enRevision = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'En revision',
+            'unread_for_admin' => 0,
+        ]);
+        $open = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'Open',
+            'unread_for_admin' => 0,
+        ]);
+        $waitingUser = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 0,
+        ]);
+        $resolved = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'Resuelto',
+            'unread_for_admin' => 0,
+        ]);
+
+        $ids = SupportTicket::query()->adminNeedsAttention()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($withUnread->id, $ids);
+        $this->assertContains($needsReview->id, $ids);
+        $this->assertContains($enRevision->id, $ids);
+        $this->assertContains($open->id, $ids);
+        $this->assertNotContains($waitingUser->id, $ids);
+        $this->assertNotContains($resolved->id, $ids);
+    }
+
     public function test_fillable_contains_expected_mass_assignable_attributes(): void
     {
         $this->assertSame([

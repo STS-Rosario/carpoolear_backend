@@ -74,6 +74,32 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => $row['priority'] === 'high'));
     }
 
+    public function test_index_filters_by_needs_reply_when_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $needsAttention = $this->makeTicket($owner, [
+            'status' => SupportTicket::STATUS_NEEDS_REVIEW,
+            'unread_for_admin' => 0,
+            'subject' => 'needs-attention',
+        ]);
+        $this->makeTicket($owner, [
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 0,
+            'subject' => 'waiting-user',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?needs_reply=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($needsAttention->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => in_array($row['status'], ['Open', 'En revision', SupportTicket::STATUS_NEEDS_REVIEW], true)
+            || (int) ($row['unread_for_admin'] ?? 0) > 0));
+    }
+
     public function test_index_returns_data_ordered_newest_first(): void
     {
         $admin = $this->adminUser();
