@@ -58,6 +58,22 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => $row['type'] === 'feedback'));
     }
 
+    public function test_index_filters_by_priority_when_priority_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $high = $this->makeTicket($owner, ['priority' => 'high', 'subject' => 'high-only']);
+        $this->makeTicket($owner, ['priority' => 'low', 'subject' => 'low-only']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?priority=high')->assertOk()->json('data'));
+
+        $this->assertContains($high->id, $rows->pluck('id')->map(fn ($id) => (int) $id)->all());
+        $this->assertTrue($rows->every(fn (array $row): bool => $row['priority'] === 'high'));
+    }
+
     public function test_index_returns_data_ordered_newest_first(): void
     {
         $admin = $this->adminUser();
