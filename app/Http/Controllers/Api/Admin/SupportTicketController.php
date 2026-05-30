@@ -45,6 +45,18 @@ class SupportTicketController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $query = $this->buildAdminIndexQuery($request);
+
+        return response()->json([
+            'data' => $query->orderByDesc('id')->get(),
+        ]);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<SupportTicket>
+     */
+    private function buildAdminIndexQuery(Request $request)
+    {
         $query = SupportTicket::query()
             ->with(self::ticketIndexRelationships());
 
@@ -62,9 +74,7 @@ class SupportTicketController extends Controller
             $query->adminNeedsAttention();
         }
 
-        return response()->json([
-            'data' => $query->orderByDesc('id')->get(),
-        ]);
+        return $query;
     }
 
     public function show(int $id): JsonResponse
