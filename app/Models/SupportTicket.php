@@ -31,6 +31,13 @@ class SupportTicket extends Model
 
     public const STATUS_NEEDS_REVIEW = 'Necesita revisión';
 
+    /** Statuses where the help desk team should take action. */
+    private const ADMIN_ACTION_STATUSES = [
+        'Open',
+        'En revision',
+        self::STATUS_NEEDS_REVIEW,
+    ];
+
     /** @var list<string> */
     public const STATUSES = [
         'Open',
@@ -88,5 +95,19 @@ class SupportTicket extends Model
     public function attachments()
     {
         return $this->hasMany(SupportTicketAttachment::class, 'ticket_id');
+    }
+
+    /**
+     * Tickets waiting on admin attention: unread user messages or actionable status.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeAdminNeedsAttention($query)
+    {
+        return $query->where(function ($builder) {
+            $builder->where('unread_for_admin', '>', 0)
+                ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
+        });
     }
 }

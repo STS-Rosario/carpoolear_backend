@@ -58,6 +58,10 @@ class SupportTicketController extends Controller
             $query->where('priority', $priority);
         }
 
+        if ($this->queryFlagIsTruthy($request->query('needs_reply'))) {
+            $query->adminNeedsAttention();
+        }
+
         return response()->json([
             'data' => $query->orderByDesc('id')->get(),
         ]);
@@ -312,5 +316,14 @@ class SupportTicketController extends Controller
         });
 
         return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    private function queryFlagIsTruthy(mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes'], true);
     }
 }
