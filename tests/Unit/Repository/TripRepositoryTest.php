@@ -1404,14 +1404,19 @@ class TripRepositoryTest extends TestCase
     {
         // Mutation intent: preserve admin-withTrashed gate and from/to date OR-branch handling.
         // Kills: adb8efe4d6d7b5c5, fe67f74c929986cf, 45c5a98301e1e6bc, e38c3f8f43a330bb, 8415cdc00871d360.
+        // Fixed dates: to_date is start-of-day (Y-m-d 00:00:00), so the trashed trip must fall on from_date
+        // and to_date must be the following day. Relative Carbon::now() fails around midnight in CI.
         $admin = User::factory()->create();
         $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $fromDate = '2024-06-14';
+        $toDate = '2024-06-15';
 
         $trashed = Trip::factory()->create([
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
             'state' => Trip::STATE_READY,
             'needs_sellado' => 0,
-            'trip_date' => Carbon::now()->subHours(2),
+            'trip_date' => '2024-06-14 23:00:00',
         ]);
         $trashed->delete();
 
@@ -1419,17 +1424,14 @@ class TripRepositoryTest extends TestCase
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
             'state' => Trip::STATE_READY,
             'needs_sellado' => 0,
-            'trip_date' => Carbon::now()->addHours(3),
+            'trip_date' => '2024-06-16 10:00:00',
         ]);
         $old = Trip::factory()->create([
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
             'state' => Trip::STATE_READY,
             'needs_sellado' => 0,
-            'trip_date' => Carbon::now()->subDays(4),
+            'trip_date' => '2024-06-10 10:00:00',
         ]);
-
-        $fromDate = Carbon::now()->subDay()->format('Y-m-d');
-        $toDate = Carbon::now()->subHour()->format('Y-m-d');
 
         $withoutAdminFlag = $this->repo()->search($admin, [
             'from_date' => $fromDate,

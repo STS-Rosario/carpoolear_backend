@@ -43,14 +43,38 @@ class SupportTicketController extends Controller
 
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $query = $this->buildAdminIndexQuery($request);
+
         return response()->json([
-            'data' => SupportTicket::query()
-                ->with(self::ticketIndexRelationships())
-                ->orderByDesc('id')
-                ->get(),
+            'data' => $query->orderByDesc('id')->get(),
         ]);
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<SupportTicket>
+     */
+    private function buildAdminIndexQuery(Request $request)
+    {
+        $query = SupportTicket::query()
+            ->with(self::ticketIndexRelationships());
+
+        $type = $request->query('type');
+        if (is_string($type) && $type !== '' && in_array($type, SupportTicket::TYPES, true)) {
+            $query->where('type', $type);
+        }
+
+        $priority = $request->query('priority');
+        if (is_string($priority) && in_array($priority, ['low', 'normal', 'high'], true)) {
+            $query->where('priority', $priority);
+        }
+
+        if ($this->queryFlagIsTruthy($request->query('needs_reply'))) {
+            $query->adminNeedsAttention();
+        }
+
+        return $query;
     }
 
     public function show(int $id): JsonResponse
@@ -302,5 +326,14 @@ class SupportTicketController extends Controller
         });
 
         return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    private function queryFlagIsTruthy(mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes'], true);
     }
 }
