@@ -64,16 +64,11 @@ class UserMigrationController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'user_id_kept' => 'required|integer|exists:users,id',
             'user_id_removed' => 'required|integer|exists:users,id|different:user_id_kept',
             'field_sources' => 'sometimes|array',
-            'field_sources.email' => 'sometimes|in:removed,kept',
-            'field_sources.password' => 'sometimes|in:removed,kept',
-            'field_sources.nro_doc' => 'sometimes|in:removed,kept',
-            'field_sources.mobile_phone' => 'sometimes|in:removed,kept',
-            'field_sources.created_at' => 'sometimes|in:removed,kept',
-        ]);
+        ], $this->fieldSourceRules()));
 
         $admin = $request->user();
         $keptId = (int) $validated['user_id_kept'];
@@ -113,6 +108,19 @@ class UserMigrationController extends Controller
                 'created_at' => $row->created_at?->toAtomString(),
             ],
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function fieldSourceRules(): array
+    {
+        $rules = [];
+        foreach (UserMigrationFieldMerger::MERGEABLE_FIELDS as $field) {
+            $rules['field_sources.'.$field] = 'sometimes|in:removed,kept';
+        }
+
+        return $rules;
     }
 
     /**
