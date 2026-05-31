@@ -77,7 +77,7 @@ class CalculateActiveUsersPerMonth extends Command
     {
         if ($monthOption = $this->option('month')) {
             try {
-                $targetMonth = Carbon::createFromFormat('Y-m', $monthOption);
+                $targetMonth = Carbon::createFromFormat('!Y-m', $monthOption);
             } catch (\Throwable) {
                 $this->error('Invalid month format. Use YYYY-MM (e.g., 2024-01)');
                 throw new \InvalidArgumentException('Invalid month format');
