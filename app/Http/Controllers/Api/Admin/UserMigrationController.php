@@ -13,6 +13,7 @@ use STS\Models\UserMigration;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
+use STS\Services\UserMigrationFieldMerger;
 use Throwable;
 
 class UserMigrationController extends Controller
@@ -21,6 +22,7 @@ class UserMigrationController extends Controller
         private readonly UserDeletionService $userDeletionService,
         private readonly AnonymizationService $anonymizationService,
         private readonly DeviceManager $deviceLogic,
+        private readonly UserMigrationFieldMerger $fieldMerger,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -65,16 +67,27 @@ class UserMigrationController extends Controller
         $validated = $request->validate([
             'user_id_kept' => 'required|integer|exists:users,id',
             'user_id_removed' => 'required|integer|exists:users,id|different:user_id_kept',
+            'field_sources' => 'sometimes|array',
+            'field_sources.email' => 'sometimes|in:removed,kept',
+            'field_sources.password' => 'sometimes|in:removed,kept',
+            'field_sources.nro_doc' => 'sometimes|in:removed,kept',
+            'field_sources.mobile_phone' => 'sometimes|in:removed,kept',
+            'field_sources.created_at' => 'sometimes|in:removed,kept',
         ]);
 
         $admin = $request->user();
         $keptId = (int) $validated['user_id_kept'];
         $removedId = (int) $validated['user_id_removed'];
+        $fieldSources = $validated['field_sources'] ?? [];
 
         Artisan::call('user:update', [
             'original' => (string) $removedId,
             'new' => (string) $keptId,
         ]);
+
+        $kept = User::findOrFail($keptId);
+        $removed = User::findOrFail($removedId);
+        $this->fieldMerger->apply($kept, $removed, $fieldSources);
 
         $removalAction = $this->removeOrAnonymize($removedId, $admin);
 
