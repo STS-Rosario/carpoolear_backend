@@ -14,11 +14,12 @@ class Rating extends Model
     {
         return \Database\Factories\RatingFactory::new();
     }
+
     const STATE_NEGATIVO = 0;
 
     const STATE_POSITIVO = 1;
 
-    const RATING_INTERVAL = 25; // TODO: roll back to 15 on 2025-03-25
+    const RATING_INTERVAL = 15;
 
     protected $table = 'rating';
 
@@ -43,7 +44,7 @@ class Rating extends Model
             'reply_comment_created_at' => 'datetime',
             'rate_at' => 'datetime',
         ];
-    } 
+    }
 
     protected $hidden = [];
 
