@@ -6,19 +6,33 @@ use STS\Models\User;
 
 class UserMigrationFieldMerger
 {
+    /** @var list<string> */
+    public const MERGEABLE_FIELDS = [
+        'email',
+        'password',
+        'nro_doc',
+        'mobile_phone',
+        'created_at',
+    ];
+
+    /** @var array<string, 'removed'|'kept'> */
+    public const DEFAULT_FIELD_SOURCES = [
+        'email' => 'removed',
+        'password' => 'kept',
+        'nro_doc' => 'removed',
+        'mobile_phone' => 'kept',
+        'created_at' => 'removed',
+    ];
+
     /**
      * @param  array<string, 'removed'|'kept'>  $fieldSources
      */
-    public function apply(User $kept, User $removed, array $fieldSources): void
+    public function apply(User $kept, User $removed, array $fieldSources = []): void
     {
-        $fields = ['email', 'password', 'nro_doc', 'mobile_phone', 'created_at'];
+        $resolved = array_merge(self::DEFAULT_FIELD_SOURCES, $fieldSources);
 
-        foreach ($fields as $field) {
-            $source = $fieldSources[$field] ?? null;
-            if ($source === null) {
-                continue;
-            }
-
+        foreach (self::MERGEABLE_FIELDS as $field) {
+            $source = $resolved[$field];
             $from = $source === 'removed' ? $removed : $kept;
             $kept->{$field} = $from->{$field};
         }

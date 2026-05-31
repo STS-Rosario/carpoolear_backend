@@ -33,13 +33,7 @@ class UserMigrationFieldMergerTest extends TestCase
         ]);
 
         $merger = new UserMigrationFieldMerger;
-        $merger->apply($kept, $removed, [
-            'email' => 'removed',
-            'password' => 'kept',
-            'nro_doc' => 'removed',
-            'mobile_phone' => 'kept',
-            'created_at' => 'removed',
-        ]);
+        $merger->apply($kept, $removed, UserMigrationFieldMerger::DEFAULT_FIELD_SOURCES);
 
         $kept->refresh();
 
