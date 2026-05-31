@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Support\Facades\Hash;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\AdminActionLog;
 use STS\Models\Trip;
@@ -113,6 +114,99 @@ class AdminUserMigrationControllerIntegrationTest extends TestCase
             'user_id_kept' => $kept->id,
             'user_id_removed' => $removed->id,
         ]);
+    }
+
+    public function test_store_applies_field_sources_to_kept_user_with_defaults(): void
+    {
+        $admin = $this->admin();
+        $kept = User::factory()->create([
+            'email' => 'new@example.test',
+            'password' => Hash::make('new-password'),
+            'nro_doc' => '22222222',
+            'mobile_phone' => '+5492222222222',
+        ]);
+        $removed = User::factory()->create([
+            'email' => 'old@example.test',
+            'password' => Hash::make('old-password'),
+            'nro_doc' => '11111111',
+            'mobile_phone' => '+5491111111111',
+        ]);
+        Trip::factory()->create(['user_id' => $removed->id]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+
+        $response->assertOk();
+
+        $kept->refresh();
+        $this->assertSame('old@example.test', $kept->email);
+        $this->assertTrue(Hash::check('new-password', $kept->password));
+        $this->assertSame('11111111', $kept->nro_doc);
+        $this->assertSame('+5492222222222', $kept->mobile_phone);
+    }
+
+    public function test_store_applies_custom_field_sources_to_kept_user(): void
+    {
+        $admin = $this->admin();
+        $kept = User::factory()->create([
+            'email' => 'new@example.test',
+            'password' => Hash::make('new-password'),
+            'nro_doc' => '22222222',
+            'mobile_phone' => '+5492222222222',
+        ]);
+        $removed = User::factory()->create([
+            'email' => 'old@example.test',
+            'password' => Hash::make('old-password'),
+            'nro_doc' => '11111111',
+            'mobile_phone' => '+5491111111111',
+        ]);
+        Trip::factory()->create(['user_id' => $removed->id]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+            'field_sources' => [
+                'email' => 'kept',
+                'password' => 'removed',
+                'nro_doc' => 'kept',
+                'mobile_phone' => 'removed',
+                'created_at' => 'kept',
+            ],
+        ]);
+
+        $response->assertOk();
+
+        $kept->refresh();
+        $this->assertSame('new@example.test', $kept->email);
+        $this->assertTrue(Hash::check('old-password', $kept->password));
+        $this->assertSame('22222222', $kept->nro_doc);
+        $this->assertSame('+5491111111111', $kept->mobile_phone);
+    }
+
+    public function test_store_rejects_invalid_field_source_value(): void
+    {
+        $admin = $this->admin();
+        $kept = User::factory()->create();
+        $removed = User::factory()->create();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+            'field_sources' => [
+                'email' => 'other',
+            ],
+        ])->assertUnprocessable();
     }
 
     public function test_store_deletes_removed_user_when_deletion_succeeds(): void
