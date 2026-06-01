@@ -237,7 +237,7 @@ class UserControllerApiTest extends TestCase
         $this->assertSame('Still editable bio.', $user->fresh()->description);
     }
 
-    public function test_registration_persists_facebook_profile_url_when_module_enabled(): void
+    public function test_registration_ignores_facebook_profile_url_when_module_enabled(): void
     {
         config(['carpoolear.module_facebook_profile_url_enabled' => true]);
 
@@ -253,10 +253,10 @@ class UserControllerApiTest extends TestCase
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('data.facebook_profile_url', $facebookUrl);
+        $response->assertJsonPath('data.facebook_profile_url', null);
         $this->assertDatabaseHas('users', [
             'email' => $email,
-            'facebook_profile_url' => $facebookUrl,
+            'facebook_profile_url' => null,
         ]);
     }
 
@@ -302,12 +302,11 @@ class UserControllerApiTest extends TestCase
         $this->assertSame($facebookUrl, $target->fresh()->facebook_profile_url);
     }
 
-    public function test_registration_normalizes_facebook_profile_url_without_scheme(): void
+    public function test_registration_does_not_normalize_facebook_profile_url(): void
     {
         config(['carpoolear.module_facebook_profile_url_enabled' => true]);
 
         $email = 'facebook-url-normalize-'.uniqid('', true).'@example.com';
-        $expected = 'https://facebook.com/registro-fixture';
 
         $response = $this->postJson('api/users/', [
             'name' => 'Facebook Url Normalize',
@@ -318,14 +317,14 @@ class UserControllerApiTest extends TestCase
         ]);
 
         $response->assertOk();
-        $response->assertJsonPath('data.facebook_profile_url', $expected);
+        $response->assertJsonPath('data.facebook_profile_url', null);
         $this->assertDatabaseHas('users', [
             'email' => $email,
-            'facebook_profile_url' => $expected,
+            'facebook_profile_url' => null,
         ]);
     }
 
-    public function test_registration_rejects_non_facebook_profile_url(): void
+    public function test_registration_ignores_invalid_facebook_profile_url(): void
     {
         config(['carpoolear.module_facebook_profile_url_enabled' => true]);
 
@@ -337,7 +336,12 @@ class UserControllerApiTest extends TestCase
             'password' => 'secret12',
             'password_confirmation' => 'secret12',
             'facebook_profile_url' => 'https://example.com/profile',
-        ])->assertStatus(422);
+        ])->assertOk();
+
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'facebook_profile_url' => null,
+        ]);
     }
 
     public function test_update_bans_user_when_mobile_matches_configured_fragment(): void
