@@ -104,7 +104,7 @@ class UsersManager extends BaseManager
                 ];
             }
         }
-        if ($facebookModuleEnabled) {
+        if ($facebookModuleEnabled && $id) {
             $rules['facebook_profile_url'] = [
                 'nullable',
                 'max:255',
@@ -142,11 +142,7 @@ class UsersManager extends BaseManager
      */
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
-        if (! $this->isFacebookProfileUrlModuleEnabled()) {
-            unset($data['facebook_profile_url']);
-        } else {
-            $data = $this->prepareFacebookProfileUrl($data);
-        }
+        unset($data['facebook_profile_url']);
         \Log::info('Create USER: '.$data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
