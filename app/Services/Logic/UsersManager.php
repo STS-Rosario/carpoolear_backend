@@ -73,8 +73,6 @@ class UsersManager extends BaseManager
 
     public function validator(array $data, $id = null, $is_social = false, $is_driver = false, $is_admin = false)
     {
-        $facebookModuleEnabled = $this->isFacebookProfileUrlModuleEnabled();
-
         if ($id) {
             $rules = [
                 'name' => 'max:255',
@@ -84,6 +82,20 @@ class UsersManager extends BaseManager
             if (config('carpoolear.module_unique_doc_phone', false) && ! $is_admin) {
                 $rules['nro_doc'] = 'unique:users,nro_doc,'.$id;
                 $rules['mobile_phone'] = 'unique:users,mobile_phone,'.$id;
+            }
+            if ($this->isFacebookProfileUrlModuleEnabled()) {
+                $rules['facebook_profile_url'] = [
+                    'nullable',
+                    'max:255',
+                    function ($attribute, $value, $fail) {
+                        if ($value === null || trim((string) $value) === '') {
+                            return;
+                        }
+                        if (FacebookProfileUrl::tryNormalize((string) $value) === null) {
+                            $fail('El enlace debe ser un perfil de Facebook válido (por ejemplo facebook.com/tu-perfil).');
+                        }
+                    },
+                ];
             }
         } else {
             if (! $is_social) {
@@ -103,20 +115,6 @@ class UsersManager extends BaseManager
                     'emails_notifications' => 'boolean',
                 ];
             }
-        }
-        if ($facebookModuleEnabled && $id) {
-            $rules['facebook_profile_url'] = [
-                'nullable',
-                'max:255',
-                function ($attribute, $value, $fail) {
-                    if ($value === null || trim((string) $value) === '') {
-                        return;
-                    }
-                    if (FacebookProfileUrl::tryNormalize((string) $value) === null) {
-                        $fail('El enlace debe ser un perfil de Facebook válido (por ejemplo facebook.com/tu-perfil).');
-                    }
-                },
-            ];
         }
         if (config('carpoolear.module_validated_drivers', false) && $is_driver) {
             $rules['driver_data_docs'] = 'required|array|min:1';
