@@ -32,6 +32,10 @@ class SupportTicketService
      */
     private const ADMIN_REPLY_SETS_WAITING_FOR_USER = ['Open', 'Esperando respuesta', 'En revision'];
 
+    /**
+     * Appends the canned welcome reply on user-created tickets.
+     * Does not use {@see applyAdminReplyTransition}; status stays admin-actionable.
+     */
     public function appendOpeningAutoReply(SupportTicket $ticket): bool
     {
         $actorUserId = $this->resolveAutoReplyActorUserId();

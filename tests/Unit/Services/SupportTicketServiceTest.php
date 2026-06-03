@@ -19,7 +19,7 @@ class SupportTicketServiceTest extends TestCase
         return $this->app->make(SupportTicketService::class);
     }
 
-    public function test_append_opening_auto_reply_creates_admin_reply_after_user_message(): void
+    public function test_append_opening_auto_reply_creates_admin_reply_without_waiting_on_user_status(): void
     {
         $owner = User::factory()->create();
         $admin = User::factory()->create(['is_admin' => 1]);
