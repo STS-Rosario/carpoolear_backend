@@ -127,10 +127,10 @@ class SupportTicketApiTest extends TestCase
         $createResponse->assertStatus(200);
         $ticketId = (int) data_get($createResponse->json(), 'data.id');
         $this->assertGreaterThan(0, $ticketId);
-        $this->assertSame('Esperando respuesta', data_get($createResponse->json(), 'data.status'));
+        $this->assertSame('Open', data_get($createResponse->json(), 'data.status'));
         $this->assertSame('normal', data_get($createResponse->json(), 'data.priority'));
         $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_user'));
-        $this->assertSame(0, data_get($createResponse->json(), 'data.unread_for_admin'));
+        $this->assertSame(1, data_get($createResponse->json(), 'data.unread_for_admin'));
 
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(\STS\Http\Middleware\UserAdmin::class);
@@ -691,9 +691,13 @@ class SupportTicketApiTest extends TestCase
         $this->assertSame($admin->id, (int) $replies[1]->user_id);
 
         $ticket = SupportTicket::query()->findOrFail($ticketId);
-        $this->assertSame('Esperando respuesta', $ticket->status);
+        $this->assertSame('Open', $ticket->status);
         $this->assertSame(1, (int) $ticket->unread_for_user);
-        $this->assertSame(0, (int) $ticket->unread_for_admin);
+        $this->assertSame(1, (int) $ticket->unread_for_admin);
+        $this->assertTrue(
+            SupportTicket::query()->adminNeedsAttention()->whereKey($ticketId)->exists(),
+            'Opening auto-reply must not remove ticket from admin attention queue',
+        );
     }
 
     public function test_duplicate_user_ticket_create_does_not_append_second_opening_auto_reply(): void

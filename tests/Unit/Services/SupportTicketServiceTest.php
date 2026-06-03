@@ -51,7 +51,41 @@ class SupportTicketServiceTest extends TestCase
         $this->assertTrue((bool) $replies[1]->is_admin);
         $this->assertSame(SupportTicketOpeningAutoReply::MARKDOWN, $replies[1]->message_markdown);
         $this->assertSame($admin->id, (int) $replies[1]->user_id);
-        $this->assertSame('Esperando respuesta', $ticket->fresh()->status);
+        $fresh = $ticket->fresh();
+        $this->assertSame('Open', $fresh->status);
+        $this->assertSame(1, (int) $fresh->unread_for_admin);
+        $this->assertSame(1, (int) $fresh->unread_for_user);
+    }
+
+    public function test_append_opening_auto_reply_preserves_status_when_ticket_already_en_revision(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        config()->set('carpoolear.support_ticket_auto_reply_user_id', $admin->id);
+
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'En revision',
+            'priority' => 'normal',
+            'unread_for_admin' => 2,
+            'unread_for_user' => 0,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User question',
+            'created_by' => $owner->id,
+        ]);
+
+        $this->assertTrue($this->service()->appendOpeningAutoReply($ticket->fresh()));
+
+        $fresh = $ticket->fresh();
+        $this->assertSame('En revision', $fresh->status);
+        $this->assertSame(2, (int) $fresh->unread_for_admin);
+        $this->assertSame(1, (int) $fresh->unread_for_user);
     }
 
     public function test_ticket_already_has_reply_with_message_markdown_detects_existing_body(): void
