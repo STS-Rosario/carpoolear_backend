@@ -32,6 +32,10 @@ class SupportTicketService
      */
     private const ADMIN_REPLY_SETS_WAITING_FOR_USER = ['Open', 'Esperando respuesta', 'En revision'];
 
+    /**
+     * Appends the canned welcome reply on user-created tickets.
+     * Does not use {@see applyAdminReplyTransition}; status stays admin-actionable.
+     */
     public function appendOpeningAutoReply(SupportTicket $ticket): bool
     {
         $actorUserId = $this->resolveAutoReplyActorUserId();
@@ -51,7 +55,7 @@ class SupportTicketService
             'created_by' => null,
         ]);
 
-        $this->applyAdminReplyTransition($ticket, $actorUserId);
+        $this->applyOpeningAutoReplyTransition($ticket, $actorUserId);
         $ticket->save();
 
         return true;
@@ -105,6 +109,17 @@ class SupportTicketService
         }
         $ticket->unread_for_admin++;
         $ticket->unread_for_user = 0;
+        $ticket->last_reply_at = now();
+        $ticket->updated_by = $actorUserId;
+    }
+
+    /**
+     * Canned opening reply only: notify the ticket owner without changing status
+     * or clearing admin unread (team still owes a human response).
+     */
+    private function applyOpeningAutoReplyTransition(SupportTicket $ticket, int $actorUserId): void
+    {
+        $ticket->unread_for_user++;
         $ticket->last_reply_at = now();
         $ticket->updated_by = $actorUserId;
     }
