@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\MercadoPagoRejectedValidation;
+use STS\Models\SupportTicket;
 
 class MercadoPagoRejectedValidationController extends Controller
 {
@@ -137,6 +138,7 @@ class MercadoPagoRejectedValidationController extends Controller
             'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
             'reviewed_by' => $item->reviewed_by,
             'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
+            'support_tickets_count' => SupportTicket::countForUser($item->user_id),
         ];
     }
 }

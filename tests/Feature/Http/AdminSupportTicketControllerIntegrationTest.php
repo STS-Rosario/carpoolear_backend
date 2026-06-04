@@ -100,6 +100,24 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             || (int) ($row['unread_for_admin'] ?? 0) > 0));
     }
 
+    public function test_index_filters_by_user_id_when_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $target = User::factory()->create();
+        $other = User::factory()->create();
+        $targetTicket = $this->makeTicket($target, ['subject' => 'target-user-ticket']);
+        $this->makeTicket($other, ['subject' => 'other-user-ticket']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?user_id='.$target->id)->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($targetTicket->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['user_id'] ?? 0) === $target->id));
+    }
+
     public function test_index_returns_data_ordered_newest_first(): void
     {
         $admin = $this->adminUser();

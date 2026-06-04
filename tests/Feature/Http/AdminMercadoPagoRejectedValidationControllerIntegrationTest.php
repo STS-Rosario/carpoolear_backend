@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\MercadoPagoRejectedValidation;
+use STS\Models\SupportTicket;
 use STS\Models\User;
 use Tests\TestCase;
 
@@ -324,5 +325,32 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
 
         $show = $this->getJson('api/admin/mercado-pago-rejected-validations/'.$row->id)->assertOk();
         $this->assertSame('Contacto por telefono, revisar en 48hs.', $show->json('data.private_admin_note'));
+    }
+
+    public function test_show_includes_support_tickets_count_for_user(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create();
+        $row = MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['sub' => 'mp-1'],
+        ]);
+
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'account_verification',
+            'subject' => 'Verification help',
+            'status' => 'Open',
+            'priority' => 'high',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $data = $this->getJson('api/admin/mercado-pago-rejected-validations/'.$row->id)->assertOk()->json('data');
+
+        $this->assertArrayHasKey('support_tickets_count', $data);
+        $this->assertSame(1, $data['support_tickets_count']);
     }
 }

@@ -5,9 +5,11 @@ namespace STS\Transformers;
 use Carbon\Carbon;
 use League\Fractal\TransformerAbstract;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
+use STS\Services\AdminUserProfileCounts;
 use STS\Services\GeoService;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\UsersManager;
@@ -108,6 +110,10 @@ class ProfileTransformer extends TransformerAbstract
             $data['cars'] = $user->cars;
             $data['patente'] = $user->cars->first() ? $user->cars->first()->patente : null;
             $data['car_description'] = $user->cars->first() ? $user->cars->first()->description : null;
+            $data['support_tickets_count'] = SupportTicket::countForUser($user->id);
+            $profileCounts = app(AdminUserProfileCounts::class);
+            $data['admin_trips_count'] = $profileCounts->tripsCount($this->user, $user);
+            $data['admin_ratings_count'] = $profileCounts->ratingsCount($user->id);
         }
 
         switch ($user->data_visibility) {

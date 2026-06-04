@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Notifications\ManualIdentityValidationReviewNotification;
 use STS\Services\Notifications\NotificationServices;
@@ -376,5 +377,43 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'action' => 'pending',
             'note' => 'Necesitamos mejor calidad.',
         ])->assertOk();
+    }
+
+    public function test_show_includes_support_tickets_count_for_user(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create();
+        $adminCreator = User::factory()->create(['is_admin' => true]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'account_verification',
+            'subject' => 'User opened ticket',
+            'status' => 'Open',
+            'priority' => 'high',
+        ]);
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'contact',
+            'subject' => 'Admin opened ticket',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'created_by' => $adminCreator->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $data = $this->getJson('api/admin/manual-identity-validations/'.$row->id)->assertOk()->json('data');
+
+        $this->assertArrayHasKey('support_tickets_count', $data);
+        $this->assertSame(2, $data['support_tickets_count']);
     }
 }

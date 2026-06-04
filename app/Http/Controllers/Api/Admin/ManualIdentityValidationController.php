@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\SupportTicket;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -82,6 +83,7 @@ class ManualIdentityValidationController extends Controller
             'back_image_url' => $item->back_image_path ? $imageUrl('back') : null,
             'selfie_image_url' => $item->selfie_image_path ? $imageUrl('selfie') : null,
             'has_images' => $item->hasImages(),
+            'support_tickets_count' => SupportTicket::countForUser($item->user_id),
         ];
     }
 

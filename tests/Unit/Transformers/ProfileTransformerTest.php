@@ -4,6 +4,8 @@ namespace Tests\Unit\Transformers;
 
 use STS\Models\Car;
 use STS\Models\Passenger;
+use STS\Models\Rating;
+use STS\Models\SupportTicket;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Transformers\ProfileTransformer;
@@ -361,5 +363,74 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayHasKey('cars', $payload);
         $patentes = collect($payload['cars'])->pluck('patente')->all();
         $this->assertSame(['ACT123'], $patentes);
+    }
+
+    public function test_transform_includes_support_tickets_count_for_admin_viewing_other_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+
+        SupportTicket::create([
+            'user_id' => $subject->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayHasKey('support_tickets_count', $payload);
+        $this->assertSame(1, $payload['support_tickets_count']);
+    }
+
+    public function test_transform_does_not_expose_support_tickets_count_for_non_admin_viewing_other_user(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['data_visibility' => '2']);
+
+        SupportTicket::create([
+            'user_id' => $subject->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('support_tickets_count', $payload);
+    }
+
+    public function test_transform_includes_admin_profile_nav_counts_for_admin_viewing_other_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+        $other = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $subject->id]);
+
+        Rating::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id_to' => $subject->id,
+            'user_id_from' => $other->id,
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayHasKey('admin_trips_count', $payload);
+        $this->assertArrayHasKey('admin_ratings_count', $payload);
+        $this->assertSame(1, $payload['admin_trips_count']);
+        $this->assertSame(1, $payload['admin_ratings_count']);
+    }
+
+    public function test_transform_does_not_expose_admin_profile_nav_counts_for_non_admin(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['data_visibility' => '2']);
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('admin_trips_count', $payload);
+        $this->assertArrayNotHasKey('admin_ratings_count', $payload);
     }
 }

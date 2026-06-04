@@ -110,4 +110,13 @@ class SupportTicket extends Model
                 ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
         });
     }
+
+    public static function countForUser(?int $userId): int
+    {
+        if ($userId === null) {
+            return 0;
+        }
+
+        return (int) static::query()->where('user_id', $userId)->count();
+    }
 }
