@@ -15,13 +15,7 @@ class ManualIdentityValidationReviewNotification extends BaseNotification
 
     public function toString()
     {
-        $action = $this->getAttribute('action');
-
-        if ($action === 'rejected') {
-            return __('notifications.manual_identity_validation.rejected');
-        }
-
-        return __('notifications.manual_identity_validation.approved');
+        return __($this->messageTranslationKey());
     }
 
     public function getExtras()
@@ -35,12 +29,9 @@ class ManualIdentityValidationReviewNotification extends BaseNotification
     public function toPush($user, $device)
     {
         $action = $this->getAttribute('action');
-        $messageKey = $action === 'rejected'
-            ? 'notifications.manual_identity_validation.rejected'
-            : 'notifications.manual_identity_validation.approved';
 
         return [
-            'message' => __($messageKey),
+            'message' => __($this->messageTranslationKey()),
             'url' => '/app/identity-validation',
             'type' => 'identity_validation',
             'extras' => [
@@ -48,5 +39,14 @@ class ManualIdentityValidationReviewNotification extends BaseNotification
             ],
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
+    }
+
+    private function messageTranslationKey(): string
+    {
+        if ($this->getAttribute('action') === 'rejected') {
+            return 'notifications.manual_identity_validation.rejected';
+        }
+
+        return 'notifications.manual_identity_validation.approved';
     }
 }
