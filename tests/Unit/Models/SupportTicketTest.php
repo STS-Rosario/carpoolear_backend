@@ -154,4 +154,21 @@ class SupportTicketTest extends TestCase
         $this->assertSame(1, $ticket->fresh()->attachments()->count());
         $this->assertSame('file.bin', $ticket->attachments()->first()->original_name);
     }
+
+    public function test_count_for_user_returns_zero_when_user_id_is_null(): void
+    {
+        $this->assertSame(0, SupportTicket::countForUser(null));
+    }
+
+    public function test_count_for_user_counts_all_tickets_for_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->makeTicket($user, ['subject' => 'One']);
+        $this->makeTicket($user, ['subject' => 'Two']);
+        $this->makeTicket($other, ['subject' => 'Other']);
+
+        $this->assertSame(2, SupportTicket::countForUser($user->id));
+    }
 }
