@@ -97,4 +97,8 @@ return [
     // UpdateTripNotification
     'update_trip.title' => ':name has changed the trip conditions.',
     'update_trip.message' => ':name has changed the conditions of their trip.',
+
+    // ManualIdentityValidationReviewNotification
+    'manual_identity_validation.approved' => 'Your account verification was approved. Click here for more information.',
+    'manual_identity_validation.rejected' => 'Your account verification was rejected. Click here for more information.',
 ];
