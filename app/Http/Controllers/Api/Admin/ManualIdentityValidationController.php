@@ -7,10 +7,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
+use STS\Services\ManualIdentityValidationReviewNotifier;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManualIdentityValidationController extends Controller
 {
+    public function __construct(
+        private readonly ManualIdentityValidationReviewNotifier $reviewNotifier,
+    ) {}
+
     /**
      * GET /api/admin/manual-identity-validations - list: paid first; within paid: with submitted_at (docs sent) first, then pending review, approved, rejected; then by waiting time (oldest first).
      * Waiting time = submitted_at (if submitted), else paid_at, else created_at.
@@ -154,6 +159,13 @@ class ManualIdentityValidationController extends Controller
             $user->identity_validation_rejected_at = null;
             $user->identity_validation_reject_reason = null;
             $user->save();
+        }
+
+        if (in_array($validated['action'], ['approve', 'reject'], true)) {
+            $this->reviewNotifier->notify(
+                $user,
+                $validated['action'] === 'approve' ? 'approved' : 'rejected',
+            );
         }
 
         return response()->json(['data' => $item->fresh(['user:id,name,nro_doc'])]);

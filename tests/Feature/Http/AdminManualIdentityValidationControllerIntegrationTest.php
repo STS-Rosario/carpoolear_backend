@@ -9,6 +9,8 @@ use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
+use STS\Notifications\ManualIdentityValidationReviewNotification;
+use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
 class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
@@ -265,5 +267,114 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
 
         $show = $this->getJson('api/admin/manual-identity-validations/'.$row->id)->assertOk();
         $this->assertSame('Internal follow-up next week.', $show->json('data.private_admin_note'));
+    }
+
+    public function test_review_approve_notifies_user_with_approved_action(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->mock(NotificationServices::class, function ($mock) use ($user) {
+            $mock->shouldReceive('send')
+                ->twice()
+                ->withArgs(function ($notification, $recipient, $channel) use ($user) {
+                    if (! $notification instanceof ManualIdentityValidationReviewNotification) {
+                        return false;
+                    }
+                    if ($notification->getAttribute('action') !== 'approved') {
+                        return false;
+                    }
+                    if (! $recipient instanceof User || (int) $recipient->id !== (int) $user->id) {
+                        return false;
+                    }
+
+                    return in_array($channel, [
+                        \STS\Services\Notifications\Channels\DatabaseChannel::class,
+                        \STS\Services\Notifications\Channels\PushChannel::class,
+                    ], true);
+                });
+        });
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/review', [
+            'action' => 'approve',
+            'note' => 'Documentación correcta.',
+        ])->assertOk();
+    }
+
+    public function test_review_reject_notifies_user_with_rejected_action(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->mock(NotificationServices::class, function ($mock) use ($user) {
+            $mock->shouldReceive('send')
+                ->twice()
+                ->withArgs(function ($notification, $recipient, $channel) use ($user) {
+                    if (! $notification instanceof ManualIdentityValidationReviewNotification) {
+                        return false;
+                    }
+                    if ($notification->getAttribute('action') !== 'rejected') {
+                        return false;
+                    }
+                    if (! $recipient instanceof User || (int) $recipient->id !== (int) $user->id) {
+                        return false;
+                    }
+
+                    return in_array($channel, [
+                        \STS\Services\Notifications\Channels\DatabaseChannel::class,
+                        \STS\Services\Notifications\Channels\PushChannel::class,
+                    ], true);
+                });
+        });
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/review', [
+            'action' => 'reject',
+            'note' => 'Fotos ilegibles.',
+        ])->assertOk();
+    }
+
+    public function test_review_pending_does_not_notify_user(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->mock(NotificationServices::class, function ($mock) {
+            $mock->shouldReceive('send')->never();
+        });
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/review', [
+            'action' => 'pending',
+            'note' => 'Necesitamos mejor calidad.',
+        ])->assertOk();
     }
 }
