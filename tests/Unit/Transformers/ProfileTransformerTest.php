@@ -4,6 +4,7 @@ namespace Tests\Unit\Transformers;
 
 use STS\Models\Car;
 use STS\Models\Passenger;
+use STS\Models\SupportTicket;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Transformers\ProfileTransformer;
@@ -361,5 +362,42 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayHasKey('cars', $payload);
         $patentes = collect($payload['cars'])->pluck('patente')->all();
         $this->assertSame(['ACT123'], $patentes);
+    }
+
+    public function test_transform_includes_support_tickets_count_for_admin_viewing_other_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+
+        SupportTicket::create([
+            'user_id' => $subject->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayHasKey('support_tickets_count', $payload);
+        $this->assertSame(1, $payload['support_tickets_count']);
+    }
+
+    public function test_transform_does_not_expose_support_tickets_count_for_non_admin_viewing_other_user(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['data_visibility' => '2']);
+
+        SupportTicket::create([
+            'user_id' => $subject->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('support_tickets_count', $payload);
     }
 }
