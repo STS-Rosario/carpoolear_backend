@@ -5,6 +5,7 @@ namespace STS\Transformers;
 use Carbon\Carbon;
 use League\Fractal\TransformerAbstract;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
@@ -108,6 +109,7 @@ class ProfileTransformer extends TransformerAbstract
             $data['cars'] = $user->cars;
             $data['patente'] = $user->cars->first() ? $user->cars->first()->patente : null;
             $data['car_description'] = $user->cars->first() ? $user->cars->first()->description : null;
+            $data['support_tickets_count'] = SupportTicket::countForUser($user->id);
         }
 
         switch ($user->data_visibility) {
