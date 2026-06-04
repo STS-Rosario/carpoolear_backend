@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\User;
+use STS\Notifications\ManualIdentityValidationReviewNotification;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManualIdentityValidationController extends Controller
@@ -156,7 +158,25 @@ class ManualIdentityValidationController extends Controller
             $user->save();
         }
 
+        if (in_array($validated['action'], ['approve', 'reject'], true)) {
+            $this->notifyUserOfManualReview(
+                $user,
+                $validated['action'] === 'approve' ? 'approved' : 'rejected',
+            );
+        }
+
         return response()->json(['data' => $item->fresh(['user:id,name,nro_doc'])]);
+    }
+
+    private function notifyUserOfManualReview(User $user, string $action): void
+    {
+        $notification = new ManualIdentityValidationReviewNotification;
+        $notification->setAttribute('action', $action);
+        try {
+            $notification->notify($user);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
