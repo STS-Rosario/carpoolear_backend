@@ -138,9 +138,7 @@ class MercadoPagoRejectedValidationController extends Controller
             'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
             'reviewed_by' => $item->reviewed_by,
             'reviewed_by_name' => $item->reviewedBy ? $item->reviewedBy->name : null,
-            'support_tickets_count' => $item->user_id
-                ? SupportTicket::where('user_id', $item->user_id)->count()
-                : 0,
+            'support_tickets_count' => SupportTicket::countForUser($item->user_id),
         ];
     }
 }

@@ -83,9 +83,7 @@ class ManualIdentityValidationController extends Controller
             'back_image_url' => $item->back_image_path ? $imageUrl('back') : null,
             'selfie_image_url' => $item->selfie_image_path ? $imageUrl('selfie') : null,
             'has_images' => $item->hasImages(),
-            'support_tickets_count' => $item->user_id
-                ? SupportTicket::where('user_id', $item->user_id)->count()
-                : 0,
+            'support_tickets_count' => SupportTicket::countForUser($item->user_id),
         ];
     }
 
