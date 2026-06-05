@@ -46,10 +46,10 @@ class CarsManager extends BaseManager
 
             return;
         } else {
-            $existing = CarModel::withTrashed()
-                ->where('user_id', $user->id)
-                ->where('patente', $data['patente'])
-                ->first();
+            $existing = $this->repo->findByUserAndPatenteIncludingTrashed(
+                $user->id,
+                $data['patente']
+            );
 
             if ($existing && $existing->trashed()) {
                 $existing->restore();
