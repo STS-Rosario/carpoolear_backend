@@ -122,6 +122,34 @@ class CarsManagerTest extends TestCase
         $this->assertSame($patente, $car->patente);
     }
 
+    public function test_create_restores_soft_deleted_car_with_same_patente_instead_of_creating_new_row(): void
+    {
+        $user = User::factory()->create();
+        $patente = 'RS'.substr(uniqid('', true), 0, 6);
+        $old = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => $patente,
+            'description' => 'Old car',
+        ]);
+        $oldId = $old->id;
+        $old->delete();
+
+        $manager = $this->manager();
+        $car = $manager->create($user, [
+            'patente' => $patente,
+            'description' => 'Restored car',
+        ]);
+
+        $this->assertInstanceOf(Car::class, $car);
+        $this->assertSame($oldId, $car->id);
+        $this->assertSame('Restored car', $car->fresh()->description);
+        $this->assertNull($car->fresh()->deleted_at);
+        $this->assertSame(
+            1,
+            Car::withTrashed()->where('user_id', $user->id)->where('patente', $patente)->count()
+        );
+    }
+
     public function test_create_persists_car_when_valid(): void
     {
         $user = User::factory()->create();
