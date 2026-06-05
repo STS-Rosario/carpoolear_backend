@@ -46,6 +46,19 @@ class CarsManager extends BaseManager
 
             return;
         } else {
+            $existing = $this->repo->findByUserAndPatenteIncludingTrashed(
+                $user->id,
+                $data['patente']
+            );
+
+            if ($existing && $existing->trashed()) {
+                $existing->restore();
+                $existing->description = $data['description'];
+                $this->repo->update($existing);
+
+                return $existing;
+            }
+
             $car = new CarModel;
             $car->description = $data['description'];
             $car->patente = $data['patente'];

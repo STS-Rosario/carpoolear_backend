@@ -145,6 +145,22 @@ class CarsRepositoryTest extends TestCase
         $this->assertNull($this->repo()->getUserCar($user->id));
     }
 
+    public function test_find_by_user_and_patente_including_trashed_returns_soft_deleted_car(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'TR-'.substr(uniqid('', true), 0, 6),
+        ]);
+        $car->delete();
+
+        $found = $this->repo()->findByUserAndPatenteIncludingTrashed($user->id, $car->patente);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($car));
+        $this->assertTrue($found->trashed());
+    }
+
     public function test_create_returns_false_when_save_fails(): void
     {
         $car = Mockery::mock(Car::class);

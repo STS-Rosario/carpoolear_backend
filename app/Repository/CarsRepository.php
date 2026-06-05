@@ -36,4 +36,12 @@ class CarsRepository
     {
         return CarModel::where('user_id', $userId)->first();
     }
+
+    public function findByUserAndPatenteIncludingTrashed($userId, $patente)
+    {
+        return CarModel::withTrashed()
+            ->where('user_id', $userId)
+            ->where('patente', $patente)
+            ->first();
+    }
 }
