@@ -97,9 +97,7 @@ class ProfileTransformer extends TransformerAbstract
             $data['email'] = $user->email;
             $data['mobile_phone'] = $user->mobile_phone;
             $data['nro_doc'] = $user->nro_doc;
-            $data['created_at'] = $user->created_at instanceof Carbon
-                ? $user->created_at->toDateTimeString()
-                : null;
+            $data['created_at'] = $this->nullableDateTimeString($user->created_at);
             // bank data
             $data['account_number'] = $user->account_number;
             $data['account_type'] = $user->account_type;
@@ -114,6 +112,15 @@ class ProfileTransformer extends TransformerAbstract
             $profileCounts = app(AdminUserProfileCounts::class);
             $data['admin_trips_count'] = $profileCounts->tripsCount($this->user, $user);
             $data['admin_ratings_count'] = $profileCounts->ratingsCount($user->id);
+            $data['phone_verified'] = intval($user->phone_verified);
+            $data['phone_verified_at'] = $this->nullableDateTimeString($user->phone_verified_at);
+            $data['identity_validation_rejected_at'] = $this->nullableDateTimeString(
+                $user->identity_validation_rejected_at
+            );
+            $data['identity_validation_reject_reason'] = $user->identity_validation_reject_reason;
+            $data['validate_by_date'] = $user->validate_by_date
+                ? $user->validate_by_date->format('Y-m-d')
+                : null;
         }
 
         switch ($user->data_visibility) {
@@ -143,5 +150,10 @@ class ProfileTransformer extends TransformerAbstract
         }
 
         return $data;
+    }
+
+    private function nullableDateTimeString(mixed $value): ?string
+    {
+        return $value instanceof Carbon ? $value->toDateTimeString() : null;
     }
 }
