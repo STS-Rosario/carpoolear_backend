@@ -433,4 +433,43 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayNotHasKey('admin_trips_count', $payload);
         $this->assertArrayNotHasKey('admin_ratings_count', $payload);
     }
+
+    public function test_transform_exposes_extended_admin_detail_fields_for_admin_viewing_other_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+        $subject->forceFill([
+            'phone_verified' => true,
+            'phone_verified_at' => '2025-05-10 08:00:00',
+            'identity_validation_rejected_at' => '2025-05-11 09:00:00',
+            'identity_validation_reject_reason' => 'Document unreadable',
+            'validate_by_date' => '2025-06-30',
+        ])->saveQuietly();
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertSame(1, $payload['phone_verified']);
+        $this->assertSame('2025-05-10 08:00:00', $payload['phone_verified_at']);
+        $this->assertSame('2025-05-11 09:00:00', $payload['identity_validation_rejected_at']);
+        $this->assertSame('Document unreadable', $payload['identity_validation_reject_reason']);
+        $this->assertSame('2025-06-30', $payload['validate_by_date']);
+    }
+
+    public function test_transform_does_not_expose_extended_admin_detail_fields_for_non_admin(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['data_visibility' => '2']);
+        $subject->forceFill([
+            'phone_verified' => true,
+            'validate_by_date' => '2025-06-30',
+        ])->saveQuietly();
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('phone_verified', $payload);
+        $this->assertArrayNotHasKey('phone_verified_at', $payload);
+        $this->assertArrayNotHasKey('identity_validation_rejected_at', $payload);
+        $this->assertArrayNotHasKey('identity_validation_reject_reason', $payload);
+        $this->assertArrayNotHasKey('validate_by_date', $payload);
+    }
 }
