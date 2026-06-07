@@ -1404,55 +1404,66 @@ class TripRepositoryTest extends TestCase
     {
         // Mutation intent: preserve admin-withTrashed gate and from/to date OR-branch handling.
         // Kills: adb8efe4d6d7b5c5, fe67f74c929986cf, 45c5a98301e1e6bc, e38c3f8f43a330bb, 8415cdc00871d360.
-        // Fixed dates: to_date is start-of-day (Y-m-d 00:00:00), so the trashed trip must fall on from_date
-        // and to_date must be the following day. Relative Carbon::now() fails around midnight in CI.
-        $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        // Fixed dates: freeze late evening UTC so date-only filters stay stable in CI.
+        // to_date is inclusive through end of that calendar day.
+        $tz = 'UTC';
+        $prevTz = date_default_timezone_get();
+        Config::set('app.timezone', $tz);
+        date_default_timezone_set($tz);
+        Carbon::setTestNow(Carbon::parse('2024-06-14 23:55:00', $tz));
 
-        $fromDate = '2024-06-14';
-        $toDate = '2024-06-15';
+        try {
+            $admin = User::factory()->create();
+            $admin->forceFill(['is_admin' => true])->saveQuietly();
 
-        $trashed = Trip::factory()->create([
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'trip_date' => '2024-06-14 23:00:00',
-        ]);
-        $trashed->delete();
+            $fromDate = '2024-06-14';
+            $toDate = '2024-06-15';
 
-        $future = Trip::factory()->create([
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'trip_date' => '2024-06-16 10:00:00',
-        ]);
-        $old = Trip::factory()->create([
-            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
-            'state' => Trip::STATE_READY,
-            'needs_sellado' => 0,
-            'trip_date' => '2024-06-10 10:00:00',
-        ]);
+            $trashed = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'trip_date' => '2024-06-14 23:00:00',
+            ]);
+            $trashed->delete();
 
-        $withoutAdminFlag = $this->repo()->search($admin, [
-            'from_date' => $fromDate,
-            'page' => 1,
-            'page_size' => 20,
-        ]);
-        $withoutIds = collect($withoutAdminFlag->items())->pluck('id');
-        $this->assertFalse($withoutIds->contains($trashed->id));
-        $this->assertTrue($withoutIds->contains($future->id));
+            $future = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'trip_date' => '2024-06-16 10:00:00',
+            ]);
+            $old = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'trip_date' => '2024-06-10 10:00:00',
+            ]);
 
-        $withAdminFlag = $this->repo()->search($admin, [
-            'is_admin' => 'true',
-            'from_date' => $fromDate,
-            'to_date' => $toDate,
-            'page' => 1,
-            'page_size' => 20,
-        ]);
-        $withIds = collect($withAdminFlag->items())->pluck('id');
-        $this->assertTrue($withIds->contains($trashed->id));
-        $this->assertFalse($withIds->contains($future->id));
-        $this->assertFalse($withIds->contains($old->id));
+            $withoutAdminFlag = $this->repo()->search($admin, [
+                'from_date' => $fromDate,
+                'page' => 1,
+                'page_size' => 20,
+            ]);
+            $withoutIds = collect($withoutAdminFlag->items())->pluck('id');
+            $this->assertFalse($withoutIds->contains($trashed->id));
+            $this->assertTrue($withoutIds->contains($future->id));
+
+            $withAdminFlag = $this->repo()->search($admin, [
+                'is_admin' => 'true',
+                'from_date' => $fromDate,
+                'to_date' => $toDate,
+                'page' => 1,
+                'page_size' => 20,
+            ]);
+            $withIds = collect($withAdminFlag->items())->pluck('id');
+            $this->assertTrue($withIds->contains($trashed->id));
+            $this->assertFalse($withIds->contains($future->id));
+            $this->assertFalse($withIds->contains($old->id));
+        } finally {
+            Carbon::setTestNow();
+            date_default_timezone_set($prevTz);
+        }
     }
 
     public function test_search_applies_from_to_and_strict_date_ordering_paths(): void
