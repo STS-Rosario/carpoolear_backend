@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Helpers;
 
-use App\Helpers\TripPriceHelper;
 use PHPUnit\Framework\TestCase;
+use STS\Helpers\TripPriceHelper;
 
 class TripPriceHelperTest extends TestCase
 {

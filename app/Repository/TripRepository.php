@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Http;
 use STS\Events\Trip\Create as CreateEvent;
+use STS\Helpers\TripPriceHelper;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -98,9 +99,12 @@ class TripRepository
 
         // Calculate maximum allowed price if seat_price_cents is provided
         if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
-            $total_seats = $data['total_seats'];
+            $rearMaxTwoPassengers = $data['rear_max_two_passengers'] ?? false;
             if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
+                $maximum_seat_price_cents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
+                    (int) $tripInfo['data']['maximum_trip_price_cents'],
+                    $rearMaxTwoPassengers
+                );
                 if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
                     \Log::info('TripRepository::create seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                     $data['seat_price_cents'] = $maximum_seat_price_cents;
@@ -209,9 +213,12 @@ class TripRepository
 
             // Calculate maximum allowed price if seat_price_cents is provided
             if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
-                $total_seats = $data['total_seats'] ?? $trip->total_seats;
+                $rearMaxTwoPassengers = $data['rear_max_two_passengers'] ?? $trip->rear_max_two_passengers;
                 if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                    $maximum_seat_price_cents = round($tripInfo['data']['maximum_trip_price_cents'] / ($total_seats + 1));
+                    $maximum_seat_price_cents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
+                        (int) $tripInfo['data']['maximum_trip_price_cents'],
+                        $rearMaxTwoPassengers
+                    );
                     if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
                         \Log::info('TripRepository::update seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                         $data['seat_price_cents'] = $maximum_seat_price_cents;
