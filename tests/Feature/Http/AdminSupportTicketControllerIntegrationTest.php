@@ -100,6 +100,38 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             || (int) ($row['unread_for_admin'] ?? 0) > 0));
     }
 
+    public function test_index_needs_reply_filter_excludes_closed_and_resolved_tickets(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $openNeedsReply = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'unread_for_admin' => 1,
+            'subject' => 'open-needs-reply',
+        ]);
+        $resolvedUnread = $this->makeTicket($owner, [
+            'status' => 'Resuelto',
+            'unread_for_admin' => 1,
+            'subject' => 'resolved-unread',
+        ]);
+        $closedUnread = $this->makeTicket($owner, [
+            'status' => 'Cerrado',
+            'unread_for_admin' => 1,
+            'subject' => 'closed-unread',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?needs_reply=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($openNeedsReply->id, $ids);
+        $this->assertNotContains($resolvedUnread->id, $ids);
+        $this->assertNotContains($closedUnread->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => ! in_array($row['status'], ['Resuelto', 'Cerrado'], true)));
+    }
+
     public function test_index_filters_by_user_id_when_query_param_is_set(): void
     {
         $admin = $this->adminUser();

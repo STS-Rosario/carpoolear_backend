@@ -38,6 +38,12 @@ class SupportTicket extends Model
         self::STATUS_NEEDS_REVIEW,
     ];
 
+    /** Statuses where admin attention is no longer required. */
+    private const ADMIN_TERMINAL_STATUSES = [
+        'Resuelto',
+        'Cerrado',
+    ];
+
     /** @var list<string> */
     public const STATUSES = [
         'Open',
@@ -105,10 +111,11 @@ class SupportTicket extends Model
      */
     public function scopeAdminNeedsAttention($query)
     {
-        return $query->where(function ($builder) {
-            $builder->where('unread_for_admin', '>', 0)
-                ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
-        });
+        return $query->whereNotIn('status', self::ADMIN_TERMINAL_STATUSES)
+            ->where(function ($builder) {
+                $builder->where('unread_for_admin', '>', 0)
+                    ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
+            });
     }
 
     public static function countForUser(?int $userId): int
