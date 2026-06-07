@@ -3316,9 +3316,10 @@ class TripRepositoryTest extends TestCase
             ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 802, 'ciudad' => 'B']],
         ]);
 
-        // 1003 / (3 + 1) = 250.75 -> round = 251; must use payload total_seats (3), not trip->total_seats (1).
+        // 1003 / 4 rear-comfort occupants = 250.75 -> round = 251.
         $updated1 = $repo->update($trip, [
             'total_seats' => 3,
+            'rear_max_two_passengers' => true,
             'seat_price_cents' => 900,
             'points' => [
                 ['lat' => -34.61, 'lng' => -58.41, 'json_address' => ['id' => 803, 'ciudad' => 'C']],
@@ -3328,9 +3329,10 @@ class TripRepositoryTest extends TestCase
         $updated1->refresh();
         $this->assertSame(251, (int) $updated1->seat_price_cents);
 
-        // 1001 / (3 + 1) = 250.25 -> round = 250 (different from ceil=251).
+        // 1001 / 4 = 250.25 -> round = 250 (different from ceil=251).
         $updated2 = $repo->update($trip->fresh(), [
             'total_seats' => 3,
+            'rear_max_two_passengers' => true,
             'seat_price_cents' => 900,
             'points' => [
                 ['lat' => -34.62, 'lng' => -58.42, 'json_address' => ['id' => 805, 'ciudad' => 'E']],
@@ -3343,6 +3345,7 @@ class TripRepositoryTest extends TestCase
         // Below cap should remain unchanged (protects `>` branch against <= mutation).
         $updated3 = $repo->update($trip->fresh(), [
             'total_seats' => 3,
+            'rear_max_two_passengers' => true,
             'seat_price_cents' => 240,
             'points' => [
                 ['lat' => -34.63, 'lng' => -58.43, 'json_address' => ['id' => 807, 'ciudad' => 'G']],
