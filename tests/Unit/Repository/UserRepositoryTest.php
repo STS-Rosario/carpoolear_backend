@@ -501,6 +501,7 @@ class UserRepositoryTest extends TestCase
         $this->assertTrue($resolved->is($user));
 
         $last = $this->repo()->getLastPasswordReset($user->email);
+        $this->assertInstanceOf(PasswordReset::class, $last);
         $this->assertSame($token, $last->token);
 
         $this->repo()->deleteResetToken('token', $token);

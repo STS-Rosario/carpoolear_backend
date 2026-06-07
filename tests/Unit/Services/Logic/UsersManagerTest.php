@@ -22,6 +22,7 @@ use STS\Models\BannedUser;
 use STS\Models\Car;
 use STS\Models\Donation;
 use STS\Models\Passenger;
+use STS\Models\PasswordReset;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\TripRepository;
@@ -1063,7 +1064,7 @@ class UsersManagerTest extends TestCase
             'id' => 12345,
             'email' => 'cooldown@example.com',
         ]);
-        $lastReset = (object) ['created_at' => now()];
+        $lastReset = new PasswordReset(['created_at' => now()]);
 
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('getUserBy')->twice()->with('email', $user->email)->andReturn($user);
@@ -1091,7 +1092,7 @@ class UsersManagerTest extends TestCase
             'id' => 33333,
             'email' => 'cooldown-exact@example.com',
         ]);
-        $lastReset = (object) ['created_at' => Carbon::parse('2028-02-01 14:57:00')];
+        $lastReset = new PasswordReset(['created_at' => Carbon::parse('2028-02-01 14:57:00')]);
 
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('getUserBy')->twice()->with('email', $user->email)->andReturn($user);
@@ -1122,7 +1123,7 @@ class UsersManagerTest extends TestCase
             'id' => 55_001,
             'email' => 'cooldown-email-logs@example.com',
         ]);
-        $lastReset = (object) ['created_at' => Carbon::parse('2028-03-10 09:58:00')];
+        $lastReset = new PasswordReset(['created_at' => Carbon::parse('2028-03-10 09:58:00')]);
 
         $emailChannel = Mockery::mock();
         $emailChannel->shouldReceive('info')
