@@ -114,6 +114,17 @@ class ProfileTransformer extends TransformerAbstract
             $profileCounts = app(AdminUserProfileCounts::class);
             $data['admin_trips_count'] = $profileCounts->tripsCount($this->user, $user);
             $data['admin_ratings_count'] = $profileCounts->ratingsCount($user->id);
+            $data['phone_verified'] = intval($user->phone_verified);
+            $data['phone_verified_at'] = $user->phone_verified_at instanceof Carbon
+                ? $user->phone_verified_at->toDateTimeString()
+                : null;
+            $data['identity_validation_rejected_at'] = $user->identity_validation_rejected_at instanceof Carbon
+                ? $user->identity_validation_rejected_at->toDateTimeString()
+                : null;
+            $data['identity_validation_reject_reason'] = $user->identity_validation_reject_reason;
+            $data['validate_by_date'] = $user->validate_by_date
+                ? $user->validate_by_date->format('Y-m-d')
+                : null;
         }
 
         switch ($user->data_visibility) {
