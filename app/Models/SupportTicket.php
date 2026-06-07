@@ -105,10 +105,11 @@ class SupportTicket extends Model
      */
     public function scopeAdminNeedsAttention($query)
     {
-        return $query->where(function ($builder) {
-            $builder->where('unread_for_admin', '>', 0)
-                ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
-        });
+        return $query->whereNotIn('status', ['Resuelto', 'Cerrado'])
+            ->where(function ($builder) {
+                $builder->where('unread_for_admin', '>', 0)
+                    ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
+            });
     }
 
     public static function countForUser(?int $userId): int
