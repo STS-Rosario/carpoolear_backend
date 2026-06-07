@@ -65,6 +65,26 @@ class SupportTicketTest extends TestCase
         $this->assertNotContains($resolved->id, $ids);
     }
 
+    public function test_scope_admin_needs_attention_excludes_closed_and_resolved_even_with_unread(): void
+    {
+        $user = User::factory()->create();
+        $resolvedUnread = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'Resuelto',
+            'unread_for_admin' => 1,
+        ]);
+        $closedUnread = $this->makeTicket($user, [
+            'type' => 'feedback',
+            'status' => 'Cerrado',
+            'unread_for_admin' => 1,
+        ]);
+
+        $ids = SupportTicket::query()->adminNeedsAttention()->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertNotContains($resolvedUnread->id, $ids);
+        $this->assertNotContains($closedUnread->id, $ids);
+    }
+
     public function test_fillable_contains_expected_mass_assignable_attributes(): void
     {
         $this->assertSame([
