@@ -2,8 +2,8 @@
 
 namespace STS\Transformers;
 
-use STS\Models\Rating;
 use League\Fractal\TransformerAbstract;
+use STS\Models\Rating;
 
 class RatingTransformer extends TransformerAbstract
 {
@@ -26,7 +26,9 @@ class RatingTransformer extends TransformerAbstract
 
         $data = [
             'id' => $rate->id,
-            'from' => $userTrans->transform($rate->from),
+            'from' => $rate->from
+                ? $userTrans->transform($rate->from)
+                : $userTrans->missingUser($rate->user_id_from),
             // 'to' => $userTrans->transform($rate->to),
             'trip' => $tripTrans->transform($rate->trip),
             'comment' => $rate->comment,
@@ -38,7 +40,9 @@ class RatingTransformer extends TransformerAbstract
             'rating' => $rate->rating,
         ];
         if (! $rate->rate_at) {
-            $data['to'] = $userTrans->transform($rate->to);
+            $data['to'] = $rate->to
+                ? $userTrans->transform($rate->to)
+                : $userTrans->missingUser($rate->user_id_to);
         }
 
         return $data;

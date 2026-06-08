@@ -3,6 +3,7 @@
 namespace Tests\Unit\Transformers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use STS\Models\Rating;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -106,7 +107,9 @@ class RatingTransformerTest extends TestCase
             'rate_at' => Carbon::parse('2026-04-30 11:00:00'),
         ]);
 
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
         $from->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
         $payload = (new RatingTransformer($to))->transform($rate->fresh());
 
@@ -119,7 +122,7 @@ class RatingTransformerTest extends TestCase
     {
         $from = User::factory()->create();
         $to = User::factory()->create();
-        $trip = Trip::factory()->create(['user_id' => $to->id]);
+        $trip = Trip::factory()->create(['user_id' => $from->id]);
         $deletedToId = $to->id;
 
         $rate = Rating::query()->create([
@@ -137,7 +140,9 @@ class RatingTransformerTest extends TestCase
             'rate_at' => null,
         ]);
 
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
         $to->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
         $payload = (new RatingTransformer($from))->transform($rate->fresh());
 
