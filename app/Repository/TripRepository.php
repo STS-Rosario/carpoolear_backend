@@ -642,18 +642,8 @@ class TripRepository
 
     public function getTripInfo($points)
     {
-        $cacheKey = json_encode($points);
-        $hashedPoints = hash('sha256', $cacheKey);
-        $pointsCount = is_array($points) ? count($points) : 0;
+        $hashedPoints = hash('sha256', json_encode($points));
         $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
-
-        \Log::debug('[trip_route|getTripInfo] request context', [
-            'points_count' => $pointsCount,
-            'hashed_points' => $hashedPoints,
-            'cache_key_length' => strlen($cacheKey),
-            'cache_key_preview' => strlen($cacheKey) > 400 ? substr($cacheKey, 0, 400).'…' : $cacheKey,
-            'points' => $points,
-        ]);
 
         // Check cache first (unless bypass is enabled for debugging)
         if (! $cacheBypass) {
