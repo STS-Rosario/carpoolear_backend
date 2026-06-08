@@ -686,10 +686,6 @@ class TripRepository
         }
 
         if ($this->mapboxDirectionsRouteService->isEnabled()) {
-            \Log::info('[trip_route|getTripInfo] trying Mapbox Directions fallback', [
-                'hashed_points' => $hashedPoints,
-                'osrm_status' => $osrmOutcome['status'],
-            ]);
             $mapboxMetrics = $this->mapboxDirectionsRouteService->drivingDistanceAndDuration($points);
             if ($mapboxMetrics !== null) {
                 return $this->storeTripInfoSuccess(
