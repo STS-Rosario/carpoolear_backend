@@ -110,7 +110,6 @@ class RoutesManager
             DB::disconnect('mysql');
         }
         // 4- Grabar
-        \Log::info('Saving route');
         $this->routesRepo->saveRoute($route, $nearPoints);
 
     }
