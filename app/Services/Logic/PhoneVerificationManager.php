@@ -269,11 +269,6 @@ class PhoneVerificationManager extends BaseManager
             return null;
         }
 
-        \Log::info('Verification SMS resent successfully', [
-            'user_id' => $user->id,
-            'phone' => $verification->phone_number,
-        ]);
-
         return [
             'verification' => $verification,
             'expires_in_minutes' => $expiresInMinutes,
