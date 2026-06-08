@@ -18,8 +18,6 @@ class MercadoPagoOAuthController extends Controller
     {
         // log the entire request payload
 
-        \Log::info('MercadoPago OAuth callback request', ['request' => $request->all()]);
-
         $code = $request->query('code');
         $state = $request->query('state');
         $error = $request->query('error');
