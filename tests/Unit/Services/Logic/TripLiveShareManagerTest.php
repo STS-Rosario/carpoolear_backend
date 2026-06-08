@@ -273,6 +273,32 @@ class TripLiveShareManagerTest extends TestCase
         $this->assertNull($view['lng']);
     }
 
+    public function test_get_trip_view_returns_stopped_state_for_passenger_share(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = $this->ongoingTripFor($driver);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+        TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        $view = $this->manager()->getTripView($passenger, $trip->id);
+
+        $this->assertNotNull($view);
+        $this->assertFalse($view['is_active']);
+        $this->assertSame($passenger->id, $view['sharer']['id']);
+    }
+
     public function test_get_trip_view_allows_participant_and_returns_driver_share(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
