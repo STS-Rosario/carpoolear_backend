@@ -169,11 +169,6 @@ class WhatsAppWebhookController extends Controller
         $messages = $value['messages'] ?? [];
 
         foreach ($messages as $message) {
-            Log::info('Received WhatsApp message', [
-                'business_account_id' => $businessAccountId,
-                'message' => $message,
-            ]);
-
             // TODO: Implement your message handling logic here
             // This could include:
             // - Storing messages in your database
