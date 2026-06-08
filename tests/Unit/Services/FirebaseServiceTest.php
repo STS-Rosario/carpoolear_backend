@@ -561,6 +561,75 @@ class FirebaseServiceTest extends TestCase
         }
     }
 
+    public function test_is_stale_registration_token_error_detects_fcm_not_registered_response(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'NotRegistered',
+                'status' => 'NOT_FOUND',
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('NotRegistered', $request, $response);
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
+    public function test_is_stale_registration_token_error_detects_unregistered_status(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'Requested entity was not found.',
+                'status' => 'UNREGISTERED',
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('unregistered', $request, $response);
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
+    public function test_is_stale_registration_token_error_detects_invalid_registration_message(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 400,
+                'message' => 'The registration token is not a valid FCM registration token',
+                'status' => 'INVALID_ARGUMENT',
+            ],
+        ];
+        $response = new Response(400, [], json_encode($payload));
+        $exception = new ClientException('invalid token', $request, $response);
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
+    public function test_is_stale_registration_token_error_returns_false_for_other_fcm_errors(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 400,
+                'message' => 'Invalid JSON',
+                'status' => 'INVALID_ARGUMENT',
+            ],
+        ];
+        $response = new Response(400, [], json_encode($payload));
+        $exception = new ClientException('bad request', $request, $response);
+
+        $this->assertFalse(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
+    public function test_is_stale_registration_token_error_returns_false_for_non_client_exceptions(): void
+    {
+        $this->assertFalse(FirebaseService::isStaleRegistrationTokenError(new \RuntimeException('network down')));
+    }
+
     public function test_fetch_messaging_access_token_returns_google_client_payload(): void
     {
         $mock = Mockery::mock(GoogleClient::class);
