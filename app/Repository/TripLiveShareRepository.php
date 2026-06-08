@@ -4,6 +4,7 @@ namespace STS\Repository;
 
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use STS\Models\Trip;
 use STS\Models\TripLiveShare;
 
 class TripLiveShareRepository
@@ -45,9 +46,19 @@ class TripLiveShareRepository
 
     public function findDriverShare(int $tripId): ?TripLiveShare
     {
+        $trip = Trip::query()->find($tripId);
+        if (! $trip) {
+            return null;
+        }
+
+        return $this->findByTripAndUser($tripId, (int) $trip->user_id);
+    }
+
+    public function findLatestShareForTrip(int $tripId): ?TripLiveShare
+    {
         return TripLiveShare::query()
             ->where('trip_id', $tripId)
-            ->whereHas('trip', fn ($q) => $q->whereColumn('trips.user_id', 'trip_live_shares.user_id'))
+            ->orderByDesc('started_at')
             ->with(['user'])
             ->first();
     }

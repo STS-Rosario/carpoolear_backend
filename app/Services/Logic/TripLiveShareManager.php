@@ -134,7 +134,8 @@ class TripLiveShareManager extends BaseManager
             return null;
         }
 
-        $share = $this->liveShareRepo->findDriverShare($tripId);
+        $share = $this->liveShareRepo->findDriverShare($tripId)
+            ?? $this->liveShareRepo->findLatestShareForTrip($tripId);
         if (! $share) {
             return null;
         }

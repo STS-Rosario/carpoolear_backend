@@ -248,4 +248,31 @@ class TripLiveShareControllerIntegrationTest extends TestCase
             ->assertJsonPath('data.is_active', false)
             ->assertJsonPath('data.lat', null);
     }
+
+    public function test_trip_view_returns_stopped_state_for_passenger_share(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+            'estimated_time' => '01:00',
+        ]);
+        TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        $response = $this->actingAs($passenger, 'api')
+            ->getJson("/api/trips/{$trip->id}/live-share/view");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.sharer.id', $passenger->id);
+    }
 }
