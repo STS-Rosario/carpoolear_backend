@@ -111,7 +111,6 @@ class TripsManager extends BaseManager
             // Check trip creation limits
             $maxTrips = config('carpoolear.trip_creation_limits.max_trips', 5);
             $timeWindow = config('carpoolear.trip_creation_limits.time_window_hours', 24);
-            \Log::info('timeWindow: '.$timeWindow);
 
             $recentTrips = $this->tripRepo->getRecentTrips($user->id, $timeWindow);
             \Log::info('recentTrips: '.$recentTrips->count());
