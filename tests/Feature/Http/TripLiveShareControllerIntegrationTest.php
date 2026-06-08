@@ -174,6 +174,36 @@ class TripLiveShareControllerIntegrationTest extends TestCase
             ->assertJsonPath('data.driver.name', 'Driver Name');
     }
 
+    public function test_public_live_endpoint_returns_passenger_share_trip_context(): void
+    {
+        $driver = User::factory()->create(['name' => 'Juan Driver']);
+        $passenger = User::factory()->create(['name' => 'Ana Passenger']);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'to_town' => 'Rosario',
+            'trip_date' => Carbon::parse('2026-06-08 16:00:00'),
+        ]);
+        $share = TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'is_active' => true,
+            'lat' => -32.9,
+            'lng' => -60.6,
+        ]);
+
+        $response = $this->getJson("/api/live/{$share->share_token}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_passenger_share', true)
+            ->assertJsonPath('data.sharer.name', 'Ana Passenger')
+            ->assertJsonPath('data.driver.name', 'Juan Driver')
+            ->assertJsonPath('data.destination', 'Rosario')
+            ->assertJsonPath(
+                'data.trip_date',
+                Carbon::parse('2026-06-08 16:00:00')->toIso8601String()
+            );
+    }
+
     public function test_trip_view_requires_participant(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));

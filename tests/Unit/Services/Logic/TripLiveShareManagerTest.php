@@ -246,6 +246,55 @@ class TripLiveShareManagerTest extends TestCase
         $this->assertSame('Juan Driver', $view['driver']['name']);
     }
 
+    public function test_get_public_view_includes_trip_context_for_passenger_share(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-08 12:00:00'));
+        $driver = User::factory()->create(['name' => 'Juan Driver']);
+        $passenger = User::factory()->create(['name' => 'Ana Passenger']);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'to_town' => 'Rosario',
+            'trip_date' => Carbon::parse('2026-06-08 16:00:00'),
+        ]);
+        $share = TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'is_active' => true,
+            'lat' => -32.9,
+            'lng' => -60.6,
+        ]);
+
+        $view = $this->manager()->getPublicView($share->share_token);
+
+        $this->assertTrue($view['is_passenger_share']);
+        $this->assertSame('Ana Passenger', $view['sharer']['name']);
+        $this->assertSame('Juan Driver', $view['driver']['name']);
+        $this->assertSame('Rosario', $view['destination']);
+        $this->assertSame(
+            Carbon::parse('2026-06-08 16:00:00')->toIso8601String(),
+            $view['trip_date']
+        );
+    }
+
+    public function test_get_public_view_marks_driver_share_as_not_passenger_share(): void
+    {
+        $driver = User::factory()->create(['name' => 'Juan Driver']);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'to_town' => 'Rosario',
+            'trip_date' => Carbon::parse('2026-06-08 16:00:00'),
+        ]);
+        $share = TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $driver->id,
+            'is_active' => true,
+        ]);
+
+        $view = $this->manager()->getPublicView($share->share_token);
+
+        $this->assertFalse($view['is_passenger_share']);
+    }
+
     public function test_get_trip_view_returns_stopped_state_for_inactive_driver_share(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
