@@ -107,10 +107,12 @@ class TripLiveShareManager extends BaseManager
 
         return [
             'is_active' => (bool) $share->is_active,
+            'is_passenger_share' => ! $this->isDriverShare($share, $trip),
             'lat' => $share->lat,
             'lng' => $share->lng,
             'recorded_at' => $share->recorded_at?->toIso8601String(),
             'destination' => $trip->to_town,
+            'trip_date' => $trip->trip_date?->toIso8601String(),
             'driver' => [
                 'id' => $driver->id,
                 'name' => $driver->name,
