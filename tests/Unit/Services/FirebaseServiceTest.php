@@ -593,6 +593,44 @@ class FirebaseServiceTest extends TestCase
         $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
     }
 
+    public function test_is_stale_registration_token_error_detects_unregistered_in_fcm_error_details(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/carpoolear-production/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'Requested entity was not found.',
+                'status' => 'NOT_FOUND',
+                'details' => [
+                    [
+                        '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                        'errorCode' => 'UNREGISTERED',
+                    ],
+                ],
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('Requested entity was not found.', $request, $response);
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
+    public function test_is_stale_registration_token_error_returns_false_for_not_found_without_unregistered_details(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'Requested entity was not found.',
+                'status' => 'NOT_FOUND',
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('Requested entity was not found.', $request, $response);
+
+        $this->assertFalse(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
     public function test_is_stale_registration_token_error_detects_invalid_registration_message(): void
     {
         $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
@@ -687,6 +725,24 @@ class FirebaseServiceTest extends TestCase
         $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
     }
 
+    public function test_is_stale_registration_token_error_can_be_checked_multiple_times_for_unregistered_details(): void
+    {
+        $exception = $this->fcmClientException(
+            404,
+            'Requested entity was not found.',
+            'NOT_FOUND',
+            [
+                [
+                    '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                    'errorCode' => 'UNREGISTERED',
+                ],
+            ],
+        );
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
     public function test_fetch_messaging_access_token_returns_google_client_payload(): void
     {
         $mock = Mockery::mock(GoogleClient::class);
@@ -708,16 +764,18 @@ class FirebaseServiceTest extends TestCase
         );
     }
 
-    private function fcmClientException(int $code, string $message, string $status): ClientException
+    private function fcmClientException(int $code, string $message, string $status, array $details = []): ClientException
     {
         $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
-        $payload = [
-            'error' => [
-                'code' => $code,
-                'message' => $message,
-                'status' => $status,
-            ],
+        $error = [
+            'code' => $code,
+            'message' => $message,
+            'status' => $status,
         ];
+        if ($details !== []) {
+            $error['details'] = $details;
+        }
+        $payload = ['error' => $error];
         $response = new Response($code, [], json_encode($payload));
 
         return new ClientException($message, $request, $response);
