@@ -229,8 +229,6 @@ class UsersManager extends BaseManager
                     return $u;
                 } else {
 
-                    \Log::info('captcha failed: '.$data['name']);
-
                     return false;
                 }
             }
