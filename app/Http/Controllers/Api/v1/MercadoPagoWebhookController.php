@@ -435,16 +435,6 @@ class MercadoPagoWebhookController extends Controller
 
         $donation->save();
 
-        Log::info('Campaign donation status updated', [
-            'payment_id' => $mpPayment['id'],
-            'donation_id' => $donationId,
-            'campaign_id' => $campaignId,
-            'reward_id' => $rewardId,
-            'old_status' => $donation->getOriginal('status'),
-            'new_status' => $newStatus,
-            'user_id' => $userId,
-        ]);
-
         return response()->json(['status' => 'success']);
     }
 
