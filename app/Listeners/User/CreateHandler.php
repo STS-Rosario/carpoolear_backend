@@ -41,8 +41,6 @@ class CreateHandler implements ShouldQueue
             $token = $user->activation_token;
             Mail::to($user->email)->send(new NewAccount($token, $user, $url, $name_app, $domain));
 
-            \Log::info('resetPassword post event event');
-
             $notification = new NewUserNotification;
             $notification->notify($user);
         }
