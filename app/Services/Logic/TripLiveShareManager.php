@@ -98,7 +98,7 @@ class TripLiveShareManager extends BaseManager
     public function getPublicView(string $token): ?array
     {
         $share = $this->liveShareRepo->findActiveByToken($token);
-        if (! $share || $share->lat === null || $share->lng === null) {
+        if (! $share) {
             return null;
         }
 

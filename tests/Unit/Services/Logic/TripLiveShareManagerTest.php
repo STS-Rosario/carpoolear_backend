@@ -202,6 +202,27 @@ class TripLiveShareManagerTest extends TestCase
         $this->assertNull($this->manager()->getPublicView('invalid-token'));
     }
 
+    public function test_get_public_view_returns_waiting_state_without_coordinates(): void
+    {
+        $driver = User::factory()->create(['name' => 'Juan Driver']);
+        $trip = $this->ongoingTripFor($driver);
+        $share = TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+            'is_active' => true,
+            'lat' => null,
+            'lng' => null,
+        ]);
+
+        $view = $this->manager()->getPublicView($share->share_token);
+
+        $this->assertNotNull($view);
+        $this->assertNull($view['lat']);
+        $this->assertNull($view['lng']);
+        $this->assertNull($view['recorded_at']);
+        $this->assertSame('Juan Driver', $view['driver']['name']);
+    }
+
     public function test_get_trip_view_allows_participant_and_returns_driver_share(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
