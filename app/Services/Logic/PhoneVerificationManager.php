@@ -256,14 +256,6 @@ class PhoneVerificationManager extends BaseManager
             config('sms.templates.verification')
         );
 
-        // Debug logging
-        \Log::info('Attempting to resend verification SMS', [
-            'user_id' => $user->id,
-            'phone' => $verification->phone_number,
-            'message' => $message,
-            'expires_in_minutes' => $expiresInMinutes,
-        ]);
-
         $sent = $this->smsService->send($verification->phone_number, $message);
 
         if (! $sent) {
