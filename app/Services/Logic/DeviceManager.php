@@ -256,11 +256,6 @@ class DeviceManager extends BaseManager
             }
         }
 
-        \Log::info('Logout all devices completed', [
-            'user_id' => $user->id,
-            'devices_removed' => $count,
-        ]);
-
         return $count;
     }
 }
