@@ -1164,6 +1164,8 @@ class TripRepositoryTest extends TestCase
 
     public function test_get_ongoing_trip_returns_driver_trip_within_window(): void
     {
+        Trip::query()->forceDelete();
+        Passenger::query()->delete();
         Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
         try {
             $user = User::factory()->create();
@@ -1193,13 +1195,15 @@ class TripRepositoryTest extends TestCase
 
     public function test_get_ongoing_trip_returns_passenger_trip_within_window(): void
     {
-        Carbon::setTestNow(Carbon::parse('2026-06-02 16:20:00'));
+        Trip::query()->forceDelete();
+        Passenger::query()->delete();
+        Carbon::setTestNow(Carbon::parse('2026-06-03 10:00:00'));
         try {
             $driver = User::factory()->create();
             $passenger = User::factory()->create();
             $trip = Trip::factory()->create([
                 'user_id' => $driver->id,
-                'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+                'trip_date' => Carbon::parse('2026-06-03 09:30:00'),
                 'estimated_time' => '01:00',
                 'weekly_schedule' => 0,
             ]);
@@ -1212,6 +1216,7 @@ class TripRepositoryTest extends TestCase
 
             $this->assertNotNull($result);
             $this->assertSame($trip->id, $result->id);
+            $this->assertSame($driver->id, $result->user_id);
         } finally {
             Carbon::setTestNow();
         }
@@ -1219,6 +1224,8 @@ class TripRepositoryTest extends TestCase
 
     public function test_get_ongoing_trip_returns_null_when_outside_window(): void
     {
+        Trip::query()->forceDelete();
+        Passenger::query()->delete();
         Carbon::setTestNow(Carbon::parse('2026-06-02 14:00:00'));
         try {
             $user = User::factory()->create();
