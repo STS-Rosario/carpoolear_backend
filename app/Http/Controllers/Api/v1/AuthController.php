@@ -85,15 +85,6 @@ class AuthController extends Controller
 
     public function getConfig(Request $request)
     {
-        $user = auth()->user();
-
-        // Check if user is authenticated before accessing properties
-        if ($user) {
-            $user_id = $user->id;
-        } else {
-            Log::warning('getConfig called without authenticated user');
-        }
-
         $isCordova = OldCordovaAppHelper::isOldCordovaApp();
 
         return response()->json($this->_getConfig($isCordova));
