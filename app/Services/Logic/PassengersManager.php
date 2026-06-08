@@ -209,7 +209,6 @@ class PassengersManager extends BaseManager
     public function sendFullTripMessage($trip)
     {
         if (config('carpoolear.module_send_full_trip_message', false) && $trip->user->send_full_trip_message > 0) {
-            \Log::info('$sendFullTripMessage: '.count($trip->passengerAccepted).' / '.$trip->seats_available);
             if (count($trip->passengerAccepted) >= $trip->seats_available) {
                 // tengo mas aceptados que asientos
                 // llamar al manager para que lo haga
