@@ -37,10 +37,6 @@ class OsrmProxyController extends Controller
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
-            Log::debug('[osrm_proxy] cache HIT', [
-                'path_preview' => substr($path, 0, 96),
-            ]);
-
             return response()->json($cached)
                 ->header('X-OSRM-Proxy-Cache', 'HIT');
         }
