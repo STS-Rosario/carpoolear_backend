@@ -238,7 +238,6 @@ class TripRepository
             // Check if the updated route needs payment (2+ stops in paid zones)
             $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
             $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
-            \Log::info('TripRepository::update routeNeedsPayment', [$routeNeedsPayment, 'oldRouteNeedsPayment' => $oldRouteNeedsPayment]);
 
             $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
 
