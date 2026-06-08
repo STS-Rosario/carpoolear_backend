@@ -645,7 +645,6 @@ class UsersManager extends BaseManager
     public function unansweredConversationOrRequestsByTrip($trip)
     {
         $count = $this->repo->unansweredConversationOrRequestsByTrip($trip->user_id, $trip->id);
-        \Log::info('unansweredConversationOrRequestsByTrip: '.$count.' < '.$trip->user->unaswered_messages_limit);
         if (isset($trip->user->unaswered_messages_limit) && $trip->user->unaswered_messages_limit > 0) {
             return $count < $trip->user->unaswered_messages_limit;
         } else {
