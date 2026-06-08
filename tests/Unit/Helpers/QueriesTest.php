@@ -130,13 +130,9 @@ class QueriesTest extends TestCase
         $this->assertStringContainsString('x', $buffer);
     }
 
-    public function test_console_log_uses_log_info_when_not_in_testing_environment(): void
+    public function test_console_log_does_not_log_when_not_in_testing_environment(): void
     {
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message): bool {
-                return str_contains($message, '"n"') && str_contains($message, '5');
-            });
+        Log::shouldReceive('info')->never();
 
         App::shouldReceive('environment')
             ->once()

@@ -31,12 +31,6 @@ class SendPasswordResetEmailTest extends TestCase
 
         $user = User::factory()->create();
 
-        Log::shouldReceive('info')
-            ->once()
-            ->with('Sending password reset email', Mockery::type('array'));
-        Log::shouldReceive('info')
-            ->once()
-            ->with('Password reset email sent successfully', Mockery::type('array'));
         Log::shouldReceive('channel')->never();
 
         $job = new SendPasswordResetEmail($user, 'token-value', 'https://app.example/r', 'App', 'example.com');
@@ -99,25 +93,11 @@ class SendPasswordResetEmailTest extends TestCase
                     && $context['timestamp'] !== '';
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('Sending password reset email', Mockery::on(function (array $context) use ($user) {
-                return $context['user_id'] === $user->id
-                    && $context['email'] === $user->email
-                    && isset($context['attempt'], $context['timestamp']);
-            }));
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
             ->with('email_logs')
             ->andReturn($emailChannel);
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('Password reset email sent successfully', Mockery::on(function (array $context) use ($user) {
-                return $context['user_id'] === $user->id && $context['email'] === $user->email;
-            }));
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
@@ -143,7 +123,6 @@ class SendPasswordResetEmailTest extends TestCase
             ->with(Mockery::type(ResetPassword::class))
             ->andThrow(new \RuntimeException('mail transport down'));
 
-        Log::shouldReceive('info')->once()->with('Sending password reset email', Mockery::type('array'));
         Log::shouldReceive('error')->once()->with('Failed to send password reset email', Mockery::on(function (array $context) use ($user) {
             return $context['user_id'] === $user->id
                 && $context['email'] === $user->email
@@ -192,10 +171,6 @@ class SendPasswordResetEmailTest extends TestCase
                     && strlen((string) $context['stack_trace']) > 0;
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('Sending password reset email', Mockery::type('array'));
         Log::shouldReceive('channel')
             ->once()
             ->ordered()

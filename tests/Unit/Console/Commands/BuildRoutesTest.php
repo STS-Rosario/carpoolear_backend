@@ -55,7 +55,6 @@ class BuildRoutesTest extends TestCase
         $command->handle();
 
         Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e): bool => $e->message === 'COMMAND BuildRoutes');
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e): bool => $e->message === 'Route builder ');
 
         Event::assertDispatched(TripCreateEvent::class, function (TripCreateEvent $event) use ($trip) {
             return $event->trip->id === $trip->id;
@@ -119,8 +118,6 @@ class BuildRoutesTest extends TestCase
         $command = new BuildRoutes($logic);
         $command->handle();
 
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e): bool => $e->message === 'Route builder ex');
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e): bool => str_contains((string) $e->message, 'route build failed'));
         Event::assertNotDispatched(TripCreateEvent::class);
     }
 

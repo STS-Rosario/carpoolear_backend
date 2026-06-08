@@ -3,8 +3,6 @@
 namespace Tests\Unit\Console\Commands;
 
 use Carbon\Carbon;
-use Illuminate\Log\Events\MessageLogged;
-use Illuminate\Support\Facades\Event;
 use STS\Console\Commands\CalculateActiveUsersPerMonth;
 use STS\Models\ActiveUsersPerMonth;
 use STS\Models\User;
@@ -145,10 +143,9 @@ class CalculateActiveUsersPerMonthTest extends TestCase
             ->assertExitCode(1);
     }
 
-    public function test_successful_save_persists_saved_at_and_writes_summary_log(): void
+    public function test_successful_save_persists_saved_at(): void
     {
         Carbon::setTestNow(Carbon::create(2026, 4, 15, 10, 0, 0));
-        Event::fake([MessageLogged::class]);
 
         User::factory()->create([
             'active' => true,
@@ -166,10 +163,5 @@ class CalculateActiveUsersPerMonthTest extends TestCase
         $this->assertNotNull($row);
         $this->assertNotNull($row->saved_at);
         $this->assertTrue($row->saved_at->isSameDay(Carbon::now()));
-
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $log): bool => str_contains(
-            (string) $log->message,
-            'Active users calculated for March 2026: 1 users'
-        ));
     }
 }

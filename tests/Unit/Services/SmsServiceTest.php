@@ -256,10 +256,6 @@ class SmsServiceTest extends TestCase
                 ], 200),
             ]);
 
-            Log::shouldReceive('info')
-                ->once()
-                ->with('WhatsApp API URL being called', Mockery::type('array'));
-
             Log::shouldReceive('error')
                 ->once()
                 ->withArgs(function (string $message): bool {
@@ -293,10 +289,6 @@ class SmsServiceTest extends TestCase
                 'https://graph.facebook.com/*' => Http::response('rate limited', 429),
             ]);
 
-            Log::shouldReceive('info')
-                ->once()
-                ->with('WhatsApp API URL being called', Mockery::type('array'));
-
             Log::shouldReceive('error')
                 ->once()
                 ->with('WhatsApp HTTP client failed with status: 429 - rate limited');
@@ -329,14 +321,6 @@ class SmsServiceTest extends TestCase
             ]);
 
             $message = 'Su código es 555555';
-
-            Log::shouldReceive('info')
-                ->ordered()
-                ->once()
-                ->with('WhatsApp API URL being called', Mockery::type('array'));
-            Log::shouldReceive('info')
-                ->once()
-                ->with('WhatsApp message sent successfully via Laravel HTTP client to: 541122223333 with message: '.$message);
 
             $service = new SmsService;
 
@@ -373,15 +357,6 @@ class SmsServiceTest extends TestCase
             'http://servicio.smsmasivos.com.ar/*' => Http::response('OK', 200),
         ]);
 
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message): bool {
-                return str_starts_with($message, 'SMS sent via SMS Masivos to: ')
-                    && str_contains($message, ' with message: ')
-                    && str_contains($message, '1122223333')
-                    && str_contains($message, 'ping');
-            });
-
         $service = new SmsService;
 
         $this->assertTrue($service->send('1122223333', 'ping'));
@@ -398,13 +373,6 @@ class SmsServiceTest extends TestCase
         Http::fake([
             'http://servicio.smsmasivos.com.ar/*' => Http::response("probando sin enviar\n", 200),
         ]);
-
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message): bool {
-                return str_starts_with($message, 'SMS test mode via SMS Masivos to: ')
-                    && str_contains($message, ' with message: ');
-            });
 
         $service = new SmsService;
 
@@ -548,13 +516,6 @@ class SmsServiceTest extends TestCase
             unlink($path);
         }
 
-        Log::shouldReceive('info')
-            ->once()
-            ->withArgs(function (string $message): bool {
-                return str_starts_with($message, 'SMS would be sent to: ')
-                    && str_contains($message, ' with message: ');
-            });
-
         $service = new SmsService;
         $this->assertTrue($service->send('+54 11 2222-3333', 'Hello local'));
 
@@ -607,19 +568,6 @@ class SmsServiceTest extends TestCase
                 })
                 ->andReturn($fbResponse);
 
-            Log::shouldReceive('info')
-                ->once()
-                ->withArgs(function (string $message, array $context): bool {
-                    return $message === 'WhatsApp API request details'
-                        && ($context['http_client_handler'] ?? null) === 'stream'
-                        && ($context['environment'] ?? null) === 'production';
-                });
-            Log::shouldReceive('info')
-                ->once()
-                ->withArgs(function (string $message): bool {
-                    return str_starts_with($message, 'WhatsApp message sent successfully to: 541122223333');
-                });
-
             $service = new SmsServiceWhatsAppFacebookHarness;
             $service->facebookDouble = $facebook;
 
@@ -650,7 +598,6 @@ class SmsServiceTest extends TestCase
             $facebook = Mockery::mock();
             $facebook->shouldReceive('post')->once()->andReturn($fbResponse);
 
-            Log::shouldReceive('info')->once()->with('WhatsApp API request details', Mockery::type('array'));
             Log::shouldReceive('error')
                 ->once()
                 ->withArgs(function (string $message): bool {
@@ -685,7 +632,6 @@ class SmsServiceTest extends TestCase
                 throw new \RuntimeException('upstream refused');
             });
 
-            Log::shouldReceive('info')->once()->with('WhatsApp API URL being called', Mockery::type('array'));
             Log::shouldReceive('error')
                 ->once()
                 ->with('Laravel HTTP client failed: upstream refused');
@@ -716,7 +662,6 @@ class SmsServiceTest extends TestCase
             $facebook = Mockery::mock();
             $facebook->shouldReceive('post')->once()->andThrow(new \RuntimeException('graph down'));
 
-            Log::shouldReceive('info')->once()->with('WhatsApp API request details', Mockery::type('array'));
             Log::shouldReceive('error')
                 ->once()
                 ->with(

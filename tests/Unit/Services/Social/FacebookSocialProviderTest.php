@@ -5,7 +5,6 @@ namespace Tests\Unit\Services\Social;
 use Closure;
 use GuzzleHttp\Client;
 use GuzzleHttp\Psr7\Response;
-use Illuminate\Support\Facades\Log;
 use Mockery;
 use STS\Services\Social\FacebookSocialProvider;
 use Tests\TestCase;
@@ -20,14 +19,6 @@ class FacebookSocialProviderTest extends TestCase
 
     public function test_get_user_data_maps_profile_transforms_gender_and_birthday_on_200(): void
     {
-        Log::shouldReceive('info')
-            ->once()
-            ->with(Mockery::on(function (mixed $message): bool {
-                return is_string($message)
-                    && str_starts_with($message, 'FACEBOOK BODY: ')
-                    && str_contains($message, '"id":"fb-1"');
-            }));
-
         $body = [
             'id' => 'fb-1',
             'email' => 'fb@example.test',
@@ -63,8 +54,6 @@ class FacebookSocialProviderTest extends TestCase
 
     public function test_get_user_data_maps_female_gender(): void
     {
-        Log::shouldReceive('info')->once()->with(Mockery::type('string'));
-
         $female = [
             'id' => 'fb-2',
             'email' => 'f@example.test',
@@ -83,8 +72,6 @@ class FacebookSocialProviderTest extends TestCase
 
     public function test_get_user_data_sets_gender_na_when_field_absent(): void
     {
-        Log::shouldReceive('info')->once()->with(Mockery::type('string'));
-
         $noGender = [
             'id' => 'fb-3',
             'email' => 'ng@example.test',
@@ -102,8 +89,6 @@ class FacebookSocialProviderTest extends TestCase
 
     public function test_get_user_data_leaves_birthday_untransformed_when_parts_fewer_than_three(): void
     {
-        Log::shouldReceive('info')->once()->with(Mockery::type('string'));
-
         $body = [
             'id' => 'fb-4',
             'email' => 'b@example.test',

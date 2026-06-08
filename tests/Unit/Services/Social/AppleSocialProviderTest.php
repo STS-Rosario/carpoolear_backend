@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Services\Social;
 
-use Illuminate\Support\Facades\Log;
 use Mockery;
 use ReflectionProperty;
 use STS\Services\Social\AppleSocialProvider;
@@ -27,12 +26,6 @@ class AppleSocialProviderTest extends TestCase
             ],
         ];
 
-        Log::shouldReceive('info')
-            ->once()
-            ->with(Mockery::on(function (mixed $message) use ($data): bool {
-                return is_string($message) && $message === 'getUserData'.json_encode($data);
-            }));
-
         $row = (new AppleSocialProvider('ignored'))->getUserData($data);
 
         $this->assertSame('apple-sub', $row['provider_user_id']);
@@ -44,8 +37,6 @@ class AppleSocialProviderTest extends TestCase
 
     public function test_get_user_data_default_name_when_no_full_name(): void
     {
-        Log::shouldReceive('info')->once();
-
         $row = (new AppleSocialProvider('x'))->getUserData([
             'user' => 'u1',
             'email' => null,
@@ -57,8 +48,6 @@ class AppleSocialProviderTest extends TestCase
 
     public function test_get_user_data_given_name_only_then_family_appended(): void
     {
-        Log::shouldReceive('info')->twice();
-
         $onlyGiven = (new AppleSocialProvider('x'))->getUserData([
             'user' => 'u2',
             'fullName' => ['givenName' => 'Pat'],
@@ -74,8 +63,6 @@ class AppleSocialProviderTest extends TestCase
 
     public function test_get_user_data_returns_non_null_array_with_all_expected_keys_and_false_booleans(): void
     {
-        Log::shouldReceive('info')->once();
-
         $row = (new AppleSocialProvider('x'))->getUserData([
             'user' => 'sub-99',
             'email' => 'present@apple.test',
@@ -96,8 +83,6 @@ class AppleSocialProviderTest extends TestCase
 
     public function test_get_user_data_email_key_uses_null_when_email_missing(): void
     {
-        Log::shouldReceive('info')->once();
-
         $row = (new AppleSocialProvider('x'))->getUserData(['user' => 'u']);
 
         $this->assertNull($row['email']);
