@@ -658,9 +658,6 @@ class TripRepository
                 return $cachedRoute->route_data;
             }
         } else {
-            \Log::info('[trip_route|getTripInfo] cache BYPASS enabled', [
-                'hashed_points' => $hashedPoints,
-            ]);
         }
 
         \Log::info('[trip_route|getTripInfo] cache MISS — calling OSRM', [
