@@ -168,8 +168,6 @@ class SmsService
             $body = $response->getDecodedBody();
 
             if (isset($body['messages'][0]['id'])) {
-                Log::info('WhatsApp message sent successfully to: '.$formattedPhone.' with message: '.$message);
-
                 return true;
             } else {
                 Log::error('WhatsApp API error: '.json_encode($body));
