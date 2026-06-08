@@ -22,6 +22,8 @@ class ProfileTransformer extends TransformerAbstract
 
     protected $tripLogic;
 
+    protected $usersManager;
+
     public function __construct($user)
     {
         $this->user = $user;
@@ -29,7 +31,8 @@ class ProfileTransformer extends TransformerAbstract
         $mercadoPagoService = app(MercadoPagoService::class);
         $mapboxDirectionsRouteService = app(MapboxDirectionsRouteService::class);
         $tripRepository = new TripRepository($geoService, $mercadoPagoService, $mapboxDirectionsRouteService);
-        $this->tripLogic = new TripsManager($tripRepository, new UsersManager(new UserRepository, $tripRepository));
+        $this->usersManager = new UsersManager(new UserRepository, $tripRepository);
+        $this->tripLogic = new TripsManager($tripRepository, $this->usersManager);
     }
 
     /**
@@ -82,6 +85,8 @@ class ProfileTransformer extends TransformerAbstract
             'identity_validated' => $user->identity_validated ? true : false,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
             'identity_validation_type' => $user->identity_validation_type,
+            'created_at' => $this->nullableDateTimeString($user->created_at),
+            'trips_count' => $this->usersManager->tripsCount($user),
         ];
 
         if ($this->user && $user->id == $this->user->id) {
@@ -97,7 +102,6 @@ class ProfileTransformer extends TransformerAbstract
             $data['email'] = $user->email;
             $data['mobile_phone'] = $user->mobile_phone;
             $data['nro_doc'] = $user->nro_doc;
-            $data['created_at'] = $this->nullableDateTimeString($user->created_at);
             // bank data
             $data['account_number'] = $user->account_number;
             $data['account_type'] = $user->account_type;
