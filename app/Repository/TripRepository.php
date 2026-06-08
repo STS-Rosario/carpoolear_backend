@@ -106,7 +106,6 @@ class TripRepository
                     $rearMaxTwoPassengers
                 );
                 if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                    \Log::info('TripRepository::create seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                     $data['seat_price_cents'] = $maximum_seat_price_cents;
                 }
             }
