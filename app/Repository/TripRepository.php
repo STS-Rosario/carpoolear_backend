@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Http;
 use STS\Events\Trip\Create as CreateEvent;
+use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\TripPriceHelper;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
@@ -372,6 +373,46 @@ class TripRepository
         $trips->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car']);
 
         return $trips->get();
+    }
+
+    public function getOngoingTrip(User $user): ?Trip
+    {
+        $now = Carbon::now();
+        $candidateStart = $now->copy()->subDay();
+        $candidateEnd = $now->copy()->addHour();
+
+        $driverTrips = Trip::query()
+            ->where('user_id', $user->id)
+            ->where('weekly_schedule', 0)
+            ->whereBetween('trip_date', [$candidateStart, $candidateEnd])
+            ->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car'])
+            ->get();
+
+        $passengerTrips = Trip::query()
+            ->where('weekly_schedule', 0)
+            ->whereBetween('trip_date', [$candidateStart, $candidateEnd]);
+        $this->applyAcceptedPassengerFilter($passengerTrips, $user->id);
+        $passengerTrips->select('trips.*');
+        $passengerTrips = $passengerTrips
+            ->with(['user', 'points', 'passengerAccepted', 'passengerAccepted.user', 'car'])
+            ->get();
+
+        $candidates = $driverTrips
+            ->concat($passengerTrips)
+            ->unique('id')
+            ->filter(fn (Trip $trip) => OngoingTripHelper::isWithinOngoingTripWindow(
+                $now,
+                $trip->trip_date,
+                $trip->estimated_time
+            ));
+
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        return $candidates
+            ->sortBy(fn (Trip $trip) => $trip->trip_date->timestamp)
+            ->first();
     }
 
     public function search($user, $data)

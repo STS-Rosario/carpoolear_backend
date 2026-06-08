@@ -1162,6 +1162,86 @@ class TripRepositoryTest extends TestCase
         ));
     }
 
+    public function test_get_ongoing_trip_returns_driver_trip_within_window(): void
+    {
+        Trip::query()->forceDelete();
+        Passenger::query()->delete();
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        try {
+            $user = User::factory()->create();
+            $ongoing = Trip::factory()->create([
+                'user_id' => $user->id,
+                'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+                'estimated_time' => '01:00',
+                'weekly_schedule' => 0,
+            ]);
+            Trip::factory()->create([
+                'user_id' => $user->id,
+                'trip_date' => Carbon::parse('2026-06-10 10:00:00'),
+                'estimated_time' => '01:00',
+                'weekly_schedule' => 0,
+            ]);
+
+            $result = $this->repo()->getOngoingTrip($user);
+
+            $this->assertNotNull($result);
+            $this->assertSame($ongoing->id, $result->id);
+            $this->assertTrue($result->relationLoaded('user'));
+            $this->assertTrue($result->relationLoaded('points'));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_get_ongoing_trip_returns_passenger_trip_within_window(): void
+    {
+        Trip::query()->forceDelete();
+        Passenger::query()->delete();
+        Carbon::setTestNow(Carbon::parse('2026-06-03 10:00:00'));
+        try {
+            $driver = User::factory()->create();
+            $passenger = User::factory()->create();
+            $trip = Trip::factory()->create([
+                'user_id' => $driver->id,
+                'trip_date' => Carbon::parse('2026-06-03 09:30:00'),
+                'estimated_time' => '01:00',
+                'weekly_schedule' => 0,
+            ]);
+            Passenger::factory()->aceptado()->create([
+                'trip_id' => $trip->id,
+                'user_id' => $passenger->id,
+            ]);
+
+            $result = $this->repo()->getOngoingTrip($passenger);
+
+            $this->assertNotNull($result);
+            $this->assertSame($trip->id, $result->id);
+            $this->assertSame($driver->id, $result->user_id);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_get_ongoing_trip_returns_null_when_outside_window(): void
+    {
+        Trip::query()->forceDelete();
+        Passenger::query()->delete();
+        Carbon::setTestNow(Carbon::parse('2026-06-02 14:00:00'));
+        try {
+            $user = User::factory()->create();
+            Trip::factory()->create([
+                'user_id' => $user->id,
+                'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+                'estimated_time' => '01:00',
+                'weekly_schedule' => 0,
+            ]);
+
+            $this->assertNull($this->repo()->getOngoingTrip($user));
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_get_old_trips_excludes_weekly_schedule_and_past_only(): void
     {
         $user = User::factory()->create();
