@@ -85,12 +85,6 @@ class SmsService
                 try {
                     $apiUrl = "https://graph.facebook.com/{$graphVersion}/{$phoneNumberId}/messages";
 
-                    Log::info('WhatsApp API URL being called', [
-                        'url' => $apiUrl,
-                        'phone_number_id' => $phoneNumberId,
-                        'graph_version' => $graphVersion,
-                    ]);
-
                     $response = Http::withHeaders([
                         'Authorization' => 'Bearer '.$accessToken,
                         'Content-Type' => 'application/json',
