@@ -543,8 +543,6 @@ class UsersManager extends BaseManager
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
 
-            \Log::info('resetPassword before queuing email');
-
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'.$token;
