@@ -525,8 +525,6 @@ class UsersManager extends BaseManager
                 $remainingMinutes = $cooldownMinutes - (int) $lastReset->created_at->diffInMinutes(now());
                 $this->setErrors(['error' => "Please wait {$remainingMinutes} minutes before requesting another password reset"]);
 
-                \Log::info("Password reset cooldown active for user {$user->email}, remaining: {$remainingMinutes} minutes");
-
                 // Log to email_logs channel if enabled
                 if ($enableEmailLogging) {
                     \Log::channel('email_logs')->warning('PASSWORD_RESET_COOLDOWN', [
