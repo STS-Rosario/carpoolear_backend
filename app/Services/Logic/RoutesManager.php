@@ -33,8 +33,6 @@ class RoutesManager
 
         $decoded = json_decode($result, true);
 
-        \Log::info('decode ok');
-
         return $decoded;
     }
 
