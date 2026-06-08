@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
+use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\TripLiveShare;
 use STS\Models\User;
@@ -258,6 +259,10 @@ class TripLiveShareControllerIntegrationTest extends TestCase
             'user_id' => $driver->id,
             'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
             'estimated_time' => '01:00',
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
         ]);
         TripLiveShare::factory()->create([
             'trip_id' => $trip->id,
