@@ -156,7 +156,7 @@ class WhatsAppWebhookController extends Controller
                 $this->handleMessageStatus($businessAccountId, $value);
                 break;
             default:
-                Log::info('Unhandled webhook field', ['field' => $field]);
+                Log::warning('Unhandled webhook field', ['field' => $field]);
                 break;
         }
     }
