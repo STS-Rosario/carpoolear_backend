@@ -4,9 +4,7 @@ namespace STS\Services\Notifications\Channels;
 
 class MailChannel
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function send($notification, $user)
     {
@@ -17,12 +15,7 @@ class MailChannel
             $data['user'] = $user;
 
             if (! config('mail.enabled')) {
-                \Log::info('notification info:');
-                // \Log::info($data);
-
                 return;
-            } else {
-                \Log::info('sending_mail:' . json_encode($data));
             }
 
             /* \Mail::send('email.'.$data['email_view'], $data, function ($message) use ($user, $data) {
