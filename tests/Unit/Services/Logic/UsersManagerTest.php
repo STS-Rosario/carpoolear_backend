@@ -1144,21 +1144,11 @@ class UsersManagerTest extends TestCase
                     && isset($context['timestamp']);
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('resetPassword userManager', ['email' => $user->email]);
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
             ->with('email_logs')
             ->andReturn($emailChannel);
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with(
-                'Password reset cooldown active for user '.$user->email.', remaining: 3 minutes'
-            );
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
@@ -1206,26 +1196,11 @@ class UsersManagerTest extends TestCase
                     && strlen($context['token']) === 13;
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('resetPassword userManager', ['email' => $user->email]);
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
             ->with('email_logs')
             ->andReturn($emailChannel);
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('resetPassword before queuing email');
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('resetPassword email queued successfully', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
@@ -1276,10 +1251,6 @@ class UsersManagerTest extends TestCase
                     && $context['ip'] === '203.0.113.44';
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('resetPassword userManager', ['email' => $email]);
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
@@ -1529,10 +1500,6 @@ class UsersManagerTest extends TestCase
     {
         $this->assertSame(0, Artisan::call('test:test'));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->with('Test COMMAND exit0');
-
         $this->manager()->migrateUsers(1, 2);
     }
 
@@ -1675,7 +1642,7 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($manager->unansweredConversationOrRequestsByTrip($trip));
     }
 
-    public function test_unanswered_conversation_or_requests_by_trip_throws_when_limit_property_is_missing(): void
+    public function test_unanswered_conversation_or_requests_by_trip_allows_when_limit_property_is_missing(): void
     {
         $trip = (object) [
             'id' => 104,
@@ -1691,8 +1658,7 @@ class UsersManagerTest extends TestCase
         $tripRepo = Mockery::mock(TripRepository::class);
         $manager = new UsersManager($userRepo, $tripRepo);
 
-        $this->expectException(\ErrorException::class);
-        $manager->unansweredConversationOrRequestsByTrip($trip);
+        $this->assertTrue($manager->unansweredConversationOrRequestsByTrip($trip));
     }
 
     public function test_update_photo_validation_requires_profile(): void

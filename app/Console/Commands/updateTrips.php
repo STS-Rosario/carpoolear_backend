@@ -55,14 +55,10 @@ class updateTrips extends Command
         $query->whereNull('route_id');
         $query->take(5000);
         $trips = $query->get();
-        \Log::info('Trips: '.count($trips));
         foreach ($trips as $trip) {
             $this->info('Trip Id: '.$trip->id);
-            \Log::info('Trip Id: '.$trip->id);
-
             if (count($trip->points) < 2) {
                 $this->info('No point'.$trip->id);
-                \Log::info('No point'.$trip->id);
 
                 continue;
             }
@@ -101,14 +97,11 @@ class updateTrips extends Command
                 }
             } else {
                 $this->info('ERROR NO SE ENCONTRO NODO '.$trip->id);
-                \Log::info('ERROR NO SE ENCONTRO NODO '.$trip->id);
                 if (! $fromNode) {
                     $this->info('name '.$from->address);
-                    \Log::info('name '.$from->address);
                 }
                 if (! $toNode) {
                     $this->info('name '.$to->address);
-                    \Log::info('name '.$to->address);
                 }
             }
 

@@ -14,14 +14,6 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        Log::info('WhatsApp webhook received', [
-            'method' => $request->method(),
-            'data' => $request->all(),
-            'content' => $request->getContent(),
-            'headers' => $request->headers->all(),
-            'content_type' => $request->header('Content-Type'),
-        ]);
-
         // Handle webhook verification request
         if ($request->method() === 'GET') {
             return $this->handleVerification($request);
@@ -46,18 +38,10 @@ class WhatsAppWebhookController extends Controller
         $token = $request->query('hub_verify_token');
         $challenge = $request->query('hub_challenge');
 
-        Log::info('WhatsApp webhook verification request', [
-            'mode' => $mode,
-            'token' => $token,
-            'challenge' => $challenge,
-        ]);
-
         // Verify the token matches your configured verify token
         $expectedToken = config('services.whatsapp.verify_token', 'your_verify_token_here');
 
         if ($mode === 'subscribe' && $token === $expectedToken) {
-            Log::info('WhatsApp webhook verification successful');
-
             // Return the challenge string to complete verification
             return response($challenge, 200, ['Content-Type' => 'text/plain']);
         }
@@ -77,10 +61,6 @@ class WhatsAppWebhookController extends Controller
     private function handleEventNotification(Request $request)
     {
         $payload = $request->all();
-
-        Log::info('WhatsApp webhook event notification', [
-            'payload' => $payload,
-        ]);
 
         // Verify the request is from WhatsApp (optional but recommended)
         if (! $this->verifyWebhookSignature($request)) {
@@ -168,12 +148,6 @@ class WhatsAppWebhookController extends Controller
         $field = $change['field'] ?? null;
         $value = $change['value'] ?? [];
 
-        Log::info('Processing WhatsApp webhook change', [
-            'business_account_id' => $businessAccountId,
-            'field' => $field,
-            'value' => $value,
-        ]);
-
         switch ($field) {
             case 'messages':
                 $this->handleMessages($businessAccountId, $value);
@@ -182,7 +156,7 @@ class WhatsAppWebhookController extends Controller
                 $this->handleMessageStatus($businessAccountId, $value);
                 break;
             default:
-                Log::info('Unhandled webhook field', ['field' => $field]);
+                Log::warning('Unhandled webhook field', ['field' => $field]);
                 break;
         }
     }
@@ -195,11 +169,6 @@ class WhatsAppWebhookController extends Controller
         $messages = $value['messages'] ?? [];
 
         foreach ($messages as $message) {
-            Log::info('Received WhatsApp message', [
-                'business_account_id' => $businessAccountId,
-                'message' => $message,
-            ]);
-
             // TODO: Implement your message handling logic here
             // This could include:
             // - Storing messages in your database
@@ -217,11 +186,6 @@ class WhatsAppWebhookController extends Controller
         $statuses = $value['statuses'] ?? [];
 
         foreach ($statuses as $status) {
-            Log::info('WhatsApp message status update', [
-                'business_account_id' => $businessAccountId,
-                'status' => $status,
-            ]);
-
             // TODO: Implement your status handling logic here
             // This could include:
             // - Updating message status in your database

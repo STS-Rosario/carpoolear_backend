@@ -433,8 +433,6 @@ class TripRepositoryTest extends TestCase
 
         Http::fake();
 
-        Log::spy();
-
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
@@ -445,17 +443,6 @@ class TripRepositoryTest extends TestCase
         $result = $repo->getTripInfo($points);
 
         $this->assertEquals($routeData, $result);
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints, $row, $routeData): bool {
-            return $message === '[trip_route|getTripInfo] cache HIT'
-                && $context['hashed_points'] === $hashedPoints
-                && $context['expires_at'] === null
-                && $context['cached_status'] === $routeData['status']
-                && $context['cached_message'] === $routeData['message']
-                && $context['cached_distance_m'] === null
-                && $context['cached_duration_s'] === null
-                && $context['route_cache_id'] === $row->id;
-        })->once();
 
         Http::assertNothingSent();
     }
@@ -489,8 +476,6 @@ class TripRepositoryTest extends TestCase
 
         Http::fake();
 
-        Log::spy();
-
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
@@ -500,22 +485,6 @@ class TripRepositoryTest extends TestCase
         $result = $repo->getTripInfo($points);
 
         $this->assertEquals($routeData, $result);
-
-        $expectedExpires = $row->expires_at->toIso8601String();
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints, $row, $expectedExpires): bool {
-            if ($message !== '[trip_route|getTripInfo] cache HIT') {
-                return false;
-            }
-
-            return $context['hashed_points'] === $hashedPoints
-                && $context['expires_at'] === $expectedExpires
-                && $context['cached_status'] === true
-                && $context['cached_message'] === 'OK'
-                && (float) $context['cached_distance_m'] === 123.4
-                && (float) $context['cached_duration_s'] === 56.7
-                && $context['route_cache_id'] === $row->id;
-        })->once();
 
         Http::assertNothingSent();
     }
@@ -562,8 +531,6 @@ class TripRepositoryTest extends TestCase
             ], 200),
         ]);
 
-        Log::spy();
-
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
@@ -579,11 +546,6 @@ class TripRepositoryTest extends TestCase
         $this->assertSame($expectedDistance, (float) $result['data']['distance']);
         $this->assertSame($expectedDuration, (float) $result['data']['duration']);
         $this->assertSame('Route found', $result['message']);
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints): bool {
-            return $message === '[trip_route|getTripInfo] cache MISS — calling OSRM'
-                && ($context['hashed_points'] ?? null) === $hashedPoints;
-        })->once();
 
         $this->assertGreaterThanOrEqual(1, count(Http::recorded()));
     }
@@ -652,9 +614,7 @@ class TripRepositoryTest extends TestCase
         Config::set('carpoolear.trip_route_cache_bypass', false);
 
         $points = str_repeat('x', 450);
-        $cacheKey = json_encode($points);
-        $hashedPoints = hash('sha256', $cacheKey);
-        $expectedPreview = substr($cacheKey, 0, 400).'…';
+        $hashedPoints = hash('sha256', json_encode($points));
         $routeData = [
             'status' => true,
             'data' => ['distance' => 77.0, 'duration' => 88.0],
@@ -670,8 +630,6 @@ class TripRepositoryTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        Log::spy();
-
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
@@ -682,14 +640,6 @@ class TripRepositoryTest extends TestCase
         $result = $repo->getTripInfo($points);
 
         $this->assertEquals($routeData, $result);
-        Log::shouldHaveReceived('debug')->withArgs(function (string $message, array $context) use ($points, $hashedPoints, $cacheKey, $expectedPreview): bool {
-            return $message === '[trip_route|getTripInfo] request context'
-                && $context['points_count'] === 0
-                && $context['hashed_points'] === $hashedPoints
-                && $context['cache_key_length'] === strlen($cacheKey)
-                && $context['cache_key_preview'] === $expectedPreview
-                && $context['points'] === $points;
-        })->once();
     }
 
     public function test_get_trip_info_builds_osrm_coords_and_returns_osrm_success_payload(): void
@@ -3724,6 +3674,8 @@ class TripRepositoryTest extends TestCase
         Config::set('carpoolear.osrm_router_base_url', 'https://primary.test/');
         Config::set('carpoolear.osrm_router_fallback_base_url', 'https://fallback.test/');
 
+        Log::spy();
+
         $coords = '-1,-2;-3,-4';
         $expectedPath = '/route/v1/driving/'.$coords.'?overview=false&alternatives=true&steps=true';
 
@@ -3747,8 +3699,6 @@ class TripRepositoryTest extends TestCase
             return Http::response('unexpected host', 500);
         });
 
-        Log::spy();
-
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), $coords, 'hp-fallback');
 
         $this->assertSame('route', $result['status']);
@@ -3771,14 +3721,14 @@ class TripRepositoryTest extends TestCase
         Config::set('carpoolear.osrm_router_base_url', 'https://only.test');
         Config::set('carpoolear.osrm_router_fallback_base_url', null);
 
+        Log::spy();
+
         $longCoords = str_repeat('9', 121);
         $expectedPreview = substr($longCoords, 0, 120).'…';
 
         Http::fake(function () {
             throw new \RuntimeException('dns failed');
         });
-
-        Log::spy();
 
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), $longCoords, 'hp-exc');
 
@@ -3802,12 +3752,12 @@ class TripRepositoryTest extends TestCase
         Config::set('carpoolear.osrm_router_base_url', 'https://err.test');
         Config::set('carpoolear.osrm_router_fallback_base_url', null);
 
+        Log::spy();
+
         $body = str_repeat('Z', 600);
         $expectedPreview = substr($body, 0, 500).'…';
 
         Http::fake(['*' => Http::response($body, 502)]);
-
-        Log::spy();
 
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '0,0;1,1', 'hp-body');
 
@@ -3833,23 +3783,12 @@ class TripRepositoryTest extends TestCase
             'routes' => [],
         ], 200)]);
 
-        Log::spy();
-
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '9,9;8,8', 'hp-dbg');
 
         $this->assertSame('osrm_no_route', $result['status']);
         $this->assertSame('Ok', $result['payload']['code']);
         $this->assertSame([], $result['payload']['routes']);
 
-        Log::shouldHaveReceived('debug')->withArgs(function (string $message, array $context): bool {
-            return $message === '[trip_route|getTripInfo] OSRM raw response summary'
-                && ($context['payload_is_array'] ?? null) === true
-                && ($context['osrm_code'] ?? null) === 'Ok'
-                && ($context['osrm_message'] ?? null) === null
-                && ($context['http_status'] ?? null) === 200
-                && ($context['base'] ?? '') === 'https://okempty.test'
-                && ($context['hashed_points'] ?? '') === 'hp-dbg';
-        })->once();
     }
 
     public function test_request_osrm_for_trip_info_coords_skips_non_array_json_and_returns_unreachable(): void
@@ -3861,18 +3800,10 @@ class TripRepositoryTest extends TestCase
 
         Http::fake(['*' => Http::response('"just-a-string"', 200, ['Content-Type' => 'application/json'])]);
 
-        Log::spy();
-
         $result = $this->invokeRequestOsrmForTripInfoCoords($this->repo(), '2,2', 'hp-str');
 
         $this->assertSame('osrm_unreachable', $result['status']);
 
-        Log::shouldHaveReceived('debug')->withArgs(function (string $message, array $context): bool {
-            return $message === '[trip_route|getTripInfo] OSRM raw response summary'
-                && $context['payload_is_array'] === false
-                && $context['osrm_code'] === null
-                && $context['osrm_message'] === null;
-        })->once();
     }
 
     public function test_request_osrm_for_trip_info_coords_skips_empty_primary_base_and_uses_fallback(): void
@@ -3929,8 +3860,6 @@ class TripRepositoryTest extends TestCase
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
 
-        Log::spy();
-
         $distanceM = 5000.0;
         $durationS = 600.0;
         $response = $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, $distanceM, $durationS, 'osrm');
@@ -3947,15 +3876,6 @@ class TripRepositoryTest extends TestCase
         $this->assertGreaterThanOrEqual(now()->addSeconds(7190)->timestamp, $row->expires_at->timestamp);
         $this->assertLessThanOrEqual(now()->addSeconds(7210)->timestamp, $row->expires_at->timestamp);
 
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($hashedPoints, $distanceM, $durationS): bool {
-            return $message === '[trip_route|getTripInfo] route OK — cached'
-                && $context['hashed_points'] === $hashedPoints
-                && $context['provider'] === 'osrm'
-                && $context['ttl_seconds'] === 7200
-                && $context['distance_m'] === $distanceM
-                && $context['duration_s'] === $durationS
-                && $context['route_needs_payment'] === false;
-        })->once();
     }
 
     public function test_store_trip_info_success_clamps_ttl_to_minimum_3600_seconds(): void
@@ -3984,8 +3904,6 @@ class TripRepositoryTest extends TestCase
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
 
-        Log::spy();
-
         $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, 1000.0, 60.0, 'mapbox');
 
         $row = RouteCache::query()->where('hashed_points', $hashedPoints)->first();
@@ -3993,10 +3911,6 @@ class TripRepositoryTest extends TestCase
         $this->assertGreaterThanOrEqual(now()->addSeconds(3590)->timestamp, $row->expires_at->timestamp);
         $this->assertLessThanOrEqual(now()->addSeconds(3610)->timestamp, $row->expires_at->timestamp);
 
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === '[trip_route|getTripInfo] route OK — cached'
-                && ($context['ttl_seconds'] ?? null) === 3600;
-        })->once();
     }
 
     public function test_store_trip_info_success_skips_cache_write_and_logs_bypass_when_cache_bypass_enabled(): void
@@ -4026,20 +3940,12 @@ class TripRepositoryTest extends TestCase
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
 
-        Log::spy();
-
         $response = $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, 2000.0, 120.0, 'mapbox');
 
         $this->assertTrue($response['status']);
         $this->assertTrue($response['data']['route_needs_payment']);
         $this->assertNull(RouteCache::query()->where('hashed_points', $hashedPoints)->first());
 
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === '[trip_route|getTripInfo] route OK — cache write skipped (BYPASS)'
-                && $context['provider'] === 'mapbox'
-                && $context['route_needs_payment'] === true
-                && ! array_key_exists('ttl_seconds', $context);
-        })->once();
     }
 
     public function test_store_trip_info_success_computes_price_cents_tolls_sellado_and_max_cap(): void

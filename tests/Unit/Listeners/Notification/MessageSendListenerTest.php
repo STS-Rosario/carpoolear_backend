@@ -50,13 +50,8 @@ class MessageSendListenerTest extends TestCase
         $listener = new MessageSend;
         $listener->handle(new SendEvent($from, $to, $message));
 
-        Log::shouldHaveReceived('info')
-            ->withArgs(fn ($logged, ...$rest) => $logged === 'Error on sending notification')
-            ->once();
-
-        Log::shouldHaveReceived('info')
-            ->withArgs(fn ($logged, ...$rest) => $logged instanceof \RuntimeException
-                && $logged->getMessage() === 'push channel unavailable')
+        Log::shouldHaveReceived('warning')
+            ->with('Error on sending notification', ['message' => 'push channel unavailable'])
             ->once();
     }
 }

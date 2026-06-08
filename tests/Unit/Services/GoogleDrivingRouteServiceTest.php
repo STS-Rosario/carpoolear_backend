@@ -218,7 +218,7 @@ class GoogleDrivingRouteServiceTest extends TestCase
             'https://routes.googleapis.com/*' => Http::response(['routes' => []], 200),
         ]);
 
-        Log::shouldReceive('info')->once()->with('[google_routes] no routes in response');
+        Log::shouldReceive('warning')->once()->with('[google_routes] no routes in response');
 
         $this->assertNull((new GoogleDrivingRouteService)->drivingDistanceAndDuration([
             ['lat' => 0, 'lng' => 0],

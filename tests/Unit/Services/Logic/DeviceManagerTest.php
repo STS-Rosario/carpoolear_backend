@@ -362,9 +362,8 @@ class DeviceManagerTest extends TestCase
         $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
     }
 
-    public function test_logout_all_devices_emits_summary_log_line(): void
+    public function test_logout_all_devices_removes_devices_without_summary_log(): void
     {
-        Event::fake([MessageLogged::class]);
         $user = User::factory()->create();
         $m = $this->manager();
         $m->register($user, $this->validPayload(['session_id' => 'x-'.uniqid('', true), 'device_id' => 'dx-'.uniqid('', true)]));
@@ -372,11 +371,7 @@ class DeviceManagerTest extends TestCase
         $count = $m->logoutAllDevices($user);
 
         $this->assertSame(1, $count);
-        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
-            return $e->level === 'info'
-                && str_contains($e->message, 'Logout all devices completed')
-                && isset($e->context['user_id'], $e->context['devices_removed']);
-        });
+        $this->assertSame(0, Device::query()->where('user_id', $user->id)->count());
     }
 
     public function test_logout_all_devices_when_fcm_unregister_throws_still_deletes_and_logs_error(): void

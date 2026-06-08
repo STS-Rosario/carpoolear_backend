@@ -133,16 +133,10 @@ class NotificationServicesTest extends TestCase
 
     public function test_send_logs_label_and_exception_when_driver_throws(): void
     {
-        Log::shouldReceive('info')
+        Log::shouldReceive('warning')
             ->once()
-            ->with('error sending:');
-        Log::shouldReceive('info')
-            ->once()
-            ->with(Mockery::on(function ($arg): bool {
-                $this->assertInstanceOf(\RuntimeException::class, $arg);
-                $this->assertSame('channel boom', $arg->getMessage());
-
-                return true;
+            ->with('Notification send failed', Mockery::on(function (array $context): bool {
+                return ($context['message'] ?? null) === 'channel boom';
             }));
 
         $svc = new NotificationServices;

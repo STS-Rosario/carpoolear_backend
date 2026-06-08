@@ -111,8 +111,6 @@ class CampaignRewardControllerIntegrationTest extends TestCase
 
     public function test_purchase_creates_pending_donation_returns_urls_and_stores_preference_id(): void
     {
-        Log::spy();
-
         $campaign = $this->makeCampaign();
         $reward = $this->makeReward($campaign);
 
@@ -146,12 +144,6 @@ class CampaignRewardControllerIntegrationTest extends TestCase
                     'sandbox_url' => 'https://checkout.example/sandbox',
                 ],
             ]);
-
-        Log::shouldHaveReceived('info')->once()->withArgs(function (string $message, array $context): bool {
-            return $message === 'Preference created'
-                && isset($context['preference'])
-                && $context['preference'] !== null;
-        });
 
         $this->assertDatabaseHas('campaign_donations', [
             'campaign_id' => $campaign->id,

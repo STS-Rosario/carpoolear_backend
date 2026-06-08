@@ -56,7 +56,6 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
             ];
 
             // Log to regular log
-            Log::info('Sending delete account request email', $logData);
 
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
@@ -75,7 +74,6 @@ class SendDeleteAccountRequestEmail implements ShouldQueue
             ];
 
             // Log to regular log
-            Log::info('Delete account request email sent successfully', $successData);
 
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {

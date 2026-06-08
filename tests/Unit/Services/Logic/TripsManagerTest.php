@@ -591,9 +591,6 @@ class TripsManagerTest extends TestCase
         $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
         $manager->create($user, $this->minimalCreatePayload());
 
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'maxTrips'));
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'timeWindow'));
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'recentTrips'));
         Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'User banned due to exceeding trip creation limits'));
         Carbon::setTestNow();
     }
@@ -977,12 +974,10 @@ class TripsManagerTest extends TestCase
         $stranger = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $driver->id]);
 
-        Event::fake([MessageLogged::class]);
         $manager = $this->manager();
         $manager->changeVisibility($stranger, $trip->id);
 
         $this->assertSame(trans('errors.tripowner'), $manager->getErrors());
-        Event::assertDispatched(MessageLogged::class, fn (MessageLogged $e) => $e->level === 'info' && str_contains($e->message, 'changeVisibility trip'));
     }
 
     public function test_calc_trip_price_arg_branch_uses_simple_price(): void

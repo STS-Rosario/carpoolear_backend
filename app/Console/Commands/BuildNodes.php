@@ -2,12 +2,9 @@
 
 namespace STS\Console\Commands;
 
-use STS\Models\User;
-use Carbon\Carbon;
-use STS\Models\NodeGeo;
-use Illuminate\Console\Command;
-use Storage;
 use GuzzleHttp\Client;
+use Illuminate\Console\Command;
+use STS\Models\NodeGeo;
 
 class BuildNodes extends Command
 {
@@ -28,22 +25,22 @@ class BuildNodes extends Command
     protected $shorts_arg = [
         'PBA' => 'Buenos Aires',
         'Bs. As.' => 'Buenos Aires',
-        'CA'  => 'Catamarca',
-        'CTM'  => 'Catamarca',
+        'CA' => 'Catamarca',
+        'CTM' => 'Catamarca',
         'CH' => 'Chaco',
         'CCO' => 'Chaco',
-        'CT' => 'Chubut',	
-        'CHB' => 'Chubut',	
+        'CT' => 'Chubut',
+        'CHB' => 'Chubut',
         'CB' => 'Córdoba',
         'Cba.' => 'Córdoba',
-        'CR' => 'Corrientes', 
-        'Ctes.' => 'Corrientes', 
+        'CR' => 'Corrientes',
+        'Ctes.' => 'Corrientes',
         'ER' => 'Entre Ríos',
         'ER.' => 'Entre Ríos',
         'FO' => 'Formosa',
         'FSA' => 'Formosa',
-        'JY' => 'Jujuy',	
-        'JJY' => 'Jujuy',	
+        'JY' => 'Jujuy',
+        'JJY' => 'Jujuy',
         'LP' => 'La Pampa',
         'LR' => 'La Rioja',
         'MZ' => 'Mendoza',
@@ -62,8 +59,9 @@ class BuildNodes extends Command
         'SE' => 'Santiago del Estero',
         'SDE' => 'Santiago del Estero',
         'TF' => 'Tierra del Fuego',
-        'TU' => 'Tucumán'
+        'TU' => 'Tucumán',
     ];
+
     protected $shorts_br = [
         'AC' => 'Acre',
         'AL' => 'Alagoas',
@@ -91,7 +89,7 @@ class BuildNodes extends Command
         'SC' => 'Santa Catarina',
         'SP' => 'São Paulo',
         'SE' => 'Sergipe',
-        'TO' => 'Tocantins'
+        'TO' => 'Tocantins',
     ];
 
     /**
@@ -102,11 +100,11 @@ class BuildNodes extends Command
     public function __construct()
     {
         parent::__construct();
-        $this->dir = storage_path() . "/geojson/";
+        $this->dir = storage_path().'/geojson/';
         $this->files = scandir($this->dir);
         unset($this->files[0]);
         unset($this->files[1]);
-        $this->client = new Client();
+        $this->client = new Client;
     }
 
     /**
@@ -116,7 +114,7 @@ class BuildNodes extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND BuildNodes");
+        \Log::info('COMMAND BuildNodes');
         $startNode = 0;
         $startCountry = 0;
         $endCountry = 1;
@@ -127,6 +125,7 @@ class BuildNodes extends Command
 
             if ($countryIndex < $startCountry) {
                 $this->info($countryIndex);
+
                 continue;
             }
 
@@ -137,11 +136,11 @@ class BuildNodes extends Command
             $parts = pathinfo($file);
             $country = $parts['filename'];
             $this->info($country);
-            $json = json_decode(file_get_contents($this->dir . $file), true); 
+            $json = json_decode(file_get_contents($this->dir.$file), true);
             $nodes = $json['features'];
             // \Log::info("Creating: " . file_get_contents($this->dir . $file));
             // \Log::info("Creating: " . count($json['features']));break;die;
-            
+
             if ($countryIndex == $startCountry) {
                 $nodeIndex = 0;
             }
@@ -153,7 +152,7 @@ class BuildNodes extends Command
 
                 $props = $feature['properties'];
                 $geo = $feature['geometry'];
-                if (isset($props['name'])){
+                if (isset($props['name'])) {
                     $node = new NodeGeo;
                     $node->name = $props['name'];
                     $node->type = $props['place'];
@@ -175,34 +174,32 @@ class BuildNodes extends Command
                     // \Log::info("Creating $node->type: $node->name - $node->state");
                     $node->save();
                 }
-            }    
+            }
         }
     }
 
-    public function geocodeState($lat, $long) {
-        $data = array('lat' => $lat, 'lon' => $long, 'format' => 'json', 'zoom' => 16);
-    
+    public function geocodeState($lat, $long)
+    {
+        $data = ['lat' => $lat, 'lon' => $long, 'format' => 'json', 'zoom' => 16];
+
         try {
             $response = $this->client->get("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$long&zoom=8", [
                 // un array con la data de los headers como tipo de peticion, etc.
-                'headers' => ['user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36']
+                'headers' => ['user-agent' => 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'],
             ]);
         } catch (\Exception $ex) {
-            \Log::info('Error on query');
-            \Log::info('lat: ' . $lat . ' lng: ' . $long);
             return 0;
         }
-        
+
         $response = $response->getBody();
         $response = json_decode($response);
         if (isset($response->address->state)) {
             return $response->address->state;
         }
         if (isset($response->address->county)) {
-            \Log::info("county");
-            \Log::info('lat' . $lat . ' lng' . $long);
             return $response->address->county;
         }
+
         return '';
         // $json = json_decode(file_get_contents("https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$long&zoom=8"), true);
     }

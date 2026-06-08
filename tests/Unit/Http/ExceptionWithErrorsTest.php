@@ -89,12 +89,14 @@ class ExceptionWithErrorsTest extends TestCase
         $this->assertSame(['profile' => ['Invalid profile image']], $response->getData(true)['errors']);
     }
 
-    public function test_report_logs_exception_message(): void
+    public function test_report_does_not_log_exception_message(): void
     {
-        Log::shouldReceive('info')->once()->with('Log me');
+        Log::spy();
 
         $exception = new ExceptionWithErrors('Log me');
         $exception->report();
+
+        Log::shouldNotHaveReceived('info');
     }
 
     public function test_constructor_string_cast_allows_resource_message_for_parent(): void

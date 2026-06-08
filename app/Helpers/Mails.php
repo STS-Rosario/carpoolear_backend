@@ -1,12 +1,7 @@
 <?php
- 
 
-function ssmtp_send_mail ($subject, $to, $body) {
-    
-    \Log::info('ssmtp_send_mail: START');
-
-   
- 
+function ssmtp_send_mail($subject, $to, $body)
+{
 
     // Verificar el resultado
 

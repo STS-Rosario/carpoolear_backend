@@ -48,7 +48,6 @@ class PhoneVerificationControllerTest extends TestCase
             ]);
 
         $this->actingAs($user, 'api');
-        Log::spy();
 
         $response = (new PhoneVerificationController($manager))->send(
             Request::create('/api/phone/send', 'POST', ['phone' => '+5491100000000'])
@@ -60,22 +59,6 @@ class PhoneVerificationControllerTest extends TestCase
             'phone' => '+5491100000000',
             'expires_in_minutes' => 10,
         ], $response->getData(true));
-
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return count($args) === 2
-                && $args[0] === 'Phone verification send request'
-                && ($args[1]['user_id'] ?? null) === $user->id
-                && ($args[1]['phone'] ?? null) === '+5491100000000'
-                && isset($args[1]['ip'])
-                && is_string($args[1]['ip']);
-        })->once();
-
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return count($args) === 2
-                && $args[0] === 'Phone verification send successful'
-                && ($args[1]['user_id'] ?? null) === $user->id
-                && ($args[1]['phone'] ?? null) === '+5491100000000';
-        })->once();
     }
 
     public function test_send_throws_exception_with_errors_and_logs_when_manager_returns_null(): void
@@ -94,15 +77,6 @@ class PhoneVerificationControllerTest extends TestCase
         } catch (ExceptionWithErrors $e) {
             $this->assertSame('Validation failed', $e->getMessage());
         }
-
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return count($args) === 2
-                && $args[0] === 'Phone verification send request'
-                && ($args[1]['user_id'] ?? null) === $user->id
-                && ($args[1]['phone'] ?? null) === 'x'
-                && isset($args[1]['ip'])
-                && is_string($args[1]['ip']);
-        })->once();
 
         Log::shouldHaveReceived('error')->withArgs(function (...$args) use ($user): bool {
             return count($args) === 2

@@ -85,12 +85,6 @@ class SmsService
                 try {
                     $apiUrl = "https://graph.facebook.com/{$graphVersion}/{$phoneNumberId}/messages";
 
-                    Log::info('WhatsApp API URL being called', [
-                        'url' => $apiUrl,
-                        'phone_number_id' => $phoneNumberId,
-                        'graph_version' => $graphVersion,
-                    ]);
-
                     $response = Http::withHeaders([
                         'Authorization' => 'Bearer '.$accessToken,
                         'Content-Type' => 'application/json',
@@ -119,8 +113,6 @@ class SmsService
                     if ($response->successful()) {
                         $body = $response->json();
                         if (isset($body['messages'][0]['id'])) {
-                            Log::info('WhatsApp message sent successfully via Laravel HTTP client to: '.$formattedPhone.' with message: '.$message);
-
                             return true;
                         } else {
                             Log::error('WhatsApp API error via Laravel HTTP client: '.json_encode($body));
@@ -146,20 +138,6 @@ class SmsService
             }
 
             $fb = $this->createFacebookSdk($fbConfig);
-
-            // Debug logging
-            Log::info('WhatsApp API request details', [
-                'to' => $to,
-                'formatted_phone' => $formattedPhone,
-                'message' => $message,
-                'extracted_code' => $code,
-                'expires' => $expires,
-                'phone_number_id' => $phoneNumberId,
-                'http_client_handler' => app()->environment('local', 'development') ? 'LaravelHttpClient' : 'stream',
-                'environment' => app()->environment(),
-                'curl_available' => function_exists('curl_version'),
-                'curl_version' => function_exists('curl_version') ? curl_version() : null,
-            ]);
 
             // Prepare template parameters
             $parameters = [
@@ -190,8 +168,6 @@ class SmsService
             $body = $response->getDecodedBody();
 
             if (isset($body['messages'][0]['id'])) {
-                Log::info('WhatsApp message sent successfully to: '.$formattedPhone.' with message: '.$message);
-
                 return true;
             } else {
                 Log::error('WhatsApp API error: '.json_encode($body));
@@ -283,15 +259,11 @@ class SmsService
 
             // Check for successful response
             if ($responseText === 'OK') {
-                Log::info('SMS sent via SMS Masivos to: '.$formattedPhone.' with message: '.$message);
-
                 return true;
             }
 
             // Check for test mode response
             if (strpos($responseText, 'probando sin enviar') !== false) {
-                Log::info('SMS test mode via SMS Masivos to: '.$formattedPhone.' with message: '.$message);
-
                 return true;
             }
 
@@ -343,9 +315,6 @@ class SmsService
      */
     protected function sendViaLocal($to, $message)
     {
-        // For development/testing, just log the SMS
-        Log::info('SMS would be sent to: '.$to.' with message: '.$message);
-
         // You can also log to a file for easier debugging
         $logMessage = date('Y-m-d H:i:s').' - SMS to '.$to.': '.$message.PHP_EOL;
         file_put_contents(storage_path('logs/sms.log'), $logMessage, FILE_APPEND | LOCK_EX);

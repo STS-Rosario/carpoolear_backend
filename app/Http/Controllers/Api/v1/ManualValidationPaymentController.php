@@ -3,7 +3,6 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
 
@@ -32,11 +31,6 @@ class ManualValidationPaymentController extends Controller
                     $validationRequest->payment_id = (string) $paymentId;
                 }
                 $validationRequest->save();
-                Log::info('Manual identity validation payment success', [
-                    'request_id' => $requestId,
-                    'user_id' => $validationRequest->user_id,
-                    'payment_id' => $paymentId ?? $validationRequest->payment_id,
-                ]);
             }
             $redirectUrl .= '?request_id='.$requestId;
             if ($result !== 'success') {

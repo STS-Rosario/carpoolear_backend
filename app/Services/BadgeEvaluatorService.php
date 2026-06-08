@@ -21,11 +21,6 @@ class BadgeEvaluatorService
             try {
                 if ($this->meetsConditions($user, $badge) && ! $user->badges->contains($badge->id)) {
                     $user->badges()->attach($badge->id, ['awarded_at' => now()]);
-                    Log::info('Badge awarded', [
-                        'user_id' => $user->id,
-                        'badge_id' => $badge->id,
-                        'badge_title' => $badge->title,
-                    ]);
                 }
             } catch (\Exception $e) {
                 Log::error('Error evaluating badge', [

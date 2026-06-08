@@ -18,8 +18,6 @@ class MercadoPagoOAuthController extends Controller
     {
         // log the entire request payload
 
-        \Log::info('MercadoPago OAuth callback request', ['request' => $request->all()]);
-
         $code = $request->query('code');
         $state = $request->query('state');
         $error = $request->query('error');
@@ -66,8 +64,6 @@ class MercadoPagoOAuthController extends Controller
             }
 
             $me = $oauthService->getUserMe($accessToken);
-            \Log::info('MercadoPago OAuth users/me response', ['user_id' => $userId, 'me' => $me]);
-
             $userName = trim((string) ($user->name ?? ''));
             $mpName = trim((string) (($me['first_name'] ?? '').' '.($me['last_name'] ?? '')));
             $nameMismatch = ! MercadoPagoOAuthService::nameMatches($me, $userName);
@@ -96,14 +92,6 @@ class MercadoPagoOAuthController extends Controller
                     'reject_reason' => $rejectReason,
                     'mp_payload' => MercadoPagoOAuthService::filterMePayloadForStorage($me),
                 ]);
-                \Log::info('MercadoPago OAuth callback: mismatch', [
-                    'user_id' => $userId,
-                    'reject_reason' => $rejectReason,
-                    'user_name' => $userName,
-                    'mp_name' => $mpName,
-                    'user_dni_normalized' => $userDni,
-                    'mp_dni_normalized' => $mpDni,
-                ]);
                 $details = $this->buildMismatchRedirectDetails(
                     $nameMismatch,
                     $dniMismatch,
@@ -122,7 +110,6 @@ class MercadoPagoOAuthController extends Controller
             $user->identity_validation_rejected_at = null;
             $user->identity_validation_reject_reason = null;
             $user->save();
-            \Log::info('MercadoPago OAuth callback: success', ['user_id' => $userId]);
 
             return redirect($oauthService->getFrontendRedirectUrl('success'));
         } catch (\Exception $e) {

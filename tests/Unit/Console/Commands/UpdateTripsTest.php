@@ -75,9 +75,6 @@ class UpdateTripsTest extends TestCase
         Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
             return $e->level === 'info' && $e->message === 'COMMAND updateTrips';
         });
-        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
-            return $e->level === 'info' && str_starts_with($e->message, 'Trips: ');
-        });
     }
 
     public function test_handle_skips_trip_with_single_point_without_crashing(): void

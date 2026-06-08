@@ -100,8 +100,10 @@ class OnNewTripListenerTest extends TestCase
 
         (new OnNewTrip($userRepo, $subRepo))->handle(new TripCreated($trip));
 
-        $expected = 'Ex: '.$trip->to_town.': '.$subscriber->id.' - '.$subscriber->name;
-
-        Log::shouldHaveReceived('info')->with($expected)->once();
+        Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context) use ($trip, $subscriber): bool {
+            return $message === 'Subscription notification failed'
+                && ($context['trip_id'] ?? null) === $trip->id
+                && ($context['user_id'] ?? null) === $subscriber->id;
+        });
     }
 }

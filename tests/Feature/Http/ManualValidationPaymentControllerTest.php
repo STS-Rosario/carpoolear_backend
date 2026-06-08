@@ -3,7 +3,6 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use STS\Http\Controllers\Api\v1\ManualValidationPaymentController;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
@@ -48,8 +47,6 @@ class ManualValidationPaymentControllerTest extends TestCase
 
     public function test_success_marks_validation_paid_stores_payment_id_and_redirects_with_success_flag(): void
     {
-        Log::spy();
-
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         $row = ManualIdentityValidation::query()->create([
             'user_id' => $user->id,
@@ -73,13 +70,6 @@ class ManualValidationPaymentControllerTest extends TestCase
         $this->assertTrue((bool) $fresh->paid);
         $this->assertNotNull($fresh->paid_at);
         $this->assertSame('mp-555', $fresh->payment_id);
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($row, $user): bool {
-            return $message === 'Manual identity validation payment success'
-                && (string) $context['request_id'] === (string) $row->id
-                && (int) $context['user_id'] === (int) $user->id
-                && (string) $context['payment_id'] === 'mp-555';
-        });
     }
 
     public function test_success_uses_collection_id_when_payment_id_is_absent(): void
@@ -176,8 +166,6 @@ class ManualValidationPaymentControllerTest extends TestCase
 
     public function test_success_without_payment_identifiers_leaves_payment_id_null(): void
     {
-        Log::spy();
-
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         $row = ManualIdentityValidation::query()->create([
             'user_id' => $user->id,
@@ -193,20 +181,10 @@ class ManualValidationPaymentControllerTest extends TestCase
         $fresh = $row->fresh();
         $this->assertTrue((bool) $fresh->paid);
         $this->assertNull($fresh->payment_id);
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($row, $user): bool {
-            return $message === 'Manual identity validation payment success'
-                && (string) $context['request_id'] === (string) $row->id
-                && (int) $context['user_id'] === (int) $user->id
-                && array_key_exists('payment_id', $context)
-                && $context['payment_id'] === null;
-        });
     }
 
     public function test_success_without_new_payment_identifier_logs_existing_payment_id_context(): void
     {
-        Log::spy();
-
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         $row = ManualIdentityValidation::query()->create([
             'user_id' => $user->id,
@@ -216,13 +194,6 @@ class ManualValidationPaymentControllerTest extends TestCase
         ]);
 
         $this->get('api/mercadopago/manual-validation-success?request_id='.$row->id)->assertRedirect();
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($row, $user): bool {
-            return $message === 'Manual identity validation payment success'
-                && (string) $context['request_id'] === (string) $row->id
-                && (int) $context['user_id'] === (int) $user->id
-                && (string) $context['payment_id'] === 'previous-mp-id';
-        });
     }
 
     public function test_success_when_payment_and_collection_resolve_to_empty_string_does_not_persist_empty_payment_id(): void
@@ -252,8 +223,6 @@ class ManualValidationPaymentControllerTest extends TestCase
 
     public function test_success_logs_empty_string_payment_context_when_resolved_identifier_is_empty_even_if_row_has_prior_payment_id(): void
     {
-        Log::spy();
-
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         $row = ManualIdentityValidation::query()->create([
             'user_id' => $user->id,
@@ -273,15 +242,6 @@ class ManualValidationPaymentControllerTest extends TestCase
         $fresh = $row->fresh();
         $this->assertTrue($fresh->paid);
         $this->assertSame('prior-mp-reference', $fresh->payment_id);
-
-        Log::shouldHaveReceived('info')->withArgs(function ($message, $context) use ($row, $user): bool {
-            return (string) $message === 'Manual identity validation payment success'
-                && is_array($context)
-                && (string) $context['request_id'] === (string) $row->id
-                && (int) $context['user_id'] === (int) $user->id
-                && array_key_exists('payment_id', $context)
-                && $context['payment_id'] === '';
-        });
     }
 
     public function test_success_normalizes_integer_payment_identifier_to_string_on_model(): void

@@ -2,33 +2,23 @@
 
 namespace STS\Listeners;
 
-use STS\Events\User\Create;
-use STS\Notifications\NewUserNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Repository\UserRepository; 
+use STS\Events\User\Create;
 
 class TestJob implements ShouldQueue
-{ 
-
+{
     /**
      * Create the event listener.
      *
      * @return void
      */
-    public function __construct()
-    {
-        
-    }
+    public function __construct() {}
 
     /**
      * Handle the event.
      *
-     * @param Create $event
      *
      * @return void
      */
-    public function handle(Create $event)
-    {
-        \Log::info('create handler');
-    }
+    public function handle(Create $event) {}
 }

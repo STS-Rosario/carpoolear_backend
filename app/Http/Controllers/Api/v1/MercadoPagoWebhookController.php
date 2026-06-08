@@ -35,18 +35,6 @@ class MercadoPagoWebhookController extends Controller
 
     public function handle(Request $request)
     {
-        Log::info('MercadoPago webhook received', [
-            'method' => $request->method(),
-            'type' => $request->header('type'),
-            'action' => $request->header('action'),
-            'data' => $request->all(),
-            'content' => $request->getContent(),
-            'headers' => $request->headers->all(),
-            'content_type' => $request->header('Content-Type'),
-        ]);
-
-        \Log::info('MercadoPago webhook received', ['action' => $request->input('action')]);
-
         // Handle order.processed (QR/Orders API) - sent when QR order is paid
         if ($request->input('action') === 'order.processed') {
             return $this->handleOrderProcessed($request);
@@ -63,16 +51,12 @@ class MercadoPagoWebhookController extends Controller
 
             return response()->json(['error' => 'Invalid request'], 400);
         }
-        Log::info('MercadoPago webhook request verified');
-
         $paymentId = $request->input('data_id');
         if (! $paymentId) {
             Log::error('No payment ID in webhook request');
 
             return response()->json(['error' => 'No payment ID'], 400);
         }
-        \Log::info('MercadoPago $paymentId', ['payment_id' => $paymentId]);
-
         // Get the payment status from Mercado Pago
         $mpPayment = $this->getMercadoPagoPayment($paymentId);
         if (! $mpPayment) {
@@ -80,8 +64,6 @@ class MercadoPagoWebhookController extends Controller
 
             return response()->json(['error' => 'Could not fetch payment'], 500);
         }
-        Log::info('MP WEBHOOK payment', ['payment' => $mpPayment]);
-
         $externalReference = $mpPayment['external_reference'] ?? '';
 
         // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR - Orders API allows no colon)
@@ -238,7 +220,6 @@ class MercadoPagoWebhookController extends Controller
     protected function getMercadoPagoPayment($paymentId)
     {
         try {
-            \Log::info('MP WEBHOOK fetching payment', ['payment_id' => $paymentId]);
             // Use the SDK client to fetch payment details
             $payment = $this->paymentClient->get($paymentId);
 
@@ -302,12 +283,6 @@ class MercadoPagoWebhookController extends Controller
         }
 
         $payment->save();
-
-        Log::info('Payment status updated', [
-            'payment_id' => $payment->payment_id,
-            'old_status' => $oldStatus,
-            'new_status' => $newStatus,
-        ]);
 
         return $newStatus;
     }
@@ -460,16 +435,6 @@ class MercadoPagoWebhookController extends Controller
 
         $donation->save();
 
-        Log::info('Campaign donation status updated', [
-            'payment_id' => $mpPayment['id'],
-            'donation_id' => $donationId,
-            'campaign_id' => $campaignId,
-            'reward_id' => $rewardId,
-            'old_status' => $donation->getOriginal('status'),
-            'new_status' => $newStatus,
-            'user_id' => $userId,
-        ]);
-
         return response()->json(['status' => 'success']);
     }
 
@@ -498,20 +463,11 @@ class MercadoPagoWebhookController extends Controller
 
         // Only process when order is fully paid (processed + accredited)
         if ($orderStatus !== 'processed' || $orderStatusDetail !== 'accredited') {
-            Log::info('Order processed webhook ignored: not paid', [
-                'status' => $orderStatus,
-                'status_detail' => $orderStatusDetail,
-            ]);
-
             return response()->json(['status' => 'success']);
         }
 
         // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR)
         if (strpos($externalReference, 'manual_validation:') !== 0 && strpos($externalReference, 'manual_validation_') !== 0) {
-            Log::info('Order processed webhook: external_reference not manual_validation', [
-                'external_reference' => $externalReference,
-            ]);
-
             return response()->json(['status' => 'success']);
         }
 
@@ -564,11 +520,7 @@ class MercadoPagoWebhookController extends Controller
                 $validationRequest->paid_at = now();
                 $validationRequest->payment_id = (string) $mpPayment['id'];
                 $validationRequest->save();
-                Log::info('Manual identity validation payment success', [
-                    'request_id' => $requestId,
-                    'user_id' => $validationRequest->user_id,
-                    'payment_id' => $mpPayment['id'],
-                ]);
+
             }
         }
 

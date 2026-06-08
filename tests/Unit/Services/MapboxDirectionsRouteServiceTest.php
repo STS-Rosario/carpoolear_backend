@@ -213,7 +213,7 @@ class MapboxDirectionsRouteServiceTest extends TestCase
             ['lat' => 1, 'lng' => 1],
         ]));
 
-        Log::shouldHaveReceived('info')->once()->withArgs(function (string $message, array $context): bool {
+        Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context): bool {
             return str_contains($message, 'no route')
                 && ($context['code'] ?? null) === 'NoRoute'
                 && ($context['message'] ?? null) === 'Impossible route';

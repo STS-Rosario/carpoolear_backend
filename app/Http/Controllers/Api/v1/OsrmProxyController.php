@@ -33,19 +33,15 @@ class OsrmProxyController extends Controller
         }
 
         $query = $request->getQueryString();
-        $cacheKey = 'osrm_proxy:v1:' . hash('sha256', $path . '|' . ($query ?? ''));
+        $cacheKey = 'osrm_proxy:v1:'.hash('sha256', $path.'|'.($query ?? ''));
 
         $cached = Cache::get($cacheKey);
         if ($cached !== null) {
-            Log::debug('[osrm_proxy] cache HIT', [
-                'path_preview' => substr($path, 0, 96),
-            ]);
-
             return response()->json($cached)
                 ->header('X-OSRM-Proxy-Cache', 'HIT');
         }
 
-        $upstreamPath = '/route/v1/' . $path . ($query ? '?' . $query : '');
+        $upstreamPath = '/route/v1/'.$path.($query ? '?'.$query : '');
         $json = $this->fetchFromOsrmBases($upstreamPath);
 
         if ($json === null) {
@@ -69,12 +65,6 @@ class OsrmProxyController extends Controller
 
         Cache::put($cacheKey, $json, now()->addSeconds(max(60, $ttlSeconds)));
 
-        Log::debug('[osrm_proxy] cache STORE', [
-            'path_preview' => substr($path, 0, 96),
-            'osrm_code' => $json['code'] ?? null,
-            'ttl_seconds' => $ttlSeconds,
-        ]);
-
         return response()->json($json)
             ->header('X-OSRM-Proxy-Cache', 'MISS');
     }
@@ -86,18 +76,12 @@ class OsrmProxyController extends Controller
         $bases = array_values(array_unique(array_filter([$primary, $fallback])));
 
         foreach ($bases as $base) {
-            $url = rtrim((string) $base, '/') . $upstreamPath;
+            $url = rtrim((string) $base, '/').$upstreamPath;
             try {
                 $response = Http::timeout(45)->get($url);
                 if ($response->successful()) {
                     $data = $response->json();
                     if (is_array($data) && array_key_exists('code', $data)) {
-                        Log::info('[osrm_proxy] upstream response', [
-                            'base' => $base,
-                            'http_status' => $response->status(),
-                            'osrm_code' => $data['code'] ?? null,
-                        ]);
-
                         return $data;
                     }
                 } else {

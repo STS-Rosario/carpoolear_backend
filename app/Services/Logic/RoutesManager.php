@@ -31,11 +31,7 @@ class RoutesManager
         $result = curl_exec($ch);
         curl_close($ch);
 
-        \Log::info($url);
-
         $decoded = json_decode($result, true);
-
-        \Log::info('decode ok');
 
         return $decoded;
     }
@@ -63,8 +59,6 @@ class RoutesManager
         }
         // 3- Buscar los puntos obtenidos en 1 cercanos a los segumentos
         $nearPoints = [];
-        \Log::info('count($points): '.count($points));
-        \Log::info('count($nodesArr): '.count($nodes->toArray()));
         for ($i = 1; $i < count($points); $i++) {
             $p1 = $points[$i - 1];
             $p2 = $points[$i];
@@ -116,7 +110,6 @@ class RoutesManager
             DB::disconnect('mysql');
         }
         // 4- Grabar
-        \Log::info('Saving route');
         $this->routesRepo->saveRoute($route, $nearPoints);
 
     }

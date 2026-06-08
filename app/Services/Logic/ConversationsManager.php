@@ -265,7 +265,6 @@ class ConversationsManager extends BaseManager
                         if (count($conversation->messages) > 1) {
                             for ($i = 1; $i < count($arr); $i++) {
                                 $m = $arr[$i];
-                                \Log::info($m['user_id'].' = '.$initiator['user_id']);
                                 if ($m['user_id'] != $initiator['user_id']) {
                                     $date = Carbon::parse($initiator['created_at']);
                                     $dateLate = Carbon::parse($m['created_at']);
@@ -367,7 +366,6 @@ class ConversationsManager extends BaseManager
                             break;
                         }
                     }
-                    \Log::info('$esperandoRespuestaSolicitud: '.$user->id.' / '.$esperandoRespuestaSolicitud ? 'true' : 'false');
                     if (! in_array($user->id, $destinations) && $esperandoRespuestaSolicitud) {
                         $destinations[] = $user->id;
                     }

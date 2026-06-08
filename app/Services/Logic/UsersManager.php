@@ -141,13 +141,9 @@ class UsersManager extends BaseManager
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
         unset($data['facebook_profile_url']);
-        \Log::info('Create USER: '.$data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
-            \Log::info('Error validation: '.$data['name']);
             $this->setErrors($v->errors());
-
-            \Log::info('Error validation: '.$v->errors());
 
             return;
         } else {
@@ -176,7 +172,6 @@ class UsersManager extends BaseManager
                         }
                     }
 
-                    \Log::info('UserManager before CreateEvent');
                     event(new CreateEvent($u->id));
 
                     return $u;
@@ -187,7 +182,6 @@ class UsersManager extends BaseManager
 
                 $url = 'https://www.google.com/recaptcha/api/siteverify';
 
-                \Log::info('Captcha val: '.env('RECAPTCHA_SECRET_KEY', '123456789').' - ip  '.$_SERVER['REMOTE_ADDR'].' token = '.$_POST['token']);
                 $recaptchaData = [
                     'secret' => env('RECAPTCHA_SECRET_KEY', ''),
                     'response' => $_POST['token'],
@@ -207,7 +201,6 @@ class UsersManager extends BaseManager
                 // Takes a JSON encoded string and converts it into a PHP variable
                 $res = json_decode($response, true);
 
-                \Log::info('Captcha val: '.$response);
                 // END setting reCaptcha v3 validation data
 
                 // Post form OR output alert and bypass post if false. NOTE: score conditional is optional
@@ -231,13 +224,10 @@ class UsersManager extends BaseManager
                         }
                     }
 
-                    \Log::info('UserManager before CreateEvent.');
                     event(new CreateEvent($u->id));
 
                     return $u;
                 } else {
-
-                    \Log::info('captcha failed: '.$data['name']);
 
                     return false;
                 }
@@ -347,8 +337,6 @@ class UsersManager extends BaseManager
                 }
             }
         }
-        \Log::info($data);
-
         // Handle car/patente updates for admin
         if ($is_admin && (isset($data['patente']) || isset($data['car_description']))) {
             $this->updateUserCar($user, $data);
@@ -518,8 +506,6 @@ class UsersManager extends BaseManager
     {
         $enableEmailLogging = config('carpoolear.log_emails', false);
 
-        \Log::info('resetPassword userManager', ['email' => $email]);
-
         // Log to email_logs channel if enabled
         if ($enableEmailLogging) {
             \Log::channel('email_logs')->info('PASSWORD_RESET_REQUEST', [
@@ -539,8 +525,6 @@ class UsersManager extends BaseManager
                 $remainingMinutes = $cooldownMinutes - (int) $lastReset->created_at->diffInMinutes(now());
                 $this->setErrors(['error' => "Please wait {$remainingMinutes} minutes before requesting another password reset"]);
 
-                \Log::info("Password reset cooldown active for user {$user->email}, remaining: {$remainingMinutes} minutes");
-
                 // Log to email_logs channel if enabled
                 if ($enableEmailLogging) {
                     \Log::channel('email_logs')->warning('PASSWORD_RESET_COOLDOWN', [
@@ -559,8 +543,6 @@ class UsersManager extends BaseManager
             $this->repo->deleteResetToken('email', $user->email);
             $this->repo->storeResetToken($user, $token);
 
-            \Log::info('resetPassword before queuing email');
-
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
             $url = config('app.url').'/app/reset-password/'.$token;
@@ -569,11 +551,6 @@ class UsersManager extends BaseManager
             \STS\Jobs\SendPasswordResetEmail::dispatch($user, $token, $url, $name_app, $domain)
                 ->onQueue('emails') // Use a dedicated queue for emails
                 ->delay(now()->addSeconds(10)); // Add a small delay to prevent immediate retries
-
-            \Log::info('resetPassword email queued successfully', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
 
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
@@ -668,7 +645,6 @@ class UsersManager extends BaseManager
     public function unansweredConversationOrRequestsByTrip($trip)
     {
         $count = $this->repo->unansweredConversationOrRequestsByTrip($trip->user_id, $trip->id);
-        \Log::info('unansweredConversationOrRequestsByTrip: '.$count.' < '.$trip->user->unaswered_messages_limit);
         if (isset($trip->user->unaswered_messages_limit) && $trip->user->unaswered_messages_limit > 0) {
             return $count < $trip->user->unaswered_messages_limit;
         } else {
@@ -685,7 +661,6 @@ class UsersManager extends BaseManager
     {
         // $exitCode = \Artisan::call("user:update {$user_id_delete} {$user_id_keep}", []);
         $exitCode = \Artisan::call('test:test', []);
-        \Log::info('Test COMMAND exit'.$exitCode);
     }
 
     public function registerDonation($user, $donation)

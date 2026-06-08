@@ -28,7 +28,6 @@ class RoutesRepository
 
     public function autocomplete($name, $country, $multicountry)
     {
-        \Log::info($name.' '.$country);
         // sometime someone will implement full text search
         $query = NodeGeo::query();
         $query->whereRaw("CONCAT(name, ' ', state, ' ', country) like ?", '%'.$name.'%');

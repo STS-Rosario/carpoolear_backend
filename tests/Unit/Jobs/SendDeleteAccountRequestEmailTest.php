@@ -59,23 +59,11 @@ class SendDeleteAccountRequestEmailTest extends TestCase
                 return $context['admin_email'] === $adminEmail && isset($context['timestamp']);
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('Sending delete account request email', Mockery::on(function (array $context) use ($adminEmail) {
-                return $context['admin_email'] === $adminEmail && isset($context['attempt'], $context['timestamp']);
-            }));
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
             ->with('email_logs')
             ->andReturn($emailChannel);
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('Delete account request email sent successfully', Mockery::on(function (array $context) use ($adminEmail) {
-                return $context['admin_email'] === $adminEmail && isset($context['timestamp']);
-            }));
         Log::shouldReceive('channel')
             ->once()
             ->ordered()
@@ -101,7 +89,6 @@ class SendDeleteAccountRequestEmailTest extends TestCase
             ->with(Mockery::type(DeleteAccountRequestNotification::class))
             ->andThrow(new \RuntimeException('smtp unavailable'));
 
-        Log::shouldReceive('info')->once()->with('Sending delete account request email', Mockery::type('array'));
         Log::shouldReceive('error')->once()->with('Failed to send delete account request email', Mockery::on(function (array $context) use ($adminEmail) {
             return $context['admin_email'] === $adminEmail
                 && $context['error'] === 'smtp unavailable'
@@ -126,7 +113,6 @@ class SendDeleteAccountRequestEmailTest extends TestCase
         unset($carpoolear['log_emails']);
         config(['carpoolear' => $carpoolear]);
 
-        Log::shouldReceive('info')->twice();
         Log::shouldReceive('channel')->never();
 
         $job = new SendDeleteAccountRequestEmail('ops@example.com', 'https://admin.example/pending');
@@ -162,10 +148,6 @@ class SendDeleteAccountRequestEmailTest extends TestCase
                     && strlen((string) $context['stack_trace']) > 0;
             }));
 
-        Log::shouldReceive('info')
-            ->once()
-            ->ordered()
-            ->with('Sending delete account request email', Mockery::type('array'));
         Log::shouldReceive('channel')
             ->once()
             ->ordered()

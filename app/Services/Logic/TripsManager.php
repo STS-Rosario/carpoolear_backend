@@ -111,11 +111,8 @@ class TripsManager extends BaseManager
             // Check trip creation limits
             $maxTrips = config('carpoolear.trip_creation_limits.max_trips', 5);
             $timeWindow = config('carpoolear.trip_creation_limits.time_window_hours', 24);
-            \Log::info('maxTrips: '.$maxTrips);
-            \Log::info('timeWindow: '.$timeWindow);
 
             $recentTrips = $this->tripRepo->getRecentTrips($user->id, $timeWindow);
-            \Log::info('recentTrips: '.$recentTrips->count());
             if ($recentTrips->count() > $maxTrips) {
                 $this->userManager->update($user, ['banned' => 1], false, true);
                 \Log::info('User banned due to exceeding trip creation limits. User ID: '.$user->id.', Trips created: '.$recentTrips->count().' in last '.$timeWindow.' hours');
@@ -503,7 +500,6 @@ class TripsManager extends BaseManager
     {
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
-            \Log::info('changeVisibility trip: '.$trip->id);
             if ($user->id == $trip->user->id || $user->is_admin) {
                 if (! isset($trip->deleted_at) || is_null($trip->deleted_at) || empty($trip->deleted_at->toDateTimeString())) {
                     Trip::where('id', $trip_id)

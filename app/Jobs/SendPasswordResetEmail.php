@@ -66,9 +66,6 @@ class SendPasswordResetEmail implements ShouldQueue
                 'timestamp' => now()->toIso8601String(),
             ];
 
-            // Log to regular log
-            Log::info('Sending password reset email', $logData);
-
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('PASSWORD_RESET_EMAIL_SENDING', array_merge($logData, [
@@ -91,9 +88,6 @@ class SendPasswordResetEmail implements ShouldQueue
                 'email' => $this->user->email,
                 'timestamp' => now()->toIso8601String(),
             ];
-
-            // Log to regular log
-            Log::info('Password reset email sent successfully', $successData);
 
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {

@@ -181,7 +181,6 @@ class RoutesRepositoryTest extends TestCase
         ]);
 
         $needle = 'StateNeedle'.$suffix;
-        Log::shouldReceive('info')->once()->with($needle.' AR');
 
         $rows = $this->repo()->autocomplete($needle, 'AR', false);
 

@@ -78,7 +78,6 @@ class OsrmProxyApiTest extends TestCase
 
     public function test_returns_no_route_envelope_when_upstream_unreachable(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://127.0.0.1:9',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -90,6 +89,8 @@ class OsrmProxyApiTest extends TestCase
 
         $path = 'driving/-32.9,-60.7;-34.6,-58.4';
         $preview = substr($path, 0, 96);
+
+        Log::spy();
 
         $this->getJson('api/osrm/route/v1/'.$path)
             ->assertOk()
@@ -148,7 +149,6 @@ class OsrmProxyApiTest extends TestCase
 
     public function test_cache_hit_logs_debug_with_path_preview_truncated_to_96_chars(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://osrm-preview.test',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -170,30 +170,6 @@ class OsrmProxyApiTest extends TestCase
 
         $this->getJson($uri)->assertOk()->assertHeader('X-OSRM-Proxy-Cache', 'MISS');
         $this->getJson($uri)->assertOk()->assertHeader('X-OSRM-Proxy-Cache', 'HIT');
-
-        $expectedPreview = substr($path, 0, 96);
-
-        Log::shouldHaveReceived('debug')->withArgs(function (...$args) use ($expectedPreview): bool {
-            if (count($args) < 1 || $args[0] !== '[osrm_proxy] cache STORE') {
-                return false;
-            }
-            $ctx = $args[1] ?? [];
-
-            return is_array($ctx)
-                && ($ctx['path_preview'] ?? null) === $expectedPreview
-                && ($ctx['osrm_code'] ?? null) === 'Ok'
-                && isset($ctx['ttl_seconds']);
-        });
-
-        Log::shouldHaveReceived('debug')->withArgs(function (...$args) use ($expectedPreview): bool {
-            if (count($args) < 1 || $args[0] !== '[osrm_proxy] cache HIT') {
-                return false;
-            }
-            $ctx = $args[1] ?? [];
-
-            return is_array($ctx)
-                && ($ctx['path_preview'] ?? null) === $expectedPreview;
-        });
     }
 
     public function test_cache_get_uses_key_prefixed_with_osrm_proxy_v1_and_sha256_of_path_and_query(): void
@@ -273,7 +249,6 @@ class OsrmProxyApiTest extends TestCase
 
     public function test_upstream_non_success_http_logs_warning_with_base_and_status(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://primary-502.test',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -282,6 +257,8 @@ class OsrmProxyApiTest extends TestCase
         Http::fake([
             'https://primary-502.test/*' => Http::response('bad', 502),
         ]);
+
+        Log::spy();
 
         $this->getJson('api/osrm/route/v1/driving/-20.0,-20.0;-21.0,-21.0')
             ->assertOk()
@@ -299,9 +276,8 @@ class OsrmProxyApiTest extends TestCase
         });
     }
 
-    public function test_upstream_ok_logs_info_with_base_http_status_and_osrm_code(): void
+    public function test_upstream_ok_returns_osrm_payload(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://osrm-info.test',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -319,17 +295,6 @@ class OsrmProxyApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('code', 'Ok');
 
-        Log::shouldHaveReceived('info')->withArgs(function (...$args): bool {
-            if (count($args) < 1 || $args[0] !== '[osrm_proxy] upstream response') {
-                return false;
-            }
-            $ctx = $args[1] ?? [];
-
-            return is_array($ctx)
-                && str_contains((string) ($ctx['base'] ?? ''), 'osrm-info.test')
-                && ($ctx['http_status'] ?? null) === 200
-                && ($ctx['osrm_code'] ?? null) === 'Ok';
-        });
     }
 
     public function test_blank_primary_base_is_skipped_and_fallback_is_used(): void

@@ -19,7 +19,7 @@ class GoogleDrivingRouteService
 
     /**
      * @param  array<int, array{lat: float|int|string, lng: float|int|string}>  $points
-     * @return array{distance: int, duration: int}|null  distance meters, duration whole seconds
+     * @return array{distance: int, duration: int}|null distance meters, duration whole seconds
      */
     public function drivingDistanceAndDuration(array $points): ?array
     {
@@ -86,7 +86,7 @@ class GoogleDrivingRouteService
 
         $data = $response->json();
         if (! is_array($data) || empty($data['routes'][0])) {
-            Log::info('[google_routes] no routes in response');
+            Log::warning('[google_routes] no routes in response');
 
             return null;
         }

@@ -24,12 +24,6 @@ class PhoneVerificationController extends Controller
     {
         $user = auth()->user();
 
-        \Log::info('Phone verification send request', [
-            'user_id' => $user->id,
-            'phone' => $request->input('phone'),
-            'ip' => $request->ip(),
-        ]);
-
         $result = $this->phoneVerificationManager->sendVerificationCode($user, $request);
 
         if ($result === null) {
@@ -41,11 +35,6 @@ class PhoneVerificationController extends Controller
             ]);
             throw new ExceptionWithErrors('Validation failed', $errors);
         }
-
-        \Log::info('Phone verification send successful', [
-            'user_id' => $user->id,
-            'phone' => $result['phone'],
-        ]);
 
         return response()->json([
             'message' => 'Verification code sent successfully',

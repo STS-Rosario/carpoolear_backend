@@ -60,15 +60,6 @@ class AuthController extends Controller
             'identity_validation_new_users_date', // backend only; profile exposes identity_validation_required_for_user
         ];
         $allConfigs = config('carpoolear');
-        Log::info('Environment Check:', [
-            'raw_env' => [
-                'MODULE_USER_REQUEST_LIMITED_ENABLED' => env('MODULE_USER_REQUEST_LIMITED_ENABLED'),
-                'MODULE_USER_REQUEST_LIMITED_HOURS_RANGE' => env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE'),
-            ],
-            'config_values' => config('carpoolear'),
-            'app_env' => app()->environment(),
-            'env_path' => app()->environmentFilePath(),
-        ]);
         foreach ($exclude as $key) {
             unset($allConfigs[$key]);
         }
@@ -94,15 +85,6 @@ class AuthController extends Controller
 
     public function getConfig(Request $request)
     {
-        $user = auth()->user();
-
-        // Check if user is authenticated before accessing properties
-        if ($user) {
-            $user_id = $user->id;
-        } else {
-            Log::warning('getConfig called without authenticated user');
-        }
-
         $isCordova = OldCordovaAppHelper::isOldCordovaApp();
 
         return response()->json($this->_getConfig($isCordova));
@@ -201,7 +183,6 @@ class AuthController extends Controller
             $token = JWTAuth::getToken();
             if ($token) {
                 JWTAuth::invalidate($token);
-                Log::info('JWT token invalidated successfully');
             }
         } catch (\Exception $e) {
             Log::error('Failed to invalidate JWT token: '.$e->getMessage());

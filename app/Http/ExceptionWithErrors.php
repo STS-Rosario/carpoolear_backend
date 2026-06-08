@@ -18,10 +18,7 @@ class ExceptionWithErrors extends Exception
         $this->httpStatus = $httpStatus;
     }
 
-    public function report()
-    {
-        \Log::info($this->message);
-    }
+    public function report() {}
 
     public function render($request): JsonResponse
     {

@@ -2,12 +2,12 @@
 
 namespace STS\Listeners\User;
 
-use STS\Events\User\Create;
-use STS\Notifications\NewUserNotification;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Repository\UserRepository; 
 use Illuminate\Support\Facades\Mail;
+use STS\Events\User\Create;
 use STS\Mail\NewAccount;
+use STS\Notifications\NewUserNotification;
+use STS\Repository\UserRepository;
 
 class CreateHandler implements ShouldQueue
 {
@@ -26,16 +26,13 @@ class CreateHandler implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param Create $event
      *
      * @return void
      */
     public function handle(Create $event)
     {
-        \Log::info('create handler');
         $user = $this->userRepo->show($event->id);
-        if ($user && $user->email && !$user->active) {
-
+        if ($user && $user->email && ! $user->active) {
 
             $domain = config('app.url');
             $name_app = config('carpoolear.name_app');
@@ -44,10 +41,7 @@ class CreateHandler implements ShouldQueue
             $token = $user->activation_token;
             Mail::to($user->email)->send(new NewAccount($token, $user, $url, $name_app, $domain));
 
-            \Log::info('resetPassword post event event');
-
-
-            $notification = new NewUserNotification();
+            $notification = new NewUserNotification;
             $notification->notify($user);
         }
     }

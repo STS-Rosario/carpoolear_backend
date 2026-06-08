@@ -18,7 +18,7 @@ class MapboxDirectionsRouteService
 
     /**
      * @param  array<int, array{lat: float|int|string, lng: float|int|string}>  $points
-     * @return array{distance: int, duration: int}|null  distance meters, duration whole seconds
+     * @return array{distance: int, duration: int}|null distance meters, duration whole seconds
      */
     public function drivingDistanceAndDuration(array $points): ?array
     {
@@ -73,7 +73,7 @@ class MapboxDirectionsRouteService
         }
 
         if (empty($data['routes'][0]) || ! is_array($data['routes'][0])) {
-            Log::info('[mapbox_directions] no route', [
+            Log::warning('[mapbox_directions] no route', [
                 'code' => $data['code'] ?? null,
                 'message' => $data['message'] ?? null,
             ]);

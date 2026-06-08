@@ -106,14 +106,12 @@ class TripRepository
                     $rearMaxTwoPassengers
                 );
                 if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                    \Log::info('TripRepository::create seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                     $data['seat_price_cents'] = $maximum_seat_price_cents;
                 }
             }
         }
 
         $trip = Trip::create($data);
-        \Log::info('TripRepository::create trip', [$trip]);
 
         // Save recommended trip price if available from trip info
         if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
@@ -122,13 +120,11 @@ class TripRepository
         }
 
         $this->addPoints($trip, $points);
-        \Log::info('TripRepository::create trip after add points', [$trip]);
 
         $this->generateTripPath($trip);
 
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
-        \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
 
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
         // if route is paid, and user should pay, create payment
@@ -220,7 +216,6 @@ class TripRepository
                         $rearMaxTwoPassengers
                     );
                     if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                        \Log::info('TripRepository::update seat_price_cents is greater than maximum_seat_price_cents, setting to maximum_seat_price_cents', [$maximum_seat_price_cents]);
                         $data['seat_price_cents'] = $maximum_seat_price_cents;
                     }
                 }
@@ -243,7 +238,6 @@ class TripRepository
             // Check if the updated route needs payment (2+ stops in paid zones)
             $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
             $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
-            \Log::info('TripRepository::update routeNeedsPayment', [$routeNeedsPayment, 'oldRouteNeedsPayment' => $oldRouteNeedsPayment]);
 
             $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
 
@@ -648,18 +642,8 @@ class TripRepository
 
     public function getTripInfo($points)
     {
-        $cacheKey = json_encode($points);
-        $hashedPoints = hash('sha256', $cacheKey);
-        $pointsCount = is_array($points) ? count($points) : 0;
+        $hashedPoints = hash('sha256', json_encode($points));
         $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
-
-        \Log::debug('[trip_route|getTripInfo] request context', [
-            'points_count' => $pointsCount,
-            'hashed_points' => $hashedPoints,
-            'cache_key_length' => strlen($cacheKey),
-            'cache_key_preview' => strlen($cacheKey) > 400 ? substr($cacheKey, 0, 400).'…' : $cacheKey,
-            'points' => $points,
-        ]);
 
         // Check cache first (unless bypass is enabled for debugging)
         if (! $cacheBypass) {
@@ -671,28 +655,9 @@ class TripRepository
                 ->first();
 
             if ($cachedRoute) {
-                $routeData = $cachedRoute->route_data;
-                \Log::info('[trip_route|getTripInfo] cache HIT', [
-                    'hashed_points' => $hashedPoints,
-                    'expires_at' => $cachedRoute->expires_at?->toIso8601String(),
-                    'cached_status' => $routeData['status'] ?? null,
-                    'cached_message' => $routeData['message'] ?? null,
-                    'cached_distance_m' => $routeData['data']['distance'] ?? null,
-                    'cached_duration_s' => $routeData['data']['duration'] ?? null,
-                    'route_cache_id' => $cachedRoute->id,
-                ]);
-
-                return $routeData;
+                return $cachedRoute->route_data;
             }
-        } else {
-            \Log::info('[trip_route|getTripInfo] cache BYPASS enabled', [
-                'hashed_points' => $hashedPoints,
-            ]);
         }
-
-        \Log::info('[trip_route|getTripInfo] cache MISS — calling OSRM', [
-            'hashed_points' => $hashedPoints,
-        ]);
 
         $coords = '';
         foreach ($points as $point) {
@@ -721,10 +686,6 @@ class TripRepository
         }
 
         if ($this->mapboxDirectionsRouteService->isEnabled()) {
-            \Log::info('[trip_route|getTripInfo] trying Mapbox Directions fallback', [
-                'hashed_points' => $hashedPoints,
-                'osrm_status' => $osrmOutcome['status'],
-            ]);
             $mapboxMetrics = $this->mapboxDirectionsRouteService->drivingDistanceAndDuration($points);
             if ($mapboxMetrics !== null) {
                 return $this->storeTripInfoSuccess(
@@ -744,12 +705,6 @@ class TripRepository
 
             return $this->routingServiceUnavailableResponse();
         }
-
-        $payload = $osrmOutcome['payload'] ?? [];
-        \Log::info('[trip_route|getTripInfo] route not found (OSRM and Mapbox)', [
-            'hashed_points' => $hashedPoints,
-            'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
-        ]);
 
         $failResponse = [
             'status' => false,
@@ -822,14 +777,6 @@ class TripRepository
             }
 
             $payload = $response->json();
-            \Log::debug('[trip_route|getTripInfo] OSRM raw response summary', [
-                'hashed_points' => $hashedPoints,
-                'base' => $base,
-                'http_status' => $lastHttpStatus,
-                'payload_is_array' => is_array($payload),
-                'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
-                'osrm_message' => is_array($payload) ? ($payload['message'] ?? null) : null,
-            ]);
 
             if (! is_array($payload)) {
                 continue;
@@ -907,22 +854,6 @@ class TripRepository
                 ]
             );
 
-            \Log::info('[trip_route|getTripInfo] route OK — cached', [
-                'hashed_points' => $hashedPoints,
-                'provider' => $provider,
-                'ttl_seconds' => $ttl,
-                'distance_m' => $distanceInMeters,
-                'duration_s' => $duration,
-                'route_needs_payment' => $routeNeedsPayment,
-            ]);
-        } else {
-            \Log::info('[trip_route|getTripInfo] route OK — cache write skipped (BYPASS)', [
-                'hashed_points' => $hashedPoints,
-                'provider' => $provider,
-                'distance_m' => $distanceInMeters,
-                'duration_s' => $duration,
-                'route_needs_payment' => $routeNeedsPayment,
-            ]);
         }
 
         return $response;

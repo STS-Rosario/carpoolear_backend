@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Listeners\Notification;
 
-use Illuminate\Support\Facades\Log;
 use STS\Events\User\Reset as ResetEvent;
 use STS\Listeners\Notification\ResetPasswordHandler;
 use STS\Models\User;
@@ -17,8 +16,6 @@ class ResetPasswordHandlerTest extends TestCase
     {
         $user = User::factory()->create();
         $token = 'reset-token-xyz';
-
-        Log::shouldReceive('info')->once()->with('ResetPasswordHandler');
 
         $repo = $this->mock(UserRepository::class);
         $repo->shouldReceive('show')
@@ -44,8 +41,6 @@ class ResetPasswordHandlerTest extends TestCase
     public function test_handle_skips_notification_when_user_is_missing(): void
     {
         $missingId = 999_999_123;
-
-        Log::shouldReceive('info')->once()->with('ResetPasswordHandler');
 
         $repo = $this->mock(UserRepository::class);
         $repo->shouldReceive('show')

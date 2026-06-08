@@ -115,14 +115,6 @@ class PhoneVerificationManager extends BaseManager
             config('sms.templates.verification')
         );
 
-        // Debug logging
-        \Log::info('Attempting to send verification SMS', [
-            'user_id' => $user->id,
-            'phone' => $formattedPhone,
-            'message' => $message,
-            'expires_in_minutes' => $expiresInMinutes,
-        ]);
-
         $sent = $this->smsService->send($formattedPhone, $message);
 
         if (! $sent) {
@@ -135,11 +127,6 @@ class PhoneVerificationManager extends BaseManager
 
             return null;
         }
-
-        \Log::info('Verification SMS sent successfully', [
-            'user_id' => $user->id,
-            'phone' => $formattedPhone,
-        ]);
 
         return [
             'verification' => $verification,
@@ -269,14 +256,6 @@ class PhoneVerificationManager extends BaseManager
             config('sms.templates.verification')
         );
 
-        // Debug logging
-        \Log::info('Attempting to resend verification SMS', [
-            'user_id' => $user->id,
-            'phone' => $verification->phone_number,
-            'message' => $message,
-            'expires_in_minutes' => $expiresInMinutes,
-        ]);
-
         $sent = $this->smsService->send($verification->phone_number, $message);
 
         if (! $sent) {
@@ -289,11 +268,6 @@ class PhoneVerificationManager extends BaseManager
 
             return null;
         }
-
-        \Log::info('Verification SMS resent successfully', [
-            'user_id' => $user->id,
-            'phone' => $verification->phone_number,
-        ]);
 
         return [
             'verification' => $verification,

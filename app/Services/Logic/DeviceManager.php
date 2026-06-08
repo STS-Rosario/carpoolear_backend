@@ -234,36 +234,14 @@ class DeviceManager extends BaseManager
         $devices = $this->deviceRepo->getDevices($user);
         $count = 0;
 
-        \Log::info('Logging out all devices for user', [
-            'user_id' => $user->id,
-            'device_count' => $devices->count(),
-        ]);
-
         foreach ($devices as $device) {
             try {
-                \Log::info('Processing device for logout', [
-                    'device_id' => $device->id,
-                    'device_token' => $device->device_id,
-                    'session_id' => $device->session_id,
-                    'device_type' => $device->device_type,
-                ]);
-
                 // Unregister from FCM first
                 $unregisterResult = $this->firebase->unregisterDevice($device->device_id);
-
-                \Log::info('FCM unregister result', [
-                    'device_token' => $device->device_id,
-                    'success' => $unregisterResult,
-                ]);
 
                 // Then delete the device record
                 $this->deviceRepo->delete($device);
                 $count++;
-
-                \Log::info('Device successfully logged out', [
-                    'device_id' => $device->id,
-                    'device_token' => $device->device_id,
-                ]);
 
             } catch (\Exception $e) {
                 \Log::error('Failed to logout device', [
@@ -277,11 +255,6 @@ class DeviceManager extends BaseManager
                 $count++;
             }
         }
-
-        \Log::info('Logout all devices completed', [
-            'user_id' => $user->id,
-            'devices_removed' => $count,
-        ]);
 
         return $count;
     }

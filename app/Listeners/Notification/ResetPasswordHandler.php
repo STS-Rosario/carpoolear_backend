@@ -2,10 +2,10 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\User\Reset;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\User\Reset;
 use STS\Notifications\ResetPasswordNotification;
-use STS\Repository\UserRepository; 
+use STS\Repository\UserRepository;
 
 class ResetPasswordHandler implements ShouldQueue
 {
@@ -24,17 +24,15 @@ class ResetPasswordHandler implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param Reset $event
      *
      * @return void
      */
     public function handle(Reset $event)
     {
-        \Log::info('ResetPasswordHandler');
         $token = $event->token;
         $user = $this->userRepo->show($event->id);
         if ($user) {
-            $notification = new ResetPasswordNotification();
+            $notification = new ResetPasswordNotification;
             $notification->setAttribute('token', $token);
             $notification->notify($user);
         }
