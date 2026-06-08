@@ -97,7 +97,7 @@ class TripLiveShareManager extends BaseManager
 
     public function getPublicView(string $token): ?array
     {
-        $share = $this->liveShareRepo->findActiveByToken($token);
+        $share = $this->liveShareRepo->findByToken($token);
         if (! $share) {
             return null;
         }
@@ -106,6 +106,7 @@ class TripLiveShareManager extends BaseManager
         $driver = $trip->user;
 
         return [
+            'is_active' => (bool) $share->is_active,
             'lat' => $share->lat,
             'lng' => $share->lng,
             'recorded_at' => $share->recorded_at?->toIso8601String(),
@@ -133,12 +134,13 @@ class TripLiveShareManager extends BaseManager
             return null;
         }
 
-        $share = $this->liveShareRepo->findActiveDriverShare($tripId);
-        if (! $share || $share->lat === null || $share->lng === null) {
+        $share = $this->liveShareRepo->findDriverShare($tripId);
+        if (! $share) {
             return null;
         }
 
         return [
+            'is_active' => (bool) $share->is_active,
             'lat' => $share->lat,
             'lng' => $share->lng,
             'recorded_at' => $share->recorded_at?->toIso8601String(),

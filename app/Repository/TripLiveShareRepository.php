@@ -25,11 +25,28 @@ class TripLiveShareRepository
             ->first();
     }
 
+    public function findByToken(string $token): ?TripLiveShare
+    {
+        return TripLiveShare::query()
+            ->where('share_token', $token)
+            ->with(['trip.user', 'trip.points', 'user'])
+            ->first();
+    }
+
     public function findActiveDriverShare(int $tripId): ?TripLiveShare
     {
         return TripLiveShare::query()
             ->where('trip_id', $tripId)
             ->where('is_active', true)
+            ->whereHas('trip', fn ($q) => $q->whereColumn('trips.user_id', 'trip_live_shares.user_id'))
+            ->with(['user'])
+            ->first();
+    }
+
+    public function findDriverShare(int $tripId): ?TripLiveShare
+    {
+        return TripLiveShare::query()
+            ->where('trip_id', $tripId)
             ->whereHas('trip', fn ($q) => $q->whereColumn('trips.user_id', 'trip_live_shares.user_id'))
             ->with(['user'])
             ->first();
