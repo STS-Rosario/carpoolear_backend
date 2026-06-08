@@ -66,6 +66,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/get-trips', [TripController::class, 'getTrips']);
         Route::get('/get-old-trips', [TripController::class, 'getOldTrips']);
         Route::get('/my-trips', [TripController::class, 'getTrips']);
+        Route::get('/ongoing-trip', [TripController::class, 'getOngoingTrip']);
         Route::get('/my-old-trips', [TripController::class, 'getOldTrips']);
         Route::get('/requests', [PassengerController::class, 'allRequests']);
         Route::get('/seat-requests', [PassengerController::class, 'seatRequests']);

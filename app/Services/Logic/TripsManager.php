@@ -467,6 +467,16 @@ class TripsManager extends BaseManager
         return $trips;
     }
 
+    public function getOngoingTrip($user)
+    {
+        $trip = $this->tripRepo->getOngoingTrip($user);
+        if (! $trip) {
+            return null;
+        }
+
+        return $this->proccessTrips(collect([$trip]))->first();
+    }
+
     public function tripOwner($user, $trip)
     {
         $trip = $trip instanceof Model ? $trip : $this->tripRepo->show($user, $trip);

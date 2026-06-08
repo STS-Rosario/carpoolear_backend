@@ -175,6 +175,18 @@ class TripController extends Controller
         // return response()->json(['data' => $trips]);
     }
 
+    public function getOngoingTrip(Request $request)
+    {
+        $this->user = auth()->user();
+        $trip = $this->tripsLogic->getOngoingTrip($this->user);
+
+        if (! $trip) {
+            return response()->json(['data' => null]);
+        }
+
+        return $this->item($trip, new TripTransformer($this->user));
+    }
+
     public function getOldTrips(Request $request)
     {
         $this->user = auth()->user();
