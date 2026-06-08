@@ -46,7 +46,7 @@ class PushChannel
                         $this->sendBrowser($device, $data);
                     }
                 } catch (\Exception $e) {
-                    if (FirebaseService::isStaleRegistrationTokenError($e)) {
+                    if (FirebaseService::isStaleRegistrationTokenError($e) || self::isApnsUnregisteredError($e)) {
                         $this->deactivateDeviceAfterStaleToken($device, $user, $e);
                     } else {
                         \Log::error('PushChannel: Error sending push notification', [
@@ -182,13 +182,34 @@ class PushChannel
 
             return $result;
         } catch (\Exception $e) {
-            \Log::error('PushChannel: sendIOS error', [
-                'device_id' => $device->id,
-                'device_token' => $device->device_id,
-                'error' => $e->getMessage(),
-            ]);
+            if (! self::isApnsUnregisteredError($e)) {
+                \Log::error('PushChannel: sendIOS error', [
+                    'device_id' => $device->id,
+                    'device_token' => $device->device_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
             throw $e;
         }
+    }
+
+    public static function isApnsUnregisteredError(\Throwable $e): bool
+    {
+        $message = $e->getMessage();
+
+        if (strpos($message, 'HTTP 410') === false) {
+            return false;
+        }
+
+        if (stripos($message, 'Unregistered') !== false) {
+            return true;
+        }
+
+        if (preg_match('/"reason"\s*:\s*"Unregistered"/', $message) === 1) {
+            return true;
+        }
+
+        return false;
     }
 
     private function sendAPNsNotification($deviceToken, $payload)
