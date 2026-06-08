@@ -136,13 +136,15 @@ class PushChannel
 
             return $response;
         } catch (\Exception $e) {
-            \Log::error('PushChannel: sendAndroid error', [
-                'device_id' => $device->id ?? null,
-                'device_token' => substr($device->device_id ?? '', 0, 20).'...',
-                'error' => $e->getMessage(),
-                'error_trace' => $e->getTraceAsString(),
-                'input_data' => $data ?? null,
-            ]);
+            if (! FirebaseService::isStaleRegistrationTokenError($e)) {
+                \Log::error('PushChannel: sendAndroid error', [
+                    'device_id' => $device->id ?? null,
+                    'device_token' => substr($device->device_id ?? '', 0, 20).'...',
+                    'error' => $e->getMessage(),
+                    'error_trace' => $e->getTraceAsString(),
+                    'input_data' => $data ?? null,
+                ]);
+            }
             throw $e;
         }
     }

@@ -243,7 +243,11 @@ class FirebaseService
         }
 
         try {
-            $body = json_decode($e->getResponse()->getBody()->getContents(), true);
+            $stream = $e->getResponse()->getBody();
+            if ($stream->isSeekable()) {
+                $stream->rewind();
+            }
+            $body = json_decode($stream->getContents(), true);
         } catch (\Exception) {
             return false;
         }

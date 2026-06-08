@@ -630,6 +630,23 @@ class FirebaseServiceTest extends TestCase
         $this->assertFalse(FirebaseService::isStaleRegistrationTokenError(new \RuntimeException('network down')));
     }
 
+    public function test_is_stale_registration_token_error_can_be_checked_multiple_times_on_same_exception(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'NotRegistered',
+                'status' => 'NOT_FOUND',
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('NotRegistered', $request, $response);
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
     public function test_fetch_messaging_access_token_returns_google_client_payload(): void
     {
         $mock = Mockery::mock(GoogleClient::class);
