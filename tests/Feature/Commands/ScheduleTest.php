@@ -131,6 +131,7 @@ class ScheduleTest extends TestCase
             'rate:create',
             'trip:remainder',
             'rating:availables',
+            'live-location:process',
             'maintenance:tick',
             'trip:request',
             'trip:visibilityclean',
