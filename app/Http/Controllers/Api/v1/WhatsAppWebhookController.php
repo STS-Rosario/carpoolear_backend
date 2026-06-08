@@ -148,12 +148,6 @@ class WhatsAppWebhookController extends Controller
         $field = $change['field'] ?? null;
         $value = $change['value'] ?? [];
 
-        Log::info('Processing WhatsApp webhook change', [
-            'business_account_id' => $businessAccountId,
-            'field' => $field,
-            'value' => $value,
-        ]);
-
         switch ($field) {
             case 'messages':
                 $this->handleMessages($businessAccountId, $value);
