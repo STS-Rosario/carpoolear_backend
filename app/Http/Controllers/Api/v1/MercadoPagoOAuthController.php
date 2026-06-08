@@ -92,14 +92,6 @@ class MercadoPagoOAuthController extends Controller
                     'reject_reason' => $rejectReason,
                     'mp_payload' => MercadoPagoOAuthService::filterMePayloadForStorage($me),
                 ]);
-                \Log::info('MercadoPago OAuth callback: mismatch', [
-                    'user_id' => $userId,
-                    'reject_reason' => $rejectReason,
-                    'user_name' => $userName,
-                    'mp_name' => $mpName,
-                    'user_dni_normalized' => $userDni,
-                    'mp_dni_normalized' => $mpDni,
-                ]);
                 $details = $this->buildMismatchRedirectDetails(
                     $nameMismatch,
                     $dniMismatch,
