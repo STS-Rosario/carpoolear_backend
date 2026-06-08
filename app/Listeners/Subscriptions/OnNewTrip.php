@@ -2,15 +2,17 @@
 
 namespace STS\Listeners\Subscriptions;
 
-use STS\Events\Trip\Create;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Trip\Create;
 use STS\Notifications\SubscriptionMatchNotification;
 use STS\Repository\SubscriptionsRepository;
 use STS\Repository\UserRepository;
 
 class OnNewTrip implements ShouldQueue
 {
-    protected $userRepo, $subRepo;
+    protected $userRepo;
+
+    protected $subRepo;
 
     /**
      * Create the event listener.
@@ -26,24 +28,23 @@ class OnNewTrip implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  Create  $event
      * @return void
      */
     public function handle(Create $event)
     {
         $trip = $event->trip;
         $user = $trip->user;
-        $subscriptions =  $this->subRepo->search($user, $trip);
+        $subscriptions = $this->subRepo->search($user, $trip);
         // console_log($subscriptions);
         foreach ($subscriptions as $s) {
             // \Log::info($trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
             // FIXME
-            $notification = new SubscriptionMatchNotification();
+            $notification = new SubscriptionMatchNotification;
             $notification->setAttribute('trip', $trip);
             try {
                 $notification->notify($s->user);
             } catch (\Exception $e) {
-                \Log::info('Ex: ' . $trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
+                \Log::warning('Subscription notification failed', ['trip_id' => $trip->id, 'user_id' => $s->user->id]);
             }
         }
     }
