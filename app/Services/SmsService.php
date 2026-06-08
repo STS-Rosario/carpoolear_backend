@@ -264,8 +264,6 @@ class SmsService
 
             // Check for test mode response
             if (strpos($responseText, 'probando sin enviar') !== false) {
-                Log::info('SMS test mode via SMS Masivos to: '.$formattedPhone.' with message: '.$message);
-
                 return true;
             }
 
