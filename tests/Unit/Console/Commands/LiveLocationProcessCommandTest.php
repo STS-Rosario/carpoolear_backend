@@ -44,14 +44,17 @@ class LiveLocationProcessCommandTest extends TestCase
             'lat' => -34.6037 + (5.0 / 111.0),
             'lng' => -58.3816,
             'recorded_at' => Carbon::now(),
+            'started_at' => Carbon::parse('2026-06-02 16:00:00'),
         ]);
 
         $mock = $this->mock(NotificationServices::class);
         $mock->shouldReceive('send')
+            ->atLeast()
             ->once()
-            ->withArgs(function ($user, $notification) use ($driver) {
-                return $user->id === $driver->id
-                    && $notification instanceof LiveLocationStopReminderNotification;
+            ->withArgs(function ($notification, $users, $channel) use ($driver) {
+                return $notification instanceof LiveLocationStopReminderNotification
+                    && $users instanceof User
+                    && $users->id === $driver->id;
             });
 
         $this->artisan('live-location:process')->assertSuccessful();
@@ -76,14 +79,17 @@ class LiveLocationProcessCommandTest extends TestCase
             'lat' => -34.6,
             'lng' => -58.38,
             'recorded_at' => Carbon::now(),
+            'started_at' => Carbon::parse('2026-06-02 16:00:00'),
         ]);
 
         $mock = $this->mock(NotificationServices::class);
         $mock->shouldReceive('send')
+            ->atLeast()
             ->once()
-            ->withArgs(function ($user, $notification) use ($driver) {
-                return $user->id === $driver->id
-                    && $notification instanceof LiveLocationAutoStoppedNotification;
+            ->withArgs(function ($notification, $users, $channel) use ($driver) {
+                return $notification instanceof LiveLocationAutoStoppedNotification
+                    && $users instanceof User
+                    && $users->id === $driver->id;
             });
 
         $this->artisan('live-location:process')->assertSuccessful();
@@ -136,10 +142,12 @@ class LiveLocationProcessCommandTest extends TestCase
 
         $mock = $this->mock(NotificationServices::class);
         $mock->shouldReceive('send')
+            ->atLeast()
             ->once()
-            ->withArgs(function ($user, $notification) use ($passenger) {
-                return $user->id === $passenger->id
-                    && $notification instanceof DriverLiveLocationSharingNotification;
+            ->withArgs(function ($notification, $users, $channel) use ($passenger) {
+                return $notification instanceof DriverLiveLocationSharingNotification
+                    && $users instanceof User
+                    && $users->id === $passenger->id;
             });
 
         $manager = $this->app->make(\STS\Services\Logic\TripLiveShareManager::class);

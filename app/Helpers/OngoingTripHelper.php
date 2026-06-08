@@ -49,10 +49,15 @@ class OngoingTripHelper
         ?string $estimatedTime
     ): bool {
         $windowStart = $tripStart->copy()->subMinutes(self::LEAD_MINUTES);
-        $autoStopAt = self::getAutoStopAt($tripStart, $estimatedTime);
 
-        return $now->greaterThanOrEqualTo($windowStart)
-            && $now->lessThanOrEqualTo($autoStopAt);
+        return $now->greaterThanOrEqualTo($windowStart);
+    }
+
+    public static function getAutoStopAtForShare(Carbon $tripStart, ?string $estimatedTime, ?Carbon $shareStartedAt): Carbon
+    {
+        $reference = $shareStartedAt ?? $tripStart;
+
+        return self::getAutoStopAt($reference, $estimatedTime);
     }
 
     public static function shouldSendStopReminder(

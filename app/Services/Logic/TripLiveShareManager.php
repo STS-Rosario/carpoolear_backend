@@ -7,6 +7,9 @@ use STS\Helpers\OngoingTripHelper;
 use STS\Models\Trip;
 use STS\Models\TripLiveShare;
 use STS\Models\User;
+use STS\Notifications\DriverLiveLocationSharingNotification;
+use STS\Notifications\LiveLocationAutoStoppedNotification;
+use STS\Notifications\LiveLocationStopReminderNotification;
 use STS\Repository\TripLiveShareRepository;
 use STS\Repository\TripRepository;
 
@@ -33,7 +36,14 @@ class TripLiveShareManager extends BaseManager
             return null;
         }
 
-        return $this->liveShareRepo->start($tripId, $user->id);
+        $wasActive = ($existing = $this->liveShareRepo->findByTripAndUser($tripId, $user->id)) && $existing->is_active;
+        $share = $this->liveShareRepo->start($tripId, $user->id);
+
+        if (! $wasActive && $this->tripsManager->tripOwner($user, $trip)) {
+            $this->notifyPassengersOfDriverSharing($trip, $user);
+        }
+
+        return $share;
     }
 
     public function updateLocation(User $user, int $tripId, float $lat, float $lng): ?TripLiveShare
@@ -52,7 +62,7 @@ class TripLiveShareManager extends BaseManager
             return null;
         }
 
-        if ($this->isPastAutoStop($trip)) {
+        if ($this->isPastAutoStop($trip, $share)) {
             $this->setErrors(['error' => 'sharing_expired']);
 
             return null;
@@ -144,6 +154,91 @@ class TripLiveShareManager extends BaseManager
         return (int) $share->user_id === (int) $trip->user_id;
     }
 
+    public function processActiveShares(): void
+    {
+        $shares = $this->liveShareRepo->getActiveSharesForProcessing();
+
+        foreach ($shares as $share) {
+            $trip = $share->trip;
+            if (! $trip) {
+                continue;
+            }
+
+            if ($this->shouldAutoStop($trip, $share)) {
+                $this->liveShareRepo->autoStop($share);
+                $this->notifyAutoStopped($share->user, $trip);
+
+                continue;
+            }
+
+            if ($this->shouldSendStopReminder($trip, $share)) {
+                $this->notifyStopReminder($share->user, $trip);
+                $this->liveShareRepo->markStopReminderSent($share);
+            }
+        }
+    }
+
+    private function notifyPassengersOfDriverSharing(Trip $trip, User $driver): void
+    {
+        $trip->loadMissing('passengerAccepted.user');
+        foreach ($trip->passengerAccepted as $passenger) {
+            if (! $passenger->user) {
+                continue;
+            }
+            $notification = new DriverLiveLocationSharingNotification;
+            $notification->setAttribute('trip', $trip);
+            $notification->setAttribute('from', $driver);
+            $notification->notify($passenger->user);
+        }
+    }
+
+    private function notifyStopReminder(User $user, Trip $trip): void
+    {
+        $notification = new LiveLocationStopReminderNotification;
+        $notification->setAttribute('trip', $trip);
+        $notification->notify($user);
+    }
+
+    private function notifyAutoStopped(User $user, Trip $trip): void
+    {
+        $notification = new LiveLocationAutoStoppedNotification;
+        $notification->setAttribute('trip', $trip);
+        $notification->notify($user);
+    }
+
+    private function shouldAutoStop(Trip $trip, TripLiveShare $share): bool
+    {
+        $autoStopAt = OngoingTripHelper::getAutoStopAtForShare(
+            $trip->trip_date,
+            $trip->estimated_time,
+            $share->started_at
+        );
+
+        return Carbon::now()->greaterThanOrEqualTo($autoStopAt);
+    }
+
+    private function shouldSendStopReminder(Trip $trip, TripLiveShare $share): bool
+    {
+        if ($share->stop_reminder_sent_at || $share->lat === null || $share->lng === null) {
+            return false;
+        }
+
+        $destination = $trip->points->sortBy('id')->last();
+        if (! $destination) {
+            return false;
+        }
+
+        return OngoingTripHelper::shouldSendStopReminder(
+            Carbon::now(),
+            $trip->trip_date,
+            $trip->estimated_time,
+            (float) $share->lat,
+            (float) $share->lng,
+            (float) $destination->lat,
+            (float) $destination->lng
+        );
+    }
+
     private function resolveTrip(int $tripId): ?Trip
     {
         return Trip::query()->with(['passengerAccepted', 'points', 'user'])->find($tripId);
@@ -154,9 +249,13 @@ class TripLiveShareManager extends BaseManager
         return $this->tripsManager->tripOwner($user, $trip) || $trip->isPassenger($user);
     }
 
-    private function isPastAutoStop(Trip $trip): bool
+    private function isPastAutoStop(Trip $trip, TripLiveShare $share): bool
     {
-        $autoStopAt = OngoingTripHelper::getAutoStopAt($trip->trip_date, $trip->estimated_time);
+        $autoStopAt = OngoingTripHelper::getAutoStopAtForShare(
+            $trip->trip_date,
+            $trip->estimated_time,
+            $share->started_at
+        );
 
         return Carbon::now()->greaterThan($autoStopAt);
     }

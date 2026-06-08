@@ -84,6 +84,27 @@ class TripLiveShareRepository
         return $share->fresh();
     }
 
+    public function autoStop(TripLiveShare $share): TripLiveShare
+    {
+        $share->update([
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'recorded_at' => null,
+            'auto_stopped_at' => Carbon::now(),
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        return $share->fresh();
+    }
+
+    public function markStopReminderSent(TripLiveShare $share): TripLiveShare
+    {
+        $share->update(['stop_reminder_sent_at' => Carbon::now()]);
+
+        return $share->fresh();
+    }
+
     public function getActiveSharesForProcessing(): \Illuminate\Database\Eloquent\Collection
     {
         return TripLiveShare::query()

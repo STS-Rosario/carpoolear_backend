@@ -144,6 +144,7 @@ class TripLiveShareManagerTest extends TestCase
             'trip_id' => $trip->id,
             'user_id' => $driver->id,
             'is_active' => true,
+            'started_at' => Carbon::parse('2026-06-02 16:00:00'),
         ]);
 
         $manager = $this->manager();
