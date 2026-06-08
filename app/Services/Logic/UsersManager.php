@@ -337,8 +337,6 @@ class UsersManager extends BaseManager
                 }
             }
         }
-        \Log::info($data);
-
         // Handle car/patente updates for admin
         if ($is_admin && (isset($data['patente']) || isset($data['car_description']))) {
             $this->updateUserCar($user, $data);
