@@ -46,14 +46,18 @@ class PushChannel
                         $this->sendBrowser($device, $data);
                     }
                 } catch (\Exception $e) {
-                    \Log::error('PushChannel: Error sending push notification', [
-                        'user_id' => $user->id ?? null,
-                        'device_id' => $device->id ?? null,
-                        'device_token' => substr($device->device_id ?? '', 0, 20).'...',
-                        'device_type' => $device->device_type,
-                        'error' => $e->getMessage(),
-                        'error_trace' => $e->getTraceAsString(),
-                    ]);
+                    if (FirebaseService::isStaleRegistrationTokenError($e)) {
+                        $this->deactivateDeviceAfterStaleToken($device, $user, $e);
+                    } else {
+                        \Log::error('PushChannel: Error sending push notification', [
+                            'user_id' => $user->id ?? null,
+                            'device_id' => $device->id ?? null,
+                            'device_token' => substr($device->device_id ?? '', 0, 20).'...',
+                            'device_type' => $device->device_type,
+                            'error' => $e->getMessage(),
+                            'error_trace' => $e->getTraceAsString(),
+                        ]);
+                    }
                 }
             }
         }
@@ -268,5 +272,20 @@ class PushChannel
         $factory = $this->firebaseFactory;
 
         return $factory();
+    }
+
+    protected function deactivateDeviceAfterStaleToken(Device $device, $user, \Throwable $e): void
+    {
+        if ($device->exists) {
+            $device->update(['notifications' => false]);
+        }
+
+        \Log::warning('PushChannel: Deactivated device after stale push token', [
+            'user_id' => $user->id ?? null,
+            'device_id' => $device->id ?? null,
+            'device_token' => substr($device->device_id ?? '', 0, 20).'...',
+            'device_type' => $device->device_type,
+            'error' => $e->getMessage(),
+        ]);
     }
 }
