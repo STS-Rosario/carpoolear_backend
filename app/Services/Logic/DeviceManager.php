@@ -234,11 +234,6 @@ class DeviceManager extends BaseManager
         $devices = $this->deviceRepo->getDevices($user);
         $count = 0;
 
-        \Log::info('Logging out all devices for user', [
-            'user_id' => $user->id,
-            'device_count' => $devices->count(),
-        ]);
-
         foreach ($devices as $device) {
             try {
                 \Log::info('Processing device for logout', [
