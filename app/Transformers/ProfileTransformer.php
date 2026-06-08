@@ -22,6 +22,8 @@ class ProfileTransformer extends TransformerAbstract
 
     protected $tripLogic;
 
+    protected $usersManager;
+
     public function __construct($user)
     {
         $this->user = $user;
@@ -29,7 +31,8 @@ class ProfileTransformer extends TransformerAbstract
         $mercadoPagoService = app(MercadoPagoService::class);
         $mapboxDirectionsRouteService = app(MapboxDirectionsRouteService::class);
         $tripRepository = new TripRepository($geoService, $mercadoPagoService, $mapboxDirectionsRouteService);
-        $this->tripLogic = new TripsManager($tripRepository, new UsersManager(new UserRepository, $tripRepository));
+        $this->usersManager = new UsersManager(new UserRepository, $tripRepository);
+        $this->tripLogic = new TripsManager($tripRepository, $this->usersManager);
     }
 
     /**
@@ -83,7 +86,7 @@ class ProfileTransformer extends TransformerAbstract
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
             'identity_validation_type' => $user->identity_validation_type,
             'created_at' => $this->nullableDateTimeString($user->created_at),
-            'trips_count' => app(UsersManager::class)->tripsCount($user),
+            'trips_count' => $this->usersManager->tripsCount($user),
         ];
 
         if ($this->user && $user->id == $this->user->id) {
