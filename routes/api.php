@@ -19,6 +19,7 @@ use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 use STS\Http\Controllers\Api\v1\CarController;
+use STS\Http\Controllers\Api\v1\ChangelogController;
 use STS\Http\Controllers\Api\v1\ConversationController;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\DeviceController;
@@ -44,6 +45,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('retoken', [AuthController::class, 'retoken']);
     Route::get('config', [AuthController::class, 'getConfig']);
+    Route::get('changelog', [ChangelogController::class, 'show']);
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
