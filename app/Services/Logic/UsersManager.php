@@ -143,7 +143,6 @@ class UsersManager extends BaseManager
         unset($data['facebook_profile_url']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
-            \Log::info('Error validation: '.$data['name']);
             $this->setErrors($v->errors());
 
             \Log::info('Error validation: '.$v->errors());
