@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -16,6 +17,12 @@ class StaticPageNavigationTest extends TestCase
         $response = $this->get($path);
 
         $response->assertOk();
+        $this->assertNavigationExcludesEmpresasLink($response);
+        $response->assertSee('href="contacto"', false);
+    }
+
+    private function assertNavigationExcludesEmpresasLink(TestResponse $response): void
+    {
         $response->assertDontSee('>Empresas<', false);
         $response->assertDontSee('carpoolearmas.com.ar', false);
     }
