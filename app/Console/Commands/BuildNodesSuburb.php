@@ -202,9 +202,6 @@ class BuildNodesSuburb extends Command
             return $response->address->state;
         }
         if (isset($response->address->county)) {
-            \Log::info('county');
-            \Log::info('lat'.$lat.' lng'.$long);
-
             return $response->address->county;
         }
 
