@@ -35,4 +35,54 @@ class OngoingTripHelper
         return $now->greaterThanOrEqualTo($windowStart)
             && $now->lessThanOrEqualTo($windowEnd);
     }
+
+    public static function getAutoStopAt(Carbon $tripStart, ?string $estimatedTime): Carbon
+    {
+        $durationMinutes = self::estimatedTimeToMinutes($estimatedTime);
+
+        return $tripStart->copy()->addMinutes($durationMinutes * 2);
+    }
+
+    public static function canStartSharing(
+        Carbon $now,
+        Carbon $tripStart,
+        ?string $estimatedTime
+    ): bool {
+        $windowStart = $tripStart->copy()->subMinutes(self::LEAD_MINUTES);
+
+        return $now->greaterThanOrEqualTo($windowStart);
+    }
+
+    public static function getAutoStopAtForShare(Carbon $tripStart, ?string $estimatedTime, ?Carbon $shareStartedAt): Carbon
+    {
+        $reference = $shareStartedAt ?? $tripStart;
+
+        return self::getAutoStopAt($reference, $estimatedTime);
+    }
+
+    public static function shouldSendStopReminder(
+        Carbon $now,
+        Carbon $tripStart,
+        ?string $estimatedTime,
+        float $sharerLat,
+        float $sharerLng,
+        float $destLat,
+        float $destLng,
+        float $radiusKm = 10.0
+    ): bool {
+        $durationMinutes = self::estimatedTimeToMinutes($estimatedTime);
+        $eta = $tripStart->copy()->addMinutes($durationMinutes);
+
+        if ($now->lessThan($eta)) {
+            return false;
+        }
+
+        return GeoDistanceHelper::isWithinKm(
+            $sharerLat,
+            $sharerLng,
+            $destLat,
+            $destLng,
+            $radiusKm
+        );
+    }
 }

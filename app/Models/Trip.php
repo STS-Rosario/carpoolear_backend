@@ -206,6 +206,11 @@ class Trip extends Model
         return $this->hasMany('STS\Models\TripPoint', 'trip_id');
     }
 
+    public function liveShares()
+    {
+        return $this->hasMany(TripLiveShare::class, 'trip_id');
+    }
+
     public function ratings()
     {
         return $this->hasMany('STS\Models\Rating', 'trip_id')->with(['from', 'to']);

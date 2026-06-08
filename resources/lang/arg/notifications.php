@@ -55,6 +55,12 @@ return [
     'hour_left.title' => 'Recordatorio de viaje hacia :destination?',
     'hour_left.message' => 'Recuerda que en poco más de una hora viajas hacia :destination',
 
+    // DriverLiveLocationSharingNotification
+    'driver_live_location.message' => ':name está compartiendo su ubicación en tiempo real para tu viaje a :destination',
+
+    // LiveLocationAutoStoppedNotification
+    'live_location_auto_stopped.message' => 'Se detuvo automáticamente el compartir de tu ubicación en tiempo real. Podés reanudarlo si lo necesitás.',
+
     // NewMessageNotification
     'new_message.title' => ':name te ha enviado un mensaje.',
     'new_message.message' => 'De :name has recibido nuevos mensajes.',
