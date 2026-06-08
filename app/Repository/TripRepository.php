@@ -777,14 +777,6 @@ class TripRepository
             }
 
             $payload = $response->json();
-            \Log::debug('[trip_route|getTripInfo] OSRM raw response summary', [
-                'hashed_points' => $hashedPoints,
-                'base' => $base,
-                'http_status' => $lastHttpStatus,
-                'payload_is_array' => is_array($payload),
-                'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
-                'osrm_message' => is_array($payload) ? ($payload['message'] ?? null) : null,
-            ]);
 
             if (! is_array($payload)) {
                 continue;
