@@ -183,7 +183,6 @@ class AuthController extends Controller
             $token = JWTAuth::getToken();
             if ($token) {
                 JWTAuth::invalidate($token);
-                Log::info('JWT token invalidated successfully');
             }
         } catch (\Exception $e) {
             Log::error('Failed to invalidate JWT token: '.$e->getMessage());
