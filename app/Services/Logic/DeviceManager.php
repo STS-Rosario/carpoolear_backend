@@ -239,11 +239,6 @@ class DeviceManager extends BaseManager
                 // Unregister from FCM first
                 $unregisterResult = $this->firebase->unregisterDevice($device->device_id);
 
-                \Log::info('FCM unregister result', [
-                    'device_token' => $device->device_id,
-                    'success' => $unregisterResult,
-                ]);
-
                 // Then delete the device record
                 $this->deviceRepo->delete($device);
                 $count++;
