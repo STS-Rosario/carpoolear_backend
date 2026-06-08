@@ -463,11 +463,6 @@ class MercadoPagoWebhookController extends Controller
 
         // Only process when order is fully paid (processed + accredited)
         if ($orderStatus !== 'processed' || $orderStatusDetail !== 'accredited') {
-            Log::info('Order processed webhook ignored: not paid', [
-                'status' => $orderStatus,
-                'status_detail' => $orderStatusDetail,
-            ]);
-
             return response()->json(['status' => 'success']);
         }
 
