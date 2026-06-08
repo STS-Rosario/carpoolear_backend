@@ -269,7 +269,33 @@ class FirebaseService
             return true;
         }
 
+        if (self::fcmErrorDetailsIndicateUnregistered($error['details'] ?? null)) {
+            return true;
+        }
+
         return self::fcmErrorMessageIndicatesUnusableToken($message);
+    }
+
+    /**
+     * @param  mixed  $details
+     */
+    private static function fcmErrorDetailsIndicateUnregistered($details): bool
+    {
+        if (! is_array($details)) {
+            return false;
+        }
+
+        foreach ($details as $detail) {
+            if (! is_array($detail)) {
+                continue;
+            }
+
+            if (strtoupper((string) ($detail['errorCode'] ?? '')) === 'UNREGISTERED') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function fcmErrorMessageIndicatesUnusableToken(string $message): bool
