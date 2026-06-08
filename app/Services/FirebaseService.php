@@ -176,21 +176,30 @@ class FirebaseService
                 }
             }
 
-            \Log::error('FirebaseService: FCM ClientException (HTTP '.$statusCode.')', [
-                'device_token' => $deviceToken,
-                'device_type' => $deviceType,
-                'status_code' => $statusCode,
-                'url' => $url,
-                'project_name' => $this->firebaseName,
-                'error_message' => $e->getMessage(),
-                'fcm_error_code' => $errorDetails['code'] ?? null,
-                'fcm_error_message' => $errorDetails['message'] ?? null,
-                'fcm_error_status' => $errorDetails['status'] ?? null,
-                'fcm_error_details' => $errorDetails['details'] ?? null,
-                'full_error_response' => $responseBody,
-                'request_payload' => $message,
-                'error_trace' => $e->getTraceAsString(),
-            ]);
+            if (self::isStaleRegistrationTokenError($e)) {
+                \Log::warning('FirebaseService: FCM stale registration token', [
+                    'device_token' => substr((string) $deviceToken, 0, 20).'...',
+                    'device_type' => $deviceType,
+                    'status_code' => $statusCode,
+                    'fcm_error_status' => $errorDetails['status'] ?? null,
+                ]);
+            } else {
+                \Log::error('FirebaseService: FCM ClientException (HTTP '.$statusCode.')', [
+                    'device_token' => $deviceToken,
+                    'device_type' => $deviceType,
+                    'status_code' => $statusCode,
+                    'url' => $url,
+                    'project_name' => $this->firebaseName,
+                    'error_message' => $e->getMessage(),
+                    'fcm_error_code' => $errorDetails['code'] ?? null,
+                    'fcm_error_message' => $errorDetails['message'] ?? null,
+                    'fcm_error_status' => $errorDetails['status'] ?? null,
+                    'fcm_error_details' => $errorDetails['details'] ?? null,
+                    'full_error_response' => $responseBody,
+                    'request_payload' => $message,
+                    'error_trace' => $e->getTraceAsString(),
+                ]);
+            }
 
             throw $e;
         } catch (RequestException $e) {

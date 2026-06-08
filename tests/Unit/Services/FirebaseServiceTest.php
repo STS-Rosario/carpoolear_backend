@@ -239,6 +239,60 @@ class FirebaseServiceTest extends TestCase
         $service->sendNotification('tok', ['title' => 'a', 'body' => 'b'], [], 'android');
     }
 
+    public function test_send_notification_client_exception_logs_warning_for_stale_registration_token(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'Requested entity was not found.',
+                'status' => 'NOT_FOUND',
+                'details' => [
+                    [
+                        '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                        'errorCode' => 'UNREGISTERED',
+                    ],
+                ],
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('Requested entity was not found.', $request, $response);
+
+        $http = Mockery::mock(HttpClient::class);
+        $http->shouldReceive('post')->once()->andThrow($exception);
+
+        Log::shouldReceive('error')->never();
+        Log::shouldReceive('warning')
+            ->once()
+            ->withArgs(function (string $message, array $context): bool {
+                if ($message !== 'FirebaseService: FCM stale registration token') {
+                    return false;
+                }
+                if (($context['device_token'] ?? null) !== substr('stale-android-token', 0, 20).'...') {
+                    return false;
+                }
+                if (($context['device_type'] ?? null) !== 'android') {
+                    return false;
+                }
+                if (($context['status_code'] ?? null) !== 404) {
+                    return false;
+                }
+                if (($context['fcm_error_status'] ?? null) !== 'NOT_FOUND') {
+                    return false;
+                }
+                if (array_key_exists('error_trace', $context) || array_key_exists('request_payload', $context)) {
+                    return false;
+                }
+
+                return true;
+            });
+
+        $service = new FirebaseServiceHarness($http, ['access_token' => 't'], 'myproj');
+
+        $this->expectException(ClientException::class);
+        $service->sendNotification('stale-android-token', ['title' => 'a', 'body' => 'b'], [], 'android');
+    }
+
     public function test_send_notification_client_exception_without_top_level_error_key_nulls_fcm_fields(): void
     {
         $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
