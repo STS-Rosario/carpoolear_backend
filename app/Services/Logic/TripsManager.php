@@ -500,7 +500,6 @@ class TripsManager extends BaseManager
     {
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
-            \Log::info('changeVisibility trip: '.$trip->id);
             if ($user->id == $trip->user->id || $user->is_admin) {
                 if (! isset($trip->deleted_at) || is_null($trip->deleted_at) || empty($trip->deleted_at->toDateTimeString())) {
                     Trip::where('id', $trip_id)
