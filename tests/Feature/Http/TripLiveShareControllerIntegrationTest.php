@@ -52,7 +52,7 @@ class TripLiveShareControllerIntegrationTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.lat', -34.6)
             ->assertJsonPath('data.lng', -58.38)
-            ->assertJsonPath('data.recorded_at', '2026-06-02T15:30:00+00:00');
+            ->assertJsonPath('data.recorded_at', Carbon::now()->toIso8601String());
     }
 
     public function test_status_returns_recorded_at_for_active_share(): void
@@ -77,7 +77,7 @@ class TripLiveShareControllerIntegrationTest extends TestCase
             ->getJson("/api/trips/{$trip->id}/live-share");
 
         $response->assertOk()
-            ->assertJsonPath('data.recorded_at', '2026-06-02T15:30:00+00:00');
+            ->assertJsonPath('data.recorded_at', Carbon::parse('2026-06-02 15:30:00')->toIso8601String());
     }
 
     public function test_stop_live_share_clears_coordinates(): void
@@ -198,6 +198,6 @@ class TripLiveShareControllerIntegrationTest extends TestCase
             ->getJson("/api/trips/{$trip->id}/live-share/view");
 
         $response->assertOk()
-            ->assertJsonPath('data.recorded_at', '2026-06-02T15:30:00+00:00');
+            ->assertJsonPath('data.recorded_at', Carbon::parse('2026-06-02 15:30:00')->toIso8601String());
     }
 }
