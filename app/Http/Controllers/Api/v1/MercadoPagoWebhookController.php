@@ -220,7 +220,6 @@ class MercadoPagoWebhookController extends Controller
     protected function getMercadoPagoPayment($paymentId)
     {
         try {
-            \Log::info('MP WEBHOOK fetching payment', ['payment_id' => $paymentId]);
             // Use the SDK client to fetch payment details
             $payment = $this->paymentClient->get($paymentId);
 
