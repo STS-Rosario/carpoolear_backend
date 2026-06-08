@@ -25,8 +25,6 @@ RateLimiter::for('phone-verification-send', function (Request $request) {
 
     // Always limit by IP (prevents abuse from single IP creating multiple accounts)
     $limits[] = Limit::perHour(5)->by($ip.':send'); // 5 send requests per hour per IP
-    \Log::info('IP: '.$ip);
-    \Log::info('limits: '.json_encode($limits));
 
     // If user is authenticated, also limit by user ID
     if ($user) {
