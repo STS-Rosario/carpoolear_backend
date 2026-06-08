@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use STS\Models\Conversation;
 use STS\Models\Message;
+use STS\Models\Rating;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Transformers\ConversationsTransformer;
@@ -163,7 +164,14 @@ class ConversationsTransformerTest extends TestCase
 
         $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
 
-        $expectedKeys = ['id', 'name', 'last_connection', 'identity_validated_at'];
+        $expectedKeys = [
+            'id',
+            'name',
+            'last_connection',
+            'identity_validated_at',
+            'positive_ratings',
+            'negative_ratings',
+        ];
         foreach ($payload['users'] as $row) {
             $this->assertSame($expectedKeys, array_keys($row));
         }
@@ -202,6 +210,54 @@ class ConversationsTransformerTest extends TestCase
         $this->assertSame('Trip room title', $payload['title']);
         $this->assertSame('', $payload['image']);
         $this->assertNull($payload['other_user_identity_validated_at']);
+    }
+
+    public function test_transform_users_include_positive_and_negative_ratings(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create(['name' => 'Rated User']);
+        $raterOne = User::factory()->create();
+        $raterTwo = User::factory()->create();
+        $raterThree = User::factory()->create();
+        $tripOne = Trip::factory()->create(['user_id' => $other->id]);
+        $tripTwo = Trip::factory()->create(['user_id' => $other->id]);
+        $tripThree = Trip::factory()->create(['user_id' => $other->id]);
+
+        Rating::factory()->create([
+            'trip_id' => $tripOne->id,
+            'user_id_to' => $other->id,
+            'user_id_from' => $raterOne->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'available' => 1,
+        ]);
+        Rating::factory()->create([
+            'trip_id' => $tripTwo->id,
+            'user_id_to' => $other->id,
+            'user_id_from' => $raterTwo->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'available' => 1,
+        ]);
+        Rating::factory()->create([
+            'trip_id' => $tripThree->id,
+            'user_id_to' => $other->id,
+            'user_id_from' => $raterThree->id,
+            'rating' => Rating::STATE_NEGATIVO,
+            'available' => 1,
+        ]);
+
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Chat',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $otherRow = collect($payload['users'])->firstWhere('id', $other->id);
+        $this->assertNotNull($otherRow);
+        $this->assertSame(2, $otherRow['positive_ratings']);
+        $this->assertSame(1, $otherRow['negative_ratings']);
     }
 
     public function test_transform_users_list_includes_identity_and_last_connection_fields(): void

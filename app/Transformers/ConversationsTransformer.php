@@ -85,6 +85,8 @@ class ConversationsTransformer extends TransformerAbstract
                 'name' => $u->name,
                 'last_connection' => $u->last_connection ? $u->last_connection->toDateTimeString() : null,
                 'identity_validated_at' => $u->identity_validated_at ? $u->identity_validated_at->toDateTimeString() : null,
+                'positive_ratings' => $u->positive_ratings,
+                'negative_ratings' => $u->negative_ratings,
             ];
         }
 
