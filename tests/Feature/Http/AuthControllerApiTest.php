@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
@@ -314,6 +315,31 @@ class AuthControllerApiTest extends TestCase
             ->assertExactJson(['data' => 'ok']);
 
         Queue::assertPushed(SendPasswordResetEmail::class);
+    }
+
+    public function test_reset_password_repeat_within_cooldown_returns_wait_message(): void
+    {
+        Queue::fake();
+        Carbon::setTestNow('2028-06-01 12:00:00');
+
+        $user = User::factory()->create();
+
+        $this->postJson('api/reset-password', ['email' => $user->email])
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        Carbon::setTestNow('2028-06-01 12:02:00');
+
+        $this->postJson('api/reset-password', ['email' => $user->email])
+            ->assertStatus(422)
+            ->assertJsonPath(
+                'message',
+                'Please wait 3 minutes before requesting another password reset'
+            );
+
+        Queue::assertPushed(SendPasswordResetEmail::class, 1);
+
+        Carbon::setTestNow();
     }
 
     public function test_change_password_with_valid_token_updates_password(): void

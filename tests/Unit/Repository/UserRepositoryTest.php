@@ -2,11 +2,14 @@
 
 namespace Tests\Unit\Repository;
 
+use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Mockery;
 use STS\Models\Conversation;
 use STS\Models\Message;
 use STS\Models\Passenger;
+use STS\Models\PasswordReset;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\FriendsRepository;
@@ -464,6 +467,24 @@ class UserRepositoryTest extends TestCase
         $this->assertDatabaseHas('friends', ['uid1' => $b->id, 'uid2' => $a->id, 'origin' => '']);
     }
 
+    public function test_get_last_password_reset_returns_password_reset_with_carbon_created_at(): void
+    {
+        Carbon::setTestNow('2028-06-01 12:00:00');
+        $user = User::factory()->create(['email' => 'reset-cast-'.uniqid('', true).'@example.com']);
+        $token = 'tok-'.uniqid('', true);
+
+        $this->repo()->storeResetToken($user, $token);
+
+        $last = $this->repo()->getLastPasswordReset($user->email);
+
+        $this->assertInstanceOf(PasswordReset::class, $last);
+        $this->assertSame($token, $last->token);
+        $this->assertInstanceOf(CarbonInterface::class, $last->created_at);
+        $this->assertTrue($last->created_at->equalTo(Carbon::parse('2028-06-01 12:00:00')));
+
+        Carbon::setTestNow();
+    }
+
     public function test_password_reset_token_round_trip(): void
     {
         $user = User::factory()->create(['email' => 'reset-'.uniqid('', true).'@example.com']);
@@ -480,6 +501,7 @@ class UserRepositoryTest extends TestCase
         $this->assertTrue($resolved->is($user));
 
         $last = $this->repo()->getLastPasswordReset($user->email);
+        $this->assertInstanceOf(PasswordReset::class, $last);
         $this->assertSame($token, $last->token);
 
         $this->repo()->deleteResetToken('token', $token);

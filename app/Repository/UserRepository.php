@@ -3,9 +3,9 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
-use DB;
 use STS\Models\Conversation;
 use STS\Models\Passenger;
+use STS\Models\PasswordReset;
 use STS\Models\User;
 use STS\Support\UserSearchFilter;
 
@@ -157,19 +157,21 @@ class UserRepository
 
     public function storeResetToken($user, $token)
     {
-        DB::table('password_resets')->insert(
-            ['email' => $user->email, 'token' => $token, 'created_at' => Carbon::now()]
-        );
+        PasswordReset::query()->create([
+            'email' => $user->email,
+            'token' => $token,
+            'created_at' => Carbon::now(),
+        ]);
     }
 
     public function deleteResetToken($key, $value)
     {
-        DB::table('password_resets')->where($key, $value)->delete();
+        PasswordReset::query()->where($key, $value)->delete();
     }
 
     public function getUserByResetToken($token)
     {
-        $pr = DB::table('password_resets')->where('token', $token)->first();
+        $pr = PasswordReset::query()->where('token', $token)->first();
         if ($pr) {
             return User::where('email', $pr->email)->first();
         }
@@ -177,9 +179,9 @@ class UserRepository
 
     public function getLastPasswordReset($email)
     {
-        return DB::table('password_resets')
+        return PasswordReset::query()
             ->where('email', $email)
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
             ->first();
     }
 
