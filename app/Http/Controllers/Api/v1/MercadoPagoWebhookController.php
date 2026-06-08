@@ -57,8 +57,6 @@ class MercadoPagoWebhookController extends Controller
 
             return response()->json(['error' => 'No payment ID'], 400);
         }
-        \Log::info('MercadoPago $paymentId', ['payment_id' => $paymentId]);
-
         // Get the payment status from Mercado Pago
         $mpPayment = $this->getMercadoPagoPayment($paymentId);
         if (! $mpPayment) {
