@@ -97,7 +97,6 @@ class updateTrips extends Command
                 }
             } else {
                 $this->info('ERROR NO SE ENCONTRO NODO '.$trip->id);
-                \Log::info('ERROR NO SE ENCONTRO NODO '.$trip->id);
                 if (! $fromNode) {
                     $this->info('name '.$from->address);
                     \Log::info('name '.$from->address);
