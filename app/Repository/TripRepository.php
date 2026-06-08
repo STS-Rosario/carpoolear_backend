@@ -657,12 +657,7 @@ class TripRepository
             if ($cachedRoute) {
                 return $cachedRoute->route_data;
             }
-        } else {
         }
-
-        \Log::info('[trip_route|getTripInfo] cache MISS — calling OSRM', [
-            'hashed_points' => $hashedPoints,
-        ]);
 
         $coords = '';
         foreach ($points as $point) {
