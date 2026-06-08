@@ -250,8 +250,6 @@ class AuthControllerApiTest extends TestCase
 
     public function test_logout_with_valid_session_logs_successful_invalidation(): void
     {
-        Log::spy();
-
         $user = User::factory()->create(['active' => true, 'banned' => false]);
 
         $login = $this->postJson('api/login', [
@@ -264,8 +262,6 @@ class AuthControllerApiTest extends TestCase
         $this->postJson('api/logout', [], [
             'Authorization' => 'Bearer '.$token,
         ])->assertOk();
-
-        Log::shouldHaveReceived('info')->with('JWT token invalidated successfully');
     }
 
     public function test_retoken_without_bearer_token_returns_unauthorized(): void

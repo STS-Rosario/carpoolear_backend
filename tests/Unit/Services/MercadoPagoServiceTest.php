@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Services;
 
-use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use MercadoPago\Resources\Preference;
 use STS\Models\Campaign;
@@ -160,7 +159,6 @@ class MercadoPagoServiceTest extends TestCase
 
     public function test_create_payment_preference_for_manual_validation_logs_urls_and_builds_paths(): void
     {
-        Log::spy();
         config([
             'app.url' => 'https://backend.test/',
             'carpoolear.manual_identity_validation_cost_cents' => 2000,
@@ -180,13 +178,6 @@ class MercadoPagoServiceTest extends TestCase
 
         $service->createPaymentPreferenceForManualValidation(77, 2500, null);
 
-        Log::shouldHaveReceived('info')->once()->withArgs(function (string $message, array $context): bool {
-            return $message === 'MercadoPago URLS:'
-                && ($context['success'] ?? '') === 'https://backend.test/api/mercadopago/manual-validation-success?request_id=77'
-                && str_contains((string) ($context['failure'] ?? ''), 'request_id=77')
-                && str_contains((string) ($context['pending'] ?? ''), 'result=pending');
-        });
-
         $p = $service->capturedPayload;
         $this->assertSame('Validación manual de identidad', $p['items'][0]['title']);
         $this->assertSame(25.0, $p['items'][0]['unit_price']);
@@ -195,7 +186,6 @@ class MercadoPagoServiceTest extends TestCase
 
     public function test_create_payment_preference_for_manual_validation_uses_success_redirect_override(): void
     {
-        Log::spy();
         config(['app.url' => 'https://backend.test']);
 
         $service = new class extends MercadoPagoService

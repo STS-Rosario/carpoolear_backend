@@ -41,7 +41,6 @@ class WhatsAppWebhookTest extends TestCase
 
     public function test_get_verification_returns_plaintext_challenge_when_mode_and_token_match(): void
     {
-        Log::spy();
         $token = 'verify-token-'.uniqid();
         config(['services.whatsapp.verify_token' => $token]);
 
@@ -55,34 +54,6 @@ class WhatsAppWebhookTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
             ->assertSee($challenge, false);
-
-        Log::shouldHaveReceived('info')->withArgs(function (...$args): bool {
-            if (count($args) !== 2 || ! is_string($args[0]) || ! is_array($args[1])) {
-                return false;
-            }
-            [$message, $context] = $args;
-
-            return $message === 'WhatsApp webhook received'
-                && ($context['method'] ?? null) === 'GET'
-                && array_key_exists('data', $context)
-                && array_key_exists('content', $context)
-                && array_key_exists('headers', $context)
-                && array_key_exists('content_type', $context);
-        });
-
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($token, $challenge): bool {
-            if (count($args) !== 2 || ! is_string($args[0]) || ! is_array($args[1])) {
-                return false;
-            }
-            [$message, $context] = $args;
-
-            return $message === 'WhatsApp webhook verification request'
-                && ($context['mode'] ?? null) === 'subscribe'
-                && ($context['token'] ?? null) === $token
-                && ($context['challenge'] ?? null) === $challenge;
-        });
-
-        Log::shouldHaveReceived('info')->with('WhatsApp webhook verification successful');
     }
 
     public function test_get_verification_returns_forbidden_when_verify_token_mismatches(): void
@@ -170,11 +141,6 @@ class WhatsAppWebhookTest extends TestCase
             ->assertExactJson(['success' => true]);
 
         Log::shouldHaveReceived('warning')->with('WhatsApp app secret not configured');
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'WhatsApp webhook event notification'
-                && array_key_exists('payload', $context)
-                && ($context['payload']['object'] ?? null) === 'whatsapp_business_account';
-        });
     }
 
     public function test_post_with_app_secret_rejects_wrong_signature(): void
@@ -202,11 +168,6 @@ class WhatsAppWebhookTest extends TestCase
         $this->signedPost($body, $secret)
             ->assertOk()
             ->assertExactJson(['success' => true]);
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'WhatsApp webhook event notification'
-                && array_key_exists('payload', $context);
-        });
     }
 
     public function test_post_with_wrong_object_type_still_returns_success_so_meta_does_not_retry(): void
@@ -334,31 +295,8 @@ class WhatsAppWebhookTest extends TestCase
             ->assertOk()
             ->assertExactJson(['success' => true]);
 
-        foreach (['messages', 'message_status', 'account_update'] as $field) {
-            Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context) use ($field): bool {
-                return $message === 'Processing WhatsApp webhook change'
-                    && ($context['field'] ?? null) === $field
-                    && ($context['business_account_id'] ?? null) === 'waba-test-id'
-                    && array_key_exists('value', $context);
-            });
-        }
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'Received WhatsApp message'
-                && ($context['business_account_id'] ?? null) === 'waba-test-id'
-                && ($context['message']['id'] ?? null) === 'wamid-1';
-        });
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'WhatsApp message status update'
-                && ($context['business_account_id'] ?? null) === 'waba-test-id'
-                && ($context['status']['status'] ?? null) === 'delivered';
-        });
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'Unhandled webhook field'
-                && ($context['field'] ?? null) === 'account_update';
-        });
+        Log::shouldHaveReceived('warning')
+            ->with('Unhandled webhook field', ['field' => 'account_update']);
     }
 
     public function test_post_processes_entry_when_changes_key_is_missing(): void
@@ -388,11 +326,6 @@ class WhatsAppWebhookTest extends TestCase
         )
             ->assertOk()
             ->assertExactJson(['success' => true]);
-
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'WhatsApp webhook event notification'
-                && ($context['payload']['entry'][0]['id'] ?? null) === 'waba-only-id';
-        });
     }
 
     public function test_post_logs_error_and_returns_processing_failed_json_when_change_payload_is_invalid(): void

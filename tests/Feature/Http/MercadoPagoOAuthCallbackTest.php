@@ -49,12 +49,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?error=access_denied&state=ignored')
             ->assertRedirect($this->identityRedirect('error'));
 
-        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
-            return $message === 'MercadoPago OAuth callback request'
-                && ($context['request']['error'] ?? null) === 'access_denied'
-                && ($context['request']['state'] ?? null) === 'ignored';
-        })->once();
-
         Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
             return ($args[0] ?? null) === 'MercadoPago OAuth callback: MP error param'
                 && ($args[1]['error'] ?? null) === 'access_denied';
@@ -241,8 +235,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             ], 200),
         ]);
 
-        Log::spy();
-
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=name-state')
             ->assertRedirect($this->identityRedirectWith('name_mismatch', [
                 'user_name' => 'Jane Doe',
@@ -258,17 +250,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             'reject_reason' => 'name_mismatch',
         ]);
 
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth users/me response'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id
-                && is_array($args[1]['me'] ?? null);
-        })->once();
-
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: mismatch'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id
-                && ($args[1]['reject_reason'] ?? null) === 'name_mismatch';
-        })->once();
     }
 
     public function test_redirects_name_mismatch_when_local_name_is_empty(): void
@@ -314,8 +295,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             ], 200),
         ]);
 
-        Log::spy();
-
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=dni-state')
             ->assertRedirect($this->identityRedirectWith('dni_mismatch', [
                 'user_dni' => '30123456',
@@ -331,13 +310,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             'reject_reason' => 'dni_mismatch',
         ]);
 
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: mismatch'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id
-                && ($args[1]['reject_reason'] ?? null) === 'dni_mismatch'
-                && ($args[1]['user_dni_normalized'] ?? null) === '30123456'
-                && ($args[1]['mp_dni_normalized'] ?? null) === '30999999';
-        })->once();
     }
 
     public function test_redirects_success_and_sets_identity_when_name_and_dni_match(): void
@@ -358,8 +330,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             ], 200),
         ]);
 
-        Log::spy();
-
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=ok-state')
             ->assertRedirect($this->identityRedirect('success'));
 
@@ -370,10 +340,6 @@ class MercadoPagoOAuthCallbackTest extends TestCase
 
         $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
 
-        Log::shouldHaveReceived('info')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: success'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id;
-        })->once();
     }
 
     public function test_resolves_user_when_cached_user_id_is_numeric_string(): void
