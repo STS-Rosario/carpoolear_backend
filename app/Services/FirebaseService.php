@@ -261,19 +261,18 @@ class FirebaseService
         $status = strtoupper((string) ($error['status'] ?? ''));
         $message = (string) ($error['message'] ?? '');
 
+        return self::fcmTopLevelStatusIndicatesUnregistered($status, $message)
+            || self::fcmErrorDetailsIndicateUnregistered($error['details'] ?? null)
+            || self::fcmErrorMessageIndicatesUnusableToken($message);
+    }
+
+    private static function fcmTopLevelStatusIndicatesUnregistered(string $status, string $message): bool
+    {
         if ($status === 'UNREGISTERED') {
             return true;
         }
 
-        if ($status === 'NOT_FOUND' && strcasecmp($message, 'NotRegistered') === 0) {
-            return true;
-        }
-
-        if (self::fcmErrorDetailsIndicateUnregistered($error['details'] ?? null)) {
-            return true;
-        }
-
-        return self::fcmErrorMessageIndicatesUnusableToken($message);
+        return $status === 'NOT_FOUND' && strcasecmp($message, 'NotRegistered') === 0;
     }
 
     /**
