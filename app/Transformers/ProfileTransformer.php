@@ -82,6 +82,8 @@ class ProfileTransformer extends TransformerAbstract
             'identity_validated' => $user->identity_validated ? true : false,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
             'identity_validation_type' => $user->identity_validation_type,
+            'created_at' => $this->nullableDateTimeString($user->created_at),
+            'trips_count' => app(UsersManager::class)->tripsCount($user),
         ];
 
         if ($this->user && $user->id == $this->user->id) {
@@ -97,7 +99,6 @@ class ProfileTransformer extends TransformerAbstract
             $data['email'] = $user->email;
             $data['mobile_phone'] = $user->mobile_phone;
             $data['nro_doc'] = $user->nro_doc;
-            $data['created_at'] = $this->nullableDateTimeString($user->created_at);
             // bank data
             $data['account_number'] = $user->account_number;
             $data['account_type'] = $user->account_type;
