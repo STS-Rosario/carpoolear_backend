@@ -14,14 +14,6 @@ class WhatsAppWebhookController extends Controller
      */
     public function handle(Request $request)
     {
-        Log::info('WhatsApp webhook received', [
-            'method' => $request->method(),
-            'data' => $request->all(),
-            'content' => $request->getContent(),
-            'headers' => $request->headers->all(),
-            'content_type' => $request->header('Content-Type'),
-        ]);
-
         // Handle webhook verification request
         if ($request->method() === 'GET') {
             return $this->handleVerification($request);
