@@ -284,12 +284,6 @@ class MercadoPagoWebhookController extends Controller
 
         $payment->save();
 
-        Log::info('Payment status updated', [
-            'payment_id' => $payment->payment_id,
-            'old_status' => $oldStatus,
-            'new_status' => $newStatus,
-        ]);
-
         return $newStatus;
     }
 
