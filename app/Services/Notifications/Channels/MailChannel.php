@@ -24,7 +24,6 @@ class MailChannel
 
             $html = view('email.'.$data['email_view'], $data)->render();
             ssmtp_send_mail($data['title'], $user->email, $html);
-            \Log::info('estoy alla:');
         }
     }
 
