@@ -679,6 +679,14 @@ class FirebaseServiceTest extends TestCase
         $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
     }
 
+    public function test_is_stale_registration_token_error_can_be_checked_multiple_times_for_sender_id_mismatch(): void
+    {
+        $exception = $this->fcmClientException(403, 'SenderId mismatch', 'PERMISSION_DENIED');
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
     public function test_fetch_messaging_access_token_returns_google_client_payload(): void
     {
         $mock = Mockery::mock(GoogleClient::class);
@@ -698,5 +706,20 @@ class FirebaseServiceTest extends TestCase
             ['access_token' => 'from-assertion', 'expires_in' => 3600],
             $m->invoke($service)
         );
+    }
+
+    private function fcmClientException(int $code, string $message, string $status): ClientException
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => $code,
+                'message' => $message,
+                'status' => $status,
+            ],
+        ];
+        $response = new Response($code, [], json_encode($payload));
+
+        return new ClientException($message, $request, $response);
     }
 }

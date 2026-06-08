@@ -269,16 +269,19 @@ class FirebaseService
             return true;
         }
 
-        if (stripos($message, 'not a valid fcm registration token') !== false) {
-            return true;
-        }
+        return self::fcmErrorMessageIndicatesUnusableToken($message);
+    }
 
-        if (stripos($message, 'InvalidRegistration') !== false) {
-            return true;
-        }
-
-        if (stripos($message, 'SenderId mismatch') !== false) {
-            return true;
+    private static function fcmErrorMessageIndicatesUnusableToken(string $message): bool
+    {
+        foreach ([
+            'not a valid fcm registration token',
+            'InvalidRegistration',
+            'SenderId mismatch',
+        ] as $needle) {
+            if (stripos($message, $needle) !== false) {
+                return true;
+            }
         }
 
         return false;
