@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Pagination\Paginator;
-use Illuminate\Support\Facades\Log;
 
 function match_array($data)
 {
@@ -35,8 +34,6 @@ function console_log($obj)
 
     if (App::environment('testing')) {
         print_r($payload);
-    } else {
-        Log::info($payload);
     }
 }
 
