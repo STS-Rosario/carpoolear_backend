@@ -59,8 +59,6 @@ RateLimiter::for('phone-verification-verify', function (Request $request) {
 RateLimiter::for('phone-verification-resend', function (Request $request) {
     // Check if rate limiting is disabled for testing
     if (env('DISABLE_PHONE_VERIFICATION_RATE_LIMIT', false)) {
-        \Log::info('Phone verification rate limiting disabled for testing');
-
         return []; // No limits
     }
 
