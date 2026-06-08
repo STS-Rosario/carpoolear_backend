@@ -887,4 +887,76 @@ class PassengersRepositoryTest extends TestCase
 
         $this->assertFalse($this->repo()->userHasActiveRequest($trip->id, $alice->id));
     }
+
+    public function test_get_seat_requests_returns_pending_rejected_and_accepted_on_active_future_trips(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+
+        $pendingTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        $rejectedTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(3),
+        ]);
+        $acceptedTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(4),
+        ]);
+        $pastTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $waitingPaymentTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(5),
+        ]);
+        $canceledTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(6),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $pendingTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $rejectedTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_REJECTED,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $acceptedTrip->id,
+            'user_id' => $passenger->id,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $pastTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $waitingPaymentTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $canceledTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_CANCELED,
+        ]);
+
+        $rows = $this->repo()->getSeatRequests($passenger, []);
+
+        $this->assertCount(3, $rows);
+        $tripIds = $rows->pluck('trip_id')->all();
+        $this->assertContains($pendingTrip->id, $tripIds);
+        $this->assertContains($rejectedTrip->id, $tripIds);
+        $this->assertContains($acceptedTrip->id, $tripIds);
+        $this->assertSame($pendingTrip->id, $rows->first()->trip_id);
+        $this->assertSame($acceptedTrip->id, $rows->last()->trip_id);
+        $this->assertTrue($rows->first()->relationLoaded('trip'));
+    }
 }

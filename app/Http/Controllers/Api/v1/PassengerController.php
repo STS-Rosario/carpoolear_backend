@@ -7,6 +7,7 @@ use STS\Helpers\IdentityValidationHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\PassengersManager;
+use STS\Transformers\PassengerSeatRequestTransformer;
 use STS\Transformers\PassengerTransformer;
 
 class PassengerController extends Controller
@@ -59,6 +60,16 @@ class PassengerController extends Controller
         $toPay = $this->passengerLogic->getPendingPaymentRequests(null, $this->user, $data);
 
         return $this->collection($toPay, new PassengerTransformer($this->user));
+    }
+
+    public function seatRequests(Request $request)
+    {
+        $this->user = auth()->user();
+        $data = $request->all();
+
+        $seatRequests = $this->passengerLogic->getSeatRequests($this->user, $data);
+
+        return $this->collection($seatRequests, new PassengerSeatRequestTransformer($this->user));
     }
 
     public function newRequest($tripId, Request $request)

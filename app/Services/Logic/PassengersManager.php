@@ -70,6 +70,11 @@ class PassengersManager extends BaseManager
         return $this->passengerRepository->getPendingPaymentRequests($tripId, $user, $data);
     }
 
+    public function getSeatRequests($user, $data)
+    {
+        return $this->passengerRepository->getSeatRequests($user, $data);
+    }
+
     private function validateInput($input)
     {
         return Validator::make($input, [

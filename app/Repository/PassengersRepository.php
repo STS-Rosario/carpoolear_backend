@@ -12,7 +12,7 @@ class PassengersRepository
     {
         $passengers = Passenger::where('trip_id', $tripId);
 
-        $passengers->whereIn('request_state', [Passenger::STATE_ACCEPTED]); //TODO: ver si hace falta obtener pasajeros con otro request_state
+        $passengers->whereIn('request_state', [Passenger::STATE_ACCEPTED]); // TODO: ver si hace falta obtener pasajeros con otro request_state
 
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
@@ -45,6 +45,33 @@ class PassengersRepository
         return $passengers->get(); // make_pagination($passengers, $pageNumber, $pageSize);
     }
 
+    public function getSeatRequests($user, $data)
+    {
+        $passengers = Passenger::query();
+        $passengers->join('trips', 'trips.id', '=', 'trip_passengers.trip_id');
+        $passengers->whereNull('trips.deleted_at');
+        $passengers->where('trip_passengers.user_id', $user->id);
+        $passengers->where(function ($q) {
+            $q->where('trips.trip_date', '>=', Carbon::Now())
+                ->orWhere('trips.weekly_schedule', '>', 0);
+        });
+        $passengers->whereIn('request_state', [
+            Passenger::STATE_PENDING,
+            Passenger::STATE_REJECTED,
+            Passenger::STATE_ACCEPTED,
+        ]);
+        $passengers->with([
+            'trip.user',
+            'trip.points',
+            'trip.passengerAccepted',
+            'trip.passengerAccepted.user',
+            'trip.car',
+        ]);
+        $passengers->select('trip_passengers.*');
+        $passengers->orderBy('trips.trip_date');
+
+        return $passengers->get();
+    }
 
     public function getPendingPaymentRequests($tripId, $user, $data)
     {
@@ -103,6 +130,7 @@ class PassengersRepository
                 $passenger->{$key} = $value;
             }
             $passenger->save();
+
             return $passenger;
         } else {
             return null;
@@ -176,8 +204,8 @@ class PassengersRepository
         return $rejectedRequest;
     }
 
-
-    public function tripsWithTransactions ($user) {
+    public function tripsWithTransactions($user)
+    {
         /* $query = Trip::where(function ($q) use ($user) {
             $q->where('user_id', $user->id);
             $q->orWhereHas('passenger', function ($q) use ($user) {
@@ -199,13 +227,14 @@ class PassengersRepository
 
         $query->with([
             'user',
-            'passenger.trip.user'
+            'passenger.trip.user',
         ]);
+
         // $r = $query->toSql();
         // var_dump($r);die;
         return $query->get();
     }
-    
+
     public function userHasActiveRequest($tripId, $userId)
     {
         $query = Passenger::where('trip_id', $tripId);
@@ -215,7 +244,7 @@ class PassengersRepository
         $query->whereIn('request_state', [
             Passenger::STATE_WAITING_PAYMENT,
             Passenger::STATE_ACCEPTED,
-            Passenger::STATE_PENDING
+            Passenger::STATE_PENDING,
         ]);
 
         return $query->get()->count() > 0;
