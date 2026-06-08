@@ -315,9 +315,6 @@ class SmsService
      */
     protected function sendViaLocal($to, $message)
     {
-        // For development/testing, just log the SMS
-        Log::info('SMS would be sent to: '.$to.' with message: '.$message);
-
         // You can also log to a file for easier debugging
         $logMessage = date('Y-m-d H:i:s').' - SMS to '.$to.': '.$message.PHP_EOL;
         file_put_contents(storage_path('logs/sms.log'), $logMessage, FILE_APPEND | LOCK_EX);
