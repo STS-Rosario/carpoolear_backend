@@ -47,6 +47,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('retoken', [AuthController::class, 'retoken']);
     Route::get('config', [AuthController::class, 'getConfig']);
     Route::get('changelog', [ChangelogController::class, 'show']);
+    Route::get('changelogs', [ChangelogController::class, 'index']);
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
