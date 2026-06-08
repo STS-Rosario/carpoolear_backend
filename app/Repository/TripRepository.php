@@ -655,18 +655,7 @@ class TripRepository
                 ->first();
 
             if ($cachedRoute) {
-                $routeData = $cachedRoute->route_data;
-                \Log::info('[trip_route|getTripInfo] cache HIT', [
-                    'hashed_points' => $hashedPoints,
-                    'expires_at' => $cachedRoute->expires_at?->toIso8601String(),
-                    'cached_status' => $routeData['status'] ?? null,
-                    'cached_message' => $routeData['message'] ?? null,
-                    'cached_distance_m' => $routeData['data']['distance'] ?? null,
-                    'cached_duration_s' => $routeData['data']['duration'] ?? null,
-                    'route_cache_id' => $cachedRoute->id,
-                ]);
-
-                return $routeData;
+                return $cachedRoute->route_data;
             }
         } else {
             \Log::info('[trip_route|getTripInfo] cache BYPASS enabled', [
