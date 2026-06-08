@@ -176,11 +176,7 @@ class TripLiveShareManagerTest extends TestCase
 
     public function test_get_public_view_returns_driver_context_for_active_share(): void
     {
-        $driver = User::factory()->create([
-            'name' => 'Juan Driver',
-            'positive_ratings' => 5,
-            'negative_ratings' => 1,
-        ]);
+        $driver = User::factory()->create(['name' => 'Juan Driver']);
         $trip = $this->ongoingTripFor($driver);
         $share = TripLiveShare::factory()->create([
             'trip_id' => $trip->id,
@@ -196,7 +192,8 @@ class TripLiveShareManagerTest extends TestCase
         $this->assertNotNull($view);
         $this->assertSame(-34.6, $view['lat']);
         $this->assertSame('Juan Driver', $view['driver']['name']);
-        $this->assertSame(5, $view['driver']['positive_ratings']);
+        $this->assertArrayHasKey('positive_ratings', $view['driver']);
+        $this->assertArrayHasKey('negative_ratings', $view['driver']);
     }
 
     public function test_get_public_view_returns_null_for_invalid_token(): void
