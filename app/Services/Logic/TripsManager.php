@@ -113,7 +113,6 @@ class TripsManager extends BaseManager
             $timeWindow = config('carpoolear.trip_creation_limits.time_window_hours', 24);
 
             $recentTrips = $this->tripRepo->getRecentTrips($user->id, $timeWindow);
-            \Log::info('recentTrips: '.$recentTrips->count());
             if ($recentTrips->count() > $maxTrips) {
                 $this->userManager->update($user, ['banned' => 1], false, true);
                 \Log::info('User banned due to exceeding trip creation limits. User ID: '.$user->id.', Trips created: '.$recentTrips->count().' in last '.$timeWindow.' hours');
