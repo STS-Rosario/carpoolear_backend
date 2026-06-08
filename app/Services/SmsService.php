@@ -113,8 +113,6 @@ class SmsService
                     if ($response->successful()) {
                         $body = $response->json();
                         if (isset($body['messages'][0]['id'])) {
-                            Log::info('WhatsApp message sent successfully via Laravel HTTP client to: '.$formattedPhone.' with message: '.$message);
-
                             return true;
                         } else {
                             Log::error('WhatsApp API error via Laravel HTTP client: '.json_encode($body));
