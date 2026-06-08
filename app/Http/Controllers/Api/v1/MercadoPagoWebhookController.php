@@ -520,11 +520,7 @@ class MercadoPagoWebhookController extends Controller
                 $validationRequest->paid_at = now();
                 $validationRequest->payment_id = (string) $mpPayment['id'];
                 $validationRequest->save();
-                Log::info('Manual identity validation payment success', [
-                    'request_id' => $requestId,
-                    'user_id' => $validationRequest->user_id,
-                    'payment_id' => $mpPayment['id'],
-                ]);
+
             }
         }
 
