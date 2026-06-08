@@ -706,12 +706,6 @@ class TripRepository
             return $this->routingServiceUnavailableResponse();
         }
 
-        $payload = $osrmOutcome['payload'] ?? [];
-        \Log::info('[trip_route|getTripInfo] route not found (OSRM and Mapbox)', [
-            'hashed_points' => $hashedPoints,
-            'osrm_code' => is_array($payload) ? ($payload['code'] ?? null) : null,
-        ]);
-
         $failResponse = [
             'status' => false,
             'data' => null,
