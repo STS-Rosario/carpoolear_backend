@@ -64,8 +64,6 @@ class MercadoPagoWebhookController extends Controller
 
             return response()->json(['error' => 'Could not fetch payment'], 500);
         }
-        Log::info('MP WEBHOOK payment', ['payment' => $mpPayment]);
-
         $externalReference = $mpPayment['external_reference'] ?? '';
 
         // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR - Orders API allows no colon)
