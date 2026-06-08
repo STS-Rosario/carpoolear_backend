@@ -141,7 +141,6 @@ class UsersManager extends BaseManager
     public function create(array $data, $validate = true, $is_social = false, $is_driver = false)
     {
         unset($data['facebook_profile_url']);
-        \Log::info('Create USER: '.$data['name']);
         $v = $this->validator($data, null, $is_social, $is_driver);
         if ($v->fails() && $validate) {
             \Log::info('Error validation: '.$data['name']);
