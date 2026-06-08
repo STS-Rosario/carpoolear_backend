@@ -125,7 +125,6 @@ class TripRepository
 
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
-        \Log::info('TripRepository::create routeNeedsPayment', [$routeNeedsPayment]);
 
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
         // if route is paid, and user should pay, create payment
