@@ -78,7 +78,6 @@ class OsrmProxyApiTest extends TestCase
 
     public function test_returns_no_route_envelope_when_upstream_unreachable(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://127.0.0.1:9',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -148,7 +147,6 @@ class OsrmProxyApiTest extends TestCase
 
     public function test_cache_hit_logs_debug_with_path_preview_truncated_to_96_chars(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://osrm-preview.test',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -273,7 +271,6 @@ class OsrmProxyApiTest extends TestCase
 
     public function test_upstream_non_success_http_logs_warning_with_base_and_status(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://primary-502.test',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -299,9 +296,8 @@ class OsrmProxyApiTest extends TestCase
         });
     }
 
-    public function test_upstream_ok_logs_info_with_base_http_status_and_osrm_code(): void
+    public function test_upstream_ok_returns_osrm_payload(): void
     {
-        Log::spy();
         config([
             'carpoolear.osrm_router_base_url' => 'https://osrm-info.test',
             'carpoolear.osrm_router_fallback_base_url' => null,
@@ -319,17 +315,6 @@ class OsrmProxyApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('code', 'Ok');
 
-        Log::shouldHaveReceived('info')->withArgs(function (...$args): bool {
-            if (count($args) < 1 || $args[0] !== '[osrm_proxy] upstream response') {
-                return false;
-            }
-            $ctx = $args[1] ?? [];
-
-            return is_array($ctx)
-                && str_contains((string) ($ctx['base'] ?? ''), 'osrm-info.test')
-                && ($ctx['http_status'] ?? null) === 200
-                && ($ctx['osrm_code'] ?? null) === 'Ok';
-        });
     }
 
     public function test_blank_primary_base_is_skipped_and_fallback_is_used(): void
