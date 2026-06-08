@@ -139,20 +139,6 @@ class SmsService
 
             $fb = $this->createFacebookSdk($fbConfig);
 
-            // Debug logging
-            Log::info('WhatsApp API request details', [
-                'to' => $to,
-                'formatted_phone' => $formattedPhone,
-                'message' => $message,
-                'extracted_code' => $code,
-                'expires' => $expires,
-                'phone_number_id' => $phoneNumberId,
-                'http_client_handler' => app()->environment('local', 'development') ? 'LaravelHttpClient' : 'stream',
-                'environment' => app()->environment(),
-                'curl_available' => function_exists('curl_version'),
-                'curl_version' => function_exists('curl_version') ? curl_version() : null,
-            ]);
-
             // Prepare template parameters
             $parameters = [
                 ['type' => 'text', 'text' => $code],
