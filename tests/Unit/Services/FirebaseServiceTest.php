@@ -609,6 +609,22 @@ class FirebaseServiceTest extends TestCase
         $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
     }
 
+    public function test_is_stale_registration_token_error_detects_sender_id_mismatch(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/carpoolear-production/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 403,
+                'message' => 'SenderId mismatch',
+                'status' => 'PERMISSION_DENIED',
+            ],
+        ];
+        $response = new Response(403, [], json_encode($payload));
+        $exception = new ClientException('SenderId mismatch', $request, $response);
+
+        $this->assertTrue(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
     public function test_is_stale_registration_token_error_returns_false_for_other_fcm_errors(): void
     {
         $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
@@ -621,6 +637,22 @@ class FirebaseServiceTest extends TestCase
         ];
         $response = new Response(400, [], json_encode($payload));
         $exception = new ClientException('bad request', $request, $response);
+
+        $this->assertFalse(FirebaseService::isStaleRegistrationTokenError($exception));
+    }
+
+    public function test_is_stale_registration_token_error_returns_false_for_other_permission_denied_errors(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 403,
+                'message' => 'Cloud Messaging API has not been used in project 123 before or it is disabled.',
+                'status' => 'PERMISSION_DENIED',
+            ],
+        ];
+        $response = new Response(403, [], json_encode($payload));
+        $exception = new ClientException('permission denied', $request, $response);
 
         $this->assertFalse(FirebaseService::isStaleRegistrationTokenError($exception));
     }
