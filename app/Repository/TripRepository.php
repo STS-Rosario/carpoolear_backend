@@ -854,14 +854,6 @@ class TripRepository
                 ]
             );
 
-            \Log::info('[trip_route|getTripInfo] route OK — cached', [
-                'hashed_points' => $hashedPoints,
-                'provider' => $provider,
-                'ttl_seconds' => $ttl,
-                'distance_m' => $distanceInMeters,
-                'duration_s' => $duration,
-                'route_needs_payment' => $routeNeedsPayment,
-            ]);
         } else {
             \Log::info('[trip_route|getTripInfo] route OK — cache write skipped (BYPASS)', [
                 'hashed_points' => $hashedPoints,
