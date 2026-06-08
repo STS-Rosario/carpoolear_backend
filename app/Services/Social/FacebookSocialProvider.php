@@ -30,8 +30,6 @@ class FacebookSocialProvider implements SocialProvider
         if ($response->getStatusCode() == 200) {
             $body = json_decode($response->getBody());
 
-            \Log::info('FACEBOOK BODY: '.$response->getBody());
-
             if (isset($body->gender)) {
                 if ($body->gender == 'male') {
                     $body->gender = 'Masculino';
