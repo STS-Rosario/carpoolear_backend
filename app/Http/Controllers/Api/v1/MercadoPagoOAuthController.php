@@ -110,7 +110,6 @@ class MercadoPagoOAuthController extends Controller
             $user->identity_validation_rejected_at = null;
             $user->identity_validation_reject_reason = null;
             $user->save();
-            \Log::info('MercadoPago OAuth callback: success', ['user_id' => $userId]);
 
             return redirect($oauthService->getFrontendRedirectUrl('success'));
         } catch (\Exception $e) {
