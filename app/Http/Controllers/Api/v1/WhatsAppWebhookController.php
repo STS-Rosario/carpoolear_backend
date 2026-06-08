@@ -38,12 +38,6 @@ class WhatsAppWebhookController extends Controller
         $token = $request->query('hub_verify_token');
         $challenge = $request->query('hub_challenge');
 
-        Log::info('WhatsApp webhook verification request', [
-            'mode' => $mode,
-            'token' => $token,
-            'challenge' => $challenge,
-        ]);
-
         // Verify the token matches your configured verify token
         $expectedToken = config('services.whatsapp.verify_token', 'your_verify_token_here');
 
