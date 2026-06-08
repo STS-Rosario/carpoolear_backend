@@ -36,6 +36,7 @@ use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\SupportTicketController;
 use STS\Http\Controllers\Api\v1\TripController;
+use STS\Http\Controllers\Api\v1\TripLiveShareController;
 use STS\Http\Controllers\Api\v1\UserController;
 
 Route::middleware(['api'])->group(function () {
@@ -129,6 +130,9 @@ Route::middleware(['api'])->group(function () {
         Route::put('/update/{provider?}', [SocialController::class, 'update']);
     });
 
+    // Public live location view (unguessable token)
+    Route::get('live/{token}', [TripLiveShareController::class, 'publicView'])->middleware('logged.optional');
+
     Route::prefix('trips')->group(function () {
         Route::get('/requests', [PassengerController::class, 'allRequests']);
 
@@ -146,6 +150,12 @@ Route::middleware(['api'])->group(function () {
 
         Route::get('/{tripId}/passengers', [PassengerController::class, 'passengers']);
         Route::get('/{tripId}/requests', [PassengerController::class, 'requests']);
+
+        Route::post('/{tripId}/live-share/start', [TripLiveShareController::class, 'start']);
+        Route::put('/{tripId}/live-share/location', [TripLiveShareController::class, 'updateLocation']);
+        Route::post('/{tripId}/live-share/stop', [TripLiveShareController::class, 'stop']);
+        Route::get('/{tripId}/live-share', [TripLiveShareController::class, 'status']);
+        Route::get('/{tripId}/live-share/view', [TripLiveShareController::class, 'tripView']);
 
         Route::post('/{tripId}/requests', [PassengerController::class, 'newRequest']);
         Route::post('/{tripId}/requests/{userId}/cancel', [PassengerController::class, 'cancelRequest']);

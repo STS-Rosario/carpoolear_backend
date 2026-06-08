@@ -125,6 +125,7 @@ class TripLiveShareControllerIntegrationTest extends TestCase
 
         $this->actingAs($outsider, 'api')
             ->getJson("/api/trips/{$trip->id}/live-share/view")
-            ->assertForbidden();
+            ->assertStatus(422)
+            ->assertJsonPath('errors.error', 'access_denied');
     }
 }
