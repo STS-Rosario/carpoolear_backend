@@ -24,12 +24,6 @@ class PhoneVerificationController extends Controller
     {
         $user = auth()->user();
 
-        \Log::info('Phone verification send request', [
-            'user_id' => $user->id,
-            'phone' => $request->input('phone'),
-            'ip' => $request->ip(),
-        ]);
-
         $result = $this->phoneVerificationManager->sendVerificationCode($user, $request);
 
         if ($result === null) {
