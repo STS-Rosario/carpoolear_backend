@@ -153,7 +153,6 @@ class CalculateActiveUsersPerMonth extends Command
 
             $this->info("Data saved successfully for {$month->format('F Y')}");
 
-            Log::info("Active users calculated for {$month->format('F Y')}: {$count} users");
         } catch (\Illuminate\Database\QueryException $e) {
             // Handle unique constraint violation
             if ($e->getCode() == 23000 && strpos($e->getMessage(), 'unique_year_month') !== false) {
