@@ -2,6 +2,9 @@
 
 namespace Tests\Unit\Services\Notifications\Channels;
 
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Mockery;
@@ -150,6 +153,12 @@ class PushChannelTest extends TestCase
             ->andReturnUsing(function () use (&$errors): void {
                 $errors++;
             });
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($this->fcmInternalErrorException());
 
         $user = User::factory()->create();
         Device::query()->create([
@@ -167,7 +176,7 @@ class PushChannelTest extends TestCase
         $notification->setAttribute('message', 'Hello');
         $notification->setAttribute('title', 'T');
 
-        (new PushChannel)->send($notification, $user);
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
 
         $this->assertGreaterThan(0, $errors);
     }
@@ -182,6 +191,12 @@ class PushChannelTest extends TestCase
             ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
                 $logged[] = ['message' => $message, 'context' => $context];
             });
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($this->fcmInternalErrorException());
 
         $user = User::factory()->create();
         $device = Device::query()->create([
@@ -199,7 +214,7 @@ class PushChannelTest extends TestCase
         $notification->setAttribute('message', 'Hello');
         $notification->setAttribute('title', 'T');
 
-        (new PushChannel)->send($notification, $user);
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
 
         $outer = $this->firstLogMatching($logged, 'PushChannel: Error sending push notification');
         $this->assertNotNull($outer, 'Expected outer PushChannel catch to log once.');
@@ -256,6 +271,12 @@ class PushChannelTest extends TestCase
             ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
                 $logged[] = ['message' => $message, 'context' => $context];
             });
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($this->fcmInternalErrorException());
 
         $user = User::factory()->create();
         $device = Device::query()->create([
@@ -273,7 +294,7 @@ class PushChannelTest extends TestCase
         $notification->setAttribute('message', 'Hello browser');
         $notification->setAttribute('title', 'TB');
 
-        (new PushChannel)->send($notification, $user);
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
 
         $outer = $this->firstLogMatching($logged, 'PushChannel: Error sending push notification');
         $this->assertNotNull($outer);
@@ -338,6 +359,12 @@ class PushChannelTest extends TestCase
             ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
                 $logged[] = ['message' => $message, 'context' => $context];
             });
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($this->fcmInternalErrorException());
 
         $user = User::factory()->create();
         Device::query()->create([
@@ -370,7 +397,7 @@ class PushChannelTest extends TestCase
             }
         };
 
-        (new PushChannel)->send($notification, $user);
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
 
         $inner = $this->firstLogMatching($logged, 'PushChannel: sendAndroid error');
         $this->assertNotNull($inner);
@@ -381,6 +408,228 @@ class PushChannelTest extends TestCase
         $this->assertSame('custom_type', $data['type']);
         $this->assertSame('https://cdn.example/push.png', $data['image']);
         $this->assertSame(['from_get_extras' => '1'], $data['extras']);
+    }
+
+    public function test_send_deactivates_android_device_when_fcm_returns_not_registered(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context, 'level' => 'error'];
+            });
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context, 'level' => 'warning'];
+            });
+
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/carpoolear-production/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'NotRegistered',
+                'status' => 'NOT_FOUND',
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $fcmException = new ClientException('NotRegistered', $request, $response);
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($fcmException);
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'stale-android-token',
+            'device_type' => 'android',
+            'session_id' => 's-stale-android',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello');
+        $notification->setAttribute('title', 'T');
+
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
+
+        $device->refresh();
+        $this->assertFalse($device->notifications);
+
+        $deactivateLog = $this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token');
+        $this->assertNotNull($deactivateLog);
+        $this->assertSame($user->id, $deactivateLog['context']['user_id']);
+        $this->assertSame($device->id, $deactivateLog['context']['device_id']);
+        $this->assertSame('android', $deactivateLog['context']['device_type']);
+
+        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
+        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
+    }
+
+    public function test_send_deactivates_android_device_when_fcm_returns_sender_id_mismatch(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context, 'level' => 'error'];
+            });
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context, 'level' => 'warning'];
+            });
+
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/carpoolear-production/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 403,
+                'message' => 'SenderId mismatch',
+                'status' => 'PERMISSION_DENIED',
+            ],
+        ];
+        $response = new Response(403, [], json_encode($payload));
+        $fcmException = new ClientException('SenderId mismatch', $request, $response);
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($fcmException);
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'wrong-sender-android-token',
+            'device_type' => 'Android',
+            'session_id' => 's-sender-mismatch',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello');
+        $notification->setAttribute('title', 'T');
+
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
+
+        $device->refresh();
+        $this->assertFalse($device->notifications);
+        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
+        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
+    }
+
+    public function test_send_deactivates_browser_device_when_fcm_returns_not_registered(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')->zeroOrMoreTimes();
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/carpoolear-production/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'NotRegistered',
+                'status' => 'NOT_FOUND',
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $fcmException = new ClientException('NotRegistered', $request, $response);
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($fcmException);
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'stale-browser-token',
+            'device_type' => 'browser',
+            'session_id' => 's-stale-browser',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello browser');
+        $notification->setAttribute('title', 'TB');
+
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
+
+        $device->refresh();
+        $this->assertFalse($device->notifications);
+        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+    }
+
+    public function test_send_still_logs_error_when_android_send_fails_for_non_stale_token(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 500,
+                'message' => 'Internal error',
+                'status' => 'INTERNAL',
+            ],
+        ];
+        $response = new Response(500, [], json_encode($payload));
+        $fcmException = new ClientException('Internal error', $request, $response);
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($fcmException);
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'valid-android-token',
+            'device_type' => 'android',
+            'session_id' => 's-valid-android',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello');
+        $notification->setAttribute('title', 'T');
+
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
+
+        $device->refresh();
+        $this->assertTrue($device->notifications);
+        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
     }
 
     /**
@@ -396,5 +645,20 @@ class PushChannelTest extends TestCase
         }
 
         return null;
+    }
+
+    private function fcmInternalErrorException(): ClientException
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 500,
+                'message' => 'Internal error',
+                'status' => 'INTERNAL',
+            ],
+        ];
+        $response = new Response(500, [], json_encode($payload));
+
+        return new ClientException('Internal error', $request, $response);
     }
 }

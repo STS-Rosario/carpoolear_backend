@@ -234,6 +234,60 @@ class FirebaseService
     }
 
     /**
+     * Whether an FCM HTTP v1 error indicates the device registration token cannot be used
+     * with the configured Firebase project (stale, invalid, or wrong sender).
+     */
+    public static function isStaleRegistrationTokenError(\Throwable $e): bool
+    {
+        if (! $e instanceof ClientException || ! $e->getResponse()) {
+            return false;
+        }
+
+        try {
+            $stream = $e->getResponse()->getBody();
+            if ($stream->isSeekable()) {
+                $stream->rewind();
+            }
+            $body = json_decode($stream->getContents(), true);
+        } catch (\Exception) {
+            return false;
+        }
+
+        if (! is_array($body) || ! isset($body['error']) || ! is_array($body['error'])) {
+            return false;
+        }
+
+        $error = $body['error'];
+        $status = strtoupper((string) ($error['status'] ?? ''));
+        $message = (string) ($error['message'] ?? '');
+
+        if ($status === 'UNREGISTERED') {
+            return true;
+        }
+
+        if ($status === 'NOT_FOUND' && strcasecmp($message, 'NotRegistered') === 0) {
+            return true;
+        }
+
+        return self::fcmErrorMessageIndicatesUnusableToken($message);
+    }
+
+    private static function fcmErrorMessageIndicatesUnusableToken(string $message): bool
+    {
+        foreach ([
+            'not a valid fcm registration token',
+            'InvalidRegistration',
+            'SenderId mismatch',
+        ] as $needle) {
+            if (stripos($message, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Unregisters a device from FCM by sending a delete request
      * This stops the device from receiving any future notifications
      */
