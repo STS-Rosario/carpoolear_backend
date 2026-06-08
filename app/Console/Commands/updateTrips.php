@@ -55,7 +55,6 @@ class updateTrips extends Command
         $query->whereNull('route_id');
         $query->take(5000);
         $trips = $query->get();
-        \Log::info('Trips: '.count($trips));
         foreach ($trips as $trip) {
             $this->info('Trip Id: '.$trip->id);
             \Log::info('Trip Id: '.$trip->id);
