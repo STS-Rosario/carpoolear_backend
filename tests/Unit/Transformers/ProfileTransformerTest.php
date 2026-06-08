@@ -55,6 +55,8 @@ class ProfileTransformerTest extends TestCase
             'identity_validated',
             'identity_validated_at',
             'identity_validation_type',
+            'created_at',
+            'trips_count',
         ];
     }
 
@@ -237,14 +239,24 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame('2024-03-15 12:34:56', $payload['created_at']);
     }
 
-    public function test_transform_does_not_expose_created_at_for_non_admin_viewing_other_user(): void
+    public function test_transform_exposes_created_at_and_trips_count_for_any_viewer(): void
     {
         $viewer = User::factory()->create(['is_admin' => false]);
-        $subject = User::factory()->create(['data_visibility' => '2']);
+        $subject = User::factory()->create([
+            'data_visibility' => '2',
+            'created_at' => '2024-03-15 12:34:56',
+        ]);
+        Trip::factory()->create([
+            'user_id' => $subject->id,
+            'trip_date' => now()->subDay(),
+        ]);
 
         $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
 
-        $this->assertArrayNotHasKey('created_at', $payload);
+        $this->assertArrayHasKey('created_at', $payload);
+        $this->assertSame('2024-03-15 12:34:56', $payload['created_at']);
+        $this->assertArrayHasKey('trips_count', $payload);
+        $this->assertSame(1, $payload['trips_count']);
     }
 
     public function test_transform_admin_branch_uses_loose_id_equality_for_string_subject_id(): void
