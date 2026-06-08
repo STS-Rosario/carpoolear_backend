@@ -3,24 +3,26 @@
 namespace STS\Services;
 
 use MercadoPago\Client\Common\RequestOptions;
-use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Client\Order\OrderClient;
-use MercadoPago\MercadoPagoConfig;
+use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
+use MercadoPago\MercadoPagoConfig;
 use STS\Models\Campaign;
 
 class MercadoPagoService
 {
     private $accessToken;
+
     private $client;
+
     private $orderClient;
 
     public function __construct()
     {
         $this->accessToken = config('services.mercadopago.access_token');
-        if (!empty($this->accessToken)) {
+        if (! empty($this->accessToken)) {
             MercadoPagoConfig::setAccessToken($this->accessToken);
-            $this->client = new PreferenceClient();
+            $this->client = new PreferenceClient;
         }
     }
 
@@ -30,8 +32,8 @@ class MercadoPagoService
             throw new \Exception('MercadoPago access token is not configured');
         }
         MercadoPagoConfig::setAccessToken($this->accessToken);
-        $this->client = new PreferenceClient();
-        $this->orderClient = new OrderClient();
+        $this->client = new PreferenceClient;
+        $this->orderClient = new OrderClient;
     }
 
     /**
@@ -41,18 +43,17 @@ class MercadoPagoService
     {
         $this->ensureConfigured();
         try {
-            \Log::info('MercadoPago Preference request payload', ['payload' => $preferenceData]);
-
-            $requestOptions = new RequestOptions();
+            $requestOptions = new RequestOptions;
             $requestOptions->setAccessToken($this->accessToken);
 
             $preference = $this->client->create($preferenceData, $requestOptions);
+
             return $preference;
         } catch (MPApiException $e) {
             \Log::error('MercadoPago API Error:', [
                 'message' => $e->getMessage(),
                 'status' => $e->getApiResponse()->getStatusCode(),
-                'response' => $e->getApiResponse()->getContent()
+                'response' => $e->getApiResponse()->getContent(),
             ]);
             throw $e;
         }
@@ -63,7 +64,7 @@ class MercadoPagoService
      */
     public function createPaymentPreferenceForSellado($trip, $amountInCents = null)
     {
-        if (!isset($amountInCents)) {
+        if (! isset($amountInCents)) {
             $amountInCents = config('carpoolear.module_trip_creation_payment_amount_cents');
         }
 
@@ -72,22 +73,22 @@ class MercadoPagoService
             throw new \InvalidArgumentException('carpoolear.frontend_url must be set for MercadoPago sellado (auto_return requires valid back_urls.success)');
         }
         $selladoUrls = [
-            "success" => $baseUrl . '/app/trips/' . $trip->id,
-            "failure" => $baseUrl . '/app/trips/' . $trip->id,
-            "pending" => $baseUrl . '/app/trips/' . $trip->id,
+            'success' => $baseUrl.'/app/trips/'.$trip->id,
+            'failure' => $baseUrl.'/app/trips/'.$trip->id,
+            'pending' => $baseUrl.'/app/trips/'.$trip->id,
         ];
         $preferenceData = [
-            "items" => [
+            'items' => [
                 [
-                    "title" => "Sellado Carpoolear",
-                    "quantity" => 1,
-                    "unit_price" => floatval($amountInCents) / 100,
-                    "currency_id" => "ARS"
-                ]
+                    'title' => 'Sellado Carpoolear',
+                    'quantity' => 1,
+                    'unit_price' => floatval($amountInCents) / 100,
+                    'currency_id' => 'ARS',
+                ],
             ],
-            "back_urls" => $selladoUrls,
-            "auto_return" => "approved",
-            'external_reference' => $this->createHashedExternalReferenceForSellado((int) $trip->id)
+            'back_urls' => $selladoUrls,
+            'auto_return' => 'approved',
+            'external_reference' => $this->createHashedExternalReferenceForSellado((int) $trip->id),
         ];
 
         return $this->createPaymentPreference($preferenceData);
@@ -99,34 +100,34 @@ class MercadoPagoService
     public function createPaymentPreferenceForCampaignDonation(int $campaignId, int $amountInCents, ?int $userId = null, ?int $rewardId = null, ?int $donationId = null)
     {
         $campaign = Campaign::findOrFail($campaignId);
-        
+
         $baseUrl = rtrim(config('app.url'), '/');
         if ($baseUrl === '') {
             throw new \InvalidArgumentException('APP_URL must be set for MercadoPago campaign donations (auto_return requires valid back_urls.success)');
         }
         $campaignUrls = [
-            "success" => $baseUrl . "/campaigns/{$campaign->slug}?result=success",
-            "failure" => $baseUrl . "/campaigns/{$campaign->slug}?result=failed",
-            "pending" => $baseUrl . "/campaigns/{$campaign->slug}?result=pending",
+            'success' => $baseUrl."/campaigns/{$campaign->slug}?result=success",
+            'failure' => $baseUrl."/campaigns/{$campaign->slug}?result=failed",
+            'pending' => $baseUrl."/campaigns/{$campaign->slug}?result=pending",
         ];
         $preferenceData = [
-            "items" => [
+            'items' => [
                 [
-                    "title" => "Donación para Carpoolear: " . $campaign->title,
-                    "quantity" => 1,
-                    "unit_price" => floatval($amountInCents) / 100,
-                    "currency_id" => "ARS"
-                ]
+                    'title' => 'Donación para Carpoolear: '.$campaign->title,
+                    'quantity' => 1,
+                    'unit_price' => floatval($amountInCents) / 100,
+                    'currency_id' => 'ARS',
+                ],
             ],
-            "back_urls" => $campaignUrls,
-            "auto_return" => "approved",
+            'back_urls' => $campaignUrls,
+            'auto_return' => 'approved',
             'external_reference' => $this->createHashedExternalReferenceForCampaignDonation(
                 $campaign->id,
                 $campaign->payment_slug,
                 $rewardId ?? 0,
                 $userId ?? 'Anonymous',
                 $donationId ?? 0
-            )
+            ),
         ];
 
         return $this->createPaymentPreference($preferenceData);
@@ -139,10 +140,10 @@ class MercadoPagoService
     private function buildHashedReference(string $referenceString): string
     {
         $salt = config('services.mercadopago.reference_salt', 'carpoolear_2024_secure_salt');
-        $hash = hash('sha256', $referenceString . $salt);
+        $hash = hash('sha256', $referenceString.$salt);
         $encodedData = base64_encode($referenceString);
 
-        return $hash . ':' . $encodedData;
+        return $hash.':'.$encodedData;
     }
 
     /**
@@ -169,7 +170,7 @@ class MercadoPagoService
      */
     private function createHashedExternalReferenceForSellado(int $tripId): string
     {
-        $referenceString = 'Sellado de Viaje ID: ' . $tripId;
+        $referenceString = 'Sellado de Viaje ID: '.$tripId;
 
         return $this->buildHashedReference($referenceString);
     }
@@ -177,9 +178,9 @@ class MercadoPagoService
     /**
      * Create a payment preference for manual identity validation.
      *
-     * @param int $requestId ManualIdentityValidation id
-     * @param int|null $amountInCents Override from config if null
-     * @param string|null $successRedirectUrl Optional override for success URL (default: backend manual-validation-success)
+     * @param  int  $requestId  ManualIdentityValidation id
+     * @param  int|null  $amountInCents  Override from config if null
+     * @param  string|null  $successRedirectUrl  Optional override for success URL (default: backend manual-validation-success)
      */
     public function createPaymentPreferenceForManualValidation(int $requestId, ?int $amountInCents = null, ?string $successRedirectUrl = null): \MercadoPago\Resources\Preference
     {
@@ -191,9 +192,9 @@ class MercadoPagoService
         }
 
         $baseUrl = rtrim(config('app.url'), '/');
-        $successPath = $baseUrl . '/api/mercadopago/manual-validation-success?request_id=' . $requestId;
-        $failurePath = $baseUrl . '/api/mercadopago/manual-validation-success?request_id=' . $requestId . '&result=failure';
-        $pendingPath = $baseUrl . '/api/mercadopago/manual-validation-success?request_id=' . $requestId . '&result=pending';
+        $successPath = $baseUrl.'/api/mercadopago/manual-validation-success?request_id='.$requestId;
+        $failurePath = $baseUrl.'/api/mercadopago/manual-validation-success?request_id='.$requestId.'&result=failure';
+        $pendingPath = $baseUrl.'/api/mercadopago/manual-validation-success?request_id='.$requestId.'&result=pending';
         if ($successRedirectUrl !== null) {
             $successPath = $successRedirectUrl;
         }
@@ -218,7 +219,7 @@ class MercadoPagoService
             ],
             'back_urls' => $urls,
             'auto_return' => 'approved',
-            'external_reference' => 'manual_validation:' . $requestId,
+            'external_reference' => 'manual_validation:'.$requestId,
         ];
 
         return $this->createPaymentPreference($preferenceData);
@@ -240,8 +241,8 @@ class MercadoPagoService
      *   Search POS:        https://www.mercadopago.com.ar/developers/en/reference/pos/_pos/get
      *   Stores and POS:    https://www.mercadopago.com.ar/developers/en/docs/qr-code/stores-pos/stores-and-pos
      *
-     * @param int $requestId ManualIdentityValidation id
-     * @param int|null $amountInCents Override from config if null
+     * @param  int  $requestId  ManualIdentityValidation id
+     * @param  int|null  $amountInCents  Override from config if null
      * @return array{request_id: int, order_id: string, qr_data: string, payment_id: string|null}
      */
     public function createQrOrderForManualValidation(int $requestId, ?int $amountInCents = null): array
@@ -264,13 +265,13 @@ class MercadoPagoService
         $minAmountCents = 1500;
         if ($amountInCents < $minAmountCents) {
             throw new \InvalidArgumentException(
-                'Mercado Pago QR orders require amount >= 15.00. Got ' . ($amountInCents / 100) . '. Set MANUAL_IDENTITY_VALIDATION_COST_CENTS >= 1500.'
+                'Mercado Pago QR orders require amount >= 15.00. Got '.($amountInCents / 100).'. Set MANUAL_IDENTITY_VALIDATION_COST_CENTS >= 1500.'
             );
         }
 
         $amount = number_format(floatval($amountInCents) / 100, 2, '.', '');
         // Orders API allows only alphanumeric/underscore (max 64 chars); colon is rejected
-        $externalReference = 'manual_validation_' . $requestId;
+        $externalReference = 'manual_validation_'.$requestId;
 
         $orderPayload = [
             'type' => 'qr',
@@ -299,11 +300,11 @@ class MercadoPagoService
             ],
         ];
 
-        $requestOptions = new RequestOptions();
+        $requestOptions = new RequestOptions;
         $requestOptions->setAccessToken($qrAccessToken);
         // SDK expects lowercase key: getIdempotencyKey() checks array_change_key_case($headers) but returns $headers[strtolower($key)]
         $requestOptions->setCustomHeaders([
-            'x-idempotency-key' => 'manual_qr_' . $requestId . '_' . uniqid('', true),
+            'x-idempotency-key' => 'manual_qr_'.$requestId.'_'.uniqid('', true),
         ]);
 
         \Log::info('MercadoPago QR Order request', [
