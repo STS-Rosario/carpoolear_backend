@@ -31,8 +31,6 @@ class RoutesManager
         $result = curl_exec($ch);
         curl_close($ch);
 
-        \Log::info($url);
-
         $decoded = json_decode($result, true);
 
         \Log::info('decode ok');
