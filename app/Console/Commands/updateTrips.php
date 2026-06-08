@@ -102,7 +102,6 @@ class updateTrips extends Command
                 }
                 if (! $toNode) {
                     $this->info('name '.$to->address);
-                    \Log::info('name '.$to->address);
                 }
             }
 
