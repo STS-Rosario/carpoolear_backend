@@ -112,7 +112,6 @@ class TripRepository
         }
 
         $trip = Trip::create($data);
-        \Log::info('TripRepository::create trip', [$trip]);
 
         // Save recommended trip price if available from trip info
         if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
