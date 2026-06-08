@@ -220,7 +220,57 @@ class TripLiveShareManagerTest extends TestCase
         $this->assertNull($view['lat']);
         $this->assertNull($view['lng']);
         $this->assertNull($view['recorded_at']);
+        $this->assertTrue($view['is_active']);
         $this->assertSame('Juan Driver', $view['driver']['name']);
+    }
+
+    public function test_get_public_view_returns_stopped_state_for_inactive_share(): void
+    {
+        $driver = User::factory()->create(['name' => 'Juan Driver']);
+        $trip = $this->ongoingTripFor($driver);
+        $share = TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        $view = $this->manager()->getPublicView($share->share_token);
+
+        $this->assertNotNull($view);
+        $this->assertFalse($view['is_active']);
+        $this->assertNull($view['lat']);
+        $this->assertNull($view['lng']);
+        $this->assertSame('Juan Driver', $view['driver']['name']);
+    }
+
+    public function test_get_trip_view_returns_stopped_state_for_inactive_driver_share(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = $this->ongoingTripFor($driver);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+        TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $driver->id,
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        $view = $this->manager()->getTripView($passenger, $trip->id);
+
+        $this->assertNotNull($view);
+        $this->assertFalse($view['is_active']);
+        $this->assertNull($view['lat']);
+        $this->assertNull($view['lng']);
     }
 
     public function test_get_trip_view_allows_participant_and_returns_driver_share(): void

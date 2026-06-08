@@ -146,8 +146,30 @@ class TripLiveShareControllerIntegrationTest extends TestCase
         $response = $this->getJson("/api/live/{$share->share_token}");
 
         $response->assertOk()
+            ->assertJsonPath('data.is_active', true)
             ->assertJsonPath('data.lat', null)
             ->assertJsonPath('data.lng', null)
+            ->assertJsonPath('data.driver.name', 'Driver Name');
+    }
+
+    public function test_public_live_endpoint_returns_stopped_state_for_inactive_share(): void
+    {
+        $driver = User::factory()->create(['name' => 'Driver Name']);
+        $trip = Trip::factory()->create(['user_id' => $driver->id, 'to_town' => 'Rosario']);
+        $share = TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory()->create()->id,
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        $response = $this->getJson("/api/live/{$share->share_token}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.lat', null)
             ->assertJsonPath('data.driver.name', 'Driver Name');
     }
 
@@ -199,5 +221,31 @@ class TripLiveShareControllerIntegrationTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.recorded_at', Carbon::parse('2026-06-02 15:30:00')->toIso8601String());
+    }
+
+    public function test_trip_view_returns_stopped_state_for_inactive_driver_share(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+            'estimated_time' => '01:00',
+        ]);
+        TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $driver->id,
+            'is_active' => false,
+            'lat' => null,
+            'lng' => null,
+            'stopped_at' => Carbon::now(),
+        ]);
+
+        $response = $this->actingAs($driver, 'api')
+            ->getJson("/api/trips/{$trip->id}/live-share/view");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.lat', null);
     }
 }
