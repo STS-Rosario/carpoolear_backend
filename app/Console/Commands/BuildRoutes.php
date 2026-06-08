@@ -4,10 +4,10 @@ namespace STS\Console\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use STS\Services\Logic\RoutesManager as RoutesManager;
-use STS\Events\Trip\Create  as CreateEvent;
+use STS\Events\Trip\Create as CreateEvent;
 use STS\Models\Route;
 use STS\Models\Trip;
+use STS\Services\Logic\RoutesManager;
 
 class BuildRoutes extends Command
 {
@@ -45,8 +45,7 @@ class BuildRoutes extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND BuildRoutes");
-        \Log::info('Route builder ');
+        \Log::info('COMMAND BuildRoutes');
         $route = Route::where('processed', 0)->with(['origin', 'destiny'])->first();
         if ($route) {
             try {
