@@ -65,12 +65,6 @@ class OsrmProxyController extends Controller
 
         Cache::put($cacheKey, $json, now()->addSeconds(max(60, $ttlSeconds)));
 
-        Log::debug('[osrm_proxy] cache STORE', [
-            'path_preview' => substr($path, 0, 96),
-            'osrm_code' => $json['code'] ?? null,
-            'ttl_seconds' => $ttlSeconds,
-        ]);
-
         return response()->json($json)
             ->header('X-OSRM-Proxy-Cache', 'MISS');
     }
