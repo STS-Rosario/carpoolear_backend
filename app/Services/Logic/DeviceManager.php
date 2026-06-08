@@ -243,11 +243,6 @@ class DeviceManager extends BaseManager
                 $this->deviceRepo->delete($device);
                 $count++;
 
-                \Log::info('Device successfully logged out', [
-                    'device_id' => $device->id,
-                    'device_token' => $device->device_id,
-                ]);
-
             } catch (\Exception $e) {
                 \Log::error('Failed to logout device', [
                     'device_id' => $device->id,
