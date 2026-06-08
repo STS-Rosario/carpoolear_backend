@@ -42,6 +42,7 @@ class PassengerControllerIntegrationTest extends TestCase
             ['GET', '/api/trips/requests'],
             ['GET', '/api/users/requests'],
             ['GET', '/api/users/payment-pending'],
+            ['GET', '/api/users/seat-requests'],
             ['GET', '/api/trips/transactions'],
             ['POST', "/api/trips/{$trip->id}/requests"],
             ['POST', "/api/trips/{$trip->id}/requests/{$otherId}/cancel"],
@@ -396,5 +397,49 @@ class PassengerControllerIntegrationTest extends TestCase
             ->getJson('/api/users/payment-pending')
             ->assertOk()
             ->assertJsonStructure(['data']);
+    }
+
+    public function test_seat_requests_endpoint_returns_pending_rejected_and_accepted_trips(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+
+        $pendingTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        $rejectedTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(3),
+        ]);
+        $acceptedTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(4),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $pendingTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $rejectedTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_REJECTED,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $acceptedTrip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        $this->actingAs($passenger, 'api')
+            ->getJson('/api/users/seat-requests')
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonPath('data.0.trip_id', $pendingTrip->id)
+            ->assertJsonPath('data.0.request_state', Passenger::STATE_PENDING)
+            ->assertJsonPath('data.0.trip.id', $pendingTrip->id)
+            ->assertJsonPath('data.1.request_state', Passenger::STATE_REJECTED)
+            ->assertJsonPath('data.2.request_state', Passenger::STATE_ACCEPTED);
     }
 }
