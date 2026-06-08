@@ -83,4 +83,65 @@ class RatingTransformerTest extends TestCase
         $this->assertNull($payload['reply_comment_created_at']);
         $this->assertSame(Rating::STATE_NEGATIVO, $payload['rating']);
     }
+
+    public function test_transform_returns_placeholder_when_from_user_was_deleted(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $to->id]);
+        $deletedFromId = $from->id;
+
+        $rate = Rating::query()->create([
+            'trip_id' => $trip->id,
+            'user_id_from' => $deletedFromId,
+            'user_id_to' => $to->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'From deleted user',
+            'reply_comment' => '',
+            'reply_comment_created_at' => null,
+            'user_to_type' => 1,
+            'user_to_state' => 1,
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::parse('2026-04-30 11:00:00'),
+        ]);
+
+        $from->delete();
+
+        $payload = (new RatingTransformer($to))->transform($rate->fresh());
+
+        $this->assertSame($deletedFromId, $payload['from']['id']);
+        $this->assertSame('Usuario inexistente', $payload['from']['name']);
+        $this->assertSame('', $payload['from']['image']);
+    }
+
+    public function test_transform_returns_placeholder_when_to_user_was_deleted_on_pending_rate(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $to->id]);
+        $deletedToId = $to->id;
+
+        $rate = Rating::query()->create([
+            'trip_id' => $trip->id,
+            'user_id_from' => $from->id,
+            'user_id_to' => $deletedToId,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Pending rate',
+            'reply_comment' => '',
+            'reply_comment_created_at' => null,
+            'user_to_type' => 1,
+            'user_to_state' => 1,
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => null,
+        ]);
+
+        $to->delete();
+
+        $payload = (new RatingTransformer($from))->transform($rate->fresh());
+
+        $this->assertSame($deletedToId, $payload['to']['id']);
+        $this->assertSame('Usuario inexistente', $payload['to']['name']);
+    }
 }
