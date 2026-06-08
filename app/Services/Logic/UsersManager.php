@@ -201,7 +201,6 @@ class UsersManager extends BaseManager
                 // Takes a JSON encoded string and converts it into a PHP variable
                 $res = json_decode($response, true);
 
-                \Log::info('Captcha val: '.$response);
                 // END setting reCaptcha v3 validation data
 
                 // Post form OR output alert and bypass post if false. NOTE: score conditional is optional
