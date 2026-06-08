@@ -134,10 +134,18 @@ class HomeControllerTest extends TestCase
 
     public function test_handle_app_returns_js_asset_or_index_html(): void
     {
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/app/main.js')
+            ->andReturn(true);
         File::shouldReceive('get')
             ->once()
             ->with(public_path().'/app/main.js')
             ->andReturn('app-js-content');
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/app/index.html')
+            ->andReturn(true);
         File::shouldReceive('get')
             ->once()
             ->with(public_path().'/app/index.html')
@@ -149,20 +157,50 @@ class HomeControllerTest extends TestCase
         $this->assertSame('app-index-content', $controller->handleApp('dashboard'));
     }
 
+    public function test_handle_app_returns_404_when_asset_does_not_exist(): void
+    {
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/app/DatePicker.C03Rsm5d.js')
+            ->andReturn(false);
+
+        $response = app(HomeController::class)->handleApp('DatePicker.C03Rsm5d.js');
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('', $response->getContent());
+    }
+
     public function test_handle_campaigns_and_dev_return_expected_files_for_js_and_index(): void
     {
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/campaigns/vendor.js')
+            ->andReturn(true);
         File::shouldReceive('get')
             ->once()
             ->with(public_path().'/campaigns/vendor.js')
             ->andReturn('campaigns-js');
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/campaigns/index.html')
+            ->andReturn(true);
         File::shouldReceive('get')
             ->once()
             ->with(public_path().'/campaigns/index.html')
             ->andReturn('campaigns-index');
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/dev/runtime.js')
+            ->andReturn(true);
         File::shouldReceive('get')
             ->once()
             ->with(public_path().'/dev/runtime.js')
             ->andReturn('dev-js');
+        File::shouldReceive('exists')
+            ->once()
+            ->with(public_path().'/dev/index.html')
+            ->andReturn(true);
         File::shouldReceive('get')
             ->once()
             ->with(public_path().'/dev/index.html')
