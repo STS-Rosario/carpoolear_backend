@@ -17,6 +17,11 @@ class TripUserTransformer extends TransformerAbstract
     /**
      * Turn this item object into a generic array.
      */
+    public function transformOrMissing(?User $user, ?int $userId = null): array
+    {
+        return $user ? $this->transform($user) : $this->missingUser($userId);
+    }
+
     public function missingUser(?int $userId = null): array
     {
         return [

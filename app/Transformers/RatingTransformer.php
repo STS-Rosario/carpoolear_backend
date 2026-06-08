@@ -26,9 +26,7 @@ class RatingTransformer extends TransformerAbstract
 
         $data = [
             'id' => $rate->id,
-            'from' => $rate->from
-                ? $userTrans->transform($rate->from)
-                : $userTrans->missingUser($rate->user_id_from),
+            'from' => $userTrans->transformOrMissing($rate->from, $rate->user_id_from),
             // 'to' => $userTrans->transform($rate->to),
             'trip' => $tripTrans->transform($rate->trip),
             'comment' => $rate->comment,
@@ -40,9 +38,7 @@ class RatingTransformer extends TransformerAbstract
             'rating' => $rate->rating,
         ];
         if (! $rate->rate_at) {
-            $data['to'] = $rate->to
-                ? $userTrans->transform($rate->to)
-                : $userTrans->missingUser($rate->user_id_to);
+            $data['to'] = $userTrans->transformOrMissing($rate->to, $rate->user_id_to);
         }
 
         return $data;
