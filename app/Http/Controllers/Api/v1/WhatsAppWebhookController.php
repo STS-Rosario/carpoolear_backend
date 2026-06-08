@@ -62,10 +62,6 @@ class WhatsAppWebhookController extends Controller
     {
         $payload = $request->all();
 
-        Log::info('WhatsApp webhook event notification', [
-            'payload' => $payload,
-        ]);
-
         // Verify the request is from WhatsApp (optional but recommended)
         if (! $this->verifyWebhookSignature($request)) {
             Log::warning('WhatsApp webhook signature verification failed');
