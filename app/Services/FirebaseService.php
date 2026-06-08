@@ -234,7 +234,8 @@ class FirebaseService
     }
 
     /**
-     * Whether an FCM HTTP v1 error indicates the device registration token is no longer valid.
+     * Whether an FCM HTTP v1 error indicates the device registration token cannot be used
+     * with the configured Firebase project (stale, invalid, or wrong sender).
      */
     public static function isStaleRegistrationTokenError(\Throwable $e): bool
     {
@@ -273,6 +274,10 @@ class FirebaseService
         }
 
         if (stripos($message, 'InvalidRegistration') !== false) {
+            return true;
+        }
+
+        if (stripos($message, 'SenderId mismatch') !== false) {
             return true;
         }
 
