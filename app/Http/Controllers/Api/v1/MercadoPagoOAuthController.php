@@ -64,8 +64,6 @@ class MercadoPagoOAuthController extends Controller
             }
 
             $me = $oauthService->getUserMe($accessToken);
-            \Log::info('MercadoPago OAuth users/me response', ['user_id' => $userId, 'me' => $me]);
-
             $userName = trim((string) ($user->name ?? ''));
             $mpName = trim((string) (($me['first_name'] ?? '').' '.($me['last_name'] ?? '')));
             $nameMismatch = ! MercadoPagoOAuthService::nameMatches($me, $userName);
