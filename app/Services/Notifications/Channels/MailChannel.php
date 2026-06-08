@@ -22,7 +22,6 @@ class MailChannel
                 $message->to($user->email, $user->name)->subject($data['title']);
             }); */
 
-            \Log::info('estoy aca:');
             $html = view('email.'.$data['email_view'], $data)->render();
             ssmtp_send_mail($data['title'], $user->email, $html);
             \Log::info('estoy alla:');
