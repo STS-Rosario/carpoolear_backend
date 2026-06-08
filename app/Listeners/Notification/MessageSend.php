@@ -2,8 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\MessageSend as SendEvent;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\MessageSend as SendEvent;
 use STS\Notifications\NewMessagePushNotification;
 
 class MessageSend implements ShouldQueue
@@ -21,7 +21,6 @@ class MessageSend implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  SendEvent  $event
      * @return void
      */
     public function handle(SendEvent $event)
@@ -29,14 +28,13 @@ class MessageSend implements ShouldQueue
         $from = $event->from;
         $to = $event->to;
         $message = $event->message;
-        $notification = new NewMessagePushNotification();
+        $notification = new NewMessagePushNotification;
         $notification->setAttribute('from', $from);
         $notification->setAttribute('messages', $message);
         try {
             $notification->notify($to);
         } catch (\Exception $e) {
-            \Log::info('Error on sending notification');
-            \Log::info($e);
+            \Log::warning('Error on sending notification', ['message' => $e->getMessage()]);
         }
     }
 }
