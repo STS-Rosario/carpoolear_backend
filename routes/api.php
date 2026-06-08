@@ -6,6 +6,7 @@ use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
@@ -290,6 +291,7 @@ Route::middleware(['api'])->group(function () {
 
         Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
         Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
+        Route::apiResource('changelogs', AdminChangelogController::class)->except(['create', 'edit']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
