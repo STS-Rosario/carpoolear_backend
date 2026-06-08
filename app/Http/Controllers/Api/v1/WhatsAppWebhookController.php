@@ -186,11 +186,6 @@ class WhatsAppWebhookController extends Controller
         $statuses = $value['statuses'] ?? [];
 
         foreach ($statuses as $status) {
-            Log::info('WhatsApp message status update', [
-                'business_account_id' => $businessAccountId,
-                'status' => $status,
-            ]);
-
             // TODO: Implement your status handling logic here
             // This could include:
             // - Updating message status in your database
