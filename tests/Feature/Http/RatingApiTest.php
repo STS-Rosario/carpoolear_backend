@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Mockery;
 use STS\Http\Controllers\Api\v1\RatingController;
 use STS\Models\Passenger;
@@ -72,6 +73,43 @@ class RatingApiTest extends TestCase
         $this->postJson('api/trips/1/reply/1', ['comment' => 'Thanks'])
             ->assertUnauthorized()
             ->assertJson(['message' => 'Unauthorized.']);
+    }
+
+    public function test_authenticated_user_can_list_ratings_when_voter_was_deleted(): void
+    {
+        $rated = User::factory()->create(['active' => true, 'banned' => false]);
+        $voter = User::factory()->create(['active' => true, 'banned' => false]);
+        $trip = Trip::factory()->create(['user_id' => $rated->id]);
+        $deletedVoterId = $voter->id;
+
+        $row = $this->persistRating([
+            'trip_id' => $trip->id,
+            'user_id_from' => $deletedVoterId,
+            'user_id_to' => $rated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Orphaned voter',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::now(),
+            'available' => 1,
+        ]);
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        $voter->delete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        $this->actingAs($rated, 'api');
+
+        $response = $this->getJson('api/users/ratings?page_size=10');
+        $response->assertOk();
+
+        $rating = collect($response->json('data'))->firstWhere('id', $row->id);
+        $this->assertNotNull($rating);
+        $this->assertSame($deletedVoterId, $rating['from']['id']);
+        $this->assertSame('Usuario inexistente', $rating['from']['name']);
     }
 
     public function test_authenticated_user_can_list_ratings_they_received_using_pagination(): void

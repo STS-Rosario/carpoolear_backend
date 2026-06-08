@@ -93,4 +93,60 @@ class TripUserTransformerTest extends TestCase
         $this->assertNull($payload['driver_data_docs']);
         $this->assertNull($payload['identity_validated_at']);
     }
+
+    public function test_missing_user_returns_placeholder_payload_with_usuario_inexistente_name(): void
+    {
+        $viewer = User::factory()->create();
+
+        $payload = (new TripUserTransformer($viewer))->missingUser(99999);
+
+        $this->assertSame([
+            'id',
+            'name',
+            'descripcion',
+            'private_note',
+            'image',
+            'positive_ratings',
+            'negative_ratings',
+            'last_connection',
+            'accounts',
+            'has_pin',
+            'is_member',
+            'monthly_donate',
+            'do_not_alert_request_seat',
+            'do_not_alert_accept_passenger',
+            'do_not_alert_pending_rates',
+            'do_not_alert_pricing',
+            'autoaccept_requests',
+            'driver_is_verified',
+            'driver_data_docs',
+            'conversation_opened_count',
+            'conversation_answered_count',
+            'answer_delay_sum',
+            'identity_validated_at',
+        ], array_keys($payload));
+        $this->assertSame(99999, $payload['id']);
+        $this->assertSame('Usuario inexistente', $payload['name']);
+        $this->assertSame('', $payload['descripcion']);
+        $this->assertSame('', $payload['private_note']);
+        $this->assertSame('', $payload['image']);
+        $this->assertSame(0, $payload['positive_ratings']);
+        $this->assertSame(0, $payload['negative_ratings']);
+        $this->assertSame('', $payload['last_connection']);
+        $this->assertNull($payload['accounts']);
+        $this->assertFalse($payload['has_pin']);
+        $this->assertFalse($payload['is_member']);
+        $this->assertFalse($payload['monthly_donate']);
+        $this->assertFalse($payload['do_not_alert_request_seat']);
+        $this->assertFalse($payload['do_not_alert_accept_passenger']);
+        $this->assertFalse($payload['do_not_alert_pending_rates']);
+        $this->assertFalse($payload['do_not_alert_pricing']);
+        $this->assertFalse($payload['autoaccept_requests']);
+        $this->assertFalse($payload['driver_is_verified']);
+        $this->assertNull($payload['driver_data_docs']);
+        $this->assertSame(0, $payload['conversation_opened_count']);
+        $this->assertSame(0, $payload['conversation_answered_count']);
+        $this->assertSame(0, $payload['answer_delay_sum']);
+        $this->assertNull($payload['identity_validated_at']);
+    }
 }

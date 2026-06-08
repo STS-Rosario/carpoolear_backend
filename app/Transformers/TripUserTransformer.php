@@ -16,9 +16,41 @@ class TripUserTransformer extends TransformerAbstract
 
     /**
      * Turn this item object into a generic array.
-     *
-     * @return array
      */
+    public function transformOrMissing(?User $user, ?int $userId = null): array
+    {
+        return $user ? $this->transform($user) : $this->missingUser($userId);
+    }
+
+    public function missingUser(?int $userId = null): array
+    {
+        return [
+            'id' => $userId,
+            'name' => 'Usuario inexistente',
+            'descripcion' => '',
+            'private_note' => '',
+            'image' => '',
+            'positive_ratings' => 0,
+            'negative_ratings' => 0,
+            'last_connection' => '',
+            'accounts' => null,
+            'has_pin' => false,
+            'is_member' => false,
+            'monthly_donate' => false,
+            'do_not_alert_request_seat' => false,
+            'do_not_alert_accept_passenger' => false,
+            'do_not_alert_pending_rates' => false,
+            'do_not_alert_pricing' => false,
+            'autoaccept_requests' => false,
+            'driver_is_verified' => false,
+            'driver_data_docs' => null,
+            'conversation_opened_count' => 0,
+            'conversation_answered_count' => 0,
+            'answer_delay_sum' => 0,
+            'identity_validated_at' => null,
+        ];
+    }
+
     public function transform(User $user)
     {
         $data = [
