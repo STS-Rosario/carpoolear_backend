@@ -224,7 +224,6 @@ class UsersManager extends BaseManager
                         }
                     }
 
-                    \Log::info('UserManager before CreateEvent.');
                     event(new CreateEvent($u->id));
 
                     return $u;
