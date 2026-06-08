@@ -6,6 +6,7 @@ use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
@@ -19,6 +20,7 @@ use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
 use STS\Http\Controllers\Api\v1\CarController;
+use STS\Http\Controllers\Api\v1\ChangelogController;
 use STS\Http\Controllers\Api\v1\ConversationController;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\DeviceController;
@@ -44,6 +46,8 @@ Route::middleware(['api'])->group(function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('retoken', [AuthController::class, 'retoken']);
     Route::get('config', [AuthController::class, 'getConfig']);
+    Route::get('changelog', [ChangelogController::class, 'show']);
+    Route::get('changelogs', [ChangelogController::class, 'index']);
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
@@ -288,6 +292,7 @@ Route::middleware(['api'])->group(function () {
 
         Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
         Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
+        Route::apiResource('changelogs', AdminChangelogController::class)->except(['create', 'edit']);
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');
