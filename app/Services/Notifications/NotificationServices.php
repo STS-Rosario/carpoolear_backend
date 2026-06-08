@@ -8,9 +8,7 @@ use STS\Events\Notification\NotificationSending;
 
 class NotificationServices
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function driver($name)
     {
@@ -27,10 +25,10 @@ class NotificationServices
             if (isset($config->is_laravel) && $config->is_laravel) {
                 \Config::set($config->key, $config->value);
             } else {
-                \Config::set("carpoolear." . $config->key, $config->value);
+                \Config::set('carpoolear.'.$config->key, $config->value);
             }
         }
-        /// -----------
+        // / -----------
         $users = (is_array($users) || $users instanceof Collection) ? $users : [$users];
         $driver = $this->driver($channel);
         foreach ($users as $user) {
@@ -38,8 +36,7 @@ class NotificationServices
                 try {
                     $driver->send($notification, $user);
                 } catch (\Exception $ex) {
-                    \Log::info('error sending:');
-                    \Log::info($ex);
+                    \Log::warning('Notification send failed', ['message' => $ex->getMessage()]);
 
                 }
             }
