@@ -552,11 +552,6 @@ class UsersManager extends BaseManager
                 ->onQueue('emails') // Use a dedicated queue for emails
                 ->delay(now()->addSeconds(10)); // Add a small delay to prevent immediate retries
 
-            \Log::info('resetPassword email queued successfully', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-            ]);
-
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
                 \Log::channel('email_logs')->info('PASSWORD_RESET_QUEUED', [
