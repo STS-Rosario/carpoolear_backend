@@ -366,7 +366,6 @@ class ConversationsManager extends BaseManager
                             break;
                         }
                     }
-                    \Log::info('$esperandoRespuestaSolicitud: '.$user->id.' / '.$esperandoRespuestaSolicitud ? 'true' : 'false');
                     if (! in_array($user->id, $destinations) && $esperandoRespuestaSolicitud) {
                         $destinations[] = $user->id;
                     }
