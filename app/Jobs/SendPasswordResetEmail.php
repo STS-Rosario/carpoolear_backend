@@ -89,9 +89,6 @@ class SendPasswordResetEmail implements ShouldQueue
                 'timestamp' => now()->toIso8601String(),
             ];
 
-            // Log to regular log
-            Log::info('Password reset email sent successfully', $successData);
-
             // Log to email_logs channel if enabled
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('PASSWORD_RESET_EMAIL_SUCCESS', $successData);
