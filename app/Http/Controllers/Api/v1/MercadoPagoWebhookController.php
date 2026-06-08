@@ -468,10 +468,6 @@ class MercadoPagoWebhookController extends Controller
 
         // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR)
         if (strpos($externalReference, 'manual_validation:') !== 0 && strpos($externalReference, 'manual_validation_') !== 0) {
-            Log::info('Order processed webhook: external_reference not manual_validation', [
-                'external_reference' => $externalReference,
-            ]);
-
             return response()->json(['status' => 'success']);
         }
 
