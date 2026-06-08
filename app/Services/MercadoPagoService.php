@@ -304,12 +304,6 @@ class MercadoPagoService
             'x-idempotency-key' => 'manual_qr_'.$requestId.'_'.uniqid('', true),
         ]);
 
-        \Log::info('MercadoPago QR Order request', [
-            'request_id' => $requestId,
-            'payload' => $orderPayload,
-            'config_qr_external_pos_id' => $posExternalId,
-        ]);
-
         try {
             $order = $this->orderClient->create($orderPayload, $requestOptions);
         } catch (MPApiException $e) {
