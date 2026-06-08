@@ -236,13 +236,6 @@ class DeviceManager extends BaseManager
 
         foreach ($devices as $device) {
             try {
-                \Log::info('Processing device for logout', [
-                    'device_id' => $device->id,
-                    'device_token' => $device->device_id,
-                    'session_id' => $device->session_id,
-                    'device_type' => $device->device_type,
-                ]);
-
                 // Unregister from FCM first
                 $unregisterResult = $this->firebase->unregisterDevice($device->device_id);
 
