@@ -473,6 +473,63 @@ class PushChannelTest extends TestCase
         $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
     }
 
+    public function test_send_deactivates_android_device_when_fcm_returns_not_found_with_unregistered_details(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')->zeroOrMoreTimes();
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/carpoolear-production/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'Requested entity was not found.',
+                'status' => 'NOT_FOUND',
+                'details' => [
+                    [
+                        '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                        'errorCode' => 'UNREGISTERED',
+                    ],
+                ],
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $fcmException = new ClientException('Requested entity was not found.', $request, $response);
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($fcmException);
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => 'stale-android-token-v2',
+            'device_type' => 'android',
+            'session_id' => 's-stale-android-v2',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello');
+        $notification->setAttribute('title', 'T');
+
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
+
+        $device->refresh();
+        $this->assertFalse($device->notifications);
+        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+    }
+
     public function test_send_deactivates_android_device_when_fcm_returns_sender_id_mismatch(): void
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
