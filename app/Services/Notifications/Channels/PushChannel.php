@@ -302,13 +302,5 @@ class PushChannel
         if ($device->exists) {
             $device->update(['notifications' => false]);
         }
-
-        \Log::warning('PushChannel: Deactivated device after stale push token', [
-            'user_id' => $user->id ?? null,
-            'device_id' => $device->id ?? null,
-            'device_token' => substr($device->device_id ?? '', 0, 20).'...',
-            'device_type' => $device->device_type,
-            'error' => $e->getMessage(),
-        ]);
     }
 }

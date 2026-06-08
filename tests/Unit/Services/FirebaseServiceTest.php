@@ -239,7 +239,7 @@ class FirebaseServiceTest extends TestCase
         $service->sendNotification('tok', ['title' => 'a', 'body' => 'b'], [], 'android');
     }
 
-    public function test_send_notification_client_exception_logs_warning_for_stale_registration_token(): void
+    public function test_send_notification_client_exception_skips_log_for_stale_registration_token(): void
     {
         $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
         $payload = [
@@ -262,30 +262,7 @@ class FirebaseServiceTest extends TestCase
         $http->shouldReceive('post')->once()->andThrow($exception);
 
         Log::shouldReceive('error')->never();
-        Log::shouldReceive('warning')
-            ->once()
-            ->withArgs(function (string $message, array $context): bool {
-                if ($message !== 'FirebaseService: FCM stale registration token') {
-                    return false;
-                }
-                if (($context['device_token'] ?? null) !== substr('stale-android-token', 0, 20).'...') {
-                    return false;
-                }
-                if (($context['device_type'] ?? null) !== 'android') {
-                    return false;
-                }
-                if (($context['status_code'] ?? null) !== 404) {
-                    return false;
-                }
-                if (($context['fcm_error_status'] ?? null) !== 'NOT_FOUND') {
-                    return false;
-                }
-                if (array_key_exists('error_trace', $context) || array_key_exists('request_payload', $context)) {
-                    return false;
-                }
-
-                return true;
-            });
+        Log::shouldReceive('warning')->never();
 
         $service = new FirebaseServiceHarness($http, ['access_token' => 't'], 'myproj');
 

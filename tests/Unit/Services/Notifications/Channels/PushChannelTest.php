@@ -462,15 +462,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-
-        $deactivateLog = $this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token');
-        $this->assertNotNull($deactivateLog);
-        $this->assertSame($user->id, $deactivateLog['context']['user_id']);
-        $this->assertSame($device->id, $deactivateLog['context']['device_id']);
-        $this->assertSame('android', $deactivateLog['context']['device_type']);
-
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_deactivates_android_device_when_fcm_returns_not_found_with_unregistered_details(): void
@@ -527,7 +519,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_deactivates_android_device_when_fcm_returns_sender_id_mismatch(): void
@@ -582,9 +574,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_deactivates_browser_device_when_fcm_returns_not_registered(): void
@@ -635,7 +625,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+        $this->assertSame([], $logged);
     }
 
     public function test_is_apns_unregistered_error_detects_http_410_unregistered(): void
@@ -695,14 +685,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-
-        $deactivateLog = $this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token');
-        $this->assertNotNull($deactivateLog);
-        $this->assertSame($user->id, $deactivateLog['context']['user_id']);
-        $this->assertSame($device->id, $deactivateLog['context']['device_id']);
-        $this->assertSame('iOS', $deactivateLog['context']['device_type']);
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendIOS error'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_still_logs_error_when_android_send_fails_for_non_stale_token(): void

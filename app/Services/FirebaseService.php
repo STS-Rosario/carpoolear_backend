@@ -176,14 +176,7 @@ class FirebaseService
                 }
             }
 
-            if (self::isStaleRegistrationTokenError($e)) {
-                \Log::warning('FirebaseService: FCM stale registration token', [
-                    'device_token' => substr((string) $deviceToken, 0, 20).'...',
-                    'device_type' => $deviceType,
-                    'status_code' => $statusCode,
-                    'fcm_error_status' => $errorDetails['status'] ?? null,
-                ]);
-            } else {
+            if (! self::isStaleRegistrationTokenError($e)) {
                 \Log::error('FirebaseService: FCM ClientException (HTTP '.$statusCode.')', [
                     'device_token' => $deviceToken,
                     'device_type' => $deviceType,
