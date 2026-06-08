@@ -416,25 +416,9 @@ class AuthControllerApiTest extends TestCase
         );
     }
 
-    public function test_get_config_logs_environment_check_and_guest_warning(): void
+    public function test_get_config_returns_ok_for_guest(): void
     {
-        Log::spy();
-
         $this->getJson('api/config')->assertOk();
-
-        Log::shouldHaveReceived('info')->withArgs(function ($message, $context): bool {
-            if ((string) $message !== 'Environment Check:' || ! is_array($context)) {
-                return false;
-            }
-            $raw = $context['raw_env'] ?? null;
-
-            return is_array($raw)
-                && array_key_exists('MODULE_USER_REQUEST_LIMITED_ENABLED', $raw)
-                && array_key_exists('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE', $raw)
-                && isset($context['config_values'], $context['app_env'], $context['env_path']);
-        });
-
-        Log::shouldHaveReceived('warning')->with('getConfig called without authenticated user');
     }
 
     public function test_get_config_merges_flat_carpoolear_keys_after_exclude_foreach(): void

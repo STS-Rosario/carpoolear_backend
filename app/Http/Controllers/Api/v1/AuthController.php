@@ -60,15 +60,6 @@ class AuthController extends Controller
             'identity_validation_new_users_date', // backend only; profile exposes identity_validation_required_for_user
         ];
         $allConfigs = config('carpoolear');
-        Log::info('Environment Check:', [
-            'raw_env' => [
-                'MODULE_USER_REQUEST_LIMITED_ENABLED' => env('MODULE_USER_REQUEST_LIMITED_ENABLED'),
-                'MODULE_USER_REQUEST_LIMITED_HOURS_RANGE' => env('MODULE_USER_REQUEST_LIMITED_HOURS_RANGE'),
-            ],
-            'config_values' => config('carpoolear'),
-            'app_env' => app()->environment(),
-            'env_path' => app()->environmentFilePath(),
-        ]);
         foreach ($exclude as $key) {
             unset($allConfigs[$key]);
         }
