@@ -215,7 +215,7 @@ class UserLogginTest extends TestCase
         $this->assertSame('jwt-user-ok', $response->getContent());
     }
 
-    public function test_jwt_exception_logs_class_and_request_url_context(): void
+    public function test_jwt_exception_returns_unauthorized_without_logging(): void
     {
         Log::spy();
 
@@ -228,9 +228,7 @@ class UserLogginTest extends TestCase
             fn () => response('no', 200)
         );
 
-        Log::shouldHaveReceived('info')
-            ->once()
-            ->with('JWT Exception: RuntimeException - Request URL: https://api.example/protected/path');
+        Log::shouldNotHaveReceived('info');
         $this->assertSame(401, $response->getStatusCode());
         $this->assertSame(['message' => 'Unauthorized.'], $response->getData(true));
     }
