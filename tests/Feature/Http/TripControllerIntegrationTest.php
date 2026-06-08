@@ -564,6 +564,51 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonFragment(['id' => $asPassengerTrip->id]);
     }
 
+    public function test_ongoing_trip_endpoint_returns_trip_within_visibility_window(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:45:00'));
+        try {
+            $user = User::factory()->create();
+            $trip = Trip::factory()->create([
+                'user_id' => $user->id,
+                'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+                'estimated_time' => '01:00',
+                'weekly_schedule' => 0,
+            ]);
+
+            $this->actingAs($user, 'api')
+                ->getJson('/api/users/ongoing-trip')
+                ->assertOk()
+                ->assertJsonPath('data.id', $trip->id)
+                ->assertJsonStructure([
+                    'data' => ['id', 'from_town', 'to_town', 'trip_date', 'estimated_time', 'user'],
+                ]);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_ongoing_trip_endpoint_returns_null_when_no_trip_in_window(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 14:00:00'));
+        try {
+            $user = User::factory()->create();
+            Trip::factory()->create([
+                'user_id' => $user->id,
+                'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+                'estimated_time' => '01:00',
+                'weekly_schedule' => 0,
+            ]);
+
+            $this->actingAs($user, 'api')
+                ->getJson('/api/users/ongoing-trip')
+                ->assertOk()
+                ->assertJsonPath('data', null);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
     public function test_admin_can_list_trips_for_another_user_via_user_id(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
