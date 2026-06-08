@@ -661,7 +661,6 @@ class UsersManager extends BaseManager
     {
         // $exitCode = \Artisan::call("user:update {$user_id_delete} {$user_id_keep}", []);
         $exitCode = \Artisan::call('test:test', []);
-        \Log::info('Test COMMAND exit'.$exitCode);
     }
 
     public function registerDonation($user, $donation)
