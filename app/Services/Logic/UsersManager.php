@@ -145,8 +145,6 @@ class UsersManager extends BaseManager
         if ($v->fails() && $validate) {
             $this->setErrors($v->errors());
 
-            \Log::info('Error validation: '.$v->errors());
-
             return;
         } else {
             $data['emails_notifications'] = true;
