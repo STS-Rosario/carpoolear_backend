@@ -362,11 +362,6 @@ class UserController extends Controller
             ->onQueue('emails') // Use a dedicated queue for emails
             ->delay(now()->addSeconds(10)); // Add a small delay to prevent immediate retries
 
-        \Log::info('Delete account request email queued successfully', [
-            'user_id' => $user->id,
-            'admin_email' => $adminEmail,
-        ]);
-
         return response()->json([
             'message' => 'Delete account request created successfully',
             'request_id' => $deleteRequest->id,
