@@ -36,11 +36,6 @@ class PhoneVerificationController extends Controller
             throw new ExceptionWithErrors('Validation failed', $errors);
         }
 
-        \Log::info('Phone verification send successful', [
-            'user_id' => $user->id,
-            'phone' => $result['phone'],
-        ]);
-
         return response()->json([
             'message' => 'Verification code sent successfully',
             'phone' => $result['phone'],
