@@ -192,38 +192,34 @@ class HomeController extends Controller
 
     public function handleApp($name)
     {
-        if ($this->endsWith($name, '.js')) {
-            $strings = explode('/', $name);
-            $file = $strings[count($strings) - 1];
-
-            return \File::get(public_path().'/app/'.$file);
-        } else {
-            return \File::get(public_path().'/app/index.html');
-        }
+        return $this->servePublicAsset('app', $name);
     }
 
     public function handleCampaigns($name)
     {
-        if ($this->endsWith($name, '.js')) {
-            $strings = explode('/', $name);
-            $file = $strings[count($strings) - 1];
-
-            return \File::get(public_path().'/campaigns/'.$file);
-        } else {
-            return \File::get(public_path().'/campaigns/index.html');
-        }
+        return $this->servePublicAsset('campaigns', $name);
     }
 
     public function handleDev($name)
     {
+        return $this->servePublicAsset('dev', $name);
+    }
+
+    private function servePublicAsset(string $directory, $name)
+    {
         if ($this->endsWith($name, '.js')) {
             $strings = explode('/', $name);
             $file = $strings[count($strings) - 1];
-
-            return \File::get(public_path().'/dev/'.$file);
+            $path = public_path().'/'.$directory.'/'.$file;
         } else {
-            return \File::get(public_path().'/dev/index.html');
+            $path = public_path().'/'.$directory.'/index.html';
         }
+
+        if (! \File::exists($path)) {
+            return response('', 404);
+        }
+
+        return \File::get($path);
     }
 
     public function desuscribirme(Request $request, UsersManager $userLogic)
