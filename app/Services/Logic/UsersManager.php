@@ -506,8 +506,6 @@ class UsersManager extends BaseManager
     {
         $enableEmailLogging = config('carpoolear.log_emails', false);
 
-        \Log::info('resetPassword userManager', ['email' => $email]);
-
         // Log to email_logs channel if enabled
         if ($enableEmailLogging) {
             \Log::channel('email_logs')->info('PASSWORD_RESET_REQUEST', [
