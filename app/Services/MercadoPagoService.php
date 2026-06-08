@@ -205,9 +205,6 @@ class MercadoPagoService
             'pending' => $pendingPath,
         ];
 
-        // log urls
-        \Log::info('MercadoPago URLS:', $urls);
-
         $preferenceData = [
             'items' => [
                 [
