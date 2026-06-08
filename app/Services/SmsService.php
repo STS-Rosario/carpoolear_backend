@@ -259,8 +259,6 @@ class SmsService
 
             // Check for successful response
             if ($responseText === 'OK') {
-                Log::info('SMS sent via SMS Masivos to: '.$formattedPhone.' with message: '.$message);
-
                 return true;
             }
 
