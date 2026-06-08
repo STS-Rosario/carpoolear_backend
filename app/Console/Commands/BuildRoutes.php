@@ -59,8 +59,6 @@ class BuildRoutes extends Command
                     event(new CreateEvent($trip));
                 }
             } catch (\Exception $ex) {
-                \Log::info('Route builder ex');
-                \Log::info($ex);
             }
         }
     }
