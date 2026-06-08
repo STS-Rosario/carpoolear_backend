@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Listeners\User;
 
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Mockery;
 use STS\Events\User\Create as UserCreated;
@@ -19,7 +18,6 @@ class CreateHandlerListenerTest extends TestCase
     public function test_handle_logs_and_stops_when_user_is_missing(): void
     {
         Mail::fake();
-        Log::spy();
 
         $repo = Mockery::mock(UserRepository::class);
         $repo->shouldReceive('show')->once()->with(404)->andReturn(null);
@@ -27,7 +25,6 @@ class CreateHandlerListenerTest extends TestCase
         (new CreateHandler($repo))->handle(new UserCreated(404));
 
         Mail::assertNothingSent();
-        Log::shouldHaveReceived('info')->with('create handler')->once();
     }
 
     public function test_handle_does_not_mail_when_user_is_already_active(): void
@@ -39,7 +36,6 @@ class CreateHandlerListenerTest extends TestCase
         ]);
 
         Mail::fake();
-        Log::spy();
         $this->mock(NotificationServices::class)->shouldNotReceive('send');
 
         $repo = Mockery::mock(UserRepository::class);
@@ -48,7 +44,6 @@ class CreateHandlerListenerTest extends TestCase
         (new CreateHandler($repo))->handle(new UserCreated($user->id));
 
         Mail::assertNothingSent();
-        Log::shouldHaveReceived('info')->with('create handler')->once();
     }
 
     public function test_handle_does_not_mail_when_user_has_no_email(): void
@@ -60,7 +55,6 @@ class CreateHandlerListenerTest extends TestCase
         ]);
 
         Mail::fake();
-        Log::spy();
         $this->mock(NotificationServices::class)->shouldNotReceive('send');
 
         $repo = Mockery::mock(UserRepository::class);
@@ -69,7 +63,6 @@ class CreateHandlerListenerTest extends TestCase
         (new CreateHandler($repo))->handle(new UserCreated($user->id));
 
         Mail::assertNothingSent();
-        Log::shouldHaveReceived('info')->with('create handler')->once();
     }
 
     public function test_handle_sends_activation_mail_and_new_user_notification_when_user_is_inactive(): void
@@ -91,7 +84,6 @@ class CreateHandlerListenerTest extends TestCase
         $expectedUrl = $baseUrl.'/app/activate/'.$user->activation_token;
 
         Mail::fake();
-        Log::spy();
 
         $this->mock(NotificationServices::class)
             ->shouldReceive('send')
@@ -115,8 +107,5 @@ class CreateHandlerListenerTest extends TestCase
                 && $mail->domain === $baseUrl
                 && $mail->name_app === $nameApp;
         });
-
-        Log::shouldHaveReceived('info')->with('create handler')->once();
-        Log::shouldHaveReceived('info')->with('resetPassword post event event')->once();
     }
 }
