@@ -164,7 +164,14 @@ class ConversationsTransformerTest extends TestCase
 
         $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
 
-        $expectedKeys = ['id', 'name', 'last_connection', 'identity_validated_at'];
+        $expectedKeys = [
+            'id',
+            'name',
+            'last_connection',
+            'identity_validated_at',
+            'positive_ratings',
+            'negative_ratings',
+        ];
         foreach ($payload['users'] as $row) {
             $this->assertSame($expectedKeys, array_keys($row));
         }
