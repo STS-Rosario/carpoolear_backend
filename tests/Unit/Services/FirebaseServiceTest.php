@@ -239,6 +239,37 @@ class FirebaseServiceTest extends TestCase
         $service->sendNotification('tok', ['title' => 'a', 'body' => 'b'], [], 'android');
     }
 
+    public function test_send_notification_client_exception_skips_log_for_stale_registration_token(): void
+    {
+        $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');
+        $payload = [
+            'error' => [
+                'code' => 404,
+                'message' => 'Requested entity was not found.',
+                'status' => 'NOT_FOUND',
+                'details' => [
+                    [
+                        '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                        'errorCode' => 'UNREGISTERED',
+                    ],
+                ],
+            ],
+        ];
+        $response = new Response(404, [], json_encode($payload));
+        $exception = new ClientException('Requested entity was not found.', $request, $response);
+
+        $http = Mockery::mock(HttpClient::class);
+        $http->shouldReceive('post')->once()->andThrow($exception);
+
+        Log::shouldReceive('error')->never();
+        Log::shouldReceive('warning')->never();
+
+        $service = new FirebaseServiceHarness($http, ['access_token' => 't'], 'myproj');
+
+        $this->expectException(ClientException::class);
+        $service->sendNotification('stale-android-token', ['title' => 'a', 'body' => 'b'], [], 'android');
+    }
+
     public function test_send_notification_client_exception_without_top_level_error_key_nulls_fcm_fields(): void
     {
         $request = new Request('POST', 'https://fcm.googleapis.com/v1/projects/myproj/messages:send');

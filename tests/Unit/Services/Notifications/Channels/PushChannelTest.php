@@ -462,15 +462,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-
-        $deactivateLog = $this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token');
-        $this->assertNotNull($deactivateLog);
-        $this->assertSame($user->id, $deactivateLog['context']['user_id']);
-        $this->assertSame($device->id, $deactivateLog['context']['device_id']);
-        $this->assertSame('android', $deactivateLog['context']['device_type']);
-
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_deactivates_android_device_when_fcm_returns_not_found_with_unregistered_details(): void
@@ -527,7 +519,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_deactivates_android_device_when_fcm_returns_sender_id_mismatch(): void
@@ -582,9 +574,7 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: Error sending push notification'));
-        $this->assertNull($this->firstLogMatching($logged, 'PushChannel: sendAndroid error'));
+        $this->assertSame([], $logged);
     }
 
     public function test_send_deactivates_browser_device_when_fcm_returns_not_registered(): void
@@ -635,7 +625,67 @@ class PushChannelTest extends TestCase
 
         $device->refresh();
         $this->assertFalse($device->notifications);
-        $this->assertNotNull($this->firstLogMatching($logged, 'PushChannel: Deactivated device after stale push token'));
+        $this->assertSame([], $logged);
+    }
+
+    public function test_is_apns_unregistered_error_detects_http_410_unregistered(): void
+    {
+        $exception = new \RuntimeException(
+            'APNs returned HTTP 410: {"reason":"Unregistered","timestamp":1770046554255}'
+        );
+
+        $this->assertTrue(PushChannel::isApnsUnregisteredError($exception));
+    }
+
+    public function test_is_apns_unregistered_error_returns_false_for_other_apns_errors(): void
+    {
+        $exception = new \RuntimeException('APNs returned HTTP 403: {"reason":"BadCertificate"}');
+
+        $this->assertFalse(PushChannel::isApnsUnregisteredError($exception));
+        $this->assertFalse(PushChannel::isApnsUnregisteredError(new \RuntimeException('network down')));
+    }
+
+    public function test_send_deactivates_ios_device_when_apns_returns_unregistered(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')->zeroOrMoreTimes();
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $channel = new class extends PushChannel
+        {
+            public function sendIOS($device, $data)
+            {
+                throw new \Exception('APNs returned HTTP 410: {"reason":"Unregistered","timestamp":1770046554255}');
+            }
+        };
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => str_repeat('b', 64),
+            'device_type' => 'iOS',
+            'session_id' => 's-stale-ios',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello ios');
+        $notification->setAttribute('title', 'TI');
+
+        $channel->send($notification, $user);
+
+        $device->refresh();
+        $this->assertFalse($device->notifications);
+        $this->assertSame([], $logged);
     }
 
     public function test_send_still_logs_error_when_android_send_fails_for_non_stale_token(): void
