@@ -31,4 +31,25 @@ class ChangelogApiTest extends TestCase
         $this->getJson('api/changelog')->assertUnprocessable()
             ->assertJsonValidationErrors(['version']);
     }
+
+    public function test_lists_all_changelogs_sorted_by_semver_newest_first(): void
+    {
+        Changelog::create([
+            'version' => '1.0.0',
+            'body_markdown' => 'Primera versión',
+        ]);
+        Changelog::create([
+            'version' => '2.10.0',
+            'body_markdown' => 'Mejoras mayores',
+        ]);
+        Changelog::create([
+            'version' => '2.2.0',
+            'body_markdown' => 'Parches',
+        ]);
+
+        $response = $this->getJson('api/changelogs')->assertOk();
+
+        $versions = array_column($response->json('data'), 'version');
+        $this->assertSame(['2.10.0', '2.2.0', '1.0.0'], $versions);
+    }
 }
