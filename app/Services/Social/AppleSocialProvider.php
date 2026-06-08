@@ -26,7 +26,6 @@ class AppleSocialProvider implements SocialProvider
 
     public function getUserData($data): ?array
     {
-        \Log::info('getUserData'.json_encode($data));
         $name = 'Apple ID Anónimo';
         if (isset($data['fullName'])) {
             if (isset($data['fullName']['givenName'])) {
