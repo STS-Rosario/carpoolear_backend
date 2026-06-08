@@ -182,7 +182,6 @@ class UsersManager extends BaseManager
 
                 $url = 'https://www.google.com/recaptcha/api/siteverify';
 
-                \Log::info('Captcha val: '.env('RECAPTCHA_SECRET_KEY', '123456789').' - ip  '.$_SERVER['REMOTE_ADDR'].' token = '.$_POST['token']);
                 $recaptchaData = [
                     'secret' => env('RECAPTCHA_SECRET_KEY', ''),
                     'response' => $_POST['token'],
