@@ -51,8 +51,6 @@ class MercadoPagoWebhookController extends Controller
 
             return response()->json(['error' => 'Invalid request'], 400);
         }
-        Log::info('MercadoPago webhook request verified');
-
         $paymentId = $request->input('data_id');
         if (! $paymentId) {
             Log::error('No payment ID in webhook request');
