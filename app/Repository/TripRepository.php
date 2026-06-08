@@ -120,7 +120,6 @@ class TripRepository
         }
 
         $this->addPoints($trip, $points);
-        \Log::info('TripRepository::create trip after add points', [$trip]);
 
         $this->generateTripPath($trip);
 
