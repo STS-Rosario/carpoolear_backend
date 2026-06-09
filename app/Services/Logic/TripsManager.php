@@ -46,6 +46,7 @@ class TripsManager extends BaseManager
                 'weekly_schedule' => 'required_without:trip_date|nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
                 'seat_price_cents' => $this->seatPriceCentsRule(),
+                'autoaccept_friends_requests' => 'boolean',
 
                 'points.*.address' => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -69,6 +70,7 @@ class TripsManager extends BaseManager
                 'weekly_schedule' => 'nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
                 'seat_price_cents' => $this->seatPriceCentsRule(),
+                'autoaccept_friends_requests' => 'boolean',
 
                 'points.*.address' => 'string',
                 'points.*.json_address' => 'array',
