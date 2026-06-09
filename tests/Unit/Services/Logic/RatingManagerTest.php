@@ -453,4 +453,94 @@ class RatingManagerTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_create_eligible_ratings_creates_pending_rows_after_eighty_percent_of_estimated_time_without_notification(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-06-01 14:00:00');
+
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-06-01 10:00:00',
+            'estimated_time' => '04:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $this->manager()->createEligibleRatings();
+
+        $this->assertSame(2, Rating::query()->where('trip_id', $trip->id)->count());
+        $this->assertSame(0, (int) $trip->fresh()->mail_send);
+        Event::assertNotDispatched(PendingRateEvent::class);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_create_eligible_ratings_skips_trips_before_eighty_percent_of_estimated_time(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-06-01 12:00:00');
+
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-06-01 10:00:00',
+            'estimated_time' => '04:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $this->manager()->createEligibleRatings();
+
+        $this->assertSame(0, Rating::query()->where('trip_id', $trip->id)->count());
+        Event::assertNotDispatched(PendingRateEvent::class);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_send_rating_notifications_dispatches_events_after_twenty_four_hours_without_recreating_ratings(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-06-02 11:00:00');
+
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-06-01 10:00:00',
+            'estimated_time' => '04:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $repo = new RatingRepository;
+        $repo->create($driver->id, $passengerUser->id, $trip->id, 0, 0, 'drv-'.uniqid('', true));
+        $repo->create($passengerUser->id, $driver->id, $trip->id, 0, 0, 'psg-'.uniqid('', true));
+
+        $this->manager()->sendRatingNotifications('2026-06-01 10:00:00');
+
+        $this->assertSame(2, Rating::query()->where('trip_id', $trip->id)->count());
+        $this->assertSame(1, (int) $trip->fresh()->mail_send);
+        Event::assertDispatched(PendingRateEvent::class, 2);
+
+        Carbon::setTestNow();
+    }
 }
