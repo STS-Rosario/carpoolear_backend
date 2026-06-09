@@ -281,4 +281,41 @@ class FriendsManagerTest extends TestCase
 
         $this->assertSame('pending_received', $this->manager()->getFriendshipState($viewer, $profile));
     }
+
+    public function test_get_sent_pendings_returns_users_viewer_requested(): void
+    {
+        $viewer = User::factory()->create();
+        $requested = User::factory()->create();
+        $incomingOnly = User::factory()->create();
+        $unrelated = User::factory()->create();
+
+        $this->manager()->request($viewer, $requested);
+        $this->manager()->request($incomingOnly, $viewer);
+        $this->manager()->request($viewer, $unrelated);
+
+        $sent = $this->manager()->getSentPendings($viewer)->pluck('id')->all();
+
+        $this->assertContains($requested->id, $sent);
+        $this->assertContains($unrelated->id, $sent);
+        $this->assertNotContains($incomingOnly->id, $sent);
+    }
+
+    public function test_cancel_request_removes_outgoing_pending_edge(): void
+    {
+        $viewer = User::factory()->create();
+        $target = User::factory()->create();
+        $this->manager()->request($viewer, $target);
+
+        $this->assertTrue($this->manager()->cancelRequest($viewer, $target));
+        $this->assertSame('none', $this->manager()->getFriendshipState($viewer, $target));
+        $this->assertEmpty($this->manager()->getSentPendings($viewer));
+    }
+
+    public function test_cancel_request_fails_without_outgoing_request(): void
+    {
+        $viewer = User::factory()->create();
+        $target = User::factory()->create();
+
+        $this->assertNull($this->manager()->cancelRequest($viewer, $target));
+    }
 }
