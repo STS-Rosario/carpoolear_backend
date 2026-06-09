@@ -596,6 +596,12 @@ class TripsManager extends BaseManager
             return;
         }
 
+        if ($trip->expired()) {
+            $this->setErrors(['error' => 'trip_expired']);
+
+            return;
+        }
+
         $friendsManager = app(FriendsManager::class);
         $invited = 0;
 

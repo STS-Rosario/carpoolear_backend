@@ -149,7 +149,7 @@ class ProfileTransformer extends TransformerAbstract
                 break;
         }
 
-        if ($user->state) {
+        if (isset($user->state)) {
             $data['state'] = $user->state;
         }
 

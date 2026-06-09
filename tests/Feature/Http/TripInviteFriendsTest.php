@@ -58,6 +58,26 @@ class TripInviteFriendsTest extends TestCase
             ->assertJsonPath('invited_count', 1);
     }
 
+    public function test_invite_friends_denies_expired_trip(): void
+    {
+        $driver = User::factory()->create();
+        $friend = User::factory()->create();
+        $this->makeFriends($driver, $friend);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
+
+        $this->actingAs($driver, 'api')
+            ->postJson("/api/trips/{$trip->id}/invite-friends", [
+                'friend_ids' => [$friend->id],
+            ])
+            ->assertStatus(422);
+    }
+
     public function test_invite_friends_denies_non_owner(): void
     {
         $driver = User::factory()->create();
