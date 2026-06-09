@@ -153,6 +153,10 @@ class ProfileTransformer extends TransformerAbstract
             $data['state'] = $user->state;
         }
 
+        if (isset($user->friendship_state)) {
+            $data['friendship_state'] = $user->friendship_state;
+        }
+
         return $data;
     }
 

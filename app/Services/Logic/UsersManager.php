@@ -605,7 +605,11 @@ class UsersManager extends BaseManager
     {
         $profile = $this->repo->show($profile_id);
         if ($profile) {
-            // $profile->donations = $profile->donations->get();
+            if ($user && $profile->id !== $user->id) {
+                $friendsManager = app(FriendsManager::class);
+                $profile->friendship_state = $friendsManager->getFriendshipState($user, $profile);
+            }
+
             return $profile;
         }
         $this->setErrors(['error' => 'profile not found']);

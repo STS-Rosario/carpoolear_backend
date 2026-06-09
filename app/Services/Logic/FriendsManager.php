@@ -2,12 +2,12 @@
 
 namespace STS\Services\Logic;
 
-use STS\Repository\FriendsRepository;
-use STS\Models\User as UserModel;
+use STS\Events\Friend\Accept as AcceptEvent;
 use STS\Events\Friend\Cancel as CancelEvent;
-use STS\Events\Friend\Accept  as AcceptEvent;
-use STS\Events\Friend\Reject  as RejectEvent;
-use STS\Events\Friend\Request as RequestEvent; 
+use STS\Events\Friend\Reject as RejectEvent;
+use STS\Events\Friend\Request as RequestEvent;
+use STS\Models\User as UserModel;
+use STS\Repository\FriendsRepository;
 
 class FriendsManager extends BaseManager
 {
@@ -54,7 +54,8 @@ class FriendsManager extends BaseManager
             $this->friendsRepo->add($who, $user, UserModel::FRIEND_ACCEPTED);
             $this->friendsRepo->add($user, $who, UserModel::FRIEND_ACCEPTED);
             event(new AcceptEvent($who, $user));
-            // tengo que 
+
+            // tengo que
             return true;
         } else {
             $this->setErrors(['error' => 'Operación inválida']);
@@ -67,7 +68,7 @@ class FriendsManager extends BaseManager
     {
         if ($this->friendsRepo->get($user, $who, UserModel::FRIEND_REQUEST)->count() > 0) {
             $this->friendsRepo->delete($user, $who);
-            //$this->friendsRepo->add($who, $user, UserModel::FRIEND_REJECT );
+            // $this->friendsRepo->add($who, $user, UserModel::FRIEND_REJECT );
             event(new RejectEvent($who, $user));
 
             return true;
@@ -111,5 +112,22 @@ class FriendsManager extends BaseManager
     public function getPendings(UserModel $who)
     {
         return $this->friendsRepo->getPending($who);
+    }
+
+    public function getFriendshipState(UserModel $viewer, UserModel $profileUser): string
+    {
+        if ($this->areFriend($viewer, $profileUser)) {
+            return 'friend';
+        }
+
+        if ($this->friendsRepo->get($viewer, $profileUser, UserModel::FRIEND_REQUEST)->count() > 0) {
+            return 'pending_sent';
+        }
+
+        if ($this->friendsRepo->get($profileUser, $viewer, UserModel::FRIEND_REQUEST)->count() > 0) {
+            return 'pending_received';
+        }
+
+        return 'none';
     }
 }
