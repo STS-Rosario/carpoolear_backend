@@ -245,4 +245,39 @@ class FriendsManagerTest extends TestCase
         $this->assertContains($p2->id, $pendings);
         $this->assertNotContains($otherTarget->id, $pendings);
     }
+
+    public function test_get_friendship_state_none_without_edge(): void
+    {
+        $viewer = User::factory()->create();
+        $profile = User::factory()->create();
+
+        $this->assertSame('none', $this->manager()->getFriendshipState($viewer, $profile));
+    }
+
+    public function test_get_friendship_state_friend_when_accepted(): void
+    {
+        $viewer = User::factory()->create();
+        $profile = User::factory()->create();
+        $this->manager()->make($viewer, $profile);
+
+        $this->assertSame('friend', $this->manager()->getFriendshipState($viewer, $profile));
+    }
+
+    public function test_get_friendship_state_pending_sent_when_viewer_requested(): void
+    {
+        $viewer = User::factory()->create();
+        $profile = User::factory()->create();
+        $this->manager()->request($viewer, $profile);
+
+        $this->assertSame('pending_sent', $this->manager()->getFriendshipState($viewer, $profile));
+    }
+
+    public function test_get_friendship_state_pending_received_when_profile_requested(): void
+    {
+        $viewer = User::factory()->create();
+        $profile = User::factory()->create();
+        $this->manager()->request($profile, $viewer);
+
+        $this->assertSame('pending_received', $this->manager()->getFriendshipState($viewer, $profile));
+    }
 }
