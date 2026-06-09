@@ -118,17 +118,14 @@ class UserRepository
         $users->orderBy('name');
         $users = $users->get();
 
-        $users = $users->map(function ($item, $key) use ($user) {
-            $u = $user->allFriends()->withPivot('state')->where('id', $item->id)->first();
-            if ($u) {
-                if ($u->pivot->state == User::FRIEND_REQUEST) {
-                    $item->state = 'request';
-                } else {
-                    $item->state = 'friend';
-                }
-            } else {
-                $item->state = 'none';
-            }
+        $friendsManager = app(\STS\Services\Logic\FriendsManager::class);
+        $users = $users->map(function ($item) use ($user, $friendsManager) {
+            $friendshipState = $friendsManager->getFriendshipState($user, $item);
+            $item->state = match ($friendshipState) {
+                'friend' => 'friend',
+                'pending_sent', 'pending_received' => 'request',
+                default => 'none',
+            };
 
             return $item;
         });
