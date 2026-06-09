@@ -46,7 +46,7 @@ class PushChannel
                         $this->sendBrowser($device, $data);
                     }
                 } catch (\Exception $e) {
-                    if (FirebaseService::isStaleRegistrationTokenError($e) || self::isApnsUnregisteredError($e) || self::isApnsBadDeviceTokenError($e)) {
+                    if (FirebaseService::isStaleRegistrationTokenError($e) || self::isApnsStaleTokenError($e)) {
                         $this->deactivateDeviceAfterStaleToken($device, $user, $e);
                     } else {
                         \Log::error('PushChannel: Error sending push notification', [
@@ -182,7 +182,7 @@ class PushChannel
 
             return $result;
         } catch (\Exception $e) {
-            if (! self::isApnsUnregisteredError($e) && ! self::isApnsBadDeviceTokenError($e)) {
+            if (! self::isApnsStaleTokenError($e)) {
                 \Log::error('PushChannel: sendIOS error', [
                     'device_id' => $device->id,
                     'device_token' => $device->device_id,
@@ -210,6 +210,11 @@ class PushChannel
         }
 
         return false;
+    }
+
+    public static function isApnsStaleTokenError(\Throwable $e): bool
+    {
+        return self::isApnsUnregisteredError($e) || self::isApnsBadDeviceTokenError($e);
     }
 
     public static function isApnsBadDeviceTokenError(\Throwable $e): bool
