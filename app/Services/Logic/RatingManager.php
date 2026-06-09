@@ -150,13 +150,10 @@ class RatingManager extends BaseManager
 
     public function sendRatingNotifications($when): void
     {
-        $criterias = [
+        $trips = $this->tripRepo->index($this->driverTripCriteria([
             ['key' => 'trip_date', 'value' => $when, 'op' => '<'],
             ['key' => 'mail_send', 'value' => false],
-            ['key' => 'is_passenger', 'value' => false],
-        ];
-
-        $trips = $this->tripRepo->index($criterias, ['user', 'passenger']);
+        ]), ['user', 'passenger']);
 
         foreach ($trips as $trip) {
             if (! Rating::query()->where('trip_id', $trip->id)->exists()) {
@@ -213,5 +210,16 @@ class RatingManager extends BaseManager
             event(new PendingEvent($rate->from, $trip, $rate->voted_hash));
             $notifiedUserIds[] = $rate->user_id_from;
         }
+    }
+
+    /**
+     * @param  list<array{key: string, value: mixed, op?: string}>  $extra
+     * @return list<array{key: string, value: mixed, op?: string}>
+     */
+    private function driverTripCriteria(array $extra = []): array
+    {
+        return array_merge([
+            ['key' => 'is_passenger', 'value' => false],
+        ], $extra);
     }
 }
