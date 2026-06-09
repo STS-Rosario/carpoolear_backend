@@ -63,6 +63,8 @@ class TripTransformerTest extends TestCase
             'id',
             'from_town',
             'to_town',
+            'punto_partida',
+            'punto_llegada',
             'trip_date',
             'weekly_schedule',
             'weekly_schedule_time',
@@ -159,6 +161,19 @@ class TripTransformerTest extends TestCase
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
         $this->assertSame(1, $payload['rear_max_two_passengers']);
+    }
+
+    public function test_transform_includes_punto_partida_and_punto_llegada(): void
+    {
+        $trip = $this->makeTrip([
+            'punto_partida' => 'Terminal de Ómnibus',
+            'punto_llegada' => 'Plaza Principal',
+        ]);
+
+        $payload = (new TripTransformer(null))->transform($trip->fresh());
+
+        $this->assertSame('Terminal de Ómnibus', $payload['punto_partida']);
+        $this->assertSame('Plaza Principal', $payload['punto_llegada']);
     }
 
     public function test_transform_marks_sellado_pending_when_needed_and_not_ready(): void
