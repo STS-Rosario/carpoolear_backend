@@ -15,6 +15,14 @@ use Tests\TestCase;
 
 class CreateRatingDeleteTripListenerTest extends TestCase
 {
+    private function mockRatingRepository(): RatingRepository
+    {
+        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository->shouldReceive('getRating')->andReturn(null);
+
+        return $ratingRepository;
+    }
+
     public function test_handle_does_nothing_when_trip_has_no_accepted_passengers(): void
     {
         $driver = User::factory()->create();
@@ -47,7 +55,7 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         $trip = $trip->fresh();
 
-        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository = $this->mockRatingRepository();
         $ratingRepository->shouldReceive('create')
             ->once()
             ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($passengerUser, $driver, $trip) {
@@ -101,7 +109,7 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         $trip = $trip->fresh();
 
-        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository = $this->mockRatingRepository();
         $ratingRepository->shouldReceive('create')
             ->twice()
             ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($first, $second, $driver, $trip) {
@@ -157,7 +165,7 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         $trip = $trip->fresh();
 
-        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository = $this->mockRatingRepository();
         $ratingRepository->shouldReceive('create')
             ->once()
             ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($passengerUser, $driver, $trip) {
@@ -257,11 +265,7 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         $trip = $trip->fresh();
 
-        $ratingRepository = Mockery::mock(RatingRepository::class);
-        $ratingRepository->shouldReceive('getRating')
-            ->once()
-            ->with($passengerUser->id, $driver->id, $trip->id)
-            ->andReturn(null);
+        $ratingRepository = $this->mockRatingRepository();
         $ratingRepository->shouldReceive('create')
             ->once()
             ->andReturn((object) ['id' => 1]);

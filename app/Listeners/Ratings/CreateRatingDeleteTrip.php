@@ -53,6 +53,10 @@ class CreateRatingDeleteTrip
                 continue;
             }
 
+            if ($this->ratingRepository->getRating($passenger->user_id, $trip->user_id, $trip->id)) {
+                continue;
+            }
+
             $passenger_hash = Str::random(40);
             $this->ratingRepository->create($passenger->user_id, $trip->user_id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
 
