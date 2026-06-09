@@ -39,7 +39,7 @@ class TripLiveShareManager extends BaseManager
         $wasActive = ($existing = $this->liveShareRepo->findByTripAndUser($tripId, $user->id)) && $existing->is_active;
         $share = $this->liveShareRepo->start($tripId, $user->id);
 
-        if (! $wasActive && $this->tripsManager->tripOwner($user, $trip)) {
+        if (! $wasActive && $this->shouldNotifyParticipantsOfSharing($user, $trip)) {
             $this->notifyPassengersOfDriverSharing($trip, $user);
         }
 
@@ -183,13 +183,27 @@ class TripLiveShareManager extends BaseManager
         }
     }
 
+    private function shouldNotifyParticipantsOfSharing(User $user, Trip $trip): bool
+    {
+        return (int) $trip->user_id === (int) $user->id;
+    }
+
     private function notifyPassengersOfDriverSharing(Trip $trip, User $driver): void
     {
         $trip->loadMissing('passengerAccepted.user');
+        $sharerId = (int) $driver->id;
+        $tripOwnerId = (int) $trip->user_id;
+
         foreach ($trip->passengerAccepted as $passenger) {
             if (! $passenger->user) {
                 continue;
             }
+
+            $passengerUserId = (int) $passenger->user_id;
+            if ($passengerUserId === $sharerId || $passengerUserId === $tripOwnerId) {
+                continue;
+            }
+
             $notification = new DriverLiveLocationSharingNotification;
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $driver);

@@ -7,7 +7,9 @@ use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\TripLiveShare;
 use STS\Models\User;
+use STS\Notifications\DriverLiveLocationSharingNotification;
 use STS\Services\Logic\TripLiveShareManager;
+use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
 class TripLiveShareManagerTest extends TestCase
@@ -383,5 +385,102 @@ class TripLiveShareManagerTest extends TestCase
         $manager = $this->manager();
         $this->assertNull($manager->getTripView($outsider, $trip->id));
         $this->assertSame('access_denied', $manager->getErrors()['error']);
+    }
+
+    public function test_driver_start_notifies_accepted_passengers_only(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create(['name' => 'Driver']);
+        $passenger = User::factory()->create();
+        $trip = $this->ongoingTripFor($driver);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        $notifiedUserIds = [];
+        $mock = $this->mock(NotificationServices::class);
+        $mock->shouldReceive('send')
+            ->andReturnUsing(function ($notification, $users) use (&$notifiedUserIds) {
+                if ($notification instanceof DriverLiveLocationSharingNotification && $users instanceof User) {
+                    $notifiedUserIds[] = $users->id;
+                }
+            });
+
+        $this->manager()->start($driver, $trip->id);
+
+        $this->assertSame([$passenger->id], array_values(array_unique($notifiedUserIds)));
+    }
+
+    public function test_driver_start_does_not_notify_driver_even_with_accepted_passenger_row(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create(['name' => 'Driver']);
+        $passenger = User::factory()->create();
+        $trip = $this->ongoingTripFor($driver);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $driver->id,
+        ]);
+
+        $notifiedUserIds = [];
+        $mock = $this->mock(NotificationServices::class);
+        $mock->shouldReceive('send')
+            ->andReturnUsing(function ($notification, $users) use (&$notifiedUserIds) {
+                if ($notification instanceof DriverLiveLocationSharingNotification && $users instanceof User) {
+                    $notifiedUserIds[] = $users->id;
+                }
+            });
+
+        $this->manager()->start($driver, $trip->id);
+
+        $this->assertSame([$passenger->id], array_values(array_unique($notifiedUserIds)));
+        $this->assertNotContains($driver->id, $notifiedUserIds);
+    }
+
+    public function test_passenger_start_does_not_notify_anyone(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = $this->ongoingTripFor($driver);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+        ]);
+
+        $mock = $this->mock(NotificationServices::class);
+        $mock->shouldReceive('send')
+            ->never()
+            ->withArgs(function ($notification) {
+                return $notification instanceof DriverLiveLocationSharingNotification;
+            });
+
+        $this->manager()->start($passenger, $trip->id);
+    }
+
+    public function test_admin_passenger_start_does_not_notify_anyone(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 15:30:00'));
+        $driver = User::factory()->create();
+        $adminPassenger = User::factory()->create(['is_admin' => true]);
+        $trip = $this->ongoingTripFor($driver);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $adminPassenger->id,
+        ]);
+
+        $mock = $this->mock(NotificationServices::class);
+        $mock->shouldReceive('send')
+            ->never()
+            ->withArgs(function ($notification) {
+                return $notification instanceof DriverLiveLocationSharingNotification;
+            });
+
+        $this->manager()->start($adminPassenger, $trip->id);
     }
 }
