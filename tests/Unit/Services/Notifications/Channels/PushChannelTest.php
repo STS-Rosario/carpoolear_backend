@@ -645,6 +645,66 @@ class PushChannelTest extends TestCase
         $this->assertFalse(PushChannel::isApnsUnregisteredError(new \RuntimeException('network down')));
     }
 
+    public function test_is_apns_bad_device_token_error_detects_http_400_bad_device_token(): void
+    {
+        $exception = new \RuntimeException(
+            'APNs returned HTTP 400: {"reason":"BadDeviceToken"}'
+        );
+
+        $this->assertTrue(PushChannel::isApnsBadDeviceTokenError($exception));
+    }
+
+    public function test_is_apns_bad_device_token_error_returns_false_for_other_apns_errors(): void
+    {
+        $exception = new \RuntimeException('APNs returned HTTP 410: {"reason":"Unregistered"}');
+
+        $this->assertFalse(PushChannel::isApnsBadDeviceTokenError($exception));
+        $this->assertFalse(PushChannel::isApnsBadDeviceTokenError(new \RuntimeException('network down')));
+    }
+
+    public function test_send_deactivates_ios_device_when_apns_returns_bad_device_token(): void
+    {
+        Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
+
+        $logged = [];
+        Log::shouldReceive('error')->zeroOrMoreTimes();
+        Log::shouldReceive('warning')
+            ->zeroOrMoreTimes()
+            ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
+                $logged[] = ['message' => $message, 'context' => $context];
+            });
+
+        $channel = new class extends PushChannel
+        {
+            public function sendIOS($device, $data)
+            {
+                throw new \Exception('APNs returned HTTP 400: {"reason":"BadDeviceToken"}');
+            }
+        };
+
+        $user = User::factory()->create();
+        $device = Device::query()->create([
+            'user_id' => $user->id,
+            'device_id' => str_repeat('c', 64),
+            'device_type' => 'iOS',
+            'session_id' => 's-bad-ios-token',
+            'notifications' => true,
+            'last_activity' => now()->toDateTimeString(),
+        ]);
+
+        $user->load('devices');
+
+        $notification = new AnnouncementNotification;
+        $notification->setAttribute('message', 'Hello ios');
+        $notification->setAttribute('title', 'TI');
+
+        $channel->send($notification, $user);
+
+        $device->refresh();
+        $this->assertFalse($device->notifications);
+        $this->assertSame([], $logged);
+    }
+
     public function test_send_deactivates_ios_device_when_apns_returns_unregistered(): void
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
