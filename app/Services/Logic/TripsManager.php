@@ -44,6 +44,7 @@ class TripsManager extends BaseManager
                 'car_id' => $this->activeCarIdRule($user_id),
                 'weekly_schedule' => 'required_without:trip_date|nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
+                'seat_price_cents' => $this->seatPriceCentsRule(),
 
                 'points.*.address' => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -66,6 +67,7 @@ class TripsManager extends BaseManager
                 'car_id' => $this->activeCarIdRule($user_id),
                 'weekly_schedule' => 'nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
+                'seat_price_cents' => $this->seatPriceCentsRule(),
 
                 'points.*.address' => 'string',
                 'points.*.json_address' => 'array',
@@ -184,6 +186,11 @@ class TripsManager extends BaseManager
 
             return $trip;
         }
+    }
+
+    private function seatPriceCentsRule(): string
+    {
+        return 'nullable|integer|gte:-1';
     }
 
     private function activeCarIdRule($user_id): array

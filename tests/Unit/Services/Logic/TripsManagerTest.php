@@ -156,6 +156,54 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_validator_create_allows_voluntary_and_non_negative_seat_price_cents(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+
+        $voluntary = $this->manager()->validator(
+            $this->minimalCreatePayload(['seat_price_cents' => -1]),
+            $user->id
+        );
+        $this->assertFalse($voluntary->fails());
+
+        $priced = $this->manager()->validator(
+            $this->minimalCreatePayload(['seat_price_cents' => 1500]),
+            $user->id
+        );
+        $this->assertFalse($priced->fails());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_validator_create_rejects_negative_seat_price_cents_below_voluntary_sentinel(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+        $v = $this->manager()->validator(
+            $this->minimalCreatePayload(['seat_price_cents' => -500]),
+            $user->id
+        );
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('seat_price_cents'));
+        Carbon::setTestNow();
+    }
+
+    public function test_validator_update_rejects_negative_seat_price_cents_below_voluntary_sentinel(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $user->id]);
+        $v = $this->manager()->validator(
+            ['seat_price_cents' => -250],
+            $user->id,
+            $trip->id
+        );
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('seat_price_cents'));
+        Carbon::setTestNow();
+    }
+
     public function test_validator_create_rejects_trip_date_not_after_now(): void
     {
         Carbon::setTestNow('2028-06-01 12:00:00');
