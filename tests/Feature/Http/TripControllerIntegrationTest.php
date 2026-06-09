@@ -48,6 +48,8 @@ class TripControllerIntegrationTest extends TestCase
             'is_passenger' => 0,
             'from_town' => 'Origin Town',
             'to_town' => 'Destination Town',
+            'punto_partida' => 'Barrio Centro',
+            'punto_llegada' => 'Barrio Norte',
             'trip_date' => '2028-03-10 15:00:00',
             'total_seats' => 3,
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,

@@ -43,6 +43,8 @@ class TripsManagerTest extends TestCase
             'is_passenger' => 0,
             'from_town' => 'Origin Town',
             'to_town' => 'Destination Town',
+            'punto_partida' => 'Barrio Centro',
+            'punto_llegada' => 'Barrio Norte',
             'trip_date' => '2028-03-10 15:00:00',
             'total_seats' => 3,
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
@@ -117,7 +119,7 @@ class TripsManagerTest extends TestCase
         $user = User::factory()->create();
         $rules = $this->manager()->validator($this->minimalCreatePayload(), $user->id)->getRules();
         $expected = [
-            'is_passenger', 'from_town', 'to_town', 'trip_date', 'total_seats', 'friendship_type_id',
+            'is_passenger', 'from_town', 'to_town', 'punto_partida', 'punto_llegada', 'trip_date', 'total_seats', 'friendship_type_id',
             'estimated_time', 'distance', 'co2', 'description', 'return_trip_id', 'parent_trip_id', 'car_id',
             'weekly_schedule', 'weekly_schedule_time',
         ];
