@@ -4,7 +4,7 @@ namespace STS\Console\Commands;
 
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use STS\Services\Logic\RatingManager; 
+use STS\Services\Logic\RatingManager;
 
 class CreateRates extends Command
 {
@@ -42,8 +42,9 @@ class CreateRates extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND CreateRates");
+        \Log::info('COMMAND CreateRates');
+        $this->rateLogic->createEligibleRatings();
         $date = Carbon::now()->subDay()->toDateTimeString();
-        $this->rateLogic->activeRatings($date);
+        $this->rateLogic->sendRatingNotifications($date);
     }
 }

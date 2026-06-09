@@ -535,7 +535,7 @@ class RatingManagerTest extends TestCase
         $repo->create($driver->id, $passengerUser->id, $trip->id, 0, 0, 'drv-'.uniqid('', true));
         $repo->create($passengerUser->id, $driver->id, $trip->id, 0, 0, 'psg-'.uniqid('', true));
 
-        $this->manager()->sendRatingNotifications('2026-06-01 10:00:00');
+        $this->manager()->sendRatingNotifications('2026-06-01 11:00:00');
 
         $this->assertSame(2, Rating::query()->where('trip_id', $trip->id)->count());
         $this->assertSame(1, (int) $trip->fresh()->mail_send);

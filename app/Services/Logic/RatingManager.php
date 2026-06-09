@@ -6,8 +6,10 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 use STS\Events\Rating\PendingRate as PendingEvent;
+use STS\Helpers\RatingHelper;
 use STS\Models\Passenger;
 use STS\Models\Rating;
+use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\RatingRepository;
 use STS\Repository\TripRepository;
@@ -122,6 +124,32 @@ class RatingManager extends BaseManager
 
     public function activeRatings($when)
     {
+        $this->createEligibleRatings();
+        $this->sendRatingNotifications($when);
+    }
+
+    public function createEligibleRatings(): void
+    {
+        $now = Carbon::now();
+        $trips = Trip::query()
+            ->where('is_passenger', false)
+            ->where('mail_send', false)
+            ->where('trip_date', '<', $now)
+            ->whereDoesntHave('ratings')
+            ->with(['user', 'passenger'])
+            ->get();
+
+        foreach ($trips as $trip) {
+            if (! RatingHelper::isRatingAvailable($now, Carbon::parse($trip->trip_date), $trip->estimated_time)) {
+                continue;
+            }
+
+            $this->createRatingsForTrip($trip);
+        }
+    }
+
+    public function sendRatingNotifications($when): void
+    {
         $criterias = [
             ['key' => 'trip_date', 'value' => $when, 'op' => '<'],
             ['key' => 'mail_send', 'value' => false],
@@ -131,33 +159,59 @@ class RatingManager extends BaseManager
         $trips = $this->tripRepo->index($criterias, ['user', 'passenger']);
 
         foreach ($trips as $trip) {
-            $driver = $trip->user;
-            $driver_hash = Str::random(40);
-            $has_passenger = false;
-
-            $passengers = $trip->passenger()->orderBy('created_at', 'desc')->get();
-
-            $passenger_ids_rates_created = [];
-
-            foreach ($passengers as $passenger) {
-                if ($passenger->isEligibleForRating()) {
-                    // the passenger could be make more than one trip request
-                    if (! in_array($passenger->user->id, $passenger_ids_rates_created)) {
-                        $passenger_hash = Str::random(40);
-                        $rate = $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
-
-                        $rate = $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
-                        $has_passenger = true;
-                        event(new PendingEvent($passenger->user, $trip, $passenger_hash));
-
-                        $passenger_ids_rates_created[] = $passenger->user->id;
-                    }
-                }
+            if (! Rating::query()->where('trip_id', $trip->id)->exists()) {
+                continue;
             }
-            if ($has_passenger) {
-                event(new PendingEvent($driver, $trip, $driver_hash));
-            }
+
+            $this->dispatchRatingNotificationsForTrip($trip);
             $this->tripRepo->update($trip, ['mail_send' => true]);
+        }
+    }
+
+    private function createRatingsForTrip(Trip $trip): bool
+    {
+        $driver = $trip->user;
+        $driver_hash = Str::random(40);
+        $has_passenger = false;
+        $passengers = $trip->passenger()->orderBy('created_at', 'desc')->get();
+        $passenger_ids_rates_created = [];
+
+        foreach ($passengers as $passenger) {
+            if (! $passenger->isEligibleForRating()) {
+                continue;
+            }
+
+            if (in_array($passenger->user->id, $passenger_ids_rates_created)) {
+                continue;
+            }
+
+            $passenger_hash = Str::random(40);
+            $this->ratingRepository->create($driver->id, $passenger->user_id, $trip->id, Passenger::TYPE_PASAJERO, $passenger->request_state, $driver_hash);
+            $this->ratingRepository->create($passenger->user_id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, Passenger::STATE_ACCEPTED, $passenger_hash);
+            $has_passenger = true;
+            $passenger_ids_rates_created[] = $passenger->user->id;
+        }
+
+        return $has_passenger;
+    }
+
+    private function dispatchRatingNotificationsForTrip(Trip $trip): void
+    {
+        $notifiedUserIds = [];
+
+        $pendingRatings = Rating::query()
+            ->where('trip_id', $trip->id)
+            ->where('voted', false)
+            ->with('from')
+            ->get();
+
+        foreach ($pendingRatings as $rate) {
+            if (in_array($rate->user_id_from, $notifiedUserIds)) {
+                continue;
+            }
+
+            event(new PendingEvent($rate->from, $trip, $rate->voted_hash));
+            $notifiedUserIds[] = $rate->user_id_from;
         }
     }
 }
