@@ -251,6 +251,12 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
+        foreach (['friendship_state', 'friend_trip_alerts_enabled', 'state'] as $virtualKey) {
+            if ($user->offsetExists($virtualKey)) {
+                $user->offsetUnset($virtualKey);
+            }
+        }
+
         if (! $this->isFacebookProfileUrlModuleEnabled()) {
             unset($data['facebook_profile_url']);
         } else {
