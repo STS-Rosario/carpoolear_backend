@@ -141,4 +141,55 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip));
     }
+
+    public function test_handle_creates_pending_rating_for_passenger_removed_by_driver(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passengerUser = User::factory()->create();
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_DRIVER,
+        ]);
+
+        $trip = $trip->fresh();
+
+        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository->shouldReceive('create')
+            ->once()
+            ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($passengerUser, $driver, $trip) {
+                return $userFromId === $passengerUser->id
+                    && $userToId === $driver->id
+                    && $tripId === $trip->id
+                    && $userToType === Passenger::TYPE_CONDUCTOR
+                    && $userToState === Passenger::STATE_ACCEPTED
+                    && is_string($hash)
+                    && strlen($hash) === 40;
+            })
+            ->andReturn((object) ['id' => 1]);
+
+        $this->mock(NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(3)
+            ->withArgs(function ($notification, $users, $channel) use ($trip, $driver, $passengerUser) {
+                if (! $notification instanceof DeleteTripNotification) {
+                    return false;
+                }
+
+                $hash = $notification->getAttribute('hash');
+
+                return $notification->getAttribute('trip')->is($trip)
+                    && $notification->getAttribute('from')->is($driver)
+                    && is_string($hash)
+                    && strlen($hash) === 40
+                    && $users instanceof User
+                    && $users->is($passengerUser)
+                    && is_string($channel);
+            });
+
+        (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip));
+    }
 }
