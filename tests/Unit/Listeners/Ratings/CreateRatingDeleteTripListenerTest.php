@@ -15,6 +15,14 @@ use Tests\TestCase;
 
 class CreateRatingDeleteTripListenerTest extends TestCase
 {
+    private function mockRatingRepository(): RatingRepository
+    {
+        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository->shouldReceive('getRating')->andReturn(null);
+
+        return $ratingRepository;
+    }
+
     public function test_handle_does_nothing_when_trip_has_no_accepted_passengers(): void
     {
         $driver = User::factory()->create();
@@ -47,7 +55,7 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         $trip = $trip->fresh();
 
-        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository = $this->mockRatingRepository();
         $ratingRepository->shouldReceive('create')
             ->once()
             ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($passengerUser, $driver, $trip) {
@@ -101,7 +109,7 @@ class CreateRatingDeleteTripListenerTest extends TestCase
 
         $trip = $trip->fresh();
 
-        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository = $this->mockRatingRepository();
         $ratingRepository->shouldReceive('create')
             ->twice()
             ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($first, $second, $driver, $trip) {
@@ -138,6 +146,133 @@ class CreateRatingDeleteTripListenerTest extends TestCase
                     && ($users->is($first) || $users->is($second))
                     && is_string($channel);
             });
+
+        (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip));
+    }
+
+    public function test_handle_creates_pending_rating_for_passenger_removed_by_driver(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passengerUser = User::factory()->create();
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_DRIVER,
+        ]);
+
+        $trip = $trip->fresh();
+
+        $ratingRepository = $this->mockRatingRepository();
+        $ratingRepository->shouldReceive('create')
+            ->once()
+            ->withArgs(function ($userFromId, $userToId, $tripId, $userToType, $userToState, $hash) use ($passengerUser, $driver, $trip) {
+                return $userFromId === $passengerUser->id
+                    && $userToId === $driver->id
+                    && $tripId === $trip->id
+                    && $userToType === Passenger::TYPE_CONDUCTOR
+                    && $userToState === Passenger::STATE_ACCEPTED
+                    && is_string($hash)
+                    && strlen($hash) === 40;
+            })
+            ->andReturn((object) ['id' => 1]);
+
+        $this->mock(NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(3)
+            ->withArgs(function ($notification, $users, $channel) use ($trip, $driver, $passengerUser) {
+                if (! $notification instanceof DeleteTripNotification) {
+                    return false;
+                }
+
+                $hash = $notification->getAttribute('hash');
+
+                return $notification->getAttribute('trip')->is($trip)
+                    && $notification->getAttribute('from')->is($driver)
+                    && is_string($hash)
+                    && strlen($hash) === 40
+                    && $users instanceof User
+                    && $users->is($passengerUser)
+                    && is_string($channel);
+            });
+
+        (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip));
+    }
+
+    public function test_handle_skips_passenger_who_withdrew_pending_request(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory(),
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_REQUEST,
+        ]);
+
+        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository->shouldNotReceive('create');
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
+
+        (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip->fresh()));
+    }
+
+    public function test_handle_skips_when_pending_rating_already_exists(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passengerUser = User::factory()->create();
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+
+        $trip = $trip->fresh();
+
+        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository->shouldReceive('getRating')
+            ->once()
+            ->with($passengerUser->id, $driver->id, $trip->id)
+            ->andReturn((object) ['id' => 99, 'voted' => false]);
+        $ratingRepository->shouldNotReceive('create');
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
+
+        (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip));
+    }
+
+    public function test_handle_deduplicates_rating_per_passenger_user(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passengerUser = User::factory()->create();
+
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_DRIVER,
+        ]);
+
+        $trip = $trip->fresh();
+
+        $ratingRepository = $this->mockRatingRepository();
+        $ratingRepository->shouldReceive('create')
+            ->once()
+            ->andReturn((object) ['id' => 1]);
+
+        $this->mock(NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(3);
 
         (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip));
     }
