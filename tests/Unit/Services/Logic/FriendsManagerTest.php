@@ -9,6 +9,7 @@ use STS\Events\Friend\Reject as RejectEvent;
 use STS\Events\Friend\Request as RequestEvent;
 use STS\Models\User;
 use STS\Repository\FriendsRepository;
+use STS\Repository\FriendTripAlertRepository;
 use STS\Services\Logic\FriendsManager;
 use Tests\TestCase;
 
@@ -16,7 +17,7 @@ class FriendsManagerTest extends TestCase
 {
     private function manager(): FriendsManager
     {
-        return new FriendsManager(new FriendsRepository);
+        return new FriendsManager(new FriendsRepository, new FriendTripAlertRepository);
     }
 
     public function test_are_friend_false_without_edge(): void

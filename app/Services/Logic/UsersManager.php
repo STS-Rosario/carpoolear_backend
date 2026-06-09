@@ -608,6 +608,10 @@ class UsersManager extends BaseManager
             if ($user && $profile->id !== $user->id) {
                 $friendsManager = app(FriendsManager::class);
                 $profile->friendship_state = $friendsManager->getFriendshipState($user, $profile);
+                if ($profile->friendship_state === 'friend') {
+                    $alertRepo = app(\STS\Repository\FriendTripAlertRepository::class);
+                    $profile->friend_trip_alerts_enabled = $alertRepo->isSubscribed($user, $profile);
+                }
             }
 
             return $profile;

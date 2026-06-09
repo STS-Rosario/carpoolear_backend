@@ -8,14 +8,18 @@ use STS\Events\Friend\Reject as RejectEvent;
 use STS\Events\Friend\Request as RequestEvent;
 use STS\Models\User as UserModel;
 use STS\Repository\FriendsRepository;
+use STS\Repository\FriendTripAlertRepository;
 
 class FriendsManager extends BaseManager
 {
     protected $friendsRepo;
 
-    public function __construct(FriendsRepository $friends)
+    protected $friendTripAlertRepo;
+
+    public function __construct(FriendsRepository $friends, FriendTripAlertRepository $friendTripAlertRepo)
     {
         $this->friendsRepo = $friends;
+        $this->friendTripAlertRepo = $friendTripAlertRepo;
     }
 
     public function areFriend(UserModel $who, UserModel $user, $friendOfFriends = false)
@@ -84,6 +88,7 @@ class FriendsManager extends BaseManager
         if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_ACCEPTED)->count() > 0) {
             $this->friendsRepo->delete($who, $user);
             $this->friendsRepo->delete($user, $who);
+            $this->friendTripAlertRepo->deleteForUsers($who, $user);
             event(new CancelEvent($who, $user));
 
             return true;
@@ -129,5 +134,16 @@ class FriendsManager extends BaseManager
         }
 
         return 'none';
+    }
+
+    public function toggleTripAlerts(UserModel $who, UserModel $friend)
+    {
+        if (! $this->areFriend($who, $friend)) {
+            $this->setErrors(['error' => 'Operación inválida']);
+
+            return;
+        }
+
+        return $this->friendTripAlertRepo->toggle($who, $friend);
     }
 }

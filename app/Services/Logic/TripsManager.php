@@ -11,6 +11,7 @@ use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
 use STS\Models\Trip;
 use STS\Repository\TripRepository;
+use STS\Services\FriendTripAlertService;
 use Validator;
 
 class TripsManager extends BaseManager
@@ -183,6 +184,11 @@ class TripsManager extends BaseManager
                 }
             }
             event(new CreateEvent($trip));
+
+            $friendTripAlertService = app(FriendTripAlertService::class);
+            if ($friendTripAlertService->isImmediatelyVisible($trip)) {
+                $friendTripAlertService->notifyIfVisible($trip);
+            }
 
             return $trip;
         }

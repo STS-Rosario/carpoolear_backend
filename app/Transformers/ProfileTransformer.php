@@ -157,6 +157,10 @@ class ProfileTransformer extends TransformerAbstract
             $data['friendship_state'] = $user->friendship_state;
         }
 
+        if (isset($user->friend_trip_alerts_enabled)) {
+            $data['friend_trip_alerts_enabled'] = (bool) $user->friend_trip_alerts_enabled;
+        }
+
         return $data;
     }
 

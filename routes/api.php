@@ -123,6 +123,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/request/{id?}', [FriendsController::class, 'request']);
         Route::post('/delete/{id?}', [FriendsController::class, 'delete']);
         Route::post('/reject/{id?}', [FriendsController::class, 'reject']);
+        Route::post('/trip-alerts/{id?}', [FriendsController::class, 'toggleTripAlerts']);
 
         Route::get('/', [FriendsController::class, 'index']);
         Route::get('/pedings', [FriendsController::class, 'pedings']);
