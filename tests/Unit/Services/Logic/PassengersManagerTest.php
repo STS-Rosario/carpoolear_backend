@@ -16,6 +16,9 @@ use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\CancelPassengerNotification;
+use STS\Repository\FriendsRepository;
+use STS\Repository\FriendTripAlertRepository;
+use STS\Services\Logic\FriendsManager;
 use STS\Services\Logic\PassengersManager;
 use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
@@ -240,6 +243,51 @@ class PassengersManagerTest extends TestCase
         Event::assertNotDispatched(RequestEvent::class);
         Event::assertNotDispatched(AcceptEvent::class);
         Event::assertNotDispatched(AutoRequestEvent::class);
+    }
+
+    public function test_new_request_autoaccept_friends_dispatches_auto_and_accept_events(): void
+    {
+        Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $requester = User::factory()->create();
+        (new FriendsManager(new FriendsRepository, new FriendTripAlertRepository))->make($driver, $requester);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+            'total_seats' => 4,
+            'autoaccept_friends_requests' => true,
+        ]);
+
+        $row = $this->manager()->newRequest($trip->id, $requester, []);
+
+        $this->assertNotNull($row);
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) $row->fresh()->request_state);
+        Event::assertNotDispatched(RequestEvent::class);
+        Event::assertDispatched(AutoRequestEvent::class);
+        Event::assertDispatched(AcceptEvent::class);
+    }
+
+    public function test_new_request_autoaccept_friends_skips_non_friends(): void
+    {
+        Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $requester = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+            'total_seats' => 4,
+            'autoaccept_friends_requests' => true,
+        ]);
+
+        $row = $this->manager()->newRequest($trip->id, $requester, []);
+
+        $this->assertNotNull($row);
+        $this->assertSame(Passenger::STATE_PENDING, (int) $row->fresh()->request_state);
+        Event::assertDispatched(RequestEvent::class);
+        Event::assertNotDispatched(AutoRequestEvent::class);
+        Event::assertNotDispatched(AcceptEvent::class);
     }
 
     public function test_new_request_autoaccept_dispatches_auto_and_accept_events(): void
