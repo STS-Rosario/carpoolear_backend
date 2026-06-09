@@ -96,6 +96,21 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_validator_create_requires_punto_partida_and_punto_llegada(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+        $payload = $this->minimalCreatePayload();
+        unset($payload['punto_partida'], $payload['punto_llegada']);
+
+        $v = $this->manager()->validator($payload, $user->id);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('punto_partida'));
+        $this->assertTrue($v->errors()->has('punto_llegada'));
+        Carbon::setTestNow();
+    }
+
     public function test_validator_create_includes_all_documented_rule_keys(): void
     {
         Carbon::setTestNow('2028-01-01 12:00:00');
