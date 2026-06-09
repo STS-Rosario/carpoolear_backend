@@ -2,12 +2,10 @@
 
 namespace STS\Repository;
 
-use STS\Models\User as UserModel;
+use DB;
 use STS\Models\Trip as TripModel;
 use STS\Models\TripVisibility as TripVisibilityModel;
-
-use DB;
-
+use STS\Models\User as UserModel;
 
 class FriendsRepository
 {
@@ -25,7 +23,7 @@ class FriendsRepository
         $this->undoFriendTripVisibility($user1, $user2);
     }
 
-    public function get(UserModel $user1, UserModel $user2 = null, $state = null, $data = [])
+    public function get(UserModel $user1, ?UserModel $user2 = null, $state = null, $data = [])
     {
         $pageNumber = isset($data['page']) ? $data['page'] : null;
         $pageSize = isset($data['page_size']) ? $data['page_size'] : null;
@@ -57,19 +55,25 @@ class FriendsRepository
         return $users->get();
     }
 
-    public function closestFriend(UserModel $user1, UserModel $user2 = null)
+    public function getSentPending(UserModel $user)
+    {
+        return $user->allFriends(UserModel::FRIEND_REQUEST)->get();
+    }
+
+    public function closestFriend(UserModel $user1, ?UserModel $user2 = null)
     {
         $friends = $user1->friends()
-                         ->whereHas('friends',
-                            function ($q) use ($user2) {
-                                $q->whereId($user2->id);
-                            }
-                         )->count();
+            ->whereHas('friends',
+                function ($q) use ($user2) {
+                    $q->whereId($user2->id);
+                }
+            )->count();
 
         return $friends > 0;
     }
 
-    public function generateFriendTripVisibility ($requestedUser, $userAccepted) {
+    public function generateFriendTripVisibility($requestedUser, $userAccepted)
+    {
         // somos amigos
         // ahora deberia ver todos los viajes que publicaste como only friends
         // tambien deberia ver los viajes de amigos de amigos publicados como FoF
@@ -80,19 +84,18 @@ class FriendsRepository
         $ownTrips->each(function ($t) use (&$data, $requestedUser) {
             $data[] = [
                 'user_id' => $requestedUser->id,
-                'trip_id' => $t->id
+                'trip_id' => $t->id,
             ];
         });
 
-
         $friendsTrips = $userAccepted->friends()->each(function ($f) use (&$data, $requestedUser) {
-            
+
             $friendTrips = $f->trips(TripModel::ACTIVO)->where('friendship_type_id', TripModel::PRIVACY_FOF);
             // \Log::info($f->name . ': ' . $friendTrips->count());
             $friendTrips->each(function ($t) use (&$data, $requestedUser) {
                 $data[] = [
                     'user_id' => $requestedUser->id,
-                    'trip_id' => $t->id
+                    'trip_id' => $t->id,
                 ];
             });
         });
@@ -102,21 +105,22 @@ class FriendsRepository
         }
     }
 
-    public function undoFriendTripVisibility ($requestedUser, $userRejected) {
+    public function undoFriendTripVisibility($requestedUser, $userRejected)
+    {
         $ownTrips = $userRejected->trips(TripModel::ACTIVO)->where('friendship_type_id', '<', TripModel::PRIVACY_PUBLIC);
 
         $data = [];
         // \Log::info($userRejected->name . ': ' . $ownTrips->count());
 
         $ownTrips->each(function ($t) use (&$data, $requestedUser) {
-            $data[] = [ $requestedUser->id, $t->id ];
+            $data[] = [$requestedUser->id, $t->id];
         });
 
         $userRejected->friends()->each(function ($f) use (&$data, $requestedUser) {
             $friendTrips = $f->trips(TripModel::ACTIVO)->where('friendship_type_id', TripModel::PRIVACY_FOF);
             // \Log::info($f->name . ': ' . $friendTrips->count());
             $friendTrips->each(function ($t) use (&$data, $requestedUser) {
-                $data[] = [ $requestedUser->id, $t->id ];
+                $data[] = [$requestedUser->id, $t->id];
             });
         });
 
@@ -125,7 +129,6 @@ class FriendsRepository
         foreach ($data as $row) {
             DB::delete('DELETE FROM user_visibility_trip WHERE user_id = ? AND trip_id = ?', $row);
         }
-
 
     }
 }

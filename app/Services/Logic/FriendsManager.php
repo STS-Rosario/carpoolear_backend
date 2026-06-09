@@ -119,6 +119,23 @@ class FriendsManager extends BaseManager
         return $this->friendsRepo->getPending($who);
     }
 
+    public function getSentPendings(UserModel $who)
+    {
+        return $this->friendsRepo->getSentPending($who);
+    }
+
+    public function cancelRequest(UserModel $who, UserModel $user)
+    {
+        if ($this->friendsRepo->get($who, $user, UserModel::FRIEND_REQUEST)->count() > 0) {
+            $this->friendsRepo->delete($who, $user);
+
+            return true;
+        }
+
+        $this->setErrors(['error' => 'Operación inválida']);
+
+    }
+
     public function getFriendshipState(UserModel $viewer, UserModel $profileUser): string
     {
         if ($this->areFriend($viewer, $profileUser)) {
