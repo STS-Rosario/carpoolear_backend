@@ -4100,4 +4100,49 @@ class TripRepositoryTest extends TestCase
 
         $this->assertSame(0, (int) DB::table('user_visibility_trip')->where('trip_id', $publicTrip->id)->count());
     }
+
+    public function test_search_hides_carpooleado_trips_when_hide_carpooleado_is_true(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $available = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'total_seats' => 2,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $full = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'total_seats' => 1,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $full->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+
+        $this->assertSame(0, (int) $full->fresh()->seats_available);
+
+        $all = $this->repo()->search($admin, [
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $allIds = collect($all->items())->pluck('id');
+        $this->assertTrue($allIds->contains($available->id));
+        $this->assertTrue($allIds->contains($full->id));
+
+        $filtered = $this->repo()->search($admin, [
+            'hide_carpooleado' => 'true',
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $filteredIds = collect($filtered->items())->pluck('id');
+        $this->assertTrue($filteredIds->contains($available->id));
+        $this->assertFalse($filteredIds->contains($full->id));
+    }
 }
