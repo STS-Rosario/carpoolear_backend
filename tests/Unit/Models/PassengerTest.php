@@ -214,6 +214,27 @@ class PassengerTest extends TestCase
         $this->assertSame(2, Passenger::TYPE_CONDUCTORRECURRENTE);
     }
 
+    public function test_is_eligible_for_rating(): void
+    {
+        $accepted = Passenger::factory()->make(['request_state' => Passenger::STATE_ACCEPTED]);
+        $this->assertTrue($accepted->isEligibleForRating());
+
+        $canceledByDriver = Passenger::factory()->make([
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_DRIVER,
+        ]);
+        $this->assertTrue($canceledByDriver->isEligibleForRating());
+
+        $canceledRequest = Passenger::factory()->make([
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_REQUEST,
+        ]);
+        $this->assertFalse($canceledRequest->isEligibleForRating());
+
+        $pending = Passenger::factory()->make(['request_state' => Passenger::STATE_PENDING]);
+        $this->assertFalse($pending->isEligibleForRating());
+    }
+
     public function test_table_name_is_trip_passengers(): void
     {
         $this->assertSame('trip_passengers', (new Passenger)->getTable());

@@ -86,6 +86,22 @@ class Passenger extends Model
         return $this->belongsTo('STS\Models\Trip', 'trip_id');
     }
 
+    public function isEligibleForRating(): bool
+    {
+        $requestState = (int) $this->request_state;
+        $inRatingState = $requestState === self::STATE_ACCEPTED || $requestState === self::STATE_CANCELED;
+
+        if (! $inRatingState) {
+            return false;
+        }
+
+        if ($requestState === self::STATE_CANCELED) {
+            return ! isset($this->canceled_state) || (int) $this->canceled_state !== self::CANCELED_REQUEST;
+        }
+
+        return true;
+    }
+
     /**
      * Ratings this passenger's user gave on this trip (FK columns reference users.id).
      */

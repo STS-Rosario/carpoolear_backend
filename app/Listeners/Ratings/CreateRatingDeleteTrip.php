@@ -35,17 +35,7 @@ class CreateRatingDeleteTrip
         $passengerUserIdsNotified = [];
 
         foreach ($trip->passenger()->orderBy('created_at', 'desc')->get() as $passenger) {
-            $requestState = (int) $passenger->request_state;
-            $inRatingState = $requestState === Passenger::STATE_ACCEPTED || $requestState === Passenger::STATE_CANCELED;
-
-            $canceledButAccepted = true;
-            if ($requestState === Passenger::STATE_CANCELED) {
-                if (isset($passenger->canceled_state) && (int) $passenger->canceled_state === Passenger::CANCELED_REQUEST) {
-                    $canceledButAccepted = false;
-                }
-            }
-
-            if (! $inRatingState || ! $canceledButAccepted) {
+            if (! $passenger->isEligibleForRating()) {
                 continue;
             }
 
