@@ -56,6 +56,8 @@ class TripsTest extends TestCase
                 'is_passenger' => 0,
                 'from_town' => 'Rosario, Santa Fe, Argentina',
                 'to_town' => 'Santa Fe, Santa Fe, Argentina',
+                'punto_partida' => 'Centro',
+                'punto_llegada' => 'Barrio Sur',
                 'trip_date' => '2026-06-15 10:00:00',
                 'total_seats' => 5,
                 'friendship_type_id' => 0,

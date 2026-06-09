@@ -148,7 +148,7 @@ class TripsManagerTest extends TestCase
         ];
         $rules = $this->manager()->validator($payload, $user->id, $trip->id)->getRules();
         $expected = [
-            'is_passenger', 'from_town', 'to_town', 'trip_date', 'total_seats', 'friendship_type_id',
+            'is_passenger', 'from_town', 'to_town', 'punto_partida', 'punto_llegada', 'trip_date', 'total_seats', 'friendship_type_id',
             'estimated_time', 'distance', 'co2', 'return_trip_id', 'parent_trip_id', 'car_id',
             'weekly_schedule', 'weekly_schedule_time',
         ];
