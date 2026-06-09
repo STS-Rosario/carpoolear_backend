@@ -561,6 +561,19 @@ class TripRepository
             }
         }
 
+        if (isset($data['hide_carpooleado']) && parse_boolean($data['hide_carpooleado'])) {
+            $trips->whereRaw(
+                'trips.total_seats > (
+                    SELECT COUNT(*)
+                    FROM trip_passengers
+                    WHERE trip_passengers.trip_id = trips.id
+                    AND trip_passengers.request_state = ?
+                    AND trip_passengers.user_id <> trips.user_id
+                )',
+                [Passenger::STATE_ACCEPTED]
+            );
+        }
+
         $trips->with([
             'user',
             'user.accounts',
