@@ -85,6 +85,18 @@ class TripController extends Controller
         return response()->json(['data' => 'ok']);
     }
 
+    public function inviteFriends($id, Request $request)
+    {
+        $this->user = auth()->user();
+        $friendIds = $request->get('friend_ids', []);
+        $count = $this->tripsLogic->inviteFriends($this->user, $id, $friendIds);
+        if ($count === null) {
+            throw new ExceptionWithErrors('Could not invite friends.', $this->tripsLogic->getErrors());
+        }
+
+        return response()->json(['invited_count' => $count]);
+    }
+
     public function show($id, Request $request)
     {
         if (OldCordovaAppHelper::isOldCordovaApp()) {

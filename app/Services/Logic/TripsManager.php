@@ -10,6 +10,8 @@ use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
 use STS\Models\Trip;
+use STS\Models\User;
+use STS\Notifications\FriendTripInviteNotification;
 use STS\Repository\TripRepository;
 use STS\Services\FriendTripAlertService;
 use Validator;
@@ -583,6 +585,34 @@ class TripsManager extends BaseManager
         // [TODO] Faltaría saber si sos pasajero
 
         return false;
+    }
+
+    public function inviteFriends($user, $tripId, $friendIds)
+    {
+        $trip = $this->tripRepo->show($user, $tripId);
+        if (! $trip || $trip->user_id != $user->id) {
+            $this->setErrors(['error' => 'access_denied']);
+
+            return;
+        }
+
+        $friendsManager = app(FriendsManager::class);
+        $invited = 0;
+
+        foreach ((array) $friendIds as $friendId) {
+            $friend = User::find($friendId);
+            if (! $friend || ! $friendsManager->areFriend($user, $friend)) {
+                continue;
+            }
+
+            $notification = new FriendTripInviteNotification;
+            $notification->setAttribute('trip', $trip);
+            $notification->setAttribute('driver', $user);
+            $notification->notify($friend);
+            $invited++;
+        }
+
+        return $invited;
     }
 
     public function shareTrip($me, $user)

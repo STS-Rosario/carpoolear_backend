@@ -76,7 +76,7 @@ class TripInviteFriendsTest extends TestCase
             ->postJson("/api/trips/{$trip->id}/invite-friends", [
                 'friend_ids' => [$friend->id],
             ])
-            ->assertStatus(400);
+            ->assertStatus(422);
     }
 
     protected function tearDown(): void

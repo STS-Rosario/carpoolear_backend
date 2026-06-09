@@ -55,6 +55,10 @@ return [
     'friend_created_trip.title' => ':name published a new trip to :destination',
     'friend_created_trip.message' => ':name published a trip to :destination on :date at :time',
 
+    // FriendTripInviteNotification
+    'friend_trip_invite.title' => ':name invited you to a trip to :destination',
+    'friend_trip_invite.message' => ':name invited you to a trip to :destination on :date at :time',
+
     // HourLeftNotification
     'hour_left.title' => 'Trip reminder to :destination',
     'hour_left.message' => 'Remember that in just over an hour you are traveling to :destination',
