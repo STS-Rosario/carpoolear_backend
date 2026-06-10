@@ -608,4 +608,19 @@ class ConversationApiTest extends TestCase
         $this->expectExceptionMessage('Bad request exceptions');
         $controller->deleteUser(new Request, 300, $toDelete->id);
     }
+
+    public function test_show_by_trip_returns_trip_conversation_for_participant(): void
+    {
+        $driver = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($conversation, $driver);
+
+        $this->actingAs($driver, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertOk();
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, $response->json('data.type'));
+        $this->assertSame($conversation->id, $response->json('data.id'));
+    }
 }
