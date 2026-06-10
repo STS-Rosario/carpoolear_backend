@@ -110,6 +110,7 @@ class TripTransformer extends TransformerAbstract
             return null;
         }
 
+        $car->loadMissing(['brand', 'carModel', 'color']);
         $payload = $car->toArray();
         if (method_exists($car, 'trashed') && $car->trashed()) {
             $payload['deleted'] = true;

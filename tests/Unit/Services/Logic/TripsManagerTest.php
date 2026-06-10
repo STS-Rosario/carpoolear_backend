@@ -79,7 +79,7 @@ class TripsManagerTest extends TestCase
 
     private function carWithPlateFor(User $user, array $overrides = []): Car
     {
-        return Car::factory()->create(array_merge([
+        return Car::factory()->withCatalog()->create(array_merge([
             'user_id' => $user->id,
             'patente' => 'ABC123',
         ], $overrides));
@@ -702,16 +702,36 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_driver_trip_rejects_incomplete_car(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $user = $this->completeUser();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'LEGACY1',
+            'description' => 'Legacy',
+        ]);
+
+        $manager = $this->manager();
+        $result = $manager->create($user, $this->minimalCreatePayload([
+            'car_id' => $car->id,
+        ]));
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('car_incomplete'));
+        Carbon::setTestNow();
+    }
+
     public function test_create_driver_trip_requires_car_id_when_user_has_multiple_active_cars(): void
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
         $user = $this->completeUser();
-        Car::factory()->create([
+        Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'CAR001',
             'description' => 'First',
         ]);
-        Car::factory()->create([
+        Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'CAR002',
             'description' => 'Second',
@@ -741,12 +761,12 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow('2028-02-01 10:00:00');
         Event::fake([CreateEvent::class]);
         $user = $this->completeUser();
-        $first = Car::factory()->create([
+        $first = Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'CAR001',
             'description' => 'First',
         ]);
-        $second = Car::factory()->create([
+        $second = Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'CAR002',
             'description' => 'Second',
@@ -781,12 +801,12 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow('2028-02-01 10:00:00');
         Event::fake([CreateEvent::class]);
         $user = $this->completeUser();
-        $deletedCar = Car::factory()->create([
+        $deletedCar = Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'OLD001',
             'description' => 'Removed',
         ]);
-        $replacementCar = Car::factory()->create([
+        $replacementCar = Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'NEW002',
             'description' => 'Replacement',
@@ -847,12 +867,12 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow('2028-02-01 10:00:00');
         Event::fake([CreateEvent::class]);
         $user = $this->completeUser();
-        Car::factory()->create([
+        Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'CAR001',
             'description' => 'First',
         ]);
-        $second = Car::factory()->create([
+        $second = Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'CAR002',
             'description' => 'Second',

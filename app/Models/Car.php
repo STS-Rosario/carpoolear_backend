@@ -32,7 +32,7 @@ class Car extends Model
 
     protected $hidden = ['created_at', 'updated_at'];
 
-    protected $appends = ['trips_count'];
+    protected $appends = ['trips_count', 'brand_name', 'model_name', 'color_name'];
 
     public function user(): BelongsTo
     {
@@ -62,6 +62,33 @@ class Car extends Model
     public function getTripsCountAttribute()
     {
         return $this->trips()->count();
+    }
+
+    public function getBrandNameAttribute(): ?string
+    {
+        if ($this->relationLoaded('brand') && $this->brand) {
+            return $this->brand->name;
+        }
+
+        return $this->brand_other;
+    }
+
+    public function getModelNameAttribute(): ?string
+    {
+        if ($this->relationLoaded('carModel') && $this->carModel) {
+            return $this->carModel->name;
+        }
+
+        return $this->model_other;
+    }
+
+    public function getColorNameAttribute(): ?string
+    {
+        if ($this->relationLoaded('color') && $this->color) {
+            return $this->color->name;
+        }
+
+        return null;
     }
 
     public function isComplete(): bool

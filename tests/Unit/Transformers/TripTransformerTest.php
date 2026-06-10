@@ -185,10 +185,29 @@ class TripTransformerTest extends TestCase
         $this->assertArrayNotHasKey('hidden', $deletedPayload);
     }
 
+    public function test_transform_includes_catalog_names_on_car(): void
+    {
+        $owner = User::factory()->create(['is_admin' => true]);
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $owner->id,
+            'patente' => 'CAT123',
+        ]);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'car_id' => $car->id,
+        ]);
+
+        $payload = (new TripTransformer($owner))->transform($trip->fresh(['car']));
+
+        $this->assertNotEmpty($payload['car']['brand_name']);
+        $this->assertNotEmpty($payload['car']['model_name']);
+        $this->assertNotEmpty($payload['car']['color_name']);
+    }
+
     public function test_transform_marks_soft_deleted_car_on_trip(): void
     {
         $owner = User::factory()->create(['is_admin' => true]);
-        $car = Car::factory()->create([
+        $car = Car::factory()->withCatalog()->create([
             'user_id' => $owner->id,
             'patente' => 'DEL123',
             'description' => 'Removed car',
