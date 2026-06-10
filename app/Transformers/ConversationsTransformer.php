@@ -27,23 +27,30 @@ class ConversationsTransformer extends TransformerAbstract
             'type' => $conversation->type,
         ];
 
+        $trip = null;
+        if ($conversation->trip_id) {
+            $trip = Trip::find($conversation->trip_id);
+        }
+
+        if ($conversation->type === Conversation::TYPE_TRIP_CONVERSATION && $trip) {
+            $data['trip_id'] = $trip->id;
+            $data['trip_date'] = $trip->trip_date ? $trip->trip_date->toDateTimeString() : null;
+        }
+
         $module_module_coordinate_by_message = filter_var(
             config('carpoolear.module_coordinate_by_message'),
             FILTER_VALIDATE_BOOLEAN
         );
-        if ($module_module_coordinate_by_message) {
-            $trip = Trip::find($conversation->trip_id);
+        if ($module_module_coordinate_by_message && $trip) {
             // old client, maybe null
-            if ($trip) {
-                $tripTransformer = new TripTransformer($this->user);
-                if ($trip->return_trip_id) {
-                    $returnTrip = Trip::find($trip->return_trip_id);
-                    if ($returnTrip) {
-                        $data['return_trip'] = $tripTransformer->transform($returnTrip);
-                    }
+            $tripTransformer = new TripTransformer($this->user);
+            if ($trip->return_trip_id) {
+                $returnTrip = Trip::find($trip->return_trip_id);
+                if ($returnTrip) {
+                    $data['return_trip'] = $tripTransformer->transform($returnTrip);
                 }
-                $data['trip'] = $tripTransformer->transform($trip);
             }
+            $data['trip'] = $tripTransformer->transform($trip);
         }
 
         switch ($conversation->type) {
@@ -83,6 +90,7 @@ class ConversationsTransformer extends TransformerAbstract
             $data['users'][] = [
                 'id' => $u->id,
                 'name' => $u->name,
+                'image' => $u->image ? '/image/profile/'.$u->image : '',
                 'last_connection' => $u->last_connection ? $u->last_connection->toDateTimeString() : null,
                 'identity_validated_at' => $u->identity_validated_at ? $u->identity_validated_at->toDateTimeString() : null,
                 'positive_ratings' => $u->positive_ratings,

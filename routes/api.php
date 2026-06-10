@@ -180,6 +180,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/', [ConversationController::class, 'create']);
         Route::get('/user-list', [ConversationController::class, 'userList']);
         Route::get('/unread', [ConversationController::class, 'getMessagesUnread']);
+        Route::get('/trip/{tripId}', [ConversationController::class, 'showByTrip']);
         Route::get('/show/{id?}', [ConversationController::class, 'show']);
 
         Route::get('/{id?}', [ConversationController::class, 'getConversation']);

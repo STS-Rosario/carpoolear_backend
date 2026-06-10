@@ -60,6 +60,17 @@ class ConversationController extends Controller
         }
     }
 
+    public function showByTrip($tripId)
+    {
+        $this->user = auth()->user();
+        $conversation = $this->conversationLogic->getConversationByTrip($this->user, $tripId);
+        if ($conversation) {
+            return $this->item($conversation, new ConversationsTransformer($this->user));
+        }
+
+        throw new ExceptionWithErrors('Bad request exceptions');
+    }
+
     public function create(Request $request)
     {
         $this->user = auth()->user();

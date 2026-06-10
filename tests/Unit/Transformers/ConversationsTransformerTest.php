@@ -167,6 +167,7 @@ class ConversationsTransformerTest extends TestCase
         $expectedKeys = [
             'id',
             'name',
+            'image',
             'last_connection',
             'identity_validated_at',
             'positive_ratings',
