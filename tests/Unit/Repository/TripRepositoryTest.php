@@ -4100,4 +4100,109 @@ class TripRepositoryTest extends TestCase
 
         $this->assertSame(0, (int) DB::table('user_visibility_trip')->where('trip_id', $publicTrip->id)->count());
     }
+
+    public function test_search_hides_carpooleado_trips_when_hide_carpooleado_is_true(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $available = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'total_seats' => 2,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $full = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'total_seats' => 1,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        Passenger::factory()->aceptado()->create([
+            'trip_id' => $full->id,
+            'user_id' => User::factory()->create()->id,
+        ]);
+
+        $this->assertSame(0, (int) $full->fresh()->seats_available);
+
+        $all = $this->repo()->search($admin, [
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $allIds = collect($all->items())->pluck('id');
+        $this->assertTrue($allIds->contains($available->id));
+        $this->assertTrue($allIds->contains($full->id));
+
+        $filtered = $this->repo()->search($admin, [
+            'hide_carpooleado' => 'true',
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $filteredIds = collect($filtered->items())->pluck('id');
+        $this->assertTrue($filteredIds->contains($available->id));
+        $this->assertFalse($filteredIds->contains($full->id));
+    }
+
+    public function test_search_filters_by_allow_preference_flags_when_set(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+        $allowsAnimals = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'allow_animals' => true,
+            'allow_smoking' => false,
+            'allow_kids' => false,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $allowsSmoking = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'allow_animals' => false,
+            'allow_smoking' => true,
+            'allow_kids' => false,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $allowsKids = Trip::factory()->create([
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+            'allow_animals' => false,
+            'allow_smoking' => false,
+            'allow_kids' => true,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $animalsOnly = collect($this->repo()->search($admin, [
+            'allow_animals' => 'true',
+            'page' => 1,
+            'page_size' => 10,
+        ])->items())->pluck('id');
+        $this->assertTrue($animalsOnly->contains($allowsAnimals->id));
+        $this->assertFalse($animalsOnly->contains($allowsSmoking->id));
+        $this->assertFalse($animalsOnly->contains($allowsKids->id));
+
+        $noSmoking = collect($this->repo()->search($admin, [
+            'allow_smoking' => 'false',
+            'page' => 1,
+            'page_size' => 10,
+        ])->items())->pluck('id');
+        $this->assertTrue($noSmoking->contains($allowsAnimals->id));
+        $this->assertFalse($noSmoking->contains($allowsSmoking->id));
+        $this->assertTrue($noSmoking->contains($allowsKids->id));
+
+        $all = collect($this->repo()->search($admin, [
+            'page' => 1,
+            'page_size' => 10,
+        ])->items())->pluck('id');
+        $this->assertTrue($all->contains($allowsAnimals->id));
+        $this->assertTrue($all->contains($allowsSmoking->id));
+        $this->assertTrue($all->contains($allowsKids->id));
+    }
 }

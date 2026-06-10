@@ -561,6 +561,12 @@ class TripRepository
             }
         }
 
+        $this->applyAllowPreferenceFilters($trips, $data);
+
+        if (isset($data['hide_carpooleado']) && parse_boolean($data['hide_carpooleado'])) {
+            $this->excludeCarpooleadoTrips($trips);
+        }
+
         $trips->with([
             'user',
             'user.accounts',
@@ -605,6 +611,29 @@ class TripRepository
             }
             $q->whereRaw('sin_lat * '.$sin_lat.' + cos_lat * '.$cos_lat.' *  (cos_lng * '.$cos_lng.' + sin_lng * '.$sin_lng.') > '.$dist);
         });
+    }
+
+    private function applyAllowPreferenceFilters($trips, array $data): void
+    {
+        foreach (['allow_animals', 'allow_smoking', 'allow_kids'] as $allowField) {
+            if (isset($data[$allowField])) {
+                $trips->where($allowField, parse_boolean($data[$allowField]) ? 1 : 0);
+            }
+        }
+    }
+
+    private function excludeCarpooleadoTrips($trips): void
+    {
+        $trips->whereRaw(
+            'trips.total_seats > (
+                SELECT COUNT(*)
+                FROM trip_passengers
+                WHERE trip_passengers.trip_id = trips.id
+                AND trip_passengers.request_state = ?
+                AND trip_passengers.user_id <> trips.user_id
+            )',
+            [Passenger::STATE_ACCEPTED]
+        );
     }
 
     private function applyAcceptedPassengerFilter($query, $userId): void
