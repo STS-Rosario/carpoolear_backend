@@ -140,6 +140,17 @@ class CarTest extends TestCase
         $this->assertFalse($car->isComplete());
     }
 
+    public function test_is_not_complete_without_color(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'car_color_id' => null,
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
+
     public function test_is_not_complete_without_year(): void
     {
         $user = User::factory()->create();
