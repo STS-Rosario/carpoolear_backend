@@ -20,7 +20,7 @@ class RatingManagerTest extends TestCase
         return $this->app->make(RatingManager::class);
     }
 
-    public function test_validator_requires_rating_and_accepts_zero_or_one(): void
+    public function test_validator_requires_rating_and_accepts_zero_one_or_two(): void
     {
         $manager = $this->manager();
 
@@ -33,6 +33,13 @@ class RatingManagerTest extends TestCase
 
         $okOne = $manager->validator(['rating' => 1]);
         $this->assertFalse($okOne->fails());
+
+        $okTwo = $manager->validator(['rating' => 2, 'comment' => 'Neutral trip']);
+        $this->assertFalse($okTwo->fails());
+
+        $invalid = $manager->validator(['rating' => 3]);
+        $this->assertTrue($invalid->fails());
+        $this->assertTrue($invalid->errors()->has('rating'));
     }
 
     public function test_validator_rejects_array_comment_when_rating_is_present(): void
