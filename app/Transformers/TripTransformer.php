@@ -99,6 +99,20 @@ class TripTransformer extends TransformerAbstract
             // passengerPending
             $data['passengerPending_count'] = count($trip->passengerPending);
 
+            $data['group_chat_conversation_id'] = null;
+            $data['group_chat_unread_count'] = 0;
+            if ($trip->user_id == $this->user->id || $trip->isPassenger($this->user)) {
+                $conversationRepo = app(\STS\Repository\ConversationRepository::class);
+                $messageRepo = app(\STS\Repository\MessageRepository::class);
+                $groupConversation = $conversationRepo->getConversationByTripId($trip->id, $this->user);
+                if ($groupConversation) {
+                    $data['group_chat_conversation_id'] = $groupConversation->id;
+                    $data['group_chat_unread_count'] = $messageRepo
+                        ->getUnreadMessages($groupConversation, $this->user)
+                        ->count();
+                }
+            }
+
         }
 
         return $data;
