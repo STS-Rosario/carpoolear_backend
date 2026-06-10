@@ -239,7 +239,7 @@ class TripControllerIntegrationTest extends TestCase
             'nro_doc' => '30111222',
             'mobile_phone' => '+5493415551234',
         ]);
-        Car::factory()->create([
+        Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'OK123',
         ]);
@@ -313,7 +313,7 @@ class TripControllerIntegrationTest extends TestCase
             'nro_doc' => '30111222',
             'mobile_phone' => '+5493415551234',
         ]);
-        $car = Car::factory()->create([
+        $car = Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'ABC123',
         ]);
@@ -344,7 +344,7 @@ class TripControllerIntegrationTest extends TestCase
             'nro_doc' => '30111222',
             'mobile_phone' => '+5493415551234',
         ]);
-        Car::factory()->create([
+        Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'OK123',
         ]);
@@ -376,7 +376,7 @@ class TripControllerIntegrationTest extends TestCase
             'nro_doc' => '30111222',
             'mobile_phone' => '+5493415551234',
         ]);
-        Car::factory()->create([
+        Car::factory()->withCatalog()->create([
             'user_id' => $user->id,
             'patente' => 'OK123',
         ]);

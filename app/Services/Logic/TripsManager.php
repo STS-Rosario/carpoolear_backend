@@ -361,6 +361,7 @@ class TripsManager extends BaseManager
 
                     if (
                         $this->isDriverTrip($data, $trip) &&
+                        $carIdWasInRequest &&
                         ! $this->driverTripHasCompleteCar($user, $data, $trip)
                     ) {
                         $messageBag = new MessageBag;

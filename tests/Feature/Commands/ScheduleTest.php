@@ -121,6 +121,13 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
+    public function test_car_catalog_sync_is_scheduled_weekly()
+    {
+        $event = $this->findEvent('car-catalog:sync-argautos');
+        $this->assertEquals('0 3 * * 1', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+    }
+
     // -- Overall schedule integrity --
 
     public function test_no_unexpected_commands_in_schedule()
@@ -140,6 +147,7 @@ class ScheduleTest extends TestCase
             'users:calculate-active-per-month',
             'auth:cleanup-reset-tokens',
             'support-tickets:autoclose',
+            'car-catalog:sync-argautos',
         ];
 
         foreach (array_keys($events) as $command) {

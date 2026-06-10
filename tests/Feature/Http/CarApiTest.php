@@ -21,6 +21,7 @@ class CarApiTest extends TestCase
             'car_brand_id' => $brand->id,
             'car_model_id' => $model->id,
             'car_color_id' => $color->id,
+            'year' => (int) date('Y') - 4,
         ], $overrides);
     }
 

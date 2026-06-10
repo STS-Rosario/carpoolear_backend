@@ -28,10 +28,12 @@ class CarsManager extends BaseManager
             'brand_other' => ['nullable', 'string', 'max:100'],
             'model_other' => ['nullable', 'string', 'max:100'],
             'car_color_id' => ['nullable', 'integer', Rule::exists('car_colors', 'id')->where('is_active', true)],
+            'year' => ['nullable', 'integer', 'min:1900', 'max:'.(int) date('Y')],
         ];
 
         if ($isCreate) {
             $rules['car_color_id'][] = 'required';
+            $rules['year'][] = 'required';
         }
 
         if ($userId) {
@@ -190,6 +192,7 @@ class CarsManager extends BaseManager
             'brand_other' => $this->hasValue($data['brand_other'] ?? null) ? trim($data['brand_other']) : null,
             'model_other' => $this->hasValue($data['model_other'] ?? null) ? trim($data['model_other']) : null,
             'car_color_id' => $data['car_color_id'] ?? null,
+            'year' => isset($data['year']) ? (int) $data['year'] : null,
         ];
 
         if ($payload['car_brand_id']) {

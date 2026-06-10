@@ -38,6 +38,7 @@ class CarsManagerTest extends TestCase
             'car_brand_id' => $brand->id,
             'car_model_id' => $model->id,
             'car_color_id' => $color->id,
+            'year' => (int) date('Y') - 1,
         ];
     }
 
@@ -48,6 +49,24 @@ class CarsManagerTest extends TestCase
         $this->assertTrue($v->errors()->has('patente'));
         $this->assertTrue($v->errors()->has('car_color_id'));
         $this->assertTrue($v->errors()->has('car_brand_id'));
+        $this->assertTrue($v->errors()->has('year'));
+    }
+
+    public function test_validator_rejects_year_outside_allowed_range(): void
+    {
+        $v = $this->manager()->validator(array_merge($this->validCarData(), [
+            'year' => 1899,
+        ]), 1, null, true);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('year'));
+
+        $v = $this->manager()->validator(array_merge($this->validCarData(), [
+            'year' => (int) date('Y') + 1,
+        ]), 1, null, true);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('year'));
     }
 
     public function test_validator_enforces_unique_patente_per_user_on_create(): void
@@ -368,6 +387,7 @@ class CarsManagerTest extends TestCase
         $car = $manager->create($user, [
             'patente' => 'OT1234',
             'car_color_id' => $color->id,
+            'year' => (int) date('Y') - 5,
             'brand_other' => 'Custom Make',
             'model_other' => 'Custom Model',
         ]);

@@ -121,6 +121,7 @@ class CarTest extends TestCase
         $car = Car::factory()->create([
             'user_id' => $user->id,
             'patente' => 'AB123CD',
+            'year' => (int) date('Y') - 6,
             'brand_other' => 'Custom Brand',
             'model_other' => 'Custom Model',
         ]);
@@ -134,6 +135,28 @@ class CarTest extends TestCase
         $car = Car::factory()->create([
             'user_id' => $user->id,
             'patente' => 'AB123CD',
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
+
+    public function test_is_not_complete_without_year(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'year' => null,
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
+
+    public function test_is_not_complete_with_invalid_year(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'year' => 1800,
         ]);
 
         $this->assertFalse($car->isComplete());

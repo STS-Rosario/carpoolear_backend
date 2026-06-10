@@ -34,6 +34,7 @@ class CarFactory extends Factory
                 'car_brand_id' => $brand->id,
                 'car_model_id' => $model->id,
                 'car_color_id' => $color->id,
+                'year' => (int) date('Y') - 3,
             ];
         });
     }
