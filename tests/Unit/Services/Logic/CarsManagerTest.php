@@ -4,6 +4,9 @@ namespace Tests\Unit\Services\Logic;
 
 use Mockery;
 use STS\Models\Car;
+use STS\Models\CarBrand;
+use STS\Models\CarColor;
+use STS\Models\CarModel;
 use STS\Models\User;
 use STS\Repository\CarsRepository;
 use STS\Services\Logic\CarsManager;
@@ -25,19 +28,26 @@ class CarsManagerTest extends TestCase
     private function validCarData(string $patenteSuffix = ''): array
     {
         $suffix = $patenteSuffix ?: substr(uniqid('', true), 0, 4);
+        $brand = CarBrand::factory()->create();
+        $model = CarModel::factory()->create(['car_brand_id' => $brand->id]);
+        $color = CarColor::factory()->create();
 
         return [
             'patente' => 'AA'.$suffix,
             'description' => 'Family car',
+            'car_brand_id' => $brand->id,
+            'car_model_id' => $model->id,
+            'car_color_id' => $color->id,
         ];
     }
 
-    public function test_validator_requires_patente_and_description(): void
+    public function test_validator_requires_patente_and_catalog_on_create(): void
     {
-        $v = $this->manager()->validator([], 1);
+        $v = $this->manager()->validator([], 1, null, true);
         $this->assertTrue($v->fails());
         $this->assertTrue($v->errors()->has('patente'));
-        $this->assertTrue($v->errors()->has('description'));
+        $this->assertTrue($v->errors()->has('car_color_id'));
+        $this->assertTrue($v->errors()->has('car_brand_id'));
     }
 
     public function test_validator_enforces_unique_patente_per_user_on_create(): void
@@ -50,10 +60,10 @@ class CarsManagerTest extends TestCase
             'description' => 'First',
         ]);
 
-        $v = $this->manager()->validator([
+        $v = $this->manager()->validator(array_merge($this->validCarData(), [
             'patente' => $patente,
             'description' => 'Second',
-        ], $user->id);
+        ]), $user->id, null, true);
 
         $this->assertTrue($v->fails());
         $this->assertTrue($v->errors()->has('patente'));
@@ -91,10 +101,10 @@ class CarsManagerTest extends TestCase
         ]);
 
         $manager = $this->manager();
-        $result = $manager->create($user, [
+        $result = $manager->create($user, array_merge($this->validCarData(), [
             'patente' => $patente,
             'description' => 'Duplicate attempt',
-        ]);
+        ]));
 
         $this->assertNull($result);
         $errors = $manager->getErrors();
@@ -113,10 +123,10 @@ class CarsManagerTest extends TestCase
         $old->delete();
 
         $manager = $this->manager();
-        $car = $manager->create($user, [
+        $car = $manager->create($user, array_merge($this->validCarData(), [
             'patente' => $patente,
             'description' => 'Replacement car',
-        ]);
+        ]));
 
         $this->assertInstanceOf(Car::class, $car);
         $this->assertSame($patente, $car->patente);
@@ -135,10 +145,10 @@ class CarsManagerTest extends TestCase
         $old->delete();
 
         $manager = $this->manager();
-        $car = $manager->create($user, [
+        $car = $manager->create($user, array_merge($this->validCarData(), [
             'patente' => $patente,
             'description' => 'Restored car',
-        ]);
+        ]));
 
         $this->assertInstanceOf(Car::class, $car);
         $this->assertSame($oldId, $car->id);
@@ -171,10 +181,10 @@ class CarsManagerTest extends TestCase
         $user = User::factory()->create();
         $manager = $this->manager();
 
-        $result = $manager->create($user, [
+        $result = $manager->create($user, array_merge($this->validCarData(), [
             'patente' => 'TOOLONGPATX',
             'description' => 'x',
-        ]);
+        ]));
 
         $this->assertNull($result);
         $this->assertNotNull($manager->getErrors());
@@ -207,10 +217,10 @@ class CarsManagerTest extends TestCase
         ]);
 
         $manager = $this->manager();
-        $updated = $manager->update($user, $car->id, [
+        $updated = $manager->update($user, $car->id, array_merge($this->validCarData(), [
             'patente' => 'ZZ'.substr(uniqid('', true), 0, 6),
             'description' => 'After update',
-        ]);
+        ]));
 
         $this->assertNotNull($updated);
         $this->assertSame('After update', $updated->fresh()->description);
@@ -228,6 +238,8 @@ class CarsManagerTest extends TestCase
         $v = $this->manager()->validator([
             'patente' => 'AA123BB',
             'description' => 'Updated description',
+            'brand_other' => 'Custom',
+            'model_other' => 'Model',
         ], $user->id, $car->id);
 
         $this->assertFalse($v->fails());
@@ -249,10 +261,10 @@ class CarsManagerTest extends TestCase
         ]);
 
         $manager = $this->manager();
-        $result = $manager->update($user, $target->id, [
+        $result = $manager->update($user, $target->id, array_merge($this->validCarData(), [
             'patente' => 'DUP123',
             'description' => 'Should pass',
-        ]);
+        ]));
 
         $this->assertNotNull($result);
         $this->assertSame('DUP123', $result->fresh()->patente);
@@ -280,11 +292,12 @@ class CarsManagerTest extends TestCase
         $result = $manager->update($user, $car->id, [
             'patente' => 'TOOLONGPATX',
             'description' => '',
+            'brand_other' => 'Other brand',
+            'model_other' => 'Other model',
         ]);
 
         $this->assertNull($result);
         $this->assertTrue($manager->getErrors()->has('patente'));
-        $this->assertTrue($manager->getErrors()->has('description'));
     }
 
     public function test_show_accepts_equivalent_scalar_ids_for_owner_check(): void
@@ -344,6 +357,24 @@ class CarsManagerTest extends TestCase
         $manager = new CarsManager($repo);
         $this->assertNull($manager->delete($user, $car->id));
         $this->assertSame('can_delete_car', $manager->getErrors()['error']);
+    }
+
+    public function test_create_with_other_brand_and_model(): void
+    {
+        $user = User::factory()->create();
+        $color = CarColor::factory()->create();
+        $manager = $this->manager();
+
+        $car = $manager->create($user, [
+            'patente' => 'OT1234',
+            'car_color_id' => $color->id,
+            'brand_other' => 'Custom Make',
+            'model_other' => 'Custom Model',
+        ]);
+
+        $this->assertInstanceOf(Car::class, $car);
+        $this->assertSame('Custom Make', $car->brand_other);
+        $this->assertSame('Custom Model', $car->model_other);
     }
 
     public function test_index_delegates_to_repository(): void
