@@ -25,7 +25,8 @@ class CreateRatesTest extends TestCase
         Event::fake([MessageLogged::class]);
 
         $ratingManager = Mockery::mock(RatingManager::class);
-        $ratingManager->shouldReceive('activeRatings')
+        $ratingManager->shouldReceive('createEligibleRatings')->once();
+        $ratingManager->shouldReceive('sendRatingNotifications')
             ->once()
             ->with('2026-04-27 09:00:00');
 
