@@ -180,4 +180,8 @@ return [
             'validate_by_date',
         ],
     ],
+
+    'argautos_api_base_url' => env('ARGAUTOS_API_BASE_URL', 'https://argautos.com/api/v1'),
+    'argautos_api_key' => env('ARGAUTOS_API_KEY'),
+    'argautos_request_delay_ms' => (int) env('ARGAUTOS_REQUEST_DELAY_MS', 21000),
 ];
