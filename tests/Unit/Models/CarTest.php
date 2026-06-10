@@ -106,4 +106,36 @@ class CarTest extends TestCase
 
         $this->assertInstanceOf(CarFactory::class, $factory);
     }
+
+    public function test_is_complete_with_catalog_brand_and_model(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create(['user_id' => $user->id]);
+
+        $this->assertTrue($car->isComplete());
+    }
+
+    public function test_is_complete_with_other_brand_and_model(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AB123CD',
+            'brand_other' => 'Custom Brand',
+            'model_other' => 'Custom Model',
+        ]);
+
+        $this->assertTrue($car->isComplete());
+    }
+
+    public function test_is_not_complete_with_patente_only(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AB123CD',
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
 }
