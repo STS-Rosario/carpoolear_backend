@@ -228,6 +228,27 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_rate_user_persists_neutral_vote(): void
+    {
+        Carbon::setTestNow('2026-11-11 10:00:00');
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, 'neu-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($passenger, $driver->id, $trip->id, [
+            'rating' => Rating::STATE_NEUTRAL,
+            'comment' => 'Average experience',
+        ]));
+
+        $row = $repo->getRating($passenger->id, $driver->id, $trip->id);
+        $this->assertSame(Rating::STATE_NEUTRAL, (int) $row->rating);
+        $this->assertSame('Average experience', $row->comment);
+
+        Carbon::setTestNow();
+    }
+
     public function test_rate_user_persists_negative_vote(): void
     {
         Carbon::setTestNow('2026-11-11 09:00:00');
