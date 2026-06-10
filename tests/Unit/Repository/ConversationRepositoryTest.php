@@ -180,7 +180,7 @@ class ConversationRepositoryTest extends TestCase
         // Mutation intent: preserve `$conversation->users()->attach($userID, ['read' => true])` (~83–86 RemoveMethodCall).
         $conversation = Mockery::mock(Conversation::class)->makePartial();
         $relation = Mockery::mock();
-        $relation->shouldReceive('attach')->once()->with(99, ['read' => true]);
+        $relation->shouldReceive('attach')->once()->with(99, ['read' => true, 'notifications_enabled' => true]);
 
         $conversation->shouldReceive('users')->once()->andReturn($relation);
 

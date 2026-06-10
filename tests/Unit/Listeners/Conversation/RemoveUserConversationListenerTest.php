@@ -44,6 +44,7 @@ class RemoveUserConversationListenerTest extends TestCase
         $driver = User::factory()->create();
         $passenger = User::factory()->create();
         $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('fresh')->andReturnSelf();
 
         $trip = new \stdClass;
         $trip->user_id = $driver->id;
@@ -70,6 +71,7 @@ class RemoveUserConversationListenerTest extends TestCase
         $passenger = User::factory()->create();
         $moderator = User::factory()->create();
         $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('fresh')->andReturnSelf();
 
         $trip = new \stdClass;
         $trip->user_id = $driver->id;
@@ -95,6 +97,7 @@ class RemoveUserConversationListenerTest extends TestCase
         $driver = User::factory()->create();
         $passenger = User::factory()->create();
         $conversation = Mockery::mock(Conversation::class);
+        $conversation->shouldReceive('fresh')->andReturnSelf();
 
         $trip = new \stdClass;
         $trip->user_id = (string) $driver->id;
