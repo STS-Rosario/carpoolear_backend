@@ -28,6 +28,13 @@ class MessageSend implements ShouldQueue
         $from = $event->from;
         $to = $event->to;
         $message = $event->message;
+        $conversation = $message->conversation ?? null;
+        if (! $conversation && isset($message->conversation_id)) {
+            $conversation = \STS\Models\Conversation::find($message->conversation_id);
+        }
+        if ($conversation && ! $conversation->notificationsEnabled($to)) {
+            return;
+        }
         $notification = new NewMessagePushNotification;
         $notification->setAttribute('from', $from);
         $notification->setAttribute('messages', $message);

@@ -75,6 +75,7 @@ class ConversationsTransformer extends TransformerAbstract
         }
 
         $data['unread'] = ! $conversation->read($this->user);
+        $data['notifications_enabled'] = $conversation->notificationsEnabled($this->user);
         $data['update_at'] = $conversation->updated_at ? $conversation->updated_at->toDateTimeString() : null;
 
         $m = $conversation->messages()->orderBy('created_at', 'desc')->first();

@@ -277,7 +277,7 @@ class User extends Authenticatable implements JWTSubject
 
     public function conversations()
     {
-        return $this->belongsToMany('STS\Models\Conversation', 'conversations_users', 'user_id', 'conversation_id')->withPivot('read');
+        return $this->belongsToMany('STS\Models\Conversation', 'conversations_users', 'user_id', 'conversation_id')->withPivot('read', 'notifications_enabled');
     }
 
     public function tripsAsPassenger($state = null, $hours_range = null, $date = null)

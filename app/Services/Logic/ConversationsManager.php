@@ -253,7 +253,9 @@ class ConversationsManager extends BaseManager
                 $newMessage = $this->newMessage($data);
                 $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get()->unique('id');
                 foreach ($otherUsers as $to) {
-                    event(new MessageSend($user, $to, $newMessage));
+                    if ($conversation->notificationsEnabled($to)) {
+                        event(new MessageSend($user, $to, $newMessage));
+                    }
                     $this->messageRepository->createMessageReadState($newMessage, $to, false);
                     $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
@@ -408,5 +410,19 @@ class ConversationsManager extends BaseManager
         }
 
         return true;
+    }
+
+    public function setConversationNotifications(User $user, $conversationId, bool $enabled)
+    {
+        $conversation = $this->getConversation($user, $conversationId);
+        if (! $conversation) {
+            $this->setErrors(['conversation_id' => 'user_does_not_have_access_to_conversation']);
+
+            return;
+        }
+
+        $this->conversationRepository->changeConversationNotificationsEnabled($conversation, $user, $enabled);
+
+        return $conversation->fresh();
     }
 }

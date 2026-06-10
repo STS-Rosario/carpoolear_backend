@@ -319,4 +319,33 @@ class ConversationsManagerTest extends TestCase
                 && str_contains((string) $e->message->text, $trip->to_town);
         });
     }
+
+    public function test_send_does_not_dispatch_message_send_for_muted_recipient(): void
+    {
+        Event::fake([MessageSend::class]);
+
+        $sender = User::factory()->create(['is_admin' => true]);
+        $muted = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($sender->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($muted->id, ['read' => true, 'notifications_enabled' => false]);
+
+        $this->manager()->send($sender, $conversation->id, 'Hola');
+
+        Event::assertNotDispatched(MessageSend::class);
+    }
+
+    public function test_set_conversation_notifications_updates_pivot(): void
+    {
+        $user = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($user->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $updated = $this->manager()->setConversationNotifications($user, $conversation->id, false);
+        $this->assertNotNull($updated);
+        $this->assertFalse($updated->notificationsEnabled($user));
+
+        $updated = $this->manager()->setConversationNotifications($user, $conversation->id, true);
+        $this->assertTrue($updated->notificationsEnabled($user));
+    }
 }

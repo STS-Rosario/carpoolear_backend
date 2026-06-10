@@ -188,6 +188,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/{id?}/users', [ConversationController::class, 'addUser']);
         Route::delete('/{id?}/users/{userId?}', [ConversationController::class, 'deleteUser']);
         Route::post('/{id?}/send', [ConversationController::class, 'send']);
+        Route::post('/{id?}/notifications', [ConversationController::class, 'updateNotifications']);
         Route::post('/multi-send', [ConversationController::class, 'multiSend']);
     });
 

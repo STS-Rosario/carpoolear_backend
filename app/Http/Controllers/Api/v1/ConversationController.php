@@ -131,6 +131,18 @@ class ConversationController extends Controller
         throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
     }
 
+    public function updateNotifications(Request $request, $id)
+    {
+        $this->user = auth()->user();
+        $enabled = parse_boolean($request->get('enabled'));
+        $conversation = $this->conversationLogic->setConversationNotifications($this->user, $id, $enabled);
+        if ($conversation) {
+            return $this->item($conversation, new ConversationsTransformer($this->user));
+        }
+
+        throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
+    }
+
     public function users(Request $request, $id)
     {
         $this->user = auth()->user();

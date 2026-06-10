@@ -65,6 +65,27 @@ class ConversationTest extends TestCase
         $this->assertSame($trip->id, $conversation->trip_id);
     }
 
+    public function test_add_user_sets_notifications_enabled_true_by_default(): void
+    {
+        $conversation = Conversation::factory()->create();
+        $user = User::factory()->create();
+        $repo = $this->app->make(\STS\Repository\ConversationRepository::class);
+
+        $repo->addUser($conversation, $user->id);
+
+        $pivot = $conversation->fresh()->users()->whereKey($user->id)->first()->pivot;
+        $this->assertTrue((bool) $pivot->notifications_enabled);
+    }
+
+    public function test_notifications_enabled_helper(): void
+    {
+        $conversation = Conversation::factory()->create();
+        $user = User::factory()->create();
+        $conversation->users()->attach($user->id, ['read' => true, 'notifications_enabled' => false]);
+
+        $this->assertFalse($conversation->fresh()->notificationsEnabled($user));
+    }
+
     public function test_soft_delete_excludes_from_default_query(): void
     {
         $conversation = Conversation::factory()->create();

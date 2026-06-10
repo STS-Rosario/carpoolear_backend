@@ -78,7 +78,7 @@ class ConversationRepository
 
     public function addUser(Conversation $conversation, $userID)
     {
-        $conversation->users()->attach($userID, ['read' => true]);
+        $conversation->users()->attach($userID, ['read' => true, 'notifications_enabled' => true]);
     }
 
     public function removeUser(Conversation $conversation, User $user)
@@ -122,6 +122,11 @@ class ConversationRepository
     public function changeConversationReadState(Conversation $conversation, User $user, $read_state)
     {
         $conversation->users()->updateExistingPivot($user->id, ['read' => $read_state]);
+    }
+
+    public function changeConversationNotificationsEnabled(Conversation $conversation, User $user, bool $enabled)
+    {
+        $conversation->users()->updateExistingPivot($user->id, ['notifications_enabled' => $enabled]);
     }
 
     public function getConversationReadState(Conversation $conversation, User $user)

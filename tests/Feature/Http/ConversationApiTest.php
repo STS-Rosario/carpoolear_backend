@@ -623,4 +623,21 @@ class ConversationApiTest extends TestCase
         $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, $response->json('data.type'));
         $this->assertSame($conversation->id, $response->json('data.id'));
     }
+
+    public function test_participant_can_disable_and_re_enable_conversation_notifications(): void
+    {
+        $user = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($user->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->postJson("api/conversations/{$conversation->id}/notifications", ['enabled' => false]);
+        $response->assertOk();
+        $this->assertFalse($response->json('data.notifications_enabled'));
+
+        $response = $this->postJson("api/conversations/{$conversation->id}/notifications", ['enabled' => true]);
+        $response->assertOk();
+        $this->assertTrue($response->json('data.notifications_enabled'));
+    }
 }
