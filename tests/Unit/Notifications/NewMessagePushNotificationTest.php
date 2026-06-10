@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Notifications;
 
+use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\NewMessagePushNotification;
 use STS\Services\Notifications\Channels\DatabaseChannel;
@@ -83,5 +84,35 @@ class NewMessagePushNotificationTest extends TestCase
         $this->assertSame(777, $push['extras']['id']);
         $this->assertSame('conversation', $push['type']);
         $this->assertSame('https://carpoolear.com.ar/app/static/img/carpoolear_logo.png', $push['image']);
+    }
+
+    public function test_to_push_includes_trip_title_for_trip_group_conversation(): void
+    {
+        $driver = User::factory()->create(['name' => 'Driver']);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-06-10 14:30:00',
+        ]);
+        $conversation = \STS\Models\Conversation::factory()->create([
+            'type' => \STS\Models\Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+        ]);
+        $message = \STS\Models\Message::query()->create([
+            'user_id' => $driver->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Hola grupo',
+            'estado' => \STS\Models\Message::STATE_NOLEIDO,
+        ]);
+
+        $notification = new NewMessagePushNotification;
+        $notification->setAttribute('from', $driver);
+        $notification->setAttribute('messages', $message);
+
+        $push = $notification->toPush(null, null);
+
+        $this->assertStringContainsString('10/06/2026', $push['message']);
+        $this->assertStringContainsString('14:30', $push['message']);
+        $this->assertStringContainsString('Driver', $push['message']);
+        $this->assertStringContainsString('Hola grupo', $push['message']);
     }
 }
