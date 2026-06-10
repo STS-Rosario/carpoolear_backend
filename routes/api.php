@@ -5,7 +5,10 @@ use STS\Http\Controllers\Api\Admin\CampaignController;
 use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
+use STS\Http\Controllers\Api\Admin\CarBrandController as AdminCarBrandController;
+use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
@@ -238,6 +241,9 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
+        Route::apiResource('car-colors', AdminCarColorController::class)->except(['create', 'edit']);
+        Route::apiResource('car-brands', AdminCarBrandController::class)->except(['create', 'edit']);
+        Route::apiResource('car-brands.models', AdminCarModelController::class)->except(['create', 'edit']);
         Route::get('users/{user}/ratings', [AdminRatingController::class, 'index']);
         Route::patch('ratings/{rating}', [AdminRatingController::class, 'update']);
         Route::patch('references/{reference}', [AdminReferencesController::class, 'update']);
