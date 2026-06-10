@@ -102,6 +102,10 @@ class Car extends Model
             return false;
         }
 
+        if (! $this->car_color_id) {
+            return false;
+        }
+
         if ($this->car_brand_id && $this->car_model_id) {
             return true;
         }

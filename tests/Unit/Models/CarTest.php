@@ -118,10 +118,12 @@ class CarTest extends TestCase
     public function test_is_complete_with_other_brand_and_model(): void
     {
         $user = User::factory()->create();
+        $color = \STS\Models\CarColor::factory()->create();
         $car = Car::factory()->create([
             'user_id' => $user->id,
             'patente' => 'AB123CD',
             'year' => (int) date('Y') - 6,
+            'car_color_id' => $color->id,
             'brand_other' => 'Custom Brand',
             'model_other' => 'Custom Model',
         ]);
