@@ -159,18 +159,11 @@ class CarsManager extends BaseManager
             $validator->errors()->add('model_other', 'Cannot set both car_model_id and model_other.');
         }
 
-        if ($hasBrandId xor $hasModelId) {
-            $validator->errors()->add('car_model_id', 'Both car_brand_id and car_model_id are required together.');
-        }
-
-        if ($hasBrandOther xor $hasModelOther) {
-            $validator->errors()->add('model_other', 'Both brand_other and model_other are required together.');
-        }
-
         $hasCatalogIds = $hasBrandId && $hasModelId;
         $hasCatalogOther = $hasBrandOther && $hasModelOther;
+        $hasCatalogBrandWithOtherModel = $hasBrandId && $hasModelOther && ! $hasModelId;
 
-        if ($isCreate && ! $hasCatalogIds && ! $hasCatalogOther) {
+        if ($isCreate && ! $hasCatalogIds && ! $hasCatalogOther && ! $hasCatalogBrandWithOtherModel) {
             $validator->errors()->add('car_brand_id', 'A brand and model or custom values are required.');
         }
 
@@ -204,7 +197,9 @@ class CarsManager extends BaseManager
 
         if ($payload['car_model_id']) {
             $payload['model_other'] = null;
-        } elseif (! $payload['brand_other']) {
+        } elseif ($this->hasValue($payload['model_other'] ?? null)) {
+            $payload['car_model_id'] = null;
+        } else {
             $payload['model_other'] = null;
         }
 

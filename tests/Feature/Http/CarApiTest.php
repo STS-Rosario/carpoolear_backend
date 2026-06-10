@@ -116,6 +116,37 @@ class CarApiTest extends TestCase
             ->assertJsonPath('message', 'Could not found car.');
     }
 
+    public function test_update_allows_catalog_brand_with_custom_model(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $brand = CarBrand::factory()->create(['name' => 'Ford']);
+        $color = CarColor::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AE322FE',
+            'year' => 2011,
+            'car_color_id' => $color->id,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->putJson('api/cars/'.$car->id, [
+            'patente' => 'AE322FE',
+            'car_color_id' => $color->id,
+            'year' => 2011,
+            'car_brand_id' => $brand->id,
+            'model_other' => 'MiModelo',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.car_brand_id', $brand->id)
+            ->assertJsonPath('data.model_other', 'MiModelo');
+
+        $fresh = $car->fresh();
+        $this->assertSame($brand->id, $fresh->car_brand_id);
+        $this->assertNull($fresh->car_model_id);
+        $this->assertSame('MiModelo', $fresh->model_other);
+    }
+
     public function test_create_returns_unprocessable_when_validation_fails(): void
     {
         $user = User::factory()->create(['active' => true, 'banned' => false]);

@@ -110,6 +110,10 @@ class Car extends Model
             return true;
         }
 
+        if ($this->car_brand_id && $this->hasValue($this->model_other)) {
+            return true;
+        }
+
         return $this->hasValue($this->brand_other) && $this->hasValue($this->model_other);
     }
 

@@ -245,6 +245,60 @@ class CarsManagerTest extends TestCase
         $this->assertSame('After update', $updated->fresh()->description);
     }
 
+    public function test_update_allows_catalog_brand_with_custom_model(): void
+    {
+        $user = User::factory()->create();
+        $brand = CarBrand::factory()->create(['name' => 'Ford']);
+        $color = CarColor::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AE322FE',
+            'year' => 2011,
+            'car_color_id' => $color->id,
+        ]);
+
+        $manager = $this->manager();
+        $updated = $manager->update($user, $car->id, [
+            'patente' => 'AE322FE',
+            'car_color_id' => $color->id,
+            'year' => 2011,
+            'car_brand_id' => $brand->id,
+            'model_other' => 'MiModelo',
+        ]);
+
+        $this->assertNotNull($updated);
+        $fresh = $updated->fresh();
+        $this->assertSame($brand->id, $fresh->car_brand_id);
+        $this->assertNull($fresh->car_model_id);
+        $this->assertNull($fresh->brand_other);
+        $this->assertSame('MiModelo', $fresh->model_other);
+        $this->assertTrue($fresh->isComplete());
+    }
+
+    public function test_create_allows_catalog_brand_with_custom_model(): void
+    {
+        $user = User::factory()->create();
+        $brand = CarBrand::factory()->create(['name' => 'Ford']);
+        $color = CarColor::factory()->create();
+        $patente = 'CB'.substr(uniqid('', true), 0, 6);
+
+        $manager = $this->manager();
+        $created = $manager->create($user, [
+            'patente' => $patente,
+            'description' => 'Custom model car',
+            'car_brand_id' => $brand->id,
+            'model_other' => 'MiModelo',
+            'car_color_id' => $color->id,
+            'year' => 2011,
+        ]);
+
+        $this->assertNotNull($created);
+        $this->assertSame($brand->id, $created->car_brand_id);
+        $this->assertNull($created->car_model_id);
+        $this->assertSame('MiModelo', $created->model_other);
+        $this->assertTrue($created->isComplete());
+    }
+
     public function test_validator_update_allows_same_patente_for_current_car_id(): void
     {
         $user = User::factory()->create();
