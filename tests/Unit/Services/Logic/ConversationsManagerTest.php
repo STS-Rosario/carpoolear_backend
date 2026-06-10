@@ -228,6 +228,52 @@ class ConversationsManagerTest extends TestCase
         $this->assertTrue($found->is($conversation));
     }
 
+    public function test_get_conversation_by_trip_enrolls_accepted_passenger_missing_from_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $found = $this->manager()->getConversationByTrip($passenger, $trip->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($conversation));
+        $this->assertTrue($conversation->fresh()->users()->whereKey($passenger->id)->exists());
+    }
+
+    public function test_get_conversation_by_trip_denies_pending_passenger(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $found = $this->manager()->getConversationByTrip($passenger, $trip->id);
+
+        $this->assertNull($found);
+    }
+
     public function test_get_conversation_by_trip_returns_trip_thread_for_admin_user(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);

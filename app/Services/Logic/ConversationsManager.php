@@ -139,10 +139,24 @@ class ConversationsManager extends BaseManager
     public function getConversationByTrip(User $user, $trip_id)
     {
         if ($user->is_admin) {
-            $user = null;
+            return $this->conversationRepository->getConversationByTripId($trip_id, null);
         }
 
-        return $this->conversationRepository->getConversationByTripId($trip_id, $user);
+        $trip = Trip::find($trip_id);
+        if ($trip === null || ! $trip->canAccessGroupChat($user)) {
+            return null;
+        }
+
+        $conversation = $this->conversationRepository->getConversationByTripId($trip_id, null);
+        if ($conversation === null) {
+            return null;
+        }
+
+        if (! $conversation->users()->whereKey($user->id)->exists()) {
+            $this->conversationRepository->addUser($conversation, $user->id);
+        }
+
+        return $conversation->fresh();
     }
 
     /* CONVERSATION - USER MANIPULATION */

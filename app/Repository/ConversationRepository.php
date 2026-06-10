@@ -52,7 +52,9 @@ class ConversationRepository
 
     public function getConversationByTripId($tripId, ?User $user = null)
     {
-        $query = Conversation::query()->where('trip_id', $tripId);
+        $query = Conversation::query()
+            ->where('trip_id', $tripId)
+            ->where('type', Conversation::TYPE_TRIP_CONVERSATION);
 
         if ($user !== null) {
             $query->whereHas('users', fn ($q) => $q->whereKey($user->id));

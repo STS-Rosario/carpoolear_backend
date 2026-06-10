@@ -229,7 +229,8 @@ class Trip extends Model
 
     public function conversation()
     {
-        return $this->hasOne('STS\Models\Conversation', 'trip_id');
+        return $this->hasOne('STS\Models\Conversation', 'trip_id')
+            ->where('type', Conversation::TYPE_TRIP_CONVERSATION);
     }
 
     public function payments()
@@ -250,6 +251,21 @@ class Trip extends Model
     public function isPassenger($user)
     {
         return $this->passengerAccepted->where('user_id', $user->id)->count() > 0;
+    }
+
+    public function canAccessGroupChat($user)
+    {
+        if ((int) $this->user_id === (int) $user->id) {
+            return true;
+        }
+
+        return $this->passenger()
+            ->where('user_id', $user->id)
+            ->whereIn('request_state', [
+                Passenger::STATE_ACCEPTED,
+                Passenger::STATE_WAITING_PAYMENT,
+            ])
+            ->exists();
     }
 
     public function getSeatsAvailableAttribute()
