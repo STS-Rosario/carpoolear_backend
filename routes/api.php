@@ -5,7 +5,11 @@ use STS\Http\Controllers\Api\Admin\CampaignController;
 use STS\Http\Controllers\Api\Admin\CampaignDonationController;
 use STS\Http\Controllers\Api\Admin\CampaignMilestoneController;
 use STS\Http\Controllers\Api\Admin\CampaignRewardController;
+use STS\Http\Controllers\Api\Admin\CarBrandController as AdminCarBrandController;
+use STS\Http\Controllers\Api\Admin\CarCatalogSyncController as AdminCarCatalogSyncController;
+use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController;
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
+use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
@@ -19,6 +23,7 @@ use STS\Http\Controllers\Api\Admin\UserMigrationController as AdminUserMigration
 use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Controllers\Api\v1\CampaignController as ApiCampaignController;
 use STS\Http\Controllers\Api\v1\CampaignRewardController as ApiCampaignRewardController;
+use STS\Http\Controllers\Api\v1\CarCatalogController;
 use STS\Http\Controllers\Api\v1\CarController;
 use STS\Http\Controllers\Api\v1\ChangelogController;
 use STS\Http\Controllers\Api\v1\ConversationController;
@@ -48,6 +53,9 @@ Route::middleware(['api'])->group(function () {
     Route::get('config', [AuthController::class, 'getConfig']);
     Route::get('changelog', [ChangelogController::class, 'show']);
     Route::get('changelogs', [ChangelogController::class, 'index']);
+    Route::get('car-brands', [CarCatalogController::class, 'brands']);
+    Route::get('car-brands/{carBrand}/models', [CarCatalogController::class, 'models']);
+    Route::get('car-colors', [CarCatalogController::class, 'colors']);
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
@@ -240,6 +248,11 @@ Route::middleware(['api'])->group(function () {
         Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         // Car management routes
         Route::apiResource('cars', AdminCarController::class);
+        Route::apiResource('car-colors', AdminCarColorController::class)->except(['create', 'edit']);
+        Route::apiResource('car-brands', AdminCarBrandController::class)->except(['create', 'edit']);
+        Route::apiResource('car-brands.models', AdminCarModelController::class)->except(['create', 'edit']);
+        Route::post('car-catalog/sync', [AdminCarCatalogSyncController::class, 'store']);
+        Route::get('car-catalog/sync-status', [AdminCarCatalogSyncController::class, 'status']);
         Route::get('users/{user}/ratings', [AdminRatingController::class, 'index']);
         Route::patch('ratings/{rating}', [AdminRatingController::class, 'update']);
         Route::patch('references/{reference}', [AdminReferencesController::class, 'update']);

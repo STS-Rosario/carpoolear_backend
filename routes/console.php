@@ -44,3 +44,7 @@ Schedule::command('auth:cleanup-reset-tokens')->dailyAt('04:00')->timezone('Amer
 
 // Auto-close resolved support tickets after configured inactivity days
 Schedule::command('support-tickets:autoclose')->dailyAt('04:30')->timezone('America/Argentina/Buenos_Aires');
+
+Schedule::command('car-catalog:sync-argautos --mode=incremental')
+    ->weeklyOn(1, '03:00')
+    ->timezone('America/Argentina/Buenos_Aires');

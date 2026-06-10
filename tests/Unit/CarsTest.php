@@ -3,6 +3,9 @@
 namespace Tests\Unit;
 
 use STS\Models\Car;
+use STS\Models\CarBrand;
+use STS\Models\CarColor;
+use STS\Models\CarModel;
 use STS\Models\User;
 use STS\Services\Logic\CarsManager;
 use Tests\TestCase;
@@ -17,13 +20,26 @@ class CarsTest extends TestCase
         $this->carManager = $this->app->make(CarsManager::class);
     }
 
+    private function catalogCarData(array $overrides = []): array
+    {
+        $brand = CarBrand::factory()->create();
+        $model = CarModel::factory()->create(['car_brand_id' => $brand->id]);
+        $color = CarColor::factory()->create();
+
+        return array_merge([
+            'patente' => 'ASD123',
+            'description' => 'Sandero',
+            'car_brand_id' => $brand->id,
+            'car_model_id' => $model->id,
+            'car_color_id' => $color->id,
+            'year' => (int) date('Y') - 2,
+        ], $overrides);
+    }
+
     public function test_create_car_persists_for_user(): void
     {
         $user = User::factory()->create();
-        $data = [
-            'patente' => 'ASD123',
-            'description' => 'Sandero',
-        ];
+        $data = $this->catalogCarData();
 
         $car = $this->carManager->create($user, $data);
         $this->assertNotNull($car);

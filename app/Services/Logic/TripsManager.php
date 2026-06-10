@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
+use STS\Models\Car as CarModel;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\FriendTripInviteNotification;
@@ -102,6 +103,14 @@ class TripsManager extends BaseManager
             if ($this->isDriverTrip($data) && ! $this->driverTripHasPlate($user, $data)) {
                 $messageBag = new MessageBag;
                 $messageBag->add('car_id', 'The driver must have a car with a plate.');
+                $this->setErrors($messageBag);
+
+                return;
+            }
+
+            if ($this->isDriverTrip($data) && ! $this->driverTripHasCompleteCar($user, $data)) {
+                $messageBag = new MessageBag;
+                $messageBag->add('car_incomplete', 'The driver car must have brand and model.');
                 $this->setErrors($messageBag);
 
                 return;
@@ -285,6 +294,31 @@ class TripsManager extends BaseManager
         return $this->activeCarsWithPlate($user)->count() === 1;
     }
 
+    private function driverTripHasCompleteCar($user, array $data, ?Trip $existingTrip = null): bool
+    {
+        $car = $this->resolveDriverCarForCompleteness($user, $data, $existingTrip);
+
+        return $car && $car->isComplete();
+    }
+
+    private function resolveDriverCarForCompleteness($user, array $data, ?Trip $existingTrip = null): ?CarModel
+    {
+        if (! empty($data['car_id'])) {
+            return $user->cars()->whereKey($data['car_id'])->first();
+        }
+
+        $cars = $this->activeCarsWithPlate($user);
+        if ($cars->count() === 1) {
+            return $cars->first();
+        }
+
+        if ($existingTrip && $existingTrip->car_id) {
+            return $user->cars()->whereKey($existingTrip->car_id)->first();
+        }
+
+        return null;
+    }
+
     private function activeCarsWithPlate($user)
     {
         return $user->cars()
@@ -320,6 +354,18 @@ class TripsManager extends BaseManager
                     ) {
                         $messageBag = new MessageBag;
                         $messageBag->add('car_id', 'The driver must have a car with a plate.');
+                        $this->setErrors($messageBag);
+
+                        return;
+                    }
+
+                    if (
+                        $this->isDriverTrip($data, $trip) &&
+                        $carIdWasInRequest &&
+                        ! $this->driverTripHasCompleteCar($user, $data, $trip)
+                    ) {
+                        $messageBag = new MessageBag;
+                        $messageBag->add('car_incomplete', 'The driver car must have brand and model.');
                         $this->setErrors($messageBag);
 
                         return;

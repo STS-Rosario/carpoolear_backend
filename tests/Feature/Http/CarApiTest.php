@@ -3,11 +3,28 @@
 namespace Tests\Feature\Http;
 
 use STS\Models\Car;
+use STS\Models\CarBrand;
+use STS\Models\CarColor;
+use STS\Models\CarModel;
 use STS\Models\User;
 use Tests\TestCase;
 
 class CarApiTest extends TestCase
 {
+    private function catalogPayload(array $overrides = []): array
+    {
+        $brand = CarBrand::factory()->create();
+        $model = CarModel::factory()->create(['car_brand_id' => $brand->id]);
+        $color = CarColor::factory()->create();
+
+        return array_merge([
+            'car_brand_id' => $brand->id,
+            'car_model_id' => $model->id,
+            'car_color_id' => $color->id,
+            'year' => (int) date('Y') - 4,
+        ], $overrides);
+    }
+
     public function test_car_routes_require_authentication(): void
     {
         $this->getJson('api/cars')->assertUnauthorized()->assertJson(['message' => 'Unauthorized.']);
@@ -50,10 +67,10 @@ class CarApiTest extends TestCase
         $user = User::factory()->create(['active' => true, 'banned' => false]);
         $this->actingAs($user, 'api');
 
-        $create = $this->postJson('api/cars', [
+        $create = $this->postJson('api/cars', $this->catalogPayload([
             'patente' => 'CR1',
             'description' => 'Compact',
-        ]);
+        ]));
         $create->assertOk();
         $create->assertJsonStructure(['data' => ['id', 'patente', 'description', 'user_id', 'trips_count']]);
         $create->assertJsonPath('data.patente', 'CR1');
@@ -66,10 +83,10 @@ class CarApiTest extends TestCase
             ->assertJsonPath('data.id', $carId)
             ->assertJsonPath('data.patente', 'CR1');
 
-        $this->putJson('api/cars/'.$carId, [
+        $this->putJson('api/cars/'.$carId, $this->catalogPayload([
             'patente' => 'CR1U',
             'description' => 'Updated compact',
-        ])
+        ]))
             ->assertOk()
             ->assertJsonPath('data.patente', 'CR1U')
             ->assertJsonPath('data.description', 'Updated compact');
@@ -99,6 +116,37 @@ class CarApiTest extends TestCase
             ->assertJsonPath('message', 'Could not found car.');
     }
 
+    public function test_update_allows_catalog_brand_with_custom_model(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $brand = CarBrand::factory()->create(['name' => 'Ford']);
+        $color = CarColor::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AE322FE',
+            'year' => 2011,
+            'car_color_id' => $color->id,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->putJson('api/cars/'.$car->id, [
+            'patente' => 'AE322FE',
+            'car_color_id' => $color->id,
+            'year' => 2011,
+            'car_brand_id' => $brand->id,
+            'model_other' => 'MiModelo',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.car_brand_id', $brand->id)
+            ->assertJsonPath('data.model_other', 'MiModelo');
+
+        $fresh = $car->fresh();
+        $this->assertSame($brand->id, $fresh->car_brand_id);
+        $this->assertNull($fresh->car_model_id);
+        $this->assertSame('MiModelo', $fresh->model_other);
+    }
+
     public function test_create_returns_unprocessable_when_validation_fails(): void
     {
         $user = User::factory()->create(['active' => true, 'banned' => false]);
@@ -117,10 +165,10 @@ class CarApiTest extends TestCase
 
         $this->actingAs($user, 'api');
 
-        $this->postJson('api/cars', [
+        $this->postJson('api/cars', $this->catalogPayload([
             'patente' => 'HAS2',
             'description' => 'Second car',
-        ])
+        ]))
             ->assertOk()
             ->assertJsonPath('data.patente', 'HAS2');
     }
@@ -132,9 +180,9 @@ class CarApiTest extends TestCase
 
         $this->actingAs($user, 'api');
 
-        $this->postJson('api/cars', [
+        $this->postJson('api/cars', $this->catalogPayload([
             'patente' => 'DUP1',
             'description' => 'Duplicate patente',
-        ])->assertStatus(422);
+        ]))->assertStatus(422);
     }
 }

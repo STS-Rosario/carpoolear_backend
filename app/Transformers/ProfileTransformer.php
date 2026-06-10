@@ -42,6 +42,8 @@ class ProfileTransformer extends TransformerAbstract
      */
     public function transform(User $user)
     {
+        $user->loadMissing(['cars.brand', 'cars.carModel', 'cars.color']);
+
         $lastConnection = $user->last_connection;
         $lastConnectionSerialized = ($lastConnection instanceof Carbon && $lastConnection->year > 0)
             ? $lastConnection->toDateTimeString()

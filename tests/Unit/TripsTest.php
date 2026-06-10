@@ -49,7 +49,7 @@ class TripsTest extends TestCase
                 'nro_doc' => '30111222',
                 'mobile_phone' => '+5493415551234',
             ]);
-            $car = \STS\Models\Car::factory()->create(['user_id' => $user->id]);
+            $car = \STS\Models\Car::factory()->withCatalog()->create(['user_id' => $user->id]);
             $tripManager = \App::make(\STS\Services\Logic\TripsManager::class);
 
             $data = [

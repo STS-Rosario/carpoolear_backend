@@ -106,4 +106,91 @@ class CarTest extends TestCase
 
         $this->assertInstanceOf(CarFactory::class, $factory);
     }
+
+    public function test_is_complete_with_catalog_brand_and_model(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create(['user_id' => $user->id]);
+
+        $this->assertTrue($car->isComplete());
+    }
+
+    public function test_is_complete_with_catalog_brand_and_custom_model(): void
+    {
+        $user = User::factory()->create();
+        $brand = \STS\Models\CarBrand::factory()->create();
+        $color = \STS\Models\CarColor::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AB123CD',
+            'year' => (int) date('Y') - 6,
+            'car_color_id' => $color->id,
+            'car_brand_id' => $brand->id,
+            'car_model_id' => null,
+            'brand_other' => null,
+            'model_other' => 'Custom Model',
+        ]);
+
+        $this->assertTrue($car->isComplete());
+    }
+
+    public function test_is_complete_with_other_brand_and_model(): void
+    {
+        $user = User::factory()->create();
+        $color = \STS\Models\CarColor::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AB123CD',
+            'year' => (int) date('Y') - 6,
+            'car_color_id' => $color->id,
+            'brand_other' => 'Custom Brand',
+            'model_other' => 'Custom Model',
+        ]);
+
+        $this->assertTrue($car->isComplete());
+    }
+
+    public function test_is_not_complete_with_patente_only(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'patente' => 'AB123CD',
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
+
+    public function test_is_not_complete_without_color(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'car_color_id' => null,
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
+
+    public function test_is_not_complete_without_year(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'year' => null,
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
+
+    public function test_is_not_complete_with_invalid_year(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'year' => 1800,
+        ]);
+
+        $this->assertFalse($car->isComplete());
+    }
 }
