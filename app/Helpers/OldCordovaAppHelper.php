@@ -40,6 +40,7 @@ class OldCordovaAppHelper
             'image' => $avatarUrl,
             'positive_ratings' => 0,
             'negative_ratings' => 0,
+            'neutral_ratings' => 0,
             'last_connection' => $now,
             'accounts' => null,
             'has_pin' => false,

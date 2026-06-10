@@ -197,6 +197,7 @@ class TripLiveShareManagerTest extends TestCase
         $this->assertSame('Juan Driver', $view['driver']['name']);
         $this->assertArrayHasKey('positive_ratings', $view['driver']);
         $this->assertArrayHasKey('negative_ratings', $view['driver']);
+        $this->assertArrayHasKey('neutral_ratings', $view['driver']);
     }
 
     public function test_get_public_view_returns_null_for_invalid_token(): void

@@ -171,6 +171,7 @@ class ConversationsTransformerTest extends TestCase
             'identity_validated_at',
             'positive_ratings',
             'negative_ratings',
+            'neutral_ratings',
         ];
         foreach ($payload['users'] as $row) {
             $this->assertSame($expectedKeys, array_keys($row));

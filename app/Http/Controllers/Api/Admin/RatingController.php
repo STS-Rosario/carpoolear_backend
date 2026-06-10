@@ -50,7 +50,7 @@ class RatingController extends Controller
         }
 
         $validated = $request->validate([
-            'rating' => 'sometimes|integer|in:0,1',
+            'rating' => 'sometimes|integer|in:0,1,2',
             'comment' => 'nullable|string',
             'reply_comment' => 'nullable|string',
         ]);

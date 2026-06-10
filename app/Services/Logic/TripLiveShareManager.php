@@ -119,6 +119,7 @@ class TripLiveShareManager extends BaseManager
                 'image' => $driver->image,
                 'positive_ratings' => (int) $driver->positive_ratings,
                 'negative_ratings' => (int) $driver->negative_ratings,
+                'neutral_ratings' => (int) $driver->neutral_ratings,
             ],
             'sharer' => [
                 'id' => $share->user->id,

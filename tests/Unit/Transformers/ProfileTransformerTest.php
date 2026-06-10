@@ -30,6 +30,7 @@ class ProfileTransformerTest extends TestCase
             'image',
             'positive_ratings',
             'negative_ratings',
+            'neutral_ratings',
             'birthday',
             'gender',
             'last_connection',
@@ -117,6 +118,7 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayHasKey('image', $payload);
         $this->assertArrayHasKey('positive_ratings', $payload);
         $this->assertArrayHasKey('negative_ratings', $payload);
+        $this->assertArrayHasKey('neutral_ratings', $payload);
         $this->assertArrayHasKey('birthday', $payload);
         $this->assertArrayHasKey('gender', $payload);
         $this->assertArrayHasKey('last_connection', $payload);
@@ -135,6 +137,7 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame('profile.png', $payload['image']);
         $this->assertSame(0, $payload['positive_ratings']);
         $this->assertSame(0, $payload['negative_ratings']);
+        $this->assertSame(0, $payload['neutral_ratings']);
         $this->assertSame('2025-06-01 12:00:00', $payload['last_connection']);
     }
 
