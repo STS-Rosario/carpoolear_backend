@@ -31,7 +31,7 @@ class RatingManager extends BaseManager
     {
         return Validator::make($data, [
             'comment' => 'nullable|string',
-            'rating' => 'required|integer|in:0,1',
+            'rating' => 'required|integer|in:0,1,2',
         ]);
     }
 
@@ -94,7 +94,7 @@ class RatingManager extends BaseManager
             $rate->comment = $data['comment'];
             $rate->voted_hash = '';
             $rate->rate_at = Carbon::now();
-            $rate->rating = parse_boolean($data['rating']) ? Rating::STATE_POSITIVO : Rating::STATE_NEGATIVO;
+            $rate->rating = (int) $data['rating'];
 
             $result = $this->ratingRepository->update($rate);
             $this->ratingRepository->update_rating_availability($rate);
