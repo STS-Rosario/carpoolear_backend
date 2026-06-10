@@ -51,6 +51,14 @@ return [
     'friend_request.title' => 'Nueva solicitud de amistad',
     'friend_request.message' => ':name te ha enviado una solicitud de amistad.',
 
+    // FriendCreatedTripNotification
+    'friend_created_trip.title' => ':name publicó un nuevo viaje a :destination',
+    'friend_created_trip.message' => ':name publicó un viaje a :destination el :date a las :time',
+
+    // FriendTripInviteNotification
+    'friend_trip_invite.title' => ':name te invitó a un viaje a :destination',
+    'friend_trip_invite.message' => ':name te invitó a un viaje a :destination el :date a las :time',
+
     // HourLeftNotification
     'hour_left.title' => 'Recordatorio de viaje hacia :destination?',
     'hour_left.message' => 'Recuerda que en poco más de una hora viajas hacia :destination',

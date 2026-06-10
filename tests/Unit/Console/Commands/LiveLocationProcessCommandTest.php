@@ -102,6 +102,30 @@ class LiveLocationProcessCommandTest extends TestCase
 
     public function test_start_after_auto_stop_resumes_sharing(): void
     {
+        Carbon::setTestNow(Carbon::parse('2026-06-02 17:30:00'));
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::parse('2026-06-02 16:00:00'),
+            'estimated_time' => '01:00',
+        ]);
+        TripLiveShare::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $driver->id,
+            'is_active' => false,
+            'auto_stopped_at' => Carbon::parse('2026-06-02 17:00:00'),
+            'share_token' => 'resume-token-123456789012345678901234567890123456789012',
+        ]);
+
+        $manager = $this->app->make(\STS\Services\Logic\TripLiveShareManager::class);
+        $share = $manager->start($driver, $trip->id);
+
+        $this->assertTrue($share->is_active);
+        $this->assertSame('resume-token-123456789012345678901234567890123456789012', $share->share_token);
+    }
+
+    public function test_start_after_auto_stop_denies_when_sharing_window_ended(): void
+    {
         Carbon::setTestNow(Carbon::parse('2026-06-02 18:30:00'));
         $driver = User::factory()->create();
         $trip = Trip::factory()->create([
@@ -114,14 +138,13 @@ class LiveLocationProcessCommandTest extends TestCase
             'user_id' => $driver->id,
             'is_active' => false,
             'auto_stopped_at' => Carbon::parse('2026-06-02 18:01:00'),
-            'share_token' => 'resume-token-123456789012345678901234567890123456789012',
         ]);
 
         $manager = $this->app->make(\STS\Services\Logic\TripLiveShareManager::class);
         $share = $manager->start($driver, $trip->id);
 
-        $this->assertTrue($share->is_active);
-        $this->assertSame('resume-token-123456789012345678901234567890123456789012', $share->share_token);
+        $this->assertNull($share);
+        $this->assertSame('sharing_not_available', $manager->getErrors()['error']);
     }
 
     public function test_driver_start_notifies_accepted_passengers(): void

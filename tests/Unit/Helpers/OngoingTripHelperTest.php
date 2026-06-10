@@ -95,6 +95,22 @@ class OngoingTripHelperTest extends TestCase
         $this->assertFalse(OngoingTripHelper::canStartSharing($now, $start, '01:00'));
     }
 
+    public function test_can_start_sharing_up_to_twice_estimated_duration_after_departure(): void
+    {
+        $start = Carbon::parse('2026-06-02 16:00:00');
+        $now = $start->copy()->addMinutes(120);
+
+        $this->assertTrue(OngoingTripHelper::canStartSharing($now, $start, '01:00'));
+    }
+
+    public function test_cannot_start_sharing_after_twice_estimated_duration_from_departure(): void
+    {
+        $start = Carbon::parse('2026-06-02 16:00:00');
+        $now = $start->copy()->addMinutes(121);
+
+        $this->assertFalse(OngoingTripHelper::canStartSharing($now, $start, '01:00'));
+    }
+
     public function test_should_send_stop_reminder_when_past_eta_and_within_radius(): void
     {
         $start = Carbon::parse('2026-06-02 16:00:00');

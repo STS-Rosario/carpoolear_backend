@@ -43,14 +43,21 @@ class OngoingTripHelper
         return $tripStart->copy()->addMinutes($durationMinutes * 2);
     }
 
+    public static function getSharingWindowEnd(Carbon $tripStart, ?string $estimatedTime): Carbon
+    {
+        return self::getAutoStopAt($tripStart, $estimatedTime);
+    }
+
     public static function canStartSharing(
         Carbon $now,
         Carbon $tripStart,
         ?string $estimatedTime
     ): bool {
         $windowStart = $tripStart->copy()->subMinutes(self::LEAD_MINUTES);
+        $windowEnd = self::getSharingWindowEnd($tripStart, $estimatedTime);
 
-        return $now->greaterThanOrEqualTo($windowStart);
+        return $now->greaterThanOrEqualTo($windowStart)
+            && $now->lessThanOrEqualTo($windowEnd);
     }
 
     public static function getAutoStopAtForShare(Carbon $tripStart, ?string $estimatedTime, ?Carbon $shareStartedAt): Carbon

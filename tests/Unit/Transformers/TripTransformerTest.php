@@ -7,6 +7,9 @@ use STS\Models\Car;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Repository\FriendsRepository;
+use STS\Repository\FriendTripAlertRepository;
+use STS\Services\Logic\FriendsManager;
 use STS\Transformers\TripTransformer;
 use Tests\TestCase;
 
@@ -343,5 +346,36 @@ class TripTransformerTest extends TestCase
 
         $this->assertSame('send', $payload['request']);
         $this->assertArrayHasKey('allPassengerRequest', $payload);
+    }
+
+    public function test_transform_includes_driver_is_friend_when_viewer_is_friend(): void
+    {
+        $driver = User::factory()->create();
+        $viewer = User::factory()->create();
+        (new FriendsManager(new FriendsRepository, new FriendTripAlertRepository))->make($driver, $viewer);
+
+        $trip = $this->makeTrip(['user_id' => $driver->id]);
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh());
+
+        $this->assertTrue($payload['driver_is_friend']);
+    }
+
+    public function test_transform_includes_driver_is_friend_false_for_stranger(): void
+    {
+        $driver = User::factory()->create();
+        $viewer = User::factory()->create();
+        $trip = $this->makeTrip(['user_id' => $driver->id]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh());
+
+        $this->assertFalse($payload['driver_is_friend']);
+    }
+
+    public function test_transform_omits_driver_is_friend_without_logged_viewer(): void
+    {
+        $trip = $this->makeTrip();
+        $payload = (new TripTransformer(null))->transform($trip->fresh());
+
+        $this->assertArrayNotHasKey('driver_is_friend', $payload);
     }
 }

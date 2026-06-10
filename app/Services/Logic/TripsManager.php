@@ -10,7 +10,10 @@ use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
 use STS\Models\Trip;
+use STS\Models\User;
+use STS\Notifications\FriendTripInviteNotification;
 use STS\Repository\TripRepository;
+use STS\Services\FriendTripAlertService;
 use Validator;
 
 class TripsManager extends BaseManager
@@ -45,6 +48,7 @@ class TripsManager extends BaseManager
                 'weekly_schedule' => 'required_without:trip_date|nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
                 'seat_price_cents' => $this->seatPriceCentsRule(),
+                'autoaccept_friends_requests' => 'boolean',
 
                 'points.*.address' => 'required|string',
                 'points.*.json_address' => 'required|array',
@@ -68,6 +72,7 @@ class TripsManager extends BaseManager
                 'weekly_schedule' => 'nullable|integer|min:0|max:127',
                 'weekly_schedule_time' => 'nullable|date_format:H:i:s',
                 'seat_price_cents' => $this->seatPriceCentsRule(),
+                'autoaccept_friends_requests' => 'boolean',
 
                 'points.*.address' => 'string',
                 'points.*.json_address' => 'array',
@@ -183,6 +188,11 @@ class TripsManager extends BaseManager
                 }
             }
             event(new CreateEvent($trip));
+
+            $friendTripAlertService = app(FriendTripAlertService::class);
+            if ($friendTripAlertService->isImmediatelyVisible($trip)) {
+                $friendTripAlertService->notifyIfVisible($trip);
+            }
 
             return $trip;
         }
@@ -575,6 +585,40 @@ class TripsManager extends BaseManager
         // [TODO] Faltaría saber si sos pasajero
 
         return false;
+    }
+
+    public function inviteFriends($user, $tripId, $friendIds)
+    {
+        $trip = $this->tripRepo->show($user, $tripId);
+        if (! $trip || $trip->user_id != $user->id) {
+            $this->setErrors(['error' => 'access_denied']);
+
+            return;
+        }
+
+        if ($trip->expired()) {
+            $this->setErrors(['error' => 'trip_expired']);
+
+            return;
+        }
+
+        $friendsManager = app(FriendsManager::class);
+        $invited = 0;
+
+        foreach ((array) $friendIds as $friendId) {
+            $friend = User::find($friendId);
+            if (! $friend || ! $friendsManager->areFriend($user, $friend)) {
+                continue;
+            }
+
+            $notification = new FriendTripInviteNotification;
+            $notification->setAttribute('trip', $trip);
+            $notification->setAttribute('driver', $user);
+            $notification->notify($friend);
+            $invited++;
+        }
+
+        return $invited;
     }
 
     public function shareTrip($me, $user)

@@ -123,9 +123,12 @@ Route::middleware(['api'])->group(function () {
         Route::post('/request/{id?}', [FriendsController::class, 'request']);
         Route::post('/delete/{id?}', [FriendsController::class, 'delete']);
         Route::post('/reject/{id?}', [FriendsController::class, 'reject']);
+        Route::post('/cancel-request/{id?}', [FriendsController::class, 'cancelRequest']);
+        Route::post('/trip-alerts/{id?}', [FriendsController::class, 'toggleTripAlerts']);
 
         Route::get('/', [FriendsController::class, 'index']);
         Route::get('/pedings', [FriendsController::class, 'pedings']);
+        Route::get('/sent-pendings', [FriendsController::class, 'sentPendings']);
     });
 
     Route::prefix('social')->group(function () {
@@ -148,6 +151,7 @@ Route::middleware(['api'])->group(function () {
         Route::delete('/{id?}', [TripController::class, 'delete']);
         Route::get('/{id?}', [TripController::class, 'show']);
         Route::post('/{id?}/changeSeats', [TripController::class, 'changeTripSeats']);
+        Route::post('/{id}/invite-friends', [TripController::class, 'inviteFriends'])->middleware('throttle:trip-invite-friends');
         Route::post('/{id}/change-visibility', [TripController::class, 'changeVisibility']);
         Route::post('/price', [TripController::class, 'price']);
         Route::post('/trip-info', [TripController::class, 'getTripInfo']);

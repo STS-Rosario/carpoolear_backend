@@ -4,6 +4,7 @@ namespace STS\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use STS\Models\Trip;
+use STS\Services\Logic\FriendsManager;
 
 class TripTransformer extends TransformerAbstract
 {
@@ -67,6 +68,9 @@ class TripTransformer extends TransformerAbstract
         $data['request'] = '';
         $data['passenger'] = [];
         if ($this->user) {
+            $friendsManager = app(FriendsManager::class);
+            $data['driver_is_friend'] = $friendsManager->areFriend($this->user, $trip->user);
+
             $userTranforms = new TripUserTransformer($this->user);
             $data['user'] = $userTranforms->transform($trip->user);
             if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id || $this->user->is_admin) {

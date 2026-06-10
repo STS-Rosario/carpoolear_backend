@@ -563,6 +563,23 @@ class UserControllerApiTest extends TestCase
             ->assertJsonPath('data.0.title', 'Me slug');
     }
 
+    public function test_user_index_search_includes_friendship_state_for_results(): void
+    {
+        $needle = 'LilNeedle'.uniqid('', false);
+        $actor = User::factory()->create(['active' => true, 'banned' => false, 'name' => 'Actor']);
+        $match = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'name' => 'Lilliana '.$needle,
+        ]);
+
+        $this->actingAs($actor, 'api')
+            ->getJson('api/users/list?value='.urlencode('Lilliana'))
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $match->id)
+            ->assertJsonPath('data.0.state', 'none');
+    }
+
     public function test_user_index_search_value_narrows_results_relative_to_open_list(): void
     {
         $needle = 'ZzNeedle'.uniqid('', false);

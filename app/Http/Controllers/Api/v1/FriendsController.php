@@ -99,4 +99,40 @@ class FriendsController extends Controller
 
         return $this->collection($users, new ProfileTransformer($this->user));
     }
+
+    public function sentPendings(Request $request)
+    {
+        $this->user = auth()->user();
+        $users = $this->friends->getSentPendings($this->user);
+
+        return $this->collection($users, new ProfileTransformer($this->user));
+    }
+
+    public function cancelRequest(Request $request, $id)
+    {
+        $this->user = auth()->user();
+        $friend = $this->users->find($id);
+        if ($friend) {
+            $ret = $this->friends->cancelRequest($this->user, $friend);
+            if ($ret) {
+                return response()->json('OK');
+            }
+        }
+
+        throw new ExceptionWithErrors('Bad request exceptions', $this->friends->getErrors());
+    }
+
+    public function toggleTripAlerts(Request $request, $id)
+    {
+        $this->user = auth()->user();
+        $friend = $this->users->find($id);
+        if ($friend) {
+            $enabled = $this->friends->toggleTripAlerts($this->user, $friend);
+            if ($enabled !== null) {
+                return response()->json(['friend_trip_alerts_enabled' => $enabled]);
+            }
+        }
+
+        throw new ExceptionWithErrors('Bad request exceptions', $this->friends->getErrors());
+    }
 }

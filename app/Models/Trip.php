@@ -99,6 +99,7 @@ class Trip extends Model
             'state',
             'payment_id',
             'needs_sellado',
+            'autoaccept_friends_requests',
         ];
     }
 

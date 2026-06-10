@@ -12,6 +12,7 @@ use STS\Models\CampaignDonation;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\PaymentAttempt;
 use STS\Models\Trip;
+use STS\Services\FriendTripAlertService;
 use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\TripsManager;
 
@@ -291,6 +292,7 @@ class MercadoPagoWebhookController extends Controller
     {
         if ($paymentStatus === PaymentAttempt::STATUS_COMPLETED) {
             $trip->setStateReady()->save();
+            app(FriendTripAlertService::class)->notifyIfVisible($trip->fresh());
         } elseif ($paymentStatus === PaymentAttempt::STATUS_FAILED) {
             $trip->setStatePaymentFailed()->save();
         } elseif ($paymentStatus === PaymentAttempt::STATUS_PENDING) {

@@ -136,7 +136,10 @@ class PassengersManager extends BaseManager
             }
 
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
-                if ($trip->user->autoaccept_requests) {
+                $friendsManager = app(FriendsManager::class);
+                $shouldAutoAccept = $trip->user->autoaccept_requests
+                    || ($trip->autoaccept_friends_requests && $friendsManager->areFriend($user, $trip->user));
+                if ($shouldAutoAccept) {
                     // $result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data);
                     if (! config('carpoolear.module_trip_seats_payment', false)) {
                         if ($result = $this->passengerRepository->acceptRequest($tripId, $user->id, $trip->user, $data)) {

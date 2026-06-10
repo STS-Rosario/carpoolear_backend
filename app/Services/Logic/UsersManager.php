@@ -251,6 +251,12 @@ class UsersManager extends BaseManager
 
     public function update($user, array $data, $is_driver = false, $is_admin = false)
     {
+        foreach (['friendship_state', 'friend_trip_alerts_enabled', 'state'] as $virtualKey) {
+            if ($user->offsetExists($virtualKey)) {
+                $user->offsetUnset($virtualKey);
+            }
+        }
+
         if (! $this->isFacebookProfileUrlModuleEnabled()) {
             unset($data['facebook_profile_url']);
         } else {
@@ -605,7 +611,15 @@ class UsersManager extends BaseManager
     {
         $profile = $this->repo->show($profile_id);
         if ($profile) {
-            // $profile->donations = $profile->donations->get();
+            if ($user && $profile->id !== $user->id) {
+                $friendsManager = app(FriendsManager::class);
+                $profile->friendship_state = $friendsManager->getFriendshipState($user, $profile);
+                if ($profile->friendship_state === 'friend') {
+                    $alertRepo = app(\STS\Repository\FriendTripAlertRepository::class);
+                    $profile->friend_trip_alerts_enabled = $alertRepo->isSubscribed($user, $profile);
+                }
+            }
+
             return $profile;
         }
         $this->setErrors(['error' => 'profile not found']);

@@ -354,7 +354,7 @@ class TripsManagerTest extends TestCase
 
         $this->assertFalse($this->manager()->userCanSeeTrip($stranger, $trip));
 
-        (new FriendsManager(new FriendsRepository))->make($driver, $friend);
+        (new FriendsManager(new FriendsRepository, new \STS\Repository\FriendTripAlertRepository))->make($driver, $friend);
 
         $this->assertTrue($this->manager()->userCanSeeTrip($friend->fresh(), $trip));
     }
@@ -930,7 +930,7 @@ class TripsManagerTest extends TestCase
         $a = User::factory()->create();
         $b = User::factory()->create();
         $c = User::factory()->create();
-        $friends = new FriendsManager(new FriendsRepository);
+        $friends = new FriendsManager(new FriendsRepository, new \STS\Repository\FriendTripAlertRepository);
         $friends->make($a, $b);
         $friends->make($b, $c);
 

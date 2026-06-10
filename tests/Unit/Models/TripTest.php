@@ -66,6 +66,7 @@ class TripTest extends TestCase
             'state',
             'payment_id',
             'needs_sellado',
+            'autoaccept_friends_requests',
         ];
 
         $this->assertSame($expected, (new Trip)->getFillable());

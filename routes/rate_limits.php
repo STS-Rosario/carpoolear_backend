@@ -173,3 +173,12 @@ RateLimiter::for('support-ticket-admin-reply', function (Request $request) {
 
     return Limit::perHour(config('carpoolear.support_ticket_rate_limit_admin_reply_per_hour', 120))->by($user->id.':support-admin-reply');
 });
+
+RateLimiter::for('trip-invite-friends', function (Request $request) {
+    $user = $request->user();
+    if (! $user) {
+        return Limit::perHour(20)->by($request->ip().':trip-invite-friends');
+    }
+
+    return Limit::perHour(20)->by($user->id.':trip-invite-friends');
+});
