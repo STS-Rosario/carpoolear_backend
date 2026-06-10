@@ -18,6 +18,7 @@ class Message extends Model
         'text',
         'estado',
         'conversation_id',
+        'is_system',
     ];
 
     protected $touches = ['conversation'];
@@ -26,6 +27,7 @@ class Message extends Model
         'user_id' => 'integer',
         'conversation_id' => 'integer',
         'created_at' => 'datetime',
+        'is_system' => 'boolean',
     ];
 
     public function conversation()

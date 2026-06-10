@@ -348,4 +348,26 @@ class ConversationsManagerTest extends TestCase
         $updated = $this->manager()->setConversationNotifications($user, $conversation->id, true);
         $this->assertTrue($updated->notificationsEnabled($user));
     }
+
+    public function test_send_system_message_creates_message_with_is_system_flag_and_no_notification_event(): void
+    {
+        Event::fake([MessageSend::class]);
+
+        $subject = User::factory()->create(['name' => 'Ana']);
+        $other = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_TRIP_CONVERSATION]);
+        $conversation->users()->attach($subject->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($other->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $message = $this->manager()->sendSystemMessage(
+            $conversation->fresh(),
+            $subject,
+            'notifications.group_chat_user_joined',
+            ['name' => 'Ana']
+        );
+
+        Event::assertNotDispatched(MessageSend::class);
+        $this->assertTrue($message->is_system);
+        $this->assertStringContainsString('Ana', $message->text);
+    }
 }

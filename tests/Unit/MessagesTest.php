@@ -260,12 +260,24 @@ class MessagesTest extends TestCase
         $this->assertInstanceOf(Conversation::class, $conversation);
         $this->assertSame(1, $conversation->users()->count(), 'trip creator is attached on conversation creation');
 
-        $addListener = new \STS\Listeners\Conversation\addUserConversation($this->conversationRepository);
+        $addListener = new \STS\Listeners\Conversation\addUserConversation(
+            $this->conversationRepository,
+            $this->conversationManager
+        );
         $addListener->handle(new \STS\Events\Passenger\Accept($trip, $driver, $accepted));
         $this->assertSame(2, $conversation->fresh()->users()->count());
+        $joinMessage = $conversation->messages()->where('is_system', true)->first();
+        $this->assertNotNull($joinMessage);
+        $this->assertStringContainsString($accepted->name, $joinMessage->text);
 
-        $removeListener = new \STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
+        $removeListener = new \STS\Listeners\Conversation\removeUserConversation(
+            $this->conversationRepository,
+            $this->conversationManager
+        );
         $removeListener->handle(new \STS\Events\Passenger\Cancel($trip, $driver, $accepted, 0));
         $this->assertSame(1, $conversation->fresh()->users()->count());
+        $leaveMessage = $conversation->messages()->where('is_system', true)->orderByDesc('id')->first();
+        $this->assertNotNull($leaveMessage);
+        $this->assertStringContainsString($accepted->name, $leaveMessage->text);
     }
 }

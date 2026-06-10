@@ -8,10 +8,18 @@ use STS\Listeners\Conversation\removeUserConversation;
 use STS\Models\Conversation;
 use STS\Models\User;
 use STS\Repository\ConversationRepository;
+use STS\Services\Logic\ConversationsManager;
 use Tests\TestCase;
 
 class RemoveUserConversationListenerTest extends TestCase
 {
+    private function makeListener(ConversationRepository $repo, ?ConversationsManager $logic = null): removeUserConversation
+    {
+        $logic = $logic ?? Mockery::mock(ConversationsManager::class);
+
+        return new removeUserConversation($repo, $logic);
+    }
+
     public function test_handle_does_not_call_repository_when_trip_has_no_conversation(): void
     {
         $driver = User::factory()->create();
@@ -23,8 +31,10 @@ class RemoveUserConversationListenerTest extends TestCase
 
         $repo = Mockery::mock(ConversationRepository::class);
         $repo->shouldNotReceive('removeUser');
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldNotReceive('sendSystemMessage');
 
-        (new removeUserConversation($repo))->handle(
+        $this->makeListener($repo, $logic)->handle(
             new PassengerCanceled($trip, $driver, $passenger, 0)
         );
     }
@@ -40,6 +50,8 @@ class RemoveUserConversationListenerTest extends TestCase
         $trip->conversation = $conversation;
 
         $repo = Mockery::mock(ConversationRepository::class);
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldReceive('sendSystemMessage')->once();
         $repo->shouldReceive('removeUser')
             ->once()
             ->with(
@@ -47,7 +59,7 @@ class RemoveUserConversationListenerTest extends TestCase
                 Mockery::on(fn (User $user) => $user->is($passenger))
             );
 
-        (new removeUserConversation($repo))->handle(
+        $this->makeListener($repo, $logic)->handle(
             new PassengerCanceled($trip, $driver, $passenger, 0)
         );
     }
@@ -64,6 +76,8 @@ class RemoveUserConversationListenerTest extends TestCase
         $trip->conversation = $conversation;
 
         $repo = Mockery::mock(ConversationRepository::class);
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldReceive('sendSystemMessage')->once();
         $repo->shouldReceive('removeUser')
             ->once()
             ->with(
@@ -71,7 +85,7 @@ class RemoveUserConversationListenerTest extends TestCase
                 Mockery::on(fn (User $user) => $user->is($moderator))
             );
 
-        (new removeUserConversation($repo))->handle(
+        $this->makeListener($repo, $logic)->handle(
             new PassengerCanceled($trip, $moderator, $passenger, 0)
         );
     }
@@ -87,6 +101,8 @@ class RemoveUserConversationListenerTest extends TestCase
         $trip->conversation = $conversation;
 
         $repo = Mockery::mock(ConversationRepository::class);
+        $logic = Mockery::mock(ConversationsManager::class);
+        $logic->shouldReceive('sendSystemMessage')->once();
         $repo->shouldReceive('removeUser')
             ->once()
             ->with(
@@ -94,7 +110,7 @@ class RemoveUserConversationListenerTest extends TestCase
                 Mockery::on(fn (User $user) => $user->is($passenger))
             );
 
-        (new removeUserConversation($repo))->handle(
+        $this->makeListener($repo, $logic)->handle(
             new PassengerCanceled($trip, $driver, $passenger, 0)
         );
     }

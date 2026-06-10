@@ -425,4 +425,27 @@ class ConversationsManager extends BaseManager
 
         return $conversation->fresh();
     }
+
+    public function sendSystemMessage(Conversation $conversation, User $subjectUser, string $translationKey, array $params = [])
+    {
+        $message = new Message;
+        $message->user_id = $subjectUser->id;
+        $message->text = __($translationKey, $params);
+        $message->conversation_id = $conversation->id;
+        $message->estado = Message::STATE_NOLEIDO;
+        $message->already_notified = 1;
+        $message->is_system = true;
+        $this->messageRepository->store($message);
+
+        $conversation = $conversation->fresh(['users']);
+        foreach ($conversation->users as $participant) {
+            $read = $participant->id === $subjectUser->id;
+            $this->messageRepository->createMessageReadState($message, $participant, $read);
+            if (! $read) {
+                $this->conversationRepository->changeConversationReadState($conversation, $participant, false);
+            }
+        }
+
+        return $message;
+    }
 }
