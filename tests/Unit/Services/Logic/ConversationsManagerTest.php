@@ -228,6 +228,52 @@ class ConversationsManagerTest extends TestCase
         $this->assertTrue($found->is($conversation));
     }
 
+    public function test_get_conversation_by_trip_enrolls_accepted_passenger_missing_from_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $found = $this->manager()->getConversationByTrip($passenger, $trip->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($conversation));
+        $this->assertTrue($conversation->fresh()->users()->whereKey($passenger->id)->exists());
+    }
+
+    public function test_get_conversation_by_trip_denies_pending_passenger(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $found = $this->manager()->getConversationByTrip($passenger, $trip->id);
+
+        $this->assertNull($found);
+    }
+
     public function test_get_conversation_by_trip_returns_trip_thread_for_admin_user(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
@@ -318,5 +364,56 @@ class ConversationsManagerTest extends TestCase
                 && str_contains((string) $e->message->text, 'Mensaje automático')
                 && str_contains((string) $e->message->text, $trip->to_town);
         });
+    }
+
+    public function test_send_does_not_dispatch_message_send_for_muted_recipient(): void
+    {
+        Event::fake([MessageSend::class]);
+
+        $sender = User::factory()->create(['is_admin' => true]);
+        $muted = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($sender->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($muted->id, ['read' => true, 'notifications_enabled' => false]);
+
+        $this->manager()->send($sender, $conversation->id, 'Hola');
+
+        Event::assertNotDispatched(MessageSend::class);
+    }
+
+    public function test_set_conversation_notifications_updates_pivot(): void
+    {
+        $user = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($user->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $updated = $this->manager()->setConversationNotifications($user, $conversation->id, false);
+        $this->assertNotNull($updated);
+        $this->assertFalse($updated->notificationsEnabled($user));
+
+        $updated = $this->manager()->setConversationNotifications($user, $conversation->id, true);
+        $this->assertTrue($updated->notificationsEnabled($user));
+    }
+
+    public function test_send_system_message_creates_message_with_is_system_flag_and_no_notification_event(): void
+    {
+        Event::fake([MessageSend::class]);
+
+        $subject = User::factory()->create(['name' => 'Ana']);
+        $other = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_TRIP_CONVERSATION]);
+        $conversation->users()->attach($subject->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($other->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $message = $this->manager()->sendSystemMessage(
+            $conversation->fresh(),
+            $subject,
+            'notifications.group_chat_user_joined',
+            ['name' => 'Ana']
+        );
+
+        Event::assertNotDispatched(MessageSend::class);
+        $this->assertTrue($message->is_system);
+        $this->assertStringContainsString('Ana', $message->text);
     }
 }

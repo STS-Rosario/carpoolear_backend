@@ -5,6 +5,8 @@ namespace Tests\Unit\Listeners\Notification;
 use Illuminate\Support\Facades\Log;
 use STS\Events\MessageSend as SendEvent;
 use STS\Listeners\Notification\MessageSend;
+use STS\Models\Message;
+use STS\Models\User;
 use STS\Notifications\NewMessagePushNotification;
 use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
@@ -53,5 +55,24 @@ class MessageSendListenerTest extends TestCase
         Log::shouldHaveReceived('warning')
             ->with('Error on sending notification', ['message' => 'push channel unavailable'])
             ->once();
+    }
+
+    public function test_handle_skips_notification_when_recipient_muted_conversation(): void
+    {
+        $from = User::factory()->create(['name' => 'Sender']);
+        $to = User::factory()->create();
+        $conversation = \STS\Models\Conversation::factory()->create();
+        $conversation->users()->attach($to->id, ['read' => true, 'notifications_enabled' => false]);
+        $message = Message::query()->create([
+            'user_id' => $from->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'hello',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
+
+        $listener = new MessageSend;
+        $listener->handle(new SendEvent($from, $to, $message));
     }
 }

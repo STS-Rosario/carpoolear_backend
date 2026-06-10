@@ -74,6 +74,11 @@ return [
     'new_message.message' => 'De :name has recibido nuevos mensajes.',
     'new_message.new_message' => 'Nuevo mensaje',
 
+    'group_chat_user_joined' => ':name se sumó al chat',
+    'group_chat_user_left' => ':name se fue del chat',
+    'group_chat_message.trip_title' => 'Viaje :date :hour',
+    'group_chat_message.title' => ':trip: :name @ :text',
+
     // NewUserNotification
     'new_user.title' => '¡Bienvenido a Carpoolear!',
     'new_user.message' => '¡Bienvenido a Carpoolear!',

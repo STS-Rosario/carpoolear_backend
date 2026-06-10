@@ -60,6 +60,17 @@ class ConversationController extends Controller
         }
     }
 
+    public function showByTrip($tripId)
+    {
+        $this->user = auth()->user();
+        $conversation = $this->conversationLogic->getConversationByTrip($this->user, $tripId);
+        if ($conversation) {
+            return $this->item($conversation, new ConversationsTransformer($this->user));
+        }
+
+        throw new ExceptionWithErrors('Bad request exceptions');
+    }
+
     public function create(Request $request)
     {
         $this->user = auth()->user();
@@ -115,6 +126,18 @@ class ConversationController extends Controller
         $message = $request->get('message');
         if ($m = $this->conversationLogic->send($this->user, $id, $message)) {
             return $this->item($m, new MessageTransformer($this->user));
+        }
+
+        throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());
+    }
+
+    public function updateNotifications(Request $request, $id)
+    {
+        $this->user = auth()->user();
+        $enabled = parse_boolean($request->get('enabled'));
+        $conversation = $this->conversationLogic->setConversationNotifications($this->user, $id, $enabled);
+        if ($conversation) {
+            return $this->item($conversation, new ConversationsTransformer($this->user));
         }
 
         throw new ExceptionWithErrors('Bad request exceptions', $this->conversationLogic->getErrors());

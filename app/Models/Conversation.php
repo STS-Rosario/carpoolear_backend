@@ -39,7 +39,7 @@ class Conversation extends Model
 
     public function users()
     {
-        return $this->belongsToMany('STS\Models\User', 'conversations_users', 'conversation_id', 'user_id')->withPivot('read')->withTimestamps();
+        return $this->belongsToMany('STS\Models\User', 'conversations_users', 'conversation_id', 'user_id')->withPivot('read', 'notifications_enabled')->withTimestamps();
     }
 
     public function read(UserModel $user)
@@ -47,6 +47,17 @@ class Conversation extends Model
         $userRelation = $this->users()->whereKey($user->id)->first();
 
         return $userRelation ? $userRelation->pivot->read : false;
+    }
+
+    public function notificationsEnabled(UserModel $user)
+    {
+        $userRelation = $this->users()->whereKey($user->id)->first();
+
+        if (! $userRelation) {
+            return true;
+        }
+
+        return (bool) ($userRelation->pivot->notifications_enabled ?? true);
     }
 
     public function messages()

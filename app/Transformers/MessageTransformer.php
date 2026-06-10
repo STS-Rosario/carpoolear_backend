@@ -2,8 +2,8 @@
 
 namespace STS\Transformers;
 
-use STS\Models\Message;
 use League\Fractal\TransformerAbstract;
+use STS\Models\Message;
 
 class MessageTransformer extends TransformerAbstract
 {
@@ -31,6 +31,7 @@ class MessageTransformer extends TransformerAbstract
         if ($this->user->id == $message->user_id) {
             $data['no_of_read'] = $message->numberOfRead();
         }
+        $data['is_system'] = (bool) $message->is_system;
 
         return $data;
     }

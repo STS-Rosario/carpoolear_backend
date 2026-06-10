@@ -33,6 +33,7 @@ class MessageTransformerTest extends TestCase
             'created_at',
             'user_id',
             'conversation_id',
+            'is_system',
         ], array_keys($payload));
         $this->assertSame($message->id, $payload['id']);
         $this->assertSame('Hello there', $payload['text']);

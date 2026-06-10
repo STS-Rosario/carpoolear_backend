@@ -260,12 +260,58 @@ class MessagesTest extends TestCase
         $this->assertInstanceOf(Conversation::class, $conversation);
         $this->assertSame(1, $conversation->users()->count(), 'trip creator is attached on conversation creation');
 
-        $addListener = new \STS\Listeners\Conversation\addUserConversation($this->conversationRepository);
+        $addListener = new \STS\Listeners\Conversation\addUserConversation(
+            $this->conversationRepository,
+            $this->conversationManager
+        );
         $addListener->handle(new \STS\Events\Passenger\Accept($trip, $driver, $accepted));
         $this->assertSame(2, $conversation->fresh()->users()->count());
+        $joinMessage = $conversation->messages()->where('is_system', true)->first();
+        $this->assertNotNull($joinMessage);
+        $this->assertStringContainsString($accepted->name, $joinMessage->text);
 
-        $removeListener = new \STS\Listeners\Conversation\removeUserConversation($this->conversationRepository);
+        $removeListener = new \STS\Listeners\Conversation\removeUserConversation(
+            $this->conversationRepository,
+            $this->conversationManager
+        );
         $removeListener->handle(new \STS\Events\Passenger\Cancel($trip, $driver, $accepted, 0));
         $this->assertSame(1, $conversation->fresh()->users()->count());
+        $leaveMessage = $conversation->messages()->where('is_system', true)->orderByDesc('id')->first();
+        $this->assertNotNull($leaveMessage);
+        $this->assertStringContainsString($accepted->name, $leaveMessage->text);
+    }
+
+    public function test_accept_adds_passenger_to_group_chat_when_private_trip_scoped_chat_exists(): void
+    {
+        $driver = User::factory()->create();
+        $accepted = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $createListener = new \STS\Listeners\Conversation\createConversation(
+            $this->conversationManager,
+            $this->conversationRepository
+        );
+        $createListener->handle(new \STS\Events\Trip\Create($trip));
+        $groupChat = $trip->fresh()->conversation;
+
+        $privateChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $privateChat->users()->attach($driver->id, ['read' => true]);
+        $privateChat->users()->attach($accepted->id, ['read' => true]);
+
+        $addListener = new \STS\Listeners\Conversation\addUserConversation(
+            $this->conversationRepository,
+            $this->conversationManager
+        );
+        $addListener->handle(new \STS\Events\Passenger\Accept($trip, $driver, $accepted));
+
+        $this->assertTrue($groupChat->fresh()->users()->whereKey($accepted->id)->exists());
+        $this->assertSame(2, $groupChat->fresh()->users()->count());
+        $this->assertSame(2, $privateChat->fresh()->users()->count());
+        $joinMessage = $groupChat->messages()->where('is_system', true)->first();
+        $this->assertNotNull($joinMessage);
+        $this->assertStringContainsString($accepted->name, $joinMessage->text);
     }
 }

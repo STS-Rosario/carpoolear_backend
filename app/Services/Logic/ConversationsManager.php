@@ -139,10 +139,24 @@ class ConversationsManager extends BaseManager
     public function getConversationByTrip(User $user, $trip_id)
     {
         if ($user->is_admin) {
-            $user = null;
+            return $this->conversationRepository->getConversationByTripId($trip_id, null);
         }
 
-        return $this->conversationRepository->getConversationByTripId($trip_id, $user);
+        $trip = Trip::find($trip_id);
+        if ($trip === null || ! $trip->canAccessGroupChat($user)) {
+            return null;
+        }
+
+        $conversation = $this->conversationRepository->getConversationByTripId($trip_id, null);
+        if ($conversation === null) {
+            return null;
+        }
+
+        if (! $conversation->users()->whereKey($user->id)->exists()) {
+            $this->conversationRepository->addUser($conversation, $user->id);
+        }
+
+        return $conversation->fresh();
     }
 
     /* CONVERSATION - USER MANIPULATION */
@@ -253,7 +267,9 @@ class ConversationsManager extends BaseManager
                 $newMessage = $this->newMessage($data);
                 $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get()->unique('id');
                 foreach ($otherUsers as $to) {
-                    event(new MessageSend($user, $to, $newMessage));
+                    if ($conversation->notificationsEnabled($to)) {
+                        event(new MessageSend($user, $to, $newMessage));
+                    }
                     $this->messageRepository->createMessageReadState($newMessage, $to, false);
                     $this->conversationRepository->changeConversationReadState($conversation, $to, false);
                 }
@@ -408,5 +424,42 @@ class ConversationsManager extends BaseManager
         }
 
         return true;
+    }
+
+    public function setConversationNotifications(User $user, $conversationId, bool $enabled)
+    {
+        $conversation = $this->getConversation($user, $conversationId);
+        if (! $conversation) {
+            $this->setErrors(['conversation_id' => 'user_does_not_have_access_to_conversation']);
+
+            return;
+        }
+
+        $this->conversationRepository->changeConversationNotificationsEnabled($conversation, $user, $enabled);
+
+        return $conversation->fresh();
+    }
+
+    public function sendSystemMessage(Conversation $conversation, User $subjectUser, string $translationKey, array $params = [])
+    {
+        $message = new Message;
+        $message->user_id = $subjectUser->id;
+        $message->text = __($translationKey, $params);
+        $message->conversation_id = $conversation->id;
+        $message->estado = Message::STATE_NOLEIDO;
+        $message->already_notified = 1;
+        $message->is_system = true;
+        $this->messageRepository->store($message);
+
+        $conversation = $conversation->fresh(['users']);
+        foreach ($conversation->users as $participant) {
+            $read = $participant->id === $subjectUser->id;
+            $this->messageRepository->createMessageReadState($message, $participant, $read);
+            if (! $read) {
+                $this->conversationRepository->changeConversationReadState($conversation, $participant, false);
+            }
+        }
+
+        return $message;
     }
 }

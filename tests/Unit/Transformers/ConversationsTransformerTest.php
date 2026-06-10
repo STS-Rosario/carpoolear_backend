@@ -167,6 +167,7 @@ class ConversationsTransformerTest extends TestCase
         $expectedKeys = [
             'id',
             'name',
+            'image',
             'last_connection',
             'identity_validated_at',
             'positive_ratings',
@@ -258,6 +259,45 @@ class ConversationsTransformerTest extends TestCase
         $this->assertNotNull($otherRow);
         $this->assertSame(2, $otherRow['positive_ratings']);
         $this->assertSame(1, $otherRow['negative_ratings']);
+    }
+
+    public function test_transform_trip_conversation_includes_trip_id_and_date_without_coordinate_module(): void
+    {
+        config(['carpoolear.module_coordinate_by_message' => false]);
+
+        $viewer = User::factory()->create();
+        $trip = Trip::factory()->create(['trip_date' => Carbon::parse('2026-06-10 14:30:00')]);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, $payload['type']);
+        $this->assertSame($trip->id, $payload['trip_id']);
+        $this->assertSame('2026-06-10 14:30:00', $payload['trip_date']);
+        $this->assertArrayNotHasKey('trip', $payload);
+    }
+
+    public function test_transform_users_include_profile_image_path_or_empty_string(): void
+    {
+        $viewer = User::factory()->create(['image' => 'avatar.png']);
+        $other = User::factory()->create(['image' => null]);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Chat',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $viewerRow = collect($payload['users'])->firstWhere('id', $viewer->id);
+        $otherRow = collect($payload['users'])->firstWhere('id', $other->id);
+        $this->assertSame('/image/profile/avatar.png', $viewerRow['image']);
+        $this->assertSame('', $otherRow['image']);
     }
 
     public function test_transform_users_list_includes_identity_and_last_connection_fields(): void

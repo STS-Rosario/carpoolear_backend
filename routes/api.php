@@ -180,6 +180,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/', [ConversationController::class, 'create']);
         Route::get('/user-list', [ConversationController::class, 'userList']);
         Route::get('/unread', [ConversationController::class, 'getMessagesUnread']);
+        Route::get('/trip/{tripId}', [ConversationController::class, 'showByTrip']);
         Route::get('/show/{id?}', [ConversationController::class, 'show']);
 
         Route::get('/{id?}', [ConversationController::class, 'getConversation']);
@@ -187,6 +188,7 @@ Route::middleware(['api'])->group(function () {
         Route::post('/{id?}/users', [ConversationController::class, 'addUser']);
         Route::delete('/{id?}/users/{userId?}', [ConversationController::class, 'deleteUser']);
         Route::post('/{id?}/send', [ConversationController::class, 'send']);
+        Route::post('/{id?}/notifications', [ConversationController::class, 'updateNotifications']);
         Route::post('/multi-send', [ConversationController::class, 'multiSend']);
     });
 

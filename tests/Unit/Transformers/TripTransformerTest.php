@@ -378,4 +378,70 @@ class TripTransformerTest extends TestCase
 
         $this->assertArrayNotHasKey('driver_is_friend', $payload);
     }
+
+    public function test_trip_includes_group_chat_unread_count_for_accepted_passenger(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = $this->makeTrip(['user_id' => $driver->id]);
+
+        $conversation = \STS\Models\Conversation::factory()->create([
+            'type' => \STS\Models\Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($passenger->id, ['read' => true, 'notifications_enabled' => true]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $msgOne = \STS\Models\Message::query()->create([
+            'user_id' => $driver->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'One',
+            'estado' => \STS\Models\Message::STATE_NOLEIDO,
+        ]);
+        $msgTwo = \STS\Models\Message::query()->create([
+            'user_id' => $driver->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Two',
+            'estado' => \STS\Models\Message::STATE_NOLEIDO,
+        ]);
+        $msgOne->users()->attach($passenger->id, ['read' => false]);
+        $msgTwo->users()->attach($passenger->id, ['read' => false]);
+
+        $trip = $trip->fresh(['passenger', 'passengerAccepted']);
+        $payload = (new TripTransformer($passenger))->transform($trip);
+
+        $this->assertSame($conversation->id, $payload['group_chat_conversation_id']);
+        $this->assertSame(2, $payload['group_chat_unread_count']);
+    }
+
+    public function test_trip_includes_group_chat_for_passenger_waiting_payment_not_yet_in_conversation(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = $this->makeTrip(['user_id' => $driver->id]);
+
+        $conversation = \STS\Models\Conversation::factory()->create([
+            'type' => \STS\Models\Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+        ]);
+
+        $trip = $trip->fresh(['passenger', 'passengerAccepted']);
+        $payload = (new TripTransformer($passenger))->transform($trip);
+
+        $this->assertSame($conversation->id, $payload['group_chat_conversation_id']);
+        $this->assertTrue($conversation->fresh()->users()->whereKey($passenger->id)->exists());
+    }
 }

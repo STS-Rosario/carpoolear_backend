@@ -121,13 +121,50 @@ class ConversationRepositoryTest extends TestCase
     public function test_get_conversation_by_trip_id_returns_trip_conversation_without_user_filter(): void
     {
         $trip = Trip::factory()->create();
-        $conversation = Conversation::factory()->create(['trip_id' => $trip->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
 
         $repo = new ConversationRepository;
         $found = $repo->getConversationByTripId($trip->id);
 
         $this->assertNotNull($found);
         $this->assertTrue($found->is($conversation));
+    }
+
+    public function test_get_conversation_by_trip_id_returns_group_chat_when_private_trip_scoped_chat_exists(): void
+    {
+        $trip = Trip::factory()->create();
+        $groupChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $privateChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $this->assertGreaterThan($groupChat->id, $privateChat->id);
+
+        $found = (new ConversationRepository)->getConversationByTripId($trip->id);
+
+        $this->assertTrue($found->is($groupChat));
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, (int) $found->type);
+    }
+
+    public function test_trip_conversation_relationship_returns_group_chat_when_private_trip_scoped_chat_exists(): void
+    {
+        $trip = Trip::factory()->create();
+        $groupChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+
+        $this->assertTrue($trip->fresh()->conversation->is($groupChat));
     }
 
     public function test_get_conversation_by_trip_id_requires_membership_when_user_provided(): void
@@ -137,7 +174,10 @@ class ConversationRepositoryTest extends TestCase
         $trip = Trip::factory()->create();
         $member = User::factory()->create();
         $stranger = User::factory()->create();
-        $conversation = Conversation::factory()->create(['trip_id' => $trip->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
         $conversation->users()->attach($member->id, ['read' => false]);
 
         $repo = new ConversationRepository;
@@ -180,7 +220,7 @@ class ConversationRepositoryTest extends TestCase
         // Mutation intent: preserve `$conversation->users()->attach($userID, ['read' => true])` (~83–86 RemoveMethodCall).
         $conversation = Mockery::mock(Conversation::class)->makePartial();
         $relation = Mockery::mock();
-        $relation->shouldReceive('attach')->once()->with(99, ['read' => true]);
+        $relation->shouldReceive('attach')->once()->with(99, ['read' => true, 'notifications_enabled' => true]);
 
         $conversation->shouldReceive('users')->once()->andReturn($relation);
 

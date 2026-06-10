@@ -608,4 +608,170 @@ class ConversationApiTest extends TestCase
         $this->expectExceptionMessage('Bad request exceptions');
         $controller->deleteUser(new Request, 300, $toDelete->id);
     }
+
+    public function test_show_by_trip_returns_trip_conversation_for_participant(): void
+    {
+        $driver = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($conversation, $driver);
+
+        $this->actingAs($driver, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertOk();
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, $response->json('data.type'));
+        $this->assertSame($conversation->id, $response->json('data.id'));
+    }
+
+    public function test_show_by_trip_returns_group_chat_when_passenger_also_has_private_trip_scoped_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+
+        $groupChat = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($groupChat, $driver);
+        $this->conversationRepository->addUser($groupChat, $passenger);
+
+        \STS\Models\Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => \STS\Models\Passenger::STATE_ACCEPTED,
+        ]);
+
+        $privateChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $privateChat->users()->attach($driver->id, ['read' => true]);
+        $privateChat->users()->attach($passenger->id, ['read' => true]);
+        $this->assertGreaterThan($groupChat->id, $privateChat->id);
+
+        $this->actingAs($passenger, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertOk();
+        $this->assertSame($groupChat->id, $response->json('data.id'));
+        $this->assertSame(Conversation::TYPE_TRIP_CONVERSATION, $response->json('data.type'));
+        $this->assertSame(
+            $driver->name,
+            collect($response->json('data.users'))->firstWhere('id', $driver->id)['name']
+        );
+        $this->assertSame(
+            $passenger->name,
+            collect($response->json('data.users'))->firstWhere('id', $passenger->id)['name']
+        );
+    }
+
+    public function test_show_by_trip_includes_accepted_passengers_for_driver(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+
+        $groupChat = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($groupChat, $driver);
+        $this->conversationRepository->addUser($groupChat, $passenger);
+
+        Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+
+        $this->actingAs($driver, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertOk();
+        $this->assertSame($groupChat->id, $response->json('data.id'));
+        $userIds = collect($response->json('data.users'))->pluck('id')->all();
+        $this->assertContains($driver->id, $userIds);
+        $this->assertContains($passenger->id, $userIds);
+    }
+
+    public function test_show_by_trip_enrolls_accepted_passenger_missing_from_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+
+        $groupChat = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($groupChat, $driver);
+
+        \STS\Models\Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => \STS\Models\Passenger::STATE_ACCEPTED,
+        ]);
+
+        $this->actingAs($passenger, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertOk();
+        $this->assertSame($groupChat->id, $response->json('data.id'));
+        $this->assertTrue($groupChat->fresh()->users()->whereKey($passenger->id)->exists());
+        $userIds = collect($response->json('data.users'))->pluck('id')->all();
+        $this->assertContains($passenger->id, $userIds);
+    }
+
+    public function test_show_by_trip_enrolls_passenger_waiting_payment_missing_from_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+
+        $groupChat = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($groupChat, $driver);
+
+        \STS\Models\Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => \STS\Models\Passenger::STATE_WAITING_PAYMENT,
+        ]);
+
+        $this->actingAs($passenger, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertOk();
+        $this->assertSame($groupChat->id, $response->json('data.id'));
+        $this->assertTrue($groupChat->fresh()->users()->whereKey($passenger->id)->exists());
+    }
+
+    public function test_show_by_trip_denies_pending_passenger_not_in_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = \STS\Models\Trip::factory()->create(['user_id' => $driver->id]);
+
+        $groupChat = $this->conversationManager->createTripConversation($trip->id);
+        $this->conversationRepository->addUser($groupChat, $driver);
+
+        \STS\Models\Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => \STS\Models\Passenger::STATE_PENDING,
+        ]);
+
+        $this->actingAs($passenger, 'api');
+        $response = $this->getJson("api/conversations/trip/{$trip->id}");
+
+        $response->assertStatus(422);
+    }
+
+    public function test_participant_can_disable_and_re_enable_conversation_notifications(): void
+    {
+        $user = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($user->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->postJson("api/conversations/{$conversation->id}/notifications", ['enabled' => false]);
+        $response->assertOk();
+        $this->assertFalse($response->json('data.notifications_enabled'));
+
+        $response = $this->postJson("api/conversations/{$conversation->id}/notifications", ['enabled' => true]);
+        $response->assertOk();
+        $this->assertTrue($response->json('data.notifications_enabled'));
+    }
 }
