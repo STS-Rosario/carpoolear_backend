@@ -214,6 +214,49 @@ class UndoUserMigrationTest extends TestCase
         $this->assertSame('+5491111111111', $kept->mobile_phone);
     }
 
+    public function test_live_run_restores_conversations_before_conversations_users_pivot(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create(['email' => 'removed-conv@example.test']);
+        $removedId = $removed->id;
+
+        $conversationId = DB::table('conversations')->insertGetId([
+            'type' => 0,
+            'title' => 'Undo test conversation',
+            'trip_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('conversations_users')->insert([
+            'conversation_id' => $conversationId,
+            'user_id' => $removedId,
+            'read' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->copyTablesToBackup(['users', 'conversations', 'conversations_users']);
+        DB::table('conversations_users')->where('user_id', $removedId)->delete();
+        DB::table('conversations')->where('id', $conversationId)->delete();
+        app(UserDeletionService::class)->deleteUser($removed);
+
+        $this->assertDatabaseMissing('conversations', ['id' => $conversationId]);
+        $this->assertDatabaseMissing('users', ['id' => $removedId]);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removedId,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('conversations', ['id' => $conversationId, 'title' => 'Undo test conversation']);
+        $this->assertDatabaseHas('conversations_users', [
+            'conversation_id' => $conversationId,
+            'user_id' => $removedId,
+        ]);
+    }
+
     public function test_dry_run_handles_conversations_users_without_id_column(): void
     {
         $kept = User::factory()->create();

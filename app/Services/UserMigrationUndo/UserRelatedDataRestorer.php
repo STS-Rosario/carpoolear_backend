@@ -20,8 +20,8 @@ class UserRelatedDataRestorer
         ['table' => 'donations', 'columns' => ['user_id']],
         ['table' => 'payments', 'columns' => ['user_id']],
         ['table' => 'conversations_users', 'columns' => ['user_id'], 'compositeKey' => ['conversation_id', 'user_id']],
-        ['table' => 'user_message_read', 'columns' => ['user_id'], 'compositeKey' => ['user_id', 'message_id']],
         ['table' => 'messages', 'columns' => ['user_id']],
+        ['table' => 'user_message_read', 'columns' => ['user_id'], 'compositeKey' => ['user_id', 'message_id']],
         ['table' => 'user_badges', 'columns' => ['user_id']],
         ['table' => 'phone_verifications', 'columns' => ['user_id']],
         ['table' => 'support_tickets', 'columns' => ['user_id']],
@@ -41,7 +41,10 @@ class UserRelatedDataRestorer
      */
     public function restore(int $removedId, bool $dryRun): array
     {
-        $counts = [];
+        $counts = [
+            'conversations' => $this->restoreConversationParents($removedId, $dryRun),
+            'messages' => $this->restoreMessageParents($removedId, $dryRun),
+        ];
 
         foreach (self::TABLE_REGISTRY as $definition) {
             if (! Schema::connection('backup_db')->hasTable($definition['table'])) {
@@ -141,6 +144,117 @@ class UserRelatedDataRestorer
         }
 
         return json_decode(json_encode($row), true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    private function restoreConversationParents(int $removedId, bool $dryRun): int
+    {
+        if (! Schema::connection('backup_db')->hasTable('conversations')) {
+            return 0;
+        }
+
+        $conversationIds = [];
+
+        if (Schema::connection('backup_db')->hasTable('conversations_users')) {
+            $conversationIds = array_merge(
+                $conversationIds,
+                DB::connection('backup_db')->table('conversations_users')
+                    ->where('user_id', $removedId)
+                    ->pluck('conversation_id')
+                    ->all()
+            );
+        }
+
+        if (Schema::connection('backup_db')->hasTable('messages')) {
+            $conversationIds = array_merge(
+                $conversationIds,
+                DB::connection('backup_db')->table('messages')
+                    ->where('user_id', $removedId)
+                    ->pluck('conversation_id')
+                    ->all()
+            );
+        }
+
+        return $this->restoreMissingRowsById(
+            'conversations',
+            array_values(array_unique(array_map('intval', $conversationIds))),
+            $dryRun
+        );
+    }
+
+    private function restoreMessageParents(int $removedId, bool $dryRun): int
+    {
+        if (! Schema::connection('backup_db')->hasTable('messages')) {
+            return 0;
+        }
+
+        $messageIds = DB::connection('backup_db')->table('messages')
+            ->where('user_id', $removedId)
+            ->pluck('id')
+            ->all();
+
+        if (Schema::connection('backup_db')->hasTable('user_message_read')) {
+            $messageIds = array_merge(
+                $messageIds,
+                DB::connection('backup_db')->table('user_message_read')
+                    ->where('user_id', $removedId)
+                    ->pluck('message_id')
+                    ->all()
+            );
+        }
+
+        $messageIds = array_values(array_unique(array_map('intval', $messageIds)));
+
+        if ($messageIds === []) {
+            return 0;
+        }
+
+        $conversationIds = DB::connection('backup_db')->table('messages')
+            ->whereIn('id', $messageIds)
+            ->pluck('conversation_id')
+            ->all();
+
+        $this->restoreMissingRowsById(
+            'conversations',
+            array_values(array_unique(array_map('intval', $conversationIds))),
+            $dryRun
+        );
+
+        return $this->restoreMissingRowsById('messages', $messageIds, $dryRun);
+    }
+
+    /**
+     * @param  list<int>  $ids
+     */
+    private function restoreMissingRowsById(string $table, array $ids, bool $dryRun): int
+    {
+        if ($ids === []) {
+            return 0;
+        }
+
+        $existingIds = DB::table($table)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $missingIds = array_values(array_diff($ids, $existingIds));
+        $restored = 0;
+
+        foreach ($missingIds as $id) {
+            $row = DB::connection('backup_db')->table($table)->where('id', $id)->first();
+
+            if ($row === null) {
+                continue;
+            }
+
+            if (! $dryRun) {
+                DB::table($table)->insert($this->rowToArray($row));
+            }
+
+            $restored++;
+        }
+
+        return $restored;
     }
 
     private function restoreNotificationParams(int $removedId, bool $dryRun): int
