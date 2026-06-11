@@ -214,6 +214,58 @@ class UndoUserMigrationTest extends TestCase
         $this->assertSame('+5491111111111', $kept->mobile_phone);
     }
 
+    public function test_live_run_restores_circular_parent_and_return_trip_pair_for_conversation(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create(['email' => 'removed-circular-trip@example.test']);
+        $removedId = $removed->id;
+        $outboundTrip = Trip::factory()->create(['user_id' => $removedId]);
+        $returnTrip = Trip::factory()->create([
+            'user_id' => $removedId,
+            'parent_trip_id' => $outboundTrip->id,
+        ]);
+
+        $conversationId = DB::table('conversations')->insertGetId([
+            'type' => 0,
+            'title' => 'Circular trip conversation',
+            'trip_id' => $returnTrip->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('conversations_users')->insert([
+            'conversation_id' => $conversationId,
+            'user_id' => $removedId,
+            'read' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->copyTablesToBackup(['users', 'trips', 'conversations', 'conversations_users']);
+        DB::connection('backup_db')->table('trips')
+            ->where('id', $outboundTrip->id)
+            ->update(['return_trip_id' => $returnTrip->id]);
+        DB::table('conversations_users')->where('user_id', $removedId)->delete();
+        DB::table('conversations')->where('id', $conversationId)->delete();
+        DB::table('trips')->whereIn('id', [$outboundTrip->id, $returnTrip->id])->delete();
+        app(UserDeletionService::class)->deleteUser($removed);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removedId,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('trips', [
+            'id' => $outboundTrip->id,
+            'return_trip_id' => $returnTrip->id,
+        ]);
+        $this->assertDatabaseHas('trips', [
+            'id' => $returnTrip->id,
+            'parent_trip_id' => $outboundTrip->id,
+        ]);
+    }
+
     public function test_live_run_restores_parent_trip_before_child_trip_for_conversation(): void
     {
         $kept = User::factory()->create();

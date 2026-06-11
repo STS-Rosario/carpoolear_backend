@@ -8,11 +8,6 @@ use Illuminate\Support\Facades\Schema;
 class UserRelatedDataRestorer
 {
     /**
-     * @var array<int, bool>
-     */
-    private array $tripsBeingRestored = [];
-
-    /**
      * @var list<array{table: string, columns: list<string>, compositeKey?: list<string>}>
      */
     private const TABLE_REGISTRY = [
@@ -210,54 +205,116 @@ class UserRelatedDataRestorer
      */
     private function restoreMissingTripsById(array $ids, bool $dryRun): int
     {
-        $this->tripsBeingRestored = [];
+        $closureIds = $this->expandTripDependencyClosure($ids);
+        $missingIds = array_values(array_filter(
+            $closureIds,
+            fn (int $tripId): bool => ! DB::table('trips')->where('id', $tripId)->exists()
+        ));
+
+        if ($missingIds === []) {
+            return 0;
+        }
+
+        if ($dryRun) {
+            return count($missingIds);
+        }
+
+        $backupRows = [];
+        foreach ($missingIds as $tripId) {
+            $row = DB::connection('backup_db')->table('trips')->where('id', $tripId)->first();
+
+            if ($row === null) {
+                continue;
+            }
+
+            $backupRows[$tripId] = $this->rowToArray($row);
+        }
+
         $restored = 0;
 
-        foreach (array_unique(array_map('intval', $ids)) as $id) {
-            $restored += $this->restoreSingleTripIfMissing($id, $dryRun);
+        foreach ($backupRows as $tripId => $rowArray) {
+            foreach (['parent_trip_id', 'return_trip_id'] as $column) {
+                if (empty($rowArray[$column])) {
+                    continue;
+                }
+
+                $relatedTripId = (int) $rowArray[$column];
+
+                if (array_key_exists($relatedTripId, $backupRows)
+                    && ! DB::table('trips')->where('id', $relatedTripId)->exists()) {
+                    $rowArray[$column] = null;
+                }
+            }
+
+            DB::table('trips')->insert($rowArray);
+            $restored++;
+        }
+
+        foreach ($backupRows as $tripId => $rowArray) {
+            $this->wireTripSelfReferences($tripId, $rowArray);
         }
 
         return $restored;
     }
 
-    private function restoreSingleTripIfMissing(int $tripId, bool $dryRun): int
+    /**
+     * @param  list<int>  $seedIds
+     * @return list<int>
+     */
+    private function expandTripDependencyClosure(array $seedIds): array
     {
-        if (DB::table('trips')->where('id', $tripId)->exists()) {
-            return 0;
-        }
+        $pending = array_values(array_unique(array_map('intval', $seedIds)));
+        $closure = [];
 
-        if (isset($this->tripsBeingRestored[$tripId])) {
-            return 0;
-        }
+        while ($pending !== []) {
+            $tripId = array_shift($pending);
 
-        $row = DB::connection('backup_db')->table('trips')->where('id', $tripId)->first();
+            if (isset($closure[$tripId])) {
+                continue;
+            }
 
-        if ($row === null) {
-            return 0;
-        }
+            $row = DB::connection('backup_db')->table('trips')->where('id', $tripId)->first();
 
-        $rowArray = $this->rowToArray($row);
-        $this->tripsBeingRestored[$tripId] = true;
+            if ($row === null) {
+                continue;
+            }
 
-        foreach (['parent_trip_id', 'return_trip_id'] as $column) {
-            if (! empty($rowArray[$column])) {
-                $this->restoreSingleTripIfMissing((int) $rowArray[$column], $dryRun);
+            $closure[$tripId] = true;
+
+            foreach (['parent_trip_id', 'return_trip_id'] as $column) {
+                $relatedTripId = $row->{$column} ?? null;
+
+                if ($relatedTripId !== null && ! isset($closure[(int) $relatedTripId])) {
+                    $pending[] = (int) $relatedTripId;
+                }
             }
         }
 
-        if (DB::table('trips')->where('id', $tripId)->exists()) {
-            unset($this->tripsBeingRestored[$tripId]);
+        return array_map('intval', array_keys($closure));
+    }
 
-            return 0;
+    /**
+     * @param  array<string, mixed>  $backupRow
+     */
+    private function wireTripSelfReferences(int $tripId, array $backupRow): void
+    {
+        $updates = [];
+
+        foreach (['parent_trip_id', 'return_trip_id'] as $column) {
+            if (empty($backupRow[$column])) {
+                continue;
+            }
+
+            $relatedTripId = (int) $backupRow[$column];
+
+            if (DB::table('trips')->where('id', $relatedTripId)->exists()) {
+                $updates[$column] = $relatedTripId;
+            }
         }
 
-        if (! $dryRun) {
-            DB::table('trips')->insert($rowArray);
+        if ($updates !== []) {
+            DB::table('trips')->where('id', $tripId)->update($updates);
         }
-
-        unset($this->tripsBeingRestored[$tripId]);
-
-        return 1;
     }
 
     private function restoreMessageParents(int $removedId, bool $dryRun): int
