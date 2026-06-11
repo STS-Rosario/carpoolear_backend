@@ -635,7 +635,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated'))
+            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated'), false)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->description = $data['description'];
 
@@ -677,7 +677,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated allowed'))
+            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated allowed'), false)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->description = $data['description'];
 
@@ -726,7 +726,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, $filteredData)
+            ->with($user, $filteredData, false)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->description = $data['description'];
 
@@ -780,7 +780,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, $requestData)
+            ->with($user, $requestData, true)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->nro_doc = $data['nro_doc'];
                 $targetUser->description = $data['description'];

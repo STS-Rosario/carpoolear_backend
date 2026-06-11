@@ -19,6 +19,7 @@ use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\MercadoPagoOAuthService;
 use STS\Services\UserDeletionService;
+use STS\Services\UserEditablePropertiesService;
 use Tests\TestCase;
 
 class UserControllerApiTest extends TestCase
@@ -35,7 +36,8 @@ class UserControllerApiTest extends TestCase
             Mockery::mock(UsersManager::class),
             Mockery::mock(DeviceManager::class),
             Mockery::mock(UserDeletionService::class),
-            Mockery::mock(AnonymizationService::class)
+            Mockery::mock(AnonymizationService::class),
+            Mockery::mock(UserEditablePropertiesService::class)
         );
 
         $middlewares = $controller->getMiddleware();

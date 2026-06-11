@@ -13,6 +13,7 @@ use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\UserDeletionService;
+use STS\Services\UserEditablePropertiesService;
 use Tests\TestCase;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
@@ -65,6 +66,7 @@ class UserControllerMutationSurvivorsTest extends TestCase
             Mockery::mock(DeviceManager::class),
             Mockery::mock(UserDeletionService::class),
             Mockery::mock(AnonymizationService::class),
+            Mockery::mock(UserEditablePropertiesService::class),
         );
 
         $response = $controller->create($request);
@@ -133,6 +135,7 @@ class UserControllerMutationSurvivorsTest extends TestCase
             $device,
             $deletion,
             Mockery::mock(AnonymizationService::class),
+            Mockery::mock(UserEditablePropertiesService::class),
         );
 
         $response = $controller->deleteAccount(Request::create('/api/users/delete-account', 'POST'));
@@ -177,6 +180,7 @@ class UserControllerMutationSurvivorsTest extends TestCase
             $device,
             Mockery::mock(UserDeletionService::class),
             $anon,
+            Mockery::mock(UserEditablePropertiesService::class),
         );
 
         $response = $controller->deleteAccount(Request::create('/api/users/delete-account', 'POST'));
