@@ -8,11 +8,20 @@ use STS\Models\User;
 
 class UserMigrationUndoService
 {
+    public function __construct(
+        private readonly MigratedRecordRestorer $migratedRecordRestorer,
+    ) {}
+
     public function undo(int $keptId, int $removedId, bool $dryRun): UndoMigrationResult
     {
         $this->validateInputs($keptId, $removedId);
 
-        return new UndoMigrationResult(dryRun: $dryRun);
+        $migrated = $this->migratedRecordRestorer->restore($keptId, $removedId, $dryRun);
+
+        return new UndoMigrationResult(
+            dryRun: $dryRun,
+            migratedReassignments: $migrated,
+        );
     }
 
     public function validateInputs(int $keptId, int $removedId): void

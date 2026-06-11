@@ -4,6 +4,7 @@ namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
 use InvalidArgumentException;
+use STS\Services\UserMigrationUndo\UndoMigrationResult;
 use STS\Services\UserMigrationUndo\UserMigrationUndoService;
 
 class UndoUserMigration extends Command
