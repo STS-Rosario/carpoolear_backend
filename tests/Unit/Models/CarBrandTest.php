@@ -21,12 +21,13 @@ class CarBrandTest extends TestCase
 
     public function test_active_scope_returns_only_active_brands(): void
     {
-        CarBrand::factory()->create(['name' => 'Active', 'is_active' => true]);
-        CarBrand::factory()->create(['name' => 'Inactive', 'is_active' => false]);
+        CarBrand::factory()->create(['name' => 'ActiveScopeBrand', 'is_active' => true]);
+        CarBrand::factory()->create(['name' => 'InactiveScopeBrand', 'is_active' => false]);
 
-        $names = CarBrand::active()->pluck('name')->all();
+        $activeNames = CarBrand::active()->pluck('name')->all();
 
-        $this->assertSame(['Active'], $names);
+        $this->assertContains('ActiveScopeBrand', $activeNames);
+        $this->assertNotContains('InactiveScopeBrand', $activeNames);
     }
 
     public function test_brand_has_many_models(): void

@@ -35,11 +35,11 @@ class CarBrandControllerTest extends TestCase
         $this->authenticateAdmin();
 
         $response = $this->postJson('api/admin/car-brands', [
-            'name' => 'Ford',
+            'name' => 'Admin Test Brand',
         ])->assertCreated();
 
-        $this->assertSame('Ford', $response->json('data.name'));
-        $this->assertSame('ford', $response->json('data.slug'));
+        $this->assertSame('Admin Test Brand', $response->json('data.name'));
+        $this->assertSame('admin-test-brand', $response->json('data.slug'));
     }
 
     public function test_destroy_deactivates_brand_when_referenced_by_car(): void

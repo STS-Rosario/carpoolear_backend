@@ -24,12 +24,16 @@ class CarCatalogSyncServiceTest extends TestCase
 
     public function test_sync_incremental_creates_new_brands_and_models(): void
     {
-        Http::fake(function ($request) {
-            if (str_contains($request->url(), '/brands/60/models')) {
+        $brandArgautosId = 9_000_001;
+        $modelArgautosId = 9_000_002;
+        $skippedModelArgautosId = 9_000_003;
+
+        Http::fake(function ($request) use ($brandArgautosId, $modelArgautosId, $skippedModelArgautosId) {
+            if (str_contains($request->url(), "/brands/{$brandArgautosId}/models")) {
                 return Http::response([
                     'data' => [
-                        ['id' => 563, 'brand_id' => 60, 'name' => 'COROLLA', 'slug' => 'corolla'],
-                        ['id' => 643, 'brand_id' => 60, 'name' => '4P 1,5 XLS 4AT 2022', 'slug' => 'version'],
+                        ['id' => $modelArgautosId, 'brand_id' => $brandArgautosId, 'name' => 'SYNC TEST MODEL', 'slug' => 'sync-test-model'],
+                        ['id' => $skippedModelArgautosId, 'brand_id' => $brandArgautosId, 'name' => '4P 1,5 XLS 4AT 2022', 'slug' => 'version'],
                     ],
                     'links' => ['next' => null],
                 ], 200);
@@ -37,7 +41,7 @@ class CarCatalogSyncServiceTest extends TestCase
 
             return Http::response([
                 'data' => [
-                    ['id' => 60, 'name' => 'TOYOTA', 'slug' => 'toyota'],
+                    ['id' => $brandArgautosId, 'name' => 'SYNC TEST BRAND', 'slug' => 'sync-test-brand'],
                 ],
                 'links' => ['next' => null],
             ], 200);
@@ -49,26 +53,30 @@ class CarCatalogSyncServiceTest extends TestCase
         $this->assertSame(1, $summary['brands_created']);
         $this->assertSame(1, $summary['models_created']);
         $this->assertSame(1, $summary['models_skipped']);
-        $this->assertDatabaseHas('car_brands', ['argautos_id' => 60, 'name' => 'TOYOTA']);
-        $this->assertDatabaseHas('car_models', ['argautos_id' => 563, 'name' => 'COROLLA']);
-        $this->assertDatabaseMissing('car_models', ['argautos_id' => 643]);
+        $this->assertDatabaseHas('car_brands', ['argautos_id' => $brandArgautosId, 'name' => 'SYNC TEST BRAND']);
+        $this->assertDatabaseHas('car_models', ['argautos_id' => $modelArgautosId, 'name' => 'SYNC TEST MODEL']);
+        $this->assertDatabaseMissing('car_models', ['argautos_id' => $skippedModelArgautosId]);
     }
 
     public function test_sync_incremental_skips_existing_argautos_ids(): void
     {
-        $brand = CarBrand::factory()->create(['argautos_id' => 60, 'name' => 'TOYOTA']);
+        $brandArgautosId = 9_000_010;
+        $existingModelArgautosId = 9_000_011;
+        $newModelArgautosId = 9_000_012;
+
+        $brand = CarBrand::factory()->create(['argautos_id' => $brandArgautosId, 'name' => 'SYNC SKIP BRAND']);
         CarModel::factory()->create([
             'car_brand_id' => $brand->id,
-            'argautos_id' => 563,
-            'name' => 'COROLLA',
+            'argautos_id' => $existingModelArgautosId,
+            'name' => 'EXISTING MODEL',
         ]);
 
-        Http::fake(function ($request) {
-            if (str_contains($request->url(), '/brands/60/models')) {
+        Http::fake(function ($request) use ($brandArgautosId, $existingModelArgautosId, $newModelArgautosId) {
+            if (str_contains($request->url(), "/brands/{$brandArgautosId}/models")) {
                 return Http::response([
                     'data' => [
-                        ['id' => 563, 'brand_id' => 60, 'name' => 'COROLLA', 'slug' => 'corolla'],
-                        ['id' => 564, 'brand_id' => 60, 'name' => 'YARIS', 'slug' => 'yaris'],
+                        ['id' => $existingModelArgautosId, 'brand_id' => $brandArgautosId, 'name' => 'EXISTING MODEL', 'slug' => 'existing-model'],
+                        ['id' => $newModelArgautosId, 'brand_id' => $brandArgautosId, 'name' => 'NEW MODEL', 'slug' => 'new-model'],
                     ],
                     'links' => ['next' => null],
                 ], 200);
@@ -76,7 +84,7 @@ class CarCatalogSyncServiceTest extends TestCase
 
             return Http::response([
                 'data' => [
-                    ['id' => 60, 'name' => 'TOYOTA', 'slug' => 'toyota'],
+                    ['id' => $brandArgautosId, 'name' => 'SYNC SKIP BRAND', 'slug' => 'sync-skip-brand'],
                 ],
                 'links' => ['next' => null],
             ], 200);
@@ -87,6 +95,6 @@ class CarCatalogSyncServiceTest extends TestCase
 
         $this->assertSame(0, $summary['brands_created']);
         $this->assertSame(1, $summary['models_created']);
-        $this->assertDatabaseHas('car_models', ['argautos_id' => 564, 'name' => 'YARIS']);
+        $this->assertDatabaseHas('car_models', ['argautos_id' => $newModelArgautosId, 'name' => 'NEW MODEL']);
     }
 }
