@@ -68,7 +68,6 @@ class ProfileTransformer extends TransformerAbstract
             'donations' => $user->donations,
             'has_pin' => intval($user->has_pin),
             'is_member' => intval($user->is_member),
-            'banned' => intval($user->banned),
             'active' => intval($user->active),
             'do_not_alert_request_seat' => intval($user->do_not_alert_request_seat),
             'do_not_alert_accept_passenger' => intval($user->do_not_alert_accept_passenger),
@@ -127,6 +126,10 @@ class ProfileTransformer extends TransformerAbstract
             $data['validate_by_date'] = $user->validate_by_date
                 ? $user->validate_by_date->format('Y-m-d')
                 : null;
+        }
+        if ($this->user && $this->user->is_admin) {
+            // Admin-only moderation fields (not exposed to regular users to prevent client round-trips).
+            $data['banned'] = intval($user->banned);
         }
 
         switch ($user->data_visibility) {

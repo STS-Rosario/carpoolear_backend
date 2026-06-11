@@ -635,7 +635,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated'))
+            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated'), false)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->description = $data['description'];
 
@@ -677,7 +677,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated allowed'))
+            ->with($user, Mockery::on(fn ($data) => ($data['description'] ?? null) === 'updated allowed'), false)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->description = $data['description'];
 
@@ -726,7 +726,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, $filteredData)
+            ->with($user, $filteredData, false)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->description = $data['description'];
 
@@ -780,7 +780,7 @@ class UsersManagerTest extends TestCase
         $userRepo = Mockery::mock(UserRepository::class);
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, $requestData)
+            ->with($user, $requestData, true)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->nro_doc = $data['nro_doc'];
                 $targetUser->description = $data['description'];
@@ -1320,6 +1320,28 @@ class UsersManagerTest extends TestCase
             'password_confirmation' => 'anotherpass12',
         ]));
         $this->assertTrue(\Hash::check('newsecret12', $user->fresh()->password));
+    }
+
+    public function test_change_password_does_not_clear_banned_when_payload_includes_banned_zero(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create([
+            'banned' => true,
+            'active' => true,
+        ]);
+        $token = $this->manager()->resetPassword($user->email);
+        $this->assertNotNull($token);
+
+        $manager = $this->manager();
+        $this->assertTrue($manager->changePassword($token, [
+            'password' => 'newsecret12',
+            'password_confirmation' => 'newsecret12',
+            'banned' => 0,
+        ]));
+
+        $fresh = $user->fresh();
+        $this->assertTrue((bool) $fresh->banned);
+        $this->assertTrue(\Hash::check('newsecret12', $fresh->password));
     }
 
     public function test_change_password_returns_null_for_invalid_token(): void

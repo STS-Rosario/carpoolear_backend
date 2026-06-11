@@ -37,7 +37,6 @@ class ProfileTransformerTest extends TestCase
             'donations',
             'has_pin',
             'is_member',
-            'banned',
             'active',
             'do_not_alert_request_seat',
             'do_not_alert_accept_passenger',
@@ -124,7 +123,7 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayHasKey('donations', $payload);
         $this->assertArrayHasKey('has_pin', $payload);
         $this->assertArrayHasKey('is_member', $payload);
-        $this->assertArrayHasKey('banned', $payload);
+        $this->assertArrayNotHasKey('banned', $payload);
         $this->assertArrayHasKey('active', $payload);
         $this->assertArrayHasKey('do_not_alert_request_seat', $payload);
         $this->assertArrayHasKey('do_not_alert_accept_passenger', $payload);
@@ -209,6 +208,26 @@ class ProfileTransformerTest extends TestCase
 
         $this->assertArrayHasKey('identity_validation_required_for_user', $payload);
         $this->assertSame('self@example.test', $payload['email']);
+    }
+
+    public function test_transform_does_not_expose_banned_for_non_admin_viewers(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['banned' => true]);
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('banned', $payload);
+    }
+
+    public function test_transform_exposes_banned_for_admin_viewers(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create(['banned' => true]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertSame(1, $payload['banned']);
     }
 
     public function test_transform_includes_sensitive_fields_for_admin_viewing_other_user(): void

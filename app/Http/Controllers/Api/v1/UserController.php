@@ -18,6 +18,7 @@ use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\MercadoPagoOAuthService;
 use STS\Services\UserDeletionService;
+use STS\Services\UserEditablePropertiesService;
 use STS\Transformers\ProfileTransformer;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -31,11 +32,14 @@ class UserController extends Controller
 
     protected $anonymizationService;
 
+    protected UserEditablePropertiesService $userEditablePropertiesService;
+
     public function __construct(
         UsersManager $userLogic,
         DeviceManager $deviceLogic,
         UserDeletionService $userDeletionService,
-        AnonymizationService $anonymizationService
+        AnonymizationService $anonymizationService,
+        UserEditablePropertiesService $userEditablePropertiesService
     ) {
         $this->middleware('logged')->except(['create', 'registerDonation', 'bankData', 'terms']);
         $this->middleware('logged.optional')->only(['create', 'registerDonation', 'bankData', 'terms']);
@@ -43,6 +47,7 @@ class UserController extends Controller
         $this->deviceLogic = $deviceLogic;
         $this->userDeletionService = $userDeletionService;
         $this->anonymizationService = $anonymizationService;
+        $this->userEditablePropertiesService = $userEditablePropertiesService;
     }
 
     public function create(Request $request)
@@ -293,6 +298,13 @@ class UserController extends Controller
 
     public function changeBooleanProperty($property, $value, Request $request)
     {
+        $allowed = $this->userEditablePropertiesService->getChangeBooleanAllowedProperties();
+        if (! in_array($property, $allowed, true)) {
+            throw new ExceptionWithErrors('Could not update user.', [
+                'property' => ['This property cannot be changed via this endpoint.'],
+            ]);
+        }
+
         $user = auth()->user();
         $profile = $this->userLogic->update($user, [$property => $value > 0 ? 1 : 0], false, false);
         if (! $profile) {

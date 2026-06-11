@@ -12,6 +12,23 @@ use STS\Support\UserSearchFilter;
 class UserRepository
 {
     /**
+     * Fields that must not be mass-assigned unless the caller explicitly opts in
+     * (e.g. admin updates or trusted system flows like account activation).
+     *
+     * @var list<string>
+     */
+    private const PROTECTED_FIELDS = [
+        'banned',
+        'active',
+        'driver_is_verified',
+        'identity_validated',
+        'identity_validated_at',
+        'identity_validation_type',
+        'identity_validation_reject_reason',
+        'validate_by_date',
+    ];
+
+    /**
      * Create a new user instance after a valid registration.
      *
      *
@@ -22,9 +39,17 @@ class UserRepository
         return User::create($data);
     }
 
-    public function update($user, array $data)
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function update($user, array $data, bool $allowProtectedFields = false)
     {
         unset($data['is_admin']);
+        if (! $allowProtectedFields) {
+            foreach (self::PROTECTED_FIELDS as $field) {
+                unset($data[$field]);
+            }
+        }
         $user->update($data);
     }
 

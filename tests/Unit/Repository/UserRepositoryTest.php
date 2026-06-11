@@ -145,6 +145,42 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse((bool) $user->is_admin);
     }
 
+    public function test_update_strips_banned_and_active_from_payload_by_default(): void
+    {
+        $user = User::factory()->create([
+            'banned' => true,
+            'active' => false,
+        ]);
+
+        $this->repo()->update($user, [
+            'name' => 'Still Banned',
+            'banned' => 0,
+            'active' => true,
+        ]);
+
+        $user->refresh();
+        $this->assertSame('Still Banned', $user->name);
+        $this->assertTrue((bool) $user->banned);
+        $this->assertFalse((bool) $user->active);
+    }
+
+    public function test_update_allows_protected_fields_when_explicitly_enabled(): void
+    {
+        $user = User::factory()->create([
+            'banned' => true,
+            'active' => false,
+        ]);
+
+        $this->repo()->update($user, [
+            'banned' => 0,
+            'active' => true,
+        ], allowProtectedFields: true);
+
+        $user->refresh();
+        $this->assertFalse((bool) $user->banned);
+        $this->assertTrue((bool) $user->active);
+    }
+
     public function test_show_nulls_private_note_and_loads_relations(): void
     {
         $user = User::factory()->create();

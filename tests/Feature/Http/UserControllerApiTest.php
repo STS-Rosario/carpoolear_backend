@@ -19,6 +19,7 @@ use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\MercadoPagoOAuthService;
 use STS\Services\UserDeletionService;
+use STS\Services\UserEditablePropertiesService;
 use Tests\TestCase;
 
 class UserControllerApiTest extends TestCase
@@ -35,7 +36,8 @@ class UserControllerApiTest extends TestCase
             Mockery::mock(UsersManager::class),
             Mockery::mock(DeviceManager::class),
             Mockery::mock(UserDeletionService::class),
-            Mockery::mock(AnonymizationService::class)
+            Mockery::mock(AnonymizationService::class),
+            Mockery::mock(UserEditablePropertiesService::class)
         );
 
         $middlewares = $controller->getMiddleware();
@@ -696,6 +698,21 @@ class UserControllerApiTest extends TestCase
             ->assertOk();
 
         $this->assertFalse((bool) $user->fresh()->emails_notifications);
+    }
+
+    public function test_change_boolean_property_rejects_non_allowlisted_property(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('/api/users/change/banned/1')
+            ->assertStatus(422);
+
+        $this->assertFalse((bool) $user->fresh()->banned);
     }
 
     public function test_mercadopago_oauth_url_returns_503_when_identity_validation_disabled(): void
