@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Commands;
 
+use Illuminate\Support\Facades\DB;
 use STS\Console\Commands\UndoUserMigration;
+use STS\Models\MaintenanceState;
+use STS\Models\Trip;
 use STS\Models\User;
 use Tests\Support\UsesBackupDatabase;
 use Tests\TestCase;
@@ -52,5 +55,29 @@ class UndoUserMigrationTest extends TestCase
             'removed' => $removed->id,
         ])
             ->assertFailed();
+    }
+
+    public function test_dry_run_reports_reassignments_without_writing(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $kept->id]);
+
+        $this->copyTablesToBackup(['users', 'trips']);
+        DB::connection('backup_db')->table('trips')
+            ->where('id', $trip->id)
+            ->update(['user_id' => $removed->id]);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removed->id,
+            '--dry-run' => true,
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Dry run complete')
+            ->assertSuccessful();
+
+        $this->assertSame($kept->id, (int) $trip->fresh()->user_id);
+        $this->assertFalse(MaintenanceState::query()->findOrFail(1)->is_active);
     }
 }
