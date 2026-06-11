@@ -45,8 +45,19 @@ class UndoUserMigration extends Command
         return self::SUCCESS;
     }
 
-    private function displayResult(\STS\Services\UserMigrationUndo\UndoMigrationResult $result): void
+    private function displayResult(UndoMigrationResult $result): void
     {
+        $this->table(
+            ['Metric', 'Count'],
+            [
+                ['Migrated records to reassign', $result->totalMigratedReassignments()],
+                ['Related records to restore', $result->totalRelatedRestored()],
+                ['Users restored', $result->usersRestored],
+                ['Users updated', $result->usersUpdated],
+                ['Migration audit rows', $result->migrationRowsDeleted],
+            ]
+        );
+
         if ($result->dryRun) {
             $this->info('Dry run complete. No changes were written.');
         } else {
