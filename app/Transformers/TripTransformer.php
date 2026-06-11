@@ -50,6 +50,7 @@ class TripTransformer extends TransformerAbstract
             'rear_max_two_passengers' => $trip->rear_max_two_passengers,
             'payment_id' => $trip->payment_id,
             'needs_sellado' => $trip->needs_sellado,
+            'existing' => (bool) $trip->getAttribute('existing'),
         ];
 
         // Flag for frontend: show faded (e.g. 80% opacity) and "Falta pagar Sellado" when sellado is unpaid

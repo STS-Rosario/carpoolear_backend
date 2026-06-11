@@ -78,6 +78,7 @@ class TripTransformerTest extends TestCase
             'rear_max_two_passengers',
             'payment_id',
             'needs_sellado',
+            'existing',
             'sellado_pending',
             'sellado_pending_label',
             'request',
@@ -90,10 +91,21 @@ class TripTransformerTest extends TestCase
         $this->assertSame(15000, $payload['seat_price_cents']);
         $this->assertSame(false, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
+        $this->assertSame(false, $payload['existing']);
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
         $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_sets_existing_true_when_trip_marked_as_existing(): void
+    {
+        $trip = $this->makeTrip();
+        $trip->setAttribute('existing', true);
+
+        $payload = (new TripTransformer(null))->transform($trip);
+
+        $this->assertTrue($payload['existing']);
     }
 
     public function test_transform_omits_car_for_unrelated_viewer_on_driver_trip(): void
