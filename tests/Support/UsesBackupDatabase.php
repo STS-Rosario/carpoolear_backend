@@ -2,7 +2,6 @@
 
 namespace Tests\Support;
 
-use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use PDO;
@@ -30,7 +29,6 @@ trait UsesBackupDatabase
                 '--force' => true,
             ]);
             static::$backupDatabaseMigrated = true;
-            RefreshDatabaseState::$migrated = false;
         }
     }
 
