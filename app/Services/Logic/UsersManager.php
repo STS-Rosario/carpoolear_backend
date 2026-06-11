@@ -587,6 +587,24 @@ class UsersManager extends BaseManager
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function buildPasswordResetUpdateData(array $data, User $user): array
+    {
+        $filtered = $this->userEditablePropertiesService->filterForUser(
+            array_intersect_key($data, array_flip(['password', 'password_confirmation'])),
+            false,
+            $user
+        );
+
+        return [
+            'password' => bcrypt($filtered['password']),
+            'active' => true,
+        ];
+    }
+
     public function changePassword($token, $data)
     {
         $user = $this->repo->getUserByResetToken($token);
@@ -597,15 +615,7 @@ class UsersManager extends BaseManager
 
                 return;
             }
-            $filtered = $this->userEditablePropertiesService->filterForUser(
-                array_intersect_key($data, array_flip(['password', 'password_confirmation'])),
-                false,
-                $user
-            );
-            $updateData = [
-                'password' => bcrypt($filtered['password']),
-                'active' => true,
-            ];
+            $updateData = $this->buildPasswordResetUpdateData($data, $user);
             $this->repo->update($user, $updateData);
             $this->repo->deleteResetToken('email', $user->email);
 
