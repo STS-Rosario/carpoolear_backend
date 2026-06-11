@@ -18,6 +18,11 @@ trait UsesBackupDatabase
         return ['mysql', 'backup_db'];
     }
 
+    protected function beforeRefreshingDatabase(): void
+    {
+        $this->ensureBackupDatabaseExists();
+    }
+
     protected function setUpBackupDatabase(): void
     {
         $this->ensureBackupDatabaseExists();

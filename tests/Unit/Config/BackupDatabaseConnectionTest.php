@@ -10,13 +10,6 @@ class BackupDatabaseConnectionTest extends TestCase
 {
     use UsesBackupDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->ensureBackupDatabaseExists();
-    }
-
     public function test_backup_db_connection_is_configured(): void
     {
         $config = config('database.connections.backup_db');

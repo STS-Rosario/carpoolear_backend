@@ -58,7 +58,9 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: php artisan migrate --force
+        run: |
+          mysql -h 127.0.0.1 -uroot -ppassword -e "CREATE DATABASE IF NOT EXISTS testing_backup"
+          php artisan migrate --force
 
       - name: Run tests with coverage
         env:
