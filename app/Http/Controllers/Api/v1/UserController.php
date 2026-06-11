@@ -18,6 +18,7 @@ use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\MercadoPagoOAuthService;
 use STS\Services\UserDeletionService;
+use STS\Services\UserEditablePropertiesService;
 use STS\Transformers\ProfileTransformer;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -293,6 +294,13 @@ class UserController extends Controller
 
     public function changeBooleanProperty($property, $value, Request $request)
     {
+        $allowed = app(UserEditablePropertiesService::class)->getChangeBooleanAllowedProperties();
+        if (! in_array($property, $allowed, true)) {
+            throw new ExceptionWithErrors('Could not update user.', [
+                'property' => ['This property cannot be changed via this endpoint.'],
+            ]);
+        }
+
         $user = auth()->user();
         $profile = $this->userLogic->update($user, [$property => $value > 0 ? 1 : 0], false, false);
         if (! $profile) {

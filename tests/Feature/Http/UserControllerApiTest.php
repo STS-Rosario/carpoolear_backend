@@ -702,15 +702,15 @@ class UserControllerApiTest extends TestCase
     {
         $user = User::factory()->create([
             'active' => true,
-            'banned' => true,
+            'banned' => false,
         ]);
 
         $this->actingAs($user, 'api');
 
-        $this->getJson('/api/users/change/banned/0')
+        $this->getJson('/api/users/change/banned/1')
             ->assertStatus(422);
 
-        $this->assertTrue((bool) $user->fresh()->banned);
+        $this->assertFalse((bool) $user->fresh()->banned);
     }
 
     public function test_mercadopago_oauth_url_returns_503_when_identity_validation_disabled(): void
