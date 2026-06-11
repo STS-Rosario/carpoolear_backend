@@ -698,6 +698,21 @@ class UserControllerApiTest extends TestCase
         $this->assertFalse((bool) $user->fresh()->emails_notifications);
     }
 
+    public function test_change_boolean_property_rejects_non_allowlisted_property(): void
+    {
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => true,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $this->getJson('/api/users/change/banned/0')
+            ->assertStatus(422);
+
+        $this->assertTrue((bool) $user->fresh()->banned);
+    }
+
     public function test_mercadopago_oauth_url_returns_503_when_identity_validation_disabled(): void
     {
         config([
