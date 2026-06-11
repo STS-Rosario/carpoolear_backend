@@ -93,7 +93,7 @@ return [
     ],
 
     'trip_creation_limits' => [
-        'max_trips' => 100,        // Maximum number of trips allowed
+        'max_trips' => 5,        // Maximum number of trips allowed
         'time_window_hours' => 24,     // Time window in hours
     ],
 
