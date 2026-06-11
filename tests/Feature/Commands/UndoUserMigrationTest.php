@@ -80,4 +80,24 @@ class UndoUserMigrationTest extends TestCase
         $this->assertSame($kept->id, (int) $trip->fresh()->user_id);
         $this->assertFalse(MaintenanceState::query()->findOrFail(1)->is_active);
     }
+
+    public function test_live_run_restores_migrated_trip_ownership_from_backup(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $kept->id]);
+
+        $this->copyTablesToBackup(['users', 'trips']);
+        DB::connection('backup_db')->table('trips')
+            ->where('id', $trip->id)
+            ->update(['user_id' => $removed->id]);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removed->id,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertSame($removed->id, (int) $trip->fresh()->user_id);
+    }
 }
