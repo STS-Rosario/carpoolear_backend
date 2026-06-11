@@ -597,10 +597,16 @@ class UsersManager extends BaseManager
 
                 return;
             }
-            $data['active'] = true;
-            $data['password'] = bcrypt($data['password']);
-            unset($data['password_confirmation']);
-            $this->repo->update($user, $data);
+            $filtered = $this->userEditablePropertiesService->filterForUser(
+                array_intersect_key($data, array_flip(['password', 'password_confirmation'])),
+                false,
+                $user
+            );
+            $updateData = [
+                'password' => bcrypt($filtered['password']),
+                'active' => true,
+            ];
+            $this->repo->update($user, $updateData);
             $this->repo->deleteResetToken('email', $user->email);
 
             return true;
