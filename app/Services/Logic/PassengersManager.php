@@ -124,9 +124,8 @@ class PassengersManager extends BaseManager
                 }
             }
             // User Request Limited Module
-            $module_user_request_limited = config('carpoolear.module_user_request_limited', false);
-            if ($module_user_request_limited && $module_user_request_limited->enabled) {
-                $hours_range = $module_user_request_limited->hours_range;
+            if (config('carpoolear.module_user_request_limited_enabled', false)) {
+                $hours_range = (int) config('carpoolear.module_user_request_limited_hours_range', 2);
                 $userHasRequests = $user->tripsAsPassenger(null, $hours_range, $trip->trip_date)->count() > 0;
                 if ($userHasRequests) {
                     $this->setErrors(['error' => 'user_has_another_similar_trip']);
