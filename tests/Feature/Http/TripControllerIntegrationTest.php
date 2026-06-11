@@ -472,6 +472,20 @@ class TripControllerIntegrationTest extends TestCase
         $this->assertNotNull($trip->fresh()->deleted_at);
     }
 
+    public function test_admin_can_delete_another_users_trip(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $this->actingAs($admin, 'api')
+            ->deleteJson("/api/trips/{$trip->id}")
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertNotNull($trip->fresh()->deleted_at);
+    }
+
     public function test_show_returns_trip_when_visibility_allows(): void
     {
         $driver = User::factory()->create();
