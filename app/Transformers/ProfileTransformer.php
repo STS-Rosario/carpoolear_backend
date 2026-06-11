@@ -128,6 +128,7 @@ class ProfileTransformer extends TransformerAbstract
                 : null;
         }
         if ($this->user && $this->user->is_admin) {
+            // Admin-only moderation fields (not exposed to regular users to prevent client round-trips).
             $data['banned'] = intval($user->banned);
         }
 
