@@ -39,6 +39,9 @@ class UserRepository
         return User::create($data);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function update($user, array $data, bool $allowProtectedFields = false)
     {
         unset($data['is_admin']);
