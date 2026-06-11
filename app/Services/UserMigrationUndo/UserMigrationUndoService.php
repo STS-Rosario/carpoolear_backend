@@ -25,8 +25,20 @@ class UserMigrationUndoService
         }
 
         try {
-            $migrated = $this->migratedRecordRestorer->restore($keptId, $removedId, $dryRun);
+            return $this->runUndo($keptId, $removedId, $dryRun);
+        } finally {
+            if (! $dryRun) {
+                $this->maintenanceGuard->disableIfEnabledByCommand();
+            }
+        }
+    }
+
+    private function runUndo(int $keptId, int $removedId, bool $dryRun): UndoMigrationResult
+    {
+        $runner = function () use ($keptId, $removedId, $dryRun): UndoMigrationResult {
+            // Restore users before FK updates: removed user must exist before reassigning trips, etc.
             $userCounts = $this->userRecordRestorer->restore($keptId, $removedId, $dryRun);
+            $migrated = $this->migratedRecordRestorer->restore($keptId, $removedId, $dryRun);
             $related = $this->userRelatedDataRestorer->restore($removedId, $dryRun);
             $migrationRowsDeleted = $this->deleteMigrationRow($keptId, $removedId, $dryRun);
 
@@ -38,11 +50,13 @@ class UserMigrationUndoService
                 relatedRestored: $related,
                 migrationRowsDeleted: $migrationRowsDeleted,
             );
-        } finally {
-            if (! $dryRun) {
-                $this->maintenanceGuard->disableIfEnabledByCommand();
-            }
+        };
+
+        if ($dryRun) {
+            return $runner();
         }
+
+        return DB::transaction($runner);
     }
 
     public function validateInputs(int $keptId, int $removedId): void

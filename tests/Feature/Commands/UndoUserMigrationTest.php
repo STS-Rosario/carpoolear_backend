@@ -86,6 +86,31 @@ class UndoUserMigrationTest extends TestCase
         $this->assertFalse(MaintenanceState::query()->findOrFail(1)->is_active);
     }
 
+    public function test_live_run_reassigns_trips_after_reinserting_hard_deleted_removed_user(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create(['email' => 'removed-trip@example.test']);
+        $removedId = $removed->id;
+        $trip = Trip::factory()->create(['user_id' => $kept->id]);
+
+        $this->copyTablesToBackup(['users', 'trips']);
+        DB::connection('backup_db')->table('trips')
+            ->where('id', $trip->id)
+            ->update(['user_id' => $removedId]);
+
+        app(UserDeletionService::class)->deleteUser($removed);
+        $this->assertDatabaseMissing('users', ['id' => $removedId]);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removedId,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('users', ['id' => $removedId, 'email' => 'removed-trip@example.test']);
+        $this->assertSame($removedId, (int) $trip->fresh()->user_id);
+    }
+
     public function test_live_run_restores_migrated_trip_ownership_from_backup(): void
     {
         $kept = User::factory()->create();
