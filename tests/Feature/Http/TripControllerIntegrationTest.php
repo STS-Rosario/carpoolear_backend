@@ -398,6 +398,39 @@ class TripControllerIntegrationTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_returns_existing_trip_with_existing_flag_when_duplicate_submitted(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $this->seedRouteCacheForMinimalCreatePoints();
+        Http::fake();
+
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+        Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'patente' => 'OK123',
+        ]);
+
+        $payload = $this->minimalCreatePayload();
+        $first = $this->actingAs($user, 'api')->postJson('/api/trips', $payload);
+        $first->assertOk();
+        $tripId = (int) $first->json('data.id');
+
+        $second = $this->actingAs($user, 'api')->postJson('/api/trips', $payload);
+        $second->assertOk()
+            ->assertJsonPath('data.id', $tripId)
+            ->assertJsonPath('data.existing', true);
+
+        $this->assertSame(1, Trip::where('user_id', $user->id)->count());
+
+        Carbon::setTestNow();
+    }
+
     public function test_update_persists_rear_max_two_passengers_and_returns_it_in_payload(): void
     {
         Carbon::setTestNow('2028-04-01 12:00:00');

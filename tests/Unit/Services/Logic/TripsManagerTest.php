@@ -702,6 +702,73 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_returns_existing_trip_when_same_route_date_and_time(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 365_000, 'duration' => 18_000]],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = $this->completeUser();
+        $this->carWithPlateFor($user);
+        $manager = $this->manager();
+        $payload = $this->minimalCreatePayload();
+
+        $first = $manager->create($user, $payload);
+        $this->assertNotNull($first);
+        Event::assertDispatched(CreateEvent::class, 1);
+
+        Event::fake([CreateEvent::class]);
+        $second = $manager->create($user, $payload);
+
+        $this->assertNotNull($second);
+        $this->assertSame($first->id, $second->id);
+        $this->assertTrue($second->existing);
+        Event::assertNotDispatched(CreateEvent::class);
+        $this->assertSame(1, Trip::where('user_id', $user->id)->count());
+        Carbon::setTestNow();
+    }
+
+    public function test_create_creates_new_trip_when_trip_date_differs(): void
+    {
+        Http::fake(function ($request) {
+            if (str_contains($request->url(), 'route/v1/driving')) {
+                return Http::response([
+                    'code' => 'Ok',
+                    'routes' => [['distance' => 365_000, 'duration' => 18_000]],
+                ], 200);
+            }
+
+            return Http::response('unexpected url in test', 404);
+        });
+
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        Event::fake([CreateEvent::class]);
+        $user = $this->completeUser();
+        $this->carWithPlateFor($user);
+        $manager = $this->manager();
+
+        $first = $manager->create($user, $this->minimalCreatePayload());
+        $second = $manager->create($user, $this->minimalCreatePayload([
+            'trip_date' => '2028-03-11 15:00:00',
+        ]));
+
+        $this->assertNotNull($first);
+        $this->assertNotNull($second);
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertFalse($second->existing ?? false);
+        $this->assertSame(2, Trip::where('user_id', $user->id)->count());
+        Carbon::setTestNow();
+    }
+
     public function test_create_driver_trip_rejects_incomplete_car(): void
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
