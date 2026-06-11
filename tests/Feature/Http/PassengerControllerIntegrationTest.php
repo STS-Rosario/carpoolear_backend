@@ -16,7 +16,7 @@ class PassengerControllerIntegrationTest extends TestCase
     {
         parent::setUp();
         Config::set('carpoolear.module_unaswered_message_limit', false);
-        Config::set('carpoolear.module_user_request_limited', false);
+        Config::set('carpoolear.module_user_request_limited_enabled', false);
         Config::set('carpoolear.module_trip_seats_payment', false);
         Config::set('carpoolear.module_send_full_trip_message', false);
     }
