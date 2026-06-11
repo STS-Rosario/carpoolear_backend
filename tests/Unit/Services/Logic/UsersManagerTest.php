@@ -1322,6 +1322,28 @@ class UsersManagerTest extends TestCase
         $this->assertTrue(\Hash::check('newsecret12', $user->fresh()->password));
     }
 
+    public function test_change_password_does_not_clear_banned_when_payload_includes_banned_zero(): void
+    {
+        Queue::fake();
+        $user = User::factory()->create([
+            'banned' => true,
+            'active' => true,
+        ]);
+        $token = $this->manager()->resetPassword($user->email);
+        $this->assertNotNull($token);
+
+        $manager = $this->manager();
+        $this->assertTrue($manager->changePassword($token, [
+            'password' => 'newsecret12',
+            'password_confirmation' => 'newsecret12',
+            'banned' => 0,
+        ]));
+
+        $fresh = $user->fresh();
+        $this->assertTrue((bool) $fresh->banned);
+        $this->assertTrue(\Hash::check('newsecret12', $fresh->password));
+    }
+
     public function test_change_password_returns_null_for_invalid_token(): void
     {
         $manager = $this->manager();
