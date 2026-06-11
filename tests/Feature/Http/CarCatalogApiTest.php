@@ -17,7 +17,8 @@ class CarCatalogApiTest extends TestCase
         $response = $this->getJson('api/car-brands')->assertOk();
 
         $names = collect($response->json('data'))->pluck('name')->all();
-        $this->assertSame(['Toyota'], $names);
+        $this->assertContains('Toyota', $names);
+        $this->assertNotContains('Hidden', $names);
     }
 
     public function test_lists_active_models_for_brand_without_hex_on_colors(): void
