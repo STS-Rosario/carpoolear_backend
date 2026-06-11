@@ -1018,6 +1018,16 @@ class TripsManagerTest extends TestCase
         $this->assertSame(trans('errors.tripowner'), $manager->getErrors());
     }
 
+    public function test_delete_allows_admin_to_cancel_non_owned_trip(): void
+    {
+        $driver = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $this->assertTrue((bool) $this->manager()->delete($admin, $trip->id));
+        $this->assertNotNull($trip->fresh()->deleted_at);
+    }
+
     public function test_update_sets_tripowner_error_for_non_owner(): void
     {
         Carbon::setTestNow('2028-04-01 10:00:00');
