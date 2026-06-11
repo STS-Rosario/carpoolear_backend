@@ -893,6 +893,37 @@ class TripRepositoryTest extends TestCase
         $this->assertSame($recent->id, $rows->first()->id);
     }
 
+    public function test_find_duplicate_trip_matches_user_route_datetime_and_passenger_flag(): void
+    {
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'from_town' => 'Rosario',
+            'to_town' => 'Buenos Aires',
+            'trip_date' => Carbon::parse('2028-06-01 09:30:00'),
+            'is_passenger' => 0,
+        ]);
+
+        $match = $this->repo()->findDuplicateTrip(
+            $user->id,
+            'Rosario',
+            'Buenos Aires',
+            '2028-06-01 09:30:00',
+            0
+        );
+        $differentTime = $this->repo()->findDuplicateTrip(
+            $user->id,
+            'Rosario',
+            'Buenos Aires',
+            '2028-06-01 10:30:00',
+            0
+        );
+
+        $this->assertNotNull($match);
+        $this->assertSame($trip->id, $match->id);
+        $this->assertNull($differentTime);
+    }
+
     public function test_hide_trips_and_unhide_trips_for_sentinel_soft_delete(): void
     {
         $user = User::factory()->create();
