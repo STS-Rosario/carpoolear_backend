@@ -8,6 +8,11 @@ use Illuminate\Support\Facades\Schema;
 class UserRelatedDataRestorer
 {
     /**
+     * @var array<int, bool>
+     */
+    private array $tripsBeingRestored = [];
+
+    /**
      * @var list<array{table: string, columns: list<string>, compositeKey?: list<string>}>
      */
     private const TABLE_REGISTRY = [
@@ -197,7 +202,62 @@ class UserRelatedDataRestorer
             ->values()
             ->all();
 
-        return $this->restoreMissingRowsById('trips', $tripIds, $dryRun);
+        return $this->restoreMissingTripsById($tripIds, $dryRun);
+    }
+
+    /**
+     * @param  list<int>  $ids
+     */
+    private function restoreMissingTripsById(array $ids, bool $dryRun): int
+    {
+        $this->tripsBeingRestored = [];
+        $restored = 0;
+
+        foreach (array_unique(array_map('intval', $ids)) as $id) {
+            $restored += $this->restoreSingleTripIfMissing($id, $dryRun);
+        }
+
+        return $restored;
+    }
+
+    private function restoreSingleTripIfMissing(int $tripId, bool $dryRun): int
+    {
+        if (DB::table('trips')->where('id', $tripId)->exists()) {
+            return 0;
+        }
+
+        if (isset($this->tripsBeingRestored[$tripId])) {
+            return 0;
+        }
+
+        $row = DB::connection('backup_db')->table('trips')->where('id', $tripId)->first();
+
+        if ($row === null) {
+            return 0;
+        }
+
+        $rowArray = $this->rowToArray($row);
+        $this->tripsBeingRestored[$tripId] = true;
+
+        foreach (['parent_trip_id', 'return_trip_id'] as $column) {
+            if (! empty($rowArray[$column])) {
+                $this->restoreSingleTripIfMissing((int) $rowArray[$column], $dryRun);
+            }
+        }
+
+        if (DB::table('trips')->where('id', $tripId)->exists()) {
+            unset($this->tripsBeingRestored[$tripId]);
+
+            return 0;
+        }
+
+        if (! $dryRun) {
+            DB::table('trips')->insert($rowArray);
+        }
+
+        unset($this->tripsBeingRestored[$tripId]);
+
+        return 1;
     }
 
     private function restoreMessageParents(int $removedId, bool $dryRun): int
