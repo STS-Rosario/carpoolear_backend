@@ -577,6 +577,7 @@ class TripsManagerTest extends TestCase
         $repo = Mockery::mock(TripRepository::class);
         $repo->shouldReceive('getRecentTrips')->once()->with($user->id, 24)->andReturn(collect([1, 2]));
         $repo->shouldReceive('getTripInfo')->once()->andReturn([]);
+        $repo->shouldReceive('findDuplicateTrip')->once()->andReturn(null);
         $repo->shouldReceive('create')->once()->andReturnUsing(function (array $data) use ($user) {
             return Trip::factory()->create([
                 'user_id' => $data['user_id'] ?? $user->id,
