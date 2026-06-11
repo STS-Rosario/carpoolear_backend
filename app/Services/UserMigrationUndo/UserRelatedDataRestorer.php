@@ -19,8 +19,8 @@ class UserRelatedDataRestorer
         ['table' => 'subscriptions', 'columns' => ['user_id']],
         ['table' => 'donations', 'columns' => ['user_id']],
         ['table' => 'payments', 'columns' => ['user_id']],
-        ['table' => 'conversations_users', 'columns' => ['user_id']],
-        ['table' => 'user_message_read', 'columns' => ['user_id']],
+        ['table' => 'conversations_users', 'columns' => ['user_id'], 'compositeKey' => ['conversation_id', 'user_id']],
+        ['table' => 'user_message_read', 'columns' => ['user_id'], 'compositeKey' => ['user_id', 'message_id']],
         ['table' => 'messages', 'columns' => ['user_id']],
         ['table' => 'user_badges', 'columns' => ['user_id']],
         ['table' => 'phone_verifications', 'columns' => ['user_id']],
@@ -64,9 +64,6 @@ class UserRelatedDataRestorer
 
     /**
      * @param  list<string>  $columns
-     */
-    /**
-     * @param  list<string>  $columns
      * @param  list<string>|null  $compositeKey
      */
     private function restoreTable(string $table, array $columns, int $removedId, bool $dryRun, ?array $compositeKey = null): int
@@ -75,7 +72,11 @@ class UserRelatedDataRestorer
         $restored = 0;
 
         foreach ($backupRows as $row) {
-            $rowArray = (array) $row;
+            $rowArray = $this->rowToArray($row);
+
+            if (! $this->hasKeyColumns($rowArray, $compositeKey)) {
+                continue;
+            }
 
             if ($this->rowExistsOnProduction($table, $rowArray, $compositeKey)) {
                 continue;
@@ -106,7 +107,40 @@ class UserRelatedDataRestorer
             return $query->exists();
         }
 
+        if (! array_key_exists('id', $rowArray)) {
+            return true;
+        }
+
         return DB::table($table)->where('id', $rowArray['id'])->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $rowArray
+     * @param  list<string>|null  $keyColumns
+     */
+    private function hasKeyColumns(array $rowArray, ?array $keyColumns): bool
+    {
+        $columns = $keyColumns ?? ['id'];
+
+        foreach ($columns as $column) {
+            if (! array_key_exists($column, $rowArray)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rowToArray(object|array $row): array
+    {
+        if (is_array($row)) {
+            return $row;
+        }
+
+        return json_decode(json_encode($row), true, 512, JSON_THROW_ON_ERROR);
     }
 
     private function restoreNotificationParams(int $removedId, bool $dryRun): int
@@ -132,7 +166,12 @@ class UserRelatedDataRestorer
 
         $restored = 0;
         foreach ($rows as $row) {
-            $rowArray = (array) $row;
+            $rowArray = $this->rowToArray($row);
+
+            if (! array_key_exists('id', $rowArray)) {
+                continue;
+            }
+
             $exists = DB::table('notifications_params')
                 ->where('id', $rowArray['id'])
                 ->exists();

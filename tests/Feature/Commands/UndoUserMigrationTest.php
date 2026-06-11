@@ -189,6 +189,39 @@ class UndoUserMigrationTest extends TestCase
         $this->assertSame('+5491111111111', $kept->mobile_phone);
     }
 
+    public function test_dry_run_handles_conversations_users_without_id_column(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create();
+        $conversationId = DB::table('conversations')->insertGetId([
+            'title' => 'Test conversation',
+            'type' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('conversations_users')->insert([
+            'conversation_id' => $conversationId,
+            'user_id' => $removed->id,
+            'read' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->copyTablesToBackup(['users', 'conversations', 'conversations_users']);
+        DB::table('conversations_users')->where('user_id', $removed->id)->delete();
+        app(UserDeletionService::class)->deleteUser($removed);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removed->id,
+            '--dry-run' => true,
+            '--force' => true,
+        ])
+            ->expectsOutputToContain('Dry run complete')
+            ->assertSuccessful();
+    }
+
     public function test_live_run_restores_cascade_deleted_related_data_from_backup(): void
     {
         $kept = User::factory()->create();
