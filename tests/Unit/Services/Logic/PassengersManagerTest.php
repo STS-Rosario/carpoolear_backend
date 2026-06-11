@@ -35,7 +35,8 @@ class PassengersManagerTest extends TestCase
     {
         parent::setUp();
         Config::set('carpoolear.module_unaswered_message_limit', false);
-        Config::set('carpoolear.module_user_request_limited', false);
+        Config::set('carpoolear.module_user_request_limited_enabled', false);
+        Config::set('carpoolear.module_user_request_limited_hours_range', 2);
         Config::set('carpoolear.module_trip_seats_payment', false);
         Config::set('carpoolear.module_send_full_trip_message', false);
     }
@@ -187,10 +188,8 @@ class PassengersManagerTest extends TestCase
     public function test_new_request_blocks_when_user_request_limited_module_detects_similar_trip(): void
     {
         Event::fake([RequestEvent::class]);
-        Config::set('carpoolear.module_user_request_limited', (object) [
-            'enabled' => true,
-            'hours_range' => 48,
-        ]);
+        Config::set('carpoolear.module_user_request_limited_enabled', true);
+        Config::set('carpoolear.module_user_request_limited_hours_range', 48);
         $driverA = User::factory()->create(['autoaccept_requests' => false]);
         $driverB = User::factory()->create();
         $tripDate = Carbon::parse('2028-07-10 10:00:00');
