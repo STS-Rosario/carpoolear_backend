@@ -3,34 +3,18 @@
 namespace Tests\Unit\Config;
 
 use Illuminate\Support\Facades\DB;
-use PDO;
+use Tests\Support\UsesBackupDatabase;
 use Tests\TestCase;
 
 class BackupDatabaseConnectionTest extends TestCase
 {
+    use UsesBackupDatabase;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->ensureBackupDatabaseExists();
-    }
-
-    private function ensureBackupDatabaseExists(): void
-    {
-        $database = config('database.connections.backup_db.database');
-        $mysql = config('database.connections.mysql');
-
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s',
-            $mysql['host'],
-            $mysql['port']
-        );
-
-        $pdo = new PDO($dsn, $mysql['username'], $mysql['password']);
-        $pdo->exec(sprintf(
-            'CREATE DATABASE IF NOT EXISTS `%s`',
-            str_replace('`', '``', $database)
-        ));
     }
 
     public function test_backup_db_connection_is_configured(): void
