@@ -41,8 +41,11 @@ class UserRelatedDataRestorer
      */
     public function restore(int $removedId, bool $dryRun): array
     {
+        $conversationIds = $this->conversationIdsForRemovedUser($removedId);
+
         $counts = [
-            'conversations' => $this->restoreConversationParents($removedId, $dryRun),
+            'trips' => $this->restoreTripParentsForConversations($conversationIds, $dryRun),
+            'conversations' => $this->restoreMissingRowsById('conversations', $conversationIds, $dryRun),
             'messages' => $this->restoreMessageParents($removedId, $dryRun),
         ];
 
@@ -146,12 +149,11 @@ class UserRelatedDataRestorer
         return json_decode(json_encode($row), true, 512, JSON_THROW_ON_ERROR);
     }
 
-    private function restoreConversationParents(int $removedId, bool $dryRun): int
+    /**
+     * @return list<int>
+     */
+    private function conversationIdsForRemovedUser(int $removedId): array
     {
-        if (! Schema::connection('backup_db')->hasTable('conversations')) {
-            return 0;
-        }
-
         $conversationIds = [];
 
         if (Schema::connection('backup_db')->hasTable('conversations_users')) {
@@ -174,11 +176,28 @@ class UserRelatedDataRestorer
             );
         }
 
-        return $this->restoreMissingRowsById(
-            'conversations',
-            array_values(array_unique(array_map('intval', $conversationIds))),
-            $dryRun
-        );
+        return array_values(array_unique(array_map('intval', $conversationIds)));
+    }
+
+    /**
+     * @param  list<int>  $conversationIds
+     */
+    private function restoreTripParentsForConversations(array $conversationIds, bool $dryRun): int
+    {
+        if ($conversationIds === [] || ! Schema::connection('backup_db')->hasTable('conversations')) {
+            return 0;
+        }
+
+        $tripIds = DB::connection('backup_db')->table('conversations')
+            ->whereIn('id', $conversationIds)
+            ->whereNotNull('trip_id')
+            ->pluck('trip_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return $this->restoreMissingRowsById('trips', $tripIds, $dryRun);
     }
 
     private function restoreMessageParents(int $removedId, bool $dryRun): int
@@ -211,13 +230,13 @@ class UserRelatedDataRestorer
         $conversationIds = DB::connection('backup_db')->table('messages')
             ->whereIn('id', $messageIds)
             ->pluck('conversation_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
             ->all();
 
-        $this->restoreMissingRowsById(
-            'conversations',
-            array_values(array_unique(array_map('intval', $conversationIds))),
-            $dryRun
-        );
+        $this->restoreTripParentsForConversations($conversationIds, $dryRun);
+        $this->restoreMissingRowsById('conversations', $conversationIds, $dryRun);
 
         return $this->restoreMissingRowsById('messages', $messageIds, $dryRun);
     }

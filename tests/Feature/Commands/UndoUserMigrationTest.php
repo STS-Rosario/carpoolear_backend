@@ -214,6 +214,49 @@ class UndoUserMigrationTest extends TestCase
         $this->assertSame('+5491111111111', $kept->mobile_phone);
     }
 
+    public function test_live_run_restores_trips_before_conversations_with_trip_id(): void
+    {
+        $kept = User::factory()->create();
+        $removed = User::factory()->create(['email' => 'removed-trip-conv@example.test']);
+        $removedId = $removed->id;
+        $trip = Trip::factory()->create(['user_id' => $removedId]);
+
+        $conversationId = DB::table('conversations')->insertGetId([
+            'type' => 0,
+            'title' => 'Trip conversation',
+            'trip_id' => $trip->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('conversations_users')->insert([
+            'conversation_id' => $conversationId,
+            'user_id' => $removedId,
+            'read' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->copyTablesToBackup(['users', 'trips', 'conversations', 'conversations_users']);
+        DB::table('conversations_users')->where('user_id', $removedId)->delete();
+        DB::table('conversations')->where('id', $conversationId)->delete();
+        DB::table('trips')->where('id', $trip->id)->delete();
+        app(UserDeletionService::class)->deleteUser($removed);
+
+        $this->artisan('user:undo-migration', [
+            'kept' => $kept->id,
+            'removed' => $removedId,
+            '--force' => true,
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('trips', ['id' => $trip->id, 'user_id' => $removedId]);
+        $this->assertDatabaseHas('conversations', ['id' => $conversationId, 'trip_id' => $trip->id]);
+        $this->assertDatabaseHas('conversations_users', [
+            'conversation_id' => $conversationId,
+            'user_id' => $removedId,
+        ]);
+    }
+
     public function test_live_run_restores_conversations_before_conversations_users_pivot(): void
     {
         $kept = User::factory()->create();
