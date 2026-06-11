@@ -184,6 +184,22 @@ class TripsManager extends BaseManager
             }
 
             $data['user_id'] = $user->id;
+
+            if (! empty($data['trip_date']) && empty($data['parent_trip_id'])) {
+                $existingTrip = $this->tripRepo->findDuplicateTrip(
+                    $user->id,
+                    $data['from_town'],
+                    $data['to_town'],
+                    $data['trip_date'],
+                    (int) $data['is_passenger']
+                );
+                if ($existingTrip) {
+                    $existingTrip->setAttribute('existing', true);
+
+                    return $existingTrip;
+                }
+            }
+
             $trip = $this->tripRepo->create($data);
             if (isset($data['parent_trip_id'])) {
                 $parentTripId = $data['parent_trip_id'];

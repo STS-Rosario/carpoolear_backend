@@ -982,4 +982,20 @@ class TripRepository
             ->where('created_at', '>=', Carbon::now()->subHours($hours))
             ->get();
     }
+
+    public function findDuplicateTrip($userId, $fromTown, $toTown, $tripDate, $isPassenger)
+    {
+        if (empty($tripDate)) {
+            return null;
+        }
+
+        return Trip::query()
+            ->where('user_id', $userId)
+            ->where('from_town', $fromTown)
+            ->where('to_town', $toTown)
+            ->where('trip_date', Carbon::parse($tripDate)->toDateTimeString())
+            ->where('is_passenger', (int) $isPassenger)
+            ->orderBy('id')
+            ->first();
+    }
 }
