@@ -165,7 +165,7 @@ class UsersManager extends BaseManager
                         $user_name_lower = strtolower($u->name);
                         foreach ($banned_words as $word) {
                             if (str_contains($user_name_lower, strtolower($word))) {
-                                $this->repo->update($u, ['banned' => 1]);
+                                $this->repo->update($u, ['banned' => 1], true);
                                 \Log::info('User banned due to name containing banned word: '.$u->name.' (matched: '.$word.')');
                                 break;
                             }
@@ -217,7 +217,7 @@ class UsersManager extends BaseManager
                         $user_name_lower = strtolower($u->name);
                         foreach ($banned_words as $word) {
                             if (str_contains($user_name_lower, strtolower($word))) {
-                                $this->repo->update($u, ['banned' => 1]);
+                                $this->repo->update($u, ['banned' => 1], true);
                                 \Log::info('User banned due to name containing banned word: '.$u->name.' (matched: '.$word.')');
                                 break;
                             }
@@ -350,7 +350,7 @@ class UsersManager extends BaseManager
             unset($data['patente'], $data['car_description']);
         }
 
-        $this->repo->update($user, $data);
+        $this->repo->update($user, $data, $is_admin);
         if ($user->banned > 0) {
             // hide user trips
             $this->tripRepository->hideTrips($user);
@@ -498,7 +498,7 @@ class UsersManager extends BaseManager
     {
         $user = $this->repo->getUserBy('activation_token', $activation_token);
         if ($user) {
-            $this->repo->update($user, ['active' => true, 'activation_token' => null]);
+            $this->repo->update($user, ['active' => true, 'activation_token' => null], true);
 
             return $user;
         } else {
@@ -616,7 +616,7 @@ class UsersManager extends BaseManager
                 return;
             }
             $updateData = $this->buildPasswordResetUpdateData($data, $user);
-            $this->repo->update($user, $updateData);
+            $this->repo->update($user, $updateData, true);
             $this->repo->deleteResetToken('email', $user->email);
 
             return true;
