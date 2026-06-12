@@ -126,6 +126,7 @@ class ProfileTransformer extends TransformerAbstract
             $data['validate_by_date'] = $user->validate_by_date
                 ? $user->validate_by_date->format('Y-m-d')
                 : null;
+            $data['manual_identity_validations_count'] = $user->manualIdentityValidations()->count();
         }
         if ($this->user && $this->user->is_admin) {
             // Admin-only moderation fields (not exposed to regular users to prevent client round-trips).

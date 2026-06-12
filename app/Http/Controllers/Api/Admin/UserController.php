@@ -15,6 +15,7 @@ use STS\Models\User;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
+use STS\Services\UserIdentityVerificationResetService;
 use STS\Support\UserSearchFilter;
 use STS\Transformers\ProfileTransformer;
 
@@ -24,16 +25,17 @@ class UserController extends Controller
 
     protected $anonymizationService;
 
-    protected $deviceLogic;
+    protected $identityVerificationResetService;
 
     public function __construct(
         UserDeletionService $userDeletionService,
         AnonymizationService $anonymizationService,
-        DeviceManager $deviceLogic
+        protected DeviceManager $deviceLogic,
+        UserIdentityVerificationResetService $identityVerificationResetService,
     ) {
         $this->userDeletionService = $userDeletionService;
         $this->anonymizationService = $anonymizationService;
-        $this->deviceLogic = $deviceLogic;
+        $this->identityVerificationResetService = $identityVerificationResetService;
     }
 
     /**
@@ -114,12 +116,7 @@ class UserController extends Controller
      */
     public function clearIdentityValidation(User $user): JsonResponse
     {
-        $user->identity_validated = false;
-        $user->identity_validated_at = null;
-        $user->identity_validation_type = null;
-        $user->identity_validation_rejected_at = null;
-        $user->identity_validation_reject_reason = null;
-        $user->save();
+        $this->identityVerificationResetService->clearForUser($user);
 
         return response()->json([
             'message' => 'Identity validation cleared',

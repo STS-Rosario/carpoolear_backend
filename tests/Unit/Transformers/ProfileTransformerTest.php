@@ -484,6 +484,23 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame('2025-05-11 09:00:00', $payload['identity_validation_rejected_at']);
         $this->assertSame('Document unreadable', $payload['identity_validation_reject_reason']);
         $this->assertSame('2025-06-30', $payload['validate_by_date']);
+        $this->assertSame(0, $payload['manual_identity_validations_count']);
+    }
+
+    public function test_transform_exposes_manual_identity_validations_count_for_admin(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+
+        \STS\Models\ManualIdentityValidation::query()->create([
+            'user_id' => $subject->id,
+            'paid' => false,
+            'review_status' => \STS\Models\ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertSame(1, $payload['manual_identity_validations_count']);
     }
 
     public function test_transform_does_not_expose_extended_admin_detail_fields_for_non_admin(): void
@@ -502,5 +519,6 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayNotHasKey('identity_validation_rejected_at', $payload);
         $this->assertArrayNotHasKey('identity_validation_reject_reason', $payload);
         $this->assertArrayNotHasKey('validate_by_date', $payload);
+        $this->assertArrayNotHasKey('manual_identity_validations_count', $payload);
     }
 }
