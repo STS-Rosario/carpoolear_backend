@@ -26,7 +26,7 @@ class TripUserTransformer extends TransformerAbstract
     {
         return [
             'id' => $userId,
-            'name' => 'Usuario inexistente',
+            'name' => 'Usuario ya no existe',
             'descripcion' => '',
             'private_note' => '',
             'image' => '',
