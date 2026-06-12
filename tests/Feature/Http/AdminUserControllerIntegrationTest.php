@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Support\Facades\Storage;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\AdminActionLog;
 use STS\Models\BannedUser;
 use STS\Models\DeleteAccountRequest;
+use STS\Models\ManualIdentityValidation;
+use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\Rating;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -175,6 +178,56 @@ class AdminUserControllerIntegrationTest extends TestCase
             ->assertJsonPath('message', 'Identity validation cleared')
             ->assertJsonPath('data.identity_validated', false)
             ->assertJsonPath('data.identity_validation_type', null);
+
+        $fresh = $target->fresh();
+        $this->assertFalse($fresh->identity_validated);
+        $this->assertNull($fresh->identity_validated_at);
+        $this->assertNull($fresh->identity_validation_type);
+        $this->assertNull($fresh->identity_validation_rejected_at);
+        $this->assertNull($fresh->identity_validation_reject_reason);
+    }
+
+    public function test_clear_identity_validation_deletes_manual_rows_photos_and_mp_rejections(): void
+    {
+        Storage::fake('local');
+
+        $admin = $this->admin();
+        $target = User::factory()->create([
+            'identity_validated' => false,
+            'identity_validated_at' => null,
+            'identity_validation_type' => null,
+            'identity_validation_rejected_at' => now()->subDay(),
+            'identity_validation_reject_reason' => 'name_mismatch',
+        ]);
+
+        $frontPath = 'idv/clear-front.jpg';
+        Storage::disk('local')->put($frontPath, 'front-bytes');
+
+        $manual = ManualIdentityValidation::query()->create([
+            'user_id' => $target->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'front_image_path' => $frontPath,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'review_note' => 'Prueba',
+        ]);
+
+        $mpRejected = MercadoPagoRejectedValidation::query()->create([
+            'user_id' => $target->id,
+            'reject_reason' => 'dni_mismatch',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/users/'.$target->id.'/clear-identity-validation')
+            ->assertOk()
+            ->assertJsonPath('message', 'Identity validation cleared');
+
+        $this->assertDatabaseMissing('manual_identity_validations', ['id' => $manual->id]);
+        $this->assertDatabaseMissing('mercado_pago_rejected_validations', ['id' => $mpRejected->id]);
+        Storage::disk('local')->assertMissing($frontPath);
 
         $fresh = $target->fresh();
         $this->assertFalse($fresh->identity_validated);
