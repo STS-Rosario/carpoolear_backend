@@ -94,7 +94,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertNull($payload['identity_validated_at']);
     }
 
-    public function test_missing_user_returns_placeholder_payload_with_usuario_inexistente_name(): void
+    public function test_missing_user_returns_placeholder_payload_with_usuario_ya_no_existe_name(): void
     {
         $viewer = User::factory()->create();
 
@@ -126,7 +126,7 @@ class TripUserTransformerTest extends TestCase
             'identity_validated_at',
         ], array_keys($payload));
         $this->assertSame(99999, $payload['id']);
-        $this->assertSame('Usuario inexistente', $payload['name']);
+        $this->assertSame('Usuario ya no existe', $payload['name']);
         $this->assertSame('', $payload['descripcion']);
         $this->assertSame('', $payload['private_note']);
         $this->assertSame('', $payload['image']);

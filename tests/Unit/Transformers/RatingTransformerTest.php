@@ -114,7 +114,7 @@ class RatingTransformerTest extends TestCase
         $payload = (new RatingTransformer($to))->transform($rate->fresh());
 
         $this->assertSame($deletedFromId, $payload['from']['id']);
-        $this->assertSame('Usuario inexistente', $payload['from']['name']);
+        $this->assertSame('Usuario ya no existe', $payload['from']['name']);
         $this->assertSame('', $payload['from']['image']);
     }
 
@@ -147,7 +147,7 @@ class RatingTransformerTest extends TestCase
         $payload = (new RatingTransformer($from))->transform($rate->fresh());
 
         $this->assertSame($deletedToId, $payload['to']['id']);
-        $this->assertSame('Usuario inexistente', $payload['to']['name']);
+        $this->assertSame('Usuario ya no existe', $payload['to']['name']);
     }
 
     public function test_transform_returns_placeholder_when_trip_was_deleted(): void

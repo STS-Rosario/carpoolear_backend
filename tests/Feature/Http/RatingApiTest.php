@@ -148,7 +148,7 @@ class RatingApiTest extends TestCase
         $rating = collect($response->json('data'))->firstWhere('id', $row->id);
         $this->assertNotNull($rating);
         $this->assertSame($deletedVoterId, $rating['from']['id']);
-        $this->assertSame('Usuario inexistente', $rating['from']['name']);
+        $this->assertSame('Usuario ya no existe', $rating['from']['name']);
     }
 
     public function test_authenticated_user_can_list_ratings_they_received_using_pagination(): void
