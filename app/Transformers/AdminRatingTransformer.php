@@ -21,9 +21,9 @@ class AdminRatingTransformer extends TransformerAbstract
 
         return [
             'id' => $rate->id,
-            'from' => $rate->from ? $userTrans->transform($rate->from) : null,
-            'to' => $rate->to ? $userTrans->transform($rate->to) : null,
-            'trip' => $rate->trip ? $tripTrans->transform($rate->trip) : null,
+            'from' => $userTrans->transformOrMissing($rate->from, $rate->user_id_from),
+            'to' => $userTrans->transformOrMissing($rate->to, $rate->user_id_to),
+            'trip' => $tripTrans->transformOrMissing($rate->trip, $rate->trip_id),
             'comment' => $rate->comment,
             'user_to_state' => $rate->user_to_state,
             'user_to_type' => $rate->user_to_type,
