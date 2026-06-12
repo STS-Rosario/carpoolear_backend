@@ -149,4 +149,37 @@ class RatingTransformerTest extends TestCase
         $this->assertSame($deletedToId, $payload['to']['id']);
         $this->assertSame('Usuario inexistente', $payload['to']['name']);
     }
+
+    public function test_transform_returns_placeholder_when_trip_was_deleted(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $to->id]);
+        $deletedTripId = $trip->id;
+
+        $rate = Rating::query()->create([
+            'trip_id' => $deletedTripId,
+            'user_id_from' => $from->id,
+            'user_id_to' => $to->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Trip deleted',
+            'reply_comment' => '',
+            'reply_comment_created_at' => null,
+            'user_to_type' => 1,
+            'user_to_state' => 1,
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::parse('2026-04-30 11:00:00'),
+        ]);
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        $trip->forceDelete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        $payload = (new RatingTransformer($to))->transform($rate->fresh());
+
+        $this->assertSame($deletedTripId, $payload['trip']['id']);
+        $this->assertSame('Viaje inexistente', $payload['trip']['to_town']);
+        $this->assertTrue($payload['trip']['deleted']);
+    }
 }

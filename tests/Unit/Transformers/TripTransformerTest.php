@@ -44,6 +44,15 @@ class TripTransformerTest extends TestCase
         ], $overrides));
     }
 
+    public function test_transform_or_missing_returns_placeholder_when_trip_is_null(): void
+    {
+        $payload = (new TripTransformer(null))->transformOrMissing(null, 148201);
+
+        $this->assertSame(148201, $payload['id']);
+        $this->assertSame('Viaje inexistente', $payload['to_town']);
+        $this->assertTrue($payload['deleted']);
+    }
+
     public function test_transform_returns_expected_base_trip_payload_without_user_context(): void
     {
         $trip = $this->makeTrip();
