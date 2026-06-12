@@ -75,6 +75,45 @@ class RatingApiTest extends TestCase
             ->assertJson(['message' => 'Unauthorized.']);
     }
 
+    public function test_authenticated_user_can_list_ratings_when_trip_was_deleted(): void
+    {
+        $rated = User::factory()->create(['active' => true, 'banned' => false]);
+        $voter = User::factory()->create(['active' => true, 'banned' => false]);
+        $trip = Trip::factory()->create(['user_id' => $rated->id]);
+        $deletedTripId = $trip->id;
+
+        $row = $this->persistRating([
+            'trip_id' => $deletedTripId,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $rated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'Orphaned trip',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => '',
+            'rate_at' => Carbon::now(),
+            'available' => 1,
+        ]);
+
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        $trip->forceDelete();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        $this->actingAs($rated, 'api');
+
+        $response = $this->getJson('api/users/'.$rated->id.'/ratings?page_size=200');
+        $response->assertOk();
+
+        $rating = collect($response->json('data'))->firstWhere('id', $row->id);
+        $this->assertNotNull($rating);
+        $this->assertDatabaseHas('rating', ['id' => $row->id]);
+        $this->assertSame($deletedTripId, $rating['trip']['id']);
+        $this->assertSame('Viaje inexistente', $rating['trip']['to_town']);
+        $this->assertTrue($rating['trip']['deleted']);
+    }
+
     public function test_authenticated_user_can_list_ratings_when_voter_was_deleted(): void
     {
         $rated = User::factory()->create(['active' => true, 'banned' => false]);
