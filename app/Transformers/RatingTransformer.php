@@ -28,7 +28,7 @@ class RatingTransformer extends TransformerAbstract
             'id' => $rate->id,
             'from' => $userTrans->transformOrMissing($rate->from, $rate->user_id_from),
             // 'to' => $userTrans->transform($rate->to),
-            'trip' => $tripTrans->transform($rate->trip),
+            'trip' => $tripTrans->transformOrMissing($rate->trip, $rate->trip_id),
             'comment' => $rate->comment,
             'user_to_state' => $rate->user_to_state,
             'user_to_type' => $rate->user_to_type,

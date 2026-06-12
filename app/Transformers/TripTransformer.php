@@ -15,6 +15,21 @@ class TripTransformer extends TransformerAbstract
         $this->user = $user;
     }
 
+    public function transformOrMissing(?Trip $trip, ?int $tripId = null): array
+    {
+        return $trip ? $this->transform($trip) : $this->missingTrip($tripId);
+    }
+
+    public function missingTrip(?int $tripId = null): array
+    {
+        return [
+            'id' => $tripId,
+            'from_town' => '',
+            'to_town' => 'Viaje inexistente',
+            'deleted' => true,
+        ];
+    }
+
     /**
      * Turn this item object into a generic array.
      *
