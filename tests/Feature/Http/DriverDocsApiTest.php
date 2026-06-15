@@ -16,7 +16,7 @@ class DriverDocsApiTest extends TestCase
 
     public function test_create_user_with_valid_driver_doc_succeeds(): void
     {
-        $file = UploadedFile::fake()->image('doc.jpg', 100, 100)->size(500);
+        $file = UploadedFile::fake()->image('doc.jpeg', 100, 100)->size(500);
         $data = [
             'name' => 'Driver User',
             'email' => 'driver'.time().'@example.com',

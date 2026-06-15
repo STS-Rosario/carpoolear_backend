@@ -3,6 +3,7 @@
 namespace STS\Services;
 
 use Illuminate\Http\UploadedFile;
+use STS\Support\ImageAttachmentRules;
 
 class ImageUploadValidator
 {
@@ -30,11 +31,11 @@ class ImageUploadValidator
 
         $errors = [];
 
-        if (! in_array($mime, $allowedMimes, true)) {
+        if (! $this->isAllowedMime($mime, $allowedMimes)) {
             $errors[$field] = ['Invalid image MIME type. Allowed: jpeg, png, webp, heic.'];
         }
 
-        if (! in_array($extension, $allowedExtensions, true)) {
+        if (! $this->isAllowedExtension($extension, $allowedExtensions)) {
             $errors[$field] = $errors[$field] ?? ['Invalid image file extension. Allowed: jpeg, png, webp, heic.'];
         }
 
@@ -47,5 +48,41 @@ class ImageUploadValidator
         }
 
         return ['valid' => true];
+    }
+
+    /**
+     * @param  list<string>  $allowedMimes
+     */
+    private function isAllowedMime(?string $mime, array $allowedMimes): bool
+    {
+        if ($mime === null || $mime === '') {
+            return false;
+        }
+
+        if (in_array($mime, $allowedMimes, true)) {
+            return true;
+        }
+
+        if (in_array($mime, ImageAttachmentRules::JPEG_MIMES, true)) {
+            return ! empty(array_intersect($allowedMimes, ImageAttachmentRules::JPEG_MIMES));
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  list<string>  $allowedExtensions
+     */
+    private function isAllowedExtension(string $extension, array $allowedExtensions): bool
+    {
+        if (in_array($extension, $allowedExtensions, true)) {
+            return true;
+        }
+
+        if (in_array($extension, ImageAttachmentRules::JPEG_EXTENSIONS, true)) {
+            return ! empty(array_intersect($allowedExtensions, ImageAttachmentRules::JPEG_EXTENSIONS));
+        }
+
+        return false;
     }
 }
