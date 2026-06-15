@@ -271,6 +271,7 @@ class ManualIdentityValidationController extends Controller
         $validationRequest->back_image_path = $backPath;
         $validationRequest->selfie_image_path = $selfiePath;
         $validationRequest->submitted_at = now();
+        $validationRequest->images_purged_at = null;
         $validationRequest->save();
 
         return response()->json([

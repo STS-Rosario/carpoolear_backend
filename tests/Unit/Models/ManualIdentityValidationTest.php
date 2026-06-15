@@ -67,6 +67,17 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertInstanceOf(Carbon::class, $row->manual_validation_started_at);
     }
 
+    public function test_images_purged_at_is_cast_to_datetime(): void
+    {
+        $user = User::factory()->create();
+
+        $row = $this->makeRow($user, [
+            'images_purged_at' => '2026-06-15 12:00:00',
+        ]);
+
+        $this->assertInstanceOf(Carbon::class, $row->fresh()->images_purged_at);
+    }
+
     public function test_has_images_detects_any_uploaded_path(): void
     {
         $user = User::factory()->create();
@@ -120,6 +131,7 @@ class ManualIdentityValidationTest extends TestCase
             'review_note',
             'private_admin_note',
             'manual_validation_started_at',
+            'images_purged_at',
         ], (new ManualIdentityValidation)->getFillable());
     }
 

@@ -248,6 +248,80 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertNull($fresh->front_image_path);
     }
 
+    public function test_show_reports_images_not_purged_when_paid_without_submitted_images(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => null,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/manual-identity-validations/'.$row->id)
+            ->assertOk()
+            ->assertJsonPath('data.has_images', false)
+            ->assertJsonPath('data.images_purged_at', null);
+    }
+
+    public function test_purge_sets_images_purged_at(): void
+    {
+        Storage::fake('local');
+        $admin = $this->admin();
+        $user = User::factory()->create();
+
+        $front = 'idv/purge-front.jpg';
+        Storage::disk('local')->put($front, 'x');
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'front_image_path' => $front,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/purge')
+            ->assertOk();
+
+        $fresh = ManualIdentityValidation::query()->findOrFail($row->id);
+        $this->assertNotNull($fresh->images_purged_at);
+    }
+
+    public function test_show_reports_images_purged_after_admin_purge(): void
+    {
+        Storage::fake('local');
+        $admin = $this->admin();
+        $user = User::factory()->create();
+
+        $front = 'idv/purge-front.jpg';
+        Storage::disk('local')->put($front, 'x');
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'front_image_path' => $front,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/purge')->assertOk();
+
+        $this->getJson('api/admin/manual-identity-validations/'.$row->id)
+            ->assertOk()
+            ->assertJsonPath('data.has_images', false)
+            ->assertJsonPath('data.images_purged_at', fn ($value) => $value !== null);
+    }
+
     public function test_private_note_endpoint_updates_field_and_show_returns_it(): void
     {
         $admin = $this->admin();
