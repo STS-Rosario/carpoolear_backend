@@ -83,6 +83,7 @@ class ManualIdentityValidationController extends Controller
             'back_image_url' => $item->back_image_path ? $imageUrl('back') : null,
             'selfie_image_url' => $item->selfie_image_path ? $imageUrl('selfie') : null,
             'has_images' => $item->hasImages(),
+            'images_purged_at' => $item->images_purged_at ? $item->images_purged_at->toDateTimeString() : null,
             'support_tickets_count' => SupportTicket::countForUser($item->user_id),
         ];
     }
@@ -203,6 +204,7 @@ class ManualIdentityValidationController extends Controller
             }
             $item->$col = null;
         }
+        $item->images_purged_at = now();
         $item->save();
 
         return response()->json(['message' => 'Photos purged', 'data' => $item->fresh()]);
