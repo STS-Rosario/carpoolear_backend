@@ -18,10 +18,40 @@ class ImageUploadValidatorTest extends TestCase
 
     public function test_valid_jpeg_passes(): void
     {
-        $file = UploadedFile::fake()->image('photo.jpg', 100, 100)->size(500);
+        $file = UploadedFile::fake()->image('photo.jpeg', 100, 100)->size(500);
         $result = $this->validator->validate($file);
         $this->assertTrue($result['valid']);
         $this->assertArrayNotHasKey('errors', $result);
+    }
+
+    public function test_jpeg_extension_passes_when_allowed_extensions_include_only_jpg(): void
+    {
+        config()->set('carpoolear.image_upload_allowed_mimes', ['image/jpeg']);
+        config()->set('carpoolear.image_upload_allowed_extensions', ['jpg']);
+
+        $file = UploadedFile::fake()->image('photo.jpeg', 100, 100)->size(500);
+        $result = $this->validator->validate($file, 'cover');
+
+        $this->assertTrue($result['valid']);
+    }
+
+    public function test_jpg_extension_passes_when_allowed_extensions_include_only_jpeg(): void
+    {
+        config()->set('carpoolear.image_upload_allowed_mimes', ['image/jpeg']);
+        config()->set('carpoolear.image_upload_allowed_extensions', ['jpeg']);
+
+        $file = UploadedFile::fake()->image('photo.jpg', 100, 100)->size(500);
+        $result = $this->validator->validate($file, 'cover');
+
+        $this->assertTrue($result['valid']);
+    }
+
+    public function test_image_jpg_mime_alias_passes(): void
+    {
+        $file = UploadedFile::fake()->create('photo.jpeg', 100, 'image/jpg');
+        $result = $this->validator->validate($file);
+
+        $this->assertTrue($result['valid']);
     }
 
     public function test_valid_png_passes(): void
@@ -163,7 +193,7 @@ class ImageUploadValidatorTest extends TestCase
         config()->set('carpoolear.image_upload_allowed_mimes', ['image/jpeg']);
         config()->set('carpoolear.image_upload_allowed_extensions', ['jpg']);
 
-        $file = UploadedFile::fake()->create('photo.jpeg', 100, 'image/jpeg');
+        $file = UploadedFile::fake()->create('photo.jfif', 100, 'image/jpeg');
         $result = $this->validator->validate($file, 'cover');
 
         $this->assertFalse($result['valid']);
