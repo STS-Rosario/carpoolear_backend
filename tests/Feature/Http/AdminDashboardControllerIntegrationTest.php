@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Carbon\Carbon;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\SupportTicket;
 use STS\Models\User;
 use Tests\TestCase;
 
@@ -76,5 +77,70 @@ class AdminDashboardControllerIntegrationTest extends TestCase
         $sorted = $submittedAts;
         sort($sorted);
         $this->assertSame($sorted, $submittedAts);
+    }
+
+    public function test_show_returns_oldest_ten_support_tickets_needing_admin_attention(): void
+    {
+        Carbon::setTestNow('2026-06-18 12:00:00');
+
+        $admin = $this->admin();
+        $owner = User::factory()->create();
+
+        $tickets = [];
+        for ($index = 0; $index < 12; $index++) {
+            $tickets[] = SupportTicket::create([
+                'user_id' => $owner->id,
+                'type' => 'feedback',
+                'subject' => 'Ticket '.$index,
+                'status' => 'Open',
+                'priority' => 'normal',
+                'unread_for_user' => 0,
+                'unread_for_admin' => 0,
+                'updated_at' => Carbon::parse('2026-06-01 10:00:00')->addDays($index),
+                'created_at' => Carbon::parse('2026-06-01 10:00:00')->addDays($index),
+            ]);
+        }
+
+        SupportTicket::create([
+            'user_id' => $owner->id,
+            'type' => 'feedback',
+            'subject' => 'Resolved ticket',
+            'status' => 'Resuelto',
+            'priority' => 'normal',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 1,
+        ]);
+
+        SupportTicket::create([
+            'user_id' => $owner->id,
+            'type' => 'feedback',
+            'subject' => 'Waiting on user',
+            'status' => 'Esperando respuesta',
+            'priority' => 'normal',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 0,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->getJson('api/admin/dashboard')->assertOk();
+        $rows = $response->json('data.support_tickets');
+
+        $this->assertCount(10, $rows);
+        $this->assertSame([
+            'id',
+            'user_id',
+            'user_name',
+            'subject',
+            'status',
+            'updated_at',
+        ], array_keys($rows[0]));
+
+        $updatedAts = collect($rows)->pluck('updated_at')->all();
+        $sorted = $updatedAts;
+        sort($sorted);
+        $this->assertSame($sorted, $updatedAts);
+        $this->assertSame($tickets[0]->id, $rows[0]['id']);
     }
 }
