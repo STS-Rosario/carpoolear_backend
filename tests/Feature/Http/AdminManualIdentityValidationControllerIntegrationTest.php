@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Notifications\ManualIdentityValidationReviewNotification;
@@ -187,6 +188,54 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $user->refresh();
         $this->assertTrue((bool) $user->identity_validated);
         $this->assertSame('manual', (string) $user->identity_validation_type);
+    }
+
+    public function test_review_approve_clears_prior_rejection_state(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create([
+            'identity_validated' => false,
+            'identity_validation_rejected_at' => now()->subDay(),
+            'identity_validation_reject_reason' => 'dni_mismatch',
+        ]);
+
+        $rejectedManual = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now()->subDays(2),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'review_note' => 'Old rejection.',
+        ]);
+
+        MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'name_mismatch',
+            'mp_payload' => ['first_name' => 'Jane'],
+        ]);
+
+        $paid = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$paid->id.'/review', [
+            'action' => 'approve',
+        ])->assertOk()->assertJsonPath('data.review_status', 'approved');
+
+        $user->refresh();
+        $this->assertTrue((bool) $user->identity_validated);
+        $this->assertNull($user->identity_validation_rejected_at);
+        $this->assertNull($user->identity_validation_reject_reason);
+        $this->assertDatabaseMissing('manual_identity_validations', ['id' => $rejectedManual->id]);
+        $this->assertDatabaseHas('manual_identity_validations', ['id' => $paid->id, 'review_status' => 'approved']);
+        $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
     }
 
     public function test_review_reject_clears_identity_on_user_row_in_database(): void
