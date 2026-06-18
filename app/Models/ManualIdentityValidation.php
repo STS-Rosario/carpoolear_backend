@@ -59,4 +59,18 @@ class ManualIdentityValidation extends Model
     {
         return ! empty($this->front_image_path) || ! empty($this->back_image_path) || ! empty($this->selfie_image_path);
     }
+
+    /**
+     * Paid requests with submitted documents awaiting admin review.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeReadyForAdminReview($query)
+    {
+        return $query
+            ->where('paid', true)
+            ->where('review_status', self::REVIEW_STATUS_PENDING)
+            ->whereNotNull('submitted_at');
+    }
 }
