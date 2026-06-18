@@ -69,8 +69,11 @@ class AdminDashboardControllerIntegrationTest extends TestCase
             'id',
             'user_id',
             'user_name',
-            'submitted_at',
             'paid_at',
+            'submitted_at',
+            'manual_validation_started_at',
+            'paid',
+            'review_status',
         ], array_keys($rows[0]));
 
         $submittedAts = collect($rows)->pluck('submitted_at')->all();
@@ -131,10 +134,14 @@ class AdminDashboardControllerIntegrationTest extends TestCase
         $this->assertSame([
             'id',
             'user_id',
-            'user_name',
+            'user',
             'subject',
+            'type',
+            'priority',
             'status',
+            'created_at',
             'updated_at',
+            'unread_for_admin',
         ], array_keys($rows[0]));
 
         $updatedAts = collect($rows)->pluck('updated_at')->all();

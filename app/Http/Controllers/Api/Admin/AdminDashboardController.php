@@ -46,8 +46,11 @@ class AdminDashboardController extends Controller
             'id' => $item->id,
             'user_id' => $item->user_id,
             'user_name' => $item->user?->name,
-            'submitted_at' => $item->submitted_at?->toDateTimeString(),
             'paid_at' => $item->paid_at?->toDateTimeString(),
+            'submitted_at' => $item->submitted_at?->toDateTimeString(),
+            'manual_validation_started_at' => $item->manual_validation_started_at?->toDateTimeString(),
+            'paid' => $item->paid,
+            'review_status' => $item->review_status,
         ];
     }
 
@@ -59,10 +62,17 @@ class AdminDashboardController extends Controller
         return [
             'id' => $ticket->id,
             'user_id' => $ticket->user_id,
-            'user_name' => $ticket->user?->name,
+            'user' => $ticket->user ? [
+                'id' => $ticket->user->id,
+                'name' => $ticket->user->name,
+            ] : null,
             'subject' => $ticket->subject,
+            'type' => $ticket->type,
+            'priority' => $ticket->priority,
             'status' => $ticket->status,
+            'created_at' => $ticket->created_at?->toDateTimeString(),
             'updated_at' => $ticket->updated_at?->toDateTimeString(),
+            'unread_for_admin' => $ticket->unread_for_admin,
         ];
     }
 }
