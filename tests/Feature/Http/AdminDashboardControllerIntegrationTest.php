@@ -143,4 +143,17 @@ class AdminDashboardControllerIntegrationTest extends TestCase
         $this->assertSame($sorted, $updatedAts);
         $this->assertSame($tickets[0]->id, $rows[0]['id']);
     }
+
+    public function test_show_returns_empty_arrays_when_nothing_needs_attention(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $data = $this->getJson('api/admin/dashboard')->assertOk()->json('data');
+
+        $this->assertSame([], $data['manual_identity_validations']);
+        $this->assertSame([], $data['support_tickets']);
+    }
 }
