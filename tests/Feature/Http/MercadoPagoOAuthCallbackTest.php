@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use STS\Models\ManualIdentityValidation;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\User;
 use Tests\TestCase;
@@ -340,6 +341,52 @@ class MercadoPagoOAuthCallbackTest extends TestCase
 
         $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
 
+    }
+
+    public function test_success_clears_prior_manual_rejection_state(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Jane Doe',
+            'nro_doc' => '30.123.456',
+            'identity_validated' => false,
+            'identity_validation_rejected_at' => now()->subDay(),
+            'identity_validation_reject_reason' => 'name_mismatch',
+        ]);
+        Cache::put('mp_oauth_state:clear-rejection-state', ['user_id' => $user->id], 600);
+
+        $rejectedManual = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'review_note' => 'Illegible documents.',
+        ]);
+
+        MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['first_name' => 'Jane'],
+        ]);
+
+        Http::fake([
+            '*oauth/token*' => Http::response(['access_token' => 'tok'], 200),
+            '*users/me*' => Http::response([
+                'first_name' => 'Jane',
+                'last_name' => 'Doe',
+                'identification' => ['type' => 'DNI', 'number' => '30123456'],
+            ], 200),
+        ]);
+
+        $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=clear-rejection-state')
+            ->assertRedirect($this->identityRedirect('success'));
+
+        $user->refresh();
+        $this->assertTrue($user->identity_validated);
+        $this->assertNull($user->identity_validation_rejected_at);
+        $this->assertNull($user->identity_validation_reject_reason);
+        $this->assertDatabaseMissing('manual_identity_validations', ['id' => $rejectedManual->id]);
+        $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
     }
 
     public function test_resolves_user_when_cached_user_id_is_numeric_string(): void
