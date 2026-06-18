@@ -44,4 +44,29 @@ class UserIdentityVerificationSuccessServiceTest extends TestCase
         $this->assertDatabaseMissing('manual_identity_validations', ['id' => $rejectedManual->id]);
         $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
     }
+
+    public function test_apply_verification_can_preserve_mercado_pago_rejected_validation_for_audit(): void
+    {
+        $user = User::factory()->create(['identity_validated' => false]);
+
+        $preserved = MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['first_name' => 'Jane'],
+        ]);
+
+        MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'name_mismatch',
+            'mp_payload' => ['first_name' => 'John'],
+        ]);
+
+        app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual', [
+            'preserve_mercado_pago_rejected_validation_ids' => [$preserved->id],
+        ]);
+
+        $this->assertTrue((bool) $user->fresh()->identity_validated);
+        $this->assertDatabaseHas('mercado_pago_rejected_validations', ['id' => $preserved->id]);
+        $this->assertSame(1, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
+    }
 }

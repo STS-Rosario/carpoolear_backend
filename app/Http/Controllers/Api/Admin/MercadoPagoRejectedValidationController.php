@@ -72,7 +72,9 @@ class MercadoPagoRejectedValidationController extends Controller
         $item->reviewed_by = $admin->id;
 
         if ($validated['action'] === 'approve') {
-            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
+            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual', [
+                'preserve_mercado_pago_rejected_validation_ids' => [$item->id],
+            ]);
             $item->approved_at = now();
             $item->approved_by = $admin->id;
         } else {

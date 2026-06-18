@@ -8,9 +8,9 @@ use STS\Models\User;
 
 class UserIdentityVerificationSuccessService
 {
-    public function applyVerification(User $user, string $validationType): void
+    public function applyVerification(User $user, string $validationType, array $options = []): void
     {
-        $this->clearPriorRejectionState($user);
+        $this->clearPriorRejectionState($user, $options);
 
         $user->identity_validated = true;
         $user->identity_validated_at = now();
@@ -20,11 +20,15 @@ class UserIdentityVerificationSuccessService
         $user->save();
     }
 
-    public function clearPriorRejectionState(User $user): void
+    public function clearPriorRejectionState(User $user, array $options = []): void
     {
-        MercadoPagoRejectedValidation::query()
-            ->where('user_id', $user->id)
-            ->delete();
+        $preserveMpRejectedIds = $options['preserve_mercado_pago_rejected_validation_ids'] ?? [];
+
+        $mpRejectedQuery = MercadoPagoRejectedValidation::query()->where('user_id', $user->id);
+        if ($preserveMpRejectedIds !== []) {
+            $mpRejectedQuery->whereNotIn('id', $preserveMpRejectedIds);
+        }
+        $mpRejectedQuery->delete();
 
         $this->deleteRejectedManualIdentityValidationsForUser($user);
     }
