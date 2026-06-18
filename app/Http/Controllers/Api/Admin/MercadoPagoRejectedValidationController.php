@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
+use STS\Services\UserIdentityVerificationSuccessService;
 
 class MercadoPagoRejectedValidationController extends Controller
 {
@@ -71,12 +72,7 @@ class MercadoPagoRejectedValidationController extends Controller
         $item->reviewed_by = $admin->id;
 
         if ($validated['action'] === 'approve') {
-            $user->identity_validated = true;
-            $user->identity_validated_at = now();
-            $user->identity_validation_type = 'manual';
-            $user->identity_validation_rejected_at = null;
-            $user->identity_validation_reject_reason = null;
-            $user->save();
+            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
             $item->approved_at = now();
             $item->approved_by = $admin->id;
         } else {

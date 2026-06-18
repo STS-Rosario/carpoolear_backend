@@ -9,6 +9,7 @@ use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
 use STS\Services\ManualIdentityValidationReviewNotifier;
+use STS\Services\UserIdentityVerificationSuccessService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManualIdentityValidationController extends Controller
@@ -148,12 +149,7 @@ class ManualIdentityValidationController extends Controller
 
         $user = $item->user;
         if ($validated['action'] === 'approve') {
-            $user->identity_validated = true;
-            $user->identity_validated_at = now();
-            $user->identity_validation_type = 'manual';
-            $user->identity_validation_rejected_at = null;
-            $user->identity_validation_reject_reason = null;
-            $user->save();
+            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
         } else {
             // Reject or Pending: clear identity validation flags and metadata
             $user->identity_validated = false;

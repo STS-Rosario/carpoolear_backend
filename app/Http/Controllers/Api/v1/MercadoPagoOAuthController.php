@@ -8,6 +8,7 @@ use STS\Http\Controllers\Controller;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\User;
 use STS\Services\MercadoPagoOAuthService;
+use STS\Services\UserIdentityVerificationSuccessService;
 
 class MercadoPagoOAuthController extends Controller
 {
@@ -104,12 +105,7 @@ class MercadoPagoOAuthController extends Controller
                 return redirect($oauthService->getFrontendRedirectUrl($rejectReason, $details));
             }
 
-            $user->identity_validated = true;
-            $user->identity_validated_at = now();
-            $user->identity_validation_type = 'mercado_pago';
-            $user->identity_validation_rejected_at = null;
-            $user->identity_validation_reject_reason = null;
-            $user->save();
+            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'mercado_pago');
 
             return redirect($oauthService->getFrontendRedirectUrl('success'));
         } catch (\Exception $e) {
