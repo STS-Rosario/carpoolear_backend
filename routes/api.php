@@ -1,5 +1,6 @@
 <?php
 
+use STS\Http\Controllers\Api\Admin\AdminDashboardController;
 use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
 use STS\Http\Controllers\Api\Admin\CampaignDonationController;
@@ -240,6 +241,7 @@ Route::middleware(['api'])->group(function () {
 
     // Admin routes
     Route::prefix('admin')->middleware('user.admin')->group(function () {
+        Route::get('dashboard', [AdminDashboardController::class, 'show']);
         Route::apiResource('badges', BadgeController::class);
         // Campaign routes
         Route::apiResource('campaigns', CampaignController::class);

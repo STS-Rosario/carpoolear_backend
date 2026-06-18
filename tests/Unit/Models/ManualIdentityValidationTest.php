@@ -169,4 +169,42 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertNotNull($row->reviewed_at);
         $this->assertNotNull($row->manual_validation_started_at);
     }
+
+    public function test_ready_for_admin_review_scope_includes_only_paid_pending_submitted_rows(): void
+    {
+        $user = User::factory()->create();
+
+        $ready = $this->makeRow($user, [
+            'paid' => true,
+            'paid_at' => '2026-06-01 10:00:00',
+            'submitted_at' => '2026-06-02 10:00:00',
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $unpaid = $this->makeRow($user, [
+            'paid' => false,
+            'submitted_at' => '2026-06-02 10:00:00',
+        ]);
+        $missingDocs = $this->makeRow($user, [
+            'paid' => true,
+            'paid_at' => '2026-06-01 10:00:00',
+            'submitted_at' => null,
+        ]);
+        $resolved = $this->makeRow($user, [
+            'paid' => true,
+            'paid_at' => '2026-06-01 10:00:00',
+            'submitted_at' => '2026-06-02 10:00:00',
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_APPROVED,
+        ]);
+
+        $ids = ManualIdentityValidation::query()
+            ->readyForAdminReview()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->assertSame([$ready->id], $ids);
+        $this->assertNotContains($unpaid->id, $ids);
+        $this->assertNotContains($missingDocs->id, $ids);
+        $this->assertNotContains($resolved->id, $ids);
+    }
 }
