@@ -119,6 +119,7 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame([
             'user_id',
             'submitted_at',
+            'submission_count',
             'front_image_path',
             'back_image_path',
             'selfie_image_path',
