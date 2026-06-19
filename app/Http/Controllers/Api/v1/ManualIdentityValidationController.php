@@ -11,6 +11,7 @@ use STS\Http\ExceptionWithErrors;
 use STS\Models\ManualIdentityValidation;
 use STS\Services\HeicToJpegConverter;
 use STS\Services\ImageUploadValidator;
+use STS\Services\ManualIdentityValidationResubmitPolicy;
 use STS\Services\MercadoPagoService;
 use STS\Support\ImageAttachmentRules;
 
@@ -40,51 +41,23 @@ class ManualIdentityValidationController extends Controller
     /**
      * GET /api/users/manual-identity-validation - current user's latest submission status
      */
-    public function status()
+    public function status(ManualIdentityValidationResubmitPolicy $resubmitPolicy)
     {
         if (! config('carpoolear.identity_validation_enabled', false)) {
-            return response()->json([
-                'has_submission' => false,
-                'request_id' => null,
-                'paid' => null,
-                'paid_at' => null,
-                'review_status' => null,
-                'submitted_at' => null,
-                'review_note' => null,
-            ]);
+            return response()->json($resubmitPolicy->statusPayload(null));
         }
         $user = auth()->user();
         $latest = ManualIdentityValidation::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (! $latest) {
-            return response()->json([
-                'has_submission' => false,
-                'request_id' => null,
-                'paid' => null,
-                'paid_at' => null,
-                'review_status' => null,
-                'submitted_at' => null,
-                'review_note' => null,
-            ]);
-        }
-
-        return response()->json([
-            'has_submission' => true,
-            'request_id' => $latest->id,
-            'paid' => $latest->paid,
-            'paid_at' => $latest->paid_at ? $latest->paid_at->toDateTimeString() : null,
-            'review_status' => $latest->review_status,
-            'submitted_at' => $latest->submitted_at ? $latest->submitted_at->toDateTimeString() : null,
-            'review_note' => $latest->review_note,
-        ]);
+        return response()->json($resubmitPolicy->statusPayload($latest));
     }
 
     /**
      * POST /api/users/manual-identity-validation/preference - create MP payment preference and request record
      */
-    public function createPreference(Request $request, MercadoPagoService $mpService)
+    public function createPreference(Request $request, MercadoPagoService $mpService, ManualIdentityValidationResubmitPolicy $resubmitPolicy)
     {
         $user = auth()->user();
         if (! config('carpoolear.identity_validation_enabled', false)) {
@@ -96,6 +69,13 @@ class ManualIdentityValidationController extends Controller
         $costCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
         if ($costCents <= 0) {
             throw new ExceptionWithErrors('Manual identity validation is not available.', []);
+        }
+
+        $latest = ManualIdentityValidation::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+        if ($latest && $resubmitPolicy->canResubmitWithoutPayment($latest)) {
+            throw new ExceptionWithErrors('You can resubmit your documents without paying again.', []);
         }
 
         // Reuse existing unpaid request so user can complete payment
@@ -140,7 +120,7 @@ class ManualIdentityValidationController extends Controller
      * Returns request_id, qr_data (string to render as QR), order_id. Frontend displays QR; user scans with MP app.
      * Payment confirmation is via webhook; frontend can poll status until paid.
      */
-    public function createQrOrder(Request $request, MercadoPagoService $mpService)
+    public function createQrOrder(Request $request, MercadoPagoService $mpService, ManualIdentityValidationResubmitPolicy $resubmitPolicy)
     {
         $user = auth()->user();
         if (! config('carpoolear.identity_validation_enabled', false)) {
@@ -159,6 +139,13 @@ class ManualIdentityValidationController extends Controller
         $costCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
         if ($costCents <= 0) {
             throw new ExceptionWithErrors('Manual identity validation is not available.', []);
+        }
+
+        $latest = ManualIdentityValidation::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+        if ($latest && $resubmitPolicy->canResubmitWithoutPayment($latest)) {
+            throw new ExceptionWithErrors('You can resubmit your documents without paying again.', []);
         }
 
         $validationRequest = ManualIdentityValidation::where('user_id', $user->id)
@@ -200,7 +187,7 @@ class ManualIdentityValidationController extends Controller
     /**
      * POST /api/users/manual-identity-validation - submit 3 images (request_id + front, back, selfie)
      */
-    public function submit(Request $request)
+    public function submit(Request $request, ManualIdentityValidationResubmitPolicy $resubmitPolicy)
     {
         $user = auth()->user();
         $requestId = $request->input('request_id');
@@ -222,6 +209,15 @@ class ManualIdentityValidationController extends Controller
 
         if (! $validationRequest->paid) {
             throw new ExceptionWithErrors('Payment is required before submitting images.', [], 422);
+        }
+
+        $isResubmit = $validationRequest->review_status === ManualIdentityValidation::REVIEW_STATUS_REJECTED;
+        if ($isResubmit) {
+            if (! $resubmitPolicy->canResubmitWithoutPayment($validationRequest)) {
+                throw new ExceptionWithErrors('Submission limit reached. Payment is required to try again.', [], 422);
+            }
+        } elseif ($validationRequest->submitted_at !== null) {
+            throw new ExceptionWithErrors('Documents were already submitted for this request.', [], 422);
         }
 
         $front = $request->file('front_image');
@@ -272,6 +268,11 @@ class ManualIdentityValidationController extends Controller
         $validationRequest->selfie_image_path = $selfiePath;
         $validationRequest->submitted_at = now();
         $validationRequest->images_purged_at = null;
+        $validationRequest->submission_count = (int) $validationRequest->submission_count + 1;
+        $validationRequest->review_status = ManualIdentityValidation::REVIEW_STATUS_PENDING;
+        $validationRequest->reviewed_by = null;
+        $validationRequest->reviewed_at = null;
+        $validationRequest->review_note = '';
         $validationRequest->save();
 
         return response()->json([
