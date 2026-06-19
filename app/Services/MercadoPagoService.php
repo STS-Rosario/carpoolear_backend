@@ -33,7 +33,14 @@ class MercadoPagoService
         }
         MercadoPagoConfig::setAccessToken($this->accessToken);
         $this->client = new PreferenceClient;
-        $this->orderClient = new OrderClient;
+        $this->ensureOrderClient();
+    }
+
+    private function ensureOrderClient(): void
+    {
+        if ($this->orderClient === null) {
+            $this->orderClient = new OrderClient;
+        }
     }
 
     /**
@@ -303,6 +310,8 @@ class MercadoPagoService
         $requestOptions->setCustomHeaders([
             'x-idempotency-key' => 'manual_qr_'.$requestId.'_'.uniqid('', true),
         ]);
+
+        $this->ensureOrderClient();
 
         try {
             $order = $this->orderClient->create($orderPayload, $requestOptions);

@@ -3,7 +3,11 @@
 namespace Tests\Unit\Services;
 
 use InvalidArgumentException;
+use MercadoPago\Client\Common\RequestOptions;
+use MercadoPago\Net\MPResponse;
+use MercadoPago\Resources\Order;
 use MercadoPago\Resources\Preference;
+use ReflectionProperty;
 use STS\Models\Campaign;
 use STS\Models\Trip;
 use STS\Services\MercadoPagoService;
@@ -83,6 +87,62 @@ class MercadoPagoServiceTest extends TestCase
         $this->expectExceptionMessage('Mercado Pago QR orders require amount >= 15.00');
 
         $service->createQrOrderForManualValidation(10, 1400);
+    }
+
+    public function test_create_qr_order_for_manual_validation_initializes_order_client_before_api_call(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $this->assertNull($orderClientRef->getValue($service));
+
+        try {
+            $service->createQrOrderForManualValidation(42, 1500);
+        } catch (\Error $e) {
+            $this->fail('OrderClient was not initialized: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            // Mercado Pago API errors are acceptable once OrderClient exists.
+        }
+
+        $this->assertNotNull($orderClientRef->getValue($service));
+    }
+
+    public function test_create_qr_order_for_manual_validation_returns_qr_data_from_order_client(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $orderClientRef->setValue($service, new class
+        {
+            public function create(array $request, ?RequestOptions $requestOptions = null): Order
+            {
+                $order = new Order;
+                $order->id = 'ORD-123';
+                $order->transactions = (object) ['payments' => [(object) ['id' => 'PAY-456']]];
+                $order->setResponse(new MPResponse(200, [
+                    'type_response' => ['qr_data' => 'EMV_QR_DATA'],
+                ]));
+
+                return $order;
+            }
+        });
+
+        $result = $service->createQrOrderForManualValidation(42, 1500);
+
+        $this->assertSame(42, $result['request_id']);
+        $this->assertSame('ORD-123', $result['order_id']);
+        $this->assertSame('EMV_QR_DATA', $result['qr_data']);
+        $this->assertSame('PAY-456', $result['payment_id']);
     }
 
     public function test_sellado_trims_trailing_slash_on_frontend_url_for_back_urls(): void
