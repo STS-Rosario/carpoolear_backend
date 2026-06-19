@@ -30,6 +30,7 @@ class ManualIdentityValidationApiTest extends TestCase
         config([
             'carpoolear.identity_validation_enabled' => true,
             'carpoolear.identity_validation_manual_enabled' => true,
+            'carpoolear.manual_identity_validation_max_submissions' => 3,
         ]);
     }
 
@@ -72,6 +73,9 @@ class ManualIdentityValidationApiTest extends TestCase
             'review_status' => null,
             'submitted_at' => null,
             'review_note' => null,
+            'submission_count' => null,
+            'max_submissions' => 3,
+            'can_resubmit_without_payment' => false,
         ];
     }
 
@@ -90,6 +94,11 @@ class ManualIdentityValidationApiTest extends TestCase
             'review_status' => $latest->review_status,
             'submitted_at' => $latest->submitted_at?->toDateTimeString(),
             'review_note' => $latest->review_note,
+            'submission_count' => (int) $latest->submission_count,
+            'max_submissions' => 3,
+            'can_resubmit_without_payment' => $latest->paid
+                && $latest->review_status === ManualIdentityValidation::REVIEW_STATUS_REJECTED
+                && (int) $latest->submission_count < 3,
         ];
     }
 
@@ -1440,5 +1449,120 @@ class ManualIdentityValidationApiTest extends TestCase
             ->assertJsonPath('errors.back_image', ['Invalid image type.']);
 
         $this->assertNull($validationRequest->fresh()->submitted_at);
+    }
+
+    public function test_status_reports_can_resubmit_without_payment_for_rejected_request_with_attempts_left(): void
+    {
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'submitted_at' => now()->subDay(),
+            'submission_count' => 1,
+            'review_note' => 'Unreadable photo',
+        ]);
+
+        $this->actingAs($user, 'api')
+            ->getJson('api/users/manual-identity-validation')
+            ->assertOk()
+            ->assertExactJson($this->expectedPopulatedStatusPayload($row));
+    }
+
+    public function test_submit_on_rejected_request_resets_review_and_increments_submission_count(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'submitted_at' => now()->subDay(),
+            'submission_count' => 1,
+            'review_note' => 'Try again',
+            'reviewed_by' => User::factory()->create()->id,
+            'reviewed_at' => now()->subHours(2),
+        ]);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])->assertStatus(201);
+
+        $validationRequest->refresh();
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $validationRequest->review_status);
+        $this->assertSame(2, $validationRequest->submission_count);
+        $this->assertNull($validationRequest->reviewed_at);
+        $this->assertNull($validationRequest->reviewed_by);
+        $this->assertSame('', $validationRequest->review_note);
+        $this->assertNotNull($validationRequest->submitted_at);
+    }
+
+    public function test_submit_on_rejected_request_returns_422_when_submission_limit_reached(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'submitted_at' => now()->subDay(),
+            'submission_count' => 3,
+        ]);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Submission limit reached. Payment is required to try again.');
+    }
+
+    public function test_preference_creates_new_row_when_latest_rejected_and_submissions_exhausted(): void
+    {
+        config([
+            'carpoolear.manual_identity_validation_cost_cents' => 500,
+        ]);
+
+        $user = User::factory()->create();
+        ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'submitted_at' => now()->subDay(),
+            'submission_count' => 3,
+        ]);
+
+        $this->mock(MercadoPagoService::class, function ($mock) {
+            $preference = new Preference;
+            $preference->init_point = 'https://checkout.example/retry-pay';
+            $preference->sandbox_init_point = null;
+
+            $mock->shouldReceive('createPaymentPreferenceForManualValidation')
+                ->once()
+                ->andReturn($preference);
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('api/users/manual-identity-validation/preference');
+
+        $this->assertSame(2, ManualIdentityValidation::where('user_id', $user->id)->count());
+        $newRow = ManualIdentityValidation::where('user_id', $user->id)->where('paid', false)->first();
+        $this->assertNotNull($newRow);
+        $response->assertOk()->assertJsonPath('request_id', $newRow->id);
     }
 }
