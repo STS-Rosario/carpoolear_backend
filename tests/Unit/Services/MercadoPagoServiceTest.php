@@ -4,6 +4,7 @@ namespace Tests\Unit\Services;
 
 use InvalidArgumentException;
 use MercadoPago\Resources\Preference;
+use ReflectionProperty;
 use STS\Models\Campaign;
 use STS\Models\Trip;
 use STS\Services\MercadoPagoService;
@@ -83,6 +84,29 @@ class MercadoPagoServiceTest extends TestCase
         $this->expectExceptionMessage('Mercado Pago QR orders require amount >= 15.00');
 
         $service->createQrOrderForManualValidation(10, 1400);
+    }
+
+    public function test_create_qr_order_for_manual_validation_initializes_order_client_before_api_call(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $this->assertNull($orderClientRef->getValue($service));
+
+        try {
+            $service->createQrOrderForManualValidation(42, 1500);
+        } catch (\Error $e) {
+            $this->fail('OrderClient was not initialized: '.$e->getMessage());
+        } catch (\Throwable $e) {
+            // Mercado Pago API errors are acceptable once OrderClient exists.
+        }
+
+        $this->assertNotNull($orderClientRef->getValue($service));
     }
 
     public function test_sellado_trims_trailing_slash_on_frontend_url_for_back_urls(): void
