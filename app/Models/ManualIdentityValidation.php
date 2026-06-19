@@ -18,6 +18,7 @@ class ManualIdentityValidation extends Model
     protected $fillable = [
         'user_id',
         'submitted_at',
+        'submission_count',
         'front_image_path',
         'back_image_path',
         'selfie_image_path',
@@ -37,6 +38,7 @@ class ManualIdentityValidation extends Model
     {
         return [
             'paid' => 'boolean',
+            'submission_count' => 'integer',
             'submitted_at' => 'datetime',
             'paid_at' => 'datetime',
             'reviewed_at' => 'datetime',

@@ -45,6 +45,8 @@ return [
     'module_max_price_kilometer_by_liter' => (float) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
 
     'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
+    // Max document submissions per paid manual validation request (including the first upload).
+    'manual_identity_validation_max_submissions' => (int) env('MANUAL_IDENTITY_VALIDATION_MAX_SUBMISSIONS', 3),
 
     // Master switch: when false, hide identity validation UI and do not enforce (except admin flows).
     'identity_validation_enabled' => filter_var(env('IDENTITY_VALIDATION_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
