@@ -304,6 +304,10 @@ class MercadoPagoService
             'x-idempotency-key' => 'manual_qr_'.$requestId.'_'.uniqid('', true),
         ]);
 
+        if ($this->orderClient === null) {
+            $this->orderClient = new OrderClient;
+        }
+
         try {
             $order = $this->orderClient->create($orderPayload, $requestOptions);
         } catch (MPApiException $e) {
