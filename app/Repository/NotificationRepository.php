@@ -20,6 +20,11 @@ class NotificationRepository
         return $query->get();
     }
 
+    public function countUnreadNotifications($user): int
+    {
+        return $user->unreadNotifications()->count();
+    }
+
     public function markAsRead($notification = null)
     {
         if ($notification) {

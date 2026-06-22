@@ -53,7 +53,7 @@ class NotificationManager
 
     public function getUnreadCount($user)
     {
-        return $this->repo->getNotifications($user, true)->count();
+        return $this->repo->countUnreadNotifications($user);
     }
 
     public function delete($user, $id)
