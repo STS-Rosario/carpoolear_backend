@@ -3,6 +3,7 @@
 namespace STS\Services\Logic;
 
 use STS\Repository\NotificationRepository;
+use STS\Support\NotificationCountCache;
 
 class NotificationManager
 {
@@ -53,7 +54,9 @@ class NotificationManager
 
     public function getUnreadCount($user)
     {
-        return $this->repo->countUnreadNotifications($user);
+        return NotificationCountCache::remember($user->id, function () use ($user) {
+            return $this->repo->countUnreadNotifications($user);
+        });
     }
 
     public function delete($user, $id)
