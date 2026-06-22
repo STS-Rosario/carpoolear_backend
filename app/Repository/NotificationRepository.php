@@ -31,7 +31,7 @@ class NotificationRepository
         if ($notification) {
             $notification->read_at = Carbon::now();
             $notification->save();
-            NotificationCountCache::forget($notification->user_id);
+            NotificationCountCache::forget((int) $notification->user_id);
         } else {
             $user->unreadNotifications()->update(['read_at' => Carbon::now()]);
         }
@@ -41,7 +41,7 @@ class NotificationRepository
     {
         $notification->deleted_at = Carbon::now();
         $notification->save();
-        NotificationCountCache::forget($notification->user_id);
+        NotificationCountCache::forget((int) $notification->user_id);
     }
 
     public function find($user, $id)

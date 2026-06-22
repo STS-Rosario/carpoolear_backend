@@ -32,6 +32,6 @@ class DatabaseChannel
             }
         }
 
-        NotificationCountCache::forget($user->id);
+        NotificationCountCache::forget((int) $user->id);
     }
 }

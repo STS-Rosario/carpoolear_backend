@@ -54,7 +54,7 @@ class NotificationManager
 
     public function getUnreadCount($user)
     {
-        return NotificationCountCache::remember($user->id, function () use ($user) {
+        return NotificationCountCache::remember((int) $user->id, function () use ($user) {
             return $this->repo->countUnreadNotifications($user);
         });
     }
