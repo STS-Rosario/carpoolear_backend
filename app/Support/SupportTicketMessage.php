@@ -20,4 +20,13 @@ final class SupportTicketMessage
     {
         return self::stripSupportInfo($message) !== '';
     }
+
+    public static function userContentValidationRule(): \Closure
+    {
+        return function (string $attribute, mixed $value, \Closure $fail): void {
+            if (! self::hasUserContent((string) $value)) {
+                $fail('The message markdown field is required.');
+            }
+        };
+    }
 }

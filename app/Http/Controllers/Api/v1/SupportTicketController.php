@@ -55,11 +55,7 @@ class SupportTicketController extends Controller
                 'required',
                 'string',
                 'min:1',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (! SupportTicketMessage::hasUserContent((string) $value)) {
-                        $fail('The message markdown field is required.');
-                    }
-                },
+                SupportTicketMessage::userContentValidationRule(),
             ],
             'attachments' => 'nullable|array|max:3',
             'attachments.*' => ImageAttachmentRules::FILE,
