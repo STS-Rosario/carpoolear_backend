@@ -13,6 +13,7 @@ use STS\Models\User;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
 use STS\Support\ImageAttachmentRules;
+use STS\Support\SupportTicketMessage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupportTicketController extends Controller
@@ -50,7 +51,12 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'type' => SupportTicket::typeValidationRule(),
             'subject' => 'required|string|min:3|max:160',
-            'message_markdown' => 'required|string|min:1',
+            'message_markdown' => [
+                'required',
+                'string',
+                'min:1',
+                SupportTicketMessage::userContentValidationRule(),
+            ],
             'attachments' => 'nullable|array|max:3',
             'attachments.*' => ImageAttachmentRules::FILE,
         ]);

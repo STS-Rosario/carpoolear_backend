@@ -409,6 +409,22 @@ class SupportTicketApiTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_create_rejects_message_markdown_that_contains_only_support_info(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $this->postJson('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Device info only',
+            'message_markdown' => "--- Información del dispositivo ---\nApp Version: 120\nPlatform: web",
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['message_markdown']);
+
+        $this->assertSame(0, SupportTicket::query()->count());
+    }
+
     public function test_create_returns_existing_ticket_when_subject_and_opening_message_duplicate(): void
     {
         $user = $this->createUser();
