@@ -226,6 +226,15 @@ class SupportTicketController extends Controller
 
     public function markNeedsReview(int $id, Request $request): JsonResponse
     {
+        $admin = auth()->user();
+        $ticket = SupportTicket::findOrFail($id);
+
+        if ($ticket->status === SupportTicket::STATUS_NEEDS_REVIEW) {
+            $this->supportTicketService->undoNeedsReviewTicket($ticket, $admin->id);
+
+            return response()->json(['data' => $ticket->fresh()]);
+        }
+
         return $this->applyActionStatus($id, $request, SupportTicket::STATUS_NEEDS_REVIEW);
     }
 
