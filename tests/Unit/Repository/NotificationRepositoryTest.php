@@ -3,6 +3,7 @@
 namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Mockery;
 use STS\Models\User;
 use STS\Repository\NotificationRepository;
@@ -189,5 +190,33 @@ class NotificationRepositoryTest extends TestCase
         $repo = new NotificationRepository;
 
         $this->assertNull($repo->find($user, 4_294_967_295));
+    }
+
+    public function test_count_unread_notifications_returns_expected_count(): void
+    {
+        $user = User::factory()->create();
+        $repo = new NotificationRepository;
+
+        $this->insert_notification($user, '2026-04-01 12:00:00', '2026-04-01 09:00:00');
+        $this->insert_notification($user, null, '2026-04-02 09:00:00');
+        $this->insert_notification($user, null, '2026-04-03 09:00:00');
+
+        $this->assertSame(2, $repo->countUnreadNotifications($user));
+    }
+
+    public function test_count_unread_notifications_uses_aggregate_query(): void
+    {
+        $user = User::factory()->create();
+        $repo = new NotificationRepository;
+
+        $this->insert_notification($user, null, '2026-04-02 09:00:00');
+
+        DB::enableQueryLog();
+        $repo->countUnreadNotifications($user);
+        $queries = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $this->assertCount(1, $queries);
+        $this->assertStringContainsString('count', strtolower($queries[0]['query']));
     }
 }

@@ -3,11 +3,13 @@
 namespace Tests\Unit\Services\Logic;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use STS\Models\User;
 use STS\Notifications\DummyNotification;
 use STS\Repository\NotificationRepository;
 use STS\Services\Logic\NotificationManager;
+use STS\Support\NotificationCountCache;
 use Tests\TestCase;
 
 class NotificationManagerTest extends TestCase
@@ -263,5 +265,65 @@ class NotificationManagerTest extends TestCase
         $result = $this->manager()->delete($user, 999999);
 
         $this->assertFalse($result);
+    }
+
+    public function test_get_unread_count_caches_result_between_requests(): void
+    {
+        Cache::flush();
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'cached');
+
+        $manager = $this->manager();
+        $this->assertSame(1, $manager->getUnreadCount($user));
+        $this->assertTrue(Cache::has(NotificationCountCache::key($user->id)));
+
+        $this->assertSame(1, $manager->getUnreadCount($user));
+    }
+
+    public function test_get_unread_count_cache_invalidated_when_notifications_marked_read(): void
+    {
+        Cache::flush();
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'read-me');
+
+        $manager = $this->manager();
+        $this->assertSame(1, $manager->getUnreadCount($user));
+
+        $manager->getNotifications($user, ['mark' => true]);
+
+        $this->assertFalse(Cache::has(NotificationCountCache::key($user->id)));
+        $this->assertSame(0, $manager->getUnreadCount($user));
+    }
+
+    public function test_get_unread_count_cache_invalidated_when_notification_deleted(): void
+    {
+        Cache::flush();
+        $user = User::factory()->create();
+        $this->sendDummy($user, 'delete-me');
+
+        $manager = $this->manager();
+        $rows = $manager->getNotifications($user, []);
+        $id = (int) $rows[0]['id'];
+
+        $this->assertSame(1, $manager->getUnreadCount($user));
+        $manager->delete($user, $id);
+
+        $this->assertFalse(Cache::has(NotificationCountCache::key($user->id)));
+        $this->assertSame(0, $manager->getUnreadCount($user));
+    }
+
+    public function test_get_unread_count_cache_invalidated_when_notification_created(): void
+    {
+        Cache::flush();
+        $user = User::factory()->create();
+        $manager = $this->manager();
+
+        $this->assertSame(0, $manager->getUnreadCount($user));
+        $this->assertTrue(Cache::has(NotificationCountCache::key($user->id)));
+
+        $this->sendDummy($user, 'fresh');
+
+        $this->assertFalse(Cache::has(NotificationCountCache::key($user->id)));
+        $this->assertSame(1, $manager->getUnreadCount($user));
     }
 }

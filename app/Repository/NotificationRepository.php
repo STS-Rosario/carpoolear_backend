@@ -3,6 +3,7 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
+use STS\Support\NotificationCountCache;
 
 class NotificationRepository
 {
@@ -20,11 +21,17 @@ class NotificationRepository
         return $query->get();
     }
 
+    public function countUnreadNotifications($user): int
+    {
+        return $user->unreadNotifications()->count();
+    }
+
     public function markAsRead($notification = null)
     {
         if ($notification) {
             $notification->read_at = Carbon::now();
             $notification->save();
+            NotificationCountCache::forget((int) $notification->user_id);
         } else {
             $user->unreadNotifications()->update(['read_at' => Carbon::now()]);
         }
@@ -34,6 +41,7 @@ class NotificationRepository
     {
         $notification->deleted_at = Carbon::now();
         $notification->save();
+        NotificationCountCache::forget((int) $notification->user_id);
     }
 
     public function find($user, $id)
