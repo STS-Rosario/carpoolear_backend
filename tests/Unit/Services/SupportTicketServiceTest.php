@@ -377,6 +377,65 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame($admin->id, (int) $ticket->fresh()->updated_by);
     }
 
+    public function test_undo_needs_review_restores_esperando_respuesta_when_last_reply_is_admin(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => SupportTicket::STATUS_NEEDS_REVIEW,
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User message',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+        ]);
+
+        $this->service()->undoNeedsReviewTicket($ticket, $admin->id);
+
+        $this->assertSame('Esperando respuesta', $ticket->fresh()->status);
+        $this->assertSame($admin->id, (int) $ticket->fresh()->updated_by);
+    }
+
+    public function test_undo_needs_review_restores_en_revision_when_last_reply_is_user(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => 1]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => SupportTicket::STATUS_NEEDS_REVIEW,
+            'priority' => 'normal',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User follow-up',
+        ]);
+
+        $this->service()->undoNeedsReviewTicket($ticket, $admin->id);
+
+        $this->assertSame('En revision', $ticket->fresh()->status);
+    }
+
     public function test_ticket_accepts_replies_is_false_for_resolved_and_closed(): void
     {
         $service = $this->service();
