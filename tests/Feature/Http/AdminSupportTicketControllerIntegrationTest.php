@@ -762,6 +762,65 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($before, SupportTicketReply::where('ticket_id', $ticket->id)->count());
     }
 
+    public function test_needs_review_toggle_undoes_when_already_marked_and_last_reply_is_admin(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => SupportTicket::STATUS_NEEDS_REVIEW]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User message',
+            'created_by' => $owner->id,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+            'created_by' => $admin->id,
+        ]);
+        $before = SupportTicketReply::where('ticket_id', $ticket->id)->count();
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/needs-review', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'Esperando respuesta');
+
+        $this->assertSame($before, SupportTicketReply::where('ticket_id', $ticket->id)->count());
+    }
+
+    public function test_needs_review_toggle_undoes_when_already_marked_and_last_reply_is_user(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => SupportTicket::STATUS_NEEDS_REVIEW]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $admin->id,
+            'is_admin' => true,
+            'message_markdown' => 'Admin reply',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicketReply::query()->create([
+            'ticket_id' => $ticket->id,
+            'user_id' => $owner->id,
+            'is_admin' => false,
+            'message_markdown' => 'User follow-up',
+            'created_by' => $owner->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/needs-review', [])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'En revision');
+    }
+
     public function test_reply_with_image_stores_file_on_local_support_tickets_disk(): void
     {
         Storage::fake('local');
