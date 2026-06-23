@@ -122,6 +122,7 @@ class OldCordovaAppHelperTest extends TestCase
         $this->assertSame('carpoolear_logo.png', $user['image']);
         $this->assertSame(0, $user['positive_ratings']);
         $this->assertSame(0, $user['negative_ratings']);
+        $this->assertSame(0, $user['neutral_ratings']);
         $this->assertFalse($user['has_pin']);
         $this->assertFalse($user['is_member']);
         $this->assertFalse($user['monthly_donate']);
@@ -150,7 +151,7 @@ class OldCordovaAppHelperTest extends TestCase
         }
 
         $expectedUserKeys = [
-            'id', 'name', 'descripcion', 'private_note', 'image', 'positive_ratings', 'negative_ratings',
+            'id', 'name', 'descripcion', 'private_note', 'image', 'positive_ratings', 'negative_ratings', 'neutral_ratings',
             'last_connection', 'accounts', 'has_pin', 'is_member', 'monthly_donate', 'do_not_alert_request_seat',
             'do_not_alert_accept_passenger', 'do_not_alert_pending_rates', 'do_not_alert_pricing',
             'autoaccept_requests', 'driver_is_verified', 'driver_data_docs', 'conversation_opened_count',

@@ -115,6 +115,7 @@ class RatingTest extends TestCase
     {
         $this->assertSame(0, Rating::STATE_NEGATIVO);
         $this->assertSame(1, Rating::STATE_POSITIVO);
+        $this->assertSame(2, Rating::STATE_NEUTRAL);
         $this->assertSame(15, Rating::RATING_INTERVAL);
     }
 

@@ -395,6 +395,62 @@ class RatingApiTest extends TestCase
             ->assertJsonFragment(['message' => 'Hash not provided']);
     }
 
+    public function test_rate_rejects_negative_and_neutral_votes_without_comment(): void
+    {
+        $voter = User::factory()->create(['active' => true, 'banned' => false]);
+        $rated = User::factory()->create(['active' => true, 'banned' => false]);
+        $negativeTrip = Trip::factory()->create(['user_id' => $voter->id]);
+        $neutralTrip = Trip::factory()->create(['user_id' => $voter->id]);
+
+        $this->persistRating([
+            'trip_id' => $negativeTrip->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $rated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => null,
+            'comment' => '',
+            'reply_comment' => '',
+            'voted' => false,
+            'voted_hash' => '',
+            'rate_at' => null,
+            'available' => 0,
+        ]);
+
+        $this->persistRating([
+            'trip_id' => $neutralTrip->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $rated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => null,
+            'comment' => '',
+            'reply_comment' => '',
+            'voted' => false,
+            'voted_hash' => '',
+            'rate_at' => null,
+            'available' => 0,
+        ]);
+
+        $this->actingAs($voter, 'api');
+
+        $this->postJson("api/trips/{$negativeTrip->id}/rate/{$rated->id}", [
+            'rating' => Rating::STATE_NEGATIVO,
+            'comment' => '',
+        ])
+            ->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Could not rate user.'])
+            ->assertJsonPath('errors.comment.0', 'The comment field is required for negative and neutral ratings.');
+
+        $this->postJson("api/trips/{$neutralTrip->id}/rate/{$rated->id}", [
+            'rating' => Rating::STATE_NEUTRAL,
+            'comment' => '   ',
+        ])
+            ->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Could not rate user.'])
+            ->assertJsonPath('errors.comment.0', 'The comment field is required for negative and neutral ratings.');
+    }
+
     public function test_rate_without_matching_row_returns_error(): void
     {
         $user = User::factory()->create(['active' => true, 'banned' => false]);

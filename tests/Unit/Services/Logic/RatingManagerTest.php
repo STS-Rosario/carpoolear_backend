@@ -20,7 +20,7 @@ class RatingManagerTest extends TestCase
         return $this->app->make(RatingManager::class);
     }
 
-    public function test_validator_requires_rating_and_accepts_zero_or_one(): void
+    public function test_validator_requires_rating_and_accepts_zero_one_or_two(): void
     {
         $manager = $this->manager();
 
@@ -28,11 +28,30 @@ class RatingManagerTest extends TestCase
         $this->assertTrue($missing->fails());
         $this->assertTrue($missing->errors()->has('rating'));
 
-        $okZero = $manager->validator(['rating' => 0, 'comment' => null]);
-        $this->assertFalse($okZero->fails());
+        $negativeWithoutComment = $manager->validator(['rating' => 0, 'comment' => null]);
+        $this->assertTrue($negativeWithoutComment->fails());
+        $this->assertTrue($negativeWithoutComment->errors()->has('comment'));
+
+        $negativeWithWhitespaceComment = $manager->validator(['rating' => 0, 'comment' => '   ']);
+        $this->assertTrue($negativeWithWhitespaceComment->fails());
+        $this->assertTrue($negativeWithWhitespaceComment->errors()->has('comment'));
+
+        $negativeWithComment = $manager->validator(['rating' => 0, 'comment' => 'Bad trip']);
+        $this->assertFalse($negativeWithComment->fails());
 
         $okOne = $manager->validator(['rating' => 1]);
         $this->assertFalse($okOne->fails());
+
+        $neutralWithoutComment = $manager->validator(['rating' => 2, 'comment' => null]);
+        $this->assertTrue($neutralWithoutComment->fails());
+        $this->assertTrue($neutralWithoutComment->errors()->has('comment'));
+
+        $okTwo = $manager->validator(['rating' => 2, 'comment' => 'Neutral trip']);
+        $this->assertFalse($okTwo->fails());
+
+        $invalid = $manager->validator(['rating' => 3]);
+        $this->assertTrue($invalid->fails());
+        $this->assertTrue($invalid->errors()->has('rating'));
     }
 
     public function test_validator_rejects_array_comment_when_rating_is_present(): void
@@ -221,6 +240,27 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_rate_user_persists_neutral_vote(): void
+    {
+        Carbon::setTestNow('2026-11-11 10:00:00');
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $trip->id, 0, 0, 'neu-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($passenger, $driver->id, $trip->id, [
+            'rating' => Rating::STATE_NEUTRAL,
+            'comment' => 'Average experience',
+        ]));
+
+        $row = $repo->getRating($passenger->id, $driver->id, $trip->id);
+        $this->assertSame(Rating::STATE_NEUTRAL, (int) $row->rating);
+        $this->assertSame('Average experience', $row->comment);
+
+        Carbon::setTestNow();
+    }
+
     public function test_rate_user_persists_negative_vote(): void
     {
         Carbon::setTestNow('2026-11-11 09:00:00');
@@ -232,11 +272,39 @@ class RatingManagerTest extends TestCase
 
         $this->assertTrue($this->manager()->rateUser($passenger, $driver->id, $trip->id, [
             'rating' => 0,
-            'comment' => null,
+            'comment' => 'Late and rude',
         ]));
 
         $row = $repo->getRating($passenger->id, $driver->id, $trip->id);
         $this->assertSame(Rating::STATE_NEGATIVO, (int) $row->rating);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_rate_user_rejects_negative_and_neutral_votes_without_comment(): void
+    {
+        Carbon::setTestNow('2026-11-11 09:30:00');
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $negativeTrip = Trip::factory()->create(['user_id' => $driver->id]);
+        $neutralTrip = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $negativeTrip->id, 0, 0, 'neg-empty-'.uniqid('', true));
+        $repo->create($passenger->id, $driver->id, $neutralTrip->id, 0, 0, 'neu-empty-'.uniqid('', true));
+
+        $manager = $this->manager();
+        $this->assertNull($manager->rateUser($passenger, $driver->id, $negativeTrip->id, [
+            'rating' => Rating::STATE_NEGATIVO,
+            'comment' => '',
+        ]));
+        $this->assertTrue($manager->getErrors()->has('comment'));
+
+        $manager = $this->manager();
+        $this->assertNull($manager->rateUser($passenger, $driver->id, $neutralTrip->id, [
+            'rating' => Rating::STATE_NEUTRAL,
+            'comment' => '   ',
+        ]));
+        $this->assertTrue($manager->getErrors()->has('comment'));
 
         Carbon::setTestNow();
     }

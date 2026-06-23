@@ -123,6 +123,7 @@ class User extends Authenticatable implements JWTSubject
         return [
             'positive_ratings',
             'negative_ratings',
+            'neutral_ratings',
             'references',
         ];
     }
@@ -377,6 +378,11 @@ class User extends Authenticatable implements JWTSubject
     public function getNegativeRatingsAttribute()
     {
         return $this->ratings(RatingModel::STATE_NEGATIVO)->count();
+    }
+
+    public function getNeutralRatingsAttribute()
+    {
+        return $this->ratings(RatingModel::STATE_NEUTRAL)->count();
     }
 
     public function getReferencesAttribute()

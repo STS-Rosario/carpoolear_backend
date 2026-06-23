@@ -19,6 +19,8 @@ class Rating extends Model
 
     const STATE_POSITIVO = 1;
 
+    const STATE_NEUTRAL = 2;
+
     const RATING_INTERVAL = 15;
 
     protected $table = 'rating';

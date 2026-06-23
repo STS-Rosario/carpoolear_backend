@@ -96,6 +96,7 @@ class ConversationsTransformer extends TransformerAbstract
                 'identity_validated_at' => $u->identity_validated_at ? $u->identity_validated_at->toDateTimeString() : null,
                 'positive_ratings' => $u->positive_ratings,
                 'negative_ratings' => $u->negative_ratings,
+                'neutral_ratings' => $u->neutral_ratings,
             ];
         }
 

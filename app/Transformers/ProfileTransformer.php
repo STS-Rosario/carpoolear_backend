@@ -59,6 +59,7 @@ class ProfileTransformer extends TransformerAbstract
             'image' => $user->image,
             'positive_ratings' => $user->positive_ratings,
             'negative_ratings' => $user->negative_ratings,
+            'neutral_ratings' => $user->neutral_ratings,
             'birthday' => $user->birthday,
             'gender' => $user->gender,
             // 'mobile_phone' => $user->mobile_phone,

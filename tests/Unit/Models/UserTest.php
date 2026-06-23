@@ -150,7 +150,7 @@ class UserTest extends TestCase
 
     public function test_appends_list_rating_and_reference_accessors(): void
     {
-        $expected = ['positive_ratings', 'negative_ratings', 'references'];
+        $expected = ['positive_ratings', 'negative_ratings', 'neutral_ratings', 'references'];
         $this->assertSame($expected, (new User)->getAppends());
     }
 
@@ -569,6 +569,7 @@ class UserTest extends TestCase
         ];
         DB::table('rating')->insert(array_merge($base, ['rating' => Rating::STATE_POSITIVO]));
         DB::table('rating')->insert(array_merge($base, ['rating' => Rating::STATE_NEGATIVO]));
+        DB::table('rating')->insert(array_merge($base, ['rating' => Rating::STATE_NEUTRAL]));
 
         References::query()->create([
             'user_id_from' => $rater->id,
@@ -579,6 +580,7 @@ class UserTest extends TestCase
         $subject = $subject->fresh();
         $this->assertSame(1, $subject->positive_ratings);
         $this->assertSame(1, $subject->negative_ratings);
+        $this->assertSame(1, $subject->neutral_ratings);
         $this->assertSame(1, $subject->references);
     }
 

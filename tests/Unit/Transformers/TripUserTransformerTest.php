@@ -46,6 +46,7 @@ class TripUserTransformerTest extends TestCase
             'image',
             'positive_ratings',
             'negative_ratings',
+            'neutral_ratings',
             'last_connection',
             'accounts',
             'has_pin',
@@ -69,6 +70,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame('Private note', $payload['private_note']);
         $this->assertSame(0, $payload['positive_ratings']);
         $this->assertSame(0, $payload['negative_ratings']);
+        $this->assertSame(0, $payload['neutral_ratings']);
         $this->assertSame(3, $payload['conversation_opened_count']);
         $this->assertSame(2, $payload['conversation_answered_count']);
         $this->assertSame(120.0, $payload['answer_delay_sum']);
@@ -108,6 +110,7 @@ class TripUserTransformerTest extends TestCase
             'image',
             'positive_ratings',
             'negative_ratings',
+            'neutral_ratings',
             'last_connection',
             'accounts',
             'has_pin',
@@ -132,6 +135,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame('', $payload['image']);
         $this->assertSame(0, $payload['positive_ratings']);
         $this->assertSame(0, $payload['negative_ratings']);
+        $this->assertSame(0, $payload['neutral_ratings']);
         $this->assertSame('', $payload['last_connection']);
         $this->assertNull($payload['accounts']);
         $this->assertFalse($payload['has_pin']);
