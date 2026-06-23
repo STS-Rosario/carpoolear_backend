@@ -159,6 +159,13 @@ class SupportTicketService
         $ticket->save();
     }
 
+    public function undoNeedsReviewTicket(SupportTicket $ticket, int $adminUserId): void
+    {
+        $ticket->status = $this->statusAfterUndoResolve($ticket);
+        $ticket->updated_by = $adminUserId;
+        $ticket->save();
+    }
+
     public function ticketAcceptsReplies(SupportTicket $ticket): bool
     {
         return ! in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true);
