@@ -3,6 +3,7 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Log;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
@@ -38,7 +39,32 @@ class MercadoPagoWebhookController extends Controller
     {
         // Handle order.processed (QR/Orders API) - sent when QR order is paid
         if ($request->input('action') === 'order.processed') {
-            return $this->handleOrderProcessed($request);
+            try {
+                return $this->handleOrderProcessed($request);
+            } catch (\Throwable $e) {
+                Log::error('MercadoPago order.processed webhook failed', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+
+                return response()->json(['error' => 'Internal error'], 500);
+            }
+        }
+
+        $webhookType = $request->query('type') ?? $request->input('type');
+        if ($webhookType === 'topic_merchant_order_wh') {
+            try {
+                return $this->handleMerchantOrderWebhook($request);
+            } catch (\Throwable $e) {
+                Log::error('MercadoPago merchant order webhook failed', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+
+                return response()->json(['error' => 'Internal error'], 500);
+            }
         }
 
         // Only process payment.created (Payments API / Checkout Pro)
@@ -138,8 +164,9 @@ class MercadoPagoWebhookController extends Controller
      *
      * @param  bool  $isOrderWebhook  True for Orders API (QR), false for Payments API (Checkout Pro / Sellado).
      *                                Orders API uses data.id in query (lowercased); Payments API uses data_id.
+     * @param  array<int, string>|null  $secretCandidates  Secrets to try, in order. Defaults from webhook type.
      */
-    protected function verifyMercadoPagoRequest(Request $request, bool $isOrderWebhook = false)
+    protected function verifyMercadoPagoRequest(Request $request, bool $isOrderWebhook = false, ?array $secretCandidates = null)
     {
         $xSignature = $request->header('x-signature');
         $xRequestId = $request->header('x-request-id');
@@ -189,33 +216,81 @@ class MercadoPagoWebhookController extends Controller
             return false;
         }
 
-        // Get the secret key from config (QR/Orders API uses separate secret)
-        $secret = $isOrderWebhook
-            ? config('services.mercadopago.webhook_secret_qr_payment')
-            : config('services.mercadopago.webhook_secret');
-        if (! $secret) {
+        // Generate the manifest string
+        $manifest = "id:{$dataId};request-id:{$xRequestId};ts:{$ts};";
+
+        if ($secretCandidates === null) {
+            $secretCandidates = $this->webhookSecretCandidatesForRequest($request, $isOrderWebhook);
+        }
+        $secretCandidates = array_values(array_filter($secretCandidates));
+
+        if ($secretCandidates === []) {
             Log::error('Mercado Pago webhook secret not configured');
 
             return false;
         }
 
-        // Generate the manifest string
-        $manifest = "id:{$dataId};request-id:{$xRequestId};ts:{$ts};";
+        $lastCalculatedHash = null;
+        foreach ($secretCandidates as $secret) {
+            $calculatedHash = hash_hmac('sha256', $manifest, $secret);
+            $lastCalculatedHash = $calculatedHash;
+            if (hash_equals($calculatedHash, $hash)) {
+                return true;
+            }
+        }
 
-        // Generate HMAC signature
-        $calculatedHash = hash_hmac('sha256', $manifest, $secret);
+        Log::error('Invalid webhook signature', [
+            'calculated' => $lastCalculatedHash,
+            'received' => $hash,
+        ]);
 
-        // Compare signatures
-        if (! hash_equals($calculatedHash, $hash)) {
-            Log::error('Invalid webhook signature', [
-                'calculated' => $calculatedHash,
-                'received' => $hash,
-            ]);
+        return false;
+    }
 
+    /**
+     * @return array<int, string>
+     */
+    protected function webhookSecretCandidatesForRequest(Request $request, bool $isOrderWebhook): array
+    {
+        $standard = config('services.mercadopago.webhook_secret');
+        $qr = config('services.mercadopago.webhook_secret_qr_payment');
+
+        if ($isOrderWebhook) {
+            return array_values(array_filter([$qr]));
+        }
+
+        if ($this->isQrPaymentApplicationWebhook($request)) {
+            return array_values(array_filter(array_unique([$qr, $standard])));
+        }
+
+        return array_values(array_filter(array_unique([$standard, $qr])));
+    }
+
+    /**
+     * QR manual-validation payments use a separate MP application.
+     * Webhook body includes application_id which matches MERCADO_PAGO_QR_PAYMENT_CLIENT_ID
+     * (or MERCADO_PAGO_QR_PAYMENT_APPLICATION_ID when set).
+     */
+    protected function isQrPaymentApplicationWebhook(Request $request): bool
+    {
+        $applicationId = (string) ($request->input('application_id') ?? '');
+        if ($applicationId === '') {
             return false;
         }
 
-        return true;
+        $qrApplicationId = (string) (
+            config('services.mercadopago.qr_payment_application_id')
+            ?: config('services.mercadopago.qr_payment_client_id')
+            ?: ''
+        );
+
+        return $qrApplicationId !== '' && $applicationId === $qrApplicationId;
+    }
+
+    protected function isManualValidationExternalReference(string $externalReference): bool
+    {
+        return strpos($externalReference, 'manual_validation:') === 0
+            || strpos($externalReference, 'manual_validation_') === 0;
     }
 
     protected function getMercadoPagoPayment($paymentId)
@@ -453,7 +528,7 @@ class MercadoPagoWebhookController extends Controller
         }
 
         $orderData = $request->input('data');
-        if (! $orderData || ! isset($orderData['external_reference'])) {
+        if (! is_array($orderData) || ! isset($orderData['external_reference'])) {
             Log::error('Invalid order.processed webhook: missing data or external_reference');
 
             return response()->json(['error' => 'Invalid payload'], 400);
@@ -462,32 +537,140 @@ class MercadoPagoWebhookController extends Controller
         $externalReference = $orderData['external_reference'] ?? '';
         $orderStatus = $orderData['status'] ?? '';
         $orderStatusDetail = $orderData['status_detail'] ?? '';
+        $payments = $this->extractOrderPayments($orderData);
 
         // Only process when order is fully paid (processed + accredited)
         if ($orderStatus !== 'processed' || $orderStatusDetail !== 'accredited') {
             return response()->json(['status' => 'success']);
         }
 
-        // manual_validation:requestId (Checkout Pro) or manual_validation_requestId (QR)
-        if (strpos($externalReference, 'manual_validation:') !== 0 && strpos($externalReference, 'manual_validation_') !== 0) {
+        if (! $this->isManualValidationExternalReference($externalReference)) {
             return response()->json(['status' => 'success']);
         }
 
-        // Get payment ID from first payment in transactions
         $paymentId = null;
-        $payments = $orderData['transactions']['payments'] ?? [];
         if (! empty($payments) && isset($payments[0]['id'])) {
             $paymentId = $payments[0]['id'];
         }
 
-        $mpPayment = [
+        return $this->handleManualValidationPayment([
             'id' => $paymentId,
             'status' => 'approved',
             'status_detail' => $orderStatusDetail,
             'external_reference' => $externalReference,
-        ];
+        ]);
+    }
 
-        return $this->handleManualValidationPayment($mpPayment);
+    /**
+     * @param  array<string, mixed>  $orderData
+     * @return array<int, array<string, mixed>>
+     */
+    protected function extractOrderPayments(array $orderData): array
+    {
+        $transactions = $orderData['transactions'] ?? null;
+        if (! is_array($transactions)) {
+            return [];
+        }
+
+        $payments = $transactions['payments'] ?? null;
+
+        return is_array($payments) ? $payments : [];
+    }
+
+    /**
+     * Handle topic_merchant_order_wh (legacy commercial order notifications).
+     * MP may send these for QR payments instead of order.processed depending on integration config.
+     * When status is closed, fetch the merchant order and mark manual validation as paid.
+     */
+    protected function handleMerchantOrderWebhook(Request $request)
+    {
+        $action = $request->input('action');
+        $status = $request->input('status') ?? ($request->input('data.status') ?? null);
+        $merchantOrderId = $request->query('data_id') ?? $request->input('data_id');
+
+        if ($action !== 'update' || $status !== 'closed') {
+            return response()->json(['status' => 'success']);
+        }
+
+        if (! $this->verifyMercadoPagoRequest($request, false)) {
+            Log::error('Invalid MercadoPago merchant order webhook request');
+
+            return response()->json(['error' => 'Invalid request'], 400);
+        }
+
+        if (! $merchantOrderId) {
+            return response()->json(['error' => 'No merchant order ID'], 400);
+        }
+
+        $merchantOrder = $this->getMercadoPagoMerchantOrder($merchantOrderId);
+        if (! $merchantOrder) {
+            return response()->json(['error' => 'Could not fetch merchant order'], 500);
+        }
+
+        $externalReference = $merchantOrder['external_reference'] ?? '';
+        if (! $this->isManualValidationExternalReference($externalReference)) {
+            return response()->json(['status' => 'success']);
+        }
+
+        $paymentId = null;
+        $payments = $merchantOrder['payments'] ?? [];
+        if (is_array($payments)) {
+            foreach ($payments as $payment) {
+                if (is_array($payment) && ($payment['status'] ?? '') === 'approved' && isset($payment['id'])) {
+                    $paymentId = $payment['id'];
+                    break;
+                }
+            }
+            if ($paymentId === null && isset($payments[0]['id'])) {
+                $paymentId = $payments[0]['id'];
+            }
+        }
+
+        return $this->handleManualValidationPayment([
+            'id' => $paymentId,
+            'status' => 'approved',
+            'status_detail' => 'accredited',
+            'external_reference' => $externalReference,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function getMercadoPagoMerchantOrder($merchantOrderId): ?array
+    {
+        $tokens = array_values(array_filter(array_unique([
+            config('services.mercadopago.qr_payment_access_token'),
+            config('services.mercadopago.access_token'),
+        ])));
+
+        if ($tokens === []) {
+            Log::error('No Mercado Pago access token configured for merchant order fetch');
+
+            return null;
+        }
+
+        foreach ($tokens as $token) {
+            try {
+                $response = Http::timeout(15)
+                    ->withToken($token)
+                    ->get('https://api.mercadopago.com/merchant_orders/'.$merchantOrderId);
+
+                if ($response->successful()) {
+                    $body = $response->json();
+                    if (is_array($body)) {
+                        return $body;
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::error('Error fetching MercadoPago merchant order', [
+                    'merchant_order_id' => $merchantOrderId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -522,7 +705,6 @@ class MercadoPagoWebhookController extends Controller
                 $validationRequest->paid_at = now();
                 $validationRequest->payment_id = (string) $mpPayment['id'];
                 $validationRequest->save();
-
             }
         }
 

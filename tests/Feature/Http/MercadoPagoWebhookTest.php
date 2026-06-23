@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Support\Facades\Http;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -500,5 +501,165 @@ class MercadoPagoWebhookTest extends TestCase
         $this->assertArrayHasKey('date_created', $attempt->payment_data);
         $this->assertArrayHasKey('date_approved', $attempt->payment_data);
         $this->assertArrayHasKey('date_last_updated', $attempt->payment_data);
+    }
+
+    public function test_merchant_order_closed_marks_manual_validation_paid_when_signed_with_qr_secret(): void
+    {
+        config([
+            'services.mercadopago.webhook_secret' => 'wh-secret-checkout',
+            'services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr',
+            'services.mercadopago.qr_payment_client_id' => '2333034981366591',
+            'services.mercadopago.access_token' => 'test-access-token',
+        ]);
+
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $merchantOrderId = 42085488043;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-qr-secret', 'wh-secret-qr');
+
+        Http::fake([
+            'api.mercadopago.com/merchant_orders/'.$merchantOrderId => Http::response([
+                'id' => $merchantOrderId,
+                'status' => 'closed',
+                'external_reference' => 'manual_validation_'.$row->id,
+                'external_pos_id' => 'carpoolearmanualvalidationposprod1',
+                'payments' => [
+                    ['id' => 99112233, 'status' => 'approved'],
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'update',
+            'status' => 'closed',
+            'application_id' => '2333034981366591',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'closed'],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $row->refresh();
+        $this->assertTrue($row->paid);
+        $this->assertSame('99112233', $row->payment_id);
+    }
+
+    public function test_merchant_order_closed_marks_manual_validation_paid_with_checkout_secret(): void
+    {
+        config([
+            'services.mercadopago.webhook_secret' => 'wh-secret-test',
+            'services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-unused',
+            'services.mercadopago.access_token' => 'test-access-token',
+        ]);
+
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $merchantOrderId = 42085488043;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-closed', 'wh-secret-test');
+
+        Http::fake([
+            'api.mercadopago.com/merchant_orders/'.$merchantOrderId => Http::response([
+                'id' => $merchantOrderId,
+                'status' => 'closed',
+                'external_reference' => 'manual_validation_'.$row->id,
+                'payments' => [
+                    ['id' => 99112233, 'status' => 'approved'],
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'update',
+            'status' => 'closed',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'closed'],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $row->refresh();
+        $this->assertTrue($row->paid);
+        $this->assertSame('99112233', $row->payment_id);
+    }
+
+    public function test_merchant_order_closed_rejects_signature_that_matches_neither_secret(): void
+    {
+        config([
+            'services.mercadopago.webhook_secret' => 'wh-secret-checkout',
+            'services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr',
+            'services.mercadopago.qr_payment_client_id' => '2333034981366591',
+        ]);
+
+        $merchantOrderId = 42085488045;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-wrong-secret', 'wh-secret-wrong');
+
+        Http::fake();
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'update',
+            'status' => 'closed',
+            'application_id' => '2333034981366591',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'closed'],
+        ], $headers)
+            ->assertStatus(400)
+            ->assertJson(['error' => 'Invalid request']);
+
+        Http::assertNothingSent();
+    }
+
+    public function test_merchant_order_opened_does_not_mark_manual_validation_paid(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $merchantOrderId = 42085488044;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-opened', 'wh-secret-test');
+
+        Http::fake();
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'create',
+            'status' => 'opened',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'opened'],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $this->assertFalse($row->fresh()->paid);
+        Http::assertNothingSent();
     }
 }
