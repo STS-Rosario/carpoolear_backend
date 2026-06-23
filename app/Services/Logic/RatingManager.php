@@ -29,10 +29,22 @@ class RatingManager extends BaseManager
 
     public function validator(array $data)
     {
-        return Validator::make($data, [
+        $validator = Validator::make($data, [
             'comment' => 'nullable|string',
             'rating' => 'required|integer|in:0,1,2',
         ]);
+
+        $validator->after(function ($validator) use ($data) {
+            $rating = array_key_exists('rating', $data) ? (int) $data['rating'] : null;
+            if (! RatingHelper::hasRequiredRatingComment($rating, $data['comment'] ?? null)) {
+                $validator->errors()->add(
+                    'comment',
+                    'The comment field is required for negative and neutral ratings.'
+                );
+            }
+        });
+
+        return $validator;
     }
 
     public function getRate($userOrHash, $user_to_id, $trip_id)
