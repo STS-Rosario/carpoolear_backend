@@ -63,6 +63,8 @@ class OldCordovaAppHelper
             'id' => 0,
             'from_town' => 'ACTUALIZA TU APP',
             'to_town' => 'para usar Carpoolear',
+            'punto_partida' => null,
+            'punto_llegada' => null,
             'trip_date' => '2026-12-31 12:00:00',
             'weekly_schedule' => 0,
             'weekly_schedule_time' => null,

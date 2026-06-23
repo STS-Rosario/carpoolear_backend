@@ -139,7 +139,7 @@ class OldCordovaAppHelperTest extends TestCase
         $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $user['last_connection']);
 
         $expectedTopLevel = [
-            'id', 'from_town', 'to_town', 'trip_date', 'weekly_schedule', 'weekly_schedule_time',
+            'id', 'from_town', 'to_town', 'punto_partida', 'punto_llegada', 'trip_date', 'weekly_schedule', 'weekly_schedule_time',
             'description', 'total_seats', 'friendship_type_id', 'distance', 'estimated_time',
             'seat_price_cents', 'recommended_trip_price_cents', 'total_price', 'state', 'is_passenger',
             'passenger_count', 'seats_available', 'points', 'ratings', 'updated_at', 'allow_kids',

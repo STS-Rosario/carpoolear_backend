@@ -40,6 +40,8 @@ class TripTest extends TestCase
             'user_id',
             'from_town',
             'to_town',
+            'punto_partida',
+            'punto_llegada',
             'trip_date',
             'weekly_schedule',
             'weekly_schedule_time',

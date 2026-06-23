@@ -48,6 +48,8 @@ class TripControllerIntegrationTest extends TestCase
             'is_passenger' => 0,
             'from_town' => 'Origin Town',
             'to_town' => 'Destination Town',
+            'punto_partida' => 'Barrio Centro',
+            'punto_llegada' => 'Barrio Norte',
             'trip_date' => '2028-03-10 15:00:00',
             'total_seats' => 3,
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
@@ -427,6 +429,44 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonPath('data.existing', true);
 
         $this->assertSame(1, Trip::where('user_id', $user->id)->count());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_create_persists_punto_partida_and_punto_llegada_and_returns_them_in_payload(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $this->seedRouteCacheForMinimalCreatePoints();
+        Http::fake();
+
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'description' => 'Completed description',
+            'image' => 'profile.jpg',
+            'nro_doc' => '30111222',
+            'mobile_phone' => '+5493415551234',
+        ]);
+        Car::factory()->withCatalog()->create([
+            'user_id' => $user->id,
+            'patente' => 'OK123',
+        ]);
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/trips', array_merge($this->minimalCreatePayload(), [
+                'punto_partida' => 'Terminal de Ómnibus',
+                'punto_llegada' => 'Plaza Principal',
+            ]));
+
+        $response->assertOk()
+            ->assertJsonPath('data.punto_partida', 'Terminal de Ómnibus')
+            ->assertJsonPath('data.punto_llegada', 'Plaza Principal');
+
+        $tripId = (int) $response->json('data.id');
+        $this->assertDatabaseHas('trips', [
+            'id' => $tripId,
+            'punto_partida' => 'Terminal de Ómnibus',
+            'punto_llegada' => 'Plaza Principal',
+        ]);
 
         Carbon::setTestNow();
     }

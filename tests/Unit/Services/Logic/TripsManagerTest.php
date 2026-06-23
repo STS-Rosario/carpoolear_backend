@@ -43,6 +43,8 @@ class TripsManagerTest extends TestCase
             'is_passenger' => 0,
             'from_town' => 'Origin Town',
             'to_town' => 'Destination Town',
+            'punto_partida' => 'Barrio Centro',
+            'punto_llegada' => 'Barrio Norte',
             'trip_date' => '2028-03-10 15:00:00',
             'total_seats' => 3,
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
@@ -96,13 +98,28 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_validator_create_requires_punto_partida_and_punto_llegada(): void
+    {
+        Carbon::setTestNow('2028-01-01 12:00:00');
+        $user = User::factory()->create();
+        $payload = $this->minimalCreatePayload();
+        unset($payload['punto_partida'], $payload['punto_llegada']);
+
+        $v = $this->manager()->validator($payload, $user->id);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('punto_partida'));
+        $this->assertTrue($v->errors()->has('punto_llegada'));
+        Carbon::setTestNow();
+    }
+
     public function test_validator_create_includes_all_documented_rule_keys(): void
     {
         Carbon::setTestNow('2028-01-01 12:00:00');
         $user = User::factory()->create();
         $rules = $this->manager()->validator($this->minimalCreatePayload(), $user->id)->getRules();
         $expected = [
-            'is_passenger', 'from_town', 'to_town', 'trip_date', 'total_seats', 'friendship_type_id',
+            'is_passenger', 'from_town', 'to_town', 'punto_partida', 'punto_llegada', 'trip_date', 'total_seats', 'friendship_type_id',
             'estimated_time', 'distance', 'co2', 'description', 'return_trip_id', 'parent_trip_id', 'car_id',
             'weekly_schedule', 'weekly_schedule_time',
         ];
@@ -131,7 +148,7 @@ class TripsManagerTest extends TestCase
         ];
         $rules = $this->manager()->validator($payload, $user->id, $trip->id)->getRules();
         $expected = [
-            'is_passenger', 'from_town', 'to_town', 'trip_date', 'total_seats', 'friendship_type_id',
+            'is_passenger', 'from_town', 'to_town', 'punto_partida', 'punto_llegada', 'trip_date', 'total_seats', 'friendship_type_id',
             'estimated_time', 'distance', 'co2', 'return_trip_id', 'parent_trip_id', 'car_id',
             'weekly_schedule', 'weekly_schedule_time',
         ];
