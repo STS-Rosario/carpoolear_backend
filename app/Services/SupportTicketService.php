@@ -137,7 +137,8 @@ class SupportTicketService
     }
 
     /**
-     * Status to restore when undoing "Resuelto", based on who sent the latest reply.
+     * Status to restore when undoing admin-set statuses (Resuelto, Necesita revisión),
+     * based on who sent the latest reply.
      */
     public function statusAfterUndoResolve(SupportTicket $ticket): string
     {
@@ -154,12 +155,15 @@ class SupportTicketService
 
     public function unresolveTicket(SupportTicket $ticket, int $adminUserId): void
     {
-        $ticket->status = $this->statusAfterUndoResolve($ticket);
-        $ticket->updated_by = $adminUserId;
-        $ticket->save();
+        $this->restoreStatusFromLastReply($ticket, $adminUserId);
     }
 
     public function undoNeedsReviewTicket(SupportTicket $ticket, int $adminUserId): void
+    {
+        $this->restoreStatusFromLastReply($ticket, $adminUserId);
+    }
+
+    private function restoreStatusFromLastReply(SupportTicket $ticket, int $adminUserId): void
     {
         $ticket->status = $this->statusAfterUndoResolve($ticket);
         $ticket->updated_by = $adminUserId;
