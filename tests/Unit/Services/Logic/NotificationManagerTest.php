@@ -372,6 +372,8 @@ class NotificationManagerTest extends TestCase
         $notification->setAttribute('trip', $trip);
         $notification->notify($user);
 
+        config(['app.locale' => 'arg']);
+
         $rows = $this->manager()->getNotifications($user, []);
 
         $this->assertCount(1, $rows);
