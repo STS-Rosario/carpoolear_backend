@@ -95,9 +95,12 @@ return [
     ],
 
     'trip_creation_limits' => [
-        'max_trips' => 5,        // Maximum number of trips allowed
-        'time_window_hours' => 24,     // Time window in hours
+        'max_trips' => (int) env('TRIP_CREATION_LIMIT_MAX_TRIPS', 5),
+        'time_window_hours' => (int) env('TRIP_CREATION_LIMIT_TIME_WINDOW_HOURS', 24),
     ],
+
+    // Set to true to disable auto-ban for excessive trip creation (local dev only)
+    'disable_trip_creation_limits' => env('DISABLE_TRIP_CREATION_LIMITS', false),
 
     // Password reset rate limiting
     // Set to true to disable rate limiting for debugging (find culprit emails)

@@ -44,6 +44,7 @@ use STS\Http\Controllers\Api\v1\SocialController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\SupportTicketController;
 use STS\Http\Controllers\Api\v1\TripController;
+use STS\Http\Controllers\Api\v1\TripCreationTemplateController;
 use STS\Http\Controllers\Api\v1\TripLiveShareController;
 use STS\Http\Controllers\Api\v1\UserController;
 
@@ -207,6 +208,13 @@ Route::middleware(['api'])->group(function () {
         Route::put('/{id?}', [CarController::class, 'update']);
         Route::delete('/{id?}', [CarController::class, 'delete']);
         Route::get('/{id?}', [CarController::class, 'show']);
+    });
+
+    Route::prefix('trip-creation-templates')->group(function () {
+        Route::get('/', [TripCreationTemplateController::class, 'index']);
+        Route::post('/', [TripCreationTemplateController::class, 'store']);
+        Route::get('/{name}', [TripCreationTemplateController::class, 'show'])
+            ->where('name', '.+');
     });
 
     Route::prefix('subscriptions')->group(function () {
