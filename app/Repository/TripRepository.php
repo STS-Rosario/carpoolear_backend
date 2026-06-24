@@ -261,27 +261,35 @@ class TripRepository
                 } else {
                     $trip->state = Trip::STATE_AWAITING_PAYMENT;
 
+                    $paymentUrl = null;
                     // Only create payment preference if one doesn't exist
                     if (! $trip->payment_id) {
                         // Create MercadoPago payment preference
                         $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
                         $trip->payment_id = $preference->id;
-                        $trip->payment_url = $preference->init_point;
+                        $paymentUrl = $preference->init_point;
                     }
 
                     $trip->needs_sellado = true;
                     $trip->save();
+
+                    if ($paymentUrl !== null) {
+                        $trip->payment_url = $paymentUrl;
+                    }
                 }
             } elseif (config('carpoolear.module_trip_creation_payment_enabled') && ! $routeNeedsPayment) {
                 // Route was edited so it no longer needs Sellado (fewer than 2 points in paid zone)
                 $trip->needs_sellado = false;
                 $paymentStates = [Trip::STATE_AWAITING_PAYMENT, Trip::STATE_PENDING_PAYMENT, Trip::STATE_PAYMENT_FAILED];
-                if (in_array($trip->state, $paymentStates)) {
+                $wasInPaymentState = in_array($trip->state, $paymentStates);
+                if ($wasInPaymentState) {
                     $trip->payment_id = null;
-                    $trip->payment_url = null;
                     $trip->state = Trip::STATE_READY;
                 }
                 $trip->save();
+                if ($wasInPaymentState) {
+                    $trip->payment_url = null;
+                }
             }
         }
 
