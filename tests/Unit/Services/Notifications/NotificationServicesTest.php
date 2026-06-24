@@ -10,6 +10,7 @@ use STS\Models\AppConfig;
 use STS\Models\User;
 use STS\Notifications\DummyNotification;
 use STS\Services\Notifications\NotificationServices;
+use STS\Support\UserLocale;
 use Tests\TestCase;
 
 final class RecordingNotificationChannel
@@ -179,13 +180,20 @@ class NotificationServicesTest extends TestCase
     {
         config(['app.locale' => 'arg']);
         app()->setLocale('en');
+        config(['app.locale' => 'arg']);
 
-        $user = User::factory()->create(['locale' => null]);
+        $user = User::factory()->create();
+        $user->forceFill(['locale' => null])->saveQuietly();
+        $user->refresh();
+
+        $this->assertNull($user->locale);
+        $this->assertSame('arg', UserLocale::resolve($user, 'arg'));
+
         $svc = new NotificationServices;
 
         $svc->send(new DummyNotification, $user, LocaleRecordingChannel::class);
 
         $this->assertSame('arg', LocaleRecordingChannel::$locale);
-        $this->assertSame('en', app()->getLocale());
+        $this->assertSame('arg', app()->getLocale());
     }
 }

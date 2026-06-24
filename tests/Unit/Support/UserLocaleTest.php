@@ -15,6 +15,13 @@ class UserLocaleTest extends TestCase
         $this->assertSame('en', UserLocale::resolve($user));
     }
 
+    public function test_resolve_falls_back_to_explicit_fallback_when_user_locale_is_missing(): void
+    {
+        $user = User::factory()->make(['locale' => null]);
+
+        $this->assertSame('arg', UserLocale::resolve($user, 'arg'));
+    }
+
     public function test_resolve_falls_back_to_app_locale_when_user_locale_is_missing(): void
     {
         config(['app.locale' => 'arg']);
