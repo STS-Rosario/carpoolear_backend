@@ -500,14 +500,14 @@ class TripRepository
         }
 
         // In the list, unpaid sellado trips are visible only to their owner (including for admins)
-        if ($user) {
-            $trips->where(function ($q) use ($user) {
-                $q->where('user_id', $user->id)
-                    ->orWhere('needs_sellado', '=', 0)
-                    ->orWhereNull('needs_sellado')
-                    ->orWhere('state', '=', Trip::STATE_READY);
-            });
-        }
+        $trips->where(function ($q) use ($user) {
+            if ($user) {
+                $q->where('user_id', $user->id);
+            }
+            $q->orWhere('needs_sellado', '=', 0)
+                ->orWhereNull('needs_sellado')
+                ->orWhere('state', '=', Trip::STATE_READY);
+        });
 
         if ($user && ! $user->is_admin) {
             $trips->where(function ($q) use ($user) {
