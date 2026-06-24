@@ -499,15 +499,7 @@ class TripRepository
             $trips->whereUserId($data['user_id']);
         }
 
-        // In the list, unpaid sellado trips are visible only to their owner (including for admins)
-        $trips->where(function ($q) use ($user) {
-            if ($user) {
-                $q->where('user_id', $user->id);
-            }
-            $q->orWhere('needs_sellado', '=', 0)
-                ->orWhereNull('needs_sellado')
-                ->orWhere('state', '=', Trip::STATE_READY);
-        });
+        $this->applyUnpaidSelladoVisibilityFilter($trips, $user);
 
         if ($user && ! $user->is_admin) {
             $trips->where(function ($q) use ($user) {
@@ -620,6 +612,19 @@ class TripRepository
                 $q->where('id', DB::Raw('(select max(`id`) from trips_points where trip_id = `trips`.`id`)'));
             }
             $q->whereRaw('sin_lat * '.$sin_lat.' + cos_lat * '.$cos_lat.' *  (cos_lng * '.$cos_lng.' + sin_lng * '.$sin_lng.') > '.$dist);
+        });
+    }
+
+    private function applyUnpaidSelladoVisibilityFilter($trips, $user): void
+    {
+        // In the list, unpaid sellado trips are visible only to their owner (including for admins)
+        $trips->where(function ($q) use ($user) {
+            if ($user) {
+                $q->where('user_id', $user->id);
+            }
+            $q->orWhere('needs_sellado', '=', 0)
+                ->orWhereNull('needs_sellado')
+                ->orWhere('state', '=', Trip::STATE_READY);
         });
     }
 
