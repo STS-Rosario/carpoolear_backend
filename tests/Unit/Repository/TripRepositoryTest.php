@@ -1910,21 +1910,54 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($historyIds->contains($pastNonWeekly->id));
     }
 
-    public function test_search_with_null_user_does_not_apply_owner_sellado_visibility_guard(): void
+    public function test_search_with_null_user_hides_unpaid_sellado_trips(): void
     {
-        // Mutation intent: preserve `if ($user)` guard before unpaid-sellado visibility filter.
-        // Kills: ffe21dba8f63af4a.
         $restricted = Trip::factory()->create([
             'trip_date' => Carbon::now()->addDay(),
             'friendship_type_id' => Trip::PRIVACY_PUBLIC,
             'state' => Trip::STATE_AWAITING_PAYMENT,
             'needs_sellado' => 1,
         ]);
+        $visible = Trip::factory()->create([
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
 
         $page = $this->repo()->search(null, ['page' => 1, 'page_size' => 20]);
         $ids = collect($page->items())->pluck('id');
 
-        $this->assertTrue($ids->contains($restricted->id));
+        $this->assertFalse($ids->contains($restricted->id));
+        $this->assertTrue($ids->contains($visible->id));
+    }
+
+    public function test_search_admin_hides_other_users_unpaid_sellado_trips(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        $owner = User::factory()->create();
+
+        $otherUnpaid = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+            'needs_sellado' => 1,
+        ]);
+        $otherReady = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+
+        $page = $this->repo()->search($admin, ['is_admin' => 'true', 'page' => 1, 'page_size' => 20]);
+        $ids = collect($page->items())->pluck('id');
+
+        $this->assertFalse($ids->contains($otherUnpaid->id));
+        $this->assertTrue($ids->contains($otherReady->id));
     }
 
     public function test_search_user_scope_keeps_owner_unpaid_trip_and_hides_other_unpaid_trip(): void
