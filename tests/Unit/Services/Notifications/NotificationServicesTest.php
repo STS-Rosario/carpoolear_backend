@@ -36,6 +36,21 @@ final class ThrowingNotificationChannel
     }
 }
 
+final class LocaleRecordingChannel
+{
+    public static string $locale = '';
+
+    public function send($notification, $user): void
+    {
+        self::$locale = app()->getLocale();
+    }
+
+    public static function reset(): void
+    {
+        self::$locale = '';
+    }
+}
+
 class NotificationServicesTest extends TestCase
 {
     protected function tearDown(): void
@@ -45,6 +60,7 @@ class NotificationServicesTest extends TestCase
             '_mutation_test_carpoolear_cfg',
         ])->delete();
         RecordingNotificationChannel::reset();
+        LocaleRecordingChannel::reset();
         Mockery::close();
         parent::tearDown();
     }
@@ -143,5 +159,33 @@ class NotificationServicesTest extends TestCase
         $user = User::factory()->create();
 
         $svc->send(new DummyNotification, $user, ThrowingNotificationChannel::class);
+    }
+
+    public function test_send_uses_recipient_locale_when_delivering_notification(): void
+    {
+        config(['app.locale' => 'arg']);
+        app()->setLocale('arg');
+
+        $user = User::factory()->create(['locale' => 'en']);
+        $svc = new NotificationServices;
+
+        $svc->send(new DummyNotification, $user, LocaleRecordingChannel::class);
+
+        $this->assertSame('en', LocaleRecordingChannel::$locale);
+        $this->assertSame('arg', app()->getLocale());
+    }
+
+    public function test_send_falls_back_to_app_locale_when_recipient_locale_is_missing(): void
+    {
+        config(['app.locale' => 'arg']);
+        app()->setLocale('en');
+
+        $user = User::factory()->create(['locale' => null]);
+        $svc = new NotificationServices;
+
+        $svc->send(new DummyNotification, $user, LocaleRecordingChannel::class);
+
+        $this->assertSame('arg', LocaleRecordingChannel::$locale);
+        $this->assertSame('en', app()->getLocale());
     }
 }
