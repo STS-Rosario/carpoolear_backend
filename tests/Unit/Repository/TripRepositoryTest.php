@@ -3777,11 +3777,6 @@ class TripRepositoryTest extends TestCase
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
         Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 1);
         Config::set('carpoolear.module_max_price_enabled', false);
-        if (! Schema::hasColumn('trips', 'payment_url')) {
-            Schema::table('trips', function (Blueprint $table): void {
-                $table->string('payment_url')->nullable();
-            });
-        }
 
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
