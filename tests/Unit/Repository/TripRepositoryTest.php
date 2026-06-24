@@ -3594,6 +3594,70 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue((bool) $updated->needs_sellado);
     }
 
+    public function test_update_creates_sellado_preference_and_ephemeral_payment_url_without_payment_url_column(): void
+    {
+        if (Schema::hasColumn('trips', 'payment_url')) {
+            Schema::table('trips', function (Blueprint $table): void {
+                $table->dropColumn('payment_url');
+            });
+        }
+        $this->assertFalse(Schema::hasColumn('trips', 'payment_url'));
+
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->twice()->andReturn(false, true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')
+            ->once()
+            ->andReturn((object) [
+                'id' => 'pref_new_456',
+                'init_point' => 'https://pay.test/pref_new_456',
+            ]);
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
+
+        $user = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'state' => Trip::STATE_READY,
+            'payment_id' => null,
+            'needs_sellado' => false,
+        ]);
+        Trip::factory()->create(['user_id' => $user->id]);
+
+        $repo->addPoints($trip, [
+            ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1201, 'ciudad' => 'OldA']],
+            ['lat' => -34.59, 'lng' => -58.39, 'json_address' => ['id' => 1202, 'ciudad' => 'OldB']],
+        ]);
+
+        $updated = $repo->update($trip, [
+            'points' => [
+                ['lat' => -34.50, 'lng' => -58.30, 'json_address' => ['id' => 1203, 'ciudad' => 'NewA']],
+                ['lat' => -34.49, 'lng' => -58.29, 'json_address' => ['id' => 1204, 'ciudad' => 'NewB']],
+            ],
+        ]);
+
+        $this->assertSame('https://pay.test/pref_new_456', $updated->payment_url);
+
+        $updated->refresh();
+        $this->assertSame(Trip::STATE_AWAITING_PAYMENT, $updated->state);
+        $this->assertSame('pref_new_456', $updated->payment_id);
+        $this->assertTrue((bool) $updated->needs_sellado);
+    }
+
     public function test_update_does_not_trigger_sellado_when_module_disabled_even_if_route_changes_to_paid(): void
     {
         // Mutation intent: prevent relaxed boolean OR gates in update sellado trigger condition.
@@ -3713,11 +3777,6 @@ class TripRepositoryTest extends TestCase
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
         Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 1);
         Config::set('carpoolear.module_max_price_enabled', false);
-        if (! Schema::hasColumn('trips', 'payment_url')) {
-            Schema::table('trips', function (Blueprint $table): void {
-                $table->string('payment_url')->nullable();
-            });
-        }
 
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
