@@ -471,6 +471,53 @@ class TripControllerIntegrationTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_show_returns_punto_partida_and_punto_llegada_for_edit_prefill(): void
+    {
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'punto_partida' => 'Terminal de Ómnibus',
+            'punto_llegada' => 'Plaza Principal',
+        ]);
+
+        $this->actingAs($owner, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertOk()
+            ->assertJsonPath('data.punto_partida', 'Terminal de Ómnibus')
+            ->assertJsonPath('data.punto_llegada', 'Plaza Principal');
+    }
+
+    public function test_update_persists_punto_partida_and_punto_llegada_and_returns_them_in_payload(): void
+    {
+        Carbon::setTestNow('2028-04-01 12:00:00');
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::parse('2028-05-15 10:00:00'),
+            'punto_partida' => 'Barrio Centro',
+            'punto_llegada' => 'Barrio Norte',
+        ]);
+
+        $this->actingAs($owner, 'api')
+            ->putJson("/api/trips/{$trip->id}", [
+                'punto_partida' => 'Terminal de Ómnibus',
+                'punto_llegada' => 'Plaza Principal',
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.punto_partida', 'Terminal de Ómnibus')
+            ->assertJsonPath('data.punto_llegada', 'Plaza Principal');
+
+        $this->assertDatabaseHas('trips', [
+            'id' => $trip->id,
+            'punto_partida' => 'Terminal de Ómnibus',
+            'punto_llegada' => 'Plaza Principal',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
     public function test_update_persists_rear_max_two_passengers_and_returns_it_in_payload(): void
     {
         Carbon::setTestNow('2028-04-01 12:00:00');
