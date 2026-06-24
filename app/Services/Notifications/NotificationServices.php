@@ -5,6 +5,7 @@ namespace STS\Services\Notifications;
 use Event;
 use Illuminate\Support\Collection;
 use STS\Events\Notification\NotificationSending;
+use STS\Support\UserLocale;
 
 class NotificationServices
 {
@@ -20,6 +21,8 @@ class NotificationServices
         // \Log::info('NotificationServices send');
         // FIXME ??? no config data on sending
 
+        $appLocale = (string) config('app.locale');
+
         $settings = \STS\Models\AppConfig::all();
         foreach ($settings as $config) {
             if (isset($config->is_laravel) && $config->is_laravel) {
@@ -34,7 +37,10 @@ class NotificationServices
         foreach ($users as $user) {
             if ($this->shouldSendNotification($notification, $user, $driver)) {
                 try {
-                    $driver->send($notification, $user);
+                    UserLocale::withLocale(
+                        UserLocale::resolve($user, $appLocale),
+                        fn () => $driver->send($notification, $user)
+                    );
                 } catch (\Exception $ex) {
                     \Log::warning('Notification send failed', ['message' => $ex->getMessage()]);
 

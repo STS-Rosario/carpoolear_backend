@@ -4,6 +4,7 @@ namespace STS\Services\Logic;
 
 use STS\Repository\NotificationRepository;
 use STS\Support\NotificationCountCache;
+use STS\Support\UserLocale;
 
 class NotificationManager
 {
@@ -32,7 +33,10 @@ class NotificationManager
         $response = [];
         foreach ($notifications as $n) {
             $noti = $n->asNotification();
-            $texto = $noti->toString();
+            $texto = UserLocale::withLocale(
+                UserLocale::resolve($user),
+                fn () => $noti->toString()
+            );
             $extras = $noti->getExtras();
 
             $row = [

@@ -162,6 +162,7 @@ return [
             'user_be_driver', 'driver_data_docs',
             'account_number', 'account_type', 'account_bank',
             'facebook_profile_url',
+            'locale',
         ],
 
         // Additional properties editable only by admin (email only at registration for users)

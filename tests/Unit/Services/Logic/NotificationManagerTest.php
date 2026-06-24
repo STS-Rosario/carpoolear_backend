@@ -5,7 +5,9 @@ namespace Tests\Unit\Services\Logic;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use STS\Models\Trip;
 use STS\Models\User;
+use STS\Notifications\AcceptPassengerNotification;
 use STS\Notifications\DummyNotification;
 use STS\Repository\NotificationRepository;
 use STS\Services\Logic\NotificationManager;
@@ -325,5 +327,61 @@ class NotificationManagerTest extends TestCase
 
         $this->assertFalse(Cache::has(NotificationCountCache::key($user->id)));
         $this->assertSame(1, $manager->getUnreadCount($user));
+    }
+
+    public function test_get_notifications_uses_user_locale_for_notification_text(): void
+    {
+        Mail::fake();
+        Carbon::setTestNow('2026-06-24 10:00:00');
+        config(['app.locale' => 'arg']);
+        app()->setLocale('arg');
+
+        $from = User::factory()->create(['name' => 'Driver Name']);
+        $trip = Trip::factory()->create(['user_id' => $from->id]);
+        $user = User::factory()->create(['locale' => 'en']);
+
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('from', $from);
+        $notification->setAttribute('trip', $trip);
+        $notification->notify($user);
+
+        $rows = $this->manager()->getNotifications($user, []);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(
+            __('notifications.accept_passenger.message', ['name' => 'Driver Name'], 'en'),
+            $rows[0]['text']
+        );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_get_notifications_falls_back_to_app_locale_when_user_locale_is_missing(): void
+    {
+        Mail::fake();
+        Carbon::setTestNow('2026-06-24 11:00:00');
+        config(['app.locale' => 'arg']);
+        app()->setLocale('en');
+
+        $from = User::factory()->create(['name' => 'Conductor']);
+        $trip = Trip::factory()->create(['user_id' => $from->id]);
+        $user = User::factory()->create(['locale' => null]);
+
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('from', $from);
+        $notification->setAttribute('trip', $trip);
+        $notification->notify($user);
+
+        config(['app.locale' => 'arg']);
+
+        $rows = $this->manager()->getNotifications($user, []);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(
+            __('notifications.accept_passenger.message', ['name' => 'Conductor'], 'arg'),
+            $rows[0]['text']
+        );
+
+        Carbon::setTestNow();
     }
 }

@@ -97,6 +97,7 @@ class UserTest extends TestCase
             'account_type',
             'account_bank',
             'data_visibility',
+            'locale',
             'facebook_profile_url',
             'identity_validated',
             'identity_validated_at',
