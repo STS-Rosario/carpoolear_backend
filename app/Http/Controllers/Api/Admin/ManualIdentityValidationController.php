@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
+use STS\Models\User;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use STS\Services\UserIdentityVerificationSuccessService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -147,22 +148,11 @@ class ManualIdentityValidationController extends Controller
         $item->review_note = $validated['note'] ?? '';
         $item->save();
 
-        $user = $item->user;
-        if ($validated['action'] === 'approve') {
-            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
-        } else {
-            // Reject or Pending: clear identity validation flags and metadata
-            $user->identity_validated = false;
-            $user->identity_validated_at = null;
-            $user->identity_validation_type = null;
-            $user->identity_validation_rejected_at = null;
-            $user->identity_validation_reject_reason = null;
-            $user->save();
-        }
+        $this->syncUserIdentityForReviewStatus($item->review_status, $item->user);
 
         if (in_array($validated['action'], ['approve', 'reject'], true)) {
             $this->reviewNotifier->notify(
-                $user,
+                $item->user,
                 $validated['action'] === 'approve' ? 'approved' : 'rejected',
             );
         }
@@ -187,34 +177,43 @@ class ManualIdentityValidationController extends Controller
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
 
         if (array_key_exists('paid', $validated)) {
-            $item->paid = (bool) $validated['paid'];
-            if ($item->paid && $item->paid_at === null) {
-                $item->paid_at = now();
-            }
+            $this->applyPaidState($item, (bool) $validated['paid']);
         }
 
         if (array_key_exists('review_status', $validated)) {
             $item->review_status = $validated['review_status'];
-            $admin = auth()->user();
-            $item->reviewed_by = $admin->id;
+            $item->reviewed_by = auth()->id();
             $item->reviewed_at = now();
-
-            $user = $item->user;
-            if ($validated['review_status'] === 'approved') {
-                app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
-            } else {
-                $user->identity_validated = false;
-                $user->identity_validated_at = null;
-                $user->identity_validation_type = null;
-                $user->identity_validation_rejected_at = null;
-                $user->identity_validation_reject_reason = null;
-                $user->save();
-            }
+            $this->syncUserIdentityForReviewStatus($validated['review_status'], $item->user);
         }
 
         $item->save();
 
         return $this->show($id);
+    }
+
+    private function applyPaidState(ManualIdentityValidation $item, bool $paid): void
+    {
+        $item->paid = $paid;
+        if ($paid && $item->paid_at === null) {
+            $item->paid_at = now();
+        }
+    }
+
+    private function syncUserIdentityForReviewStatus(string $reviewStatus, User $user): void
+    {
+        if ($reviewStatus === ManualIdentityValidation::REVIEW_STATUS_APPROVED) {
+            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
+
+            return;
+        }
+
+        $user->identity_validated = false;
+        $user->identity_validated_at = null;
+        $user->identity_validation_type = null;
+        $user->identity_validation_rejected_at = null;
+        $user->identity_validation_reject_reason = null;
+        $user->save();
     }
 
     /**
