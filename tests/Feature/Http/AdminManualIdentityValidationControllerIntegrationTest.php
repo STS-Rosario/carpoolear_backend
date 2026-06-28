@@ -502,6 +502,29 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_update_state_sets_review_status_and_syncs_user_on_approve(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
+            'review_status' => 'approved',
+        ])->assertOk()->assertJsonPath('data.review_status', 'approved');
+
+        $user->refresh();
+        $this->assertTrue((bool) $user->identity_validated);
+        $this->assertSame('manual', (string) $user->identity_validation_type);
+    }
+
     public function test_show_includes_support_tickets_count_for_user(): void
     {
         $admin = $this->admin();
