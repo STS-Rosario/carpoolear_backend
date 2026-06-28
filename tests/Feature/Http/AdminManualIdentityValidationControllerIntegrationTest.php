@@ -502,6 +502,58 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         ])->assertOk();
     }
 
+    public function test_update_state_clearing_photos_submitted_nulls_date_and_deletes_files(): void
+    {
+        Storage::fake('local');
+        $admin = $this->admin();
+        $user = User::factory()->create();
+        $front = 'idv/state-clear-front.jpg';
+        Storage::disk('local')->put($front, 'x');
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now()->subDay(),
+            'front_image_path' => $front,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
+            'photos_submitted' => false,
+        ])->assertOk()->assertJsonPath('data.submitted_at', null);
+
+        $this->assertFalse(Storage::disk('local')->exists($front));
+        $fresh = ManualIdentityValidation::query()->findOrFail($row->id);
+        $this->assertNull($fresh->submitted_at);
+        $this->assertNull($fresh->front_image_path);
+    }
+
+    public function test_update_state_setting_photos_submitted_sets_submitted_at(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => null,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
+            'photos_submitted' => true,
+        ])->assertOk()->assertJsonPath('data.submitted_at', fn ($value) => $value !== null);
+
+        $fresh = ManualIdentityValidation::query()->findOrFail($row->id);
+        $this->assertNotNull($fresh->submitted_at);
+    }
+
     public function test_update_state_sets_paid_and_paid_at_when_marking_paid(): void
     {
         $admin = $this->admin();
