@@ -168,16 +168,25 @@ class ManualIdentityValidationController extends Controller
         $validated = $request->validate([
             'review_status' => 'sometimes|in:pending,approved,rejected',
             'paid' => 'sometimes|boolean',
+            'photos_submitted' => 'sometimes|boolean',
         ]);
 
-        if (! array_key_exists('review_status', $validated) && ! array_key_exists('paid', $validated)) {
-            return response()->json(['error' => 'At least one of review_status or paid is required'], 422);
+        if (
+            ! array_key_exists('review_status', $validated) &&
+            ! array_key_exists('paid', $validated) &&
+            ! array_key_exists('photos_submitted', $validated)
+        ) {
+            return response()->json(['error' => 'At least one of review_status, paid, or photos_submitted is required'], 422);
         }
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
 
         if (array_key_exists('paid', $validated)) {
             $this->applyPaidState($item, (bool) $validated['paid']);
+        }
+
+        if (array_key_exists('photos_submitted', $validated)) {
+            $this->applyPhotosSubmittedState($item, (bool) $validated['photos_submitted']);
         }
 
         if (array_key_exists('review_status', $validated)) {
@@ -197,6 +206,31 @@ class ManualIdentityValidationController extends Controller
         $item->paid = $paid;
         if ($paid && $item->paid_at === null) {
             $item->paid_at = now();
+        }
+    }
+
+    private function applyPhotosSubmittedState(ManualIdentityValidation $item, bool $photosSubmitted): void
+    {
+        if ($photosSubmitted) {
+            if ($item->submitted_at === null) {
+                $item->submitted_at = now();
+            }
+
+            return;
+        }
+
+        $item->submitted_at = null;
+        $this->deleteStoredPhotos($item);
+    }
+
+    private function deleteStoredPhotos(ManualIdentityValidation $item): void
+    {
+        foreach (['front_image_path', 'back_image_path', 'selfie_image_path'] as $col) {
+            $path = $item->$col;
+            if ($path && Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->delete($path);
+            }
+            $item->$col = null;
         }
     }
 
@@ -239,13 +273,7 @@ class ManualIdentityValidationController extends Controller
     {
         $item = ManualIdentityValidation::findOrFail($id);
 
-        foreach (['front_image_path', 'back_image_path', 'selfie_image_path'] as $col) {
-            $path = $item->$col;
-            if ($path && Storage::disk('local')->exists($path)) {
-                Storage::disk('local')->delete($path);
-            }
-            $item->$col = null;
-        }
+        $this->deleteStoredPhotos($item);
         $item->images_purged_at = now();
         $item->save();
 
