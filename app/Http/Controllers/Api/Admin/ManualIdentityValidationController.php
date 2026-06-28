@@ -171,6 +171,53 @@ class ManualIdentityValidationController extends Controller
     }
 
     /**
+     * POST /api/admin/manual-identity-validations/{id}/state - admin override for review_status and paid.
+     */
+    public function updateState(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'review_status' => 'sometimes|in:pending,approved,rejected',
+            'paid' => 'sometimes|boolean',
+        ]);
+
+        if (! array_key_exists('review_status', $validated) && ! array_key_exists('paid', $validated)) {
+            return response()->json(['error' => 'At least one of review_status or paid is required'], 422);
+        }
+
+        $item = ManualIdentityValidation::with('user')->findOrFail($id);
+
+        if (array_key_exists('paid', $validated)) {
+            $item->paid = (bool) $validated['paid'];
+            if ($item->paid && $item->paid_at === null) {
+                $item->paid_at = now();
+            }
+        }
+
+        if (array_key_exists('review_status', $validated)) {
+            $item->review_status = $validated['review_status'];
+            $admin = auth()->user();
+            $item->reviewed_by = $admin->id;
+            $item->reviewed_at = now();
+
+            $user = $item->user;
+            if ($validated['review_status'] === 'approved') {
+                app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
+            } else {
+                $user->identity_validated = false;
+                $user->identity_validated_at = null;
+                $user->identity_validation_type = null;
+                $user->identity_validation_rejected_at = null;
+                $user->identity_validation_reject_reason = null;
+                $user->save();
+            }
+        }
+
+        $item->save();
+
+        return $this->show($id);
+    }
+
+    /**
      * POST /api/admin/manual-identity-validations/{id}/private-note - set nullable private_admin_note (admin-only context).
      */
     public function updatePrivateNote(Request $request, int $id): JsonResponse
