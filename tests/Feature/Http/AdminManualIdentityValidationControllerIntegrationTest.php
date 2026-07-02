@@ -523,7 +523,9 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
 
         $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
             'photos_submitted' => false,
-        ])->assertOk()->assertJsonPath('data.submitted_at', null);
+        ])->assertOk()
+            ->assertJsonPath('data.submitted_at', null)
+            ->assertJsonPath('data.review_status', ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS);
 
         $this->assertFalse(Storage::disk('local')->exists($front));
         $fresh = ManualIdentityValidation::query()->findOrFail($row->id);
@@ -548,7 +550,9 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
 
         $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
             'photos_submitted' => true,
-        ])->assertOk()->assertJsonPath('data.submitted_at', fn ($value) => $value !== null);
+        ])->assertOk()
+            ->assertJsonPath('data.submitted_at', fn ($value) => $value !== null)
+            ->assertJsonPath('data.review_status', ManualIdentityValidation::REVIEW_STATUS_PENDING);
 
         $fresh = ManualIdentityValidation::query()->findOrFail($row->id);
         $this->assertNotNull($fresh->submitted_at);
