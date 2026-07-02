@@ -166,7 +166,7 @@ class ManualIdentityValidationController extends Controller
     public function updateState(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'review_status' => 'sometimes|in:pending,approved,rejected',
+            'review_status' => 'sometimes|in:pending,awaiting_photos,approved,rejected',
             'paid' => 'sometimes|boolean',
             'photos_submitted' => 'sometimes|boolean',
         ]);
@@ -203,10 +203,13 @@ class ManualIdentityValidationController extends Controller
 
     private function applyPaidState(ManualIdentityValidation $item, bool $paid): void
     {
-        $item->paid = $paid;
-        if ($paid && $item->paid_at === null) {
-            $item->paid_at = now();
+        if ($paid) {
+            $item->markPaidAndAwaitingPhotosIfNeeded();
+
+            return;
         }
+
+        $item->paid = false;
     }
 
     private function applyPhotosSubmittedState(ManualIdentityValidation $item, bool $photosSubmitted): void
@@ -215,12 +218,14 @@ class ManualIdentityValidationController extends Controller
             if ($item->submitted_at === null) {
                 $item->submitted_at = now();
             }
+            $item->markPendingReview();
 
             return;
         }
 
         $item->submitted_at = null;
         $this->deleteStoredPhotos($item);
+        $item->markAwaitingPhotos();
     }
 
     private function deleteStoredPhotos(ManualIdentityValidation $item): void

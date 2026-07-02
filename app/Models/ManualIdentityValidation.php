@@ -11,6 +11,8 @@ class ManualIdentityValidation extends Model
 
     const REVIEW_STATUS_PENDING = 'pending';
 
+    const REVIEW_STATUS_AWAITING_PHOTOS = 'awaiting_photos';
+
     const REVIEW_STATUS_APPROVED = 'approved';
 
     const REVIEW_STATUS_REJECTED = 'rejected';
@@ -60,6 +62,27 @@ class ManualIdentityValidation extends Model
     public function hasImages(): bool
     {
         return ! empty($this->front_image_path) || ! empty($this->back_image_path) || ! empty($this->selfie_image_path);
+    }
+
+    public function markAwaitingPhotos(): void
+    {
+        $this->review_status = self::REVIEW_STATUS_AWAITING_PHOTOS;
+    }
+
+    public function markPendingReview(): void
+    {
+        $this->review_status = self::REVIEW_STATUS_PENDING;
+    }
+
+    public function markPaidAndAwaitingPhotosIfNeeded(): void
+    {
+        $this->paid = true;
+        if ($this->paid_at === null) {
+            $this->paid_at = now();
+        }
+        if ($this->submitted_at === null) {
+            $this->markAwaitingPhotos();
+        }
     }
 
     /**

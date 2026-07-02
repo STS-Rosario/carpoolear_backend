@@ -701,9 +701,8 @@ class MercadoPagoWebhookController extends Controller
         $status = $mpPayment['status'] ?? '';
         if ($status === 'approved') {
             if (! $validationRequest->paid) {
-                $validationRequest->paid = true;
-                $validationRequest->paid_at = now();
                 $validationRequest->payment_id = (string) $mpPayment['id'];
+                $validationRequest->markPaidAndAwaitingPhotosIfNeeded();
                 $validationRequest->save();
             }
         }
