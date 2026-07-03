@@ -25,8 +25,7 @@ class ManualValidationPaymentController extends Controller
         if ($requestId) {
             $validationRequest = ManualIdentityValidation::find($requestId);
             if ($validationRequest && $result === 'success') {
-                $validationRequest->paid = true;
-                $validationRequest->paid_at = now();
+                $validationRequest->markPaidAndAwaitingPhotosIfNeeded();
                 if ($paymentId !== null && $paymentId !== '') {
                     $validationRequest->payment_id = (string) $paymentId;
                 }

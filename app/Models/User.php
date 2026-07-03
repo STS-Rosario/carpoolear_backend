@@ -232,8 +232,8 @@ class User extends Authenticatable implements JWTSubject
     public function donations()
     {
         $donations = $this->hasMany("STS\Models\Donation", 'user_id');
-        $donations->where('month', '<=', date('Y-m-t 23:59:59'));
-        $donations->where('month', '>=', date('Y-m-01 00:00:00'));
+        $donations->where('month', '<=', now()->format('Y-m-t 23:59:59'));
+        $donations->where('month', '>=', now()->format('Y-m-01 00:00:00'));
 
         return $donations;
     }

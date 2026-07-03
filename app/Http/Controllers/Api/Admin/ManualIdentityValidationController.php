@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
+use STS\Models\User;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use STS\Services\UserIdentityVerificationSuccessService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -147,27 +148,111 @@ class ManualIdentityValidationController extends Controller
         $item->review_note = $validated['note'] ?? '';
         $item->save();
 
-        $user = $item->user;
-        if ($validated['action'] === 'approve') {
-            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
-        } else {
-            // Reject or Pending: clear identity validation flags and metadata
-            $user->identity_validated = false;
-            $user->identity_validated_at = null;
-            $user->identity_validation_type = null;
-            $user->identity_validation_rejected_at = null;
-            $user->identity_validation_reject_reason = null;
-            $user->save();
-        }
+        $this->syncUserIdentityForReviewStatus($item->review_status, $item->user);
 
         if (in_array($validated['action'], ['approve', 'reject'], true)) {
             $this->reviewNotifier->notify(
-                $user,
+                $item->user,
                 $validated['action'] === 'approve' ? 'approved' : 'rejected',
             );
         }
 
         return response()->json(['data' => $item->fresh(['user:id,name,nro_doc'])]);
+    }
+
+    /**
+     * POST /api/admin/manual-identity-validations/{id}/state - admin override for review_status and paid.
+     */
+    public function updateState(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'review_status' => 'sometimes|in:pending,awaiting_photos,approved,rejected',
+            'paid' => 'sometimes|boolean',
+            'photos_submitted' => 'sometimes|boolean',
+        ]);
+
+        if (
+            ! array_key_exists('review_status', $validated) &&
+            ! array_key_exists('paid', $validated) &&
+            ! array_key_exists('photos_submitted', $validated)
+        ) {
+            return response()->json(['error' => 'At least one of review_status, paid, or photos_submitted is required'], 422);
+        }
+
+        $item = ManualIdentityValidation::with('user')->findOrFail($id);
+
+        if (array_key_exists('paid', $validated)) {
+            $this->applyPaidState($item, (bool) $validated['paid']);
+        }
+
+        if (array_key_exists('photos_submitted', $validated)) {
+            $this->applyPhotosSubmittedState($item, (bool) $validated['photos_submitted']);
+        }
+
+        if (array_key_exists('review_status', $validated)) {
+            $item->review_status = $validated['review_status'];
+            $item->reviewed_by = auth()->id();
+            $item->reviewed_at = now();
+            $this->syncUserIdentityForReviewStatus($validated['review_status'], $item->user);
+        }
+
+        $item->save();
+
+        return $this->show($id);
+    }
+
+    private function applyPaidState(ManualIdentityValidation $item, bool $paid): void
+    {
+        if ($paid) {
+            $item->markPaidAndAwaitingPhotosIfNeeded();
+
+            return;
+        }
+
+        $item->paid = false;
+    }
+
+    private function applyPhotosSubmittedState(ManualIdentityValidation $item, bool $photosSubmitted): void
+    {
+        if ($photosSubmitted) {
+            if ($item->submitted_at === null) {
+                $item->submitted_at = now();
+            }
+            $item->markPendingReview();
+
+            return;
+        }
+
+        $item->submitted_at = null;
+        $this->deleteStoredPhotos($item);
+        $item->markAwaitingPhotos();
+    }
+
+    private function deleteStoredPhotos(ManualIdentityValidation $item): void
+    {
+        foreach (['front_image_path', 'back_image_path', 'selfie_image_path'] as $col) {
+            $path = $item->$col;
+            if ($path && Storage::disk('local')->exists($path)) {
+                Storage::disk('local')->delete($path);
+            }
+            $item->$col = null;
+        }
+    }
+
+    private function syncUserIdentityForReviewStatus(string $reviewStatus, User $user): void
+    {
+        if ($reviewStatus === ManualIdentityValidation::REVIEW_STATUS_APPROVED) {
+            app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
+
+            return;
+        }
+
+        $user->identity_validated = false;
+        $user->identity_validated_at = null;
+        $user->identity_validation_type = null;
+        $user->identity_validation_rejected_at = null;
+        $user->identity_validation_reject_reason = null;
+        $user->save();
     }
 
     /**
@@ -193,13 +278,7 @@ class ManualIdentityValidationController extends Controller
     {
         $item = ManualIdentityValidation::findOrFail($id);
 
-        foreach (['front_image_path', 'back_image_path', 'selfie_image_path'] as $col) {
-            $path = $item->$col;
-            if ($path && Storage::disk('local')->exists($path)) {
-                Storage::disk('local')->delete($path);
-            }
-            $item->$col = null;
-        }
+        $this->deleteStoredPhotos($item);
         $item->images_purged_at = now();
         $item->save();
 

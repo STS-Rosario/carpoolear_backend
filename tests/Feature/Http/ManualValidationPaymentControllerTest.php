@@ -70,6 +70,7 @@ class ManualValidationPaymentControllerTest extends TestCase
         $this->assertTrue((bool) $fresh->paid);
         $this->assertNotNull($fresh->paid_at);
         $this->assertSame('mp-555', $fresh->payment_id);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS, $fresh->review_status);
     }
 
     public function test_success_uses_collection_id_when_payment_id_is_absent(): void

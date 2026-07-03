@@ -105,8 +105,37 @@ class ManualIdentityValidationTest extends TestCase
     public function test_review_status_string_constants(): void
     {
         $this->assertSame('pending', ManualIdentityValidation::REVIEW_STATUS_PENDING);
+        $this->assertSame('awaiting_photos', ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS);
         $this->assertSame('approved', ManualIdentityValidation::REVIEW_STATUS_APPROVED);
         $this->assertSame('rejected', ManualIdentityValidation::REVIEW_STATUS_REJECTED);
+    }
+
+    public function test_mark_paid_and_awaiting_photos_if_needed_sets_status_only_before_submission(): void
+    {
+        $user = User::factory()->create();
+        $awaiting = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $awaiting->markPaidAndAwaitingPhotosIfNeeded();
+        $awaiting->save();
+
+        $this->assertTrue($awaiting->fresh()->paid);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS, $awaiting->fresh()->review_status);
+
+        $submitted = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $submitted->markPaidAndAwaitingPhotosIfNeeded();
+        $submitted->save();
+
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $submitted->fresh()->review_status);
     }
 
     public function test_table_name_is_manual_identity_validations(): void
