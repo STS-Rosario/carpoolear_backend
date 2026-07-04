@@ -237,6 +237,13 @@ class UserRepository
             ->whereDoesntHave('messages', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
+            ->whereDoesntHave('users', function ($query) use ($tripId, $userId) {
+                $query->where('users.id', '<>', $userId)
+                    ->whereHas('passenger', function ($passengerQuery) use ($tripId) {
+                        $passengerQuery->where('trip_id', $tripId)
+                            ->where('request_state', '<>', Passenger::STATE_PENDING);
+                    });
+            })
             ->count();
 
         return $pendingRequests + $unasweredConversations;
