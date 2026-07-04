@@ -152,37 +152,34 @@ class PushChannel
     public function sendIOS($device, $data)
     {
         try {
-            // Create APNs payload
-            $payload = [
-                'aps' => [
-                    'alert' => [
-                        'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
-                        'body' => $data['message'],
-                    ],
-                    'sound' => 'default',
-                    'badge' => 1,
-                ],
+            $firebase = $this->makeFirebaseService();
+
+            $device_token = $device->device_id;
+
+            $message = [
+                'title' => isset($data['title']) ? $data['title'] : 'Carpoolear',
+                'body' => $data['message'],
+                'sound' => 'default',
             ];
 
-            // Add custom data at root level (not inside aps) so Capacitor can access it
+            $dataPayload = [];
             if (isset($data['type'])) {
-                $payload['type'] = (string) $data['type'];
+                $dataPayload['type'] = (string) $data['type'];
             }
             if (isset($data['extras'])) {
                 foreach ($data['extras'] as $key => $value) {
-                    $payload[$key] = (string) $value;
+                    $dataPayload[$key] = (string) $value;
                 }
             }
             if (isset($data['url'])) {
-                $payload['url'] = (string) $data['url'];
+                $dataPayload['url'] = (string) $data['url'];
             }
 
-            // Send via APNs
-            $result = $this->sendAPNsNotification($device->device_id, $payload);
+            $result = $firebase->sendNotification($device_token, $message, $dataPayload, 'ios');
 
             return $result;
         } catch (\Exception $e) {
-            if (! self::isApnsStaleTokenError($e)) {
+            if (! FirebaseService::isStaleRegistrationTokenError($e)) {
                 \Log::error('PushChannel: sendIOS error', [
                     'device_id' => $device->id,
                     'device_token' => $device->device_id,
