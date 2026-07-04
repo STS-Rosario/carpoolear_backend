@@ -223,22 +223,34 @@ class UserRepository
 
     public function unansweredConversationOrRequestsByTrip($userId, $tripId)
     {
-        // todas las request que pertenezcan a un viaje mio y que esten pendientes
-        $pendingRequests = Passenger::with('trip')
+        return $this->countPendingRequestsByTripOwner($userId, $tripId)
+            + $this->countUnansweredConversationsByTripOwner($userId, $tripId);
+    }
+
+    private function countPendingRequestsByTripOwner($userId, $tripId): int
+    {
+        return Passenger::with('trip')
             ->where('trip_id', $tripId)
             ->whereHas('trip', function ($q) use ($userId) {
                 $q->where('user_id', $userId);
             })
             ->where('request_state', Passenger::STATE_PENDING)
             ->count();
+    }
 
-        // conversaciones que no tegan mensajes mios (respuestas)
-        $unasweredConversations = Conversation::where('trip_id', $tripId)
+    private function countUnansweredConversationsByTripOwner($userId, $tripId): int
+    {
+        return Conversation::where('trip_id', $tripId)
             ->whereDoesntHave('messages', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
+            ->whereDoesntHave('users', function ($query) use ($tripId, $userId) {
+                $query->where('users.id', '<>', $userId)
+                    ->whereHas('passenger', function ($passengerQuery) use ($tripId) {
+                        $passengerQuery->where('trip_id', $tripId)
+                            ->where('request_state', '<>', Passenger::STATE_PENDING);
+                    });
+            })
             ->count();
-
-        return $pendingRequests + $unasweredConversations;
     }
 }

@@ -661,6 +661,31 @@ class UserRepositoryTest extends TestCase
         $this->assertSame(1, $after);
     }
 
+    public function test_unanswered_conversation_or_requests_by_trip_ignores_unanswered_conversation_when_same_passenger_request_was_answered(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+        $conversation = Conversation::factory()->create(['trip_id' => $trip->id]);
+        $conversation->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($passenger->id, ['read' => true, 'notifications_enabled' => true]);
+        Message::create([
+            'user_id' => $passenger->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Can you confirm the pickup point?',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $count = $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id);
+
+        $this->assertSame(0, $count);
+    }
+
     public function test_unanswered_conversation_or_requests_by_trip_returns_zero_when_none(): void
     {
         // Mutation intent: both `count()` branches (~195–208) zero — no pending passenger rows, no qualifying conversations.
