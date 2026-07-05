@@ -277,6 +277,72 @@ class RatingApiTest extends TestCase
         $this->assertContains($pending->id, $ids);
     }
 
+    public function test_pending_omits_repeat_user_when_voter_already_rated_them(): void
+    {
+        Carbon::setTestNow('2026-06-15 12:00:00');
+        $voter = User::factory()->create(['active' => true, 'banned' => false]);
+        $alreadyRated = User::factory()->create(['active' => true, 'banned' => false]);
+        $firstTime = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $priorTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
+        $this->persistRating([
+            'trip_id' => $priorTrip->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $alreadyRated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'ok',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => 'prior-vote',
+            'rate_at' => Carbon::now(),
+            'available' => 0,
+        ]);
+
+        $repeatTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
+        $repeatPending = $this->persistRating([
+            'trip_id' => $repeatTrip->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $alreadyRated->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => null,
+            'comment' => '',
+            'reply_comment' => '',
+            'voted' => false,
+            'voted_hash' => 'repeat-pending',
+            'rate_at' => null,
+            'available' => 0,
+        ]);
+
+        $firstTrip = Trip::factory()->create(['user_id' => $firstTime->id]);
+        $mandatoryPending = $this->persistRating([
+            'trip_id' => $firstTrip->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $firstTime->id,
+            'user_to_type' => Passenger::TYPE_PASAJERO,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => null,
+            'comment' => '',
+            'reply_comment' => '',
+            'voted' => false,
+            'voted_hash' => 'first-pending',
+            'rate_at' => null,
+            'available' => 0,
+        ]);
+
+        $this->actingAs($voter, 'api');
+
+        $response = $this->getJson('api/users/ratings/pending');
+        $response->assertOk();
+        $ids = array_column($response->json('data'), 'id');
+        $this->assertNotContains($repeatPending->id, $ids);
+        $this->assertContains($mandatoryPending->id, $ids);
+
+        Carbon::setTestNow();
+    }
+
     public function test_pending_as_guest_without_hash_is_rejected(): void
     {
         $this->getJson('api/users/ratings/pending')

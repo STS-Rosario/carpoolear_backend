@@ -298,6 +298,7 @@ class RatingRepositoryTest extends TestCase
         Carbon::setTestNow('2026-06-15 12:00:00');
         $user = User::factory()->create();
         $other = User::factory()->create();
+        $votedOther = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $other->id]);
         $repo = new RatingRepository;
 
@@ -305,7 +306,7 @@ class RatingRepositoryTest extends TestCase
         $old = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r2-'.uniqid('', true));
         $old->forceFill(['created_at' => '2026-05-01 00:00:00'])->saveQuietly();
         // Must be excluded by where('voted', false).
-        $voted = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r3-'.uniqid('', true));
+        $voted = $repo->create($user->id, $votedOther->id, $trip->id, 0, 0, 'r3-'.uniqid('', true));
         $voted->forceFill(['voted' => true])->saveQuietly();
 
         $listed = $repo->getPendingRatings($user);
@@ -314,6 +315,31 @@ class RatingRepositoryTest extends TestCase
         $this->assertTrue($listed->first()->relationLoaded('from'));
         $this->assertTrue($listed->first()->relationLoaded('to'));
         $this->assertTrue($listed->first()->relationLoaded('trip'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_get_pending_ratings_excludes_repeat_user_when_already_rated_them(): void
+    {
+        Carbon::setTestNow('2026-06-15 12:00:00');
+        $user = User::factory()->create();
+        $alreadyRated = User::factory()->create();
+        $firstTime = User::factory()->create();
+        $repo = new RatingRepository;
+
+        $priorTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
+        $this->seedRating($user, $alreadyRated, $priorTrip);
+
+        $repeatTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
+        $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, 'repeat-'.uniqid('', true));
+
+        $firstTrip = Trip::factory()->create(['user_id' => $firstTime->id]);
+        $mandatory = $repo->create($user->id, $firstTime->id, $firstTrip->id, 0, 0, 'first-'.uniqid('', true));
+
+        $listed = $repo->getPendingRatings($user);
+
+        $this->assertCount(1, $listed);
+        $this->assertTrue($listed->first()->is($mandatory));
 
         Carbon::setTestNow();
     }

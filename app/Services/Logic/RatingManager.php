@@ -84,7 +84,7 @@ class RatingManager extends BaseManager
         $response = [];
         $rates = $this->ratingRepository->findBy('voted_hash', $hash);
         foreach ($rates as $rate) {
-            if (! $rate->voted && $rate->created_at->addDays(Rating::RATING_INTERVAL)->gte(Carbon::now())) {
+            if ($this->ratingRepository->isMandatoryPendingRating($rate)) {
                 $response[] = $rate;
             }
         }
