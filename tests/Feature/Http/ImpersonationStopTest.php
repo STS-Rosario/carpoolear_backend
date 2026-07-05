@@ -50,8 +50,8 @@ class ImpersonationStopTest extends TestCase
             ->assertOk();
 
         $this->withHeader('Authorization', 'Bearer '.$result['token'])
-            ->getJson('api/users/me')
-            ->assertUnauthorized();
+            ->postJson('api/retoken')
+            ->assertForbidden();
     }
 
     public function test_normal_jwt_cannot_stop_impersonation(): void

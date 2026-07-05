@@ -33,7 +33,7 @@ class AdminImpersonationTest extends TestCase
             'expires_at',
             'target_user_id',
         ]);
-        $this->assertSame((string) $target->id, $response->json('target_user_id'));
+        $this->assertSame($target->id, $response->json('target_user_id'));
         $this->assertSame(64, strlen($response->json('handoff_token')));
     }
 

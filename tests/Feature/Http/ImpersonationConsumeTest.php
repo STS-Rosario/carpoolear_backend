@@ -43,7 +43,7 @@ class ImpersonationConsumeTest extends TestCase
             'config',
             'impersonation' => ['session_id', 'actor_id', 'target_user_id', 'expires_at'],
         ]);
-        $this->assertSame((string) $target->id, $response->json('impersonation.target_user_id'));
+        $this->assertSame($target->id, $response->json('impersonation.target_user_id'));
 
         $payload = JWTAuth::setToken($response->json('token'))->getPayload();
         $this->assertTrue($payload->get('imp'));

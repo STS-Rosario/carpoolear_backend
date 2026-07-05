@@ -12,6 +12,7 @@ use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
+use STS\Http\Controllers\Api\Admin\ImpersonationController as AdminImpersonationController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
 use STS\Http\Controllers\Api\Admin\MercadoPagoRejectedValidationController as AdminMercadoPagoRejectedValidationController;
@@ -31,6 +32,8 @@ use STS\Http\Controllers\Api\v1\ConversationController;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\DeviceController;
 use STS\Http\Controllers\Api\v1\FriendsController;
+use STS\Http\Controllers\Api\v1\ImpersonationConsumeController;
+use STS\Http\Controllers\Api\v1\ImpersonationStopController;
 use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
 use STS\Http\Controllers\Api\v1\ManualValidationPaymentController;
 use STS\Http\Controllers\Api\v1\MercadoPagoOAuthController;
@@ -51,6 +54,8 @@ Route::middleware(['api'])->group(function () {
 
     Route::post('login', [AuthController::class, 'login']);
     Route::post('retoken', [AuthController::class, 'retoken']);
+    Route::post('auth/impersonate/consume', [ImpersonationConsumeController::class, 'consume'])
+        ->middleware('throttle:impersonation-consume');
     Route::get('config', [AuthController::class, 'getConfig']);
     Route::get('changelog', [ChangelogController::class, 'show']);
     Route::get('changelogs', [ChangelogController::class, 'index']);
@@ -59,6 +64,7 @@ Route::middleware(['api'])->group(function () {
     Route::get('car-colors', [CarCatalogController::class, 'colors']);
 
     Route::post('logout', [AuthController::class, 'logout']);
+    Route::post('impersonate/stop', [ImpersonationStopController::class, 'stop'])->middleware('logged');
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
     Route::post('reset-password', [AuthController::class, 'reset'])->middleware('throttle:password-reset');
     Route::post('change-password/{token?}', [AuthController::class, 'changePasswod']);
@@ -268,6 +274,8 @@ Route::middleware(['api'])->group(function () {
         Route::post('users/{user}/anonymize', [AdminUserController::class, 'anonymize']);
         Route::post('users/{user}/ban-and-anonymize', [AdminUserController::class, 'banAndAnonymize']);
         Route::post('users/{user}/clear-identity-validation', [AdminUserController::class, 'clearIdentityValidation']);
+        Route::post('users/{user}/impersonate', [AdminImpersonationController::class, 'start']);
+        Route::post('impersonations/{session}/stop', [AdminImpersonationController::class, 'stop']);
         Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
         Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
         // Manual identity validations (image route before {id} so /image/{type} is matched)
