@@ -119,6 +119,37 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_get_pending_ratings_by_hash_excludes_repeat_user_when_already_rated_them(): void
+    {
+        Carbon::setTestNow('2026-10-01 12:00:00');
+        $user = User::factory()->create();
+        $alreadyRated = User::factory()->create();
+        $firstTime = User::factory()->create();
+        $repo = new RatingRepository;
+
+        $priorTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
+        Rating::factory()->create([
+            'trip_id' => $priorTrip->id,
+            'user_id_from' => $user->id,
+            'user_id_to' => $alreadyRated->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'voted' => true,
+        ]);
+
+        $hash = 'batch-'.uniqid('', true);
+        $repeatTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
+        $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, $hash);
+
+        $firstTrip = Trip::factory()->create(['user_id' => $firstTime->id]);
+        $mandatory = $repo->create($user->id, $firstTime->id, $firstTrip->id, 0, 0, $hash);
+
+        $collection = $this->manager()->getPendingRatingsByHash($hash);
+        $this->assertCount(1, $collection);
+        $this->assertTrue($collection->first()->is($mandatory));
+
+        Carbon::setTestNow();
+    }
+
     public function test_get_rate_returns_pending_rating_for_user_within_interval(): void
     {
         Carbon::setTestNow('2026-11-05 10:00:00');
