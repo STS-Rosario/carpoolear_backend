@@ -38,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->appendToGroup('api', [
             \STS\Http\Middleware\CheckMaintenanceMode::class,
+            \STS\Http\Middleware\BlockImpersonationDestructiveActions::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

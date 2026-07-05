@@ -5,6 +5,7 @@ namespace STS\Services\Admin;
 use Illuminate\Support\Str;
 use STS\Models\AdminImpersonationSession;
 use STS\Models\User;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -94,11 +95,11 @@ class ImpersonationService
     public function assertImpersonationSessionActive(AdminImpersonationSession $session): void
     {
         if ($session->ended_at !== null) {
-            abort(401, 'impersonation_session_inactive');
+            throw new AccessDeniedHttpException('impersonation_session_inactive');
         }
 
         if ($session->expires_at === null || $session->expires_at->isPast()) {
-            abort(401, 'impersonation_session_inactive');
+            throw new AccessDeniedHttpException('impersonation_session_inactive');
         }
     }
 

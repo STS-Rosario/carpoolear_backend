@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use STS\Helpers\OldCordovaAppHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
+use STS\Services\Admin\ImpersonationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\Maintenance\MaintenanceStateService;
@@ -25,12 +26,15 @@ class AuthController extends Controller
 
     protected $deviceLogic;
 
-    public function __construct(UsersManager $userLogic, DeviceManager $devices)
+    protected ImpersonationService $impersonationService;
+
+    public function __construct(UsersManager $userLogic, DeviceManager $devices, ImpersonationService $impersonationService)
     {
         $this->middleware('logged')->only(['logout', 'retoken']);
 
         $this->userLogic = $userLogic;
         $this->deviceLogic = $devices;
+        $this->impersonationService = $impersonationService;
     }
 
     private function _getConfig($isCordova = false)
@@ -124,11 +128,24 @@ class AuthController extends Controller
     {
         try {
             $oldToken = $token = JWTAuth::getToken()->get();
-            $payload = JWTAuth::setToken($token)->checkOrFail();
+            JWTAuth::setToken($token)->checkOrFail();
             $user = JWTAuth::setToken($token)->user();
+            $payload = JWTAuth::setToken($token)->getPayload();
+
+            if ($payload->get('imp')) {
+                return $this->retokenImpersonation($request, $token, $oldToken, $user, $payload);
+            }
         } catch (TokenExpiredException $e) {
             try {
                 $oldToken = auth('api')->getToken()->get();
+                $payload = JWTAuth::setToken($oldToken)->getPayload();
+
+                if ($payload->get('imp')) {
+                    $user = JWTAuth::setToken($oldToken)->user();
+
+                    return $this->retokenImpersonation($request, $oldToken, $oldToken, $user, $payload);
+                }
+
                 $token = auth('api')->refresh($oldToken);
             } catch (JWTException $e) {
                 throw new AccessDeniedHttpException('invalid_token');
@@ -158,6 +175,44 @@ class AuthController extends Controller
                     'config' => $config,
                 ]);
             }
+        }
+
+        return response()->json([
+            'token' => $token,
+            'config' => $config,
+        ]);
+    }
+
+    private function retokenImpersonation(Request $request, string $currentToken, string $oldToken, $user, $payload)
+    {
+        $session = $this->impersonationService->findSessionOrFail((int) $payload->get('session_id'));
+        $this->impersonationService->assertImpersonationSessionActive($session);
+
+        $user_to_validate = $this->userLogic->find($user->id);
+        if ($user_to_validate->banned) {
+            return response()->json('banned', 403);
+        }
+
+        try {
+            JWTAuth::setToken($currentToken);
+            $invalidateToken = JWTAuth::getToken();
+            if ($invalidateToken) {
+                JWTAuth::invalidate($invalidateToken);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to invalidate impersonation JWT during retoken: '.$e->getMessage());
+        }
+
+        $reissued = $this->impersonationService->reissueImpersonationToken($session, $user);
+        $token = $reissued['token'];
+        $config = $this->_getConfig();
+
+        if ($request->has('app_version')) {
+            $data = [
+                'session_id' => $token,
+                'app_version' => $request->get('app_version'),
+            ];
+            $this->deviceLogic->updateBySession($oldToken, $data);
         }
 
         return response()->json([
