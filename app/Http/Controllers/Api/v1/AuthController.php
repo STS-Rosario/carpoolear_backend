@@ -138,10 +138,10 @@ class AuthController extends Controller
         } catch (TokenExpiredException $e) {
             try {
                 $oldToken = auth('api')->getToken()->get();
-                $payload = JWTAuth::setToken($oldToken)->getPayload();
+                $payload = $this->decodeTokenPayloadAllowingRefresh($oldToken);
 
-                if ($payload->get('imp')) {
-                    $user = JWTAuth::setToken($oldToken)->user();
+                if ($payload && $payload->get('imp')) {
+                    $user = $this->userLogic->find($payload->get('sub'));
 
                     return $this->retokenImpersonation($request, $oldToken, $oldToken, $user, $payload);
                 }
@@ -181,6 +181,19 @@ class AuthController extends Controller
             'token' => $token,
             'config' => $config,
         ]);
+    }
+
+    private function decodeTokenPayloadAllowingRefresh(string $tokenString)
+    {
+        JWTAuth::manager()->setRefreshFlow();
+
+        try {
+            return JWTAuth::manager()->decode(new \Tymon\JWTAuth\Token($tokenString), false);
+        } catch (\Exception $e) {
+            return null;
+        } finally {
+            JWTAuth::manager()->setRefreshFlow(false);
+        }
     }
 
     private function retokenImpersonation(Request $request, string $currentToken, string $oldToken, $user, $payload)
