@@ -298,6 +298,7 @@ class RatingRepositoryTest extends TestCase
         Carbon::setTestNow('2026-06-15 12:00:00');
         $user = User::factory()->create();
         $other = User::factory()->create();
+        $votedOther = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $other->id]);
         $repo = new RatingRepository;
 
@@ -305,7 +306,7 @@ class RatingRepositoryTest extends TestCase
         $old = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r2-'.uniqid('', true));
         $old->forceFill(['created_at' => '2026-05-01 00:00:00'])->saveQuietly();
         // Must be excluded by where('voted', false).
-        $voted = $repo->create($user->id, $other->id, $trip->id, 0, 0, 'r3-'.uniqid('', true));
+        $voted = $repo->create($user->id, $votedOther->id, $trip->id, 0, 0, 'r3-'.uniqid('', true));
         $voted->forceFill(['voted' => true])->saveQuietly();
 
         $listed = $repo->getPendingRatings($user);

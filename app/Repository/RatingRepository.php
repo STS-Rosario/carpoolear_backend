@@ -77,6 +77,13 @@ class RatingRepository
         $ratings->where('voted', false);
         $ratings->with(['from', 'to', 'trip']);
         $ratings->where('created_at', '>=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
+        $ratings->whereNotExists(function ($query) use ($user) {
+            $query->select(DB::raw(1))
+                ->from('rating as prior_ratings')
+                ->whereColumn('prior_ratings.user_id_to', 'rating.user_id_to')
+                ->where('prior_ratings.user_id_from', $user->id)
+                ->where('prior_ratings.voted', true);
+        });
 
         return $ratings->get();
     }
