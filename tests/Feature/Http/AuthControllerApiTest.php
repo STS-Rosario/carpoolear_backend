@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Http\Controllers\Api\v1\AuthController;
+use STS\Http\Middleware\BlockImpersonationDestructiveActions;
 use STS\Http\Middleware\UserLoggin;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
+use STS\Services\Admin\ImpersonationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\Maintenance\MaintenanceStateService;
@@ -33,13 +35,15 @@ class AuthControllerApiTest extends TestCase
     {
         parent::setUp();
         $this->withoutMiddleware(ThrottleRequests::class);
+        $this->withoutMiddleware(BlockImpersonationDestructiveActions::class);
     }
 
     public function test_constructor_registers_logged_middleware_for_logout_and_retoken_only(): void
     {
         $controller = new AuthController(
             Mockery::mock(UsersManager::class),
-            Mockery::mock(DeviceManager::class)
+            Mockery::mock(DeviceManager::class),
+            Mockery::mock(ImpersonationService::class)
         );
 
         $middlewares = $controller->getMiddleware();
@@ -722,7 +726,11 @@ class AuthControllerApiTest extends TestCase
         try {
             $this->actingAs($user, 'api');
 
-            $controller = new AuthController(app(UsersManager::class), $devices);
+            $controller = new AuthController(
+                app(UsersManager::class),
+                $devices,
+                app(ImpersonationService::class)
+            );
             $response = $controller->logout(Request::create('http://localhost/api/logout', 'POST'));
 
             $this->assertSame(200, $response->getStatusCode());

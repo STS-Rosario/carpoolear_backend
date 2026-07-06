@@ -16,6 +16,10 @@ class AdminActionLog extends Model
 
     const ACTION_REFERENCE_UPDATE = 'reference_update';
 
+    const ACTION_USER_IMPERSONATE_START = 'user_impersonate_start';
+
+    const ACTION_USER_IMPERSONATE_STOP = 'user_impersonate_stop';
+
     protected $table = 'admin_action_logs';
 
     protected $fillable = [

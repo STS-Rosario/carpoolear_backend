@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Database\Eloquent\Collection;
 use Mockery as m;
+use STS\Http\Middleware\BlockImpersonationDestructiveActions;
 use STS\Models\User;
 use Tests\TestCase;
 use Tymon\JWTAuth\Token;
@@ -13,6 +14,12 @@ class ApiAuthTest extends TestCase
     protected $userManager;
 
     protected $userLogic;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(BlockImpersonationDestructiveActions::class);
+    }
 
     protected function parseJson($response)
     {
@@ -102,9 +109,13 @@ class ApiAuthTest extends TestCase
 
         $deviceLogic = $this->mock(\STS\Services\Logic\DeviceManager::class);
 
+        $payload = m::mock(\Tymon\JWTAuth\Payload::class);
+        $payload->shouldReceive('get')->with('imp')->andReturn(null);
+
         \JWTAuth::shouldReceive('getToken')->once()->andReturn(new Token('a.b.c'));
         \JWTAuth::shouldReceive('setToken')->andReturnSelf();
         \JWTAuth::shouldReceive('checkOrFail')->andReturn(new \stdClass);
+        \JWTAuth::shouldReceive('getPayload')->andReturn($payload);
         \JWTAuth::shouldReceive('user')->andReturn($user);
 
         $response = $this->call('POST', 'api/retoken?token='.$json->token);

@@ -144,6 +144,9 @@ return [
     // SPA route (hash router) for maintenance admin settings — exposed on api/config.
     'maintenance_admin_path' => env('MAINTENANCE_ADMIN_PATH', '/#/admin/maintenance'),
 
+    // Admin user impersonation for support debugging (set IMPERSONATION_ENABLED=true in production).
+    'impersonation_enabled' => filter_var(env('IMPERSONATION_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
     // User edit property security: allowlist-based filtering for all user update paths
     'user_edit_properties' => [
         // NEVER editable by anyone (including admins)

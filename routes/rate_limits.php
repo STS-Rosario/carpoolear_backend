@@ -182,3 +182,7 @@ RateLimiter::for('trip-invite-friends', function (Request $request) {
 
     return Limit::perHour(20)->by($user->id.':trip-invite-friends');
 });
+
+RateLimiter::for('impersonation-consume', function (Request $request) {
+    return Limit::perHour(30)->by($request->ip().':impersonation-consume');
+});
