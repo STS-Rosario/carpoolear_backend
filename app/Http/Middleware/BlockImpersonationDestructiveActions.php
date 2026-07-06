@@ -51,6 +51,14 @@ class BlockImpersonationDestructiveActions
             return true;
         }
 
+        if ($signature === 'PUT api/users' && $this->requestContainsPasswordChange($request)) {
+            return true;
+        }
+
+        if ($signature === 'PUT api/users/modify' && $this->requestContainsPasswordChange($request)) {
+            return true;
+        }
+
         if (preg_match('#^POST API/TRIPS/\D+/REQUESTS/\D+/PAY$#', strtoupper($signature)) === 1) {
             return true;
         }
@@ -60,5 +68,12 @@ class BlockImpersonationDestructiveActions
         }
 
         return false;
+    }
+
+    private function requestContainsPasswordChange(Request $request): bool
+    {
+        $password = $request->input('password');
+
+        return is_string($password) && trim($password) !== '';
     }
 }

@@ -69,6 +69,46 @@ class BlockImpersonationDestructiveActionsTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
     }
 
+    public function test_blocks_profile_password_change_when_impersonating(): void
+    {
+        $middleware = $this->middlewareWithImpClaim(true);
+
+        $request = Request::create('/api/users', 'PUT', [
+            'password' => 'new-secret',
+            'password_confirmation' => 'new-secret',
+        ]);
+        $request->setRouteResolver(function () use ($request) {
+            $route = new \Illuminate\Routing\Route('PUT', 'api/users', []);
+            $route->bind($request);
+
+            return $route;
+        });
+
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
+
+        $this->assertSame(403, $response->getStatusCode());
+        $this->assertSame('impersonation_action_forbidden', $response->getData(true)['message']);
+    }
+
+    public function test_allows_profile_update_without_password_while_impersonating(): void
+    {
+        $middleware = $this->middlewareWithImpClaim(true);
+
+        $request = Request::create('/api/users', 'PUT', [
+            'description' => 'Updated while impersonating',
+        ]);
+        $request->setRouteResolver(function () use ($request) {
+            $route = new \Illuminate\Routing\Route('PUT', 'api/users', []);
+            $route->bind($request);
+
+            return $route;
+        });
+
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
+
+        $this->assertSame(200, $response->getStatusCode());
+    }
+
     private function middlewareWithImpClaim(bool $impersonating): BlockImpersonationDestructiveActions
     {
         $payload = Mockery::mock(Payload::class);
