@@ -1683,6 +1683,92 @@ class UsersManagerTest extends TestCase
         $this->assertTrue($manager->unansweredConversationOrRequestsByTrip($trip));
     }
 
+    public function test_seat_request_limit_status_returns_null_limit_when_module_disabled(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', false);
+
+        $trip = (object) [
+            'id' => 201,
+            'user_id' => 21,
+            'user' => (object) ['unaswered_messages_limit' => 3],
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('unansweredConversationOrRequestsByTrip')->never();
+        $manager = new UsersManager($userRepo, Mockery::mock(TripRepository::class));
+
+        $this->assertSame(
+            ['limit' => null, 'reached' => false],
+            $manager->seatRequestLimitStatus($trip)
+        );
+    }
+
+    public function test_seat_request_limit_status_returns_null_limit_when_driver_limit_not_positive(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+
+        $trip = (object) [
+            'id' => 202,
+            'user_id' => 22,
+            'user' => (object) ['unaswered_messages_limit' => 0],
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('unansweredConversationOrRequestsByTrip')->never();
+        $manager = new UsersManager($userRepo, Mockery::mock(TripRepository::class));
+
+        $this->assertSame(
+            ['limit' => null, 'reached' => false],
+            $manager->seatRequestLimitStatus($trip)
+        );
+    }
+
+    public function test_seat_request_limit_status_reached_when_count_at_limit(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+
+        $trip = (object) [
+            'id' => 203,
+            'user_id' => 23,
+            'user' => (object) ['unaswered_messages_limit' => 2],
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('unansweredConversationOrRequestsByTrip')
+            ->once()
+            ->with(23, 203)
+            ->andReturn(2);
+        $manager = new UsersManager($userRepo, Mockery::mock(TripRepository::class));
+
+        $this->assertSame(
+            ['limit' => 2, 'reached' => true],
+            $manager->seatRequestLimitStatus($trip)
+        );
+    }
+
+    public function test_seat_request_limit_status_not_reached_when_count_below_limit(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+
+        $trip = (object) [
+            'id' => 204,
+            'user_id' => 24,
+            'user' => (object) ['unaswered_messages_limit' => 5],
+        ];
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $userRepo->shouldReceive('unansweredConversationOrRequestsByTrip')
+            ->once()
+            ->with(24, 204)
+            ->andReturn(4);
+        $manager = new UsersManager($userRepo, Mockery::mock(TripRepository::class));
+
+        $this->assertSame(
+            ['limit' => 5, 'reached' => false],
+            $manager->seatRequestLimitStatus($trip)
+        );
+    }
+
     public function test_update_photo_validation_requires_profile(): void
     {
         $user = User::factory()->create();
