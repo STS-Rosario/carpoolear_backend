@@ -499,4 +499,79 @@ class TripTransformerTest extends TestCase
         $this->assertSame($conversation->id, $payload['group_chat_conversation_id']);
         $this->assertTrue($conversation->fresh()->users()->whereKey($passenger->id)->exists());
     }
+
+    public function test_transform_exposes_seat_request_limit_not_reached_when_module_on_and_under_limit(): void
+    {
+        \Illuminate\Support\Facades\Config::set('carpoolear.module_unaswered_message_limit', true);
+        $owner = User::factory()->create([
+            'is_admin' => false,
+            'unaswered_messages_limit' => 3,
+        ]);
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $trip = $this->makeTrip(['user_id' => $owner->id, 'state' => Trip::STATE_READY]);
+
+        Passenger::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_PENDING,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh(['user', 'passengerPending']));
+
+        $this->assertSame(3, $payload['seat_request_limit']);
+        $this->assertFalse($payload['seat_request_limit_reached']);
+    }
+
+    public function test_transform_exposes_seat_request_limit_reached_when_pending_count_meets_limit(): void
+    {
+        \Illuminate\Support\Facades\Config::set('carpoolear.module_unaswered_message_limit', true);
+        $owner = User::factory()->create([
+            'is_admin' => false,
+            'unaswered_messages_limit' => 1,
+        ]);
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $trip = $this->makeTrip(['user_id' => $owner->id, 'state' => Trip::STATE_READY]);
+
+        Passenger::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_PENDING,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh(['user', 'passengerPending']));
+
+        $this->assertSame(1, $payload['seat_request_limit']);
+        $this->assertTrue($payload['seat_request_limit_reached']);
+    }
+
+    public function test_transform_seat_request_limit_null_when_module_disabled(): void
+    {
+        \Illuminate\Support\Facades\Config::set('carpoolear.module_unaswered_message_limit', false);
+        $owner = User::factory()->create([
+            'is_admin' => false,
+            'unaswered_messages_limit' => 2,
+        ]);
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $trip = $this->makeTrip(['user_id' => $owner->id, 'state' => Trip::STATE_READY]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh(['user']));
+
+        $this->assertNull($payload['seat_request_limit']);
+        $this->assertFalse($payload['seat_request_limit_reached']);
+    }
+
+    public function test_transform_omits_seat_request_limit_fields_without_viewer(): void
+    {
+        \Illuminate\Support\Facades\Config::set('carpoolear.module_unaswered_message_limit', true);
+        $trip = $this->makeTrip();
+
+        $payload = (new TripTransformer(null))->transform($trip->fresh(['user']));
+
+        $this->assertArrayNotHasKey('seat_request_limit', $payload);
+        $this->assertArrayNotHasKey('seat_request_limit_reached', $payload);
+    }
 }
