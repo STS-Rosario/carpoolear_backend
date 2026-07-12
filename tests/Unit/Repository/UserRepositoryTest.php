@@ -695,6 +695,21 @@ class UserRepositoryTest extends TestCase
         $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
     }
 
+    public function test_unanswered_conversation_or_requests_ignores_empty_trip_group_chat(): void
+    {
+        // Trip creation attaches a TYPE_TRIP_CONVERSATION with only the driver.
+        // That empty group chat must not count toward the unanswered limit.
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $groupChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $groupChat->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
+    }
+
     public function test_unanswered_conversation_or_requests_counts_only_when_trip_belongs_to_user(): void
     {
         // Mutation intent: `whereHas('trip', fn ($q) => $q->where('user_id', $userId))` (~197–199 RemoveMethodCall / trip ownership).
