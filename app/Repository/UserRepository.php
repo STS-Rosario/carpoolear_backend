@@ -241,6 +241,7 @@ class UserRepository
     private function countUnansweredConversationsByTripOwner($userId, $tripId): int
     {
         return Conversation::where('trip_id', $tripId)
+            ->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)
             ->whereDoesntHave('messages', function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })
