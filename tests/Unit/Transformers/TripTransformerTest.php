@@ -548,6 +548,27 @@ class TripTransformerTest extends TestCase
         $this->assertTrue($payload['seat_request_limit_reached']);
     }
 
+    public function test_transform_seat_request_limit_not_reached_when_only_empty_trip_group_chat_exists(): void
+    {
+        \Illuminate\Support\Facades\Config::set('carpoolear.module_unaswered_message_limit', true);
+        $owner = User::factory()->create([
+            'is_admin' => false,
+            'unaswered_messages_limit' => 1,
+        ]);
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $trip = $this->makeTrip(['user_id' => $owner->id, 'state' => Trip::STATE_READY]);
+        $groupChat = \STS\Models\Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => \STS\Models\Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $groupChat->users()->attach($owner->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $payload = (new TripTransformer($viewer))->transform($trip->fresh(['user', 'passengerPending']));
+
+        $this->assertSame(1, $payload['seat_request_limit']);
+        $this->assertFalse($payload['seat_request_limit_reached']);
+    }
+
     public function test_transform_seat_request_limit_null_when_module_disabled(): void
     {
         \Illuminate\Support\Facades\Config::set('carpoolear.module_unaswered_message_limit', false);
