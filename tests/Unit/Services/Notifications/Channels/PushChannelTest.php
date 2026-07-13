@@ -84,6 +84,41 @@ class PushChannelTest extends TestCase
         $this->assertTrue(true);
     }
 
+    public function test_send_ios_uses_firebase_service_with_expected_payload(): void
+    {
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->withArgs(function (string $token, array $message, array $data, string $platform): bool {
+                return $token === 'ios-direct-token'
+                    && $platform === 'ios'
+                    && $message['title'] === 'Title I'
+                    && $message['body'] === 'Body I'
+                    && $message['sound'] === 'default'
+                    && $data['type'] === 'conversation'
+                    && $data['conversation_id'] === '24'
+                    && $data['url'] === 'https://example.com/ios';
+            })
+            ->andReturn(['ok' => true]);
+
+        $channel = new PushChannel(fn () => $firebase);
+        $device = new Device([
+            'id' => 5002,
+            'device_id' => 'ios-direct-token',
+            'device_type' => 'ios',
+        ]);
+
+        $result = $channel->sendIOS($device, [
+            'message' => 'Body I',
+            'title' => 'Title I',
+            'type' => 'conversation',
+            'extras' => ['conversation_id' => 24],
+            'url' => 'https://example.com/ios',
+        ]);
+
+        $this->assertSame(['ok' => true], $result);
+    }
+
     public function test_send_skips_push_pipeline_when_device_notifications_disabled(): void
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
@@ -306,10 +341,9 @@ class PushChannelTest extends TestCase
         $this->assertNotSame('', (string) ($ctx['error'] ?? ''));
     }
 
-    public function test_send_logs_ios_inner_and_outer_errors_when_apns_certificate_missing(): void
+    public function test_send_logs_ios_inner_and_outer_errors_when_firebase_send_throws(): void
     {
         Config::set('carpoolear.send_push_notifications_to_device_activity_days', 0);
-        Config::set('push-notification.ios.certificate', base_path('nonexistent-apns-cert-'.uniqid('', true).'.pem'));
 
         $logged = [];
         Log::shouldReceive('error')
@@ -317,11 +351,17 @@ class PushChannelTest extends TestCase
             ->andReturnUsing(function (string $message, array $context = []) use (&$logged): void {
                 $logged[] = ['message' => $message, 'context' => $context];
             });
+        Log::shouldReceive('warning')->zeroOrMoreTimes();
+
+        $firebase = Mockery::mock(FirebaseService::class);
+        $firebase->shouldReceive('sendNotification')
+            ->once()
+            ->andThrow($this->fcmInternalErrorException());
 
         $user = User::factory()->create();
         $device = Device::query()->create([
             'user_id' => $user->id,
-            'device_id' => str_repeat('a', 64),
+            'device_id' => 'ios-error-token',
             'device_type' => 'ios',
             'session_id' => 's-ios',
             'notifications' => true,
@@ -334,14 +374,14 @@ class PushChannelTest extends TestCase
         $notification->setAttribute('message', 'Hello ios');
         $notification->setAttribute('title', 'TI');
 
-        (new PushChannel)->send($notification, $user);
+        (new PushChannel(fn () => $firebase))->send($notification, $user);
 
         $inner = $this->firstLogMatching($logged, 'PushChannel: sendIOS error');
         $this->assertNotNull($inner, 'Expected sendIOS catch to log before rethrowing.');
         $ictx = $inner['context'];
         $this->assertSame($device->id, $ictx['device_id']);
         $this->assertSame($device->device_id, $ictx['device_token']);
-        $this->assertStringContainsString('APNs certificate not found', (string) ($ictx['error'] ?? ''));
+        $this->assertStringContainsString('Internal error', (string) ($ictx['error'] ?? ''));
 
         $outer = $this->firstLogMatching($logged, 'PushChannel: Error sending push notification');
         $this->assertNotNull($outer);
