@@ -695,6 +695,92 @@ class UserRepositoryTest extends TestCase
         $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
     }
 
+    public function test_unanswered_conversation_or_requests_ignores_empty_trip_group_chat(): void
+    {
+        // Trip creation attaches a TYPE_TRIP_CONVERSATION with only the driver.
+        // That empty group chat must not count toward the unanswered limit.
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $groupChat = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+        ]);
+        $groupChat->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
+    }
+
+    public function test_unanswered_conversation_counts_reused_thread_when_latest_message_is_from_passenger(): void
+    {
+        // Existing private chat reused for a new trip (trip_id updated) where the driver
+        // already messaged historically must still count if the latest message is from
+        // the passenger and the driver has not replied yet.
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $oldTrip = Trip::factory()->create(['user_id' => $driver->id]);
+        $newTrip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $oldTrip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($passenger->id, ['read' => true, 'notifications_enabled' => true]);
+        Message::create([
+            'user_id' => $passenger->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Old inquiry',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        Message::create([
+            'user_id' => $driver->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Old reply',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $conversation->trip_id = $newTrip->id;
+        $conversation->save();
+
+        Message::create([
+            'user_id' => $passenger->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'New inquiry about this trip',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $this->assertSame(
+            1,
+            $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $newTrip->id)
+        );
+    }
+
+    public function test_unanswered_conversation_does_not_count_reused_thread_when_driver_already_replied_latest(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $trip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($passenger->id, ['read' => true, 'notifications_enabled' => true]);
+        Message::create([
+            'user_id' => $passenger->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Inquiry',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        Message::create([
+            'user_id' => $driver->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Reply',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $this->assertSame(0, $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $trip->id));
+    }
+
     public function test_unanswered_conversation_or_requests_counts_only_when_trip_belongs_to_user(): void
     {
         // Mutation intent: `whereHas('trip', fn ($q) => $q->where('user_id', $userId))` (~197–199 RemoveMethodCall / trip ownership).

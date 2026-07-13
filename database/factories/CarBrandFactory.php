@@ -20,7 +20,9 @@ class CarBrandFactory extends Factory
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'argautos_id' => fake()->unique()->numberBetween(1, 99999),
+            // Leave null so factories never collide with seeded catalog argautos_ids.
+            // Faker unique() only tracks values it generated, not existing DB rows.
+            'argautos_id' => null,
             'is_active' => true,
         ];
     }

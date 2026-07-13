@@ -37,4 +37,22 @@ class CarBrandTest extends TestCase
 
         $this->assertCount(2, $brand->fresh()->models);
     }
+
+    public function test_car_brand_factory_does_not_assign_catalog_range_argautos_ids(): void
+    {
+        // Catalog seeds use low argautos_ids (including 70). Factory must not invent
+        // colliding IDs — Faker unique() does not know about rows already in the DB.
+        $definition = (new \Database\Factories\CarBrandFactory)->definition();
+
+        $this->assertNull($definition['argautos_id']);
+    }
+
+    public function test_car_brand_factory_creates_without_colliding_with_seeded_catalog(): void
+    {
+        // Suite may already have seeded catalog brands; factory creates must not throw.
+        $created = CarBrand::factory()->count(10)->create();
+
+        $this->assertCount(10, $created);
+        $this->assertTrue($created->every(fn (CarBrand $brand) => $brand->argautos_id === null));
+    }
 }

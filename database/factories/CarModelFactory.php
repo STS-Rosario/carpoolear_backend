@@ -22,7 +22,8 @@ class CarModelFactory extends Factory
             'car_brand_id' => CarBrand::factory(),
             'name' => strtoupper($name),
             'slug' => Str::slug($name),
-            'argautos_id' => fake()->unique()->numberBetween(1, 99999),
+            // Leave null so factories never collide with seeded catalog argautos_ids.
+            'argautos_id' => null,
             'is_active' => true,
         ];
     }

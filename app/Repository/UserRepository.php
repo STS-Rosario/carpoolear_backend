@@ -241,9 +241,7 @@ class UserRepository
     private function countUnansweredConversationsByTripOwner($userId, $tripId): int
     {
         return Conversation::where('trip_id', $tripId)
-            ->whereDoesntHave('messages', function ($query) use ($userId) {
-                $query->where('user_id', $userId);
-            })
+            ->where('type', Conversation::TYPE_PRIVATE_CONVERSATION)
             ->whereDoesntHave('users', function ($query) use ($tripId, $userId) {
                 $query->where('users.id', '<>', $userId)
                     ->whereHas('passenger', function ($passengerQuery) use ($tripId) {
@@ -251,6 +249,13 @@ class UserRepository
                             ->where('request_state', '<>', Passenger::STATE_PENDING);
                     });
             })
+            // Latest message is from someone other than the driver (awaiting reply).
+            // Important for reused private chats whose trip_id was updated: prior driver
+            // messages about another trip must not mark this inquiry as answered.
+            ->whereRaw(
+                '(select m.user_id from messages m where m.conversation_id = conversations.id order by m.id desc limit 1) <> ?',
+                [$userId]
+            )
             ->count();
     }
 }

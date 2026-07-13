@@ -682,6 +682,25 @@ class UsersManager extends BaseManager
         }
     }
 
+    public function seatRequestLimitStatus($trip): array
+    {
+        $moduleEnabled = config('carpoolear.module_unaswered_message_limit', false);
+        $limit = isset($trip->user->unaswered_messages_limit)
+            ? (int) $trip->user->unaswered_messages_limit
+            : 0;
+
+        if (! $moduleEnabled || $limit <= 0) {
+            return ['limit' => null, 'reached' => false];
+        }
+
+        $allow = $this->unansweredConversationOrRequestsByTrip($trip);
+
+        return [
+            'limit' => $limit,
+            'reached' => ! $allow,
+        ];
+    }
+
     public function searchUsers($name)
     {
         return $this->repo->searchUsers($name);

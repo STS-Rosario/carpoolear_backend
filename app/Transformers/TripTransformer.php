@@ -117,6 +117,11 @@ class TripTransformer extends TransformerAbstract
             // passengerPending
             $data['passengerPending_count'] = count($trip->passengerPending);
 
+            $usersManager = app(\STS\Services\Logic\UsersManager::class);
+            $seatRequestLimitStatus = $usersManager->seatRequestLimitStatus($trip);
+            $data['seat_request_limit'] = $seatRequestLimitStatus['limit'];
+            $data['seat_request_limit_reached'] = $seatRequestLimitStatus['reached'];
+
             $data['group_chat_conversation_id'] = null;
             $data['group_chat_unread_count'] = 0;
             if ($trip->canAccessGroupChat($this->user)) {
