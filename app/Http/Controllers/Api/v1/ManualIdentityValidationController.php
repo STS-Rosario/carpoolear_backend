@@ -3,6 +3,7 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -231,6 +232,15 @@ class ManualIdentityValidationController extends Controller
             );
         }
 
+        $phpUploadErrors = $this->collectPhpUploadErrors([
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ]);
+        if ($phpUploadErrors !== []) {
+            throw new ExceptionWithErrors('Invalid image upload.', $phpUploadErrors);
+        }
+
         $laravelValidator = Validator::make(
             ['front_image' => $front, 'back_image' => $back, 'selfie_image' => $selfie],
             [
@@ -279,6 +289,35 @@ class ManualIdentityValidationController extends Controller
             'message' => 'Submission received.',
             'request_id' => $validationRequest->id,
         ], 201);
+    }
+
+    /**
+     * @param  array<string, UploadedFile>  $files
+     * @return array<string, list<string>>
+     */
+    private function collectPhpUploadErrors(array $files): array
+    {
+        $errors = [];
+
+        foreach ($files as $field => $file) {
+            if ($file->isValid()) {
+                continue;
+            }
+
+            $errors[$field] = match ($file->getError()) {
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => [
+                    'File too large. Maximum size per image: '.((int) config('carpoolear.image_upload_max_bytes', 10 * 1024 * 1024) / (1024 * 1024)).' MB.',
+                ],
+                UPLOAD_ERR_PARTIAL => ['The upload was interrupted. Please try again.'],
+                UPLOAD_ERR_NO_FILE => ['No file was uploaded.'],
+                UPLOAD_ERR_NO_TMP_DIR, UPLOAD_ERR_CANT_WRITE, UPLOAD_ERR_EXTENSION => [
+                    'The server could not store the uploaded file. Please try again later.',
+                ],
+                default => ['The image failed to upload.'],
+            };
+        }
+
+        return $errors;
     }
 
     /**
