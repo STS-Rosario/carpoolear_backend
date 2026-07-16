@@ -75,13 +75,22 @@ class UserMigrationController extends Controller
         $removedId = (int) $validated['user_id_removed'];
         $fieldSources = $validated['field_sources'] ?? [];
 
+        $kept = User::findOrFail($keptId);
+        $removed = User::findOrFail($removedId);
+
+        if ($bannedUser = $this->findBannedMigrationUser($kept, $removed)) {
+            return response()->json([
+                'message' => 'migration_banned_user',
+                'user_id' => $bannedUser->id,
+                'user_name' => $bannedUser->name ?? '',
+            ], 422);
+        }
+
         Artisan::call('user:update', [
             'original' => (string) $removedId,
             'new' => (string) $keptId,
         ]);
 
-        $kept = User::findOrFail($keptId);
-        $removed = User::findOrFail($removedId);
         $this->fieldMerger->apply($kept, $removed, $fieldSources);
 
         $removalAction = $this->removeOrAnonymize($removedId, $admin);
@@ -108,6 +117,19 @@ class UserMigrationController extends Controller
                 'created_at' => $row->created_at?->toAtomString(),
             ],
         ]);
+    }
+
+    private function findBannedMigrationUser(User $kept, User $removed): ?User
+    {
+        if ($kept->banned) {
+            return $kept;
+        }
+
+        if ($removed->banned) {
+            return $removed;
+        }
+
+        return null;
     }
 
     /**
