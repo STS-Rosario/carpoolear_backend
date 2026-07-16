@@ -88,6 +88,70 @@ class AdminUserMigrationControllerIntegrationTest extends TestCase
         ])->assertUnprocessable();
     }
 
+    public function test_store_rejects_when_kept_user_is_banned(): void
+    {
+        $admin = $this->admin();
+        $kept = User::factory()->create([
+            'name' => 'Cuenta Suspendida',
+            'banned' => true,
+        ]);
+        $removed = User::factory()->create(['banned' => false]);
+        $trip = Trip::factory()->create(['user_id' => $removed->id]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'message' => 'migration_banned_user',
+            'user_id' => $kept->id,
+            'user_name' => 'Cuenta Suspendida',
+        ]);
+
+        $this->assertSame($removed->id, (int) $trip->fresh()->user_id);
+        $this->assertDatabaseMissing('user_migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+    }
+
+    public function test_store_rejects_when_removed_user_is_banned(): void
+    {
+        $admin = $this->admin();
+        $kept = User::factory()->create(['banned' => false]);
+        $removed = User::factory()->create([
+            'name' => 'Usuario Bloqueado',
+            'banned' => true,
+        ]);
+        $trip = Trip::factory()->create(['user_id' => $removed->id]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/user-migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'message' => 'migration_banned_user',
+            'user_id' => $removed->id,
+            'user_name' => 'Usuario Bloqueado',
+        ]);
+
+        $this->assertSame($removed->id, (int) $trip->fresh()->user_id);
+        $this->assertDatabaseMissing('user_migrations', [
+            'user_id_kept' => $kept->id,
+            'user_id_removed' => $removed->id,
+        ]);
+    }
+
     public function test_store_runs_user_update_artisan_and_persists_migration_row(): void
     {
         $admin = $this->admin();
