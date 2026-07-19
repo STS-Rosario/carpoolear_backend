@@ -1337,4 +1337,24 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertNull($fresh->assigned_to_user_id);
         $this->assertNull($fresh->assigned_at);
     }
+
+    public function test_admin_reply_returns_forbidden_when_ticket_assigned_to_another_admin(): void
+    {
+        $assignee = $this->adminUser();
+        $otherAdmin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'assigned-to-other',
+            'assigned_to_user_id' => $assignee->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($otherAdmin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Should not post.',
+        ])->assertStatus(403);
+    }
 }

@@ -663,4 +663,51 @@ class SupportTicketServiceTest extends TestCase
         $this->assertNull($expired->fresh()->assigned_to_user_id);
         $this->assertNull($expired->fresh()->assigned_at);
     }
+
+    public function test_admin_can_reply_to_ticket_when_assigned_to_them(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => 'contact',
+            'subject' => 'Assigned to me',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->assertTrue($this->service()->adminCanReplyToTicket($ticket, $admin));
+    }
+
+    public function test_admin_cannot_reply_to_ticket_assigned_to_another_admin(): void
+    {
+        $assignee = User::factory()->create(['is_admin' => true]);
+        $otherAdmin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => 'contact',
+            'subject' => 'Assigned elsewhere',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $assignee->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->assertFalse($this->service()->adminCanReplyToTicket($ticket, $otherAdmin));
+    }
+
+    public function test_admin_can_reply_when_ticket_is_unassigned(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => 'contact',
+            'subject' => 'Unassigned',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $this->assertTrue($this->service()->adminCanReplyToTicket($ticket, $admin));
+    }
 }
