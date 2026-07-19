@@ -210,6 +210,22 @@ class SupportTicketServiceTest extends TestCase
         $this->assertNotNull($ticket->last_reply_at);
     }
 
+    public function test_apply_admin_reply_transition_clears_active_assignment(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Open',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 1,
+            'assigned_to_user_id' => 12,
+            'assigned_at' => now(),
+        ]);
+
+        $this->service()->applyAdminReplyTransition($ticket, 99);
+
+        $this->assertNull($ticket->assigned_to_user_id);
+        $this->assertNull($ticket->assigned_at);
+    }
+
     public function test_apply_admin_reply_transition_when_waiting_for_user_stays_esperando_respuesta(): void
     {
         $ticket = new SupportTicket([

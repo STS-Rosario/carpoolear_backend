@@ -1293,4 +1293,48 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertNull($row['assigned_to_user_id']);
         $this->assertNull($row['assigned_to']);
     }
+
+    public function test_index_includes_assigned_admin_for_claimed_ticket(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'claimed-ticket',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'));
+        $row = $rows->firstWhere('id', $ticket->id);
+
+        $this->assertSame($admin->id, (int) $row['assigned_to_user_id']);
+        $this->assertSame($admin->name, $row['assigned_to']['name']);
+    }
+
+    public function test_admin_reply_clears_ticket_assignment(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'reply-clears-assignment',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Handled now.',
+        ])->assertOk();
+
+        $fresh = $ticket->fresh();
+        $this->assertNull($fresh->assigned_to_user_id);
+        $this->assertNull($fresh->assigned_at);
+    }
 }
