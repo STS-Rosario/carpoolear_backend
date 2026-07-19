@@ -1173,4 +1173,188 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             'message_markdown' => 'Hello owner.',
         ])->assertOk();
     }
+
+    public function test_assign_me_claims_assignable_ticket_for_current_admin(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, ['status' => 'Open', 'subject' => 'assign-me']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/assign-me')->assertOk();
+        $data = $response->json('data');
+
+        $this->assertSame($admin->id, (int) $data['assigned_to_user_id']);
+        $this->assertNotNull($data['assigned_at']);
+        $this->assertSame($admin->id, (int) $data['assigned_to']['id']);
+        $this->assertSame($admin->name, $data['assigned_to']['name']);
+    }
+
+    public function test_assign_me_returns_conflict_when_ticket_assigned_to_another_admin(): void
+    {
+        $adminA = $this->adminUser();
+        $adminB = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'assigned_to_user_id' => $adminA->id,
+            'assigned_at' => now(),
+            'subject' => 'already-assigned',
+        ]);
+
+        $this->actingAs($adminB, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/assign-me')
+            ->assertStatus(409);
+    }
+
+    public function test_assign_me_returns_unprocessable_when_ticket_not_assignable(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 0,
+            'subject' => 'waiting-user',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/assign-me')
+            ->assertStatus(422);
+    }
+
+    public function test_unassign_me_clears_assignment_for_current_admin(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+            'subject' => 'unassign-me',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unassign-me')->assertOk();
+        $data = $response->json('data');
+
+        $this->assertNull($data['assigned_to_user_id']);
+        $this->assertNull($data['assigned_at']);
+        $this->assertNull($data['assigned_to']);
+    }
+
+    public function test_unassign_me_returns_forbidden_for_non_assignee(): void
+    {
+        $assignee = $this->adminUser();
+        $otherAdmin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'assigned_to_user_id' => $assignee->id,
+            'assigned_at' => now(),
+            'subject' => 'forbidden-unassign',
+        ]);
+
+        $this->actingAs($otherAdmin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unassign-me')
+            ->assertStatus(403);
+    }
+
+    public function test_index_releases_expired_assignment_before_returning_rows(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $expired = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'expired-assignment',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'));
+        $row = $rows->firstWhere('id', $expired->id);
+
+        $this->assertNotNull($row);
+        $this->assertNull($row['assigned_to_user_id']);
+        $this->assertNull($row['assigned_to']);
+    }
+
+    public function test_index_includes_assigned_admin_for_claimed_ticket(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'claimed-ticket',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'));
+        $row = $rows->firstWhere('id', $ticket->id);
+
+        $this->assertSame($admin->id, (int) $row['assigned_to_user_id']);
+        $this->assertSame($admin->name, $row['assigned_to']['name']);
+    }
+
+    public function test_admin_reply_clears_ticket_assignment(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'reply-clears-assignment',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Handled now.',
+        ])->assertOk();
+
+        $fresh = $ticket->fresh();
+        $this->assertNull($fresh->assigned_to_user_id);
+        $this->assertNull($fresh->assigned_at);
+    }
+
+    public function test_admin_reply_returns_forbidden_when_ticket_assigned_to_another_admin(): void
+    {
+        $assignee = $this->adminUser();
+        $otherAdmin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'assigned-to-other',
+            'assigned_to_user_id' => $assignee->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($otherAdmin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Should not post.',
+        ])->assertStatus(403);
+    }
 }

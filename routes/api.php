@@ -317,6 +317,8 @@ Route::middleware(['api'])->group(function () {
         Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
         Route::post('support/tickets/{id}/unresolve', [AdminSupportTicketController::class, 'unresolve']);
         Route::post('support/tickets/{id}/needs-review', [AdminSupportTicketController::class, 'markNeedsReview']);
+        Route::post('support/tickets/{id}/assign-me', [AdminSupportTicketController::class, 'assignMe']);
+        Route::post('support/tickets/{id}/unassign-me', [AdminSupportTicketController::class, 'unassignMe']);
         Route::get('support/tickets/{ticketId}/attachments/{attachmentId}/image', [AdminSupportTicketController::class, 'attachmentImage']);
         Route::post('support/tickets/{id}/purge-attachments', [AdminSupportTicketController::class, 'purgeAttachments']);
 

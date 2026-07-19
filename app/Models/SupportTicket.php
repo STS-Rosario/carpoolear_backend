@@ -78,6 +78,8 @@ class SupportTicket extends Model
         'updated_by',
         'closed_by',
         'closed_at',
+        'assigned_to_user_id',
+        'assigned_at',
     ];
 
     protected function casts(): array
@@ -85,12 +87,18 @@ class SupportTicket extends Model
         return [
             'last_reply_at' => 'datetime',
             'closed_at' => 'datetime',
+            'assigned_at' => 'datetime',
         ];
     }
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to_user_id');
     }
 
     public function replies()
@@ -116,6 +124,30 @@ class SupportTicket extends Model
                 $builder->where('unread_for_admin', '>', 0)
                     ->orWhereIn('status', self::ADMIN_ACTION_STATUSES);
             });
+    }
+
+    public function isAssignedTo(int $adminId): bool
+    {
+        return $this->assigned_to_user_id !== null
+            && (int) $this->assigned_to_user_id === $adminId;
+    }
+
+    public function isAssignmentExpired(?int $timeoutMinutes = null): bool
+    {
+        if ($this->assigned_to_user_id === null || $this->assigned_at === null) {
+            return false;
+        }
+
+        $minutes = $timeoutMinutes ?? (int) config('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+
+        return $this->assigned_at->lte(now()->subMinutes($minutes));
+    }
+
+    public function hasActiveAssignment(?int $timeoutMinutes = null): bool
+    {
+        return $this->assigned_to_user_id !== null
+            && $this->assigned_at !== null
+            && ! $this->isAssignmentExpired($timeoutMinutes);
     }
 
     public static function countForUser(?int $userId): int

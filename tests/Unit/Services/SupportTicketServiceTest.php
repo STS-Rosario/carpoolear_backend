@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use STS\Models\SupportTicket;
@@ -10,6 +11,9 @@ use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Services\SupportTicketService;
 use STS\Support\SupportTicketOpeningAutoReply;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Tests\TestCase;
 
 class SupportTicketServiceTest extends TestCase
@@ -204,6 +208,22 @@ class SupportTicketServiceTest extends TestCase
         $this->assertSame(0, $ticket->unread_for_admin);
         $this->assertSame(99, (int) $ticket->updated_by);
         $this->assertNotNull($ticket->last_reply_at);
+    }
+
+    public function test_apply_admin_reply_transition_clears_active_assignment(): void
+    {
+        $ticket = new SupportTicket([
+            'status' => 'Open',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 1,
+            'assigned_to_user_id' => 12,
+            'assigned_at' => now(),
+        ]);
+
+        $this->service()->applyAdminReplyTransition($ticket, 99);
+
+        $this->assertNull($ticket->assigned_to_user_id);
+        $this->assertNull($ticket->assigned_at);
     }
 
     public function test_apply_admin_reply_transition_when_waiting_for_user_stays_esperando_respuesta(): void
@@ -443,5 +463,251 @@ class SupportTicketServiceTest extends TestCase
         $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Resuelto'])));
         $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Cerrado'])));
         $this->assertTrue($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Open'])));
+    }
+
+    public function test_ticket_is_assignable_by_admin_for_actionable_statuses(): void
+    {
+        $service = $this->service();
+
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'Open', 'unread_for_admin' => 0])));
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'En revision', 'unread_for_admin' => 0])));
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket([
+            'status' => SupportTicket::STATUS_NEEDS_REVIEW,
+            'unread_for_admin' => 0,
+        ])));
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket([
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 1,
+        ])));
+    }
+
+    public function test_ticket_is_not_assignable_by_admin_when_waiting_on_user_without_unread(): void
+    {
+        $service = $this->service();
+
+        $this->assertFalse($service->ticketIsAssignableByAdmin(new SupportTicket([
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 0,
+        ])));
+        $this->assertFalse($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'Resuelto', 'unread_for_admin' => 0])));
+        $this->assertFalse($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'Cerrado', 'unread_for_admin' => 0])));
+    }
+
+    public function test_assign_ticket_to_admin_sets_assignment_fields(): void
+    {
+        Carbon::setTestNow('2026-07-19 12:00:00');
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $this->service()->assignTicketToAdmin($ticket->fresh(), $admin);
+
+        $fresh = $ticket->fresh();
+        $this->assertSame($admin->id, (int) $fresh->assigned_to_user_id);
+        $this->assertSame('2026-07-19 12:00:00', $fresh->assigned_at?->format('Y-m-d H:i:s'));
+        $this->assertSame($admin->id, (int) $fresh->updated_by);
+    }
+
+    public function test_assign_ticket_to_admin_rejects_non_assignable_ticket(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Esperando respuesta',
+            'priority' => 'normal',
+            'unread_for_admin' => 0,
+        ]);
+
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->service()->assignTicketToAdmin($ticket->fresh(), $admin);
+    }
+
+    public function test_assign_ticket_to_admin_rejects_ticket_assigned_to_another_admin(): void
+    {
+        Carbon::setTestNow('2026-07-19 12:00:00');
+        $owner = User::factory()->create();
+        $adminA = User::factory()->create(['is_admin' => true]);
+        $adminB = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $adminA->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->expectException(ConflictHttpException::class);
+        $this->service()->assignTicketToAdmin($ticket->fresh(), $adminB);
+    }
+
+    public function test_assign_ticket_to_admin_succeeds_when_prior_assignment_expired(): void
+    {
+        Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+        $owner = User::factory()->create();
+        $adminA = User::factory()->create(['is_admin' => true]);
+        $adminB = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $adminA->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
+        $this->service()->assignTicketToAdmin($ticket->fresh(), $adminB);
+
+        $fresh = $ticket->fresh();
+        $this->assertSame($adminB->id, (int) $fresh->assigned_to_user_id);
+        $this->assertSame('2026-07-19 12:00:00', $fresh->assigned_at?->format('Y-m-d H:i:s'));
+    }
+
+    public function test_unassign_ticket_from_admin_clears_assignment_for_assignee(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->service()->unassignTicketFromAdmin($ticket->fresh(), $admin);
+
+        $fresh = $ticket->fresh();
+        $this->assertNull($fresh->assigned_to_user_id);
+        $this->assertNull($fresh->assigned_at);
+    }
+
+    public function test_unassign_ticket_from_admin_rejects_non_assignee(): void
+    {
+        $owner = User::factory()->create();
+        $assignee = User::factory()->create(['is_admin' => true]);
+        $otherAdmin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $assignee->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->expectException(AccessDeniedHttpException::class);
+        $this->service()->unassignTicketFromAdmin($ticket->fresh(), $otherAdmin);
+    }
+
+    public function test_unassign_ticket_from_admin_rejects_unassigned_ticket(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $this->expectException(UnprocessableEntityHttpException::class);
+        $this->service()->unassignTicketFromAdmin($ticket->fresh(), $admin);
+    }
+
+    public function test_release_expired_assignments_clears_stale_claims(): void
+    {
+        Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $active = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Active',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(5),
+        ]);
+        $expired = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Expired',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
+        $released = $this->service()->releaseExpiredAssignments();
+
+        $this->assertSame(1, $released);
+        $this->assertSame($admin->id, (int) $active->fresh()->assigned_to_user_id);
+        $this->assertNull($expired->fresh()->assigned_to_user_id);
+        $this->assertNull($expired->fresh()->assigned_at);
+    }
+
+    public function test_admin_can_reply_to_ticket_when_assigned_to_them(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => 'contact',
+            'subject' => 'Assigned to me',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->assertTrue($this->service()->adminCanReplyToTicket($ticket, $admin));
+    }
+
+    public function test_admin_cannot_reply_to_ticket_assigned_to_another_admin(): void
+    {
+        $assignee = User::factory()->create(['is_admin' => true]);
+        $otherAdmin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => 'contact',
+            'subject' => 'Assigned elsewhere',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $assignee->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->assertFalse($this->service()->adminCanReplyToTicket($ticket, $otherAdmin));
+    }
+
+    public function test_admin_can_reply_when_ticket_is_unassigned(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => User::factory()->create()->id,
+            'type' => 'contact',
+            'subject' => 'Unassigned',
+            'status' => 'Open',
+            'priority' => 'normal',
+        ]);
+
+        $this->assertTrue($this->service()->adminCanReplyToTicket($ticket, $admin));
     }
 }

@@ -13,6 +13,7 @@ use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
 use STS\Support\ImageAttachmentRules;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SupportTicketController extends Controller
 {
@@ -30,6 +31,7 @@ class SupportTicketController extends Controller
             'replies.user:id,name',
             'attachments',
             'user',
+            'assignedTo:id,name',
         ];
     }
 
@@ -38,13 +40,14 @@ class SupportTicketController extends Controller
      */
     private static function ticketIndexRelationships(): array
     {
-        return ['user:id,name'];
+        return ['user:id,name', 'assignedTo:id,name'];
     }
 
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
 
     public function index(Request $request): JsonResponse
     {
+        $this->supportTicketService->releaseExpiredAssignments();
         $query = $this->buildAdminIndexQuery($request);
 
         return response()->json([
@@ -84,6 +87,7 @@ class SupportTicketController extends Controller
 
     public function show(int $id): JsonResponse
     {
+        $this->supportTicketService->releaseExpiredAssignments();
         $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
 
         return response()->json(['data' => $ticket]);
@@ -149,6 +153,10 @@ class SupportTicketController extends Controller
 
         if (! $this->supportTicketService->ticketAcceptsReplies($ticket)) {
             return response()->json(['error' => 'Ticket is closed for replies'], 422);
+        }
+
+        if (! $this->supportTicketService->adminCanReplyToTicket($ticket, $admin)) {
+            return response()->json(['error' => 'Ticket is assigned to another admin'], 403);
         }
 
         if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
@@ -311,6 +319,36 @@ class SupportTicketController extends Controller
         return response()->json(['message' => 'Attachments purged']);
     }
 
+    public function assignMe(int $id): JsonResponse
+    {
+        $this->supportTicketService->releaseExpiredAssignments();
+        $admin = auth()->user();
+        $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
+
+        try {
+            $this->supportTicketService->assignTicketToAdmin($ticket, $admin);
+        } catch (HttpException $exception) {
+            return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
+
+        return response()->json(['data' => $ticket->fresh(self::ticketDetailRelationships())]);
+    }
+
+    public function unassignMe(int $id): JsonResponse
+    {
+        $this->supportTicketService->releaseExpiredAssignments();
+        $admin = auth()->user();
+        $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
+
+        try {
+            $this->supportTicketService->unassignTicketFromAdmin($ticket, $admin);
+        } catch (HttpException $exception) {
+            return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
+
+        return response()->json(['data' => $ticket->fresh(self::ticketDetailRelationships())]);
+    }
+
     private function applyActionStatus(int $id, Request $request, string $status): JsonResponse
     {
         $validated = $request->validate([
@@ -332,6 +370,9 @@ class SupportTicketController extends Controller
 
             $ticket->status = $status;
             $ticket->updated_by = $admin->id;
+            if (in_array($status, ['Resuelto', 'Cerrado'], true)) {
+                $this->supportTicketService->clearTicketAssignment($ticket);
+            }
             if ($status === 'Cerrado') {
                 $ticket->closed_by = $admin->id;
                 $ticket->closed_at = now();

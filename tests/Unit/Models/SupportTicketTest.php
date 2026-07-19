@@ -101,7 +101,24 @@ class SupportTicketTest extends TestCase
             'updated_by',
             'closed_by',
             'closed_at',
+            'assigned_to_user_id',
+            'assigned_at',
         ], (new SupportTicket)->getFillable());
+    }
+
+    public function test_assigned_to_relation_resolves_user(): void
+    {
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = $this->makeTicket($owner, [
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => '2026-07-19 12:00:00',
+        ]);
+
+        $ticket = $ticket->fresh(['assignedTo']);
+
+        $this->assertTrue($ticket->assignedTo->is($admin));
+        $this->assertInstanceOf(CarbonInterface::class, $ticket->assigned_at);
     }
 
     private function makeTicket(User $user, array $overrides = []): SupportTicket
