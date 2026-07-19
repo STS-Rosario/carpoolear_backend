@@ -1268,4 +1268,29 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->postJson('api/admin/support/tickets/'.$ticket->id.'/unassign-me')
             ->assertStatus(403);
     }
+
+    public function test_index_releases_expired_assignment_before_returning_rows(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $expired = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'expired-assignment',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'));
+        $row = $rows->firstWhere('id', $expired->id);
+
+        $this->assertNotNull($row);
+        $this->assertNull($row['assigned_to_user_id']);
+        $this->assertNull($row['assigned_to']);
+    }
 }
