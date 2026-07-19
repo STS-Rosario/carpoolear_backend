@@ -47,6 +47,7 @@ class SupportTicketController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->supportTicketService->releaseExpiredAssignments();
         $query = $this->buildAdminIndexQuery($request);
 
         return response()->json([
@@ -86,6 +87,7 @@ class SupportTicketController extends Controller
 
     public function show(int $id): JsonResponse
     {
+        $this->supportTicketService->releaseExpiredAssignments();
         $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
 
         return response()->json(['data' => $ticket]);
@@ -315,6 +317,7 @@ class SupportTicketController extends Controller
 
     public function assignMe(int $id): JsonResponse
     {
+        $this->supportTicketService->releaseExpiredAssignments();
         $admin = auth()->user();
         $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
 
@@ -329,6 +332,7 @@ class SupportTicketController extends Controller
 
     public function unassignMe(int $id): JsonResponse
     {
+        $this->supportTicketService->releaseExpiredAssignments();
         $admin = auth()->user();
         $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
 
