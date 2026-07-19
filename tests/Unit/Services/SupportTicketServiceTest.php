@@ -444,4 +444,32 @@ class SupportTicketServiceTest extends TestCase
         $this->assertFalse($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Cerrado'])));
         $this->assertTrue($service->ticketAcceptsReplies(new SupportTicket(['status' => 'Open'])));
     }
+
+    public function test_ticket_is_assignable_by_admin_for_actionable_statuses(): void
+    {
+        $service = $this->service();
+
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'Open', 'unread_for_admin' => 0])));
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'En revision', 'unread_for_admin' => 0])));
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket([
+            'status' => SupportTicket::STATUS_NEEDS_REVIEW,
+            'unread_for_admin' => 0,
+        ])));
+        $this->assertTrue($service->ticketIsAssignableByAdmin(new SupportTicket([
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 1,
+        ])));
+    }
+
+    public function test_ticket_is_not_assignable_by_admin_when_waiting_on_user_without_unread(): void
+    {
+        $service = $this->service();
+
+        $this->assertFalse($service->ticketIsAssignableByAdmin(new SupportTicket([
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 0,
+        ])));
+        $this->assertFalse($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'Resuelto', 'unread_for_admin' => 0])));
+        $this->assertFalse($service->ticketIsAssignableByAdmin(new SupportTicket(['status' => 'Cerrado', 'unread_for_admin' => 0])));
+    }
 }
