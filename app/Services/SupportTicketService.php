@@ -137,6 +137,7 @@ class SupportTicketService
         $ticket->unread_for_admin = 0;
         $ticket->last_reply_at = now();
         $ticket->updated_by = $actorUserId;
+        $this->clearTicketAssignment($ticket);
     }
 
     /**

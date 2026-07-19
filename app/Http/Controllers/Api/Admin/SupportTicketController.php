@@ -366,6 +366,9 @@ class SupportTicketController extends Controller
 
             $ticket->status = $status;
             $ticket->updated_by = $admin->id;
+            if (in_array($status, ['Resuelto', 'Cerrado'], true)) {
+                $this->supportTicketService->clearTicketAssignment($ticket);
+            }
             if ($status === 'Cerrado') {
                 $ticket->closed_by = $admin->id;
                 $ticket->closed_at = now();
