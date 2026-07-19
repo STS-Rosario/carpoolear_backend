@@ -8,6 +8,9 @@ use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Support\SupportTicketOpeningAutoReply;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class SupportTicketService
 {
@@ -186,5 +189,63 @@ class SupportTicketService
         }
 
         return in_array($ticket->status, ['Open', 'En revision', SupportTicket::STATUS_NEEDS_REVIEW], true);
+    }
+
+    public function assignTicketToAdmin(SupportTicket $ticket, User $admin): void
+    {
+        if ($ticket->isAssignmentExpired()) {
+            $this->clearTicketAssignment($ticket);
+            $ticket->save();
+        }
+
+        if (! $this->ticketIsAssignableByAdmin($ticket)) {
+            throw new UnprocessableEntityHttpException('Ticket cannot be assigned');
+        }
+
+        if ($ticket->hasActiveAssignment() && ! $ticket->isAssignedTo($admin->id)) {
+            throw new ConflictHttpException('Ticket is already assigned to another admin');
+        }
+
+        $ticket->assigned_to_user_id = $admin->id;
+        $ticket->assigned_at = now();
+        $ticket->updated_by = $admin->id;
+        $ticket->save();
+    }
+
+    public function unassignTicketFromAdmin(SupportTicket $ticket, User $admin): void
+    {
+        if ($ticket->assigned_to_user_id === null) {
+            throw new UnprocessableEntityHttpException('Ticket is not assigned');
+        }
+
+        if (! $ticket->isAssignedTo($admin->id)) {
+            throw new AccessDeniedHttpException('Only the assigned admin can unassign this ticket');
+        }
+
+        $this->clearTicketAssignment($ticket);
+        $ticket->updated_by = $admin->id;
+        $ticket->save();
+    }
+
+    public function clearTicketAssignment(SupportTicket $ticket): void
+    {
+        $ticket->assigned_to_user_id = null;
+        $ticket->assigned_at = null;
+    }
+
+    public function releaseExpiredAssignments(): int
+    {
+        $timeoutMinutes = (int) config('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+        $threshold = now()->subMinutes($timeoutMinutes);
+
+        return SupportTicket::query()
+            ->whereNotNull('assigned_to_user_id')
+            ->whereNotNull('assigned_at')
+            ->where('assigned_at', '<=', $threshold)
+            ->update([
+                'assigned_to_user_id' => null,
+                'assigned_at' => null,
+                'updated_at' => now(),
+            ]);
     }
 }
