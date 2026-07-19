@@ -174,4 +174,17 @@ class SupportTicketService
     {
         return ! in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true);
     }
+
+    public function ticketIsAssignableByAdmin(SupportTicket $ticket): bool
+    {
+        if (in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true)) {
+            return false;
+        }
+
+        if ((int) $ticket->unread_for_admin > 0) {
+            return true;
+        }
+
+        return in_array($ticket->status, ['Open', 'En revision', SupportTicket::STATUS_NEEDS_REVIEW], true);
+    }
 }
