@@ -155,6 +155,10 @@ class SupportTicketController extends Controller
             return response()->json(['error' => 'Ticket is closed for replies'], 422);
         }
 
+        if (! $this->supportTicketService->adminCanReplyToTicket($ticket, $admin)) {
+            return response()->json(['error' => 'Ticket is assigned to another admin'], 403);
+        }
+
         if ($this->supportTicketService->ticketAlreadyHasReplyWithMessageMarkdown(
             $ticket->id,
             $validated['message_markdown'],

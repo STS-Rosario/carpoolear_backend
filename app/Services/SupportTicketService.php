@@ -179,6 +179,15 @@ class SupportTicketService
         return ! in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true);
     }
 
+    public function adminCanReplyToTicket(SupportTicket $ticket, User $admin): bool
+    {
+        if (! $ticket->hasActiveAssignment()) {
+            return true;
+        }
+
+        return $ticket->isAssignedTo((int) $admin->id);
+    }
+
     public function ticketIsAssignableByAdmin(SupportTicket $ticket): bool
     {
         if (in_array($ticket->status, self::TERMINAL_USER_REPLY_STATUSES, true)) {
