@@ -13,6 +13,7 @@ use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
 use STS\Support\ImageAttachmentRules;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class SupportTicketController extends Controller
 {
@@ -30,6 +31,7 @@ class SupportTicketController extends Controller
             'replies.user:id,name',
             'attachments',
             'user',
+            'assignedTo:id,name',
         ];
     }
 
@@ -38,7 +40,7 @@ class SupportTicketController extends Controller
      */
     private static function ticketIndexRelationships(): array
     {
-        return ['user:id,name'];
+        return ['user:id,name', 'assignedTo:id,name'];
     }
 
     public function __construct(private readonly SupportTicketService $supportTicketService) {}
@@ -309,6 +311,34 @@ class SupportTicketController extends Controller
         $this->supportTicketService->purgeTicketAttachments($id);
 
         return response()->json(['message' => 'Attachments purged']);
+    }
+
+    public function assignMe(int $id): JsonResponse
+    {
+        $admin = auth()->user();
+        $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
+
+        try {
+            $this->supportTicketService->assignTicketToAdmin($ticket, $admin);
+        } catch (HttpException $exception) {
+            return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
+
+        return response()->json(['data' => $ticket->fresh(self::ticketDetailRelationships())]);
+    }
+
+    public function unassignMe(int $id): JsonResponse
+    {
+        $admin = auth()->user();
+        $ticket = SupportTicket::with(self::ticketDetailRelationships())->findOrFail($id);
+
+        try {
+            $this->supportTicketService->unassignTicketFromAdmin($ticket, $admin);
+        } catch (HttpException $exception) {
+            return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
+        }
+
+        return response()->json(['data' => $ticket->fresh(self::ticketDetailRelationships())]);
     }
 
     private function applyActionStatus(int $id, Request $request, string $status): JsonResponse
