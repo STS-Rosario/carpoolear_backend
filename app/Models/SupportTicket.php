@@ -78,6 +78,8 @@ class SupportTicket extends Model
         'updated_by',
         'closed_by',
         'closed_at',
+        'assigned_to_user_id',
+        'assigned_at',
     ];
 
     protected function casts(): array
@@ -85,12 +87,18 @@ class SupportTicket extends Model
         return [
             'last_reply_at' => 'datetime',
             'closed_at' => 'datetime',
+            'assigned_at' => 'datetime',
         ];
     }
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to_user_id');
     }
 
     public function replies()
