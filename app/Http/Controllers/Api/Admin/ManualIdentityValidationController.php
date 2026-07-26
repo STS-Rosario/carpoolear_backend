@@ -9,6 +9,7 @@ use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
+use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use STS\Services\UserIdentityVerificationSuccessService;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -278,9 +279,7 @@ class ManualIdentityValidationController extends Controller
     {
         $item = ManualIdentityValidation::findOrFail($id);
 
-        $this->deleteStoredPhotos($item);
-        $item->images_purged_at = now();
-        $item->save();
+        ManualIdentityValidationDeletion::purgeStoredPhotos($item);
 
         return response()->json(['message' => 'Photos purged', 'data' => $item->fresh()]);
     }

@@ -3,8 +3,8 @@
 namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Storage;
 use STS\Models\ManualIdentityValidation;
+use STS\Services\ManualIdentityValidationDeletion;
 
 class PurgeRejectedManualIdentityValidationPhotos extends Command
 {
@@ -33,26 +33,12 @@ class PurgeRejectedManualIdentityValidationPhotos extends Command
         $purgedCount = 0;
 
         foreach ($items as $item) {
-            $this->purgePhotos($item);
+            ManualIdentityValidationDeletion::purgeStoredPhotos($item);
             $purgedCount++;
         }
 
         $this->info('Rejected manual identity validation photos purged: '.$purgedCount);
 
         return self::SUCCESS;
-    }
-
-    private function purgePhotos(ManualIdentityValidation $item): void
-    {
-        foreach (['front_image_path', 'back_image_path', 'selfie_image_path'] as $column) {
-            $path = $item->$column;
-            if ($path && Storage::disk('local')->exists($path)) {
-                Storage::disk('local')->delete($path);
-            }
-            $item->$column = null;
-        }
-
-        $item->images_purged_at = now();
-        $item->save();
     }
 }
