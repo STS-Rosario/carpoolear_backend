@@ -11,7 +11,7 @@ use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
-use STS\Services\UserIdentityVerificationSuccessService;
+use STS\Support\AdminPagination;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManualIdentityValidationController extends Controller
@@ -24,30 +24,62 @@ class ManualIdentityValidationController extends Controller
      * GET /api/admin/manual-identity-validations - list: paid first; within paid: with submitted_at (docs sent) first, then pending review, approved, rejected; then by waiting time (oldest first).
      * Waiting time = submitted_at (if submitted), else paid_at, else created_at.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $items = ManualIdentityValidation::with('user:id,name')
+        $query = ManualIdentityValidation::with('user:id,name')
             ->orderByRaw('CASE WHEN paid = 1 THEN 0 ELSE 1 END')
             ->orderByRaw('CASE WHEN submitted_at IS NOT NULL THEN 0 ELSE 1 END')
             ->orderByRaw("CASE WHEN COALESCE(review_status, '') = 'approved' THEN 1 WHEN COALESCE(review_status, '') = 'rejected' THEN 2 ELSE 0 END")
             ->orderByRaw('COALESCE(submitted_at, paid_at, created_at) ASC')
-            ->orderBy('created_at', 'asc')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'user_id' => $item->user_id,
-                    'user_name' => $item->user ? $item->user->name : null,
-                    'paid_at' => $item->paid_at ? $item->paid_at->toDateTimeString() : null,
-                    'submitted_at' => $item->submitted_at ? $item->submitted_at->toDateTimeString() : null,
-                    'manual_validation_started_at' => $item->manual_validation_started_at ? $item->manual_validation_started_at->toDateTimeString() : null,
-                    'paid' => $item->paid,
-                    'review_status' => $item->review_status,
-                    'has_images' => $item->hasImages(),
-                ];
-            });
+            ->orderBy('created_at', 'asc');
 
-        return response()->json(['data' => $items]);
+        if (! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
+            $query->where(function ($builder) {
+                $builder->whereNull('review_status')
+                    ->orWhereNotIn('review_status', ['approved', 'approve', 'rejected', 'reject']);
+            });
+        }
+
+        $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
+        $page = AdminPagination::resolvePage($request->query('page'));
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $items = collect($paginator->items())->map(fn (ManualIdentityValidation $item) => $this->serializeIndexRow($item))->values()->all();
+
+        return response()->json([
+            'data' => $items,
+            'meta' => [
+                'pagination' => AdminPagination::paginationMeta($paginator),
+            ],
+        ]);
+    }
+
+    private function serializeIndexRow(ManualIdentityValidation $item): array
+    {
+        return [
+            'id' => $item->id,
+            'user_id' => $item->user_id,
+            'user_name' => $item->user ? $item->user->name : null,
+            'paid_at' => $item->paid_at ? $item->paid_at->toDateTimeString() : null,
+            'submitted_at' => $item->submitted_at ? $item->submitted_at->toDateTimeString() : null,
+            'manual_validation_started_at' => $item->manual_validation_started_at ? $item->manual_validation_started_at->toDateTimeString() : null,
+            'paid' => $item->paid,
+            'review_status' => $item->review_status,
+            'has_images' => $item->hasImages(),
+        ];
+    }
+
+    private function queryFlagIsTruthy(mixed $value): bool
+    {
+        if ($value === true || $value === 1) {
+            return true;
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
     }
 
     /**
