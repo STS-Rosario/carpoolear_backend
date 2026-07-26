@@ -8,31 +8,41 @@ use STS\Http\Controllers\Controller;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
 use STS\Services\UserIdentityVerificationSuccessService;
+use STS\Support\AdminPagination;
 
 class MercadoPagoRejectedValidationController extends Controller
 {
     /**
      * GET /api/admin/mercado-pago-rejected-validations - list, newest first (user_id, name, nro_doc, reject_reason, created_at).
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $items = MercadoPagoRejectedValidation::with('user:id,name,nro_doc,identity_validated')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'user_id' => $item->user_id,
-                    'user_name' => $item->user ? $item->user->name : null,
-                    'user_nro_doc' => $item->user ? $item->user->nro_doc : null,
-                    'user_identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
-                    'reject_reason' => $item->reject_reason,
-                    'review_status' => $item->review_status,
-                    'created_at' => $item->created_at->toDateTimeString(),
-                ];
-            });
+        $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
+        $page = AdminPagination::resolvePage($request->query('page'));
 
-        return response()->json(['data' => $items]);
+        $paginator = MercadoPagoRejectedValidation::with('user:id,name,nro_doc,identity_validated')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $items = collect($paginator->items())->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'user_id' => $item->user_id,
+                'user_name' => $item->user ? $item->user->name : null,
+                'user_nro_doc' => $item->user ? $item->user->nro_doc : null,
+                'user_identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
+                'reject_reason' => $item->reject_reason,
+                'review_status' => $item->review_status,
+                'created_at' => $item->created_at->toDateTimeString(),
+            ];
+        })->values()->all();
+
+        return response()->json([
+            'data' => $items,
+            'meta' => [
+                'pagination' => AdminPagination::paginationMeta($paginator),
+            ],
+        ]);
     }
 
     /**
