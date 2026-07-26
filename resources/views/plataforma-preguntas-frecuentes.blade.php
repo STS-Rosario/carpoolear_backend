@@ -27,7 +27,7 @@
 
 
               <h3>¿Cómo se calcula la contribución para un viaje?</h3>
-              <p>La contribución monetaria máxima aceptada en Carpoolear es la de combustible utilizado + peajes dividido la cantidad de personas que viajan en el auto. La misma se debe definir antes del viaje, antes o durante la coordinaciòn previa. A menos que se decida hacer una división de gastos con los tickets de combustible y peaje en mano, al finalizar el mismo.En caso de que una persona pida un valor monetario que deje en evidencia que supera la máxima aceptada, será advertido por los administradores y suspendido de la plataforma hasta aceptar las reglas.En caso de reincidencia, suspendido por meses hasta llegar a una suspensiòn definitiva.</p>
+              <p>En este artículo te explicamos <a href="/division-de-gastos">cómo se calcula la contribución por persona para un viaje</a>.</p>
 
 
               <h3>¿Por qué sólo se consideran el gasto de combustible utilizado y peajes?</h3>
