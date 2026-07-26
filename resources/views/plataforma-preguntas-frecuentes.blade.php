@@ -34,7 +34,6 @@
               <p>Son los únicos gastos comprobables en un viaje a través de tickets (en caso de requerirse su verificación). El resto de los gastos que pudiesen existir (desgaste del auto o seguros) corren a cuenta del conductor ya que aporta su automóvil de forma desinteresada para el viaje y no se dedica profesionalmente al transporte de personas. </p>
               <p>En caso de un posible inconveniente en el viaje, si se constata que ha existido un lucro en favor del conductor, el mismo podría enfrentar problemas legales por ofrecer un servicio y no estar inscripto para realizar esa actividad y cobrarla. En cambio, en una división de combustible y peaje no hay actividad ilícita. </p>
               <p>Más allá del aporte de combustible y peaje, las personas que comparten viaje pueden contribuir monetariamente por el motivo que consideren necesario a otra persona con quien compartieron el viaje -por ejemplo por las galletitas que compartieron- La misma debe ser completamente voluntaria y el motivo no puede ser por haber compartido el viaje.</p>
-              <p><a href="https://docs.google.com/document/d/1sz_p3LS5AbcADtxxRByYTYAK3DGB73arvMRryF_SvAs/edit">Más informaciòn sobre la regla de contribuciòn màxima</a></p>
 
 
 
@@ -68,49 +67,8 @@
                     <br />Una vez que está todo coordinado y el conductor te confirma para compartir el viaje ¡ya sólo hay que esperar hasta el día del viaje!
                     </p>
 
-              <h3>¿Quiénes ven los viajes que publicó?: Visibilidad personalizada de viajes.</h3>
-              <p>Al momento de crear un viaje podés definir la privacidad del mismo y elegir quiénes serán los usuarios de Carpoolear que podrán contactarse con vos. <br />
-                Hay tres tipos de visibilidad: <br />
-                “Viaje público” <br />
-                “Viaje visible para amigos de amigos” <br />
-                “Viaje visible para amigos” <br />
-                <br />Podés crear tu lista de amigos enviando solicitudes de amistad dentro de la plataforma o vinculando tu cuenta con la de Facebook, para que la plataforma tenga en cuenta también a tus amigos de esa red social que están en Carpoolear. 
-              </p>
-              <p>Siguiendo esto los tres tipos de viaje comprenden: </p>
-              <ul>
-                <li>“Viaje público” → TODOS los usuarios de Carpoolear podrán ver y solicitar este viaje.</li>
-                <li>“Viaje visible para amigos de amigos” →  tus amigos y sus amigos de Carpoolear y Facebook (si te loggeaste con esta red social) podrán ver y solicitar este viaje.</li>
-                <li>“Viaje visible para amigos” → sólo tus amigos de Carpoolear y Facebook (si te loggeaste con esta red social)  que utilicen Carpoolear podrán ver y solicitar este viaje.</li>
-              </ul>
-
-              <table class="table-visibilidad">
-                <thead>
-                  <tr>
-                      <th></th>
-                      <th>Si sos amigo
-                      </th><th>Si tenés algún amigo en común</th>
-                      <th>Si no sos amigo</th>
-                  </tr>
-                </thead>
-                  <tbody><tr>
-                      <th>Alguien crea un viaje "Público"</th>
-                      <td>lo ves ✔</td>
-                      <td>lo ves ✔</td>
-                      <td>lo ves ✔</td>
-                  </tr>
-                  <tr>
-                      <th>Alguien crea un viaje para "Amigos de amigos"</th>
-                      <td>lo ves ✔</td>
-                      <td>lo ves ✔</td>
-                      <td>no lo ves ✘</td>
-                  </tr>
-                  <tr>
-                      <th>Alguien crea un viaje para "Amigos"</th>
-                      <td>lo ves ✔</td>
-                      <td>no lo ves ✘</td>
-                      <td>no lo ves ✘</td>
-                  </tr>
-              </tbody></table>
+              <h3>¿Las cuentas de los usuarios son verificadas?</h3>
+              <p>En este artículo te explicamos <a href="/verificacion-cuenta">cómo funciona la verificación de cuenta en Carpoolear</a>.</p>
 
               <h3>Tuve problemas con mi viaje, ¿qué hago? </h3>
               <p>Si tuviste una mala experiencia con tu viaje (conductores irresponsables, falta de compromiso del pasajero, entre otros problemas) o las condiciones del mismo no se dieron tal como fueron pautadas, contá sobre tu experiencia cuando puedas calificar a la otra persona. Es por eso que es importante que mantengas la coordinación de los viajes dentro de la plataforma de Carpoolear.</p>
