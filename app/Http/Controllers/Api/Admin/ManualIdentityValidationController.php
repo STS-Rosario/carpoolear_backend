@@ -11,6 +11,7 @@ use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
+use STS\Services\UserIdentityVerificationSuccessService;
 use STS\Support\AdminPagination;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 

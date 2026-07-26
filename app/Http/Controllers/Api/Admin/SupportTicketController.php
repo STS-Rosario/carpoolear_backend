@@ -12,6 +12,7 @@ use STS\Models\SupportTicketReply;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
 use STS\Support\AdminPagination;
+use STS\Support\ImageAttachmentRules;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
