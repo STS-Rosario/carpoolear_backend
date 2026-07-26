@@ -5,6 +5,7 @@ namespace STS\Services;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Notifications\TripGroupChatCreatedNotification;
 use STS\Repository\ConversationRepository;
 use STS\Services\Logic\ConversationsManager;
 
@@ -33,6 +34,7 @@ class TripGroupChatService
             foreach ($this->participants($trip) as $participant) {
                 $this->conversationRepo->addUser($conversation, $participant);
             }
+            $this->notifyUsers($trip, $conversation->fresh(), $this->participants($trip));
 
             return;
         }
@@ -45,6 +47,20 @@ class TripGroupChatService
                 'notifications.group_chat_user_joined',
                 ['name' => $acceptedUser->name]
             );
+            $this->notifyUsers($trip, $conversation->fresh(), collect([$acceptedUser]));
+        }
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, User>  $users
+     */
+    private function notifyUsers(Trip $trip, $conversation, $users): void
+    {
+        foreach ($users as $user) {
+            $notification = new TripGroupChatCreatedNotification;
+            $notification->setAttribute('trip', $trip);
+            $notification->setAttribute('conversation', $conversation);
+            $notification->notify($user);
         }
     }
 

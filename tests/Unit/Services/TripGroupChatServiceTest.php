@@ -173,13 +173,14 @@ class TripGroupChatServiceTest extends TestCase
             'user_id' => $passengerTwo->id,
             'request_state' => Passenger::STATE_ACCEPTED,
         ]);
+
+        $this->service->syncOnPassengerAccept($trip->fresh(), $passengerTwo);
+
         Passenger::factory()->create([
             'trip_id' => $trip->id,
             'user_id' => $passengerThree->id,
             'request_state' => Passenger::STATE_ACCEPTED,
         ]);
-
-        $this->service->syncOnPassengerAccept($trip->fresh(), $passengerTwo);
 
         $this->mock(\STS\Services\Notifications\NotificationServices::class)
             ->shouldReceive('send')

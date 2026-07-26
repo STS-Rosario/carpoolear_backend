@@ -70,6 +70,7 @@ return [
 
     'group_chat_user_joined' => ':name se sumó al chat',
     'group_chat_user_left' => ':name se fue del chat',
+    'group_chat_created.message' => 'Se creó un chat grupal para el viaje a :destination el :day :hour para ayudar a la coordinación',
     'group_chat_message.trip_title' => 'Viaje :date :hour',
     'group_chat_message.title' => ':trip: :name @ :text',
 

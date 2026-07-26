@@ -71,6 +71,7 @@ return [
     // Group chat
     'group_chat_user_joined' => ':name joined the chat',
     'group_chat_user_left' => ':name left the chat',
+    'group_chat_created.message' => 'A group chat was created for the trip to :destination on :day at :hour to help with coordination',
     'group_chat_message.trip_title' => 'Trip :date :hour',
     'group_chat_message.title' => ':trip: :name @ :text',
 
