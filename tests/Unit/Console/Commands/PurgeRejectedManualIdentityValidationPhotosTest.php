@@ -7,6 +7,10 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\User;
+use STS\Notifications\ManualIdentityValidationPhotosPurgedNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\PushChannel;
+use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
 class PurgeRejectedManualIdentityValidationPhotosTest extends TestCase
@@ -140,5 +144,50 @@ class PurgeRejectedManualIdentityValidationPhotosTest extends TestCase
             '2026-07-24 05:00:00',
             $row->fresh()->images_purged_at->format('Y-m-d H:i:s')
         );
+    }
+
+    public function test_handle_notifies_user_when_photos_are_purged(): void
+    {
+        Storage::fake('local');
+        Carbon::setTestNow(Carbon::create(2026, 7, 26, 5, 0, 0));
+        Config::set('carpoolear.manual_identity_validation_rejected_photo_retention_days', 7);
+
+        $user = User::factory()->create();
+        $front = 'identity_validations/4/front.jpg';
+        Storage::disk('local')->put($front, 'front-bytes');
+
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => Carbon::now()->subDays(20),
+            'submitted_at' => Carbon::now()->subDays(15),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED,
+            'reviewed_at' => Carbon::now()->subDays(8),
+            'front_image_path' => $front,
+        ]);
+
+        $this->mock(NotificationServices::class, function ($mock) use ($user, $row) {
+            $mock->shouldReceive('send')
+                ->twice()
+                ->withArgs(function ($notification, $recipient, $channel) use ($user, $row) {
+                    if (! $notification instanceof ManualIdentityValidationPhotosPurgedNotification) {
+                        return false;
+                    }
+                    if ((int) $notification->getAttribute('request_id') !== (int) $row->id) {
+                        return false;
+                    }
+                    if (! $recipient instanceof User || (int) $recipient->id !== (int) $user->id) {
+                        return false;
+                    }
+
+                    return in_array($channel, [
+                        DatabaseChannel::class,
+                        PushChannel::class,
+                    ], true);
+                });
+        });
+
+        $this->artisan('manual-identity-validation:purge-rejected-photos')
+            ->assertExitCode(0);
     }
 }
