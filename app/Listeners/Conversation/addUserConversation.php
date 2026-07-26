@@ -3,35 +3,16 @@
 namespace STS\Listeners\Conversation;
 
 use STS\Events\Passenger\Accept;
-use STS\Repository\ConversationRepository;
-use STS\Services\Logic\ConversationsManager;
+use STS\Services\TripGroupChatService;
 
 class addUserConversation
 {
-    protected $conversationRepo;
-
-    protected $conversationLogic;
-
-    public function __construct(ConversationRepository $repo, ConversationsManager $logic)
-    {
-        $this->conversationRepo = $repo;
-        $this->conversationLogic = $logic;
-    }
+    public function __construct(private TripGroupChatService $tripGroupChatService) {}
 
     public function handle(Accept $event)
     {
-        $converstion = $event->trip->conversation;
-        if ($converstion) {
-            $this->conversationRepo->addUser($converstion, $event->to);
-            $subject = is_object($event->to) ? $event->to : \STS\Models\User::find($event->to);
-            if ($subject) {
-                $this->conversationLogic->sendSystemMessage(
-                    $converstion->fresh(),
-                    $subject,
-                    'notifications.group_chat_user_joined',
-                    ['name' => $subject->name]
-                );
-            }
+        if ($event->to) {
+            $this->tripGroupChatService->syncOnPassengerAccept($event->trip, $event->to);
         }
     }
 }
