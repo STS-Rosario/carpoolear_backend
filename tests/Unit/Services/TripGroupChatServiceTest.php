@@ -124,4 +124,73 @@ class TripGroupChatServiceTest extends TestCase
         $this->assertNotNull($conversation);
         $this->assertSame(3, $conversation->users()->count());
     }
+
+    public function test_all_participants_notified_when_group_chat_is_created(): void
+    {
+        $driver = User::factory()->create();
+        $passengerOne = User::factory()->create();
+        $passengerTwo = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerOne->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerTwo->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $this->mock(\STS\Services\Notifications\NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(6)
+            ->withArgs(function ($notification, $users, $channel) {
+                return $notification instanceof \STS\Notifications\TripGroupChatCreatedNotification
+                    && $users instanceof User
+                    && is_string($channel);
+            });
+
+        $this->service->syncOnPassengerAccept($trip->fresh(), $passengerTwo);
+    }
+
+    public function test_new_passenger_notified_when_added_to_existing_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $passengerOne = User::factory()->create();
+        $passengerTwo = User::factory()->create();
+        $passengerThree = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerOne->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerTwo->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passengerThree->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $this->service->syncOnPassengerAccept($trip->fresh(), $passengerTwo);
+
+        $this->mock(\STS\Services\Notifications\NotificationServices::class)
+            ->shouldReceive('send')
+            ->times(2)
+            ->withArgs(function ($notification, $users, $channel) use ($passengerThree) {
+                return $notification instanceof \STS\Notifications\TripGroupChatCreatedNotification
+                    && $users instanceof User
+                    && $users->is($passengerThree)
+                    && is_string($channel);
+            });
+
+        $this->service->syncOnPassengerAccept($trip->fresh(), $passengerThree);
+    }
 }
