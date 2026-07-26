@@ -45,7 +45,8 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
         $this->withoutMiddleware(UserAdmin::class);
 
         $response = $this->getJson('api/admin/mercado-pago-rejected-validations')->assertOk();
-        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertArrayHasKey('data', $response->json());
+        $this->assertArrayHasKey('meta', $response->json());
 
         $rows = collect($response->json('data'));
         $this->assertGreaterThanOrEqual(2, $rows->count());
@@ -59,6 +60,30 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
         $this->assertSame('dni_mismatch', $first['reject_reason']);
         $this->assertArrayHasKey('review_status', $first);
         $this->assertArrayHasKey('created_at', $first);
+    }
+
+    public function test_index_paginates_with_default_twenty_per_page(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 0; $i < 21; $i++) {
+            $user = User::factory()->create();
+            MercadoPagoRejectedValidation::create([
+                'user_id' => $user->id,
+                'reject_reason' => 'dni_mismatch',
+                'mp_payload' => ['k' => 'v'.$i],
+            ]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/mercado-pago-rejected-validations')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.current_page', 1)
+            ->assertJsonPath('meta.pagination.total', 21)
+            ->assertJsonCount(20, 'data');
     }
 
     public function test_show_returns_single_row_payload_and_review_approve_updates_user(): void
