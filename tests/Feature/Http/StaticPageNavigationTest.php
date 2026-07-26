@@ -33,6 +33,7 @@ class StaticPageNavigationTest extends TestCase
             'home' => ['/home'],
             'contacto' => ['/contacto'],
             'acerca de proyecto' => ['/acerca-de-proyecto'],
+            'division de gastos' => ['/division-de-gastos'],
         ];
     }
 }
