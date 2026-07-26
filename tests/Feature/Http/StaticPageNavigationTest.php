@@ -35,6 +35,7 @@ class StaticPageNavigationTest extends TestCase
             'acerca de proyecto' => ['/acerca-de-proyecto'],
             'division de gastos' => ['/division-de-gastos'],
             'plataforma preguntas frecuentes' => ['/plataforma-preguntas-frecuentes'],
+            'verificacion cuenta' => ['/verificacion-cuenta'],
         ];
     }
 }
