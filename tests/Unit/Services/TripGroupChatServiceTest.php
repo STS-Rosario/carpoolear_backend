@@ -117,7 +117,7 @@ class TripGroupChatServiceTest extends TestCase
             'request_state' => Passenger::STATE_ACCEPTED,
         ]);
 
-        $listener = new addUserConversation($this->conversationRepository, $this->conversationManager);
+        $listener = $this->app->make(addUserConversation::class);
         $listener->handle(new Accept($trip, $driver, $passengerTwo));
 
         $conversation = $trip->fresh()->conversation;

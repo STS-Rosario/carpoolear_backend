@@ -4,7 +4,7 @@ namespace STS\Listeners\Conversation;
 
 use STS\Events\Trip\Create;
 use STS\Repository\ConversationRepository;
-use STS\Services\Logic\ConversationsManager; 
+use STS\Services\Logic\ConversationsManager;
 
 class createConversation
 {
@@ -26,13 +26,10 @@ class createConversation
     /**
      * Handle the event.
      *
-     * @param  Create  $event
      * @return void
      */
     public function handle(Create $event)
     {
-        $trip = $event->trip;
-        $c = $this->conversationLogic->createTripConversation($event->trip->id);
-        $this->repoConv->addUser($c, $trip->user);
+        // Trip group chats are created once the trip reaches three participants.
     }
 }
