@@ -73,6 +73,11 @@ class HomeController extends Controller
         return view('division-de-gastos');
     }
 
+    public function verificacionCuenta()
+    {
+        return view('verificacion-cuenta');
+    }
+
     public function plataformaRecomendaciones()
     {
         return view('plataforma-recomendaciones');

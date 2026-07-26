@@ -34,6 +34,7 @@ class HomeControllerTest extends TestCase
             'auto rojo' => ['autoRojo', 'auto-rojo'],
             'plataforma faq' => ['plataformaPreguntasFrecuentes', 'plataforma-preguntas-frecuentes'],
             'division de gastos' => ['divisionDeGastos', 'division-de-gastos'],
+            'verificacion cuenta' => ['verificacionCuenta', 'verificacion-cuenta'],
             'plataforma recomendaciones' => ['plataformaRecomendaciones', 'plataforma-recomendaciones'],
             'plataforma terminos' => ['plataformaTerminosYCondiciones', 'plataforma-terminos-condiciones'],
             'colabora' => ['colaboraComoColaborar', 'colabora-como-colaborar'],
