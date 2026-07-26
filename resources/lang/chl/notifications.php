@@ -114,4 +114,5 @@ return [
     // ManualIdentityValidationReviewNotification
     'manual_identity_validation.approved' => 'Tu verificación de cuenta fue aprobada. Click acá para ver más información.',
     'manual_identity_validation.rejected' => 'Tu verificación de cuenta fue rechazada. Click acá para ver más información.',
+    'manual_identity_validation.photos_purged' => 'Las fotos de tu validación manual fueron eliminadas, volvelas a subir para continuar',
 ];

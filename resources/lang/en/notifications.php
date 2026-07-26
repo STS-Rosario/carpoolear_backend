@@ -115,4 +115,5 @@ return [
     // ManualIdentityValidationReviewNotification
     'manual_identity_validation.approved' => 'Your account verification was approved. Click here for more information.',
     'manual_identity_validation.rejected' => 'Your account verification was rejected. Click here for more information.',
+    'manual_identity_validation.photos_purged' => 'Your manual validation photos were deleted. Upload them again to continue.',
 ];
