@@ -68,6 +68,12 @@ class ScheduleTest extends TestCase
         $this->assertEquals('* * * * *', $event->expression);
     }
 
+    public function test_pulse_check_is_scheduled_every_minute()
+    {
+        $event = $this->findEvent('pulse:check');
+        $this->assertEquals('* * * * *', $event->expression);
+    }
+
     public function test_messages_email_is_scheduled_every_ten_minutes()
     {
         $event = $this->findEvent('messages:email');
@@ -154,6 +160,7 @@ class ScheduleTest extends TestCase
             'rating:availables',
             'live-location:process',
             'maintenance:tick',
+            'pulse:check',
             'trip:request',
             'trip:visibilityclean',
             'node:buildweights',
