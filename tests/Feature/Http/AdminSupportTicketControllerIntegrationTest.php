@@ -150,6 +150,47 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['user_id'] ?? 0) === $target->id));
     }
 
+    public function test_index_paginates_with_default_twenty_per_page(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+
+        for ($i = 0; $i < 25; $i++) {
+            $this->makeTicket($owner, ['subject' => 'ticket-'.$i]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/support/tickets')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.current_page', 1)
+            ->assertJsonPath('meta.pagination.total', 25)
+            ->assertJsonPath('meta.pagination.total_pages', 2)
+            ->assertJsonCount(20, 'data');
+    }
+
+    public function test_index_paginates_with_requested_per_page(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+
+        for ($i = 0; $i < 12; $i++) {
+            $this->makeTicket($owner, ['subject' => 'ticket-'.$i]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/support/tickets?per_page=10&page=2')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.per_page', 10)
+            ->assertJsonPath('meta.pagination.current_page', 2)
+            ->assertJsonPath('meta.pagination.total', 12)
+            ->assertJsonCount(2, 'data');
+    }
+
     public function test_index_returns_data_ordered_newest_first(): void
     {
         $admin = $this->adminUser();
@@ -161,7 +202,8 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->withoutMiddleware(UserAdmin::class);
 
         $indexResponse = $this->getJson('api/admin/support/tickets')->assertOk();
-        $this->assertSame(['data'], array_keys($indexResponse->json()));
+        $this->assertArrayHasKey('data', $indexResponse->json());
+        $this->assertArrayHasKey('meta', $indexResponse->json());
 
         $rows = collect($indexResponse->json('data'));
 
