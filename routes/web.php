@@ -13,6 +13,7 @@ Route::get('/mesadeayuda', [HomeController::class, 'mesadeayuda']);
 Route::get('/acerca-de-equipo', [HomeController::class, 'acercaDeEquipo']);
 Route::get('/acerca-de-proyecto', [HomeController::class, 'acercaDeProyecto']);
 Route::get('/plataforma-preguntas-frecuentes', [HomeController::class, 'plataformaPreguntasFrecuentes']);
+Route::get('/division-de-gastos', [HomeController::class, 'divisionDeGastos']);
 Route::get('/plataforma-recomendaciones', [HomeController::class, 'plataformaRecomendaciones']);
 Route::get('/plataforma-terminos-condiciones', [HomeController::class, 'plataformaTerminosYCondiciones']);
 Route::get('/colabora-como-colaborar', [HomeController::class, 'colaboraComoColaborar']);

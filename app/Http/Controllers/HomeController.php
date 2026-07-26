@@ -68,6 +68,11 @@ class HomeController extends Controller
         return view('plataforma-preguntas-frecuentes');
     }
 
+    public function divisionDeGastos()
+    {
+        return view('division-de-gastos');
+    }
+
     public function plataformaRecomendaciones()
     {
         return view('plataforma-recomendaciones');
