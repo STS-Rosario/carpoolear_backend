@@ -5,6 +5,7 @@ namespace STS\Console\Commands;
 use Illuminate\Console\Command;
 use STS\Models\ManualIdentityValidation;
 use STS\Services\ManualIdentityValidationDeletion;
+use STS\Services\ManualIdentityValidationPhotosPurgedNotifier;
 
 class PurgeRejectedManualIdentityValidationPhotos extends Command
 {
@@ -13,12 +14,19 @@ class PurgeRejectedManualIdentityValidationPhotos extends Command
 
     protected $description = 'Purge photos from rejected manual identity validations after retention period';
 
+    public function __construct(
+        private readonly ManualIdentityValidationPhotosPurgedNotifier $photosPurgedNotifier,
+    ) {
+        parent::__construct();
+    }
+
     public function handle(): int
     {
         $days = (int) ($this->option('days') ?: config('carpoolear.manual_identity_validation_rejected_photo_retention_days', 7));
         $threshold = now()->subDays($days);
 
         $items = ManualIdentityValidation::query()
+            ->with('user')
             ->where('review_status', ManualIdentityValidation::REVIEW_STATUS_REJECTED)
             ->whereNull('images_purged_at')
             ->whereNotNull('reviewed_at')
@@ -34,6 +42,10 @@ class PurgeRejectedManualIdentityValidationPhotos extends Command
 
         foreach ($items as $item) {
             ManualIdentityValidationDeletion::purgeStoredPhotos($item);
+            $item->loadMissing('user');
+            if ($item->user) {
+                $this->photosPurgedNotifier->notify($item->user, $item);
+            }
             $purgedCount++;
         }
 
