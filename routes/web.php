@@ -5,6 +5,16 @@ use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\MercadoPagoWebhookController;
 use STS\Http\Controllers\Api\v1\WhatsAppWebhookController;
 use STS\Http\Controllers\HomeController;
+use STS\Http\Controllers\Web\PulseAuthController;
+
+Route::middleware('guest')->group(function () {
+    Route::get('pulse/login', [PulseAuthController::class, 'showLoginForm'])->name('pulse.login');
+    Route::post('pulse/login', [PulseAuthController::class, 'login'])->middleware('throttle:6,1');
+});
+
+Route::post('pulse/logout', [PulseAuthController::class, 'logout'])
+    ->middleware('auth')
+    ->name('pulse.logout');
 
 Route::get('/', [HomeController::class, 'home']);
 Route::get('/home', [HomeController::class, 'home']);

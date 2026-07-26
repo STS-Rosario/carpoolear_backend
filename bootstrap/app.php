@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->redirectGuestsTo('/pulse/login');
+
         $middleware->alias([
             'update.connection' => \STS\Http\Middleware\UpdateConnection::class,
             'check.userbanned' => \STS\Http\Middleware\CheckUserBanned::class,
