@@ -14,6 +14,7 @@ use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
 use STS\Services\UserMigrationFieldMerger;
+use STS\Support\AdminPagination;
 use Throwable;
 
 class UserMigrationController extends Controller
@@ -27,13 +28,14 @@ class UserMigrationController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $perPage = min(max((int) $request->get('per_page', 20), 1), 100);
+        $perPage = AdminPagination::resolvePerPage($request->get('per_page'));
+        $page = AdminPagination::resolvePage($request->get('page'));
 
         $paginator = UserMigration::query()
             ->with(['admin:id,name'])
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->paginate($perPage);
+            ->paginate($perPage, ['*'], 'page', $page);
 
         $items = collect($paginator->items())->map(function (UserMigration $m) {
             return [
@@ -52,12 +54,7 @@ class UserMigrationController extends Controller
         return response()->json([
             'data' => $items,
             'meta' => [
-                'pagination' => [
-                    'current_page' => $paginator->currentPage(),
-                    'per_page' => $paginator->perPage(),
-                    'total' => $paginator->total(),
-                    'total_pages' => $paginator->lastPage(),
-                ],
+                'pagination' => AdminPagination::paginationMeta($paginator),
             ],
         ]);
     }
