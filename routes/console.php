@@ -58,4 +58,4 @@ Schedule::command('car-catalog:sync-argautos --mode=incremental')
     ->weeklyOn(1, '03:00')
     ->timezone('America/Argentina/Buenos_Aires');
 
-Schedule::command('pulse:check')->everyMinute();
+Schedule::command('pulse:check --once')->everyMinute();
