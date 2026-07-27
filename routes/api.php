@@ -44,6 +44,7 @@ use STS\Http\Controllers\Api\v1\RatingController;
 use STS\Http\Controllers\Api\v1\ReferencesController;
 use STS\Http\Controllers\Api\v1\RoutesController;
 use STS\Http\Controllers\Api\v1\SocialController;
+use STS\Http\Controllers\Api\v1\StaticPageController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\SupportTicketController;
 use STS\Http\Controllers\Api\v1\TripController;
@@ -57,6 +58,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('auth/impersonate/consume', [ImpersonationConsumeController::class, 'consume'])
         ->middleware('throttle:impersonation-consume');
     Route::get('config', [AuthController::class, 'getConfig']);
+    Route::get('static-pages/{page}', [StaticPageController::class, 'show']);
     Route::get('changelog', [ChangelogController::class, 'show']);
     Route::get('changelogs', [ChangelogController::class, 'index']);
     Route::get('car-brands', [CarCatalogController::class, 'brands']);
