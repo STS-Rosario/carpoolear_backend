@@ -11,6 +11,7 @@ use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\SupportTicketService;
+use STS\Support\AdminPagination;
 use STS\Support\ImageAttachmentRules;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -49,9 +50,16 @@ class SupportTicketController extends Controller
     {
         $this->supportTicketService->releaseExpiredAssignments();
         $query = $this->buildAdminIndexQuery($request);
+        $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
+        $page = AdminPagination::resolvePage($request->query('page'));
+
+        $paginator = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
-            'data' => $query->orderByDesc('id')->get(),
+            'data' => $paginator->items(),
+            'meta' => [
+                'pagination' => AdminPagination::paginationMeta($paginator),
+            ],
         ]);
     }
 

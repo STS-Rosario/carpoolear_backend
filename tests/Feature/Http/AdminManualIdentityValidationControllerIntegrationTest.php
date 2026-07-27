@@ -41,7 +41,8 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->withoutMiddleware(UserAdmin::class);
 
         $response = $this->getJson('api/admin/manual-identity-validations')->assertOk();
-        $this->assertSame(['data'], array_keys($response->json()));
+        $this->assertArrayHasKey('data', $response->json());
+        $this->assertArrayHasKey('meta', $response->json());
 
         $row = collect($response->json('data'))->firstWhere('user_id', $user->id);
         $this->assertNotNull($row);
@@ -59,6 +60,70 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertSame('Manual User', $row['user_name']);
         $this->assertTrue($row['paid']);
         $this->assertFalse($row['has_images']);
+    }
+
+    public function test_index_paginates_with_default_twenty_per_page(): void
+    {
+        $admin = $this->admin();
+
+        for ($i = 0; $i < 22; $i++) {
+            $user = User::factory()->create();
+            ManualIdentityValidation::create([
+                'user_id' => $user->id,
+                'paid' => true,
+                'paid_at' => now(),
+                'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            ]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/manual-identity-validations')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.current_page', 1)
+            ->assertJsonPath('meta.pagination.total', 22)
+            ->assertJsonCount(20, 'data');
+    }
+
+    public function test_index_excludes_resolved_rows_unless_show_resolved_is_true(): void
+    {
+        $admin = $this->admin();
+        $pendingUser = User::factory()->create();
+        $approvedUser = User::factory()->create();
+
+        ManualIdentityValidation::create([
+            'user_id' => $pendingUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        ManualIdentityValidation::create([
+            'user_id' => $approvedUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_APPROVED,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $defaultIds = collect($this->getJson('api/admin/manual-identity-validations')->json('data'))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->assertContains($pendingUser->id, $defaultIds);
+        $this->assertNotContains($approvedUser->id, $defaultIds);
+
+        $resolvedIds = collect($this->getJson('api/admin/manual-identity-validations?show_resolved=1')->json('data'))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->assertContains($pendingUser->id, $resolvedIds);
+        $this->assertContains($approvedUser->id, $resolvedIds);
     }
 
     public function test_show_builds_image_urls_from_rtrimmed_app_url_without_double_slash(): void
