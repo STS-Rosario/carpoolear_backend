@@ -182,8 +182,10 @@ class UsersManager extends BaseManager
 
                 $url = 'https://www.google.com/recaptcha/api/siteverify';
 
+                $recaptchaSecretKey = (string) config('carpoolear.recaptcha_secret_key', '');
+
                 $recaptchaData = [
-                    'secret' => env('RECAPTCHA_SECRET_KEY', ''),
+                    'secret' => $recaptchaSecretKey,
                     'response' => $_POST['token'],
                     'remoteip' => $_SERVER['REMOTE_ADDR'],
                 ];
@@ -199,7 +201,7 @@ class UsersManager extends BaseManager
                 // Creates and returns stream context with options supplied in options preset
                 $response = $this->fetchRecaptchaVerificationResponse($url, $options);
                 // Takes a JSON encoded string and converts it into a PHP variable
-                $res = json_decode($response, true);
+                $res = is_string($response) ? json_decode($response, true) : null;
 
                 // END setting reCaptcha v3 validation data
 
@@ -207,7 +209,7 @@ class UsersManager extends BaseManager
                 // since the successful score default is set at >= 0.5 by Google. Some developers want to
                 // be able to control score result conditions, so I included that in this example.
 
-                if ($res['success'] == true && $res['score'] >= 0.5) {
+                if (is_array($res) && ($res['success'] ?? false) === true && ($res['score'] ?? 0) >= 0.5) {
                     // if (true) {
                     $u = $this->repo->create($data);
 
@@ -227,13 +229,36 @@ class UsersManager extends BaseManager
                     event(new CreateEvent($u->id));
 
                     return $u;
-                } else {
-
-                    return false;
                 }
+
+                $this->logRecaptchaRegistrationFailure($data, $response, is_array($res) ? $res : null);
+
+                return false;
             }
 
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>|null  $res
+     */
+    protected function logRecaptchaRegistrationFailure(array $data, string|false $response, ?array $res): void
+    {
+        $captchaToken = (string) ($data['token'] ?? $_POST['token'] ?? '');
+
+        \Log::warning('Registration reCAPTCHA verification failed', [
+            'email' => $data['email'] ?? null,
+            'recaptcha_configured' => (string) config('carpoolear.recaptcha_secret_key', '') !== '',
+            'captcha_token_present' => $captchaToken !== '',
+            'captcha_token_length' => strlen($captchaToken),
+            'siteverify_response_received' => $response !== false,
+            'siteverify_raw_length' => is_string($response) ? strlen($response) : null,
+            'success' => is_array($res) ? ($res['success'] ?? null) : null,
+            'score' => is_array($res) ? ($res['score'] ?? null) : null,
+            'error_codes' => is_array($res) ? ($res['error-codes'] ?? null) : null,
+            'remote_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+        ]);
     }
 
     /**
