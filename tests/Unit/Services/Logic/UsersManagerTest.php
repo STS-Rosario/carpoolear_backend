@@ -1876,6 +1876,7 @@ class UsersManagerTest extends TestCase
     public function test_create_with_recaptcha_token_returns_false_when_siteverify_reports_failure(): void
     {
         Event::fake([CreateEvent::class]);
+        Log::spy();
         $email = 'captcha-fail-'.uniqid('', true).'@example.com';
         $payload = $this->validRegistrationPayload($email);
         $payload['token'] = 't-'.uniqid('', true);
@@ -1889,13 +1890,70 @@ class UsersManagerTest extends TestCase
             {
                 protected function fetchRecaptchaVerificationResponse(string $url, array $options): string|false
                 {
-                    return json_encode(['success' => false, 'score' => 0.1], JSON_THROW_ON_ERROR);
+                    return json_encode([
+                        'success' => false,
+                        'score' => 0.1,
+                        'error-codes' => ['invalid-input-response'],
+                    ], JSON_THROW_ON_ERROR);
                 }
             };
 
             $this->assertFalse($manager->create($payload));
             $this->assertNull(User::query()->where('email', $email)->first());
             Event::assertNotDispatched(CreateEvent::class);
+
+            Log::shouldHaveReceived('warning')
+                ->once()
+                ->with(
+                    'Registration reCAPTCHA verification failed',
+                    Mockery::on(function (array $context) use ($email, $payload): bool {
+                        return $context['email'] === $email
+                            && $context['success'] === false
+                            && $context['score'] === 0.1
+                            && $context['error_codes'] === ['invalid-input-response']
+                            && $context['captcha_token_length'] === strlen($payload['token'])
+                            && $context['siteverify_response_received'] === true;
+                    })
+                );
+        } finally {
+            $_POST = $prevPost;
+        }
+    }
+
+    public function test_create_with_recaptcha_token_logs_debug_context_when_siteverify_request_fails(): void
+    {
+        Event::fake([CreateEvent::class]);
+        Log::spy();
+        $email = 'captcha-http-fail-'.uniqid('', true).'@example.com';
+        $payload = $this->validRegistrationPayload($email);
+        $payload['token'] = 't-'.uniqid('', true);
+
+        $prevPost = $_POST;
+        $_SERVER['REMOTE_ADDR'] = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $_POST['token'] = $payload['token'];
+
+        try {
+            $manager = new class(app(UserRepository::class), app(TripRepository::class)) extends UsersManager
+            {
+                protected function fetchRecaptchaVerificationResponse(string $url, array $options): string|false
+                {
+                    return false;
+                }
+            };
+
+            $this->assertFalse($manager->create($payload));
+
+            Log::shouldHaveReceived('warning')
+                ->once()
+                ->with(
+                    'Registration reCAPTCHA verification failed',
+                    Mockery::on(function (array $context) use ($email): bool {
+                        return $context['email'] === $email
+                            && $context['siteverify_response_received'] === false
+                            && $context['success'] === null
+                            && $context['score'] === null;
+                    })
+                );
         } finally {
             $_POST = $prevPost;
         }
