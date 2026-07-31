@@ -269,17 +269,43 @@ class NotificationManagerTest extends TestCase
         $this->assertFalse($result);
     }
 
-    public function test_get_unread_count_caches_result_between_requests(): void
+    public function test_get_navigation_badge_counts_includes_messages_and_my_trips(): void
     {
         Cache::flush();
-        $user = User::factory()->create();
-        $this->sendDummy($user, 'cached');
+        Carbon::setTestNow('2026-06-15 12:00:00');
 
-        $manager = $this->manager();
-        $this->assertSame(1, $manager->getUnreadCount($user));
-        $this->assertTrue(Cache::has(NotificationCountCache::key($user->id)));
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $ratee = User::factory()->create();
 
-        $this->assertSame(1, $manager->getUnreadCount($user));
+        $this->sendDummy($driver, 'nav-badge');
+
+        $conversation = \STS\Models\Conversation::factory()->create();
+        $driver->conversations()->attach($conversation->id, ['read' => false]);
+        $passenger->conversations()->attach($conversation->id, ['read' => true]);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        \STS\Models\Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => \STS\Models\Passenger::STATE_PENDING,
+        ]);
+
+        $ratingRepo = new \STS\Repository\RatingRepository;
+        $ratingRepo->create($driver->id, $ratee->id, $trip->id, 0, 0, 'nav-'.uniqid('', true));
+
+        $counts = $this->manager()->getNavigationBadgeCounts($driver);
+
+        $this->assertSame([
+            'notifications' => 1,
+            'messages' => 1,
+            'my_trips' => 2,
+        ], $counts);
+
+        Carbon::setTestNow();
     }
 
     public function test_get_unread_count_cache_invalidated_when_notifications_marked_read(): void
