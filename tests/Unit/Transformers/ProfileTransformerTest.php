@@ -268,6 +268,7 @@ class ProfileTransformerTest extends TestCase
             'data_visibility' => '2',
             'created_at' => '2024-03-15 12:34:56',
         ]);
+        $this->assertNull($subject->fresh()->trips_count);
         Trip::factory()->create([
             'user_id' => $subject->id,
             'trip_date' => now()->subDay(),
@@ -279,6 +280,7 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame('2024-03-15 12:34:56', $payload['created_at']);
         $this->assertArrayHasKey('trips_count', $payload);
         $this->assertSame(1, $payload['trips_count']);
+        $this->assertSame(1, $subject->fresh()->trips_count);
     }
 
     public function test_transform_admin_branch_uses_loose_id_equality_for_string_subject_id(): void
