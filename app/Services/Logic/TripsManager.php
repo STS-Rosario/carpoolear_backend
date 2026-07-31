@@ -473,9 +473,15 @@ class TripsManager extends BaseManager
         if ($trip) {
             // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {
+                $driver = $trip->user;
                 event(new DeleteEvent($trip));
 
-                return $this->tripRepo->delete($trip);
+                $deleted = $this->tripRepo->delete($trip);
+                if ($deleted && $driver) {
+                    $this->userManager->refreshTripsCount($driver->fresh());
+                }
+
+                return $deleted;
             } else {
                 $this->setErrors(trans('errors.tripowner'));
 
