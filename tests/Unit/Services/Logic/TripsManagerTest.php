@@ -455,6 +455,25 @@ class TripsManagerTest extends TestCase
         $this->assertNotNull($trip->fresh()->deleted_at);
     }
 
+    public function test_delete_refreshes_driver_cached_trips_count(): void
+    {
+        $driver = User::factory()->create(['trips_count' => 5]);
+        $finished = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => now()->subDays(3),
+        ]);
+        $toDelete = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => now()->addDays(3),
+        ]);
+
+        $this->assertTrue((bool) $this->manager()->delete($driver, $toDelete->id));
+
+        $this->assertSame(1, $driver->fresh()->trips_count);
+        $this->assertNotNull($toDelete->fresh()->deleted_at);
+        $this->assertNull($finished->fresh()->deleted_at);
+    }
+
     public function test_update_rejects_total_seats_below_accepted_passengers(): void
     {
         Carbon::setTestNow('2028-04-01 10:00:00');
