@@ -4,6 +4,7 @@ namespace STS\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use STS\Models\User;
+use STS\Services\Logic\UsersManager;
 
 class TripUserTransformer extends TransformerAbstract
 {
@@ -49,11 +50,15 @@ class TripUserTransformer extends TransformerAbstract
             'conversation_answered_count' => 0,
             'answer_delay_sum' => 0,
             'identity_validated_at' => null,
+            'trips_count' => 0,
         ];
     }
 
     public function transform(User $user)
     {
+        $usersManager = app(UsersManager::class);
+        $tripsCount = $usersManager->resolveTripsCount($user);
+
         $data = [
             'id' => $user->id,
             'name' => $user->name,
@@ -80,6 +85,7 @@ class TripUserTransformer extends TransformerAbstract
             'conversation_answered_count' => $user->conversation_answered_count,
             'answer_delay_sum' => $user->answer_delay_sum,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
+            'trips_count' => $tripsCount,
         ];
 
         return $data;
