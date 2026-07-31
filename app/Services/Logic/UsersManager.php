@@ -659,6 +659,24 @@ class UsersManager extends BaseManager
         return $cantidad;
     }
 
+    public function refreshTripsCount($user): int
+    {
+        $count = $this->tripsCount($user);
+        $user->trips_count = $count;
+        $user->save();
+
+        return $count;
+    }
+
+    public function resolveTripsCount($user): int
+    {
+        if ($user->trips_count !== null) {
+            return (int) $user->trips_count;
+        }
+
+        return $this->refreshTripsCount($user);
+    }
+
     public function tripsDistance($user, $type = null)
     {
         $distancia = 0;
