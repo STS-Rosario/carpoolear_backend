@@ -63,6 +63,7 @@ class TripUserTransformerTest extends TestCase
             'conversation_answered_count',
             'answer_delay_sum',
             'identity_validated_at',
+            'trips_count',
         ], array_keys($payload));
         $this->assertSame($user->id, $payload['id']);
         $this->assertSame('Trip User', $payload['name']);
@@ -77,6 +78,21 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame('2026-04-30 15:00:00', $payload['last_connection']);
         $this->assertSame('2026-04-29 09:30:00', $payload['identity_validated_at']);
         $this->assertIsObject($payload['driver_data_docs']);
+        $this->assertSame(0, $payload['trips_count']);
+        $this->assertSame(0, $user->fresh()->trips_count);
+    }
+
+    public function test_transform_uses_cached_trips_count_when_present(): void
+    {
+        $viewer = User::factory()->create();
+        $user = User::factory()->create([
+            'last_connection' => '2026-04-30 16:00:00',
+            'trips_count' => 45,
+        ]);
+
+        $payload = (new TripUserTransformer($viewer))->transform($user->fresh());
+
+        $this->assertSame(45, $payload['trips_count']);
     }
 
     public function test_transform_returns_null_for_optional_docs_and_identity_date_when_absent(): void
@@ -127,6 +143,7 @@ class TripUserTransformerTest extends TestCase
             'conversation_answered_count',
             'answer_delay_sum',
             'identity_validated_at',
+            'trips_count',
         ], array_keys($payload));
         $this->assertSame(99999, $payload['id']);
         $this->assertSame('Usuario ya no existe', $payload['name']);
@@ -152,5 +169,6 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame(0, $payload['conversation_answered_count']);
         $this->assertSame(0, $payload['answer_delay_sum']);
         $this->assertNull($payload['identity_validated_at']);
+        $this->assertSame(0, $payload['trips_count']);
     }
 }
