@@ -1503,6 +1503,48 @@ class UsersManagerTest extends TestCase
         $this->assertSame(0, (int) $this->manager()->tripsDistance($user));
     }
 
+    public function test_resolve_trips_count_calculates_and_persists_when_null(): void
+    {
+        $user = User::factory()->create();
+        $this->assertNull($user->fresh()->trips_count);
+
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => now()->subDay(),
+            'distance' => 10000,
+        ]);
+
+        $count = $this->manager()->resolveTripsCount($user->fresh());
+
+        $this->assertSame(1, $count);
+        $this->assertSame(1, $user->fresh()->trips_count);
+    }
+
+    public function test_resolve_trips_count_returns_cached_value_without_recalculating_from_stale_state(): void
+    {
+        $user = User::factory()->create(['trips_count' => 7]);
+
+        $count = $this->manager()->resolveTripsCount($user->fresh());
+
+        $this->assertSame(7, $count);
+        $this->assertSame(7, $user->fresh()->trips_count);
+    }
+
+    public function test_refresh_trips_count_recalculates_and_persists(): void
+    {
+        $user = User::factory()->create(['trips_count' => 99]);
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => now()->subDay(),
+            'distance' => 5000,
+        ]);
+
+        $count = $this->manager()->refreshTripsCount($user->fresh());
+
+        $this->assertSame(1, $count);
+        $this->assertSame(1, $user->fresh()->trips_count);
+    }
+
     public function test_register_donation_sets_user_and_month(): void
     {
         $user = User::factory()->create();
