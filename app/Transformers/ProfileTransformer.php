@@ -88,7 +88,7 @@ class ProfileTransformer extends TransformerAbstract
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
             'identity_validation_type' => $user->identity_validation_type,
             'created_at' => $this->nullableDateTimeString($user->created_at),
-            'trips_count' => $this->usersManager->tripsCount($user),
+            'trips_count' => $this->usersManager->resolveTripsCount($user),
         ];
 
         if ($this->user && $user->id == $this->user->id) {
