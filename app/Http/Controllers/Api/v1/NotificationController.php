@@ -5,7 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
-use STS\Services\Logic\NotificationManager; 
+use STS\Services\Logic\NotificationManager;
 
 class NotificationController extends Controller
 {
@@ -31,10 +31,9 @@ class NotificationController extends Controller
     public function count(Request $request)
     {
         $this->user = auth()->user();
-        $data = $request->all();
-        $count = $this->logic->getUnreadCount($this->user);
+        $counts = $this->logic->getNavigationBadgeCounts($this->user);
 
-        return response()->json(['data' => $count]);
+        return response()->json(['data' => $counts]);
     }
 
     public function delete($id, Request $request)

@@ -3,6 +3,8 @@
 namespace STS\Services\Logic;
 
 use STS\Repository\NotificationRepository;
+use STS\Repository\PassengersRepository;
+use STS\Repository\RatingRepository;
 use STS\Support\NotificationCountCache;
 use STS\Support\UserLocale;
 
@@ -10,9 +12,18 @@ class NotificationManager
 {
     protected $repo;
 
-    public function __construct(NotificationRepository $repo)
-    {
+    protected PassengersRepository $passengersRepository;
+
+    protected RatingRepository $ratingRepository;
+
+    public function __construct(
+        NotificationRepository $repo,
+        ?PassengersRepository $passengersRepository = null,
+        ?RatingRepository $ratingRepository = null
+    ) {
         $this->repo = $repo;
+        $this->passengersRepository = $passengersRepository ?? new PassengersRepository;
+        $this->ratingRepository = $ratingRepository ?? new RatingRepository;
     }
 
     public function getNotifications($user, $data)
@@ -61,6 +72,25 @@ class NotificationManager
         return NotificationCountCache::remember((int) $user->id, function () use ($user) {
             return $this->repo->countUnreadNotifications($user);
         });
+    }
+
+    public function getNavigationBadgeCounts($user): array
+    {
+        $pendingRequests = $this->passengersRepository->getPendingRequests(null, $user, []);
+        $pendingRatings = $this->ratingRepository->getPendingRatings($user);
+
+        return [
+            'notifications' => $this->getUnreadCount($user),
+            'messages' => $this->countUnreadConversations($user),
+            'my_trips' => $pendingRequests->count() + $pendingRatings->count(),
+        ];
+    }
+
+    protected function countUnreadConversations($user): int
+    {
+        return (int) $user->conversations()
+            ->wherePivot('read', 0)
+            ->count();
     }
 
     public function delete($user, $id)
