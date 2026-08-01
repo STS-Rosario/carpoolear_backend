@@ -522,8 +522,8 @@ class TripsManager extends BaseManager
                 foreach ($trip->points as $point) {
                     if (is_array($point->json_address) && empty($point->json_address['ciudad'])) {
                         $temp = $point->json_address;
-                        $temp['ciudad'] = $temp['name'];
-                        $temp['provincia'] = $temp['state'];
+                        $temp['ciudad'] = $temp['name'] ?? '';
+                        $temp['provincia'] = $temp['state'] ?? '';
                         $point->json_address = $temp;
                         // var_dump($point->json_address);die;
                     }
