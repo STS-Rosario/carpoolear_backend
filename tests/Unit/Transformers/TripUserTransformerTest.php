@@ -65,6 +65,7 @@ class TripUserTransformerTest extends TestCase
             'answer_delay_sum',
             'identity_validated_at',
             'trips_count',
+            'created_at',
         ], array_keys($payload));
         $this->assertSame($user->id, $payload['id']);
         $this->assertSame('Trip User', $payload['name']);
@@ -78,6 +79,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame(120.0, $payload['answer_delay_sum']);
         $this->assertSame('2026-04-30 15:00:00', $payload['last_connection']);
         $this->assertSame('2026-04-29 09:30:00', $payload['identity_validated_at']);
+        $this->assertNotNull($payload['created_at']);
         $this->assertIsObject($payload['driver_data_docs']);
         $this->assertSame(0, $payload['trips_count']);
         $this->assertSame(0, $user->fresh()->trips_count);
@@ -146,6 +148,7 @@ class TripUserTransformerTest extends TestCase
             'answer_delay_sum',
             'identity_validated_at',
             'trips_count',
+            'created_at',
         ], array_keys($payload));
         $this->assertSame(99999, $payload['id']);
         $this->assertSame('Usuario ya no existe', $payload['name']);
@@ -155,6 +158,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame(0, $payload['positive_ratings']);
         $this->assertSame(0, $payload['negative_ratings']);
         $this->assertSame(0, $payload['neutral_ratings']);
+        $this->assertNull($payload['created_at']);
         $this->assertSame('', $payload['last_connection']);
         $this->assertNull($payload['accounts']);
         $this->assertFalse($payload['has_pin']);
