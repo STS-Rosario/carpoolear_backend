@@ -575,6 +575,7 @@ class TripRepository
             'points',
             'passenger',
             'passengerAccepted',
+            'passengerAccepted.user',
             'car',
             'ratings',
         ]);
