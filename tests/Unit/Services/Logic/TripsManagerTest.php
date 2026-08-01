@@ -1090,6 +1090,25 @@ class TripsManagerTest extends TestCase
         $this->assertSame('Santa Fe', $json['provincia']);
     }
 
+    public function test_proccess_trips_fills_ciudad_when_json_address_omits_state(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        TripPoint::factory()->create([
+            'trip_id' => $trip->id,
+            'json_address' => ['name' => 'Córdoba'],
+        ]);
+        $trip->load('points');
+
+        $method = new \ReflectionMethod(TripsManager::class, 'proccessTrips');
+        $method->setAccessible(true);
+        $out = $method->invoke($this->manager(), collect([$trip]));
+
+        $json = $out->first()->points->first()->json_address;
+        $this->assertSame('Córdoba', $json['ciudad']);
+        $this->assertSame('', $json['provincia']);
+    }
+
     public function test_user_can_see_fof_trip_when_viewer_is_friend_of_friend(): void
     {
         $a = User::factory()->create();
