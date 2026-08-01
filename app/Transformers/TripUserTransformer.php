@@ -82,6 +82,7 @@ class TripUserTransformer extends TransformerAbstract
             'answer_delay_sum' => 0,
             'identity_validated_at' => null,
             'trips_count' => 0,
+            'created_at' => null,
         ];
     }
 
@@ -118,6 +119,7 @@ class TripUserTransformer extends TransformerAbstract
             'answer_delay_sum' => $user->answer_delay_sum,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
             'trips_count' => $tripsCount,
+            'created_at' => $user->created_at ? $user->created_at->toDateTimeString() : null,
         ];
 
         return $data;
