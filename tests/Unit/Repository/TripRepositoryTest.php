@@ -2203,6 +2203,40 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($item->user->relationLoaded('accounts'));
     }
 
+    public function test_search_eager_loads_passenger_accepted_user_to_avoid_n_plus_one(): void
+    {
+        // Mutation intent: preserve passengerAccepted.user eager load in search() results
+        // so TripTransformer doesn't trigger a lazy-loaded query per accepted passenger.
+        $owner = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        Passenger::query()->create([
+            'user_id' => $passengerUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $page = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $item = collect($page->items())->firstWhere('id', $trip->id);
+
+        $this->assertNotNull($item);
+        $this->assertTrue($item->relationLoaded('passengerAccepted'));
+        $this->assertCount(1, $item->passengerAccepted);
+        $this->assertTrue($item->passengerAccepted->first()->relationLoaded('user'));
+    }
+
     public function test_search_origin_geo_filter_requires_both_coords_and_uses_default_radius(): void
     {
         // Mutation intent: preserve origin_lat+origin_lng guard and whereLocation origin filter call.
