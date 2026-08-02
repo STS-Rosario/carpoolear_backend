@@ -1545,6 +1545,27 @@ class UsersManagerTest extends TestCase
         $this->assertSame(1, $user->fresh()->trips_count);
     }
 
+    public function test_refresh_trips_count_ignores_ephemeral_friendship_attributes(): void
+    {
+        $user = User::factory()->create(['trips_count' => null]);
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => now()->subDay(),
+            'distance' => 5000,
+        ]);
+
+        $profile = $user->fresh();
+        $profile->friendship_state = 'none';
+        $profile->state = 'none';
+        $profile->friend_trip_alerts_enabled = true;
+
+        $count = $this->manager()->refreshTripsCount($profile);
+
+        $this->assertSame(1, $count);
+        $this->assertSame(1, $user->fresh()->trips_count);
+        $this->assertSame(1, (int) $profile->trips_count);
+    }
+
     public function test_register_donation_sets_user_and_month(): void
     {
         $user = User::factory()->create();
