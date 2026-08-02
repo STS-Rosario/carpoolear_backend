@@ -598,6 +598,60 @@ class ConversationRepositoryTest extends TestCase
         $this->assertNotSame($repo->matchUser($u1->id, $u2->id)?->id, $repo->matchUser($u1->id, $u3->id)?->id);
     }
 
+    public function test_match_user_ignores_private_conversation_that_has_a_third_participant(): void
+    {
+        // Bug: polluted private threads (extra members from trip/chat merges) made matchUser(u1,u2)
+        // reuse that room, so Hertha↔Liliana traffic landed in Liliana↔user0 and titled as user0.
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        $intruder = User::factory()->create();
+
+        $polluted = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $polluted->users()->attach($u1->id, ['read' => true]);
+        $polluted->users()->attach($u2->id, ['read' => true]);
+        $polluted->users()->attach($intruder->id, ['read' => true]);
+
+        $this->assertNull((new ConversationRepository)->matchUser($u1->id, $u2->id));
+    }
+
+    public function test_match_user_prefers_exact_pair_when_polluted_thread_also_contains_both_users(): void
+    {
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        $intruder = User::factory()->create();
+
+        $polluted = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $polluted->users()->attach($u1->id, ['read' => true]);
+        $polluted->users()->attach($u2->id, ['read' => true]);
+        $polluted->users()->attach($intruder->id, ['read' => true]);
+
+        $clean = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $clean->users()->attach($u1->id, ['read' => true]);
+        $clean->users()->attach($u2->id, ['read' => true]);
+
+        $found = (new ConversationRepository)->matchUser($u1->id, $u2->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame($clean->id, $found->id);
+    }
+
+    public function test_add_user_is_idempotent_when_user_already_attached(): void
+    {
+        // Duplicate pivots inflated users() and made peer selection / matchUser joins unreliable.
+        $u1 = User::factory()->create();
+        $u2 = User::factory()->create();
+        $conversation = Conversation::factory()->create(['type' => Conversation::TYPE_PRIVATE_CONVERSATION]);
+        $conversation->users()->attach($u1->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($u2->id, ['read' => true, 'notifications_enabled' => true]);
+
+        $repo = new ConversationRepository;
+        $repo->addUser($conversation, $u2->id);
+        $repo->addUser($conversation, $u2->id);
+
+        $this->assertSame(1, $conversation->users()->whereKey($u2->id)->count());
+        $this->assertSame(2, $conversation->users()->count());
+    }
+
     public function test_get_conversation_from_id_accepts_string_primary_key_matching_integer_column(): void
     {
         // Mutation intent: strengthen lookup coverage beyond strict-null branches (`EqualToIdentical` / `NotEqualToNotIdentical` on guards vs SQL coercion).
