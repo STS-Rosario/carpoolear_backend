@@ -239,6 +239,9 @@ class RatingApiTest extends TestCase
 
         $userLogic = Mockery::mock(UsersManager::class);
         $userLogic->shouldReceive('show')->never();
+        $userLogic->shouldReceive('resolveTripsCount')->andReturnUsing(function ($user) {
+            return (int) ($user->trips_count ?? 0);
+        });
         $this->instance(UsersManager::class, $userLogic);
 
         $pathUserId = (string) $rated->id;
