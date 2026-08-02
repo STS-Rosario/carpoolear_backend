@@ -55,7 +55,7 @@ class ConversationsTransformer extends TransformerAbstract
 
         switch ($conversation->type) {
             case Conversation::TYPE_PRIVATE_CONVERSATION:
-                $width = $conversation->users()->where('id', '<>', $this->user->id)->first();
+                $width = $this->resolvePrivatePeer($conversation);
                 if ($width) {
                     $data['title'] = $width->name;
                     $data['image'] = $width->image ? '/image/profile/'.$width->image : '';
@@ -101,5 +101,40 @@ class ConversationsTransformer extends TransformerAbstract
         }
 
         return $data;
+    }
+
+    /**
+     * Resolve the other party for a private conversation title.
+     * When a thread was polluted with extra members, prefer the latest non-viewer message author.
+     */
+    private function resolvePrivatePeer(Conversation $conversation)
+    {
+        $peers = $conversation->users()
+            ->where('users.id', '<>', $this->user->id)
+            ->get()
+            ->unique('id')
+            ->values();
+
+        if ($peers->isEmpty()) {
+            return null;
+        }
+
+        if ($peers->count() === 1) {
+            return $peers->first();
+        }
+
+        $lastForeignMessage = $conversation->messages()
+            ->where('user_id', '<>', $this->user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($lastForeignMessage) {
+            $fromLastMessage = $peers->firstWhere('id', $lastForeignMessage->user_id);
+            if ($fromLastMessage) {
+                return $fromLastMessage;
+            }
+        }
+
+        return $peers->first();
     }
 }
