@@ -57,6 +57,9 @@ class ProfileTransformerTest extends TestCase
             'identity_validation_type',
             'created_at',
             'trips_count',
+            'conversation_opened_count',
+            'conversation_answered_count',
+            'answer_delay_sum',
         ];
     }
 
@@ -138,6 +141,22 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame(0, $payload['negative_ratings']);
         $this->assertSame(0, $payload['neutral_ratings']);
         $this->assertSame('2025-06-01 12:00:00', $payload['last_connection']);
+    }
+
+    public function test_transform_includes_conversation_response_stats_for_all_viewers(): void
+    {
+        $user = User::factory()->create(['data_visibility' => '2']);
+        $user->forceFill([
+            'conversation_opened_count' => 5,
+            'conversation_answered_count' => 3,
+            'answer_delay_sum' => 900,
+        ])->saveQuietly();
+
+        $payload = (new ProfileTransformer(null))->transform($user->fresh());
+
+        $this->assertSame(5, $payload['conversation_opened_count']);
+        $this->assertSame(3, $payload['conversation_answered_count']);
+        $this->assertSame(900.0, $payload['answer_delay_sum']);
     }
 
     public function test_transform_last_connection_serializes_to_empty_string_when_null(): void
