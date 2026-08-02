@@ -54,6 +54,20 @@ class HomeControllerTest extends TestCase
         ];
     }
 
+    public function test_como_colaborar_lists_current_stack_versions(): void
+    {
+        $html = view('colabora-como-colaborar')->render();
+
+        $this->assertStringContainsString('Laravel 12.58', $html);
+        $this->assertStringContainsString('PHP 8.5', $html);
+        $this->assertStringContainsString('MySQL 8', $html);
+        $this->assertStringContainsString('Vue', $html);
+        $this->assertMatchesRegularExpression('/Vue(\.js)?\s*3/', $html);
+        $this->assertStringNotContainsString('Laravel 11.9', $html);
+        $this->assertStringNotContainsString('PHP 8.2', $html);
+        $this->assertStringNotContainsString('Vue.js 2', $html);
+    }
+
     public function test_home_returns_home_view_when_no_redirection_url(): void
     {
         Config::set('carpoolear.home_redirection', '');
