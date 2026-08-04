@@ -13,6 +13,7 @@ use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use STS\Services\UserIdentityVerificationSuccessService;
 use STS\Support\AdminPagination;
+use STS\Support\ManualIdentityValidationSort;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ManualIdentityValidationController extends Controller
@@ -27,12 +28,7 @@ class ManualIdentityValidationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = ManualIdentityValidation::with('user:id,name')
-            ->orderByRaw('CASE WHEN paid = 1 THEN 0 ELSE 1 END')
-            ->orderByRaw('CASE WHEN submitted_at IS NOT NULL THEN 0 ELSE 1 END')
-            ->orderByRaw("CASE WHEN COALESCE(review_status, '') = 'approved' THEN 1 WHEN COALESCE(review_status, '') = 'rejected' THEN 2 ELSE 0 END")
-            ->orderByRaw('COALESCE(submitted_at, paid_at, created_at) ASC')
-            ->orderBy('created_at', 'asc');
+        $query = ManualIdentityValidation::with('user:id,name');
 
         if (! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
             $query->where(function ($builder) {
@@ -40,6 +36,12 @@ class ManualIdentityValidationController extends Controller
                     ->orWhereNotIn('review_status', ['approved', 'approve', 'rejected', 'reject']);
             });
         }
+
+        ManualIdentityValidationSort::apply(
+            $query,
+            $request->query('sort'),
+            $request->query('direction')
+        );
 
         $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
         $page = AdminPagination::resolvePage($request->query('page'));
