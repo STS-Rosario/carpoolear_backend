@@ -126,6 +126,42 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertContains($approvedUser->id, $resolvedIds);
     }
 
+    public function test_index_sorts_by_id_across_pages_not_only_within_page(): void
+    {
+        $admin = $this->admin();
+        $rows = [];
+
+        for ($i = 1; $i <= 25; $i++) {
+            $user = User::factory()->create();
+            $rows[] = ManualIdentityValidation::create([
+                'user_id' => $user->id,
+                'paid' => true,
+                'paid_at' => now(),
+                'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            ]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $pageOneIds = collect(
+            $this->getJson('api/admin/manual-identity-validations?sort=id&direction=desc&per_page=10&page=1')
+                ->assertOk()
+                ->json('data')
+        )->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $pageTwoIds = collect(
+            $this->getJson('api/admin/manual-identity-validations?sort=id&direction=desc&per_page=10&page=2')
+                ->assertOk()
+                ->json('data')
+        )->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertCount(10, $pageOneIds);
+        $this->assertCount(10, $pageTwoIds);
+        $this->assertSame(max($pageOneIds), $pageOneIds[0]);
+        $this->assertTrue(min($pageOneIds) > max($pageTwoIds));
+    }
+
     public function test_show_builds_image_urls_from_rtrimmed_app_url_without_double_slash(): void
     {
         Config::set('app.url', 'https://app.example.com/');
