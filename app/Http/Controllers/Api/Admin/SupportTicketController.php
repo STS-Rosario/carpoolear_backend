@@ -85,6 +85,10 @@ class SupportTicketController extends Controller
             $query->adminNeedsAttention();
         }
 
+        if ($this->queryFlagIsTruthy($request->query('open'))) {
+            $query->open();
+        }
+
         $userId = $request->query('user_id');
         if (is_numeric($userId) && (int) $userId > 0) {
             $query->where('user_id', (int) $userId);

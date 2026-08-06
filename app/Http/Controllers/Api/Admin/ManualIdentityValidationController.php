@@ -45,7 +45,22 @@ class ManualIdentityValidationController extends Controller
         $page = AdminPagination::resolvePage($request->query('page'));
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $items = collect($paginator->items())->map(fn (ManualIdentityValidation $item) => $this->serializeIndexRow($item))->values()->all();
+        $pageItems = collect($paginator->items());
+        $ticketCounts = SupportTicket::countsOpenAccountVerificationByUserIds(
+            $pageItems->pluck('user_id')->all()
+        );
+
+        $items = $pageItems
+            ->map(function (ManualIdentityValidation $item) use ($ticketCounts) {
+                $userId = (int) $item->user_id;
+
+                return $this->serializeIndexRow(
+                    $item,
+                    $ticketCounts[$userId] ?? 0
+                );
+            })
+            ->values()
+            ->all();
 
         return response()->json([
             'data' => $items,
@@ -55,8 +70,10 @@ class ManualIdentityValidationController extends Controller
         ]);
     }
 
-    private function serializeIndexRow(ManualIdentityValidation $item): array
-    {
+    private function serializeIndexRow(
+        ManualIdentityValidation $item,
+        int $openAccountVerificationTicketsCount = 0
+    ): array {
         return [
             'id' => $item->id,
             'user_id' => $item->user_id,
@@ -67,6 +84,7 @@ class ManualIdentityValidationController extends Controller
             'paid' => $item->paid,
             'review_status' => $item->review_status,
             'has_images' => $item->hasImages(),
+            'open_account_verification_tickets_count' => $openAccountVerificationTicketsCount,
         ];
     }
 
