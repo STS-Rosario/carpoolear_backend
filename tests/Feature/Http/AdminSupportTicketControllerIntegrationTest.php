@@ -132,6 +132,41 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => ! in_array($row['status'], ['Resuelto', 'Cerrado'], true)));
     }
 
+    public function test_index_filters_by_open_when_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $open = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'open-ticket',
+        ]);
+        $waiting = $this->makeTicket($owner, [
+            'status' => 'Esperando respuesta',
+            'unread_for_admin' => 0,
+            'subject' => 'waiting-ticket',
+        ]);
+        $resolved = $this->makeTicket($owner, [
+            'status' => 'Resuelto',
+            'subject' => 'resolved-ticket',
+        ]);
+        $closed = $this->makeTicket($owner, [
+            'status' => 'Cerrado',
+            'subject' => 'closed-ticket',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?open=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($open->id, $ids);
+        $this->assertContains($waiting->id, $ids);
+        $this->assertNotContains($resolved->id, $ids);
+        $this->assertNotContains($closed->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => ! in_array($row['status'], ['Resuelto', 'Cerrado'], true)));
+    }
+
     public function test_index_filters_by_user_id_when_query_param_is_set(): void
     {
         $admin = $this->adminUser();

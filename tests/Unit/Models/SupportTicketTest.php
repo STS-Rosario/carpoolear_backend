@@ -208,4 +208,74 @@ class SupportTicketTest extends TestCase
 
         $this->assertSame(2, SupportTicket::countForUser($user->id));
     }
+
+    public function test_count_open_account_verification_excludes_closed_resolved_and_other_types(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $this->makeTicket($user, [
+            'type' => 'account_verification',
+            'status' => 'Open',
+            'subject' => 'open-av',
+        ]);
+        $this->makeTicket($user, [
+            'type' => 'account_verification',
+            'status' => 'Esperando respuesta',
+            'subject' => 'waiting-av',
+        ]);
+        $this->makeTicket($user, [
+            'type' => 'account_verification',
+            'status' => 'Resuelto',
+            'subject' => 'resolved-av',
+        ]);
+        $this->makeTicket($user, [
+            'type' => 'contact',
+            'status' => 'Open',
+            'subject' => 'open-contact',
+        ]);
+        $this->makeTicket($other, [
+            'type' => 'account_verification',
+            'status' => 'Open',
+            'subject' => 'other-user',
+        ]);
+
+        $this->assertSame(2, SupportTicket::countOpenAccountVerificationForUser($user->id));
+        $this->assertSame(0, SupportTicket::countOpenAccountVerificationForUser(null));
+    }
+
+    public function test_counts_open_account_verification_by_user_ids_batches_counts(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $userC = User::factory()->create();
+
+        $this->makeTicket($userA, [
+            'type' => 'account_verification',
+            'status' => 'Open',
+            'subject' => 'a1',
+        ]);
+        $this->makeTicket($userA, [
+            'type' => 'account_verification',
+            'status' => 'En revision',
+            'subject' => 'a2',
+        ]);
+        $this->makeTicket($userB, [
+            'type' => 'account_verification',
+            'status' => 'Cerrado',
+            'subject' => 'b-closed',
+        ]);
+
+        $counts = SupportTicket::countsOpenAccountVerificationByUserIds([
+            $userA->id,
+            $userB->id,
+            $userC->id,
+        ]);
+
+        $this->assertSame([
+            $userA->id => 2,
+            $userB->id => 0,
+            $userC->id => 0,
+        ], $counts);
+    }
 }
