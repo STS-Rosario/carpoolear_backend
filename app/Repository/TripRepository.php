@@ -436,14 +436,14 @@ class TripRepository
             $trips->withTrashed();
         }
 
-        if (isset($data['from_date']) || isset($data['to_date'])) {
-            if (isset($data['from_date'])) {
+        if (! empty($data['from_date']) || ! empty($data['to_date'])) {
+            if (! empty($data['from_date'])) {
                 $date_from = parse_date($data['from_date'])->startOfDay();
 
                 $trips = $trips->where('trip_date', '>=', date_to_string($date_from, 'Y-m-d H:i:s'));
                 $trips->orderBy('trip_date');
             }
-            if (isset($data['to_date'])) {
+            if (! empty($data['to_date'])) {
                 $date_to = parse_date($data['to_date'])->endOfDay();
 
                 $trips->where('trip_date', '<=', date_to_string($date_to, 'Y-m-d H:i:s'));
