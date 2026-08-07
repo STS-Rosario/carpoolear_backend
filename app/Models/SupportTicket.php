@@ -137,6 +137,18 @@ class SupportTicket extends Model
         return $query->whereNotIn('status', self::ADMIN_TERMINAL_STATUSES);
     }
 
+    /**
+     * Tickets opened by an admin for the ticket user (created_by differs from user_id).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeCreatedByAdmin($query)
+    {
+        return $query->whereNotNull('created_by')
+            ->whereColumn('created_by', '!=', 'user_id');
+    }
+
     public function isAssignedTo(int $adminId): bool
     {
         return $this->assigned_to_user_id !== null
@@ -180,6 +192,7 @@ class SupportTicket extends Model
             ->where('user_id', $userId)
             ->where('type', 'account_verification')
             ->open()
+            ->createdByAdmin()
             ->count();
     }
 
@@ -207,6 +220,7 @@ class SupportTicket extends Model
             ->whereIn('user_id', $ids)
             ->where('type', 'account_verification')
             ->open()
+            ->createdByAdmin()
             ->groupBy('user_id')
             ->pluck('aggregate', 'user_id');
 
