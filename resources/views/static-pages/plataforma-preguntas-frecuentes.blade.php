@@ -92,10 +92,10 @@
   <h3>¿Cómo funciona la alerta de viaje?</h3>
   <p>Luego de realizar una búsqueda de viaje, al final del listado de resultados encontrarás un botón para crear una alerta con los datos de viajes que cargaste en la búsqueda.
     La alerta te llega cuando alguien crea un nuevo viaje que coincide con la búsqueda desde la cual se originó la alerta. 
-    Próximamente podrás configurar las condiciones de la alerta pudiendo tener un rango de tiempo y distancia. Podés colaborar con Carpoolear para que podamos incorporar estas funciones pronto <a href="https://carpoolear.com.ar/donar"> ---> ¡Donar!</a></p>
+    Próximamente podrás configurar las condiciones de la alerta pudiendo tener un rango de tiempo y distancia. Podés colaborar con Carpoolear para que podamos incorporar estas funciones pronto <a href="https://carpoolear.com.ar/aportar"> ---> ¡Aportar!</a></p>
 
     <h3>¿Cómo funciona el ‘matcheador’ de viajes?</h3>
-    <p>Para ver los matchs (o coincidencias) de búsqueda con viajes publicados, tenés que ir a “mis viajes” entrar al que creaste y vas a ver las coincidencias. El “match” tiene un rango de días. Próximamente podrás configurar las condiciones de “match” pudiendo tener un rango de tiempo y distancia. Podés colaborar con Carpoolear para que podamos incorporar estas funciones pront <a href="https://carpoolear.com.ar/donar"> ---> ¡Donar!</a></p>
+    <p>Para ver los matchs (o coincidencias) de búsqueda con viajes publicados, tenés que ir a “mis viajes” entrar al que creaste y vas a ver las coincidencias. El “match” tiene un rango de días. Próximamente podrás configurar las condiciones de “match” pudiendo tener un rango de tiempo y distancia. Podés colaborar con Carpoolear para que podamos incorporar estas funciones pront <a href="https://carpoolear.com.ar/aportar"> ---> ¡Aportar!</a></p>
 
 <h3>¿Puedo invitar a mis amigos a Carpoolear? :D</h3>
 <p>¡Claro que sí! Contales del proyecto e invitalos a sumarse a la aplicación mediante el botón “Invitar amigos” en el menú principal. También podés incentivarlos compartir en tu muro de Facebook los viajes que cargues a la plataforma. </p>
@@ -115,7 +115,7 @@
   <h3>¿Cómo puedo contribuir con Carpoolear?  </h3>
   <p>¡Genial que quieras colaborar! Se puede aportar a carpoolear con tareas de voluntariado y también difusión/contactos. <a href="https://carpoolear.com.ar/colabora-como-colaborar">Acá podés encontrar toda la información para ayudar a que Carpoolear llegue más lejos</a>.  </p>
 
-<p>También podés donar por única vez o mensualmente acá <a href="https://carpoolear.com.ar/donar"> ---> ¡Donar!</a></p>
+<p>También podés aportar por única vez o mensualmente acá <a href="https://carpoolear.com.ar/aportar"> ---> ¡Aportar!</a></p>
 
 <h3>Ante cualquier comentario, consulta o propuesta de mejora, escribinos a nuestras redes Facebook, Instagram, Twitter o <a href="mailto:carpoolear@stsrosario.org.ar" target="_top">carpoolear@stsrosario.org.ar</a>.</p>
 

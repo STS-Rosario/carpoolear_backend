@@ -100,7 +100,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-transparent">
-                    <a href="/donar" class="card-link">Por qué donar a Carpoolear</a>
+                    <a href="/aportar" class="card-link">Por qué aportar a Carpoolear</a>
                 </div>
             </div>
         </div>
