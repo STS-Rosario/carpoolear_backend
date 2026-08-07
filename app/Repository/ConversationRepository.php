@@ -80,6 +80,10 @@ class ConversationRepository
 
     public function addUser(Conversation $conversation, $userID)
     {
+        if ($conversation->users()->whereKey($userID)->exists()) {
+            return;
+        }
+
         $conversation->users()->attach($userID, ['read' => true, 'notifications_enabled' => true]);
     }
 
@@ -116,6 +120,10 @@ class ConversationRepository
 
         $query->where('conversations.type', Conversation::TYPE_PRIVATE_CONVERSATION);
         $query->whereNull('conversations.deleted_at');
+        // Private DMs are exactly two people; polluted rooms (extra members) must not match.
+        $query->whereRaw(
+            '(SELECT COUNT(DISTINCT cu.user_id) FROM conversations_users cu WHERE cu.conversation_id = conversations.id) = 2'
+        );
         $query->select('conversations.*');
 
         return $query->first();

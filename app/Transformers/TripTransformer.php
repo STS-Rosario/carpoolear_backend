@@ -93,13 +93,17 @@ class TripTransformer extends TransformerAbstract
             $data['user'] = $userTranforms->transform($trip->user);
             if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id || $this->user->is_admin) {
                 $data['allPassengerRequest'] = $trip->passenger;
-                if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id) {
-                    foreach ($trip->passengerAccepted as $passenger) {
-                        $data['passenger'][] = $userTranforms->transform($passenger->user);
-                    }
-                    $data['car'] = $this->transformCar($trip->car);
-                } elseif ($trip->isPending($this->user)) {
+                if ($trip->isPending($this->user) && ! $trip->isPassenger($this->user) && $trip->user_id != $this->user->id) {
                     $data['request'] = 'send';
+                }
+                foreach ($trip->passengerAccepted as $passenger) {
+                    $data['passenger'][] = $userTranforms->transformOrMissing(
+                        $passenger->user,
+                        $passenger->user_id ?? null
+                    );
+                }
+                if ($trip->isPassenger($this->user) || $trip->user_id == $this->user->id) {
+                    $data['car'] = $this->transformCar($trip->car);
                 }
 
                 $data['car'] = $this->transformCar($trip->car);
@@ -114,6 +118,16 @@ class TripTransformer extends TransformerAbstract
             } elseif ($trip->isPending($this->user)) {
                 $data['request'] = 'send';
             }
+
+            if (count($data['passenger']) === 0) {
+                foreach ($trip->passengerAccepted as $passenger) {
+                    $data['passenger'][] = $userTranforms->transformPublicOrMissing(
+                        $passenger->user,
+                        $passenger->user_id ?? null
+                    );
+                }
+            }
+
             // passengerPending
             $data['passengerPending_count'] = count($trip->passengerPending);
 

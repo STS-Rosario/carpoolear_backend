@@ -316,6 +316,73 @@ class ConversationsManagerTest extends TestCase
         $this->assertSame('user_has_reach_request_limit', $manager->getErrors()['error']);
     }
 
+    public function test_find_or_create_returns_existing_conversation_when_limit_reached(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+
+        $userManager = Mockery::mock(UsersManager::class);
+        $userManager->shouldReceive('unansweredConversationOrRequestsByTrip')->never();
+
+        $manager = new ConversationsManager(
+            $this->app->make(ConversationRepository::class),
+            $this->app->make(MessageRepository::class),
+            $this->app->make(UserRepository::class),
+            $this->app->make(FriendsManager::class),
+            $userManager,
+        );
+
+        $driver = User::factory()->create(['unaswered_messages_limit' => 1]);
+        $passenger = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $existing = Conversation::factory()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'trip_id' => null,
+        ]);
+        $existing->users()->attach($passenger->id, ['read' => true]);
+        $existing->users()->attach($driver->id, ['read' => true]);
+
+        $found = $manager->findOrCreatePrivateConversation($passenger, $driver, $trip->id);
+
+        $this->assertNotNull($found);
+        $this->assertTrue($found->is($existing));
+        $this->assertSame($trip->id, (int) $found->fresh()->trip_id);
+        $this->assertEmpty($manager->getErrors());
+    }
+
+    public function test_find_or_create_allows_new_conversation_when_passenger_has_pending_request_despite_limit(): void
+    {
+        Config::set('carpoolear.module_unaswered_message_limit', true);
+
+        $userManager = Mockery::mock(UsersManager::class);
+        $userManager->shouldReceive('unansweredConversationOrRequestsByTrip')->never();
+
+        $manager = new ConversationsManager(
+            $this->app->make(ConversationRepository::class),
+            $this->app->make(MessageRepository::class),
+            $this->app->make(UserRepository::class),
+            $this->app->make(FriendsManager::class),
+            $userManager,
+        );
+
+        $driver = User::factory()->create(['unaswered_messages_limit' => 1]);
+        $passenger = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $conversation = $manager->findOrCreatePrivateConversation($passenger, $driver, $trip->id);
+
+        $this->assertNotNull($conversation);
+        $this->assertSame(Conversation::TYPE_PRIVATE_CONVERSATION, (int) $conversation->type);
+        $this->assertSame($trip->id, (int) $conversation->trip_id);
+        $this->assertEmpty($manager->getErrors());
+    }
+
     public function test_remove_user_from_conversation_sets_error_for_non_member(): void
     {
         $member = User::factory()->create();

@@ -1608,6 +1608,72 @@ class TripRepositoryTest extends TestCase
             $strictItems->search(fn ($t) => $t->id === $strictLate->id));
     }
 
+    public function test_search_ignores_empty_from_and_to_date_and_supports_open_ended_bounds(): void
+    {
+        $tz = 'America/Argentina/Buenos_Aires';
+        $prevTz = date_default_timezone_get();
+        Config::set('app.timezone', $tz);
+        date_default_timezone_set($tz);
+        Carbon::setTestNow(Carbon::parse('2026-08-06 12:00:00', $tz));
+
+        try {
+            $admin = User::factory()->create();
+            $admin->forceFill(['is_admin' => true])->saveQuietly();
+
+            $past = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'trip_date' => Carbon::parse('2026-08-01 10:00:00', $tz),
+            ]);
+            $mid = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'trip_date' => Carbon::parse('2026-08-10 10:00:00', $tz),
+            ]);
+            $future = Trip::factory()->create([
+                'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+                'state' => Trip::STATE_READY,
+                'needs_sellado' => 0,
+                'trip_date' => Carbon::parse('2026-08-20 10:00:00', $tz),
+            ]);
+
+            $emptyRange = $this->repo()->search($admin, [
+                'from_date' => '',
+                'to_date' => '',
+                'page' => 1,
+                'page_size' => 50,
+            ]);
+            $this->assertNotNull($emptyRange);
+
+            $fromOnly = $this->repo()->search($admin, [
+                'from_date' => '2026-08-05',
+                'to_date' => '',
+                'page' => 1,
+                'page_size' => 50,
+            ]);
+            $fromIds = collect($fromOnly->items())->pluck('id');
+            $this->assertFalse($fromIds->contains($past->id));
+            $this->assertTrue($fromIds->contains($mid->id));
+            $this->assertTrue($fromIds->contains($future->id));
+
+            $toOnly = $this->repo()->search($admin, [
+                'from_date' => '',
+                'to_date' => '2026-08-15',
+                'page' => 1,
+                'page_size' => 50,
+            ]);
+            $toIds = collect($toOnly->items())->pluck('id');
+            $this->assertTrue($toIds->contains($past->id));
+            $this->assertTrue($toIds->contains($mid->id));
+            $this->assertFalse($toIds->contains($future->id));
+        } finally {
+            Carbon::setTestNow();
+            date_default_timezone_set($prevTz);
+        }
+    }
+
     public function test_search_fuzzy_date_includes_boundary_trips_at_plus_minus_three_days(): void
     {
         // Mutation intent: non-strict `date` search must use `subDays(3)` / `addDays(3)` for the regular window.
@@ -2201,6 +2267,40 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($item->relationLoaded('car'));
         $this->assertTrue($item->relationLoaded('ratings'));
         $this->assertTrue($item->user->relationLoaded('accounts'));
+    }
+
+    public function test_search_eager_loads_passenger_accepted_user_to_avoid_n_plus_one(): void
+    {
+        // Mutation intent: preserve passengerAccepted.user eager load in search() results
+        // so TripTransformer doesn't trigger a lazy-loaded query per accepted passenger.
+        $owner = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'state' => Trip::STATE_READY,
+            'needs_sellado' => 0,
+        ]);
+        Passenger::query()->create([
+            'user_id' => $passengerUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $page = $this->repo()->search(null, [
+            'user_id' => $owner->id,
+            'page' => 1,
+            'page_size' => 10,
+        ]);
+        $item = collect($page->items())->firstWhere('id', $trip->id);
+
+        $this->assertNotNull($item);
+        $this->assertTrue($item->relationLoaded('passengerAccepted'));
+        $this->assertCount(1, $item->passengerAccepted);
+        $this->assertTrue($item->passengerAccepted->first()->relationLoaded('user'));
     }
 
     public function test_search_origin_geo_filter_requires_both_coords_and_uses_default_radius(): void

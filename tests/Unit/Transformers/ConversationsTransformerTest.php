@@ -320,4 +320,40 @@ class ConversationsTransformerTest extends TestCase
         $this->assertSame('2026-04-30 08:00:00', $viewerRow['last_connection']);
         $this->assertSame('2026-04-29 09:00:00', $viewerRow['identity_validated_at']);
     }
+
+    public function test_transform_private_title_uses_last_message_author_when_thread_has_extra_participants(): void
+    {
+        // Polluted private threads can include a third user; arbitrary first() peer made Liliana see
+        // Hertha's chat titled as user0. Prefer the latest non-viewer message author as the peer.
+        $viewer = User::factory()->create(['name' => 'Liliana']);
+        $stalePeer = User::factory()->create(['name' => 'Dr. Dovie Mueller', 'image' => 'dovie.png']);
+        $realPeer = User::factory()->create(['name' => 'Hertha Wolf', 'image' => 'hertha.png']);
+
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Polluted',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+        $conversation->users()->attach($stalePeer->id, ['read' => true]);
+        $conversation->users()->attach($realPeer->id, ['read' => true]);
+
+        Message::query()->create([
+            'user_id' => $stalePeer->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Old',
+            'estado' => Message::STATE_NOLEIDO,
+        ])->forceFill(['created_at' => Carbon::parse('2026-04-30 10:00:00')])->saveQuietly();
+
+        Message::query()->create([
+            'user_id' => $realPeer->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Latest from Hertha',
+            'estado' => Message::STATE_NOLEIDO,
+        ])->forceFill(['created_at' => Carbon::parse('2026-04-30 12:00:00')])->saveQuietly();
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertSame('Hertha Wolf', $payload['title']);
+        $this->assertSame('/image/profile/hertha.png', $payload['image']);
+    }
 }

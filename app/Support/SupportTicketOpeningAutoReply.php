@@ -18,6 +18,6 @@ Muchas gracias. ¡Abrazo!
 
 Equipo Carpoolear
 
-[Proyecto de gestión colectiva, sin fines de lucro y [código libre](https://github.com/sts-rosario) de la asociación civil [STS Rosario](https://stsrosario.org.ar/) en marcha desde el 2013. Vos también podés [sumarte](https://carpoolear.com.ar/colabora-como-colaborar) ó [DONAR](https://carpoolear.com.ar/donar) para que siga adelante :D]
+[Proyecto de gestión colectiva, sin fines de lucro y [código libre](https://github.com/sts-rosario) de la asociación civil [STS Rosario](https://stsrosario.org.ar/) en marcha desde el 2013. Vos también podés [sumarte](https://carpoolear.com.ar/colabora-como-colaborar) ó [APORTAR](https://carpoolear.com.ar/aportar) para que siga adelante :D]
 MARKDOWN;
 }

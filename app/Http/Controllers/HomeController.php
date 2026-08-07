@@ -118,9 +118,9 @@ class HomeController extends Controller
         return view('encuentrocarpoolero');
     }
 
-    public function donar()
+    public function aportar()
     {
-        return view('donar');
+        return view('aportar');
     }
 
     public function covid()

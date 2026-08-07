@@ -126,6 +126,29 @@ class SupportTicket extends Model
             });
     }
 
+    /**
+     * Non-terminal tickets (not Resuelto / Cerrado).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeOpen($query)
+    {
+        return $query->whereNotIn('status', self::ADMIN_TERMINAL_STATUSES);
+    }
+
+    /**
+     * Tickets opened by an admin for the ticket user (created_by differs from user_id).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeCreatedByAdmin($query)
+    {
+        return $query->whereNotNull('created_by')
+            ->whereColumn('created_by', '!=', 'user_id');
+    }
+
     public function isAssignedTo(int $adminId): bool
     {
         return $this->assigned_to_user_id !== null
@@ -157,5 +180,55 @@ class SupportTicket extends Model
         }
 
         return (int) static::query()->where('user_id', $userId)->count();
+    }
+
+    public static function countOpenAccountVerificationForUser(?int $userId): int
+    {
+        if ($userId === null) {
+            return 0;
+        }
+
+        return (int) static::query()
+            ->where('user_id', $userId)
+            ->where('type', 'account_verification')
+            ->open()
+            ->createdByAdmin()
+            ->count();
+    }
+
+    /**
+     * @param  list<int|string|null>  $userIds
+     * @return array<int, int>
+     */
+    public static function countsOpenAccountVerificationByUserIds(array $userIds): array
+    {
+        $ids = [];
+        foreach ($userIds as $userId) {
+            $id = (int) $userId;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        $ids = array_values($ids);
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = static::query()
+            ->selectRaw('user_id, COUNT(*) as aggregate')
+            ->whereIn('user_id', $ids)
+            ->where('type', 'account_verification')
+            ->open()
+            ->createdByAdmin()
+            ->groupBy('user_id')
+            ->pluck('aggregate', 'user_id');
+
+        $result = [];
+        foreach ($ids as $id) {
+            $result[$id] = (int) ($rows[$id] ?? 0);
+        }
+
+        return $result;
     }
 }

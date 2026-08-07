@@ -129,18 +129,20 @@ class TripsManager extends BaseManager
             }
 
             // Check trip creation limits
-            $maxTrips = config('carpoolear.trip_creation_limits.max_trips', 5);
-            $timeWindow = config('carpoolear.trip_creation_limits.time_window_hours', 24);
+            if (! config('carpoolear.disable_trip_creation_limits', false)) {
+                $maxTrips = config('carpoolear.trip_creation_limits.max_trips', 5);
+                $timeWindow = config('carpoolear.trip_creation_limits.time_window_hours', 24);
 
-            $recentTrips = $this->tripRepo->getRecentTrips($user->id, $timeWindow);
-            if ($recentTrips->count() > $maxTrips) {
-                $this->userManager->update($user, ['banned' => 1], false, true);
-                \Log::info('User banned due to exceeding trip creation limits. User ID: '.$user->id.', Trips created: '.$recentTrips->count().' in last '.$timeWindow.' hours');
-                $messageBag = new MessageBag;
-                $messageBag->add('banned', 'Your account has been banned due to excessive trip creation.');
-                $this->setErrors($messageBag);
+                $recentTrips = $this->tripRepo->getRecentTrips($user->id, $timeWindow);
+                if ($recentTrips->count() > $maxTrips) {
+                    $this->userManager->update($user, ['banned' => 1], false, true);
+                    \Log::info('User banned due to exceeding trip creation limits. User ID: '.$user->id.', Trips created: '.$recentTrips->count().' in last '.$timeWindow.' hours');
+                    $messageBag = new MessageBag;
+                    $messageBag->add('banned', 'Your account has been banned due to excessive trip creation.');
+                    $this->setErrors($messageBag);
 
-                return;
+                    return;
+                }
             }
 
             // Check for banned words and phone numbers in description
@@ -473,9 +475,15 @@ class TripsManager extends BaseManager
         if ($trip) {
             // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {
+                $driver = $trip->user;
                 event(new DeleteEvent($trip));
 
-                return $this->tripRepo->delete($trip);
+                $deleted = $this->tripRepo->delete($trip);
+                if ($deleted && $driver) {
+                    $this->userManager->refreshTripsCount($driver->fresh());
+                }
+
+                return $deleted;
             } else {
                 $this->setErrors(trans('errors.tripowner'));
 
@@ -514,8 +522,8 @@ class TripsManager extends BaseManager
                 foreach ($trip->points as $point) {
                     if (is_array($point->json_address) && empty($point->json_address['ciudad'])) {
                         $temp = $point->json_address;
-                        $temp['ciudad'] = $temp['name'];
-                        $temp['provincia'] = $temp['state'];
+                        $temp['ciudad'] = $temp['name'] ?? '';
+                        $temp['provincia'] = $temp['state'] ?? '';
                         $point->json_address = $temp;
                         // var_dump($point->json_address);die;
                     }

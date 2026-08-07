@@ -11,6 +11,7 @@ use STS\Models\Trip;
 use STS\Models\User;
 use STS\Repository\ConversationRepository;
 use STS\Repository\MessageRepository;
+use STS\Repository\PassengersRepository;
 use STS\Repository\UserRepository;
 use Validator;
 
@@ -64,34 +65,49 @@ class ConversationsManager extends BaseManager
         $user1ID = is_int($user1) ? $user1 : $user1->id;
         $user2ID = is_int($user2) ? $user2 : $user2->id;
         $conversation = $this->conversationRepository->matchUser($user1ID, $user2ID);
-        // \Log::info('$tripId: ' . $tripId);
-        $trip = Trip::find($tripId); // Chequeo que el tripId pertenezca a un viaje
+        $trip = Trip::find($tripId);
 
         if (! $trip) {
             $tripId = null;
-        } else {
-            $module_unaswered_message_limit = config('carpoolear.module_unaswered_message_limit', false);
-            if ($module_unaswered_message_limit) {
-                $allow = $this->userManager->unansweredConversationOrRequestsByTrip($trip);
-                if (! $allow) {
-                    $this->setErrors(['error' => 'user_has_reach_request_limit']);
-
-                    return;
-                }
-            }
         }
-        if (! $conversation) {
-            if ($this->usersCanChat($user1, $user2ID)) {
-                $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION, $tripId);
-                $this->conversationRepository->addUser($conversation, $user1ID);
-                $this->conversationRepository->addUser($conversation, $user2ID);
 
-                return $conversation;
-            }
-        } else {
+        // Existing chat: always reopen it. Limit only applies to new inquiries.
+        if ($conversation) {
             if ($tripId) {
                 $conversation = $this->updateTripId($conversation, $tripId);
             }
+
+            return $conversation;
+        }
+
+        if ($trip) {
+            $module_unaswered_message_limit = config('carpoolear.module_unaswered_message_limit', false);
+            if ($module_unaswered_message_limit) {
+                $passengerCandidateId = ((int) $user1ID === (int) $trip->user_id)
+                    ? $user2ID
+                    : $user1ID;
+                $hasActiveRequest = app(PassengersRepository::class)
+                    ->userHasActiveRequest($trip->id, $passengerCandidateId);
+
+                // Pending/accepted seat request already occupies a limit slot;
+                // allow messaging for that passenger (or the driver messaging them).
+                if (! $hasActiveRequest) {
+                    $allow = $this->userManager->unansweredConversationOrRequestsByTrip($trip);
+                    if (! $allow) {
+                        $this->setErrors(['error' => 'user_has_reach_request_limit']);
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        if ($this->usersCanChat($user1, $user2ID)) {
+            $conversation = $this->createConversation(Conversation::TYPE_PRIVATE_CONVERSATION, $tripId);
+            $this->conversationRepository->addUser($conversation, $user1ID);
+            $this->conversationRepository->addUser($conversation, $user2ID);
+
+            return $conversation;
         }
 
         return $conversation;

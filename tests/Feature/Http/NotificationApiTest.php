@@ -86,20 +86,32 @@ class NotificationApiTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_count_returns_unread_total(): void
+    public function test_count_returns_navigation_badge_counts(): void
     {
         Mail::fake();
         Carbon::setTestNow('2026-04-11 09:00:00');
         $user = User::factory()->create(['active' => true, 'banned' => false]);
 
         $this->actingAs($user, 'api');
-        $this->getJson('api/notifications/count')->assertOk()->assertJson(['data' => 0]);
+        $this->getJson('api/notifications/count')
+            ->assertOk()
+            ->assertExactJson([
+                'data' => [
+                    'notifications' => 0,
+                    'messages' => 0,
+                    'my_trips' => 0,
+                ],
+            ]);
 
         $dummy = new DummyNotification;
         $dummy->setAttribute('dummy', 'unread');
         $dummy->notify($user);
 
-        $this->getJson('api/notifications/count')->assertOk()->assertJson(['data' => 1]);
+        $this->getJson('api/notifications/count')
+            ->assertOk()
+            ->assertJsonPath('data.notifications', 1)
+            ->assertJsonPath('data.messages', 0)
+            ->assertJsonPath('data.my_trips', 0);
 
         Carbon::setTestNow();
     }

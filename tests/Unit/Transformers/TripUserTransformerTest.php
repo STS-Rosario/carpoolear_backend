@@ -41,6 +41,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame([
             'id',
             'name',
+            'first_name',
             'descripcion',
             'private_note',
             'image',
@@ -63,6 +64,8 @@ class TripUserTransformerTest extends TestCase
             'conversation_answered_count',
             'answer_delay_sum',
             'identity_validated_at',
+            'trips_count',
+            'created_at',
         ], array_keys($payload));
         $this->assertSame($user->id, $payload['id']);
         $this->assertSame('Trip User', $payload['name']);
@@ -76,7 +79,23 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame(120.0, $payload['answer_delay_sum']);
         $this->assertSame('2026-04-30 15:00:00', $payload['last_connection']);
         $this->assertSame('2026-04-29 09:30:00', $payload['identity_validated_at']);
+        $this->assertNotNull($payload['created_at']);
         $this->assertIsObject($payload['driver_data_docs']);
+        $this->assertSame(0, $payload['trips_count']);
+        $this->assertSame(0, $user->fresh()->trips_count);
+    }
+
+    public function test_transform_uses_cached_trips_count_when_present(): void
+    {
+        $viewer = User::factory()->create();
+        $user = User::factory()->create([
+            'last_connection' => '2026-04-30 16:00:00',
+            'trips_count' => 45,
+        ]);
+
+        $payload = (new TripUserTransformer($viewer))->transform($user->fresh());
+
+        $this->assertSame(45, $payload['trips_count']);
     }
 
     public function test_transform_returns_null_for_optional_docs_and_identity_date_when_absent(): void
@@ -105,6 +124,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame([
             'id',
             'name',
+            'first_name',
             'descripcion',
             'private_note',
             'image',
@@ -127,6 +147,8 @@ class TripUserTransformerTest extends TestCase
             'conversation_answered_count',
             'answer_delay_sum',
             'identity_validated_at',
+            'trips_count',
+            'created_at',
         ], array_keys($payload));
         $this->assertSame(99999, $payload['id']);
         $this->assertSame('Usuario ya no existe', $payload['name']);
@@ -136,6 +158,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame(0, $payload['positive_ratings']);
         $this->assertSame(0, $payload['negative_ratings']);
         $this->assertSame(0, $payload['neutral_ratings']);
+        $this->assertNull($payload['created_at']);
         $this->assertSame('', $payload['last_connection']);
         $this->assertNull($payload['accounts']);
         $this->assertFalse($payload['has_pin']);
@@ -152,5 +175,54 @@ class TripUserTransformerTest extends TestCase
         $this->assertSame(0, $payload['conversation_answered_count']);
         $this->assertSame(0, $payload['answer_delay_sum']);
         $this->assertNull($payload['identity_validated_at']);
+        $this->assertSame(0, $payload['trips_count']);
+    }
+
+    public function test_extract_first_name_uses_first_whitespace_token(): void
+    {
+        $this->assertSame('Juan', TripUserTransformer::extractFirstName('  Juan Pérez  '));
+        $this->assertSame('Ana', TripUserTransformer::extractFirstName('Ana'));
+        $this->assertSame('', TripUserTransformer::extractFirstName('   '));
+        $this->assertSame('', TripUserTransformer::extractFirstName(null));
+    }
+
+    public function test_transform_includes_first_name(): void
+    {
+        $viewer = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'María López',
+            'last_connection' => '2026-04-30 15:00:00',
+        ]);
+
+        $payload = (new TripUserTransformer($viewer))->transform($user->fresh());
+
+        $this->assertSame('María', $payload['first_name']);
+    }
+
+    public function test_transform_public_returns_only_safe_fields(): void
+    {
+        $viewer = User::factory()->create();
+        $user = User::factory()->create([
+            'name' => 'Pedro Gómez',
+            'image' => 'p.png',
+            'last_connection' => '2026-04-30 15:00:00',
+        ]);
+
+        $payload = (new TripUserTransformer($viewer))->transformPublic($user->fresh());
+
+        $this->assertSame(['id', 'image', 'first_name'], array_keys($payload));
+        $this->assertSame($user->id, $payload['id']);
+        $this->assertSame('p.png', $payload['image']);
+        $this->assertSame('Pedro', $payload['first_name']);
+        $this->assertArrayNotHasKey('name', $payload);
+        $this->assertArrayNotHasKey('email', $payload);
+        $this->assertArrayNotHasKey('private_note', $payload);
+    }
+
+    public function test_missing_user_includes_first_name_token(): void
+    {
+        $payload = (new TripUserTransformer(User::factory()->create()))->missingUser(99);
+
+        $this->assertSame('Usuario', $payload['first_name']);
     }
 }

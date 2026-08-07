@@ -56,10 +56,67 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'paid',
             'review_status',
             'has_images',
+            'open_account_verification_tickets_count',
         ], array_keys($row));
         $this->assertSame('Manual User', $row['user_name']);
         $this->assertTrue($row['paid']);
         $this->assertFalse($row['has_images']);
+        $this->assertSame(0, $row['open_account_verification_tickets_count']);
+    }
+
+    public function test_index_includes_open_account_verification_ticket_counts(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['name' => 'Ticket User']);
+        ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'account_verification',
+            'subject' => 'Open verification',
+            'status' => 'Open',
+            'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'account_verification',
+            'subject' => 'User opened verification',
+            'status' => 'Open',
+            'priority' => 'high',
+            'created_by' => $user->id,
+        ]);
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'account_verification',
+            'subject' => 'Closed verification',
+            'status' => 'Cerrado',
+            'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'contact',
+            'subject' => 'Other type',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $row = collect($this->getJson('api/admin/manual-identity-validations')->assertOk()->json('data'))
+            ->firstWhere('user_id', $user->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame(1, $row['open_account_verification_tickets_count']);
     }
 
     public function test_index_paginates_with_default_twenty_per_page(): void
