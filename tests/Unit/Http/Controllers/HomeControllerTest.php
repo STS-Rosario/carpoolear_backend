@@ -43,7 +43,7 @@ class HomeControllerTest extends TestCase
             'mesa de ayuda' => ['mesadeayuda', 'mesadeayuda'],
             'contacto' => ['contacto', 'contacto'],
             'encuentro carpoolero' => ['encuentrocarpoolero', 'encuentrocarpoolero'],
-            'donar' => ['donar', 'donar'],
+            'aportar' => ['aportar', 'aportar'],
             'covid' => ['covid', 'covid'],
             'freelance' => ['freelance', 'freelance'],
             'derrumbe' => ['derrumbe', 'derrumbe'],
@@ -76,6 +76,12 @@ class HomeControllerTest extends TestCase
 
         $this->assertInstanceOf(View::class, $response);
         $this->assertSame('home', $response->getName());
+    }
+
+    public function test_aportar_page_is_reachable_and_legacy_donar_redirects(): void
+    {
+        $this->get('/aportar')->assertOk();
+        $this->get('/donar')->assertRedirect('/aportar');
     }
 
     public function test_home_redirects_away_when_redirection_url_is_configured(): void

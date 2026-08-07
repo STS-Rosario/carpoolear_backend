@@ -14,5 +14,8 @@ class SupportTicketOpeningAutoReplyTest extends TestCase
         $this->assertStringContainsString('¡Hola!', $markdown);
         $this->assertStringContainsString('Equipo Carpoolear', $markdown);
         $this->assertStringContainsString('preguntas frecuentes', $markdown);
+        $this->assertStringContainsString('https://carpoolear.com.ar/aportar', $markdown);
+        $this->assertStringContainsString('[APORTAR]', $markdown);
+        $this->assertStringNotContainsString('carpoolear.com.ar/donar', $markdown);
     }
 }
