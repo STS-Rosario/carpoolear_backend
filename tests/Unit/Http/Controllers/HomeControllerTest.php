@@ -84,6 +84,18 @@ class HomeControllerTest extends TestCase
         $this->get('/donar')->assertRedirect('/aportar');
     }
 
+    public function test_donar_compartir_uses_aportar_wording(): void
+    {
+        $html = view('donar-compartir')->render();
+
+        $this->assertStringContainsString('Aportar a Carpoolear', $html);
+        $this->assertStringContainsString('Aportá a Carpoolear', $html);
+        $this->assertStringContainsString('monto de aporte', $html);
+        $this->assertStringNotContainsString('Donar a Carpoolear', $html);
+        $this->assertStringNotContainsString('Doná a Carpoolear', $html);
+        $this->assertStringNotContainsString('monto de donación', $html);
+    }
+
     public function test_home_redirects_away_when_redirection_url_is_configured(): void
     {
         Config::set('carpoolear.home_redirection', 'https://example.org/welcome');
