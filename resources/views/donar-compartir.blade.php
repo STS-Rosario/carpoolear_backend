@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8" />
-        <title>Donar a Carpoolear</title>
+        <title>Aportar a Carpoolear</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
         <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,500,600' rel='stylesheet' type='text/css'>
@@ -72,7 +72,7 @@
             <div class="card">
                 <div class="card-header bg-transparent text-center">
                     <h3>
-                        Doná a Carpoolear 
+                        Aportá a Carpoolear 
                         <br class="d-md-none d-lg-none d-xl-none">
                         un proyecto de <img class="flush-right" src="/img/logo_sts_nuevo_color.png" width="170" height="50" alt="STS Rosario">
                     </h3>
@@ -157,7 +157,7 @@
                     var user_id = getParameterByName('u');
                     post(user_id, value);
                 } else {
-                    alert("Debes seleccionar un monto de donación. Gracias!");
+                    alert("Debes seleccionar un monto de aporte. Gracias!");
                 }
             });
         });
