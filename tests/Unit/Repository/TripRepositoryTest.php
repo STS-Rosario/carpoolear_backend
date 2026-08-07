@@ -3045,9 +3045,10 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($createdRoute->nodes->pluck('id')->contains($to->id));
     }
 
-    public function test_create_reuses_processed_route_and_dispatches_create_event(): void
+    public function test_create_reuses_processed_route_without_dispatching_create_event(): void
     {
-        // Mutation intent: preserve existing-route branch, processed event trigger and trip_routes sync.
+        // Mutation intent: preserve existing-route branch and trip_routes sync without Create event.
+        // Create is owned by TripsManager to avoid duplicate subscription notifications.
         // Kills: c3ab61b50d2e29e6, 4e2796064a396e48, 2de3deecc5bf329b, 52810aad74f43a6a, 7afd019bd08af694.
         Event::fake();
         Config::set('carpoolear.module_max_price_enabled', false);
@@ -3090,7 +3091,7 @@ class TripRepositoryTest extends TestCase
             ],
         ]);
 
-        Event::assertDispatched(CreateEvent::class);
+        Event::assertNotDispatched(CreateEvent::class);
         $this->assertSame(1, Route::query()->where('from_id', $from->id)->where('to_id', $to->id)->count());
 
         $trip->refresh();
