@@ -82,6 +82,15 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'subject' => 'Open verification',
             'status' => 'Open',
             'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicket::create([
+            'user_id' => $user->id,
+            'type' => 'account_verification',
+            'subject' => 'User opened verification',
+            'status' => 'Open',
+            'priority' => 'high',
+            'created_by' => $user->id,
         ]);
         SupportTicket::create([
             'user_id' => $user->id,
@@ -89,6 +98,7 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'subject' => 'Closed verification',
             'status' => 'Cerrado',
             'priority' => 'high',
+            'created_by' => $admin->id,
         ]);
         SupportTicket::create([
             'user_id' => $user->id,
@@ -96,6 +106,7 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'subject' => 'Other type',
             'status' => 'Open',
             'priority' => 'normal',
+            'created_by' => $admin->id,
         ]);
 
         $this->actingAs($admin, 'api');

@@ -213,31 +213,43 @@ class SupportTicketTest extends TestCase
     {
         $user = User::factory()->create();
         $other = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
 
         $this->makeTicket($user, [
             'type' => 'account_verification',
             'status' => 'Open',
             'subject' => 'open-av',
+            'created_by' => $admin->id,
         ]);
         $this->makeTicket($user, [
             'type' => 'account_verification',
             'status' => 'Esperando respuesta',
             'subject' => 'waiting-av',
+            'created_by' => $admin->id,
+        ]);
+        $this->makeTicket($user, [
+            'type' => 'account_verification',
+            'status' => 'Open',
+            'subject' => 'user-opened-av',
+            'created_by' => $user->id,
         ]);
         $this->makeTicket($user, [
             'type' => 'account_verification',
             'status' => 'Resuelto',
             'subject' => 'resolved-av',
+            'created_by' => $admin->id,
         ]);
         $this->makeTicket($user, [
             'type' => 'contact',
             'status' => 'Open',
             'subject' => 'open-contact',
+            'created_by' => $admin->id,
         ]);
         $this->makeTicket($other, [
             'type' => 'account_verification',
             'status' => 'Open',
             'subject' => 'other-user',
+            'created_by' => $admin->id,
         ]);
 
         $this->assertSame(2, SupportTicket::countOpenAccountVerificationForUser($user->id));
@@ -249,21 +261,31 @@ class SupportTicketTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
         $userC = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
 
         $this->makeTicket($userA, [
             'type' => 'account_verification',
             'status' => 'Open',
             'subject' => 'a1',
+            'created_by' => $admin->id,
         ]);
         $this->makeTicket($userA, [
             'type' => 'account_verification',
             'status' => 'En revision',
             'subject' => 'a2',
+            'created_by' => $admin->id,
+        ]);
+        $this->makeTicket($userA, [
+            'type' => 'account_verification',
+            'status' => 'Open',
+            'subject' => 'a-user-opened',
+            'created_by' => $userA->id,
         ]);
         $this->makeTicket($userB, [
             'type' => 'account_verification',
             'status' => 'Cerrado',
             'subject' => 'b-closed',
+            'created_by' => $admin->id,
         ]);
 
         $counts = SupportTicket::countsOpenAccountVerificationByUserIds([

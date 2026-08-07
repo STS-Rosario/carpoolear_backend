@@ -167,6 +167,31 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => ! in_array($row['status'], ['Resuelto', 'Cerrado'], true)));
     }
 
+    public function test_index_filters_by_created_by_admin_when_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $adminOpened = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'admin-opened',
+            'created_by' => $admin->id,
+        ]);
+        $userOpened = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'user-opened',
+            'created_by' => $owner->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?created_by_admin=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($adminOpened->id, $ids);
+        $this->assertNotContains($userOpened->id, $ids);
+    }
+
     public function test_index_filters_by_user_id_when_query_param_is_set(): void
     {
         $admin = $this->adminUser();
