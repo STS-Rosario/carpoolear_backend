@@ -5,7 +5,6 @@ namespace STS\Repository;
 use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Http;
-use STS\Events\Trip\Create as CreateEvent;
 use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\TripPriceHelper;
 use STS\Models\NodeGeo;
@@ -163,11 +162,6 @@ class TripRepository
 
                     $nodes = [$origin->id, $destiny->id];
                     $route->nodes()->sync($nodes);
-
-                } else {
-                    if ($route->processed) {
-                        event(new CreateEvent($trip));
-                    }
                 }
                 $routeIds[] = $route->id;
             }
