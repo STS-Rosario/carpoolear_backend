@@ -4,9 +4,11 @@ namespace STS\Listeners\Subscriptions;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Events\Trip\Create;
+use STS\Models\Trip;
 use STS\Notifications\SubscriptionMatchNotification;
 use STS\Repository\SubscriptionsRepository;
 use STS\Repository\UserRepository;
+use STS\Services\Notifications\Models\DatabaseNotification;
 
 class OnNewTrip implements ShouldQueue
 {
@@ -39,6 +41,10 @@ class OnNewTrip implements ShouldQueue
         foreach ($subscriptions as $s) {
             // \Log::info($trip->to_town . ': ' . $s->user->id . ' - ' . $s->user->name);
             // FIXME
+            if ($this->alreadyNotified($s->user->id, $trip->id)) {
+                continue;
+            }
+
             $notification = new SubscriptionMatchNotification;
             $notification->setAttribute('trip', $trip);
             try {
@@ -47,5 +53,19 @@ class OnNewTrip implements ShouldQueue
                 \Log::warning('Subscription notification failed', ['trip_id' => $trip->id, 'user_id' => $s->user->id]);
             }
         }
+    }
+
+    private function alreadyNotified(int $userId, int $tripId): bool
+    {
+        return DatabaseNotification::query()
+            ->where('user_id', $userId)
+            ->where('type', SubscriptionMatchNotification::class)
+            ->whereNull('deleted_at')
+            ->whereHas('plain_values', function ($query) use ($tripId) {
+                $query->where('key', 'trip')
+                    ->where('value_type', Trip::class)
+                    ->where('value_id', $tripId);
+            })
+            ->exists();
     }
 }

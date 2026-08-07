@@ -11,6 +11,8 @@ use STS\Models\User;
 use STS\Notifications\SubscriptionMatchNotification;
 use STS\Repository\SubscriptionsRepository;
 use STS\Repository\UserRepository;
+use STS\Services\Notifications\Models\DatabaseNotification;
+use STS\Services\Notifications\Models\ValueNotification;
 use STS\Services\Notifications\NotificationServices;
 use Tests\TestCase;
 
@@ -68,6 +70,36 @@ class OnNewTripListenerTest extends TestCase
                     && $users->is($subscriber)
                     && is_string($channel);
             });
+
+        (new OnNewTrip($userRepo, $subRepo))->handle(new TripCreated($trip));
+    }
+
+    public function test_handle_skips_subscriber_already_notified_for_same_trip(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $trip = $trip->fresh();
+
+        $subscriber = User::factory()->create();
+
+        $existing = new DatabaseNotification;
+        $existing->user_id = $subscriber->id;
+        $existing->type = SubscriptionMatchNotification::class;
+        $existing->save();
+
+        $param = new ValueNotification;
+        $param->notification_id = $existing->id;
+        $param->key = 'trip';
+        $param->value()->associate($trip);
+        $param->save();
+
+        $userRepo = Mockery::mock(UserRepository::class);
+        $subRepo = Mockery::mock(SubscriptionsRepository::class);
+        $subRepo->shouldReceive('search')
+            ->once()
+            ->andReturn(collect([(object) ['user' => $subscriber]]));
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
 
         (new OnNewTrip($userRepo, $subRepo))->handle(new TripCreated($trip));
     }
