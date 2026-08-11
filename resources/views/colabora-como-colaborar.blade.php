@@ -27,7 +27,7 @@
                 
                 <p>Todo el código de Carpoolear es LIBRE (GPL v3). Sí! Tanto frontend como backend están disponibles en <a href="https://github.com/STS-Rosario" target="_blank">GitHub</a>. Versionamos todo nuestro código utilizando git y los cambios que se suman los aceptamos a través de Pull Request.</p>
 
-                <p>Nuestro stack backend es Apache 2.4 + MySQL 8 + PHP 8.2. Utilizamos Laravel 11.9 como framework para la arquitectura de nuestra REST+API. Por otra parte nuestro stack frontend está conformado por Vue.js 2 y tenemos una PWA para móviles.</p>
+                <p>Nuestro stack backend es Apache 2.4 + MySQL 8 + PHP 8.5. Utilizamos Laravel 12.58 como framework para la arquitectura de nuestra REST+API. Por otra parte nuestro stack frontend está conformado por Vue 3 y tenemos una PWA para móviles.</p>
 
                 <h3>✓ Difundí Carpoolear</h3>
 

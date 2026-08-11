@@ -684,6 +684,28 @@ class UsersManager extends BaseManager
         return $cantidad;
     }
 
+    public function refreshTripsCount($user): int
+    {
+        $count = $this->tripsCount($user);
+
+        // Persist only the cached count. Profile/index responses attach ephemeral
+        // attributes (friendship_state, state, friend_trip_alerts_enabled) that are
+        // not DB columns and must not be included in Model::save().
+        User::whereKey($user->id)->update(['trips_count' => $count]);
+        $user->trips_count = $count;
+
+        return $count;
+    }
+
+    public function resolveTripsCount($user): int
+    {
+        if ($user->trips_count !== null) {
+            return (int) $user->trips_count;
+        }
+
+        return $this->refreshTripsCount($user);
+    }
+
     public function tripsDistance($user, $type = null)
     {
         $distancia = 0;

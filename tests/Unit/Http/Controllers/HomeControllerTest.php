@@ -43,7 +43,7 @@ class HomeControllerTest extends TestCase
             'mesa de ayuda' => ['mesadeayuda', 'mesadeayuda'],
             'contacto' => ['contacto', 'contacto'],
             'encuentro carpoolero' => ['encuentrocarpoolero', 'encuentrocarpoolero'],
-            'donar' => ['donar', 'donar'],
+            'aportar' => ['aportar', 'aportar'],
             'covid' => ['covid', 'covid'],
             'freelance' => ['freelance', 'freelance'],
             'derrumbe' => ['derrumbe', 'derrumbe'],
@@ -54,6 +54,20 @@ class HomeControllerTest extends TestCase
         ];
     }
 
+    public function test_como_colaborar_lists_current_stack_versions(): void
+    {
+        $html = view('colabora-como-colaborar')->render();
+
+        $this->assertStringContainsString('Laravel 12.58', $html);
+        $this->assertStringContainsString('PHP 8.5', $html);
+        $this->assertStringContainsString('MySQL 8', $html);
+        $this->assertStringContainsString('Vue', $html);
+        $this->assertMatchesRegularExpression('/Vue(\.js)?\s*3/', $html);
+        $this->assertStringNotContainsString('Laravel 11.9', $html);
+        $this->assertStringNotContainsString('PHP 8.2', $html);
+        $this->assertStringNotContainsString('Vue.js 2', $html);
+    }
+
     public function test_home_returns_home_view_when_no_redirection_url(): void
     {
         Config::set('carpoolear.home_redirection', '');
@@ -62,6 +76,24 @@ class HomeControllerTest extends TestCase
 
         $this->assertInstanceOf(View::class, $response);
         $this->assertSame('home', $response->getName());
+    }
+
+    public function test_aportar_page_is_reachable_and_legacy_donar_redirects(): void
+    {
+        $this->get('/aportar')->assertOk();
+        $this->get('/donar')->assertRedirect('/aportar');
+    }
+
+    public function test_donar_compartir_uses_aportar_wording(): void
+    {
+        $html = view('donar-compartir')->render();
+
+        $this->assertStringContainsString('Aportar a Carpoolear', $html);
+        $this->assertStringContainsString('Aportá a Carpoolear', $html);
+        $this->assertStringContainsString('monto de aporte', $html);
+        $this->assertStringNotContainsString('Donar a Carpoolear', $html);
+        $this->assertStringNotContainsString('Doná a Carpoolear', $html);
+        $this->assertStringNotContainsString('monto de donación', $html);
     }
 
     public function test_home_redirects_away_when_redirection_url_is_configured(): void

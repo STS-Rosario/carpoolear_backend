@@ -44,9 +44,11 @@ use STS\Http\Controllers\Api\v1\RatingController;
 use STS\Http\Controllers\Api\v1\ReferencesController;
 use STS\Http\Controllers\Api\v1\RoutesController;
 use STS\Http\Controllers\Api\v1\SocialController;
+use STS\Http\Controllers\Api\v1\StaticPageController;
 use STS\Http\Controllers\Api\v1\SubscriptionController;
 use STS\Http\Controllers\Api\v1\SupportTicketController;
 use STS\Http\Controllers\Api\v1\TripController;
+use STS\Http\Controllers\Api\v1\TripCreationTemplateController;
 use STS\Http\Controllers\Api\v1\TripLiveShareController;
 use STS\Http\Controllers\Api\v1\UserController;
 
@@ -57,6 +59,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('auth/impersonate/consume', [ImpersonationConsumeController::class, 'consume'])
         ->middleware('throttle:impersonation-consume');
     Route::get('config', [AuthController::class, 'getConfig']);
+    Route::get('static-pages/{page}', [StaticPageController::class, 'show']);
     Route::get('changelog', [ChangelogController::class, 'show']);
     Route::get('changelogs', [ChangelogController::class, 'index']);
     Route::get('car-brands', [CarCatalogController::class, 'brands']);
@@ -213,6 +216,13 @@ Route::middleware(['api'])->group(function () {
         Route::put('/{id?}', [CarController::class, 'update']);
         Route::delete('/{id?}', [CarController::class, 'delete']);
         Route::get('/{id?}', [CarController::class, 'show']);
+    });
+
+    Route::prefix('trip-creation-templates')->group(function () {
+        Route::get('/', [TripCreationTemplateController::class, 'index']);
+        Route::post('/', [TripCreationTemplateController::class, 'store']);
+        Route::get('/{name}', [TripCreationTemplateController::class, 'show'])
+            ->where('name', '.+');
     });
 
     Route::prefix('subscriptions')->group(function () {

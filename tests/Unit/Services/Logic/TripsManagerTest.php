@@ -23,6 +23,12 @@ use Tests\TestCase;
 
 class TripsManagerTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config(['carpoolear.disable_trip_creation_limits' => false]);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
@@ -284,6 +290,41 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_skips_trip_limit_check_when_disabled_in_config(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        config([
+            'carpoolear.disable_trip_creation_limits' => true,
+            'carpoolear.trip_creation_limits.max_trips' => 0,
+            'carpoolear.trip_creation_limits.time_window_hours' => 24,
+        ]);
+        $user = $this->completeUser(['banned' => 0]);
+        $this->carWithPlateFor($user);
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldNotReceive('getRecentTrips');
+        $repo->shouldReceive('getTripInfo')->once()->andReturn([]);
+        $repo->shouldReceive('findDuplicateTrip')->once()->andReturn(null);
+        $repo->shouldReceive('create')->once()->andReturnUsing(function (array $data) use ($user) {
+            return Trip::factory()->create([
+                'user_id' => $data['user_id'] ?? $user->id,
+                'from_town' => $data['from_town'] ?? 'X',
+                'to_town' => $data['to_town'] ?? 'Y',
+                'trip_date' => $data['trip_date'] ?? Carbon::now()->addDays(5),
+                'total_seats' => $data['total_seats'] ?? 3,
+                'friendship_type_id' => $data['friendship_type_id'] ?? Trip::PRIVACY_PUBLIC,
+            ]);
+        });
+
+        Event::fake([CreateEvent::class]);
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNotNull($result);
+        $this->assertSame(0, (int) $user->fresh()->banned);
+        Carbon::setTestNow();
+    }
+
     public function test_create_bans_user_when_description_contains_banned_word(): void
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
@@ -453,6 +494,25 @@ class TripsManagerTest extends TestCase
 
         Event::assertDispatched(DeleteEvent::class);
         $this->assertNotNull($trip->fresh()->deleted_at);
+    }
+
+    public function test_delete_refreshes_driver_cached_trips_count(): void
+    {
+        $driver = User::factory()->create(['trips_count' => 5]);
+        $finished = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => now()->subDays(3),
+        ]);
+        $toDelete = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => now()->addDays(3),
+        ]);
+
+        $this->assertTrue((bool) $this->manager()->delete($driver, $toDelete->id));
+
+        $this->assertSame(1, $driver->fresh()->trips_count);
+        $this->assertNotNull($toDelete->fresh()->deleted_at);
+        $this->assertNull($finished->fresh()->deleted_at);
     }
 
     public function test_update_rejects_total_seats_below_accepted_passengers(): void
@@ -1028,6 +1088,25 @@ class TripsManagerTest extends TestCase
         $json = $out->first()->points->first()->json_address;
         $this->assertSame('Rosario', $json['ciudad']);
         $this->assertSame('Santa Fe', $json['provincia']);
+    }
+
+    public function test_proccess_trips_fills_ciudad_when_json_address_omits_state(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        TripPoint::factory()->create([
+            'trip_id' => $trip->id,
+            'json_address' => ['name' => 'Córdoba'],
+        ]);
+        $trip->load('points');
+
+        $method = new \ReflectionMethod(TripsManager::class, 'proccessTrips');
+        $method->setAccessible(true);
+        $out = $method->invoke($this->manager(), collect([$trip]));
+
+        $json = $out->first()->points->first()->json_address;
+        $this->assertSame('Córdoba', $json['ciudad']);
+        $this->assertSame('', $json['provincia']);
     }
 
     public function test_user_can_see_fof_trip_when_viewer_is_friend_of_friend(): void

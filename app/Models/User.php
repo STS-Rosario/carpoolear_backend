@@ -77,6 +77,7 @@ class User extends Authenticatable implements JWTSubject
             'identity_validation_rejected_at',
             'identity_validation_reject_reason',
             'validate_by_date',
+            'trips_count',
         ];
     }
 
@@ -103,6 +104,7 @@ class User extends Authenticatable implements JWTSubject
             'validate_by_date' => 'date',
             'phone_verified' => 'boolean',
             'phone_verified_at' => 'datetime',
+            'trips_count' => 'integer',
         ];
     }
 

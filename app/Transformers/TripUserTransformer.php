@@ -4,6 +4,7 @@ namespace STS\Transformers;
 
 use League\Fractal\TransformerAbstract;
 use STS\Models\User;
+use STS\Services\Logic\UsersManager;
 
 class TripUserTransformer extends TransformerAbstract
 {
@@ -22,11 +23,42 @@ class TripUserTransformer extends TransformerAbstract
         return $user ? $this->transform($user) : $this->missingUser($userId);
     }
 
+    public static function extractFirstName(?string $name): string
+    {
+        $trimmed = trim((string) $name);
+        if ($trimmed === '') {
+            return '';
+        }
+
+        return preg_split('/\s+/u', $trimmed, 2)[0];
+    }
+
+    public function transformPublic(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'image' => $user->image,
+            'first_name' => self::extractFirstName($user->name),
+        ];
+    }
+
+    public function transformPublicOrMissing(?User $user, ?int $userId = null): array
+    {
+        return $user
+            ? $this->transformPublic($user)
+            : [
+                'id' => $userId,
+                'image' => '',
+                'first_name' => self::extractFirstName('Usuario ya no existe'),
+            ];
+    }
+
     public function missingUser(?int $userId = null): array
     {
         return [
             'id' => $userId,
             'name' => 'Usuario ya no existe',
+            'first_name' => self::extractFirstName('Usuario ya no existe'),
             'descripcion' => '',
             'private_note' => '',
             'image' => '',
@@ -49,14 +81,20 @@ class TripUserTransformer extends TransformerAbstract
             'conversation_answered_count' => 0,
             'answer_delay_sum' => 0,
             'identity_validated_at' => null,
+            'trips_count' => 0,
+            'created_at' => null,
         ];
     }
 
     public function transform(User $user)
     {
+        $usersManager = app(UsersManager::class);
+        $tripsCount = $usersManager->resolveTripsCount($user);
+
         $data = [
             'id' => $user->id,
             'name' => $user->name,
+            'first_name' => self::extractFirstName($user->name),
             // 'email' => $user->email,
             'descripcion' => $user->description,
             'private_note' => $user->private_note,
@@ -80,6 +118,8 @@ class TripUserTransformer extends TransformerAbstract
             'conversation_answered_count' => $user->conversation_answered_count,
             'answer_delay_sum' => $user->answer_delay_sum,
             'identity_validated_at' => $user->identity_validated_at ? $user->identity_validated_at->toDateTimeString() : null,
+            'trips_count' => $tripsCount,
+            'created_at' => $user->created_at ? $user->created_at->toDateTimeString() : null,
         ];
 
         return $data;

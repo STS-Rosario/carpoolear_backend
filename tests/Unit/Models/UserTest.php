@@ -105,6 +105,7 @@ class UserTest extends TestCase
             'identity_validation_rejected_at',
             'identity_validation_reject_reason',
             'validate_by_date',
+            'trips_count',
         ];
 
         $this->assertSame($expected, (new User)->getFillable());

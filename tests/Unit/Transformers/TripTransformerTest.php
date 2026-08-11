@@ -323,6 +323,43 @@ class TripTransformerTest extends TestCase
         $this->assertSame(1, $payload['passengerPending_count']);
     }
 
+    public function test_transform_sets_request_send_and_reduced_passengers_for_pending_viewer_with_copassengers(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $requester = User::factory()->create(['is_admin' => false]);
+        $acceptedUser = User::factory()->create(['name' => 'Carla Gómez']);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        Passenger::query()->create([
+            'user_id' => $requester->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_PENDING,
+            'canceled_state' => null,
+        ]);
+        Passenger::query()->create([
+            'user_id' => $acceptedUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($requester))->transform(
+            $trip->fresh(['user', 'passengerAccepted', 'passengerPending'])
+        );
+
+        $this->assertSame('send', $payload['request']);
+        $this->assertArrayNotHasKey('allPassengerRequest', $payload);
+        $this->assertCount(1, $payload['passenger']);
+        $this->assertSame(['id', 'image', 'first_name'], array_keys($payload['passenger'][0]));
+        $this->assertSame($acceptedUser->id, $payload['passenger'][0]['id']);
+        $this->assertSame('Carla', $payload['passenger'][0]['first_name']);
+    }
+
     public function test_transform_owner_branch_matches_numeric_string_trip_user_id(): void
     {
         $owner = User::factory()->create(['is_admin' => false]);
@@ -594,5 +631,85 @@ class TripTransformerTest extends TestCase
 
         $this->assertArrayNotHasKey('seat_request_limit', $payload);
         $this->assertArrayNotHasKey('seat_request_limit_reached', $payload);
+    }
+
+    public function test_transform_includes_first_name_on_owner_passenger(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $acceptedUser = User::factory()->create(['name' => 'Lucía Fernández']);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+        Passenger::query()->create([
+            'user_id' => $acceptedUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($owner))->transform($trip->fresh(['passengerAccepted']));
+
+        $this->assertSame('Lucía', $payload['passenger'][0]['first_name']);
+        $this->assertSame('Lucía Fernández', $payload['passenger'][0]['name']);
+    }
+
+    public function test_transform_exposes_reduced_passengers_to_unrelated_viewer(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $acceptedUser = User::factory()->create([
+            'name' => 'Diego Ruiz',
+            'image' => 'diego.png',
+        ]);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+        Passenger::query()->create([
+            'user_id' => $acceptedUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($viewer))->transform(
+            $trip->fresh(['user', 'passengerAccepted', 'passengerPending'])
+        );
+
+        $this->assertArrayNotHasKey('allPassengerRequest', $payload);
+        $this->assertCount(1, $payload['passenger']);
+        $this->assertSame(['id', 'image', 'first_name'], array_keys($payload['passenger'][0]));
+        $this->assertSame($acceptedUser->id, $payload['passenger'][0]['id']);
+        $this->assertSame('Diego', $payload['passenger'][0]['first_name']);
+        $this->assertArrayNotHasKey('name', $payload['passenger'][0]);
+    }
+
+    public function test_transform_includes_full_passengers_for_admin(): void
+    {
+        $owner = User::factory()->create(['is_admin' => false]);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $acceptedUser = User::factory()->create(['name' => 'Sofía Díaz']);
+        $trip = $this->makeTrip([
+            'user_id' => $owner->id,
+            'state' => Trip::STATE_READY,
+        ]);
+        Passenger::query()->create([
+            'user_id' => $acceptedUser->id,
+            'trip_id' => $trip->id,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+            'request_state' => Passenger::STATE_ACCEPTED,
+            'canceled_state' => null,
+        ]);
+
+        $payload = (new TripTransformer($admin))->transform(
+            $trip->fresh(['passengerAccepted', 'passenger'])
+        );
+
+        $this->assertCount(1, $payload['passenger']);
+        $this->assertSame('Sofía Díaz', $payload['passenger'][0]['name']);
+        $this->assertSame('Sofía', $payload['passenger'][0]['first_name']);
     }
 }
