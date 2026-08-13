@@ -3,6 +3,7 @@
 namespace STS\Helpers;
 
 use STS\Models\Trip;
+use STS\Support\TripExcessContributionStatus;
 
 class TripDescriptionContributionHelper
 {
@@ -85,6 +86,14 @@ class TripDescriptionContributionHelper
 
         $trip->has_potential_excess_contribution = $potentialSeatPriceCents !== null;
         $trip->description_potential_seat_price_cents = $potentialSeatPriceCents;
+
+        if ($potentialSeatPriceCents !== null) {
+            if ($trip->exceso_contribucion_status === null) {
+                $trip->exceso_contribucion_status = TripExcessContributionStatus::PENDIENTE;
+            }
+        } else {
+            $trip->exceso_contribucion_status = null;
+        }
     }
 
     private static function parseNumericAmountToCents(
