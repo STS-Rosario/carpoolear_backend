@@ -542,6 +542,33 @@ class ConversationApiTest extends TestCase
         $this->assertTrue((bool) $pivotRead);
     }
 
+    public function test_get_conversation_messages_with_read_true_marks_user_message_read_rows(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $reader);
+        $this->conversationRepository->addUser($conversation, $sender);
+        $reader->conversations()->updateExistingPivot($conversation->id, ['read' => false]);
+
+        $this->conversationManager->send($sender, $conversation->id, 'Open me');
+        $messageId = Message::where('conversation_id', $conversation->id)->value('id');
+
+        $this->assertFalse((bool) \DB::table('user_message_read')
+            ->where('message_id', $messageId)
+            ->where('user_id', $reader->id)
+            ->value('read'));
+
+        $this->actingAs($reader, 'api')
+            ->getJson('api/conversations/'.$conversation->id.'?read=true&unread=false&pageSize=20')
+            ->assertOk();
+
+        $this->assertTrue((bool) \DB::table('user_message_read')
+            ->where('message_id', $messageId)
+            ->where('user_id', $reader->id)
+            ->value('read'));
+    }
+
     public function test_users_method_returns_manager_payload_when_available(): void
     {
         $actor = User::factory()->create();

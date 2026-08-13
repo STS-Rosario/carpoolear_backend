@@ -362,17 +362,13 @@ class ConversationsManager extends BaseManager
         if ($conversation) {
             if ($unreadMessages) {
                 $messages = $this->messageRepository->getUnreadMessages($conversation, $user);
-                if ($read) {
-                    foreach ($messages as $message) {
-                        $this->messageRepository->changeMessageReadState($message, $user, true);
-                    }
-                }
             } else {
                 $messages = $this->messageRepository->getMessages($conversation, $timestamp, $pageSize);
             }
 
             if ($read) {
                 $this->conversationRepository->changeConversationReadState($conversation, $user, true);
+                $this->messageRepository->markMessages($user, $conversation->id);
             }
         } else {
             $messages = null;

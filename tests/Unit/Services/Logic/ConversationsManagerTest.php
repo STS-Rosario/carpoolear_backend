@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Logic;
 
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Mockery;
 use STS\Events\MessageSend;
@@ -460,6 +461,55 @@ class ConversationsManagerTest extends TestCase
 
         $updated = $this->manager()->setConversationNotifications($user, $conversation->id, true);
         $this->assertTrue($updated->notificationsEnabled($user));
+    }
+
+    public function test_get_all_messages_from_conversation_with_read_marks_user_message_read_rows(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $conversation->users()->attach($reader->id, ['read' => false]);
+        $conversation->users()->attach($sender->id, ['read' => true]);
+
+        $this->manager()->send($sender, $conversation->id, 'Hello');
+        $this->manager()->send($sender, $conversation->id, 'Again');
+
+        $messageIds = Message::where('conversation_id', $conversation->id)->pluck('id');
+        foreach ($messageIds as $messageId) {
+            $this->assertFalse((bool) DB::table('user_message_read')
+                ->where('message_id', $messageId)
+                ->where('user_id', $reader->id)
+                ->value('read'));
+        }
+
+        $this->manager()->getAllMessagesFromConversation($conversation->id, $reader, true);
+
+        foreach ($messageIds as $messageId) {
+            $this->assertTrue((bool) DB::table('user_message_read')
+                ->where('message_id', $messageId)
+                ->where('user_id', $reader->id)
+                ->value('read'));
+        }
+    }
+
+    public function test_get_all_messages_from_conversation_without_read_leaves_user_message_read_rows_unread(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $conversation->users()->attach($reader->id, ['read' => false]);
+        $conversation->users()->attach($sender->id, ['read' => true]);
+
+        $this->manager()->send($sender, $conversation->id, 'Still unread');
+
+        $messageId = Message::where('conversation_id', $conversation->id)->value('id');
+
+        $this->manager()->getAllMessagesFromConversation($conversation->id, $reader, false);
+
+        $this->assertFalse((bool) DB::table('user_message_read')
+            ->where('message_id', $messageId)
+            ->where('user_id', $reader->id)
+            ->value('read'));
     }
 
     public function test_send_system_message_creates_message_with_is_system_flag_and_no_notification_event(): void
