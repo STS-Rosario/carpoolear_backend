@@ -69,6 +69,9 @@ class TripTest extends TestCase
             'payment_id',
             'needs_sellado',
             'autoaccept_friends_requests',
+            'has_potential_excess_contribution',
+            'description_potential_seat_price_cents',
+            'exceso_contribucion_status',
         ];
 
         $this->assertSame($expected, (new Trip)->getFillable());
@@ -99,6 +102,9 @@ class TripTest extends TestCase
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
             'recommended_trip_price_cents' => 'integer',
+            'description_potential_seat_price_cents' => 'integer',
+            'has_potential_excess_contribution' => 'boolean',
+            'exceso_contribucion_status' => 'string',
             'state' => 'string',
         ];
 

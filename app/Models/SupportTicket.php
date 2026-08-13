@@ -17,6 +17,7 @@ class SupportTicket extends Model
         'report',
         'account_verification',
         'account_recovery',
+        'excess_contribution',
     ];
 
     /** @var array<string, string> */
@@ -27,6 +28,7 @@ class SupportTicket extends Model
         'feedback' => 'low',
         'account_verification' => 'high',
         'account_recovery' => 'high',
+        'excess_contribution' => 'normal',
     ];
 
     public const STATUS_NEEDS_REVIEW = 'Necesita revisión';
@@ -221,6 +223,41 @@ class SupportTicket extends Model
             ->where('type', 'account_verification')
             ->open()
             ->createdByAdmin()
+            ->groupBy('user_id')
+            ->pluck('aggregate', 'user_id');
+
+        $result = [];
+        foreach ($ids as $id) {
+            $result[$id] = (int) ($rows[$id] ?? 0);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  list<int|string|null>  $userIds
+     * @return array<int, int>
+     */
+    public static function countsOpenExcessContributionByUserIds(array $userIds): array
+    {
+        $ids = [];
+        foreach ($userIds as $userId) {
+            $id = (int) $userId;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+        $ids = array_values($ids);
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = static::query()
+            ->selectRaw('user_id, COUNT(*) as aggregate')
+            ->whereIn('user_id', $ids)
+            ->where('type', 'excess_contribution')
+            ->open()
             ->groupBy('user_id')
             ->pluck('aggregate', 'user_id');
 
