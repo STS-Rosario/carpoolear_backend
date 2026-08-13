@@ -20,7 +20,14 @@ class TripExcessContributionController extends Controller
     {
         $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
         $page = AdminPagination::resolvePage($request->query('page'));
-        $paginator = $this->listService->paginate($perPage, $page);
+        $requiresActionOnly = $this->queryFlagIsTruthy($request->query('requires_action_only'));
+        $paginator = $this->listService->paginate(
+            $perPage,
+            $page,
+            $requiresActionOnly,
+            $request->query('sort'),
+            $request->query('direction'),
+        );
 
         return response()->json([
             'data' => $paginator->items(),
@@ -66,5 +73,18 @@ class TripExcessContributionController extends Controller
         return response()->json([
             'data' => $trip ? $this->listService->serializeDetail($trip) : null,
         ]);
+    }
+
+    private function queryFlagIsTruthy(mixed $value): bool
+    {
+        if ($value === true || $value === 1) {
+            return true;
+        }
+
+        if (! is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower($value), ['1', 'true', 'yes', 'on'], true);
     }
 }

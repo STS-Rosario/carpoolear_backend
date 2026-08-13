@@ -5,16 +5,28 @@ namespace STS\Services\Admin;
 use Illuminate\Pagination\LengthAwarePaginator;
 use STS\Models\SupportTicket;
 use STS\Models\Trip;
+use STS\Support\TripExcessContributionSort;
 
 class TripExcessContributionListService
 {
-    public function paginate(int $perPage, int $page): LengthAwarePaginator
-    {
-        $paginator = Trip::query()
+    public function paginate(
+        int $perPage,
+        int $page,
+        bool $requiresActionOnly = false,
+        ?string $sort = null,
+        ?string $direction = null,
+    ): LengthAwarePaginator {
+        $query = Trip::query()
             ->with(['user:id,name,private_note'])
-            ->where('has_potential_excess_contribution', true)
-            ->orderByDesc('id')
-            ->paginate($perPage, ['*'], 'page', $page);
+            ->where('has_potential_excess_contribution', true);
+
+        if ($requiresActionOnly) {
+            $query = TripExcessContributionSort::applyRequiresActionOnlyFilter($query);
+        }
+
+        $query = TripExcessContributionSort::apply($query, $sort, $direction);
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         $pageItems = collect($paginator->items());
         $ticketCounts = SupportTicket::countsOpenExcessContributionByUserIds(

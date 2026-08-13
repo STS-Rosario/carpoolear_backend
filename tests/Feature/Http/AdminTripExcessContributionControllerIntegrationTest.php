@@ -198,4 +198,68 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'total_pages' => 2,
         ], $response->json('meta.pagination'));
     }
+
+    public function test_index_requires_action_only_hides_resuelto_and_descartado(): void
+    {
+        $admin = $this->admin();
+        $driver = User::factory()->create();
+
+        $pendingTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::RESUELTO,
+        ]);
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::DESCARTADO,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->getJson('api/admin/trip-excess-contributions?requires_action_only=1')
+            ->assertOk();
+
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertSame([$pendingTrip->id], $ids);
+    }
+
+    public function test_index_sorts_by_user_name(): void
+    {
+        $admin = $this->admin();
+        $driverA = User::factory()->create(['name' => 'Alpha Driver']);
+        $driverB = User::factory()->create(['name' => 'Beta Driver']);
+
+        Trip::factory()->create([
+            'user_id' => $driverB->id,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+        Trip::factory()->create([
+            'user_id' => $driverA->id,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->getJson(
+            'api/admin/trip-excess-contributions?sort=user_name&direction=asc'
+        )->assertOk();
+
+        $names = collect($response->json('data'))->pluck('user_name')->all();
+        $this->assertSame(['Alpha Driver', 'Beta Driver'], $names);
+    }
 }
