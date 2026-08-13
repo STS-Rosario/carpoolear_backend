@@ -49,6 +49,14 @@ class Conversation extends Model
         return $userRelation ? $userRelation->pivot->read : false;
     }
 
+    public function hasUnreadMessagesFor(UserModel $user): bool
+    {
+        return $this->messages()->whereHas('users', function ($q) use ($user) {
+            $q->where('user_id', $user->id)
+                ->where('read', false);
+        })->exists();
+    }
+
     public function notificationsEnabled(UserModel $user)
     {
         $userRelation = $this->users()->whereKey($user->id)->first();

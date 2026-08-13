@@ -74,7 +74,7 @@ class ConversationsTransformer extends TransformerAbstract
                 break;
         }
 
-        $data['unread'] = ! $conversation->read($this->user);
+        $data['unread'] = $conversation->hasUnreadMessagesFor($this->user);
         $data['notifications_enabled'] = $conversation->notificationsEnabled($this->user);
         $data['update_at'] = $conversation->updated_at ? $conversation->updated_at->toDateTimeString() : null;
 
