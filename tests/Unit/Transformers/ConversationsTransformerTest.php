@@ -36,6 +36,7 @@ class ConversationsTransformerTest extends TestCase
             'text' => 'Latest text',
             'estado' => Message::STATE_NOLEIDO,
         ]);
+        $message->users()->attach($viewer->id, ['read' => false]);
         $message->forceFill(['created_at' => Carbon::parse('2026-04-30 12:00:00')])->saveQuietly();
 
         $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
@@ -355,5 +356,53 @@ class ConversationsTransformerTest extends TestCase
 
         $this->assertSame('Hertha Wolf', $payload['title']);
         $this->assertSame('/image/profile/hertha.png', $payload['image']);
+    }
+
+    public function test_transform_unread_is_false_when_conversation_pivot_unread_but_messages_are_read(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Stale pivot',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => false]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $message = Message::query()->create([
+            'user_id' => $other->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Already read',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $message->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertFalse($payload['unread']);
+    }
+
+    public function test_transform_unread_is_true_when_conversation_pivot_read_but_messages_are_unread(): void
+    {
+        $viewer = User::factory()->create();
+        $other = User::factory()->create();
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Stale pivot read',
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $message = Message::query()->create([
+            'user_id' => $other->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Still unread',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $message->users()->attach($viewer->id, ['read' => false]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertTrue($payload['unread']);
     }
 }
