@@ -83,7 +83,7 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $admin = $this->admin();
         $driver = User::factory()->create();
 
-        foreach (range(1, 3) as $index) {
+        foreach (range(1, 11) as $index) {
             Trip::factory()->create([
                 'user_id' => $driver->id,
                 'seat_price_cents' => 100000,
@@ -94,14 +94,14 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
-        $response = $this->getJson('api/admin/trip-excess-contributions?per_page=2&page=1')
+        $response = $this->getJson('api/admin/trip-excess-contributions?per_page=10&page=1')
             ->assertOk();
 
-        $this->assertCount(2, $response->json('data'));
+        $this->assertCount(10, $response->json('data'));
         $this->assertSame([
             'current_page' => 1,
-            'per_page' => 2,
-            'total' => 3,
+            'per_page' => 10,
+            'total' => 11,
             'total_pages' => 2,
         ], $response->json('meta.pagination'));
     }

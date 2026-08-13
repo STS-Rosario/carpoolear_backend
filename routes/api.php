@@ -20,6 +20,7 @@ use STS\Http\Controllers\Api\Admin\RatingController as AdminRatingController;
 use STS\Http\Controllers\Api\Admin\ReferencesController as AdminReferencesController;
 use STS\Http\Controllers\Api\Admin\SupportReplyTemplateController as AdminSupportReplyTemplateController;
 use STS\Http\Controllers\Api\Admin\SupportTicketController as AdminSupportTicketController;
+use STS\Http\Controllers\Api\Admin\TripExcessContributionController as AdminTripExcessContributionController;
 use STS\Http\Controllers\Api\Admin\UserController as AdminUserController;
 use STS\Http\Controllers\Api\Admin\UserMigrationController as AdminUserMigrationController;
 use STS\Http\Controllers\Api\v1\AuthController;
@@ -258,6 +259,7 @@ Route::middleware(['api'])->group(function () {
     // Admin routes
     Route::prefix('admin')->middleware('user.admin')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'show']);
+        Route::get('trip-excess-contributions', [AdminTripExcessContributionController::class, 'index']);
         Route::apiResource('badges', BadgeController::class);
         // Campaign routes
         Route::apiResource('campaigns', CampaignController::class);
