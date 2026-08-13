@@ -19,6 +19,7 @@ class TripDescriptionContributionHelperSyncTest extends TestCase
 
         $this->assertTrue($trip->has_potential_excess_contribution);
         $this->assertSame(2400000, $trip->description_potential_seat_price_cents);
+        $this->assertSame('pendiente', $trip->exceso_contribucion_status);
     }
 
     public function test_sync_potential_excess_contribution_attributes_clears_flag_when_not_excess(): void
@@ -34,5 +35,6 @@ class TripDescriptionContributionHelperSyncTest extends TestCase
 
         $this->assertFalse($trip->has_potential_excess_contribution);
         $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertNull($trip->exceso_contribucion_status);
     }
 }

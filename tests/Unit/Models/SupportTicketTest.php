@@ -14,6 +14,7 @@ class SupportTicketTest extends TestCase
     public function test_type_default_priorities_assigns_high_to_account_recovery(): void
     {
         $this->assertSame('high', SupportTicket::TYPE_DEFAULT_PRIORITIES['account_recovery']);
+        $this->assertContains('excess_contribution', SupportTicket::TYPES);
     }
 
     public function test_statuses_include_needs_review(): void

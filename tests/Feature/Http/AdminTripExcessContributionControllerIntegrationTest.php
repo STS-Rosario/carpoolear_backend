@@ -3,8 +3,10 @@
 namespace Tests\Feature\Http;
 
 use STS\Http\Middleware\UserAdmin;
+use STS\Models\SupportTicket;
 use STS\Models\Trip;
 use STS\Models\User;
+use STS\Support\TripExcessContributionStatus;
 use Tests\TestCase;
 
 class AdminTripExcessContributionControllerIntegrationTest extends TestCase
@@ -37,6 +39,18 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'description' => 'La contribución es de $24000 por persona',
             'has_potential_excess_contribution' => true,
             'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        SupportTicket::query()->create([
+            'user_id' => $driverWithNote->id,
+            'type' => 'excess_contribution',
+            'subject' => 'Exceso de contribución',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 0,
+            'created_by' => $admin->id,
         ]);
 
         Trip::factory()->create([
@@ -68,6 +82,9 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'potential_seat_price_cents',
             'has_private_note',
             'user_id',
+            'user_name',
+            'exceso_contribucion_status',
+            'excess_contribution_support_tickets_count',
         ], array_keys($rows[0]));
 
         $row = $rows[0];
@@ -78,6 +95,77 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->assertSame(2400000, $row['potential_seat_price_cents']);
         $this->assertTrue($row['has_private_note']);
         $this->assertSame($driverWithNote->id, $row['user_id']);
+        $this->assertSame('Driver With Note', $row['user_name']);
+        $this->assertSame(TripExcessContributionStatus::PENDIENTE, $row['exceso_contribucion_status']);
+        $this->assertSame(1, $row['excess_contribution_support_tickets_count']);
+    }
+
+    public function test_show_returns_trip_and_creator_detail(): void
+    {
+        $admin = $this->admin();
+        $driver = User::factory()->create([
+            'name' => 'Creator Name',
+            'email' => 'creator@example.com',
+        ]);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'from_town' => 'Córdoba',
+            'to_town' => 'Mendoza',
+            'seat_price_cents' => 1500000,
+            'description' => 'Pago $24000',
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::EN_PROCESO,
+        ]);
+
+        SupportTicket::query()->create([
+            'user_id' => $driver->id,
+            'type' => 'excess_contribution',
+            'subject' => 'Ticket exceso',
+            'status' => 'Open',
+            'priority' => 'normal',
+            'unread_for_user' => 0,
+            'unread_for_admin' => 0,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->getJson('api/admin/trip-excess-contributions/'.$trip->id)->assertOk();
+        $data = $response->json('data');
+
+        $this->assertSame($trip->id, $data['id']);
+        $this->assertSame('Córdoba', $data['from_town']);
+        $this->assertSame('Mendoza', $data['to_town']);
+        $this->assertSame('Pago $24000', $data['description']);
+        $this->assertSame(TripExcessContributionStatus::EN_PROCESO, $data['exceso_contribucion_status']);
+        $this->assertSame($driver->id, $data['user_id']);
+        $this->assertSame('Creator Name', $data['user_name']);
+        $this->assertSame('creator@example.com', $data['user_email']);
+        $this->assertSame(1, $data['excess_contribution_support_tickets_count']);
+    }
+
+    public function test_update_status_changes_exceso_contribucion_status(): void
+    {
+        $admin = $this->admin();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/trip-excess-contributions/'.$trip->id.'/status', [
+            'status' => TripExcessContributionStatus::RESUELTO,
+        ])->assertOk();
+
+        $trip->refresh();
+        $this->assertSame(TripExcessContributionStatus::RESUELTO, $trip->exceso_contribucion_status);
     }
 
     public function test_index_supports_pagination_meta(): void
@@ -92,6 +180,7 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
                 'description' => 'Pago $'.(2000 + $index).' por persona',
                 'has_potential_excess_contribution' => true,
                 'description_potential_seat_price_cents' => (2000 + $index) * 100,
+                'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
             ]);
         }
 
