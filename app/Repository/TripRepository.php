@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Http;
 use STS\Helpers\OngoingTripHelper;
+use STS\Helpers\TripDescriptionContributionHelper;
 use STS\Helpers\TripPriceHelper;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
@@ -172,6 +173,8 @@ class TripRepository
 
         $this->generateTripFriendVisibility($trip);
 
+        $this->syncPotentialExcessContributionFlag($trip);
+
         // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay
         // for this trip (origin and destination in paid cities),
         // if so, mark trip as awaiting_payment, create payment_id and return it to the frontend so it can redirect
@@ -288,8 +291,16 @@ class TripRepository
                 }
             }
 
+            $this->syncPotentialExcessContributionFlag($trip);
+
             return $trip;
         });
+    }
+
+    private function syncPotentialExcessContributionFlag(Trip $trip): void
+    {
+        TripDescriptionContributionHelper::syncPotentialExcessContributionAttributes($trip);
+        $trip->save();
     }
 
     public function generateTripPath($trip)

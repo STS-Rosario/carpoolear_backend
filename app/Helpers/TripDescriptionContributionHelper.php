@@ -2,6 +2,8 @@
 
 namespace STS\Helpers;
 
+use STS\Models\Trip;
+
 class TripDescriptionContributionHelper
 {
     /**
@@ -72,6 +74,17 @@ class TripDescriptionContributionHelper
         int $seatPriceCents
     ): bool {
         return self::potentialExcessContributionCents($description, $seatPriceCents) !== null;
+    }
+
+    public static function syncPotentialExcessContributionAttributes(Trip $trip): void
+    {
+        $potentialSeatPriceCents = self::potentialExcessContributionCents(
+            $trip->description ?? '',
+            (int) $trip->seat_price_cents
+        );
+
+        $trip->has_potential_excess_contribution = $potentialSeatPriceCents !== null;
+        $trip->description_potential_seat_price_cents = $potentialSeatPriceCents;
     }
 
     private static function parseNumericAmountToCents(
