@@ -160,6 +160,37 @@ class MessageRepositoryTest extends TestCase
         $this->assertSame($unread->id, $rows->first()->id);
     }
 
+    public function test_count_conversations_with_unread_messages_returns_zero_when_no_unread_messages(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => false]);
+
+        $this->assertSame(0, $this->repo()->countConversationsWithUnreadMessages($reader));
+    }
+
+    public function test_count_conversations_with_unread_messages_counts_distinct_conversations(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv1 = Conversation::factory()->create();
+        $conv2 = Conversation::factory()->create();
+        $reader->conversations()->attach($conv1->id, ['read' => true]);
+        $reader->conversations()->attach($conv2->id, ['read' => true]);
+
+        $m1 = $this->makeMessage($conv1, $sender);
+        $m2 = $this->makeMessage($conv1, $sender);
+        $m3 = $this->makeMessage($conv2, $sender);
+        $m1->users()->attach($reader->id, ['read' => false]);
+        $m2->users()->attach($reader->id, ['read' => false]);
+        $m3->users()->attach($reader->id, ['read' => false]);
+
+        $this->assertSame(2, $this->repo()->countConversationsWithUnreadMessages($reader));
+    }
+
     public function test_get_unread_messages_returns_empty_when_no_unread_for_user(): void
     {
         // Mutation intent: preserve whereHas users read=false (~37–42).
