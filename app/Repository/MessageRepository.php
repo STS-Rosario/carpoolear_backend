@@ -36,18 +36,16 @@ class MessageRepository
 
     public function getUnreadMessages(Conversation $conversation, User $user)
     {
-        return $conversation->messages()->whereHas('users', function ($q) use ($user) {
-            $q->where('user_id', $user->id)
-                ->where('read', false);
-        })->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
+        return $conversation->messages()
+            ->whereHas('users', $this->unreadForUserConstraint($user))
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->get();
     }
 
     public function countConversationsWithUnreadMessages(User $user): int
     {
-        return (int) Message::query()
-            ->whereHas('users', fn ($q) => $q
-                ->where('user_id', $user->id)
-                ->where('read', false))
+        return (int) $this->queryUnreadMessagesForUser($user)
             ->distinct()
             ->count('conversation_id');
     }
@@ -64,10 +62,7 @@ class MessageRepository
 
     public function getMessagesUnread(User $user, $timestamp)
     {
-        $msgs = Message::whereHas('users', function ($q) use ($user) {
-            $q->where('user_id', $user->id)
-                ->where('read', false);
-        });
+        $msgs = $this->queryUnreadMessagesForUser($user);
 
         if ($timestamp) {
             $msgs->where('created_at', '>', $timestamp);
@@ -81,11 +76,7 @@ class MessageRepository
     public function markMessages(User $user, $conversation_id)
     {
         $msgs = Message::where('conversation_id', $conversation_id)
-            ->whereHas('users',
-                function ($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                        ->where('read', false);
-                })
+            ->whereHas('users', $this->unreadForUserConstraint($user))
             ->pluck('id');
         DB::table('user_message_read')
             ->whereIn('message_id', $msgs)
@@ -94,5 +85,18 @@ class MessageRepository
                 'read' => true,
                 'updated_at' => Carbon::Now(),
             ]);
+    }
+
+    private function queryUnreadMessagesForUser(User $user)
+    {
+        return Message::query()->whereHas('users', $this->unreadForUserConstraint($user));
+    }
+
+    private function unreadForUserConstraint(User $user): \Closure
+    {
+        return function ($q) use ($user) {
+            $q->where('user_id', $user->id)
+                ->where('read', false);
+        };
     }
 }
