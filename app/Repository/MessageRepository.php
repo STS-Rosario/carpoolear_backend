@@ -42,6 +42,16 @@ class MessageRepository
         })->orderBy('created_at', 'desc')->orderBy('id', 'desc')->get();
     }
 
+    public function countConversationsWithUnreadMessages(User $user): int
+    {
+        return (int) Message::query()
+            ->whereHas('users', fn ($q) => $q
+                ->where('user_id', $user->id)
+                ->where('read', false))
+            ->distinct()
+            ->count('conversation_id');
+    }
+
     public function changeMessageReadState(Message $message, User $user, $read_state)
     {
         $message->users()->updateExistingPivot($user->id, ['read' => $read_state]);
