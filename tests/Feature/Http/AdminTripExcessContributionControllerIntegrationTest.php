@@ -35,6 +35,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'to_town' => 'Rosario',
             'seat_price_cents' => 1500000,
             'description' => 'La contribución es de $24000 por persona',
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
         ]);
 
         Trip::factory()->create([
@@ -88,6 +90,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
                 'user_id' => $driver->id,
                 'seat_price_cents' => 100000,
                 'description' => 'Pago $'.(2000 + $index).' por persona',
+                'has_potential_excess_contribution' => true,
+                'description_potential_seat_price_cents' => (2000 + $index) * 100,
             ]);
         }
 

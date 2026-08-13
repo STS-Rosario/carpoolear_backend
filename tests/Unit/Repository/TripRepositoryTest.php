@@ -4429,4 +4429,58 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($all->contains($allowsSmoking->id));
         $this->assertTrue($all->contains($allowsKids->id));
     }
+
+    public function test_create_sets_potential_excess_contribution_flag_from_description(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $user = User::factory()->create();
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'La contribución es de $24000 por persona',
+            'mail_send' => false,
+            'seat_price_cents' => 1500000,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 9001, 'ciudad' => 'Origen']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertTrue($trip->has_potential_excess_contribution);
+        $this->assertSame(2400000, (int) $trip->description_potential_seat_price_cents);
+    }
+
+    public function test_update_recomputes_potential_excess_contribution_flag(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'La contribución es de $24000 por persona',
+            'has_potential_excess_contribution' => false,
+            'description_potential_seat_price_cents' => null,
+        ]);
+
+        $updated = $this->repo()->update($trip, [
+            'description' => 'Contribución $15000',
+            'seat_price_cents' => 1500000,
+        ]);
+
+        $updated->refresh();
+        $this->assertFalse($updated->has_potential_excess_contribution);
+        $this->assertNull($updated->description_potential_seat_price_cents);
+    }
 }
