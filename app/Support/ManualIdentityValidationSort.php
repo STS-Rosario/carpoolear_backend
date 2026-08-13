@@ -4,6 +4,7 @@ namespace STS\Support;
 
 use Illuminate\Database\Eloquent\Builder;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\SupportTicket;
 
 class ManualIdentityValidationSort
 {
@@ -16,6 +17,7 @@ class ManualIdentityValidationSort
         'waiting_time',
         'paid',
         'review_status',
+        'open_account_verification_tickets_count',
     ];
 
     public static function resolveSort(?string $sort): ?string
@@ -98,18 +100,87 @@ class ManualIdentityValidationSort
                 break;
             case 'review_status':
                 $query->orderByRaw(
-                    "CASE
-                        WHEN {$table}.paid = 0 THEN 0
-                        WHEN {$table}.review_status IS NULL OR {$table}.review_status = '' THEN 1
-                        WHEN {$table}.review_status IN ('approved', 'approve') THEN 2
-                        WHEN {$table}.review_status IN ('rejected', 'reject') THEN 3
-                        ELSE 1
-                    END {$direction}"
+                    self::reviewStatusOrderExpression($table, $direction)
                 );
+                break;
+            case 'open_account_verification_tickets_count':
+                self::joinOpenAccountVerificationTicketCounts($query);
+                $query
+                    ->orderByRaw(
+                        'COALESCE(open_account_verification_tickets_count, 0) '.$direction
+                    )
+                    ->orderByRaw(
+                        self::workflowStateOrderExpression($table, $direction)
+                    );
                 break;
         }
 
         return $query->orderBy("{$table}.id", 'asc');
+    }
+
+    private static function reviewStatusOrderExpression(string $table, string $direction): string
+    {
+        return "CASE
+            WHEN {$table}.paid = 0 THEN 0
+            WHEN {$table}.review_status IS NULL OR {$table}.review_status = '' THEN 1
+            WHEN {$table}.review_status IN ('approved', 'approve') THEN 2
+            WHEN {$table}.review_status IN ('rejected', 'reject') THEN 3
+            ELSE 1
+        END {$direction}";
+    }
+
+    private static function workflowStateOrderExpression(string $table, string $direction): string
+    {
+        return "CASE
+            WHEN {$table}.paid = 0 THEN 0
+            WHEN {$table}.submitted_at IS NULL THEN 1
+            WHEN {$table}.review_status IN ('approved', 'approve') THEN 3
+            WHEN {$table}.review_status IN ('rejected', 'reject') THEN 4
+            ELSE 2
+        END {$direction}";
+    }
+
+    /**
+     * @param  Builder<ManualIdentityValidation>  $query
+     */
+    private static function joinOpenAccountVerificationTicketCounts(Builder $query): void
+    {
+        if (self::queryHasOpenAccountVerificationTicketCountsJoin($query)) {
+            return;
+        }
+
+        $subquery = SupportTicket::query()
+            ->selectRaw('user_id, COUNT(*) as open_account_verification_tickets_count')
+            ->where('type', 'account_verification')
+            ->open()
+            ->createdByAdmin()
+            ->groupBy('user_id');
+
+        $query
+            ->leftJoinSub($subquery, 'open_account_verification_tickets', function ($join) {
+                $join->on(
+                    'open_account_verification_tickets.user_id',
+                    '=',
+                    'manual_identity_validations.user_id'
+                );
+            })
+            ->select('manual_identity_validations.*');
+    }
+
+    /**
+     * @param  Builder<ManualIdentityValidation>  $query
+     */
+    private static function queryHasOpenAccountVerificationTicketCountsJoin(Builder $query): bool
+    {
+        $joins = $query->getQuery()->joins ?? [];
+
+        foreach ($joins as $join) {
+            if ($join->table === 'open_account_verification_tickets') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

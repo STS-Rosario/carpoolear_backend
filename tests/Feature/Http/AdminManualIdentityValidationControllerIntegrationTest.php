@@ -183,6 +183,122 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertContains($approvedUser->id, $resolvedIds);
     }
 
+    public function test_index_sorts_by_open_account_verification_tickets_count_desc(): void
+    {
+        $admin = $this->admin();
+        $userNone = User::factory()->create(['name' => 'No Tickets']);
+        $userOne = User::factory()->create(['name' => 'One Ticket']);
+        $userTwo = User::factory()->create(['name' => 'Two Tickets']);
+
+        $rowNone = ManualIdentityValidation::create([
+            'user_id' => $userNone->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $rowOne = ManualIdentityValidation::create([
+            'user_id' => $userOne->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $rowTwo = ManualIdentityValidation::create([
+            'user_id' => $userTwo->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        SupportTicket::create([
+            'user_id' => $userOne->id,
+            'type' => 'account_verification',
+            'subject' => 'One open ticket',
+            'status' => 'Open',
+            'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicket::create([
+            'user_id' => $userTwo->id,
+            'type' => 'account_verification',
+            'subject' => 'Two open tickets A',
+            'status' => 'Open',
+            'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+        SupportTicket::create([
+            'user_id' => $userTwo->id,
+            'type' => 'account_verification',
+            'subject' => 'Two open tickets B',
+            'status' => 'Esperando respuesta',
+            'priority' => 'high',
+            'created_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect(
+            $this->getJson(
+                'api/admin/manual-identity-validations?sort=open_account_verification_tickets_count&direction=desc&show_resolved=1'
+            )->assertOk()->json('data')
+        )->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertSame([$rowTwo->id, $rowOne->id, $rowNone->id], array_slice($ids, 0, 3));
+    }
+
+    public function test_index_sorts_by_open_account_verification_tickets_count_then_workflow_state(): void
+    {
+        $admin = $this->admin();
+        $unpaidUser = User::factory()->create(['name' => 'Unpaid']);
+        $awaitingPhotosUser = User::factory()->create(['name' => 'Awaiting Photos']);
+        $pendingReviewUser = User::factory()->create(['name' => 'Pending Review']);
+
+        $unpaidRow = ManualIdentityValidation::create([
+            'user_id' => $unpaidUser->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $awaitingPhotosRow = ManualIdentityValidation::create([
+            'user_id' => $awaitingPhotosUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => null,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS,
+        ]);
+        $pendingReviewRow = ManualIdentityValidation::create([
+            'user_id' => $pendingReviewUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        foreach ([$unpaidUser, $awaitingPhotosUser, $pendingReviewUser] as $user) {
+            SupportTicket::create([
+                'user_id' => $user->id,
+                'type' => 'account_verification',
+                'subject' => 'Shared ticket count',
+                'status' => 'Open',
+                'priority' => 'high',
+                'created_by' => $admin->id,
+            ]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect(
+            $this->getJson(
+                'api/admin/manual-identity-validations?sort=open_account_verification_tickets_count&direction=asc&show_resolved=1'
+            )->assertOk()->json('data')
+        )->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertSame(
+            [$unpaidRow->id, $awaitingPhotosRow->id, $pendingReviewRow->id],
+            array_slice($ids, 0, 3)
+        );
+    }
+
     public function test_index_sorts_by_id_across_pages_not_only_within_page(): void
     {
         $admin = $this->admin();
