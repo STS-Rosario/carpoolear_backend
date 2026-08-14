@@ -2,6 +2,7 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use App\Helpers\DocumentIdHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -216,7 +217,7 @@ class UserController extends Controller
         $nroDoc = $user->nro_doc;
 
         if (! empty($nroDoc)) {
-            $nroDoc = preg_replace('/\D/', '', (string) $nroDoc);
+            $nroDoc = DocumentIdHelper::normalizeForBanCheck((string) $nroDoc);
         }
         if (empty($nroDoc)) {
             $nroDoc = null;

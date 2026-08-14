@@ -2,6 +2,7 @@
 
 namespace STS\Services\Logic;
 
+use App\Helpers\DocumentIdHelper;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -313,9 +314,14 @@ class UsersManager extends BaseManager
             return;
         }
 
+        $data = $this->prepareDocumentNumber($data);
+        if ($data === null) {
+            return;
+        }
+
         // Check if nro_doc is banned (only on user update, not registration)
         if (! $is_admin && isset($data['nro_doc']) && ! empty(trim((string) $data['nro_doc']))) {
-            $nroDoc = preg_replace('/\D/', '', (string) $data['nro_doc']);
+            $nroDoc = DocumentIdHelper::normalizeForBanCheck((string) $data['nro_doc']);
             if (! empty($nroDoc) && BannedUser::where('nro_doc', $nroDoc)->exists()) {
                 \Log::warning('Intento de usar DNI banneado', [
                     'user_id' => $user->id,
@@ -402,6 +408,29 @@ class UsersManager extends BaseManager
         event(new UpdateEvent($user->id));
 
         return $user;
+    }
+
+    protected function prepareDocumentNumber(array $data): ?array
+    {
+        if (! array_key_exists('nro_doc', $data)) {
+            return $data;
+        }
+
+        $trimmed = trim((string) $data['nro_doc']);
+        if ($trimmed === '') {
+            return $data;
+        }
+
+        $normalized = DocumentIdHelper::normalizeForStorage($data['nro_doc']);
+        if ($normalized === null) {
+            $this->setErrors(['nro_doc' => ['El número de documento no es válido.']]);
+
+            return null;
+        }
+
+        $data['nro_doc'] = $normalized;
+
+        return $data;
     }
 
     public function mailUnsuscribe($email)

@@ -778,9 +778,13 @@ class UsersManagerTest extends TestCase
         ]);
 
         $userRepo = Mockery::mock(UserRepository::class);
+        $normalizedRequestData = [
+            'nro_doc' => '30123456',
+            'description' => 'admin updated',
+        ];
         $userRepo->shouldReceive('update')
             ->once()
-            ->with($user, $requestData, true)
+            ->with($user, $normalizedRequestData, true)
             ->andReturnUsing(function ($targetUser, $data) {
                 $targetUser->nro_doc = $data['nro_doc'];
                 $targetUser->description = $data['description'];
@@ -807,9 +811,49 @@ class UsersManagerTest extends TestCase
         $result = $manager->update($user, $requestData, false, true);
 
         $this->assertInstanceOf(User::class, $result);
-        $this->assertSame('30.123.456', $result->nro_doc);
+        $this->assertSame('30123456', $result->nro_doc);
         $this->assertSame('admin updated', $result->description);
         Event::assertDispatched(UpdateEvent::class);
+    }
+
+    public function test_update_normalizes_dni_without_separators_for_storage(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->create(['nro_doc' => '12345678']);
+
+        $manager = $this->manager();
+        $result = $manager->update($user, ['nro_doc' => '30.123.456']);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame('30123456', $user->fresh()->nro_doc);
+    }
+
+    public function test_update_rejects_invalid_document_number(): void
+    {
+        $user = User::factory()->create(['nro_doc' => '12345678']);
+
+        $manager = $this->manager();
+        $result = $manager->update($user, ['nro_doc' => 'ABC123']);
+
+        $this->assertNull($result);
+        $this->assertArrayHasKey('nro_doc', $manager->getErrors());
+    }
+
+    public function test_update_rejects_banned_passport_document_number(): void
+    {
+        config(['carpoolear.profile_id_format' => '##.###.###,A########']);
+
+        $moderator = User::factory()->create();
+        BannedUser::query()->create([
+            'user_id' => $moderator->id,
+            'nro_doc' => 'A33070219',
+            'banned_at' => now(),
+        ]);
+        $user = User::factory()->create();
+
+        $manager = $this->manager();
+        $this->assertNull($manager->update($user, ['nro_doc' => 'A33070219']));
+        $this->assertSame('banned_dni', $manager->getErrors()['error']);
     }
 
     public function test_update_rejects_banned_document_number(): void
