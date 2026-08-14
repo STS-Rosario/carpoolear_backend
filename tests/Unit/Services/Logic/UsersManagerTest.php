@@ -841,6 +841,8 @@ class UsersManagerTest extends TestCase
 
     public function test_update_rejects_banned_passport_document_number(): void
     {
+        config(['carpoolear.profile_id_format' => '##.###.###,A########']);
+
         $moderator = User::factory()->create();
         BannedUser::query()->create([
             'user_id' => $moderator->id,
