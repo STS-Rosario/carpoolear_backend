@@ -198,9 +198,5 @@ return [
     'argautos_api_key' => env('ARGAUTOS_API_KEY'),
     'argautos_request_delay_ms' => (int) env('ARGAUTOS_REQUEST_DELAY_MS', 21000),
 
-    'profile_id_format' => '##.###.###',
-    'profile_id_formats' => [
-        ['type' => 'dni', 'pattern' => '##.###.###'],
-        ['type' => 'passport', 'pattern' => 'A########'],
-    ],
+    'profile_id_format' => env('PROFILE_ID_FORMAT', '##.###.###'),
 ];

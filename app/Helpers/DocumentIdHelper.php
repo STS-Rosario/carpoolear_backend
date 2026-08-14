@@ -6,18 +6,12 @@ class DocumentIdHelper
 {
     public static function patterns(): array
     {
-        $formats = config('carpoolear.profile_id_formats');
-        if (is_array($formats) && count($formats) > 0) {
-            return array_values(array_filter(array_map(function ($entry) {
-                if (is_array($entry)) {
-                    return (string) ($entry['pattern'] ?? '');
-                }
+        $raw = (string) config('carpoolear.profile_id_format', '##.###.###');
 
-                return (string) $entry;
-            }, $formats)));
-        }
-
-        return [(string) config('carpoolear.profile_id_format', '##.###.###')];
+        return array_values(array_filter(array_map(
+            static fn (string $pattern): string => trim($pattern),
+            explode(',', $raw)
+        )));
     }
 
     public static function cleanValue(?string $value): string
