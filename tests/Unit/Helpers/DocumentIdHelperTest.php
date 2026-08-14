@@ -12,12 +12,16 @@ class DocumentIdHelperTest extends TestCase
         parent::setUp();
 
         config([
-            'carpoolear.profile_id_format' => '##.###.###',
-            'carpoolear.profile_id_formats' => [
-                ['type' => 'dni', 'pattern' => '##.###.###'],
-                ['type' => 'passport', 'pattern' => 'A########'],
-            ],
+            'carpoolear.profile_id_format' => '##.###.###,A########',
         ]);
+    }
+
+    public function test_patterns_reads_comma_separated_profile_id_format(): void
+    {
+        $this->assertSame(
+            ['##.###.###', 'A########'],
+            DocumentIdHelper::patterns()
+        );
     }
 
     public function test_normalize_for_storage_strips_dni_separators(): void
