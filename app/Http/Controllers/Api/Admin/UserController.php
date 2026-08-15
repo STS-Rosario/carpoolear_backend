@@ -2,10 +2,10 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
-use App\Helpers\DocumentIdHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use STS\Helpers\DocumentIdHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Models\AdminActionLog;

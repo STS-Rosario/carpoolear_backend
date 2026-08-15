@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Helpers;
 
-use App\Helpers\DocumentIdHelper;
+use STS\Helpers\DocumentIdHelper;
 use Tests\TestCase;
 
 class DocumentIdHelperTest extends TestCase
