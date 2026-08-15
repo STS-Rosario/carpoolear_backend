@@ -2,13 +2,13 @@
 
 namespace STS\Services\Logic;
 
-use App\Helpers\DocumentIdHelper;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use STS\Events\User\Create as CreateEvent;
 use STS\Events\User\Update as UpdateEvent;
+use STS\Helpers\DocumentIdHelper;
 use STS\Models\BannedUser;
 use STS\Models\Car;
 use STS\Models\Passenger;
