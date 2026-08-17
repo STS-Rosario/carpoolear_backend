@@ -22,7 +22,7 @@ class ClientLogApiTest extends TestCase
 
         Log::shouldHaveReceived('info')
             ->withArgs(function (string $message, array $context = []) {
-                return str_contains($message, 'ERROR IN APP [trip_create]: alert(1)trip failed')
+                return str_contains($message, 'ERROR IN APP [trip_create]: trip failed')
                     && ($context['context']['status'] ?? null) === 422;
             })
             ->once();

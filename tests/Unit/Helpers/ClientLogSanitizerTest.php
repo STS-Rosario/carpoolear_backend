@@ -10,8 +10,8 @@ class ClientLogSanitizerTest extends TestCase
     public function test_sanitize_string_strips_html_tags(): void
     {
         $this->assertSame(
-            'alert(1)',
-            ClientLogSanitizer::sanitizeString('<script>alert(1)</script>')
+            'oops',
+            ClientLogSanitizer::sanitizeString('<script>alert(1)</script>oops')
         );
     }
 

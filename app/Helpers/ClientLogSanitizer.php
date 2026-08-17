@@ -10,7 +10,9 @@ class ClientLogSanitizer
             return null;
         }
 
+        $value = self::removeScriptAndStyleBlocks($value);
         $value = strip_tags($value);
+        $value = preg_replace('/[\r\n]+/', ' ', $value) ?? '';
         $value = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $value) ?? '';
         $value = trim($value);
 
@@ -82,5 +84,13 @@ class ClientLogSanitizer
         }
 
         return $sanitized;
+    }
+
+    private static function removeScriptAndStyleBlocks(string $value): string
+    {
+        $value = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $value) ?? '';
+        $value = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $value) ?? '';
+
+        return $value;
     }
 }
