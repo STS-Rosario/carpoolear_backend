@@ -31,6 +31,7 @@ use STS\Http\Controllers\Api\v1\CarController;
 use STS\Http\Controllers\Api\v1\ChangelogController;
 use STS\Http\Controllers\Api\v1\ConversationController;
 use STS\Http\Controllers\Api\v1\DataController;
+use STS\Http\Controllers\Api\v1\DebugController;
 use STS\Http\Controllers\Api\v1\DeviceController;
 use STS\Http\Controllers\Api\v1\FriendsController;
 use STS\Http\Controllers\Api\v1\ImpersonationConsumeController;
@@ -72,7 +73,7 @@ Route::middleware(['api'])->group(function () {
     Route::post('activate/{activation_token?}', [AuthController::class, 'active']);
     Route::post('reset-password', [AuthController::class, 'reset'])->middleware('throttle:password-reset');
     Route::post('change-password/{token?}', [AuthController::class, 'changePasswod']);
-    Route::post('log', [AuthController::class, 'log']);
+    Route::post('log', [DebugController::class, 'log']);
 
     // Leaflet Routing Machine: same URL shape as OSRM /route/v1/driving/{coords}?...
     Route::get('osrm/route/v1/{path}', [OsrmProxyController::class, 'route'])
