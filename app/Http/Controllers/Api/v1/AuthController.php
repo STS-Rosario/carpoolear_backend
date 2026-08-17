@@ -319,9 +319,4 @@ class AuthController extends Controller
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
     }
-
-    public function log()
-    {
-        return true;
-    }
 }
