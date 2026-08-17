@@ -31,6 +31,22 @@ class DebugControllerTest extends TestCase
 
         (new DebugController)->log(Request::create('/', 'POST', ['log' => 'db connection failed']));
 
-        Log::shouldHaveReceived('info')->with('ERROR IN APP: db connection failed')->once();
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn (string $message) => str_contains($message, 'ERROR IN APP: db connection failed'))
+            ->once();
+    }
+
+    public function test_log_sanitizes_html_from_message(): void
+    {
+        Log::spy();
+
+        (new DebugController)->log(Request::create('/', 'POST', [
+            'log' => '<img src=x onerror=alert(1)>oops',
+            'source' => 'trip_create',
+        ]));
+
+        Log::shouldHaveReceived('info')
+            ->withArgs(fn (string $message) => str_contains($message, 'ERROR IN APP [trip_create]: oops'))
+            ->once();
     }
 }
