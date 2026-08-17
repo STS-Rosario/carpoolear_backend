@@ -18,7 +18,7 @@ class ClientLogSanitizerTest extends TestCase
     public function test_sanitize_string_removes_control_characters(): void
     {
         $this->assertSame(
-            'hello world',
+            'helloworld',
             ClientLogSanitizer::sanitizeString("hello\x00world\x1F")
         );
     }
