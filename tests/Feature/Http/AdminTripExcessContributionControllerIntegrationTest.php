@@ -37,8 +37,12 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'to_town' => 'Rosario',
             'seat_price_cents' => 1500000,
             'description' => 'La contribución es de $24000 por persona',
+            'recommended_trip_price_cents' => 5000000,
+            'rear_max_two_passengers' => false,
             'has_potential_excess_contribution' => true,
             'description_potential_seat_price_cents' => 2400000,
+            'average_contribution_cents' => 1000000,
+            'excess_contribution_percentage' => 140,
             'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
         ]);
 
@@ -80,6 +84,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'to_town',
             'seat_price_cents',
             'potential_seat_price_cents',
+            'average_contribution_cents',
+            'excess_contribution_percentage',
             'has_private_note',
             'user_id',
             'user_name',
@@ -93,6 +99,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->assertSame('Rosario', $row['to_town']);
         $this->assertSame(1500000, $row['seat_price_cents']);
         $this->assertSame(2400000, $row['potential_seat_price_cents']);
+        $this->assertSame(1000000, $row['average_contribution_cents']);
+        $this->assertSame(140, $row['excess_contribution_percentage']);
         $this->assertTrue($row['has_private_note']);
         $this->assertSame($driverWithNote->id, $row['user_id']);
         $this->assertSame('Driver With Note', $row['user_name']);
@@ -114,8 +122,12 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'to_town' => 'Mendoza',
             'seat_price_cents' => 1500000,
             'description' => 'Pago $24000',
+            'recommended_trip_price_cents' => 5000000,
+            'rear_max_two_passengers' => false,
             'has_potential_excess_contribution' => true,
             'description_potential_seat_price_cents' => 2400000,
+            'average_contribution_cents' => 1000000,
+            'excess_contribution_percentage' => 140,
             'exceso_contribucion_status' => TripExcessContributionStatus::EN_PROCESO,
         ]);
 
@@ -139,6 +151,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->assertSame('Córdoba', $data['from_town']);
         $this->assertSame('Mendoza', $data['to_town']);
         $this->assertSame('Pago $24000', $data['description']);
+        $this->assertSame(1000000, $data['average_contribution_cents']);
+        $this->assertSame(140, $data['excess_contribution_percentage']);
         $this->assertSame(TripExcessContributionStatus::EN_PROCESO, $data['exceso_contribucion_status']);
         $this->assertSame($driver->id, $data['user_id']);
         $this->assertSame('Creator Name', $data['user_name']);
