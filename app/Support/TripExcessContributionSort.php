@@ -16,6 +16,8 @@ class TripExcessContributionSort
         'to_town',
         'seat_price_cents',
         'potential_seat_price_cents',
+        'average_contribution_cents',
+        'excess_contribution_percentage',
         'has_private_note',
         'excess_contribution_support_tickets_count',
         'exceso_contribucion_status',
@@ -107,6 +109,16 @@ class TripExcessContributionSort
                 $query
                     ->orderByRaw("{$table}.description_potential_seat_price_cents IS NULL")
                     ->orderBy("{$table}.description_potential_seat_price_cents", $direction);
+                break;
+            case 'average_contribution_cents':
+                $query
+                    ->orderByRaw("{$table}.average_contribution_cents IS NULL")
+                    ->orderBy("{$table}.average_contribution_cents", $direction);
+                break;
+            case 'excess_contribution_percentage':
+                $query
+                    ->orderByRaw("{$table}.excess_contribution_percentage IS NULL")
+                    ->orderBy("{$table}.excess_contribution_percentage", $direction);
                 break;
             case 'has_private_note':
                 self::joinUsers($query);
