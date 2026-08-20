@@ -95,4 +95,62 @@ class TripDescriptionContributionHelperTest extends TestCase
             )
         );
     }
+
+    public function test_average_contribution_cents_uses_recommended_trip_price_per_seat(): void
+    {
+        $trip = new \STS\Models\Trip([
+            'recommended_trip_price_cents' => 5000000,
+            'rear_max_two_passengers' => false,
+        ]);
+
+        $this->assertSame(
+            1000000,
+            TripDescriptionContributionHelper::averageContributionCents($trip)
+        );
+    }
+
+    public function test_average_contribution_cents_returns_null_without_recommended_price(): void
+    {
+        $trip = new \STS\Models\Trip([
+            'recommended_trip_price_cents' => null,
+        ]);
+
+        $this->assertNull(
+            TripDescriptionContributionHelper::averageContributionCents($trip)
+        );
+    }
+
+    public function test_excess_contribution_percentage_measures_asked_amount_over_average(): void
+    {
+        $this->assertSame(
+            100,
+            TripDescriptionContributionHelper::excessContributionPercentage(
+                2000000,
+                1000000
+            )
+        );
+        $this->assertSame(
+            140,
+            TripDescriptionContributionHelper::excessContributionPercentage(
+                2400000,
+                1000000
+            )
+        );
+    }
+
+    public function test_excess_contribution_percentage_returns_null_without_valid_average(): void
+    {
+        $this->assertNull(
+            TripDescriptionContributionHelper::excessContributionPercentage(
+                2000000,
+                null
+            )
+        );
+        $this->assertNull(
+            TripDescriptionContributionHelper::excessContributionPercentage(
+                2000000,
+                0
+            )
+        );
+    }
 }

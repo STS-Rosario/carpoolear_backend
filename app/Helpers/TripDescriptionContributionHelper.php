@@ -77,6 +77,35 @@ class TripDescriptionContributionHelper
         return self::potentialExcessContributionCents($description, $seatPriceCents) !== null;
     }
 
+    public static function averageContributionCents(Trip $trip): ?int
+    {
+        if (! $trip->recommended_trip_price_cents) {
+            return null;
+        }
+
+        return TripPriceHelper::seatPriceCentsFromTripPriceCents(
+            (int) $trip->recommended_trip_price_cents,
+            $trip->rear_max_two_passengers
+        );
+    }
+
+    public static function excessContributionPercentage(
+        ?int $askedSeatPriceCents,
+        ?int $averageContributionCents
+    ): ?int {
+        if (
+            $askedSeatPriceCents === null
+            || $averageContributionCents === null
+            || $averageContributionCents <= 0
+        ) {
+            return null;
+        }
+
+        return (int) round(
+            ($askedSeatPriceCents - $averageContributionCents) / $averageContributionCents * 100
+        );
+    }
+
     public static function syncPotentialExcessContributionAttributes(Trip $trip): void
     {
         $potentialSeatPriceCents = self::potentialExcessContributionCents(
@@ -86,6 +115,11 @@ class TripDescriptionContributionHelper
 
         $trip->has_potential_excess_contribution = $potentialSeatPriceCents !== null;
         $trip->description_potential_seat_price_cents = $potentialSeatPriceCents;
+        $trip->average_contribution_cents = self::averageContributionCents($trip);
+        $trip->excess_contribution_percentage = self::excessContributionPercentage(
+            $potentialSeatPriceCents,
+            $trip->average_contribution_cents
+        );
 
         if ($potentialSeatPriceCents !== null) {
             if ($trip->exceso_contribucion_status === null) {
@@ -93,6 +127,8 @@ class TripDescriptionContributionHelper
             }
         } else {
             $trip->exceso_contribucion_status = null;
+            $trip->average_contribution_cents = null;
+            $trip->excess_contribution_percentage = null;
         }
     }
 
