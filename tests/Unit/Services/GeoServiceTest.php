@@ -170,7 +170,7 @@ class GeoServiceTest extends TestCase
         }
     }
 
-    public function test_has_stop_in_costa_atlantica_zone_true_when_any_stop_is_on_the_coast(): void
+    public function test_has_exactly_one_stop_in_costa_atlantica_zone_for_coastal_toll_rate(): void
     {
         $sanClementeDelTuyu = [-36.356, -56.723];
         $marDelPlata = [-38.005, -57.542];
@@ -178,12 +178,13 @@ class GeoServiceTest extends TestCase
         $inRosario = [-32.95, -60.68];
         $outside = [0.0, 0.0];
 
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$sanClementeDelTuyu]));
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$marDelPlata]));
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$necochea]));
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$inRosario, $necochea]));
-        $this->assertFalse($this->geo->hasStopInCostaAtlanticaZone([]));
-        $this->assertFalse($this->geo->hasStopInCostaAtlanticaZone([$outside]));
-        $this->assertFalse($this->geo->hasStopInCostaAtlanticaZone([$inRosario, $outside]));
+        $this->assertTrue($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$inRosario, $necochea]));
+        $this->assertTrue($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$marDelPlata, $inRosario]));
+        $this->assertFalse($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$marDelPlata, $necochea]));
+        $this->assertFalse($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$sanClementeDelTuyu, $marDelPlata]));
+        $this->assertTrue($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$necochea, $inRosario]));
+        $this->assertFalse($this->geo->hasExactlyOneStopInCostaAtlanticaZone([]));
+        $this->assertFalse($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$outside]));
+        $this->assertFalse($this->geo->hasExactlyOneStopInCostaAtlanticaZone([$inRosario, $outside]));
     }
 }
