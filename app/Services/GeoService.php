@@ -98,19 +98,21 @@ class GeoService
     }
 
     /**
-     * Returns true when at least one stop is inside the Costa Atlántica toll polygon.
+     * Returns true when exactly one stop is inside the Costa Atlántica toll polygon.
      *
      * @param  array  $points  Array of points, each [lat, lng]
      */
-    public function hasStopInCostaAtlanticaZone(array $points): bool
+    public function hasExactlyOneStopInCostaAtlanticaZone(array $points): bool
     {
+        $stopsInCostaAtlantica = 0;
+
         foreach ($points as $point) {
             if ($this->isPointInPolygon($this->costaAtlanticaRegion, $point)) {
-                return true;
+                $stopsInCostaAtlantica++;
             }
         }
 
-        return false;
+        return $stopsInCostaAtlantica === 1;
     }
 
     public function getPaidRegions(): array

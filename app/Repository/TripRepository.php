@@ -969,7 +969,7 @@ class TripRepository
      */
     private function resolveTollsVariancePercent(array $allPointsToCheck): float
     {
-        if ($this->geoService->hasStopInCostaAtlanticaZone($allPointsToCheck)) {
+        if ($this->geoService->hasExactlyOneStopInCostaAtlanticaZone($allPointsToCheck)) {
             return (float) config('carpoolear.module_max_price_price_variance_tolls_costa_atlantica', 25);
         }
 
