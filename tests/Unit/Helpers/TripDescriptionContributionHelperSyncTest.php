@@ -13,6 +13,8 @@ class TripDescriptionContributionHelperSyncTest extends TestCase
         $trip = new Trip([
             'seat_price_cents' => 1500000,
             'description' => 'La contribución es de $24000 por persona',
+            'recommended_trip_price_cents' => 5000000,
+            'rear_max_two_passengers' => false,
         ]);
 
         TripDescriptionContributionHelper::syncPotentialExcessContributionAttributes($trip);
@@ -20,6 +22,8 @@ class TripDescriptionContributionHelperSyncTest extends TestCase
         $this->assertTrue($trip->has_potential_excess_contribution);
         $this->assertSame(2400000, $trip->description_potential_seat_price_cents);
         $this->assertSame('pendiente', $trip->exceso_contribucion_status);
+        $this->assertSame(1000000, $trip->average_contribution_cents);
+        $this->assertSame(140, $trip->excess_contribution_percentage);
     }
 
     public function test_sync_potential_excess_contribution_attributes_clears_flag_when_not_excess(): void
@@ -36,5 +40,21 @@ class TripDescriptionContributionHelperSyncTest extends TestCase
         $this->assertFalse($trip->has_potential_excess_contribution);
         $this->assertNull($trip->description_potential_seat_price_cents);
         $this->assertNull($trip->exceso_contribucion_status);
+        $this->assertNull($trip->average_contribution_cents);
+        $this->assertNull($trip->excess_contribution_percentage);
+    }
+
+    public function test_sync_potential_excess_contribution_attributes_leaves_percentage_null_without_average(): void
+    {
+        $trip = new Trip([
+            'seat_price_cents' => 1500000,
+            'description' => 'La contribución es de $24000 por persona',
+        ]);
+
+        TripDescriptionContributionHelper::syncPotentialExcessContributionAttributes($trip);
+
+        $this->assertTrue($trip->has_potential_excess_contribution);
+        $this->assertNull($trip->average_contribution_cents);
+        $this->assertNull($trip->excess_contribution_percentage);
     }
 }
