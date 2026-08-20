@@ -925,7 +925,9 @@ class TripRepository
         $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
         $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
 
-        $tollsVariancePercent = config('carpoolear.module_max_price_price_variance_tolls', 0);
+        $tollsVariancePercent = $this->geoService->hasStopInCostaAtlanticaZone($allPointsToCheck)
+            ? config('carpoolear.module_max_price_price_variance_tolls_costa_atlantica', 25)
+            : config('carpoolear.module_max_price_price_variance_tolls', 0);
         $maxPriceVariancePercent = config('carpoolear.module_max_price_price_variance_max_extra', 15);
 
         $basePriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100);

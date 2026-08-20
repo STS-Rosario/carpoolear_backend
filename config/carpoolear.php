@@ -42,6 +42,7 @@ return [
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
     'module_max_price_fuel_price' => (float) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
     'module_max_price_price_variance_tolls' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
+    'module_max_price_price_variance_tolls_costa_atlantica' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS_COSTA_ATLANTICA', 25),
     'module_max_price_price_variance_max_extra' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
     'module_max_price_kilometer_by_liter' => (float) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
 

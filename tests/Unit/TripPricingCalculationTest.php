@@ -39,6 +39,7 @@ class TripPricingCalculationTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn($routeNeedsPayment);
+        $geoService->shouldReceive('hasStopInCostaAtlanticaZone')->once()->andReturn(false);
 
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxDirectionsRouteService = Mockery::mock(MapboxDirectionsRouteService::class);
