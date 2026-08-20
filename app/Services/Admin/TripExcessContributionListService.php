@@ -86,6 +86,8 @@ class TripExcessContributionListService
             'to_town' => $trip->to_town,
             'seat_price_cents' => $seatPriceCents,
             'potential_seat_price_cents' => $trip->description_potential_seat_price_cents,
+            'average_contribution_cents' => $trip->average_contribution_cents,
+            'excess_contribution_percentage' => $trip->excess_contribution_percentage,
             'has_private_note' => trim((string) ($trip->user?->private_note ?? '')) !== '',
             'user_id' => $trip->user_id,
             'user_name' => $trip->user?->name,

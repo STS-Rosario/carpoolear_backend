@@ -104,6 +104,8 @@ class Trip extends Model
             'autoaccept_friends_requests',
             'has_potential_excess_contribution',
             'description_potential_seat_price_cents',
+            'average_contribution_cents',
+            'excess_contribution_percentage',
             'exceso_contribucion_status',
         ];
     }
@@ -156,6 +158,8 @@ class Trip extends Model
             'seat_price_cents' => 'integer',
             'recommended_trip_price_cents' => 'integer',
             'description_potential_seat_price_cents' => 'integer',
+            'average_contribution_cents' => 'integer',
+            'excess_contribution_percentage' => 'integer',
             'has_potential_excess_contribution' => 'boolean',
             'exceso_contribucion_status' => 'string',
             'state' => 'string',
