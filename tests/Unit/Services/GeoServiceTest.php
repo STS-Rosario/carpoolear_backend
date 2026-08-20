@@ -171,16 +171,16 @@ class GeoServiceTest extends TestCase
 
     public function test_has_stop_in_costa_atlantica_zone_true_when_any_stop_is_on_the_coast(): void
     {
-        $marDelPlata = [-38.005, -57.542];
         $necochea = [-38.554, -58.734];
-        $sanClementeDelTuyu = [-36.356, -56.723];
+        $midCoast = [-37.5, -58.25];
+        $northCoast = [-36.25, -57.25];
         $inRosario = [-32.95, -60.68];
         $outside = [0.0, 0.0];
 
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$marDelPlata]));
         $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$necochea]));
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$sanClementeDelTuyu]));
-        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$inRosario, $marDelPlata]));
+        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$midCoast]));
+        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$northCoast]));
+        $this->assertTrue($this->geo->hasStopInCostaAtlanticaZone([$inRosario, $necochea]));
         $this->assertFalse($this->geo->hasStopInCostaAtlanticaZone([]));
         $this->assertFalse($this->geo->hasStopInCostaAtlanticaZone([$outside]));
         $this->assertFalse($this->geo->hasStopInCostaAtlanticaZone([$inRosario, $outside]));

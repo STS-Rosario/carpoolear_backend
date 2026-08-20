@@ -6,6 +6,8 @@ class GeoService
 {
     private $paidRegions;
 
+    private array $costaAtlanticaRegion;
+
     public function __construct()
     {
         $buenosAires = [
@@ -79,6 +81,35 @@ class GeoService
             [$rosario, $marDelPlata],
             [$marDelPlata, $rosario],
         ];
+
+        $this->costaAtlanticaRegion = [
+            [-38.774986, -58.837985],
+            [-38.431856, -59.165297],
+            [-36.228709, -57.973536],
+            [-35.828869, -56.357778],
+            [-38.774986, -58.837985],
+        ];
+    }
+
+    public function getCostaAtlanticaRegion(): array
+    {
+        return $this->costaAtlanticaRegion;
+    }
+
+    /**
+     * Returns true when at least one stop is inside the Costa Atlántica toll polygon.
+     *
+     * @param  array  $points  Array of points, each [lat, lng]
+     */
+    public function hasStopInCostaAtlanticaZone(array $points): bool
+    {
+        foreach ($points as $point) {
+            if ($this->isPointInPolygon($this->costaAtlanticaRegion, $point)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getPaidRegions(): array
