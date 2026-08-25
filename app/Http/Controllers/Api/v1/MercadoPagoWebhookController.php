@@ -79,7 +79,6 @@ class MercadoPagoWebhookController extends Controller
             }
         }
 
-        $webhookType = $request->query('type') ?? $request->input('type');
         $action = $request->input('action');
 
         if ($webhookType === 'subscription_preapproval' || $action === 'subscription_preapproval') {
@@ -114,13 +113,17 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['status' => 'success']);
         }
 
+        $paymentId = $request->query('data_id') ?? $request->input('data_id');
+        if ($action === 'payment.updated' && empty($paymentId)) {
+            return response()->json(['status' => 'success']);
+        }
+
         // Verify the request is from Mercado Pago
         if (! $this->verifyMercadoPagoRequest($request)) {
             Log::error('Invalid MercadoPago webhook request');
 
             return response()->json(['error' => 'Invalid request'], 400);
         }
-        $paymentId = $request->input('data_id');
         if (! $paymentId) {
             Log::error('No payment ID in webhook request');
 
