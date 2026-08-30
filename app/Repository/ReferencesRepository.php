@@ -10,4 +10,16 @@ class ReferencesRepository
     {
         return $reference->save();
     }
+
+    public function get($userFromId, $userToId)
+    {
+        return ReferencesModel::where('user_id_from', $userFromId)
+            ->where('user_id_to', $userToId)
+            ->first();
+    }
+
+    public function update(ReferencesModel $reference)
+    {
+        return $reference->save();
+    }
 }

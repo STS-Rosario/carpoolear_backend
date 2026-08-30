@@ -255,6 +255,7 @@ Route::middleware(['api'])->group(function () {
 
     Route::prefix('references')->group(function () {
         Route::post('/', [ReferencesController::class, 'create']);
+        Route::post('/reply/{userId}', [ReferencesController::class, 'reply']);
     });
 
     // Admin routes

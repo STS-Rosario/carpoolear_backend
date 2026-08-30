@@ -134,4 +134,55 @@ class ReferencesApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Could not rate user.');
     }
+
+    public function test_reply_route_requires_authentication(): void
+    {
+        $this->postJson('api/references/reply/1', ['comment' => 'Thanks'])
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthorized.']);
+    }
+
+    public function test_reply_persists_comment_and_returns_ok(): void
+    {
+        $author = User::factory()->create();
+        $recipient = User::factory()->create();
+        References::query()->create([
+            'user_id_from' => $author->id,
+            'user_id_to' => $recipient->id,
+            'comment' => 'Reliable partner.',
+        ]);
+
+        $this->actingAs($recipient, 'api')
+            ->postJson("api/references/reply/{$author->id}", [
+                'comment' => 'Thanks for writing.',
+            ])
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertDatabaseHas('users_references', [
+            'user_id_from' => $author->id,
+            'user_id_to' => $recipient->id,
+            'reply_comment' => 'Thanks for writing.',
+        ]);
+    }
+
+    public function test_reply_second_attempt_fails(): void
+    {
+        $author = User::factory()->create();
+        $recipient = User::factory()->create();
+        References::query()->create([
+            'user_id_from' => $author->id,
+            'user_id_to' => $recipient->id,
+            'comment' => 'Hi',
+            'reply_comment' => 'First',
+            'reply_comment_created_at' => now()->subMinute(),
+        ]);
+
+        $this->actingAs($recipient, 'api')
+            ->postJson("api/references/reply/{$author->id}", [
+                'comment' => 'Again',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonFragment(['message' => 'Could not reply to reference.']);
+    }
 }
