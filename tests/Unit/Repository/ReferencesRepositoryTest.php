@@ -79,4 +79,59 @@ class ReferencesRepositoryTest extends TestCase
 
         $this->assertTrue($this->repo()->create($reference));
     }
+
+    public function test_get_returns_reference_for_from_and_to(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $other = User::factory()->create();
+        References::query()->create([
+            'user_id_from' => $other->id,
+            'user_id_to' => $to->id,
+            'comment' => 'Noise',
+        ]);
+        $expected = References::query()->create([
+            'user_id_from' => $from->id,
+            'user_id_to' => $to->id,
+            'comment' => 'Target',
+        ]);
+
+        $found = $this->repo()->get($from->id, $to->id);
+
+        $this->assertNotNull($found);
+        $this->assertSame($expected->id, $found->id);
+        $this->assertSame('Target', $found->comment);
+    }
+
+    public function test_get_returns_null_when_no_reference_exists(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+
+        $this->assertNull($this->repo()->get($from->id, $to->id));
+    }
+
+    public function test_update_persists_reply_fields(): void
+    {
+        $from = User::factory()->create();
+        $to = User::factory()->create();
+        $reference = References::query()->create([
+            'user_id_from' => $from->id,
+            'user_id_to' => $to->id,
+            'comment' => 'Original',
+        ]);
+
+        $reference->reply_comment = 'Thanks for writing.';
+        $reference->reply_comment_created_at = '2026-08-30 15:00:00';
+
+        $this->assertTrue($this->repo()->update($reference));
+        $this->assertDatabaseHas('users_references', [
+            'id' => $reference->id,
+            'reply_comment' => 'Thanks for writing.',
+        ]);
+        $this->assertSame(
+            '2026-08-30 15:00:00',
+            $reference->fresh()->reply_comment_created_at->format('Y-m-d H:i:s')
+        );
+    }
 }
