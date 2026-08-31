@@ -2,6 +2,7 @@
 
 namespace STS\Services\Logic;
 
+use STS\Repository\MessageRepository;
 use STS\Repository\NotificationRepository;
 use STS\Repository\PassengersRepository;
 use STS\Repository\RatingRepository;
@@ -16,14 +17,18 @@ class NotificationManager
 
     protected RatingRepository $ratingRepository;
 
+    protected MessageRepository $messageRepository;
+
     public function __construct(
         NotificationRepository $repo,
         ?PassengersRepository $passengersRepository = null,
-        ?RatingRepository $ratingRepository = null
+        ?RatingRepository $ratingRepository = null,
+        ?MessageRepository $messageRepository = null
     ) {
         $this->repo = $repo;
         $this->passengersRepository = $passengersRepository ?? new PassengersRepository;
         $this->ratingRepository = $ratingRepository ?? new RatingRepository;
+        $this->messageRepository = $messageRepository ?? new MessageRepository;
     }
 
     public function getNotifications($user, $data)
@@ -88,9 +93,7 @@ class NotificationManager
 
     protected function countUnreadConversations($user): int
     {
-        return (int) $user->conversations()
-            ->wherePivot('read', 0)
-            ->count();
+        return $this->messageRepository->countConversationsWithUnreadMessages($user);
     }
 
     public function delete($user, $id)

@@ -160,6 +160,37 @@ class MessageRepositoryTest extends TestCase
         $this->assertSame($unread->id, $rows->first()->id);
     }
 
+    public function test_count_conversations_with_unread_messages_returns_zero_when_no_unread_messages(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => false]);
+
+        $this->assertSame(0, $this->repo()->countConversationsWithUnreadMessages($reader));
+    }
+
+    public function test_count_conversations_with_unread_messages_counts_distinct_conversations(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv1 = Conversation::factory()->create();
+        $conv2 = Conversation::factory()->create();
+        $reader->conversations()->attach($conv1->id, ['read' => true]);
+        $reader->conversations()->attach($conv2->id, ['read' => true]);
+
+        $m1 = $this->makeMessage($conv1, $sender);
+        $m2 = $this->makeMessage($conv1, $sender);
+        $m3 = $this->makeMessage($conv2, $sender);
+        $m1->users()->attach($reader->id, ['read' => false]);
+        $m2->users()->attach($reader->id, ['read' => false]);
+        $m3->users()->attach($reader->id, ['read' => false]);
+
+        $this->assertSame(2, $this->repo()->countConversationsWithUnreadMessages($reader));
+    }
+
     public function test_get_unread_messages_returns_empty_when_no_unread_for_user(): void
     {
         // Mutation intent: preserve whereHas users read=false (~37–42).
@@ -213,6 +244,8 @@ class MessageRepositoryTest extends TestCase
 
         $mOld = $this->makeMessage($convUnread, $sender, 'a', Carbon::parse('2019-01-01 08:00:00'));
         $mNew = $this->makeMessage($convUnread, $sender, 'b', Carbon::parse('2019-01-05 08:00:00'));
+        $mOld->users()->attach($reader->id, ['read' => false]);
+        $mNew->users()->attach($reader->id, ['read' => false]);
 
         $allUnreadConv = $this->repo()->getMessagesUnread($reader, null);
         $this->assertTrue($allUnreadConv->pluck('id')->contains($mOld->id));
@@ -222,6 +255,37 @@ class MessageRepositoryTest extends TestCase
         $afterTs = $this->repo()->getMessagesUnread($reader, $since);
         $this->assertCount(1, $afterTs);
         $this->assertSame($mNew->id, $afterTs->first()->id);
+    }
+
+    public function test_get_messages_unread_ignores_conversation_pivot_when_messages_are_read(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => false]);
+
+        $message = $this->makeMessage($conv, $sender, 'already-read');
+        $message->users()->attach($reader->id, ['read' => true]);
+
+        $this->assertCount(0, $this->repo()->getMessagesUnread($reader, null));
+    }
+
+    public function test_get_messages_unread_includes_unread_messages_when_conversation_pivot_is_read(): void
+    {
+        $reader = User::factory()->create();
+        $sender = User::factory()->create();
+
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => true]);
+
+        $message = $this->makeMessage($conv, $sender, 'still-unread');
+        $message->users()->attach($reader->id, ['read' => false]);
+
+        $rows = $this->repo()->getMessagesUnread($reader, null);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($message->id, $rows->first()->id);
     }
 
     public function test_get_messages_unread_returns_empty_when_user_has_no_conversations(): void
@@ -356,49 +420,54 @@ class MessageRepositoryTest extends TestCase
         );
     }
 
-    public function test_get_messages_unread_includes_conversation_when_pivot_read_is_loosely_zero(): void
+    public function test_get_messages_unread_includes_message_when_user_message_read_pivot_is_loosely_zero(): void
     {
-        // Mutation intent: preserve `$item->pivot->read == 0` — strict `=== 0` skips numeric-string pivots that still mean unread.
         $reader = User::factory()->create();
         $sender = User::factory()->create();
 
-        $convUnread = Conversation::factory()->create();
-        $reader->conversations()->attach($convUnread->id, ['read' => false]);
+        $conv = Conversation::factory()->create();
+        $reader->conversations()->attach($conv->id, ['read' => true]);
 
-        DB::table('conversations_users')
+        $message = $this->makeMessage($conv, $sender, 'ping', Carbon::parse('2019-02-01 08:00:00'));
+        $message->users()->attach($reader->id, ['read' => false]);
+
+        DB::table('user_message_read')
+            ->where('message_id', $message->id)
             ->where('user_id', $reader->id)
-            ->where('conversation_id', $convUnread->id)
             ->update(['read' => '0']);
-
-        $reader = User::query()->findOrFail($reader->id);
-
-        $this->makeMessage($convUnread, $sender, 'ping', Carbon::parse('2019-02-01 08:00:00'));
 
         $rows = $this->repo()->getMessagesUnread($reader, null);
 
         $this->assertSame(1, $rows->count());
     }
 
-    public function test_get_messages_unread_includes_unread_conversation_when_pdo_stringifies_tinyint_as_string_zero(): void
+    public function test_get_messages_unread_includes_unread_message_when_pdo_stringifies_tinyint_as_string_zero(): void
     {
-        // Mutation intent: `Line 67: EqualToIdentical` — `== 0` must stay loose; `=== 0` fails when PDO returns pivot `read` as string "0" (`"0" == 0` true, `"0" === 0` false).
         $reader = User::factory()->create();
         $sender = User::factory()->create();
         $conv = Conversation::factory()->create();
-        $reader->conversations()->attach($conv->id, ['read' => false]);
+        $reader->conversations()->attach($conv->id, ['read' => true]);
+
+        $message = $this->makeMessage($conv, $sender, 'body', Carbon::parse('2018-05-01 09:00:00'));
+        $message->users()->attach($reader->id, ['read' => false]);
 
         $pdo = DB::connection()->getPdo();
         $previous = $pdo->getAttribute(PDO::ATTR_STRINGIFY_FETCHES);
         $pdo->setAttribute(PDO::ATTR_STRINGIFY_FETCHES, true);
 
         try {
-            $reader = User::query()->with('conversations')->findOrFail($reader->id);
-            $pivotRead = $reader->conversations->first()->pivot->read;
+            DB::table('user_message_read')
+                ->where('message_id', $message->id)
+                ->where('user_id', $reader->id)
+                ->update(['read' => '0']);
+
+            $pivotRead = DB::table('user_message_read')
+                ->where('message_id', $message->id)
+                ->where('user_id', $reader->id)
+                ->value('read');
             $this->assertIsString($pivotRead);
             $this->assertTrue($pivotRead == 0);
             $this->assertFalse($pivotRead === 0);
-
-            $this->makeMessage($conv, $sender, 'body', Carbon::parse('2018-05-01 09:00:00'));
 
             $rows = $this->repo()->getMessagesUnread($reader, null);
         } finally {

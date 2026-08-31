@@ -5,10 +5,12 @@ namespace Tests\Unit\Services\Logic;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use STS\Models\Message;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\AcceptPassengerNotification;
 use STS\Notifications\DummyNotification;
+use STS\Repository\MessageRepository;
 use STS\Repository\NotificationRepository;
 use STS\Services\Logic\NotificationManager;
 use STS\Support\NotificationCountCache;
@@ -16,9 +18,14 @@ use Tests\TestCase;
 
 class NotificationManagerTest extends TestCase
 {
-    private function manager(): NotificationManager
+    private function manager(?MessageRepository $messageRepository = null): NotificationManager
     {
-        return new NotificationManager(new NotificationRepository);
+        return new NotificationManager(
+            new NotificationRepository,
+            null,
+            null,
+            $messageRepository
+        );
     }
 
     private function sendDummy(User $user, string $dummyValue): void
@@ -284,6 +291,14 @@ class NotificationManagerTest extends TestCase
         $driver->conversations()->attach($conversation->id, ['read' => false]);
         $passenger->conversations()->attach($conversation->id, ['read' => true]);
 
+        $message = Message::create([
+            'user_id' => $passenger->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Unread for driver',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $message->users()->attach($driver->id, ['read' => false]);
+
         $trip = Trip::factory()->create([
             'user_id' => $driver->id,
             'trip_date' => Carbon::now()->addDays(2),
@@ -304,6 +319,22 @@ class NotificationManagerTest extends TestCase
             'messages' => 1,
             'my_trips' => 2,
         ], $counts);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_get_navigation_badge_counts_does_not_count_empty_unread_conversation(): void
+    {
+        Cache::flush();
+        Carbon::setTestNow('2026-06-16 12:00:00');
+
+        $user = User::factory()->create();
+        $conversation = \STS\Models\Conversation::factory()->create();
+        $user->conversations()->attach($conversation->id, ['read' => false]);
+
+        $counts = $this->manager()->getNavigationBadgeCounts($user);
+
+        $this->assertSame(0, $counts['messages']);
 
         Carbon::setTestNow();
     }
