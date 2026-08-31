@@ -4,10 +4,16 @@ namespace STS\Services;
 
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Order\OrderClient;
+use MercadoPago\Client\Payment\PaymentClient;
+use MercadoPago\Client\PreApproval\PreApprovalClient;
+use MercadoPago\Client\PreApprovalPlan\PreApprovalPlanClient;
 use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\MercadoPagoConfig;
 use STS\Models\Campaign;
+use STS\Models\DonationPayment;
+use STS\Models\DonationSubscription;
+use STS\Models\DonationTier;
 
 class MercadoPagoService
 {
@@ -351,5 +357,192 @@ class MercadoPagoService
             'qr_data' => $qrData,
             'payment_id' => $paymentId,
         ];
+    }
+
+    /**
+     * Create a payment preference for platform donations (one-time).
+     */
+    public function createPaymentPreferenceForPlatformDonation(DonationPayment $payment): \MercadoPago\Resources\Preference
+    {
+        $payment->loadMissing('tier');
+        $tierSlug = $payment->tier?->slug ?? 'unknown';
+
+        $baseUrl = rtrim(config('carpoolear.frontend_url'), '/');
+        if ($baseUrl === '') {
+            throw new \InvalidArgumentException('carpoolear.frontend_url must be set for platform donation checkout');
+        }
+
+        $donationUrls = [
+            'success' => $baseUrl.'/trips?donation=success',
+            'failure' => $baseUrl.'/trips?donation=failed',
+            'pending' => $baseUrl.'/trips?donation=pending',
+        ];
+
+        $preferenceData = [
+            'items' => [
+                [
+                    'title' => 'Donación a Carpoolear',
+                    'quantity' => 1,
+                    'unit_price' => floatval($payment->amount_cents) / 100,
+                    'currency_id' => 'ARS',
+                ],
+            ],
+            'back_urls' => $donationUrls,
+            'auto_return' => 'approved',
+            'external_reference' => $this->createHashedExternalReferenceForPlatformDonation(
+                $payment->id,
+                'once',
+                $payment->user_id ?? 'Anonymous',
+                $tierSlug
+            ),
+        ];
+
+        return $this->createPaymentPreference($preferenceData);
+    }
+
+    /**
+     * Create a Mercado Pago preapproval plan for a donation tier.
+     */
+    public function createPreapprovalPlan(DonationTier $tier): \MercadoPago\Resources\PreApprovalPlan
+    {
+        $this->ensureConfigured();
+
+        $client = new PreApprovalPlanClient;
+        $requestOptions = new RequestOptions;
+        $requestOptions->setAccessToken($this->accessToken);
+
+        $amount = floatval($tier->amount_cents) / 100;
+
+        return $client->create([
+            'reason' => 'Donación mensual Carpoolear - '.$tier->slug,
+            'auto_recurring' => [
+                'frequency' => 1,
+                'frequency_type' => 'months',
+                'transaction_amount' => $amount,
+                'currency_id' => 'ARS',
+            ],
+            'back_url' => rtrim(config('carpoolear.frontend_url'), '/').'/trips?donation=success',
+        ], $requestOptions);
+    }
+
+    /**
+     * Build subscription checkout URL for a pending platform donation subscription.
+     */
+    public function createPreapprovalCheckoutUrl(DonationSubscription $subscription): string
+    {
+        $subscription->loadMissing('tier');
+        $planId = $subscription->mp_preapproval_plan_id ?? $subscription->tier?->mp_preapproval_plan_id;
+
+        if (empty($planId)) {
+            throw new \InvalidArgumentException('Mercado Pago preapproval plan ID is not configured for this tier');
+        }
+
+        $externalReference = $subscription->external_reference;
+        if (empty($externalReference)) {
+            $tierSlug = $subscription->tier?->slug ?? 'unknown';
+            $externalReference = $this->createHashedExternalReferenceForPlatformDonation(
+                $subscription->id,
+                'monthly',
+                $subscription->user_id ?? 'Anonymous',
+                $tierSlug
+            );
+            $subscription->external_reference = $externalReference;
+            $subscription->save();
+        }
+
+        $baseCheckoutUrl = 'https://www.mercadopago.com.ar/subscriptions/checkout';
+        $query = http_build_query([
+            'preapproval_plan_id' => $planId,
+            'external_reference' => $externalReference,
+        ]);
+
+        return $baseCheckoutUrl.'?'.$query;
+    }
+
+    /**
+     * Update the recurring amount on an existing preapproval subscription.
+     */
+    public function updatePreapprovalAmount(string $mpPreapprovalId, int $amountCents): \MercadoPago\Resources\PreApproval
+    {
+        $this->ensureConfigured();
+
+        $client = new PreApprovalClient;
+        $requestOptions = new RequestOptions;
+        $requestOptions->setAccessToken($this->accessToken);
+
+        return $client->update($mpPreapprovalId, [
+            'auto_recurring' => [
+                'transaction_amount' => floatval($amountCents) / 100,
+                'currency_id' => 'ARS',
+            ],
+        ], $requestOptions);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getPreapproval(string $id): ?array
+    {
+        $this->ensureConfigured();
+
+        try {
+            $client = new PreApprovalClient;
+            $requestOptions = new RequestOptions;
+            $requestOptions->setAccessToken($this->accessToken);
+            $preapproval = $client->get($id, $requestOptions);
+            $content = $preapproval->getResponse()?->getContent();
+
+            return is_array($content) ? $content : json_decode((string) $content, true);
+        } catch (MPApiException $e) {
+            \Log::error('MercadoPago getPreapproval error', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'response' => $e->getApiResponse()->getContent(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getPayment(string $id): ?array
+    {
+        $this->ensureConfigured();
+
+        try {
+            $client = new PaymentClient;
+            $requestOptions = new RequestOptions;
+            $requestOptions->setAccessToken($this->accessToken);
+            $payment = $client->get($id, $requestOptions);
+            $content = $payment->getResponse()?->getContent();
+
+            return is_array($content) ? $content : json_decode((string) $content, true);
+        } catch (MPApiException $e) {
+            \Log::error('MercadoPago getPayment error', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+                'response' => $e->getApiResponse()->getContent(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Decoded format: "Donación Plataforma ID: {id}; Tipo: {once|monthly}; User ID: {id}; Tier: {slug}"
+     */
+    public function createHashedExternalReferenceForPlatformDonation(int $recordId, string $type, $userId, string $tierSlug): string
+    {
+        $referenceString = sprintf(
+            'Donación Plataforma ID: %d; Tipo: %s; User ID: %s; Tier: %s',
+            $recordId,
+            $type,
+            $userId,
+            $tierSlug
+        );
+
+        return $this->buildHashedReference($referenceString);
     }
 }

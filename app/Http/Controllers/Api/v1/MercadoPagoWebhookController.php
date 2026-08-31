@@ -16,6 +16,8 @@ use STS\Models\Trip;
 use STS\Services\FriendTripAlertService;
 use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\TripsManager;
+use STS\Services\MercadoPagoService;
+use STS\Services\PlatformDonationService;
 
 class MercadoPagoWebhookController extends Controller
 {
@@ -25,10 +27,20 @@ class MercadoPagoWebhookController extends Controller
 
     protected $paymentClient;
 
-    public function __construct(TripsManager $tripLogic, ConversationsManager $conversationManager)
-    {
+    protected $mercadoPagoService;
+
+    protected $platformDonationService;
+
+    public function __construct(
+        TripsManager $tripLogic,
+        ConversationsManager $conversationManager,
+        MercadoPagoService $mercadoPagoService,
+        PlatformDonationService $platformDonationService
+    ) {
         $this->tripLogic = $tripLogic;
         $this->conversationManager = $conversationManager;
+        $this->mercadoPagoService = $mercadoPagoService;
+        $this->platformDonationService = $platformDonationService;
 
         // Initialize Mercado Pago SDK
         MercadoPagoConfig::setAccessToken(config('services.mercadopago.access_token'));
@@ -67,8 +79,42 @@ class MercadoPagoWebhookController extends Controller
             }
         }
 
-        // Only process payment.created (Payments API / Checkout Pro)
-        if ($request->input('action') !== 'payment.created') {
+        $action = $request->input('action');
+
+        if ($webhookType === 'subscription_preapproval' || $action === 'subscription_preapproval') {
+            try {
+                return $this->handleSubscriptionPreapprovalWebhook($request);
+            } catch (\Throwable $e) {
+                Log::error('MercadoPago subscription_preapproval webhook failed', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+
+                return response()->json(['error' => 'Internal error'], 500);
+            }
+        }
+
+        if ($webhookType === 'subscription_authorized_payment' || $action === 'subscription_authorized_payment') {
+            try {
+                return $this->handleSubscriptionAuthorizedPaymentWebhook($request);
+            } catch (\Throwable $e) {
+                Log::error('MercadoPago subscription_authorized_payment webhook failed', [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+
+                return response()->json(['error' => 'Internal error'], 500);
+            }
+        }
+
+        if (! in_array($action, ['payment.created', 'payment.updated'], true)) {
+            return response()->json(['status' => 'success']);
+        }
+
+        $paymentId = $request->query('data_id') ?? $request->input('data_id');
+        if ($action === 'payment.updated' && empty($paymentId)) {
             return response()->json(['status' => 'success']);
         }
 
@@ -78,7 +124,6 @@ class MercadoPagoWebhookController extends Controller
 
             return response()->json(['error' => 'Invalid request'], 400);
         }
-        $paymentId = $request->input('data_id');
         if (! $paymentId) {
             Log::error('No payment ID in webhook request');
 
@@ -108,9 +153,19 @@ class MercadoPagoWebhookController extends Controller
         }
 
         if (stripos($decodedReference, 'sellado') !== false) {
+            if ($action !== 'payment.created') {
+                return response()->json(['status' => 'success']);
+            }
+
             return $this->handleTripPayment($mpPayment);
         } elseif (stripos($decodedReference, 'campaña') !== false) {
+            if ($action !== 'payment.created') {
+                return response()->json(['status' => 'success']);
+            }
+
             return $this->handleCampaignDonation($mpPayment);
+        } elseif (stripos($decodedReference, 'plataforma') !== false) {
+            return $this->handlePlatformDonationPayment($mpPayment);
         }
 
         Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
@@ -309,6 +364,7 @@ class MercadoPagoWebhookController extends Controller
                 'id' => $payment->id,
                 'status' => $payment->status,
                 'status_detail' => $payment->status_detail,
+                'transaction_amount' => $payment->transaction_amount,
                 'amount' => $payment->transaction_amount,
                 'currency_id' => $payment->currency_id,
                 'payment_method_id' => $payment->payment_method_id,
@@ -724,5 +780,67 @@ class MercadoPagoWebhookController extends Controller
         ];
 
         return $statusMap[$mpStatus] ?? 'pending';
+    }
+
+    protected function handlePlatformDonationPayment(array $mpPayment)
+    {
+        try {
+            $this->platformDonationService->handlePlatformPayment($mpPayment);
+        } catch (\Throwable $e) {
+            Log::error('Failed to handle platform donation payment', [
+                'payment_id' => $mpPayment['id'] ?? null,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Failed to process platform donation'], 500);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    protected function handleSubscriptionPreapprovalWebhook(Request $request)
+    {
+        if (! $this->verifyMercadoPagoRequest($request)) {
+            Log::error('Invalid MercadoPago subscription_preapproval webhook request');
+
+            return response()->json(['error' => 'Invalid request'], 400);
+        }
+
+        $preapprovalId = $request->query('data_id') ?? $request->input('data_id') ?? $request->input('data.id');
+        if (! $preapprovalId) {
+            return response()->json(['error' => 'No preapproval ID'], 400);
+        }
+
+        $preapproval = $this->mercadoPagoService->getPreapproval((string) $preapprovalId);
+        if (! $preapproval) {
+            return response()->json(['error' => 'Could not fetch preapproval'], 500);
+        }
+
+        $this->platformDonationService->handleSubscriptionPreapproval($preapproval);
+
+        return response()->json(['status' => 'success']);
+    }
+
+    protected function handleSubscriptionAuthorizedPaymentWebhook(Request $request)
+    {
+        if (! $this->verifyMercadoPagoRequest($request)) {
+            Log::error('Invalid MercadoPago subscription_authorized_payment webhook request');
+
+            return response()->json(['error' => 'Invalid request'], 400);
+        }
+
+        $paymentId = $request->query('data_id') ?? $request->input('data_id') ?? $request->input('data.id');
+        if (! $paymentId) {
+            return response()->json(['error' => 'No payment ID'], 400);
+        }
+
+        $mpPayment = $this->getMercadoPagoPayment($paymentId);
+        if (! $mpPayment) {
+            return response()->json(['error' => 'Could not fetch payment'], 500);
+        }
+
+        $this->platformDonationService->handleSubscriptionAuthorizedPayment($mpPayment);
+
+        return response()->json(['status' => 'success']);
     }
 }

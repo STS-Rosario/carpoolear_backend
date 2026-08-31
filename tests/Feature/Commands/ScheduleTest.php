@@ -171,6 +171,8 @@ class ScheduleTest extends TestCase
             'manual-identity-validation:purge-rejected-photos',
             'support-tickets:release-expired-assignments',
             'car-catalog:sync-argautos',
+            'donations:sync-subscription-amounts',
+            'donations:reconcile',
         ];
 
         foreach (array_keys($events) as $command) {
