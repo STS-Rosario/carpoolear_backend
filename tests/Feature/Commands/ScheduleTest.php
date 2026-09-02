@@ -125,10 +125,10 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
-    public function test_manual_identity_validation_remind_upload_photos_is_scheduled_daily_at10_am()
+    public function test_manual_identity_validation_remind_upload_photos_is_scheduled_daily_at8_pm()
     {
         $event = $this->findEvent('manual-identity-validation:remind-upload-photos');
-        $this->assertEquals('0 10 * * *', $event->expression);
+        $this->assertEquals('0 20 * * *', $event->expression);
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
