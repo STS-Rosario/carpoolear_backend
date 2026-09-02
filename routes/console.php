@@ -52,7 +52,7 @@ Schedule::command('manual-identity-validation:purge-rejected-photos')
 
 // Remind users who paid for manual validation but have not uploaded photos
 Schedule::command('manual-identity-validation:remind-upload-photos')
-    ->dailyAt('10:00')
+    ->dailyAt('20:00')
     ->timezone('America/Argentina/Buenos_Aires');
 
 Schedule::command('support-tickets:release-expired-assignments')
