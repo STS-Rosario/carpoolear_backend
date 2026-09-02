@@ -220,7 +220,7 @@ class ManualIdentityValidationController extends Controller
     public function updateState(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'review_status' => 'sometimes|in:pending,awaiting_photos,approved,rejected',
+            'review_status' => 'sometimes|in:pending,awaiting_photos,approved,rejected,closed',
             'paid' => 'sometimes|boolean',
             'photos_submitted' => 'sometimes|boolean',
         ]);
@@ -298,6 +298,10 @@ class ManualIdentityValidationController extends Controller
         if ($reviewStatus === ManualIdentityValidation::REVIEW_STATUS_APPROVED) {
             app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
 
+            return;
+        }
+
+        if ($reviewStatus === ManualIdentityValidation::REVIEW_STATUS_CLOSED) {
             return;
         }
 
