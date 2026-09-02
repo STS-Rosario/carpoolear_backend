@@ -183,6 +183,45 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertContains($approvedUser->id, $resolvedIds);
     }
 
+    public function test_index_treats_closed_rows_as_resolved(): void
+    {
+        $admin = $this->admin();
+        $pendingUser = User::factory()->create();
+        $closedUser = User::factory()->create();
+
+        ManualIdentityValidation::create([
+            'user_id' => $pendingUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        ManualIdentityValidation::create([
+            'user_id' => $closedUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $defaultIds = collect($this->getJson('api/admin/manual-identity-validations')->json('data'))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->assertContains($pendingUser->id, $defaultIds);
+        $this->assertNotContains($closedUser->id, $defaultIds);
+
+        $resolvedIds = collect($this->getJson('api/admin/manual-identity-validations?show_resolved=1')->json('data'))
+            ->pluck('user_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $this->assertContains($pendingUser->id, $resolvedIds);
+        $this->assertContains($closedUser->id, $resolvedIds);
+    }
+
     public function test_index_sorts_by_open_account_verification_tickets_count_desc(): void
     {
         $admin = $this->admin();
