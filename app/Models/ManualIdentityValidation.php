@@ -17,6 +17,8 @@ class ManualIdentityValidation extends Model
 
     const REVIEW_STATUS_REJECTED = 'rejected';
 
+    const REVIEW_STATUS_CLOSED = 'closed';
+
     protected $fillable = [
         'user_id',
         'submitted_at',
