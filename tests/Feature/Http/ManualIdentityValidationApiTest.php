@@ -1187,6 +1187,34 @@ class ManualIdentityValidationApiTest extends TestCase
         $this->assertNull($validationRequest->fresh()->submitted_at);
     }
 
+    public function test_submit_on_closed_request_returns_unprocessable_and_keeps_closed(): void
+    {
+        $user = User::factory()->create();
+        $validationRequest = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ]);
+
+        $front = UploadedFile::fake()->image('front.jpg', 100, 100)->size(500);
+        $back = UploadedFile::fake()->image('back.jpg', 100, 100)->size(500);
+        $selfie = UploadedFile::fake()->image('selfie.jpg', 100, 100)->size(500);
+
+        $this->actingAs($user, 'api')->post('api/users/manual-identity-validation', [
+            'request_id' => $validationRequest->id,
+            'front_image' => $front,
+            'back_image' => $back,
+            'selfie_image' => $selfie,
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'This request is closed.');
+
+        $fresh = $validationRequest->fresh();
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $fresh->review_status);
+        $this->assertNull($fresh->submitted_at);
+    }
+
     public function test_submit_with_missing_selfie_returns_unprocessable(): void
     {
         $user = User::factory()->create();
