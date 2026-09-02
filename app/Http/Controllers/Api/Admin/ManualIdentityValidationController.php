@@ -33,7 +33,7 @@ class ManualIdentityValidationController extends Controller
         if (! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
             $query->where(function ($builder) {
                 $builder->whereNull('review_status')
-                    ->orWhereNotIn('review_status', ['approved', 'approve', 'rejected', 'reject']);
+                    ->orWhereNotIn('review_status', ['approved', 'approve', 'rejected', 'reject', 'closed']);
             });
         }
 
