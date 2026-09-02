@@ -929,6 +929,38 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertSame('manual', (string) $user->identity_validation_type);
     }
 
+    public function test_update_state_accepts_closed_without_changing_user_identity(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create([
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+            'identity_validation_type' => 'mercado_pago',
+        ]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ])->assertOk()->assertJsonPath('data.review_status', ManualIdentityValidation::REVIEW_STATUS_CLOSED);
+
+        $user->refresh();
+        $this->assertTrue((bool) $user->identity_validated);
+        $this->assertSame('mercado_pago', (string) $user->identity_validation_type);
+        $this->assertDatabaseHas('manual_identity_validations', [
+            'id' => $row->id,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ]);
+    }
+
     public function test_show_includes_support_tickets_count_for_user(): void
     {
         $admin = $this->admin();
