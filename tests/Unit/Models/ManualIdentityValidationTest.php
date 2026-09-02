@@ -78,6 +78,22 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertInstanceOf(Carbon::class, $row->fresh()->images_purged_at);
     }
 
+    public function test_photo_upload_reminder_sent_at_fields_are_cast_to_datetime(): void
+    {
+        $user = User::factory()->create();
+
+        $row = $this->makeRow($user, [
+            'photos_upload_reminder_week1_sent_at' => '2026-08-20 10:00:00',
+            'photos_upload_reminder_week2_sent_at' => '2026-08-27 10:00:00',
+        ]);
+
+        $fresh = $row->fresh();
+        $this->assertInstanceOf(Carbon::class, $fresh->photos_upload_reminder_week1_sent_at);
+        $this->assertInstanceOf(Carbon::class, $fresh->photos_upload_reminder_week2_sent_at);
+        $this->assertSame('2026-08-20 10:00:00', $fresh->photos_upload_reminder_week1_sent_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-08-27 10:00:00', $fresh->photos_upload_reminder_week2_sent_at->format('Y-m-d H:i:s'));
+    }
+
     public function test_has_images_detects_any_uploaded_path(): void
     {
         $user = User::factory()->create();
@@ -189,6 +205,8 @@ class ManualIdentityValidationTest extends TestCase
             'private_admin_note',
             'manual_validation_started_at',
             'images_purged_at',
+            'photos_upload_reminder_week1_sent_at',
+            'photos_upload_reminder_week2_sent_at',
         ], (new ManualIdentityValidation)->getFillable());
     }
 

@@ -117,4 +117,5 @@ return [
     'manual_identity_validation.approved' => 'Your account verification was approved. Click here for more information.',
     'manual_identity_validation.rejected' => 'Your account verification was rejected. Click here for more information.',
     'manual_identity_validation.photos_purged' => 'Your manual validation photos were deleted. Upload them again to continue.',
+    'manual_identity_validation.upload_photos_reminder' => 'You paid for manual verification. Don\'t forget to upload your photos so we can verify your account. Having trouble? Go to Menu -> Help desk and we\'ll help you.',
 ];

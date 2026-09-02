@@ -50,6 +50,11 @@ Schedule::command('manual-identity-validation:purge-rejected-photos')
     ->dailyAt('05:00')
     ->timezone('America/Argentina/Buenos_Aires');
 
+// Remind users who paid for manual validation but have not uploaded photos
+Schedule::command('manual-identity-validation:remind-upload-photos')
+    ->dailyAt('20:00')
+    ->timezone('America/Argentina/Buenos_Aires');
+
 Schedule::command('support-tickets:release-expired-assignments')
     ->everyMinute()
     ->timezone('America/Argentina/Buenos_Aires');

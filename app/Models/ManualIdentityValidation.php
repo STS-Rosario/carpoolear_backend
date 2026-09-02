@@ -60,6 +60,8 @@ class ManualIdentityValidation extends Model
         'private_admin_note',
         'manual_validation_started_at',
         'images_purged_at',
+        'photos_upload_reminder_week1_sent_at',
+        'photos_upload_reminder_week2_sent_at',
     ];
 
     protected function casts(): array
@@ -72,6 +74,8 @@ class ManualIdentityValidation extends Model
             'reviewed_at' => 'datetime',
             'manual_validation_started_at' => 'datetime',
             'images_purged_at' => 'datetime',
+            'photos_upload_reminder_week1_sent_at' => 'datetime',
+            'photos_upload_reminder_week2_sent_at' => 'datetime',
         ];
     }
 
