@@ -106,6 +106,20 @@ class UserIdentityVerificationSuccessServiceTest extends TestCase
             'paid_at' => now(),
             'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
         ]);
+        $historicalApprove = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => 'approve',
+        ]);
+        $historicalReject = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => 'reject',
+        ]);
         $otherUserPending = ManualIdentityValidation::create([
             'user_id' => $otherUser->id,
             'paid' => true,
@@ -121,6 +135,8 @@ class UserIdentityVerificationSuccessServiceTest extends TestCase
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $unpaid->fresh()->review_status);
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_APPROVED, $approved->fresh()->review_status);
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $alreadyClosed->fresh()->review_status);
+        $this->assertSame('approve', $historicalApprove->fresh()->review_status);
+        $this->assertSame('reject', $historicalReject->fresh()->review_status);
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $otherUserPending->fresh()->review_status);
     }
 

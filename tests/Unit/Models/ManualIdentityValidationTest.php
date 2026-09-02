@@ -147,6 +147,24 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $submitted->fresh()->review_status);
     }
 
+    public function test_mark_paid_and_awaiting_photos_if_needed_does_not_reopen_closed_requests(): void
+    {
+        $user = User::factory()->create();
+        $closed = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ]);
+
+        $closed->markPaidAndAwaitingPhotosIfNeeded();
+        $closed->save();
+
+        $fresh = $closed->fresh();
+        $this->assertTrue($fresh->paid);
+        $this->assertNotNull($fresh->paid_at);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $fresh->review_status);
+    }
+
     public function test_table_name_is_manual_identity_validations(): void
     {
         $this->assertSame('manual_identity_validations', (new ManualIdentityValidation)->getTable());
