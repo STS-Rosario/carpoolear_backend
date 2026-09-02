@@ -125,6 +125,13 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
+    public function test_manual_identity_validation_remind_upload_photos_is_scheduled_daily_at10_am()
+    {
+        $event = $this->findEvent('manual-identity-validation:remind-upload-photos');
+        $this->assertEquals('0 10 * * *', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+    }
+
     public function test_support_tickets_release_expired_assignments_is_scheduled_every_minute()
     {
         $event = $this->findEvent('support-tickets:release-expired-assignments');
@@ -169,6 +176,7 @@ class ScheduleTest extends TestCase
             'auth:cleanup-reset-tokens',
             'support-tickets:autoclose',
             'manual-identity-validation:purge-rejected-photos',
+            'manual-identity-validation:remind-upload-photos',
             'support-tickets:release-expired-assignments',
             'car-catalog:sync-argautos',
         ];
