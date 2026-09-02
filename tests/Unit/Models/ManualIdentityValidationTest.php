@@ -109,6 +109,14 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame('approved', ManualIdentityValidation::REVIEW_STATUS_APPROVED);
         $this->assertSame('rejected', ManualIdentityValidation::REVIEW_STATUS_REJECTED);
         $this->assertSame('closed', ManualIdentityValidation::REVIEW_STATUS_CLOSED);
+        $this->assertSame(
+            ['approved', 'rejected', 'closed'],
+            ManualIdentityValidation::resolvedReviewStatuses()
+        );
+        $this->assertSame(
+            ['approved', 'rejected', 'closed', 'approve', 'reject'],
+            ManualIdentityValidation::resolvedReviewStatusAliases()
+        );
     }
 
     public function test_mark_paid_and_awaiting_photos_if_needed_sets_status_only_before_submission(): void

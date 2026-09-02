@@ -19,6 +19,30 @@ class ManualIdentityValidation extends Model
 
     const REVIEW_STATUS_CLOSED = 'closed';
 
+    /**
+     * Terminal review statuses that are hidden from the default admin queue.
+     *
+     * @return list<string>
+     */
+    public static function resolvedReviewStatuses(): array
+    {
+        return [
+            self::REVIEW_STATUS_APPROVED,
+            self::REVIEW_STATUS_REJECTED,
+            self::REVIEW_STATUS_CLOSED,
+        ];
+    }
+
+    /**
+     * Resolved statuses plus historical aliases stored in older rows.
+     *
+     * @return list<string>
+     */
+    public static function resolvedReviewStatusAliases(): array
+    {
+        return array_merge(self::resolvedReviewStatuses(), ['approve', 'reject']);
+    }
+
     protected $fillable = [
         'user_id',
         'submitted_at',

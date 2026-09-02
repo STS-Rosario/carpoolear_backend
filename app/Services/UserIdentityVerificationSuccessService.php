@@ -30,11 +30,7 @@ class UserIdentityVerificationSuccessService
             ->where('user_id', $user->id)
             ->where(function ($query) {
                 $query->whereNull('review_status')
-                    ->orWhereNotIn('review_status', [
-                        ManualIdentityValidation::REVIEW_STATUS_APPROVED,
-                        ManualIdentityValidation::REVIEW_STATUS_REJECTED,
-                        ManualIdentityValidation::REVIEW_STATUS_CLOSED,
-                    ]);
+                    ->orWhereNotIn('review_status', ManualIdentityValidation::resolvedReviewStatuses());
             })
             ->update([
                 'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
