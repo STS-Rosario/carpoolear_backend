@@ -106,9 +106,14 @@ class ManualIdentityValidation extends Model
         if ($this->paid_at === null) {
             $this->paid_at = now();
         }
-        if ($this->submitted_at === null) {
+        if ($this->submitted_at === null && ! $this->isResolved()) {
             $this->markAwaitingPhotos();
         }
+    }
+
+    public function isResolved(): bool
+    {
+        return in_array((string) $this->review_status, self::resolvedReviewStatusAliases(), true);
     }
 
     /**

@@ -212,6 +212,10 @@ class ManualIdentityValidationController extends Controller
             throw new ExceptionWithErrors('Payment is required before submitting images.', [], 422);
         }
 
+        if ($validationRequest->review_status === ManualIdentityValidation::REVIEW_STATUS_CLOSED) {
+            throw new ExceptionWithErrors('This request is closed.', [], 422);
+        }
+
         $isResubmit = $validationRequest->review_status === ManualIdentityValidation::REVIEW_STATUS_REJECTED;
         if ($isResubmit) {
             if (! $resubmitPolicy->canResubmitWithoutPayment($validationRequest)) {
