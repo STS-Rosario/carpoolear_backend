@@ -34,6 +34,7 @@ use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\DebugController;
 use STS\Http\Controllers\Api\v1\DeviceController;
 use STS\Http\Controllers\Api\v1\FriendsController;
+use STS\Http\Controllers\Api\v1\HealthController;
 use STS\Http\Controllers\Api\v1\ImpersonationConsumeController;
 use STS\Http\Controllers\Api\v1\ImpersonationStopController;
 use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
@@ -58,6 +59,7 @@ Route::middleware(['api'])->group(function () {
 
     Route::post('login', [AuthController::class, 'login']);
     Route::post('retoken', [AuthController::class, 'retoken']);
+    Route::get('health', [HealthController::class, 'show']);
     Route::post('auth/impersonate/consume', [ImpersonationConsumeController::class, 'consume'])
         ->middleware('throttle:impersonation-consume');
     Route::get('config', [AuthController::class, 'getConfig']);
