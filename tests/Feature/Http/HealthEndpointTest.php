@@ -36,4 +36,12 @@ class HealthEndpointTest extends TestCase
         $this->get('up')
             ->assertOk();
     }
+
+    public function test_up_health_check_returns_500_when_database_is_down(): void
+    {
+        DB::shouldReceive('select')->andThrow(new \RuntimeException('connection refused'));
+
+        $this->get('up')
+            ->assertStatus(500);
+    }
 }
