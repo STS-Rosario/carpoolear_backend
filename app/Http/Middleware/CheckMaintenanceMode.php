@@ -49,6 +49,7 @@ class CheckMaintenanceMode
 
         $literal = [
             'api/config',
+            'api/health',
             'api/login',
             'api/retoken',
             'api/log',
