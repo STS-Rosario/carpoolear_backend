@@ -343,6 +343,48 @@ class MercadoPagoOAuthCallbackTest extends TestCase
 
     }
 
+    public function test_success_closes_open_manual_identity_validations_for_the_user(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Jane Doe',
+            'nro_doc' => '30.123.456',
+            'identity_validated' => false,
+        ]);
+        $otherUser = User::factory()->create();
+        Cache::put('mp_oauth_state:close-manual-state', ['user_id' => $user->id], 600);
+
+        $openManual = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $otherUserManual = ManualIdentityValidation::create([
+            'user_id' => $otherUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        Http::fake([
+            '*oauth/token*' => Http::response(['access_token' => 'tok'], 200),
+            '*users/me*' => Http::response([
+                'first_name' => 'Jane',
+                'last_name' => 'Doe',
+                'identification' => ['type' => 'DNI', 'number' => '30123456'],
+            ], 200),
+        ]);
+
+        $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=close-manual-state')
+            ->assertRedirect($this->identityRedirect('success'));
+
+        $this->assertTrue($user->fresh()->identity_validated);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $openManual->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $otherUserManual->fresh()->review_status);
+    }
+
     public function test_success_clears_prior_manual_rejection_state(): void
     {
         $user = User::factory()->create([

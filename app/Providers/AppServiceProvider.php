@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Foundation\Events\DiagnosingHealth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Pulse\Entry;
@@ -40,6 +43,10 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return ! preg_match('#/pulse(?:/|$)#', $entry->key);
+        });
+
+        Event::listen(DiagnosingHealth::class, function () {
+            DB::select('select 1');
         });
     }
 }
