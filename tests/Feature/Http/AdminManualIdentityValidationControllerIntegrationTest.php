@@ -1037,4 +1037,52 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertArrayHasKey('support_tickets_count', $data);
         $this->assertSame(2, $data['support_tickets_count']);
     }
+
+    public function test_review_returns_reviewed_by_name_of_acting_admin(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $data = $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/review', [
+            'action' => 'approve',
+        ])->assertOk()->json('data');
+
+        $this->assertSame($admin->id, (int) $data['reviewed_by']);
+        $this->assertSame($admin->name, $data['reviewed_by_name']);
+        $this->assertNotNull($data['reviewed_at']);
+    }
+
+    public function test_update_state_review_status_returns_reviewed_by_name_of_acting_admin(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $data = $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/state', [
+            'review_status' => 'rejected',
+        ])->assertOk()->json('data');
+
+        $this->assertSame($admin->id, (int) $data['reviewed_by']);
+        $this->assertSame($admin->name, $data['reviewed_by_name']);
+        $this->assertSame('rejected', $data['review_status']);
+    }
 }

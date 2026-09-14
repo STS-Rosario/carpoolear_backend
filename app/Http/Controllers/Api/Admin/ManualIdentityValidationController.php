@@ -211,7 +211,9 @@ class ManualIdentityValidationController extends Controller
             );
         }
 
-        return response()->json(['data' => $item->fresh(['user:id,name,nro_doc'])]);
+        $item->loadMissing('user:id,name,nro_doc', 'reviewedBy:id,name');
+
+        return response()->json(['data' => $this->buildShowPayload($item)]);
     }
 
     /**
