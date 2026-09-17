@@ -142,4 +142,27 @@ class UserEditablePropertiesServiceTest extends TestCase
 
         $this->assertSame(['private_note' => 'ok'], $out);
     }
+
+    public function test_system_admin_update_keeps_gated_properties_when_actor_is_not_staff(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin', 'admin_role']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', [
+            'banned', 'private_note',
+        ]);
+
+        $actor = User::factory()->make(['is_admin' => false]);
+        $subject = User::factory()->make();
+
+        $svc = new UserEditablePropertiesService;
+        $out = $svc->filterForUser([
+            'private_note' => 'ok',
+            'banned' => 1,
+        ], true, $subject, $actor);
+
+        $this->assertSame([
+            'private_note' => 'ok',
+            'banned' => 1,
+        ], $out);
+    }
 }

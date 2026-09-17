@@ -81,7 +81,7 @@ class UserEditablePropertiesService
             }
 
             $permission = $this->permissionRequiredForAdminProperty($property);
-            if ($permission && $actor && ! $actor->hasAdminPermission($permission)) {
+            if ($permission && $actor?->is_admin && ! $actor->hasAdminPermission($permission)) {
                 return false;
             }
 
