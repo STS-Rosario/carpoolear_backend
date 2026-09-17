@@ -158,7 +158,7 @@ return [
     // User edit property security: allowlist-based filtering for all user update paths
     'user_edit_properties' => [
         // NEVER editable by anyone (including admins)
-        'forbidden' => ['is_admin'],
+        'forbidden' => ['is_admin', 'admin_role'],
 
         // Editable by regular users (self-edit). email is only set at registration.
         // name is editable until identity is validated (see UserEditablePropertiesService).
