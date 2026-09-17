@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\UserIdentityVerificationSuccessService;
 use STS\Support\AdminPagination;
 
@@ -87,6 +88,14 @@ class MercadoPagoRejectedValidationController extends Controller
             ]);
             $item->approved_at = now();
             $item->approved_by = $admin->id;
+            app(IdentityVerificationOutcome::class)->emit([
+                'user_id' => $user->id,
+                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+                'name' => IdentityVerificationOutcome::NAME_SUCCEEDED,
+                'reason' => IdentityVerificationOutcome::REASON_APPROVED_FROM_MP_REJECTION,
+                'related_type' => 'mercado_pago_rejected_validations',
+                'related_id' => $item->id,
+            ]);
         } else {
             $user->identity_validated = false;
             $user->identity_validated_at = null;

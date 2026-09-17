@@ -57,6 +57,7 @@ class ManualIdentityValidation extends Model
         'reviewed_by',
         'reviewed_at',
         'review_note',
+        'reject_reason',
         'private_admin_note',
         'manual_validation_started_at',
         'images_purged_at',
