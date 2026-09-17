@@ -3,6 +3,7 @@
 namespace STS\Transformers;
 
 use League\Fractal\TransformerAbstract;
+use STS\Helpers\TripPricingBreakdown;
 use STS\Models\Trip;
 use STS\Services\Logic\FriendsManager;
 
@@ -53,6 +54,7 @@ class TripTransformer extends TransformerAbstract
             'estimated_time' => $trip->estimated_time,
             'seat_price_cents' => $trip->seat_price_cents,
             'recommended_trip_price_cents' => $trip->recommended_trip_price_cents,
+            'pricing_breakdown' => TripPricingBreakdown::forTrip($trip),
             'total_price' => $trip->total_price,
             'state' => $trip->state,
             'is_passenger' => $trip->is_passenger,

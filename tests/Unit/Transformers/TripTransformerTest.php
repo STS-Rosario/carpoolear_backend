@@ -75,6 +75,7 @@ class TripTransformerTest extends TestCase
             'estimated_time',
             'seat_price_cents',
             'recommended_trip_price_cents',
+            'pricing_breakdown',
             'total_price',
             'state',
             'is_passenger',
@@ -107,6 +108,61 @@ class TripTransformerTest extends TestCase
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
         $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_includes_pricing_breakdown_with_comfort_occupants(): void
+    {
+        config()->set('carpoolear.module_max_price_fuel_price', 1000);
+        config()->set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        config()->set('carpoolear.module_max_price_price_variance_tolls', 10);
+        config()->set('carpoolear.module_trip_creation_payment_enabled', true);
+        config()->set('carpoolear.module_trip_creation_payment_amount_cents', 50);
+
+        $geo = \Mockery::mock(\STS\Services\GeoService::class);
+        $geo->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
+        $this->app->instance(\STS\Services\GeoService::class, $geo);
+
+        $fiveOccupantsTrip = $this->makeTrip([
+            'distance' => 1000,
+            'rear_max_two_passengers' => 0,
+        ]);
+        $fivePayload = (new TripTransformer(null))->transform($fiveOccupantsTrip->fresh());
+
+        $this->assertSame(11050, $fivePayload['pricing_breakdown']['total_cents']);
+        $this->assertSame(5, $fivePayload['pricing_breakdown']['occupants']);
+        $this->assertSame(2210, $fivePayload['pricing_breakdown']['per_person_cents']);
+        $this->assertTrue($fivePayload['pricing_breakdown']['includes_sellado']);
+        $this->assertSame(50, $fivePayload['pricing_breakdown']['sellado_cents']);
+        $this->assertSame(10.0, $fivePayload['pricing_breakdown']['tolls_percent']);
+
+        $fourOccupantsTrip = $this->makeTrip([
+            'distance' => 1000,
+            'rear_max_two_passengers' => 1,
+        ]);
+        $fourPayload = (new TripTransformer(null))->transform($fourOccupantsTrip->fresh());
+
+        $this->assertSame(4, $fourPayload['pricing_breakdown']['occupants']);
+        $this->assertSame(2763, $fourPayload['pricing_breakdown']['per_person_cents']);
+    }
+
+    public function test_transform_pricing_breakdown_uses_costa_atlantica_tolls_when_in_zone(): void
+    {
+        config()->set('carpoolear.module_max_price_fuel_price', 1000);
+        config()->set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        config()->set('carpoolear.module_max_price_price_variance_tolls', 10);
+        config()->set('carpoolear.module_max_price_price_variance_tolls_costa_atlantica', 25);
+        config()->set('carpoolear.module_trip_creation_payment_enabled', false);
+
+        $geo = \Mockery::mock(\STS\Services\GeoService::class);
+        $geo->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(true);
+        $this->app->instance(\STS\Services\GeoService::class, $geo);
+
+        $trip = $this->makeTrip(['distance' => 100000]);
+        $payload = (new TripTransformer(null))->transform($trip->fresh());
+
+        $this->assertSame(25.0, $payload['pricing_breakdown']['tolls_percent']);
+        $this->assertSame(1250000, $payload['pricing_breakdown']['total_cents']);
+        $this->assertFalse($payload['pricing_breakdown']['includes_sellado']);
     }
 
     public function test_transform_sets_existing_true_when_trip_marked_as_existing(): void
