@@ -12,6 +12,7 @@ use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
+use STS\Http\Controllers\Api\Admin\IdentityVerificationStatsController;
 use STS\Http\Controllers\Api\Admin\ImpersonationController as AdminImpersonationController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
@@ -263,6 +264,7 @@ Route::middleware(['api'])->group(function () {
     // Admin routes
     Route::prefix('admin')->middleware('user.admin')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'show']);
+        Route::get('identity-verification-stats', [IdentityVerificationStatsController::class, 'show']);
         Route::get('trip-excess-contributions', [AdminTripExcessContributionController::class, 'index']);
         Route::get('trip-excess-contributions/{id}', [AdminTripExcessContributionController::class, 'show']);
         Route::post('trip-excess-contributions/{id}/status', [AdminTripExcessContributionController::class, 'updateStatus']);
