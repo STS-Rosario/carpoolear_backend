@@ -71,7 +71,10 @@ class MercadoPagoOAuthController extends Controller
 
             $identification = $me['identification'] ?? null;
             if (! $identification || ! isset($identification['number'])) {
-                \Log::warning('MercadoPago OAuth callback: no identification in users/me', ['user_id' => $userId]);
+                \Log::warning('MercadoPago OAuth callback: no identification in users/me', [
+                    'user_id' => $userId,
+                    'mp_payload' => $me,
+                ]);
 
                 return redirect($oauthService->getFrontendRedirectUrl('error'));
             }
