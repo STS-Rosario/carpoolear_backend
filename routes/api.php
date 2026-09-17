@@ -36,6 +36,7 @@ use STS\Http\Controllers\Api\v1\DebugController;
 use STS\Http\Controllers\Api\v1\DeviceController;
 use STS\Http\Controllers\Api\v1\FriendsController;
 use STS\Http\Controllers\Api\v1\HealthController;
+use STS\Http\Controllers\Api\v1\IdentityVerificationClientEventController;
 use STS\Http\Controllers\Api\v1\ImpersonationConsumeController;
 use STS\Http\Controllers\Api\v1\ImpersonationStopController;
 use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
@@ -110,6 +111,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/bank-data', [UserController::class, 'bankData']);
         Route::get('/terms', [UserController::class, 'terms']);
         Route::get('/mercadopago-oauth-url', [UserController::class, 'getMercadoPagoOAuthUrl']);
+        Route::post('/identity-verification-events', [IdentityVerificationClientEventController::class, 'store']);
         Route::get('/manual-identity-validation-cost', [ManualIdentityValidationController::class, 'cost']);
         Route::get('/manual-identity-validation', [ManualIdentityValidationController::class, 'status']);
         Route::post('/manual-identity-validation/preference', [ManualIdentityValidationController::class, 'createPreference']);
