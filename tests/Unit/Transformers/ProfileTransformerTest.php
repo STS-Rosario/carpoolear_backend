@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Transformers;
 
+use STS\Admin\AdminPermission;
 use STS\Models\Car;
 use STS\Models\Passenger;
 use STS\Models\Rating;
@@ -544,5 +545,51 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayNotHasKey('identity_validation_reject_reason', $payload);
         $this->assertArrayNotHasKey('validate_by_date', $payload);
         $this->assertArrayNotHasKey('manual_identity_validations_count', $payload);
+    }
+
+    public function test_transform_own_profile_includes_helpdesk_role_and_permissions(): void
+    {
+        $user = User::factory()->create(['is_admin' => true]);
+        $user->forceFill(['admin_role' => 'helpdesk'])->saveQuietly();
+
+        $payload = (new ProfileTransformer($user))->transform($user->fresh());
+
+        $this->assertSame('helpdesk', $payload['admin_role']);
+        $this->assertContains(AdminPermission::UsersEdit->value, $payload['admin_permissions']);
+        $this->assertNotContains(AdminPermission::UsersSuspend->value, $payload['admin_permissions']);
+    }
+
+    public function test_transform_own_profile_includes_all_permissions_for_superadmin(): void
+    {
+        $user = User::factory()->create(['is_admin' => true]);
+        $user->forceFill(['admin_role' => 'superadmin'])->saveQuietly();
+
+        $payload = (new ProfileTransformer($user))->transform($user->fresh());
+
+        $this->assertSame('superadmin', $payload['admin_role']);
+        $this->assertContains(AdminPermission::UsersSuspend->value, $payload['admin_permissions']);
+        $this->assertContains(AdminPermission::PulseView->value, $payload['admin_permissions']);
+    }
+
+    public function test_transform_own_non_admin_profile_has_null_role_and_empty_permissions(): void
+    {
+        $user = User::factory()->create(['is_admin' => false]);
+
+        $payload = (new ProfileTransformer($user))->transform($user->fresh());
+
+        $this->assertNull($payload['admin_role']);
+        $this->assertSame([], $payload['admin_permissions']);
+    }
+
+    public function test_transform_does_not_expose_admin_permissions_when_viewing_another_user(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $admin->forceFill(['admin_role' => 'superadmin'])->saveQuietly();
+        $subject = User::factory()->create(['is_admin' => false, 'data_visibility' => '2']);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('admin_permissions', $payload);
+        $this->assertArrayNotHasKey('admin_role', $payload);
     }
 }
