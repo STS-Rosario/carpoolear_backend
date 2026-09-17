@@ -4,9 +4,10 @@ namespace Tests\Unit\Services;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Mockery;
 use ReflectionMethod;
+use STS\Exceptions\MercadoPagoOAuthRequestException;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\MercadoPagoOAuthService;
 use Tests\TestCase;
 
@@ -137,7 +138,7 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertSame($expected, $challenge);
     }
 
-    public function test_exchange_code_for_token_posts_expected_body_and_logs_on_failure(): void
+    public function test_exchange_code_for_token_throws_typed_exception_on_failure(): void
     {
         $this->configureMercadoPagoService(pkce: false);
 
@@ -145,23 +146,16 @@ class MercadoPagoOAuthServiceTest extends TestCase
             'https://api.mercadopago.com/oauth/token' => Http::response(['error' => 'invalid_grant'], 400),
         ]);
 
-        Log::shouldReceive('error')
-            ->once()
-            ->with(
-                'MercadoPago OAuth token exchange failed',
-                Mockery::on(function ($context): bool {
-                    return is_array($context)
-                        && ($context['status'] ?? null) === 400
-                        && str_contains((string) ($context['body'] ?? ''), 'invalid_grant');
-                })
-            );
-
         $svc = new MercadoPagoOAuthService;
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Failed to exchange code for token');
-
-        $svc->exchangeCodeForToken('auth-code', null);
+        try {
+            $svc->exchangeCodeForToken('auth-code', null);
+            $this->fail('Expected MercadoPagoOAuthRequestException');
+        } catch (MercadoPagoOAuthRequestException $e) {
+            $this->assertSame(IdentityVerificationOutcome::REASON_TOKEN_EXCHANGE_FAILED, $e->reason);
+            $this->assertSame(400, $e->httpStatus);
+            $this->assertSame('Failed to exchange code for token', $e->getMessage());
+        }
     }
 
     public function test_exchange_code_for_token_includes_code_verifier_when_non_empty(): void
@@ -239,7 +233,7 @@ class MercadoPagoOAuthServiceTest extends TestCase
         $this->assertSame([], (new MercadoPagoOAuthService)->getUserMe('tok'));
     }
 
-    public function test_get_user_me_logs_and_throws_on_non_success(): void
+    public function test_get_user_me_throws_typed_exception_on_non_success(): void
     {
         $this->configureMercadoPagoService(pkce: false);
 
@@ -247,20 +241,16 @@ class MercadoPagoOAuthServiceTest extends TestCase
             'https://api.mercadopago.com/users/me' => Http::response('gone', 410),
         ]);
 
-        Log::shouldReceive('error')
-            ->once()
-            ->with(
-                'MercadoPago users/me failed',
-                Mockery::on(function ($context): bool {
-                    return is_array($context)
-                        && ($context['status'] ?? null) === 410
-                        && ($context['body'] ?? '') === 'gone';
-                })
-            );
-
         $svc = new MercadoPagoOAuthService;
-        $this->expectException(\Exception::class);
-        $svc->getUserMe('token-abc');
+
+        try {
+            $svc->getUserMe('token-abc');
+            $this->fail('Expected MercadoPagoOAuthRequestException');
+        } catch (MercadoPagoOAuthRequestException $e) {
+            $this->assertSame(IdentityVerificationOutcome::REASON_USERS_ME_FAILED, $e->reason);
+            $this->assertSame(410, $e->httpStatus);
+            $this->assertSame('Failed to get user info from Mercado Pago', $e->getMessage());
+        }
     }
 
     public function test_normalize_dni_strips_non_digits_and_handles_empty(): void
