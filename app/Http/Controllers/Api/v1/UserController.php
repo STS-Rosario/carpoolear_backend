@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
@@ -14,6 +15,7 @@ use STS\Models\Donation;
 use STS\Models\Rating;
 use STS\Models\User;
 use STS\Services\AnonymizationService;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\MercadoPagoOAuthService;
@@ -338,18 +340,38 @@ class UserController extends Controller
         }
 
         $state = bin2hex(random_bytes(16));
+        $attemptId = (string) Str::uuid();
+        $surface = $request->query('surface');
+        $platform = $request->query('platform');
+        $appVersion = $request->query('app_version');
         $authResult = $oauthService->getAuthorizationUrl($state);
+
+        $cachePayload = [
+            'user_id' => $user->id,
+            'attempt_id' => $attemptId,
+            'surface' => $surface,
+            'platform' => $platform,
+            'app_version' => $appVersion,
+        ];
 
         if (is_array($authResult)) {
             $authorizationUrl = $authResult['authorization_url'];
-            Cache::put('mp_oauth_state:'.$state, [
-                'user_id' => $user->id,
-                'code_verifier' => $authResult['code_verifier'],
-            ], 600);
+            $cachePayload['code_verifier'] = $authResult['code_verifier'];
         } else {
             $authorizationUrl = $authResult;
-            Cache::put('mp_oauth_state:'.$state, ['user_id' => $user->id], 600);
         }
+
+        Cache::put('mp_oauth_state:'.$state, $cachePayload, 600);
+
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $user->id,
+            'method' => IdentityVerificationOutcome::METHOD_MERCADO_PAGO,
+            'name' => IdentityVerificationOutcome::NAME_ATTEMPT_STARTED,
+            'attempt_id' => $attemptId,
+            'surface' => $surface,
+            'platform' => $platform,
+            'app_version' => $appVersion,
+        ]);
 
         return response()->json(['authorization_url' => $authorizationUrl]);
     }
