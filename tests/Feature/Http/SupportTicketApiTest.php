@@ -29,6 +29,7 @@ class SupportTicketApiTest extends TestCase
                 $table->increments('id');
                 $table->unsignedInteger('user_id');
                 $table->string('type');
+                $table->string('source')->default('web_form');
                 $table->string('subject');
                 $table->string('status')->default('Open');
                 $table->string('priority')->default('normal');
