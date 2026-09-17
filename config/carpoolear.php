@@ -45,6 +45,7 @@ return [
     'module_max_price_price_variance_tolls_costa_atlantica' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS_COSTA_ATLANTICA', 25),
     'module_max_price_price_variance_max_extra' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
     'module_max_price_kilometer_by_liter' => (float) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
+    'module_max_price_show_breakdown' => filter_var(env('MODULE_MAX_PRICE_SHOW_BREAKDOWN', true), FILTER_VALIDATE_BOOLEAN),
 
     'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
     // Max document submissions per paid manual validation request (including the first upload).
