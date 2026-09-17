@@ -47,7 +47,7 @@ class AdminImpersonationTest extends TestCase
 
         $this->postJson('api/admin/users/'.$target->id.'/impersonate')
             ->assertForbidden()
-            ->assertJson(['message' => 'impersonation_forbidden']);
+            ->assertJson(['message' => 'This action is unauthorized.']);
     }
 
     public function test_cannot_impersonate_admin_user(): void

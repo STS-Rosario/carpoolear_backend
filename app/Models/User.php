@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use STS\Admin\AdminPermission;
+use STS\Admin\AdminRole;
+use STS\Admin\AdminRolePermissions;
 use STS\Models\Rating as RatingModel;
 use STS\Services\Notifications\Models\DatabaseNotification;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -155,6 +158,43 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return [];
+    }
+
+    public function resolvedAdminRole(): ?AdminRole
+    {
+        if (! $this->is_admin) {
+            return null;
+        }
+
+        return AdminRole::tryFrom((string) $this->admin_role) ?? AdminRole::Superadmin;
+    }
+
+    public function hasAdminPermission(AdminPermission|string $permission): bool
+    {
+        if (! $this->is_admin) {
+            return false;
+        }
+
+        $enum = $permission instanceof AdminPermission
+            ? $permission
+            : AdminPermission::tryFrom($permission);
+
+        if ($enum === null) {
+            return false;
+        }
+
+        return in_array($enum, AdminRolePermissions::for($this->resolvedAdminRole()), true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function adminPermissionValues(): array
+    {
+        return array_map(
+            fn (AdminPermission $permission) => $permission->value,
+            AdminRolePermissions::for($this->resolvedAdminRole())
+        );
     }
 
     public function accounts()

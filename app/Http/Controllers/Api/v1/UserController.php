@@ -10,10 +10,12 @@ use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Http\Resources\UserBadgeResource;
 use STS\Jobs\SendDeleteAccountRequestEmail;
+use STS\Models\AdminActionLog;
 use STS\Models\DeleteAccountRequest;
 use STS\Models\Donation;
 use STS\Models\Rating;
 use STS\Models\User;
+use STS\Services\AdminActionLogger;
 use STS\Services\AnonymizationService;
 use STS\Services\IdentityVerificationOutcome;
 use STS\Services\Logic\DeviceManager;
@@ -151,12 +153,48 @@ class UserController extends Controller
             throw new ExceptionWithErrors('User not found.');
         }
 
+        $changedKeys = $this->adminUpdateChangedKeys($user, $data);
         $profile = $this->userLogic->update($user, $data, false, true);
         if (! $profile) {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
 
+        if ($changedKeys !== []) {
+            AdminActionLogger::log(
+                $me,
+                AdminActionLog::ACTION_USER_UPDATE,
+                (int) $profile->id,
+                ['keys' => $changedKeys]
+            );
+        }
+
         return $this->item($profile, new ProfileTransformer($me));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function adminUpdateChangedKeys(User $user, array $data): array
+    {
+        $changed = [];
+        foreach ($data as $key => $value) {
+            if (! is_string($key) || in_array($key, ['user', 'password_confirmation'], true)) {
+                continue;
+            }
+            if ($key === 'password') {
+                if ($value) {
+                    $changed[] = 'password';
+                }
+
+                continue;
+            }
+            if ($user->getAttribute($key) != $value) {
+                $changed[] = $key;
+            }
+        }
+
+        return $changed;
     }
 
     public function updatePhoto(Request $request)

@@ -10,6 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use Laravel\Pulse\Entry;
 use Laravel\Pulse\Facades\Pulse;
 use Laravel\Pulse\Value;
+use STS\Admin\AdminPermission;
 use STS\Contracts\Logic\Social;
 use STS\Models\User;
 use STS\Services\Logic\SocialManager;
@@ -29,7 +30,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Gate::define('viewPulse', fn (?User $user) => (bool) ($user?->is_admin));
+        foreach (AdminPermission::cases() as $permission) {
+            Gate::define($permission->value, fn (?User $user) => (bool) $user?->hasAdminPermission($permission));
+        }
+
+        Gate::define('viewPulse', fn (?User $user) => (bool) $user?->hasAdminPermission(AdminPermission::PulseView));
 
         Pulse::user(fn (User $user) => [
             'name' => $user->name,

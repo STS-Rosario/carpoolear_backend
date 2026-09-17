@@ -1,5 +1,6 @@
 <?php
 
+use STS\Http\Controllers\Api\Admin\ActionLogController as AdminActionLogController;
 use STS\Http\Controllers\Api\Admin\AdminDashboardController;
 use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
@@ -265,51 +266,70 @@ Route::middleware(['api'])->group(function () {
 
     // Admin routes
     Route::prefix('admin')->middleware('user.admin')->group(function () {
-        Route::get('dashboard', [AdminDashboardController::class, 'show']);
-        Route::get('identity-verification-stats', [IdentityVerificationStatsController::class, 'show']);
-        Route::get('trip-excess-contributions', [AdminTripExcessContributionController::class, 'index']);
-        Route::get('trip-excess-contributions/{id}', [AdminTripExcessContributionController::class, 'show']);
-        Route::post('trip-excess-contributions/{id}/status', [AdminTripExcessContributionController::class, 'updateStatus']);
-        Route::apiResource('badges', BadgeController::class);
-        // Campaign routes
-        Route::apiResource('campaigns', CampaignController::class);
-        Route::apiResource('campaigns.milestones', CampaignMilestoneController::class);
-        Route::apiResource('campaigns.donations', CampaignDonationController::class);
-        Route::apiResource('campaigns.rewards', CampaignRewardController::class);
-        // Car management routes
-        Route::apiResource('cars', AdminCarController::class);
-        Route::apiResource('car-colors', AdminCarColorController::class)->except(['create', 'edit']);
-        Route::apiResource('car-brands', AdminCarBrandController::class)->except(['create', 'edit']);
-        Route::apiResource('car-brands.models', AdminCarModelController::class)->except(['create', 'edit']);
-        Route::post('car-catalog/sync', [AdminCarCatalogSyncController::class, 'store']);
-        Route::get('car-catalog/sync-status', [AdminCarCatalogSyncController::class, 'status']);
-        Route::get('users/{user}/ratings', [AdminRatingController::class, 'index']);
-        Route::patch('ratings/{rating}', [AdminRatingController::class, 'update']);
-        Route::patch('references/{reference}', [AdminReferencesController::class, 'update']);
-        Route::get('users', [AdminUserController::class, 'index']);
-        Route::get('user-migrations', [AdminUserMigrationController::class, 'index']);
-        Route::post('user-migrations', [AdminUserMigrationController::class, 'store']);
-        Route::get('users/account-delete-list', [AdminUserController::class, 'accountDeleteList']);
-        Route::post('users/account-delete-update', [AdminUserController::class, 'accountDeleteUpdate']);
-        Route::get('banned-users', [AdminUserController::class, 'bannedUsersList']);
-        Route::post('users/{user}/delete', [AdminUserController::class, 'delete']);
-        Route::post('users/{user}/anonymize', [AdminUserController::class, 'anonymize']);
-        Route::post('users/{user}/ban-and-anonymize', [AdminUserController::class, 'banAndAnonymize']);
-        Route::post('users/{user}/clear-identity-validation', [AdminUserController::class, 'clearIdentityValidation']);
-        Route::post('users/{user}/impersonate', [AdminImpersonationController::class, 'start']);
-        Route::post('impersonations/{session}/stop', [AdminImpersonationController::class, 'stop']);
-        Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
-        Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
-        // Manual identity validations (image route before {id} so /image/{type} is matched)
-        Route::get('manual-identity-validations', [AdminManualIdentityValidationController::class, 'index']);
-        Route::get('manual-identity-validations/{id}/image/{type}', [AdminManualIdentityValidationController::class, 'image'])->where('type', 'front|back|selfie');
-        Route::get('manual-identity-validations/{id}', [AdminManualIdentityValidationController::class, 'show']);
-        Route::post('manual-identity-validations/{id}/review', [AdminManualIdentityValidationController::class, 'review']);
-        Route::post('manual-identity-validations/{id}/state', [AdminManualIdentityValidationController::class, 'updateState']);
-        Route::post('manual-identity-validations/{id}/private-note', [AdminManualIdentityValidationController::class, 'updatePrivateNote']);
-        Route::post('manual-identity-validations/{id}/purge', [AdminManualIdentityValidationController::class, 'purge']);
+        Route::get('action-logs', [AdminActionLogController::class, 'index'])->middleware('can:admin.audit.view');
+        Route::middleware('can:admin.dashboard.view')->group(function () {
+            Route::get('dashboard', [AdminDashboardController::class, 'show']);
+        });
+        Route::middleware('can:admin.identity.stats')->group(function () {
+            Route::get('identity-verification-stats', [IdentityVerificationStatsController::class, 'show']);
+        });
+        Route::middleware('can:admin.trips.excess_contribution')->group(function () {
+            Route::get('trip-excess-contributions', [AdminTripExcessContributionController::class, 'index']);
+            Route::get('trip-excess-contributions/{id}', [AdminTripExcessContributionController::class, 'show']);
+            Route::post('trip-excess-contributions/{id}/status', [AdminTripExcessContributionController::class, 'updateStatus']);
+        });
+        Route::apiResource('badges', BadgeController::class)->middleware('can:admin.badges.manage');
+        Route::middleware('can:admin.campaigns.manage')->group(function () {
+            Route::apiResource('campaigns', CampaignController::class);
+            Route::apiResource('campaigns.milestones', CampaignMilestoneController::class);
+            Route::apiResource('campaigns.donations', CampaignDonationController::class);
+            Route::apiResource('campaigns.rewards', CampaignRewardController::class);
+        });
+        Route::middleware('can:admin.cars.catalog')->group(function () {
+            Route::apiResource('cars', AdminCarController::class);
+            Route::apiResource('car-colors', AdminCarColorController::class)->except(['create', 'edit']);
+            Route::apiResource('car-brands', AdminCarBrandController::class)->except(['create', 'edit']);
+            Route::apiResource('car-brands.models', AdminCarModelController::class)->except(['create', 'edit']);
+            Route::post('car-catalog/sync', [AdminCarCatalogSyncController::class, 'store']);
+            Route::get('car-catalog/sync-status', [AdminCarCatalogSyncController::class, 'status']);
+        });
+        Route::get('users/{user}/ratings', [AdminRatingController::class, 'index'])->middleware('can:admin.users.search');
+        Route::patch('ratings/{rating}', [AdminRatingController::class, 'update'])->middleware('can:admin.ratings.edit');
+        Route::patch('references/{reference}', [AdminReferencesController::class, 'update'])->middleware('can:admin.references.edit');
+        Route::get('users', [AdminUserController::class, 'index'])->middleware('can:admin.users.search');
+        Route::middleware('can:admin.users.migrate')->group(function () {
+            Route::get('user-migrations', [AdminUserMigrationController::class, 'index']);
+            Route::post('user-migrations', [AdminUserMigrationController::class, 'store']);
+        });
+        Route::middleware('can:admin.users.delete_requests')->group(function () {
+            Route::get('users/account-delete-list', [AdminUserController::class, 'accountDeleteList']);
+            Route::post('users/account-delete-update', [AdminUserController::class, 'accountDeleteUpdate']);
+        });
+        Route::get('banned-users', [AdminUserController::class, 'bannedUsersList'])->middleware('can:admin.users.banned_list');
+        Route::post('users/{user}/delete', [AdminUserController::class, 'delete'])->middleware('can:admin.users.delete');
+        Route::post('users/{user}/anonymize', [AdminUserController::class, 'anonymize'])->middleware('can:admin.users.anonymize');
+        Route::post('users/{user}/ban-and-anonymize', [AdminUserController::class, 'banAndAnonymize'])->middleware('can:admin.users.ban_and_anonymize');
+        Route::post('users/{user}/clear-identity-validation', [AdminUserController::class, 'clearIdentityValidation'])->middleware('can:admin.users.unverify');
+        Route::middleware('can:admin.users.impersonate')->group(function () {
+            Route::post('users/{user}/impersonate', [AdminImpersonationController::class, 'start']);
+            Route::post('impersonations/{session}/stop', [AdminImpersonationController::class, 'stop']);
+        });
+        Route::middleware('can:admin.users.edit')->group(function () {
+            Route::get('users/{user}/cars', [AdminCarController::class, 'userCars']);
+            Route::post('users/{user}/cars', [AdminCarController::class, 'storeForUser']);
+        });
+        Route::middleware('can:admin.identity.manual.review')->group(function () {
+            Route::get('manual-identity-validations', [AdminManualIdentityValidationController::class, 'index']);
+            Route::get('manual-identity-validations/{id}/image/{type}', [AdminManualIdentityValidationController::class, 'image'])->where('type', 'front|back|selfie');
+            Route::get('manual-identity-validations/{id}', [AdminManualIdentityValidationController::class, 'show']);
+            Route::post('manual-identity-validations/{id}/review', [AdminManualIdentityValidationController::class, 'review']);
+            Route::post('manual-identity-validations/{id}/state', [AdminManualIdentityValidationController::class, 'updateState']);
+            Route::post('manual-identity-validations/{id}/private-note', [AdminManualIdentityValidationController::class, 'updatePrivateNote']);
+        });
+        Route::post('manual-identity-validations/{id}/purge', [AdminManualIdentityValidationController::class, 'purge'])
+            ->middleware('can:admin.identity.manual.purge');
 
-        Route::prefix('maintenance')->group(function () {
+        Route::prefix('maintenance')->middleware('can:admin.maintenance.manage')->group(function () {
             Route::get('schedules', [MaintenanceController::class, 'schedulesIndex']);
             Route::post('schedules', [MaintenanceController::class, 'schedulesStore']);
             Route::patch('schedules/{schedule}', [MaintenanceController::class, 'schedulesUpdate']);
@@ -319,34 +339,36 @@ Route::middleware(['api'])->group(function () {
             Route::get('audit-logs', [MaintenanceController::class, 'auditLogs']);
         });
 
-        // Mercado Pago rejected validations (OAuth validation failures)
-        Route::get('mercado-pago-rejected-validations', [AdminMercadoPagoRejectedValidationController::class, 'index']);
-        Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
-        Route::post('mercado-pago-rejected-validations/{id}/review', [AdminMercadoPagoRejectedValidationController::class, 'review']);
-        Route::post('mercado-pago-rejected-validations/{id}/private-note', [AdminMercadoPagoRejectedValidationController::class, 'updatePrivateNote']);
-        Route::post('mercado-pago-rejected-validations/{id}/approve', [AdminMercadoPagoRejectedValidationController::class, 'approve']);
+        Route::middleware('can:admin.identity.mp.review')->group(function () {
+            Route::get('mercado-pago-rejected-validations', [AdminMercadoPagoRejectedValidationController::class, 'index']);
+            Route::get('mercado-pago-rejected-validations/{id}', [AdminMercadoPagoRejectedValidationController::class, 'show']);
+            Route::post('mercado-pago-rejected-validations/{id}/review', [AdminMercadoPagoRejectedValidationController::class, 'review']);
+            Route::post('mercado-pago-rejected-validations/{id}/private-note', [AdminMercadoPagoRejectedValidationController::class, 'updatePrivateNote']);
+            Route::post('mercado-pago-rejected-validations/{id}/approve', [AdminMercadoPagoRejectedValidationController::class, 'approve']);
+        });
 
-        Route::get('support/tickets', [AdminSupportTicketController::class, 'index']);
-        Route::post('support/tickets', [AdminSupportTicketController::class, 'create']);
-        Route::get('support/tickets/{id}', [AdminSupportTicketController::class, 'show']);
-        Route::post('support/tickets/{id}/replies', [AdminSupportTicketController::class, 'reply'])->middleware('throttle:support-ticket-admin-reply');
-        Route::match(['patch', 'put'], 'support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
-        Route::match(['patch', 'put'], 'support/tickets/{id}/priority', [AdminSupportTicketController::class, 'updatePriority']);
-        Route::match(['patch', 'put'], 'support/tickets/{id}/type', [AdminSupportTicketController::class, 'updateType']);
-        Route::match(['patch', 'put'], 'support/tickets/{id}/internal-note', [AdminSupportTicketController::class, 'updateInternalNote']);
-        Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
-        Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
-        Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
-        Route::post('support/tickets/{id}/unresolve', [AdminSupportTicketController::class, 'unresolve']);
-        Route::post('support/tickets/{id}/needs-review', [AdminSupportTicketController::class, 'markNeedsReview']);
-        Route::post('support/tickets/{id}/assign-me', [AdminSupportTicketController::class, 'assignMe']);
-        Route::post('support/tickets/{id}/unassign-me', [AdminSupportTicketController::class, 'unassignMe']);
-        Route::get('support/tickets/{ticketId}/attachments/{attachmentId}/image', [AdminSupportTicketController::class, 'attachmentImage']);
-        Route::post('support/tickets/{id}/purge-attachments', [AdminSupportTicketController::class, 'purgeAttachments']);
-
-        Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
-        Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
-        Route::apiResource('changelogs', AdminChangelogController::class)->except(['create', 'edit']);
+        Route::middleware('can:admin.support.tickets')->group(function () {
+            Route::get('support/tickets', [AdminSupportTicketController::class, 'index']);
+            Route::post('support/tickets', [AdminSupportTicketController::class, 'create']);
+            Route::get('support/tickets/{id}', [AdminSupportTicketController::class, 'show']);
+            Route::post('support/tickets/{id}/replies', [AdminSupportTicketController::class, 'reply'])->middleware('throttle:support-ticket-admin-reply');
+            Route::match(['patch', 'put'], 'support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
+            Route::match(['patch', 'put'], 'support/tickets/{id}/priority', [AdminSupportTicketController::class, 'updatePriority']);
+            Route::match(['patch', 'put'], 'support/tickets/{id}/type', [AdminSupportTicketController::class, 'updateType']);
+            Route::match(['patch', 'put'], 'support/tickets/{id}/internal-note', [AdminSupportTicketController::class, 'updateInternalNote']);
+            Route::post('support/tickets/{id}/resolve', [AdminSupportTicketController::class, 'resolve']);
+            Route::post('support/tickets/{id}/close', [AdminSupportTicketController::class, 'close']);
+            Route::post('support/tickets/{id}/reopen', [AdminSupportTicketController::class, 'reopen']);
+            Route::post('support/tickets/{id}/unresolve', [AdminSupportTicketController::class, 'unresolve']);
+            Route::post('support/tickets/{id}/needs-review', [AdminSupportTicketController::class, 'markNeedsReview']);
+            Route::post('support/tickets/{id}/assign-me', [AdminSupportTicketController::class, 'assignMe']);
+            Route::post('support/tickets/{id}/unassign-me', [AdminSupportTicketController::class, 'unassignMe']);
+            Route::get('support/tickets/{ticketId}/attachments/{attachmentId}/image', [AdminSupportTicketController::class, 'attachmentImage']);
+            Route::post('support/tickets/{id}/purge-attachments', [AdminSupportTicketController::class, 'purgeAttachments']);
+            Route::post('support/reply-templates/{reply_template}/duplicate', [AdminSupportReplyTemplateController::class, 'duplicate']);
+            Route::apiResource('support/reply-templates', AdminSupportReplyTemplateController::class)->except(['create', 'edit']);
+        });
+        Route::apiResource('changelogs', AdminChangelogController::class)->except(['create', 'edit'])->middleware('can:admin.changelogs.manage');
     });
 
     Route::post('campaigns/{campaign}/rewards/{reward}/purchase', [ApiCampaignRewardController::class, 'purchase'])->middleware('logged.optional');

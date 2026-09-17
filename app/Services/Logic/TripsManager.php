@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Rule;
+use STS\Admin\AdminPermission;
 use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
@@ -601,7 +602,7 @@ class TripsManager extends BaseManager
     {
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
-            if ($user->id == $trip->user->id || $user->is_admin) {
+            if ($user->id == $trip->user->id || $user->hasAdminPermission(AdminPermission::TripsHide)) {
                 if (! isset($trip->deleted_at) || is_null($trip->deleted_at) || empty($trip->deleted_at->toDateTimeString())) {
                     Trip::where('id', $trip_id)
                         ->update(['deleted_at' => '2000-01-01 00:00:00']);
