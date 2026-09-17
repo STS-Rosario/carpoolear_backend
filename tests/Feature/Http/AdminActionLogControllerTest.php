@@ -33,22 +33,26 @@ class AdminActionLogControllerTest extends TestCase
         $target = User::factory()->create();
         $otherTarget = User::factory()->create();
 
-        AdminActionLog::query()->create([
+        $matching = AdminActionLog::query()->create([
             'admin_user_id' => $helpdesk->id,
             'action' => AdminActionLog::ACTION_USER_UPDATE,
             'target_user_id' => $target->id,
             'details' => ['keys' => ['description']],
+        ]);
+        $matching->forceFill([
             'created_at' => '2026-09-10 12:00:00',
             'updated_at' => '2026-09-10 12:00:00',
-        ]);
-        AdminActionLog::query()->create([
+        ])->saveQuietly();
+        $other = AdminActionLog::query()->create([
             'admin_user_id' => $otherAdmin->id,
             'action' => AdminActionLog::ACTION_USER_DELETE,
             'target_user_id' => $otherTarget->id,
             'details' => [],
+        ]);
+        $other->forceFill([
             'created_at' => '2026-09-01 12:00:00',
             'updated_at' => '2026-09-01 12:00:00',
-        ]);
+        ])->saveQuietly();
 
         $this->actingAsStaff($helpdesk);
 

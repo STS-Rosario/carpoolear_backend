@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
+use STS\Models\AdminActionLog;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Notifications\SupportTicketReplyNotification;
+use STS\Services\AdminActionLogger;
 use STS\Services\SupportTicketService;
 use STS\Support\AdminPagination;
 use STS\Support\ImageAttachmentRules;
@@ -144,6 +146,8 @@ class SupportTicketController extends Controller
             return $ticket->fresh();
         });
 
+        $this->logTicketMutation($admin, $ticket, 'create');
+
         $notification = new SupportTicketReplyNotification;
         $notification->setAttribute('ticket', $ticket);
         $notification->setAttribute('from', $admin);
@@ -199,6 +203,8 @@ class SupportTicketController extends Controller
             $ticket->save();
         });
 
+        $this->logTicketMutation($admin, $ticket, 'reply');
+
         $notification = new SupportTicketReplyNotification;
         $notification->setAttribute('ticket', $ticket->fresh());
         $notification->setAttribute('from', $admin);
@@ -231,6 +237,8 @@ class SupportTicketController extends Controller
         $ticket->updated_by = $admin->id;
         $ticket->save();
 
+        $this->logTicketMutation($admin, $ticket, 'reopen');
+
         return response()->json(['data' => $ticket]);
     }
 
@@ -244,6 +252,7 @@ class SupportTicketController extends Controller
         }
 
         $this->supportTicketService->unresolveTicket($ticket, $admin->id);
+        $this->logTicketMutation($admin, $ticket, 'unresolve');
 
         return response()->json(['data' => $ticket->fresh()]);
     }
@@ -255,6 +264,7 @@ class SupportTicketController extends Controller
 
         if ($ticket->status === SupportTicket::STATUS_NEEDS_REVIEW) {
             $this->supportTicketService->undoNeedsReviewTicket($ticket, $admin->id);
+            $this->logTicketMutation($admin, $ticket, 'undo_needs_review');
 
             return response()->json(['data' => $ticket->fresh()]);
         }
@@ -277,6 +287,8 @@ class SupportTicketController extends Controller
         }
         $ticket->save();
 
+        $this->logTicketMutation($admin, $ticket, 'status', ['status' => $validated['status']]);
+
         return response()->json(['data' => $ticket]);
     }
 
@@ -285,10 +297,13 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'priority' => 'required|in:low,normal,high',
         ]);
+        $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
         $ticket->priority = $validated['priority'];
-        $ticket->updated_by = auth()->id();
+        $ticket->updated_by = $admin->id;
         $ticket->save();
+
+        $this->logTicketMutation($admin, $ticket, 'priority', ['priority' => $validated['priority']]);
 
         return response()->json(['data' => $ticket]);
     }
@@ -298,11 +313,14 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'type' => SupportTicket::typeValidationRule(),
         ]);
+        $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
         $ticket->type = $validated['type'];
         $ticket->priority = SupportTicket::TYPE_DEFAULT_PRIORITIES[$validated['type']] ?? 'normal';
-        $ticket->updated_by = auth()->id();
+        $ticket->updated_by = $admin->id;
         $ticket->save();
+
+        $this->logTicketMutation($admin, $ticket, 'type', ['type' => $validated['type']]);
 
         return response()->json(['data' => $ticket]);
     }
@@ -312,10 +330,13 @@ class SupportTicketController extends Controller
         $validated = $request->validate([
             'internal_note_markdown' => 'nullable|string',
         ]);
+        $admin = auth()->user();
         $ticket = SupportTicket::findOrFail($id);
         $ticket->internal_note_markdown = $validated['internal_note_markdown'] ?? null;
-        $ticket->updated_by = auth()->id();
+        $ticket->updated_by = $admin->id;
         $ticket->save();
+
+        $this->logTicketMutation($admin, $ticket, 'internal_note');
 
         return response()->json(['data' => $ticket]);
     }
@@ -329,8 +350,12 @@ class SupportTicketController extends Controller
 
     public function purgeAttachments(int $id): JsonResponse
     {
-        SupportTicket::query()->findOrFail($id);
+        $ticket = SupportTicket::query()->findOrFail($id);
         $this->supportTicketService->purgeTicketAttachments($id);
+        $admin = auth()->user();
+        if ($admin) {
+            $this->logTicketMutation($admin, $ticket, 'purge_attachments');
+        }
 
         return response()->json(['message' => 'Attachments purged']);
     }
@@ -347,6 +372,8 @@ class SupportTicketController extends Controller
             return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
 
+        $this->logTicketMutation($admin, $ticket, 'assign_me');
+
         return response()->json(['data' => $ticket->fresh(self::ticketDetailRelationships())]);
     }
 
@@ -361,6 +388,8 @@ class SupportTicketController extends Controller
         } catch (HttpException $exception) {
             return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
         }
+
+        $this->logTicketMutation($admin, $ticket, 'unassign_me');
 
         return response()->json(['data' => $ticket->fresh(self::ticketDetailRelationships())]);
     }
@@ -396,7 +425,29 @@ class SupportTicketController extends Controller
             $ticket->save();
         });
 
+        $this->logTicketMutation($admin, $ticket, 'status', ['status' => $status]);
+
         return response()->json(['data' => $ticket->fresh()]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $details
+     */
+    private function logTicketMutation($admin, SupportTicket $ticket, string $mutation, array $details = []): void
+    {
+        if (! $admin) {
+            return;
+        }
+
+        AdminActionLogger::log(
+            $admin,
+            AdminActionLog::ACTION_SUPPORT_TICKET_UPDATE,
+            (int) $ticket->user_id,
+            array_merge([
+                'ticket_id' => $ticket->id,
+                'mutation' => $mutation,
+            ], $details)
+        );
     }
 
     private function queryFlagIsTruthy(mixed $value): bool

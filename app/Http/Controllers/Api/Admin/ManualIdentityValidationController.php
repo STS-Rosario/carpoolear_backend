@@ -6,9 +6,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
+use STS\Models\AdminActionLog;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
+use STS\Services\AdminActionLogger;
 use STS\Services\IdentityVerificationOutcome;
 use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
@@ -211,6 +213,17 @@ class ManualIdentityValidationController extends Controller
         $this->syncUserIdentityForReviewStatus($item->review_status, $item->user);
         $this->emitReviewOutcome($item, $validated['action']);
 
+        AdminActionLogger::log(
+            $admin,
+            AdminActionLog::ACTION_IDENTITY_REVIEW,
+            (int) $item->user_id,
+            [
+                'source' => 'manual',
+                'validation_id' => $item->id,
+                'action' => $validated['action'],
+            ]
+        );
+
         if (in_array($validated['action'], ['approve', 'reject'], true)) {
             $this->reviewNotifier->notify(
                 $item->user,
@@ -260,6 +273,21 @@ class ManualIdentityValidationController extends Controller
         }
 
         $item->save();
+
+        $admin = $request->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $item->user_id,
+                [
+                    'source' => 'manual',
+                    'validation_id' => $item->id,
+                    'mutation' => 'state',
+                    'changes' => $validated,
+                ]
+            );
+        }
 
         return $this->show($id);
     }
@@ -367,6 +395,20 @@ class ManualIdentityValidationController extends Controller
         $item->private_admin_note = $validated['private_admin_note'] ?? null;
         $item->save();
 
+        $admin = $request->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $item->user_id,
+                [
+                    'source' => 'manual',
+                    'validation_id' => $item->id,
+                    'mutation' => 'private_note',
+                ]
+            );
+        }
+
         return $this->show($id);
     }
 
@@ -378,6 +420,20 @@ class ManualIdentityValidationController extends Controller
         $item = ManualIdentityValidation::findOrFail($id);
 
         ManualIdentityValidationDeletion::purgeStoredPhotos($item);
+
+        $admin = auth()->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $item->user_id,
+                [
+                    'source' => 'manual',
+                    'validation_id' => $item->id,
+                    'mutation' => 'purge',
+                ]
+            );
+        }
 
         return response()->json(['message' => 'Photos purged', 'data' => $item->fresh()]);
     }

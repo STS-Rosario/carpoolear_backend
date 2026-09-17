@@ -1,5 +1,6 @@
 <?php
 
+use STS\Http\Controllers\Api\Admin\ActionLogController as AdminActionLogController;
 use STS\Http\Controllers\Api\Admin\AdminDashboardController;
 use STS\Http\Controllers\Api\Admin\BadgeController;
 use STS\Http\Controllers\Api\Admin\CampaignController;
@@ -265,6 +266,7 @@ Route::middleware(['api'])->group(function () {
 
     // Admin routes
     Route::prefix('admin')->middleware('user.admin')->group(function () {
+        Route::get('action-logs', [AdminActionLogController::class, 'index'])->middleware('can:admin.audit.view');
         Route::middleware('can:admin.dashboard.view')->group(function () {
             Route::get('dashboard', [AdminDashboardController::class, 'show']);
         });

@@ -5,8 +5,10 @@ namespace STS\Http\Controllers\Api\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
+use STS\Models\AdminActionLog;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
+use STS\Services\AdminActionLogger;
 use STS\Services\IdentityVerificationOutcome;
 use STS\Services\UserIdentityVerificationSuccessService;
 use STS\Support\AdminPagination;
@@ -107,6 +109,17 @@ class MercadoPagoRejectedValidationController extends Controller
 
         $item->save();
         $item->load(['user:id,name,nro_doc,email,identity_validated', 'approvedBy:id,name', 'reviewedBy:id,name']);
+
+        AdminActionLogger::log(
+            $admin,
+            AdminActionLog::ACTION_IDENTITY_REVIEW,
+            (int) $user->id,
+            [
+                'source' => 'mercado_pago',
+                'validation_id' => $item->id,
+                'action' => $validated['action'],
+            ]
+        );
 
         return response()->json(['data' => $this->serializeItem($item)]);
     }
