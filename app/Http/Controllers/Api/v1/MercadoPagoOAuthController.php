@@ -76,7 +76,7 @@ class MercadoPagoOAuthController extends Controller
                     'mp_payload' => $me,
                 ]);
 
-                return redirect($oauthService->getFrontendRedirectUrl('error'));
+                return redirect($oauthService->getFrontendRedirectUrl('missing_identification'));
             }
 
             $mpDni = MercadoPagoOAuthService::extractDniForComparison($identification);
