@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\TripDescriptionContributionHelper;
 use STS\Helpers\TripPriceHelper;
+use STS\Helpers\TripPricingBreakdown;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -920,18 +921,26 @@ class TripRepository
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-        $fuelPrice = config('carpoolear.module_max_price_fuel_price');
-        $kilometersPerLiter = config('carpoolear.module_max_price_kilometer_by_liter');
-        $pricePerKilometer = $fuelPrice / $kilometersPerLiter;
-        $selladoViajePrice = config('carpoolear.module_trip_creation_payment_enabled') ? config('carpoolear.module_trip_creation_payment_amount_cents') : 0;
+        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled');
+        $selladoViajePrice = $includesSellado
+            ? (int) config('carpoolear.module_trip_creation_payment_amount_cents')
+            : 0;
 
         $tollsVariancePercent = $this->resolveTollsVariancePercent($allPointsToCheck);
         $maxPriceVariancePercent = config('carpoolear.module_max_price_price_variance_max_extra', 15);
 
-        $basePriceCents = round($distanceInMeters / 1000 * $pricePerKilometer * 100);
-        $tollsVarianceCents = round($basePriceCents * ($tollsVariancePercent / 100));
-        $recommendedTripPriceCents = $basePriceCents + $tollsVarianceCents + $selladoViajePrice;
-        $maximumTripPriceCents = round(($basePriceCents + $tollsVarianceCents) * (1 + $maxPriceVariancePercent / 100)) + $selladoViajePrice;
+        $pricingBreakdown = TripPricingBreakdown::calculate(
+            $distanceInMeters,
+            (float) config('carpoolear.module_max_price_fuel_price'),
+            (float) config('carpoolear.module_max_price_kilometer_by_liter'),
+            $tollsVariancePercent,
+            $selladoViajePrice,
+            $includesSellado
+        );
+        $recommendedTripPriceCents = $pricingBreakdown['total_cents'];
+        $fuelAndTollsCents = $pricingBreakdown['fuel_cents'] + $pricingBreakdown['tolls_cents'];
+        $maximumTripPriceCents = (int) round($fuelAndTollsCents * (1 + $maxPriceVariancePercent / 100))
+            + $pricingBreakdown['sellado_cents'];
 
         $data = [
             'distance' => $distanceInMeters,
@@ -940,6 +949,7 @@ class TripRepository
             'route_needs_payment' => $routeNeedsPayment,
             'recommended_trip_price_cents' => $recommendedTripPriceCents,
             'maximum_trip_price_cents' => $maximumTripPriceCents,
+            'pricing_breakdown' => $pricingBreakdown,
         ];
 
         $response = [
