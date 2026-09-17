@@ -50,6 +50,7 @@ class SupportTicketController extends Controller
     {
         $validated = $request->validate([
             'type' => SupportTicket::typeValidationRule(),
+            'source' => SupportTicket::sourceValidationRule(),
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => [
                 'required',
@@ -76,6 +77,7 @@ class SupportTicketController extends Controller
             $ticket = SupportTicket::create([
                 'user_id' => $user->id,
                 'type' => $validated['type'],
+                'source' => $validated['source'] ?? SupportTicket::SOURCE_WEB_FORM,
                 'subject' => $validated['subject'],
                 'status' => 'Open',
                 'priority' => SupportTicket::TYPE_DEFAULT_PRIORITIES[$validated['type']] ?? 'normal',
