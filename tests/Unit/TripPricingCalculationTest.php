@@ -63,6 +63,15 @@ class TripPricingCalculationTest extends TestCase
         $this->assertEqualsWithDelta($distanceMeters * 0.15, (float) $response['data']['co2'], 0.0001);
         $this->assertEquals($expected['recommended_trip_price_cents'], $response['data']['recommended_trip_price_cents']);
         $this->assertEquals($expected['maximum_trip_price_cents'], $response['data']['maximum_trip_price_cents']);
+        $this->assertSame(
+            $expected['recommended_trip_price_cents'],
+            $response['data']['pricing_breakdown']['total_cents']
+        );
+        $this->assertSame($selladoEnabled, $response['data']['pricing_breakdown']['includes_sellado']);
+        $this->assertSame($selladoEnabled ? $selladoAmountCents : 0, $response['data']['pricing_breakdown']['sellado_cents']);
+        $this->assertSame($tollsVariancePercent, $response['data']['pricing_breakdown']['tolls_percent']);
+        $this->assertNull($response['data']['pricing_breakdown']['occupants']);
+        $this->assertNull($response['data']['pricing_breakdown']['per_person_cents']);
     }
 
     public function test_store_trip_info_success_uses_costa_atlantica_tolls_when_stop_in_zone(): void
@@ -106,6 +115,12 @@ class TripPricingCalculationTest extends TestCase
 
         $this->assertEquals($expected['recommended_trip_price_cents'], $response['data']['recommended_trip_price_cents']);
         $this->assertEquals($expected['maximum_trip_price_cents'], $response['data']['maximum_trip_price_cents']);
+        $this->assertSame($costaAtlanticaTollsVariancePercent, $response['data']['pricing_breakdown']['tolls_percent']);
+        $this->assertSame(
+            $expected['recommended_trip_price_cents'],
+            $response['data']['pricing_breakdown']['total_cents']
+        );
+        $this->assertFalse($response['data']['pricing_breakdown']['includes_sellado']);
     }
 
     public function test_carpoolear_config_preserves_decimal_values_from_env(): void
