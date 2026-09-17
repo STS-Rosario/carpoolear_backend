@@ -164,6 +164,51 @@ class TripPricingCalculationTest extends TestCase
         }
     }
 
+    public function test_carpoolear_config_show_breakdown_defaults_true_when_env_unset(): void
+    {
+        $key = 'MODULE_MAX_PRICE_SHOW_BREAKDOWN';
+        $previous = getenv($key);
+        putenv($key);
+        unset($_ENV[$key], $_SERVER[$key]);
+
+        try {
+            $config = include base_path('config/carpoolear.php');
+            $this->assertTrue($config['module_max_price_show_breakdown']);
+        } finally {
+            if ($previous === false || $previous === null) {
+                putenv($key);
+                unset($_ENV[$key], $_SERVER[$key]);
+            } else {
+                putenv($key.'='.$previous);
+                $_ENV[$key] = $previous;
+                $_SERVER[$key] = $previous;
+            }
+        }
+    }
+
+    public function test_carpoolear_config_show_breakdown_can_be_disabled_from_env(): void
+    {
+        $key = 'MODULE_MAX_PRICE_SHOW_BREAKDOWN';
+        $previous = getenv($key);
+        putenv($key.'=false');
+        $_ENV[$key] = 'false';
+        $_SERVER[$key] = 'false';
+
+        try {
+            $config = include base_path('config/carpoolear.php');
+            $this->assertFalse($config['module_max_price_show_breakdown']);
+        } finally {
+            if ($previous === false || $previous === null) {
+                putenv($key);
+                unset($_ENV[$key], $_SERVER[$key]);
+            } else {
+                putenv($key.'='.$previous);
+                $_ENV[$key] = $previous;
+                $_SERVER[$key] = $previous;
+            }
+        }
+    }
+
     public static function tripPricingProvider(): array
     {
         return [
