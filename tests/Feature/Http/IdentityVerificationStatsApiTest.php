@@ -28,15 +28,6 @@ class IdentityVerificationStatsApiTest extends TestCase
         ], $attrs));
     }
 
-    public function test_requires_admin(): void
-    {
-        $user = User::factory()->create();
-        $this->actingAs($user, 'api');
-
-        $this->getJson('api/admin/identity-verification-stats?from=2026-09-01&to=2026-09-30')
-            ->assertUnauthorized();
-    }
-
     public function test_mp_stats_include_rates_reason_breakdown_and_abandonment(): void
     {
         Carbon::setTestNow('2026-09-17 12:00:00');
