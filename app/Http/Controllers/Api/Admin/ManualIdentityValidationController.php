@@ -9,6 +9,7 @@ use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use STS\Services\UserIdentityVerificationSuccessService;
@@ -131,6 +132,7 @@ class ManualIdentityValidationController extends Controller
             'paid' => $item->paid,
             'review_status' => $item->review_status,
             'review_note' => $item->review_note,
+            'reject_reason' => $item->reject_reason,
             'private_admin_note' => $item->private_admin_note,
             'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
             'reviewed_by' => $item->reviewed_by,
@@ -184,6 +186,7 @@ class ManualIdentityValidationController extends Controller
         $validated = $request->validate([
             'action' => 'required|in:approve,reject,pending',
             'note' => 'required_if:action,reject,pending|nullable|string|min:1',
+            'reject_reason' => 'required_if:action,reject|nullable|in:'.implode(',', IdentityVerificationOutcome::MANUAL_REJECT_REASONS),
         ]);
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
@@ -200,9 +203,13 @@ class ManualIdentityValidationController extends Controller
         $item->reviewed_by = $admin->id;
         $item->reviewed_at = now();
         $item->review_note = $validated['note'] ?? '';
+        if ($validated['action'] === 'reject') {
+            $item->reject_reason = $validated['reject_reason'];
+        }
         $item->save();
 
         $this->syncUserIdentityForReviewStatus($item->review_status, $item->user);
+        $this->emitReviewOutcome($item, $validated['action']);
 
         if (in_array($validated['action'], ['approve', 'reject'], true)) {
             $this->reviewNotifier->notify(
@@ -313,6 +320,38 @@ class ManualIdentityValidationController extends Controller
         $user->identity_validation_rejected_at = null;
         $user->identity_validation_reject_reason = null;
         $user->save();
+    }
+
+    private function emitReviewOutcome(ManualIdentityValidation $item, string $action): void
+    {
+        $outcome = app(IdentityVerificationOutcome::class);
+        $payload = [
+            'user_id' => $item->user_id,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'related_type' => 'manual_identity_validations',
+            'related_id' => $item->id,
+        ];
+
+        if ($action === 'approve') {
+            $outcome->emit(array_merge($payload, [
+                'name' => IdentityVerificationOutcome::NAME_SUCCEEDED,
+            ]));
+
+            return;
+        }
+
+        if ($action === 'reject') {
+            $outcome->emit(array_merge($payload, [
+                'name' => IdentityVerificationOutcome::NAME_FAILED,
+                'reason' => $item->reject_reason,
+            ]));
+
+            return;
+        }
+
+        $outcome->emit(array_merge($payload, [
+            'name' => IdentityVerificationOutcome::NAME_INFO_REQUESTED,
+        ]));
     }
 
     /**

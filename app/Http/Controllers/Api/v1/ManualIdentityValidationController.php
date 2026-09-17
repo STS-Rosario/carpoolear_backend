@@ -11,6 +11,7 @@ use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Models\ManualIdentityValidation;
 use STS\Services\HeicToJpegConverter;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\ImageUploadValidator;
 use STS\Services\ManualIdentityValidationResubmitPolicy;
 use STS\Services\MercadoPagoService;
@@ -110,6 +111,10 @@ class ManualIdentityValidationController extends Controller
             throw new ExceptionWithErrors('Failed to create payment preference.', []);
         }
 
+        $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_PAYMENT_STARTED, $validationRequest->id, [
+            'payment_channel' => 'checkout_pro',
+        ]);
+
         return response()->json([
             'init_point' => $initPoint,
             'request_id' => $validationRequest->id,
@@ -178,6 +183,10 @@ class ManualIdentityValidationController extends Controller
             throw new ExceptionWithErrors('Failed to create QR order.', []);
         }
 
+        $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_PAYMENT_STARTED, $validationRequest->id, [
+            'payment_channel' => 'qr',
+        ]);
+
         return response()->json([
             'request_id' => $result['request_id'],
             'qr_data' => $result['qr_data'],
@@ -209,19 +218,23 @@ class ManualIdentityValidationController extends Controller
         }
 
         if (! $validationRequest->paid) {
+            $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
             throw new ExceptionWithErrors('Payment is required before submitting images.', [], 422);
         }
 
         if ($validationRequest->review_status === ManualIdentityValidation::REVIEW_STATUS_CLOSED) {
+            $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
             throw new ExceptionWithErrors('This request is closed.', [], 422);
         }
 
         $isResubmit = $validationRequest->review_status === ManualIdentityValidation::REVIEW_STATUS_REJECTED;
         if ($isResubmit) {
             if (! $resubmitPolicy->canResubmitWithoutPayment($validationRequest)) {
+                $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
                 throw new ExceptionWithErrors('Submission limit reached. Payment is required to try again.', [], 422);
             }
         } elseif ($validationRequest->submitted_at !== null) {
+            $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
             throw new ExceptionWithErrors('Documents were already submitted for this request.', [], 422);
         }
 
@@ -230,6 +243,7 @@ class ManualIdentityValidationController extends Controller
         $selfie = $request->file('selfie_image');
 
         if (! $front || ! $back || ! $selfie) {
+            $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
             throw new ExceptionWithErrors(
                 'All three images are required: front_image, back_image, selfie_image.',
                 []
@@ -242,6 +256,7 @@ class ManualIdentityValidationController extends Controller
             'selfie_image' => $selfie,
         ]);
         if ($phpUploadErrors !== []) {
+            $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
             throw new ExceptionWithErrors('Invalid image upload.', $phpUploadErrors);
         }
 
@@ -254,6 +269,7 @@ class ManualIdentityValidationController extends Controller
             ],
         );
         if ($laravelValidator->fails()) {
+            $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
             throw new ExceptionWithErrors('Invalid image upload.', $laravelValidator->errors()->toArray());
         }
 
@@ -266,6 +282,7 @@ class ManualIdentityValidationController extends Controller
                 ImageAttachmentRules::ALLOWED_EXTENSIONS,
             );
             if (! ($result['valid'] ?? true)) {
+                $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_UPLOAD_REJECTED, $validationRequest->id);
                 throw new ExceptionWithErrors('Invalid image upload.', $result['errors'] ?? []);
             }
         }
@@ -288,6 +305,8 @@ class ManualIdentityValidationController extends Controller
         $validationRequest->reviewed_at = null;
         $validationRequest->review_note = '';
         $validationRequest->save();
+
+        $this->emitManualEvent($user->id, IdentityVerificationOutcome::NAME_DOCS_SUBMITTED, $validationRequest->id);
 
         return response()->json([
             'message' => 'Submission received.',
@@ -338,5 +357,20 @@ class ManualIdentityValidationController extends Controller
         }
 
         return $file->store($basePath, 'local');
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    private function emitManualEvent(int $userId, string $name, int $relatedId, array $metadata = []): void
+    {
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $userId,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'name' => $name,
+            'related_type' => 'manual_identity_validations',
+            'related_id' => $relatedId,
+            'metadata' => $metadata,
+        ]);
     }
 }

@@ -12,6 +12,7 @@ use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
+use STS\Http\Controllers\Api\Admin\IdentityVerificationStatsController;
 use STS\Http\Controllers\Api\Admin\ImpersonationController as AdminImpersonationController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
 use STS\Http\Controllers\Api\Admin\ManualIdentityValidationController as AdminManualIdentityValidationController;
@@ -35,6 +36,7 @@ use STS\Http\Controllers\Api\v1\DebugController;
 use STS\Http\Controllers\Api\v1\DeviceController;
 use STS\Http\Controllers\Api\v1\FriendsController;
 use STS\Http\Controllers\Api\v1\HealthController;
+use STS\Http\Controllers\Api\v1\IdentityVerificationClientEventController;
 use STS\Http\Controllers\Api\v1\ImpersonationConsumeController;
 use STS\Http\Controllers\Api\v1\ImpersonationStopController;
 use STS\Http\Controllers\Api\v1\ManualIdentityValidationController;
@@ -109,6 +111,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/bank-data', [UserController::class, 'bankData']);
         Route::get('/terms', [UserController::class, 'terms']);
         Route::get('/mercadopago-oauth-url', [UserController::class, 'getMercadoPagoOAuthUrl']);
+        Route::post('/identity-verification-events', [IdentityVerificationClientEventController::class, 'store']);
         Route::get('/manual-identity-validation-cost', [ManualIdentityValidationController::class, 'cost']);
         Route::get('/manual-identity-validation', [ManualIdentityValidationController::class, 'status']);
         Route::post('/manual-identity-validation/preference', [ManualIdentityValidationController::class, 'createPreference']);
@@ -263,6 +266,7 @@ Route::middleware(['api'])->group(function () {
     // Admin routes
     Route::prefix('admin')->middleware('user.admin')->group(function () {
         Route::get('dashboard', [AdminDashboardController::class, 'show']);
+        Route::get('identity-verification-stats', [IdentityVerificationStatsController::class, 'show']);
         Route::get('trip-excess-contributions', [AdminTripExcessContributionController::class, 'index']);
         Route::get('trip-excess-contributions/{id}', [AdminTripExcessContributionController::class, 'show']);
         Route::post('trip-excess-contributions/{id}/status', [AdminTripExcessContributionController::class, 'updateStatus']);

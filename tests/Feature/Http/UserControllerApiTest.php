@@ -5,7 +5,9 @@ namespace Tests\Feature\Http;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use STS\Http\Controllers\Api\v1\UserController;
 use STS\Jobs\SendDeleteAccountRequestEmail;
@@ -867,6 +869,56 @@ class UserControllerApiTest extends TestCase
         $this->assertStringContainsString('client_id=', $url);
         $this->assertStringContainsString('mp-non-pkce-client', $url);
         $this->assertStringContainsString('redirect_uri=', $url);
+    }
+
+    public function test_mercadopago_oauth_url_records_attempt_started_and_caches_attempt_id(): void
+    {
+        config([
+            'carpoolear.identity_validation_enabled' => true,
+            'carpoolear.identity_validation_mercado_pago_enabled' => true,
+        ]);
+        config([
+            'services.mercadopago.client_id' => 'mp-non-pkce-client',
+            'services.mercadopago.oauth_redirect_uri' => 'https://app.example.test/mp/callback',
+            'services.mercadopago.oauth_pkce_enabled' => false,
+        ]);
+
+        $user = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'nro_doc' => '30111222',
+        ]);
+
+        $this->actingAs($user, 'api');
+        Log::spy();
+
+        $response = $this->getJson('api/users/mercadopago-oauth-url?surface=choice_cards&platform=web&app_version=4.1.0');
+        $response->assertOk();
+        $url = $response->json('authorization_url');
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+        $state = $query['state'] ?? null;
+        $this->assertIsString($state);
+        $cached = Cache::get('mp_oauth_state:'.$state);
+        $this->assertIsArray($cached);
+        $this->assertSame($user->id, $cached['user_id']);
+        $this->assertNotEmpty($cached['attempt_id']);
+        $this->assertSame('choice_cards', $cached['surface']);
+        $this->assertSame('web', $cached['platform']);
+        $this->assertSame('4.1.0', $cached['app_version']);
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'method' => 'mercado_pago',
+            'name' => 'attempt_started',
+            'attempt_id' => $cached['attempt_id'],
+            'surface' => 'choice_cards',
+            'platform' => 'web',
+            'app_version' => '4.1.0',
+        ]);
+
+        Log::shouldHaveReceived('info')->withArgs(function (...$args): bool {
+            return ($args[0] ?? null) === 'Identity verification mercado_pago attempt_started reason=';
+        })->once();
     }
 
     public function test_delete_account_request_persists_row_and_dispatches_email_job(): void

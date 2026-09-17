@@ -4,9 +4,11 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use STS\Exceptions\MercadoPagoOAuthRequestException;
 use STS\Http\Controllers\Controller;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\User;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\MercadoPagoOAuthService;
 use STS\Services\UserIdentityVerificationSuccessService;
 
@@ -15,32 +17,40 @@ class MercadoPagoOAuthController extends Controller
     /**
      * OAuth callback: MP redirects here with ?code=...&state=...
      */
-    public function callback(Request $request, MercadoPagoOAuthService $oauthService)
+    public function callback(Request $request, MercadoPagoOAuthService $oauthService, IdentityVerificationOutcome $outcome)
     {
-        // log the entire request payload
-
         $code = $request->query('code');
         $state = $request->query('state');
         $error = $request->query('error');
 
         if ($error) {
-            \Log::warning('MercadoPago OAuth callback: MP error param', ['error' => $error]);
+            $cached = is_string($state) && $state !== '' ? Cache::pull('mp_oauth_state:'.$state) : null;
+            $reason = $error === 'access_denied'
+                ? IdentityVerificationOutcome::REASON_OAUTH_CANCELLED
+                : IdentityVerificationOutcome::REASON_OAUTH_DENIED;
+            $this->emitMpFailure($outcome, $cached, $reason, [
+                'mp_error' => $error,
+            ]);
 
             return redirect($oauthService->getFrontendRedirectUrl('error'));
         }
 
         if (! $code || ! $state) {
-            \Log::warning('MercadoPago OAuth callback: missing code or state', ['has_code' => ! empty($code), 'has_state' => ! empty($state)]);
+            $this->emitMpFailure($outcome, null, IdentityVerificationOutcome::REASON_MISSING_CODE_OR_STATE, [
+                'has_code' => ! empty($code),
+                'has_state' => ! empty($state),
+            ]);
 
             return redirect($oauthService->getFrontendRedirectUrl('error'));
         }
 
         $cacheKey = 'mp_oauth_state:'.$state;
-        $cached = Cache::get($cacheKey);
-        Cache::forget($cacheKey);
+        $cached = Cache::pull($cacheKey);
 
         if (! $cached || ! isset($cached['user_id'])) {
-            \Log::warning('MercadoPago OAuth callback: invalid or expired state', ['state' => $state]);
+            $this->emitMpFailure($outcome, is_array($cached) ? $cached : null, IdentityVerificationOutcome::REASON_INVALID_OR_EXPIRED_STATE, [
+                'state' => $state,
+            ]);
 
             return redirect($oauthService->getFrontendRedirectUrl('error'));
         }
@@ -50,7 +60,9 @@ class MercadoPagoOAuthController extends Controller
         $user = User::find($userId);
 
         if (! $user) {
-            \Log::warning('MercadoPago OAuth callback: user not found', ['user_id' => $userId]);
+            $this->emitMpFailure($outcome, $cached, IdentityVerificationOutcome::REASON_USER_NOT_FOUND, [
+                'missing_user_id' => $userId,
+            ], null);
 
             return redirect($oauthService->getFrontendRedirectUrl('error'));
         }
@@ -59,7 +71,7 @@ class MercadoPagoOAuthController extends Controller
             $tokenResponse = $oauthService->exchangeCodeForToken($code, $codeVerifier);
             $accessToken = $tokenResponse['access_token'] ?? null;
             if (! $accessToken) {
-                \Log::warning('MercadoPago OAuth callback: no access_token in token response', ['user_id' => $userId]);
+                $this->emitMpFailure($outcome, $cached, IdentityVerificationOutcome::REASON_MISSING_ACCESS_TOKEN, [], $user->id);
 
                 return redirect($oauthService->getFrontendRedirectUrl('error'));
             }
@@ -71,10 +83,7 @@ class MercadoPagoOAuthController extends Controller
 
             $identification = $me['identification'] ?? null;
             if (! $identification || ! isset($identification['number'])) {
-                \Log::warning('MercadoPago OAuth callback: no identification in users/me', [
-                    'user_id' => $userId,
-                    'mp_payload' => $me,
-                ]);
+                $this->emitMpFailure($outcome, $cached, IdentityVerificationOutcome::REASON_MISSING_IDENTIFICATION, [], $user->id);
 
                 return redirect($oauthService->getFrontendRedirectUrl('missing_identification'));
             }
@@ -96,6 +105,7 @@ class MercadoPagoOAuthController extends Controller
                     'reject_reason' => $rejectReason,
                     'mp_payload' => MercadoPagoOAuthService::filterMePayloadForStorage($me),
                 ]);
+                $this->emitMpFailure($outcome, $cached, $rejectReason, [], $user->id);
                 $details = $this->buildMismatchRedirectDetails(
                     $nameMismatch,
                     $dniMismatch,
@@ -109,13 +119,70 @@ class MercadoPagoOAuthController extends Controller
             }
 
             app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'mercado_pago');
+            $outcome->emit(array_merge($this->cachedContext($cached), [
+                'user_id' => $user->id,
+                'method' => IdentityVerificationOutcome::METHOD_MERCADO_PAGO,
+                'name' => IdentityVerificationOutcome::NAME_SUCCEEDED,
+            ]));
 
             return redirect($oauthService->getFrontendRedirectUrl('success'));
+        } catch (MercadoPagoOAuthRequestException $e) {
+            $this->emitMpFailure($outcome, $cached, $e->reason, [
+                'http_status' => $e->httpStatus,
+            ], $user->id);
+
+            return redirect($oauthService->getFrontendRedirectUrl('error'));
         } catch (\Exception $e) {
-            \Log::error('MercadoPago OAuth callback exception', ['message' => $e->getMessage()]);
+            $this->emitMpFailure($outcome, $cached, IdentityVerificationOutcome::REASON_CALLBACK_EXCEPTION, [
+                'exception_class' => $e::class,
+                'exception_message' => $e->getMessage(),
+            ], $user->id);
 
             return redirect($oauthService->getFrontendRedirectUrl('error'));
         }
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $cached
+     * @param  array<string, mixed>  $metadata
+     */
+    private function emitMpFailure(
+        IdentityVerificationOutcome $outcome,
+        ?array $cached,
+        string $reason,
+        array $metadata = [],
+        ?int $userId = null
+    ): void {
+        $resolvedUserId = $userId;
+        if ($resolvedUserId === null && isset($cached['user_id']) && $reason !== IdentityVerificationOutcome::REASON_USER_NOT_FOUND) {
+            $resolvedUserId = (int) $cached['user_id'];
+        }
+
+        $outcome->emit(array_merge($this->cachedContext($cached), [
+            'user_id' => $resolvedUserId,
+            'method' => IdentityVerificationOutcome::METHOD_MERCADO_PAGO,
+            'name' => IdentityVerificationOutcome::NAME_FAILED,
+            'reason' => $reason,
+            'metadata' => $metadata,
+        ]));
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $cached
+     * @return array<string, mixed>
+     */
+    private function cachedContext(?array $cached): array
+    {
+        if (! is_array($cached)) {
+            return [];
+        }
+
+        return [
+            'attempt_id' => $cached['attempt_id'] ?? null,
+            'surface' => $cached['surface'] ?? null,
+            'platform' => $cached['platform'] ?? null,
+            'app_version' => $cached['app_version'] ?? null,
+        ];
     }
 
     private function resolveRejectReason(bool $nameMismatch, bool $dniMismatch): string

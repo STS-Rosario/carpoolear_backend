@@ -14,6 +14,7 @@ use STS\Models\ManualIdentityValidation;
 use STS\Models\PaymentAttempt;
 use STS\Models\Trip;
 use STS\Services\FriendTripAlertService;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\TripsManager;
 
@@ -704,7 +705,24 @@ class MercadoPagoWebhookController extends Controller
                 $validationRequest->payment_id = (string) $mpPayment['id'];
                 $validationRequest->markPaidAndAwaitingPhotosIfNeeded();
                 $validationRequest->save();
+                app(IdentityVerificationOutcome::class)->emit([
+                    'user_id' => $validationRequest->user_id,
+                    'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+                    'name' => IdentityVerificationOutcome::NAME_PAYMENT_SUCCEEDED,
+                    'related_type' => 'manual_identity_validations',
+                    'related_id' => $validationRequest->id,
+                    'metadata' => ['payment_channel' => 'webhook'],
+                ]);
             }
+        } elseif (in_array($status, ['rejected', 'cancelled'], true)) {
+            app(IdentityVerificationOutcome::class)->emit([
+                'user_id' => $validationRequest->user_id,
+                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+                'name' => IdentityVerificationOutcome::NAME_PAYMENT_FAILED,
+                'related_type' => 'manual_identity_validations',
+                'related_id' => $validationRequest->id,
+                'metadata' => ['payment_status' => $status],
+            ]);
         }
 
         return response()->json(['status' => 'success']);

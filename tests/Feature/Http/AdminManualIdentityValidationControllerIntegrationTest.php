@@ -572,6 +572,7 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/review', [
             'action' => 'reject',
             'note' => 'Illegible documents.',
+            'reject_reason' => 'docs_illegible',
         ])->assertOk()->assertJsonPath('data.review_status', 'rejected');
 
         $fromDb = User::query()->findOrFail($user->id);
@@ -787,6 +788,7 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->postJson('api/admin/manual-identity-validations/'.$row->id.'/review', [
             'action' => 'reject',
             'note' => 'Fotos ilegibles.',
+            'reject_reason' => 'docs_illegible',
         ])->assertOk();
     }
 

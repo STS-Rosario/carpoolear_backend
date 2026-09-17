@@ -202,6 +202,7 @@ class ManualIdentityValidationTest extends TestCase
             'reviewed_by',
             'reviewed_at',
             'review_note',
+            'reject_reason',
             'private_admin_note',
             'manual_validation_started_at',
             'images_purged_at',
@@ -228,6 +229,7 @@ class ManualIdentityValidationTest extends TestCase
             'reviewed_by' => $reviewer->id,
             'reviewed_at' => '2026-07-01 10:10:00',
             'review_note' => 'Looks good',
+            'reject_reason' => 'docs_illegible',
             'manual_validation_started_at' => '2026-07-01 09:59:00',
         ])->fresh();
 
@@ -240,6 +242,7 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_APPROVED, $row->review_status);
         $this->assertSame($reviewer->id, (int) $row->reviewed_by);
         $this->assertSame('Looks good', $row->review_note);
+        $this->assertSame('docs_illegible', $row->reject_reason);
         $this->assertNotNull($row->paid_at);
         $this->assertNotNull($row->reviewed_at);
         $this->assertNotNull($row->manual_validation_started_at);
