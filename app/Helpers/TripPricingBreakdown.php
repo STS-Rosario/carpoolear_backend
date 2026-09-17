@@ -2,6 +2,9 @@
 
 namespace STS\Helpers;
 
+use STS\Models\Trip;
+use STS\Services\GeoService;
+
 class TripPricingBreakdown
 {
     public static function calculate(
@@ -47,5 +50,31 @@ class TripPricingBreakdown
             'occupants' => $occupants,
             'per_person_cents' => $perPersonCents,
         ];
+    }
+
+    public static function forTrip(Trip $trip, ?GeoService $geoService = null): array
+    {
+        $geoService ??= app(GeoService::class);
+        $points = $trip->points
+            ->map(fn ($point) => [(float) $point->lat, (float) $point->lng])
+            ->all();
+        $inCostaAtlantica = $geoService->hasExactlyOneStopInCostaAtlanticaZone($points);
+        $tollsPercent = $inCostaAtlantica
+            ? (float) config('carpoolear.module_max_price_price_variance_tolls_costa_atlantica', 25)
+            : (float) config('carpoolear.module_max_price_price_variance_tolls', 0);
+        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled');
+        $selladoCents = $includesSellado
+            ? (int) config('carpoolear.module_trip_creation_payment_amount_cents')
+            : 0;
+
+        return self::calculate(
+            (float) $trip->distance,
+            (float) config('carpoolear.module_max_price_fuel_price'),
+            (float) config('carpoolear.module_max_price_kilometer_by_liter'),
+            $tollsPercent,
+            $selladoCents,
+            $includesSellado,
+            $trip->rear_max_two_passengers ?? false
+        );
     }
 }
