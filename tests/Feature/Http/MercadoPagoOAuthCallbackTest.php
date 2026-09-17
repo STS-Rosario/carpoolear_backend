@@ -191,7 +191,7 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         })->once();
     }
 
-    public function test_redirects_to_error_when_users_me_has_no_identification(): void
+    public function test_redirects_to_missing_identification_when_users_me_has_no_identification(): void
     {
         $user = User::factory()->create([
             'name' => 'Jane Doe',
@@ -199,22 +199,26 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         ]);
         Cache::put('mp_oauth_state:no-id-state', ['user_id' => $user->id], 600);
 
+        $me = [
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'company' => ['identification' => '20123456789'],
+        ];
+
         Http::fake([
             '*oauth/token*' => Http::response(['access_token' => 'tok'], 200),
-            '*users/me*' => Http::response([
-                'first_name' => 'Jane',
-                'last_name' => 'Doe',
-            ], 200),
+            '*users/me*' => Http::response($me, 200),
         ]);
 
         Log::spy();
 
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=no-id-state')
-            ->assertRedirect($this->identityRedirect('error'));
+            ->assertRedirect($this->identityRedirect('missing_identification'));
 
-        Log::shouldHaveReceived('warning')->withArgs(function (...$args) use ($user): bool {
+        Log::shouldHaveReceived('warning')->withArgs(function (...$args) use ($user, $me): bool {
             return ($args[0] ?? null) === 'MercadoPago OAuth callback: no identification in users/me'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id;
+                && (int) ($args[1]['user_id'] ?? 0) === $user->id
+                && ($args[1]['mp_payload'] ?? null) === $me;
         })->once();
     }
 
