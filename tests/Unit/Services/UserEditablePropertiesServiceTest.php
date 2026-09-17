@@ -18,13 +18,13 @@ class UserEditablePropertiesServiceTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_get_forbidden_properties_uses_config_default_is_admin(): void
+    public function test_get_forbidden_properties_uses_config_default_is_admin_and_admin_role(): void
     {
         Config::set('carpoolear.user_edit_properties', []);
 
         $svc = new UserEditablePropertiesService;
 
-        $this->assertSame(['is_admin'], $svc->getForbiddenProperties());
+        $this->assertSame(['is_admin', 'admin_role'], $svc->getForbiddenProperties());
     }
 
     public function test_is_property_allowed_returns_false_for_forbidden_before_other_lists(): void
@@ -116,5 +116,30 @@ class UserEditablePropertiesServiceTest extends TestCase
         $user = User::factory()->make(['id' => 502]);
         $svc = new UserEditablePropertiesService;
         $svc->sendFlaggedPropertyAlert($user, ['banned']);
+    }
+
+    public function test_helpdesk_actor_cannot_filter_in_permission_gated_admin_properties(): void
+    {
+        Config::set('carpoolear.user_edit_properties.forbidden', ['is_admin', 'admin_role']);
+        Config::set('carpoolear.user_edit_properties.allowed', ['name']);
+        Config::set('carpoolear.user_edit_properties.admin_allowed', [
+            'banned', 'active', 'driver_is_verified', 'identity_validated', 'private_note',
+        ]);
+
+        $actor = User::factory()->make(['is_admin' => true]);
+        $actor->admin_role = 'helpdesk';
+        $subject = User::factory()->make();
+
+        $svc = new UserEditablePropertiesService;
+        $out = $svc->filterForUser([
+            'private_note' => 'ok',
+            'banned' => 1,
+            'active' => 0,
+            'driver_is_verified' => 1,
+            'identity_validated' => 1,
+            'admin_role' => 'superadmin',
+        ], true, $subject, $actor);
+
+        $this->assertSame(['private_note' => 'ok'], $out);
     }
 }
