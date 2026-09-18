@@ -50,6 +50,8 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'id',
             'user_id',
             'user_name',
+            'identity_validated',
+            'identity_validation_type',
             'paid_at',
             'submitted_at',
             'manual_validation_started_at',
@@ -59,9 +61,47 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
             'open_account_verification_tickets_count',
         ], array_keys($row));
         $this->assertSame('Manual User', $row['user_name']);
+        $this->assertFalse($row['identity_validated']);
+        $this->assertNull($row['identity_validation_type']);
         $this->assertTrue($row['paid']);
         $this->assertFalse($row['has_images']);
         $this->assertSame(0, $row['open_account_verification_tickets_count']);
+    }
+
+    public function test_index_includes_user_identity_verification_fields(): void
+    {
+        $admin = $this->admin();
+        $verified = User::factory()->create([
+            'name' => 'Verified User',
+            'identity_validated' => true,
+            'identity_validation_type' => 'manual',
+        ]);
+        $unverified = User::factory()->create(['name' => 'Unverified User']);
+
+        foreach ([$verified, $unverified] as $user) {
+            ManualIdentityValidation::create([
+                'user_id' => $user->id,
+                'paid' => true,
+                'paid_at' => now(),
+                'submitted_at' => now(),
+                'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            ]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/manual-identity-validations')->assertOk()->json('data'));
+
+        $verifiedRow = $rows->firstWhere('user_id', $verified->id);
+        $this->assertNotNull($verifiedRow);
+        $this->assertTrue($verifiedRow['identity_validated']);
+        $this->assertSame('manual', $verifiedRow['identity_validation_type']);
+
+        $unverifiedRow = $rows->firstWhere('user_id', $unverified->id);
+        $this->assertNotNull($unverifiedRow);
+        $this->assertFalse($unverifiedRow['identity_validated']);
+        $this->assertNull($unverifiedRow['identity_validation_type']);
     }
 
     public function test_index_includes_open_account_verification_ticket_counts(): void

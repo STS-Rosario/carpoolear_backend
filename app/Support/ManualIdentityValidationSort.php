@@ -12,6 +12,7 @@ class ManualIdentityValidationSort
     public const ALLOWED_SORTS = [
         'id',
         'user_name',
+        'identity_validated',
         'paid_at',
         'submitted_at',
         'waiting_time',
@@ -77,6 +78,12 @@ class ManualIdentityValidationSort
                 $query
                     ->orderByRaw('users.name IS NULL')
                     ->orderBy('users.name', $direction);
+                break;
+            case 'identity_validated':
+                self::joinUsers($query);
+                $query
+                    ->orderByRaw('users.identity_validated IS NULL')
+                    ->orderBy('users.identity_validated', $direction);
                 break;
             case 'paid_at':
                 $query

@@ -31,7 +31,7 @@ class ManualIdentityValidationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = ManualIdentityValidation::with('user:id,name');
+        $query = ManualIdentityValidation::with('user:id,name,identity_validated,identity_validation_type');
 
         if (! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
             $query->where(function ($builder) {
@@ -83,6 +83,8 @@ class ManualIdentityValidationController extends Controller
             'id' => $item->id,
             'user_id' => $item->user_id,
             'user_name' => $item->user ? $item->user->name : null,
+            'identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
+            'identity_validation_type' => $item->user ? $item->user->identity_validation_type : null,
             'paid_at' => $item->paid_at ? $item->paid_at->toDateTimeString() : null,
             'submitted_at' => $item->submitted_at ? $item->submitted_at->toDateTimeString() : null,
             'manual_validation_started_at' => $item->manual_validation_started_at ? $item->manual_validation_started_at->toDateTimeString() : null,
