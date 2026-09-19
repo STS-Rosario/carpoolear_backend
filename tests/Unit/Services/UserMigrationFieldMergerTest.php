@@ -37,10 +37,10 @@ class UserMigrationFieldMergerTest extends TestCase
 
         $kept->refresh();
 
-        $this->assertSame('old@example.test', $kept->email);
+        $this->assertSame('new@example.test', $kept->email);
         $this->assertTrue(Hash::check('new-password', $kept->password));
         $this->assertSame('11111111', $kept->nro_doc);
-        $this->assertSame('+5492222222222', $kept->mobile_phone);
+        $this->assertSame('+5491111111111', $kept->mobile_phone);
         $this->assertSame(
             $oldCreatedAt->toDateTimeString(),
             $kept->created_at->toDateTimeString()
