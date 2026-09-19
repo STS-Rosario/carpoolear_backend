@@ -6,7 +6,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class AdminPagination
 {
-    public const DEFAULT_PER_PAGE = 20;
+    public const DEFAULT_PER_PAGE = 100;
 
     /** @var list<int> */
     public const ALLOWED_PER_PAGE_OPTIONS = [10, 20, 30, 50, 100];

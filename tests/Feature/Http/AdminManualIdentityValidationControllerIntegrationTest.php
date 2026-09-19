@@ -159,7 +159,7 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertSame(1, $row['open_account_verification_tickets_count']);
     }
 
-    public function test_index_paginates_with_default_twenty_per_page(): void
+    public function test_index_paginates_with_default_hundred_per_page(): void
     {
         $admin = $this->admin();
 
@@ -178,10 +178,10 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
 
         $this->getJson('api/admin/manual-identity-validations')
             ->assertOk()
-            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.per_page', 100)
             ->assertJsonPath('meta.pagination.current_page', 1)
             ->assertJsonPath('meta.pagination.total', 22)
-            ->assertJsonCount(20, 'data');
+            ->assertJsonCount(22, 'data');
     }
 
     public function test_index_excludes_resolved_rows_unless_show_resolved_is_true(): void
