@@ -17,10 +17,10 @@ class UserMigrationFieldMerger
 
     /** @var array<string, 'removed'|'kept'> */
     public const DEFAULT_FIELD_SOURCES = [
-        'email' => 'removed',
+        'email' => 'kept',
         'password' => 'kept',
         'nro_doc' => 'removed',
-        'mobile_phone' => 'kept',
+        'mobile_phone' => 'removed',
         'created_at' => 'removed',
     ];
 
