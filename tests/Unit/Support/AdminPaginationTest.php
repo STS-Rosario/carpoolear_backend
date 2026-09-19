@@ -8,9 +8,9 @@ use Tests\TestCase;
 
 class AdminPaginationTest extends TestCase
 {
-    public function test_default_per_page_is_twenty(): void
+    public function test_default_per_page_is_one_hundred(): void
     {
-        $this->assertSame(20, AdminPagination::DEFAULT_PER_PAGE);
+        $this->assertSame(100, AdminPagination::DEFAULT_PER_PAGE);
     }
 
     public function test_allowed_per_page_options(): void
@@ -20,7 +20,7 @@ class AdminPaginationTest extends TestCase
 
     public function test_resolve_per_page_uses_default_when_missing(): void
     {
-        $this->assertSame(20, AdminPagination::resolvePerPage(null));
+        $this->assertSame(100, AdminPagination::resolvePerPage(null));
     }
 
     public function test_resolve_per_page_accepts_allowed_values(): void
@@ -32,9 +32,9 @@ class AdminPaginationTest extends TestCase
 
     public function test_resolve_per_page_falls_back_to_default_for_invalid_values(): void
     {
-        $this->assertSame(20, AdminPagination::resolvePerPage(0));
-        $this->assertSame(20, AdminPagination::resolvePerPage(15));
-        $this->assertSame(20, AdminPagination::resolvePerPage(500));
+        $this->assertSame(100, AdminPagination::resolvePerPage(0));
+        $this->assertSame(100, AdminPagination::resolvePerPage(15));
+        $this->assertSame(100, AdminPagination::resolvePerPage(500));
     }
 
     public function test_resolve_page_defaults_to_one_and_clamps_to_minimum_one(): void
