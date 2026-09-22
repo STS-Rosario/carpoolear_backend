@@ -15,7 +15,7 @@ class CreditFinishedTrips extends Command
      *
      * @var string
      */
-    protected $signature = 'trips:credit-finished';
+    protected $signature = 'trips:credit-finished {--limit=100 : Max trips to credit per run}';
 
     /**
      * The console command description.
@@ -52,10 +52,14 @@ class CreditFinishedTrips extends Command
         // 1. trip_date in the past (finished)
         // 2. NOT soft-deleted
         // 3. NOT yet credited (trips_count_credited_at is null)
+        $limit = max(1, (int) $this->option('limit'));
+
         $finishedTrips = Trip::whereNotNull('trip_date')
             ->where('trip_date', '<', $now)
             ->whereNull('trips_count_credited_at')
             ->whereNull('deleted_at')
+            ->orderBy('id')
+            ->limit($limit)
             ->get();
 
         $creditedCount = 0;
