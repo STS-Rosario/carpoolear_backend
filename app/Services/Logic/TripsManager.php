@@ -11,6 +11,7 @@ use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
 use STS\Models\Car as CarModel;
+use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\FriendTripInviteNotification;
