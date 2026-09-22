@@ -734,11 +734,7 @@ class UsersManager extends BaseManager
 
     public function resolveTripsCount($user): int
     {
-        if ($user->trips_count !== null) {
-            return (int) $user->trips_count;
-        }
-
-        return $this->refreshTripsCount($user);
+        return (int) ($user->trips_count ?? 0);
     }
 
     public function tripsDistance($user, $type = null)
