@@ -204,6 +204,27 @@ class CreditFinishedTripsTest extends TestCase
         $this->assertEquals(1, $driver2->trips_count);
     }
 
+    public function test_credits_at_most_one_hundred_trips_per_run(): void
+    {
+        $trips = [];
+        for ($i = 0; $i < 101; $i++) {
+            $driver = User::factory()->create(['trips_count' => null]);
+            $trips[] = Trip::factory()->create([
+                'user_id' => $driver->id,
+                'trip_date' => Carbon::now()->subHour(),
+                'trips_count_credited_at' => null,
+            ]);
+        }
+
+        Artisan::call('trips:credit-finished');
+
+        $credited = collect($trips)
+            ->filter(fn (Trip $trip) => $trip->fresh()->trips_count_credited_at !== null)
+            ->count();
+
+        $this->assertSame(100, $credited);
+    }
+
     public function test_marks_trip_as_credited_with_correct_timestamp(): void
     {
         $driver = User::factory()->create();
