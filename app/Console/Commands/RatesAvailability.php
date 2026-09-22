@@ -2,11 +2,10 @@
 
 namespace STS\Console\Commands;
 
-use STS\Models\Rating;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
 use DB;
-
+use Illuminate\Console\Command;
+use STS\Models\Rating;
 
 class RatesAvailability extends Command
 {
@@ -43,12 +42,12 @@ class RatesAvailability extends Command
     {
         \Log::info('COMMAND RatesAvailability');
         Rating::where('created_at', '<', Carbon::Now()->subDays(Rating::RATING_INTERVAL))
-        ->where('voted', '=', DB::raw(1))
-        ->update(['available' => 1]);
+            ->where('voted', '=', DB::raw(1))
+            ->where('available', '=', 0)
+            ->update(['available' => 1]);
 
-        
-        $rates = DB::table('rating as r')->where('r.created_at', '>=', Carbon::Now()->subDays(Rating::RATING_INTERVAL))->where('r.voted', 1);
-        $rates->join("rating as r2", function($join) {
+        $rates = DB::table('rating as r')->where('r.created_at', '>=', Carbon::Now()->subDays(Rating::RATING_INTERVAL))->where('r.voted', 1)->where('r.available', '=', 0);
+        $rates->join('rating as r2', function ($join) {
             $join->on('r.trip_id', '=', 'r2.trip_id');
             $join->on('r.user_id_from', '=', 'r2.user_id_to');
             $join->on('r.user_id_to', '=', 'r2.user_id_from');
