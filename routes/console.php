@@ -12,6 +12,8 @@ if (app()->runningUnitTests()) {
 
 Schedule::command('rate:create')->hourly();
 
+Schedule::command('trips:credit-finished')->everyFiveMinutes()->timezone('America/Argentina/Buenos_Aires');
+
 Schedule::command('trip:remainder')->hourly();
 
 Schedule::command('rating:availables')->everyMinute();

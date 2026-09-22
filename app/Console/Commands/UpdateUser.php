@@ -8,6 +8,7 @@ use STS\Models\Rating;
 use STS\Models\Passenger;
 use Illuminate\Console\Command;
 use STS\Models\References;
+use STS\Services\Logic\UsersManager;
 
 class UpdateUser extends Command
 {
@@ -25,14 +26,17 @@ class UpdateUser extends Command
      */
     protected $description = 'Update trips, ratings and passenger for duplicated users';
 
+    protected $usersManager;
+
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(UsersManager $usersManager)
     {
         parent::__construct();
+        $this->usersManager = $usersManager;
     }
 
     /**
@@ -84,6 +88,12 @@ class UpdateUser extends Command
             $reference->save();
         }
 
+
+        // Refresh trips_count for the surviving user
+        $survivingUser = User::find($newId);
+        if ($survivingUser) {
+            $this->usersManager->refreshTripsCount($survivingUser);
+        }
 
         if ($this->option('remove') && $this->confirm('Do you wish to continue? This will remove the user from the database [y|N]')) {
             $user = User::find($originalId);

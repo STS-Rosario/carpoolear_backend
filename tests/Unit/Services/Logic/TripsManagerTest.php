@@ -1317,4 +1317,238 @@ class TripsManagerTest extends TestCase
             $manager->price(['name' => 'Origin'], ['name' => 'Dest'], $distance)
         );
     }
+
+    public function test_delete_refreshes_driver_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = User::factory()->create(['trips_count' => null]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        $manager = $this->manager();
+        $manager->delete($driver, $trip->id);
+
+        $driver->refresh();
+        $this->assertNotNull($driver->trips_count);
+        $this->assertEquals(0, $driver->trips_count);
+        Carbon::setTestNow();
+    }
+
+    public function test_delete_refreshes_accepted_passengers_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = User::factory()->create(['trips_count' => null]);
+        $passenger1 = User::factory()->create(['trips_count' => null]);
+        $passenger2 = User::factory()->create(['trips_count' => null]);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger1->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger2->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $manager = $this->manager();
+        $manager->delete($driver, $trip->id);
+
+        $passenger1->refresh();
+        $passenger2->refresh();
+
+        $this->assertNotNull($passenger1->trips_count);
+        $this->assertNotNull($passenger2->trips_count);
+        $this->assertEquals(0, $passenger1->trips_count);
+        $this->assertEquals(0, $passenger2->trips_count);
+        Carbon::setTestNow();
+    }
+
+    public function test_delete_does_not_refresh_pending_passengers_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = User::factory()->create(['trips_count' => null]);
+        $pendingPassenger = User::factory()->create(['trips_count' => null]);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $pendingPassenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $manager = $this->manager();
+        $manager->delete($driver, $trip->id);
+
+        $pendingPassenger->refresh();
+        $this->assertNull($pendingPassenger->trips_count);
+        Carbon::setTestNow();
+    }
+
+    public function test_delete_does_not_refresh_rejected_passengers_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = User::factory()->create(['trips_count' => null]);
+        $rejectedPassenger = User::factory()->create(['trips_count' => null]);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $rejectedPassenger->id,
+            'request_state' => Passenger::STATE_REJECTED,
+        ]);
+
+        $manager = $this->manager();
+        $manager->delete($driver, $trip->id);
+
+        $rejectedPassenger->refresh();
+        $this->assertNull($rejectedPassenger->trips_count);
+        Carbon::setTestNow();
+    }
+
+    public function test_update_trip_date_from_past_to_future_refreshes_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = $this->completeUser(['trips_count' => null]);
+        $passenger = User::factory()->create(['trips_count' => null]);
+        $this->carWithPlateFor($driver);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+            'trips_count_credited_at' => Carbon::now()->subHour(),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $manager = $this->manager();
+        $manager->update($driver, $trip->id, [
+            'trip_date' => Carbon::now()->addDay()->toDateTimeString(),
+        ]);
+
+        $driver->refresh();
+        $passenger->refresh();
+        $trip->refresh();
+
+        $this->assertNotNull($driver->trips_count);
+        $this->assertNotNull($passenger->trips_count);
+        $this->assertNull($trip->trips_count_credited_at);
+        Carbon::setTestNow();
+    }
+
+    public function test_update_trip_date_from_future_to_past_refreshes_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = $this->completeUser(['trips_count' => null]);
+        $passenger = User::factory()->create(['trips_count' => null]);
+        $this->carWithPlateFor($driver);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+            'trips_count_credited_at' => null,
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        $manager = $this->manager();
+        $manager->update($driver, $trip->id, [
+            'trip_date' => Carbon::now()->subDay()->toDateTimeString(),
+        ]);
+
+        $driver->refresh();
+        $passenger->refresh();
+        $trip->refresh();
+
+        $this->assertNotNull($driver->trips_count);
+        $this->assertNotNull($passenger->trips_count);
+        $this->assertEquals(1, $driver->trips_count);
+        $this->assertEquals(1, $passenger->trips_count);
+        $this->assertNotNull($trip->trips_count_credited_at);
+        Carbon::setTestNow();
+    }
+
+    public function test_update_trip_date_within_same_period_does_not_refresh_trips_count(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = $this->completeUser(['trips_count' => 5]);
+        $this->carWithPlateFor($driver);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $manager = $this->manager();
+        $manager->update($driver, $trip->id, [
+            'trip_date' => Carbon::now()->addDays(2)->toDateTimeString(),
+        ]);
+
+        $driver->refresh();
+        $this->assertEquals(5, $driver->trips_count);
+        Carbon::setTestNow();
+    }
+
+    public function test_update_trip_date_boundary_refreshes_accepted_passengers_only(): void
+    {
+        Carbon::setTestNow('2028-06-15 12:00:00');
+        $driver = $this->completeUser(['trips_count' => null]);
+        $acceptedPassenger = User::factory()->create(['trips_count' => null]);
+        $pendingPassenger = User::factory()->create(['trips_count' => null]);
+        $this->carWithPlateFor($driver);
+
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $acceptedPassenger->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $pendingPassenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $manager = $this->manager();
+        $manager->update($driver, $trip->id, [
+            'trip_date' => Carbon::now()->subDay()->toDateTimeString(),
+        ]);
+
+        $acceptedPassenger->refresh();
+        $pendingPassenger->refresh();
+
+        $this->assertNotNull($acceptedPassenger->trips_count);
+        $this->assertNull($pendingPassenger->trips_count);
+        Carbon::setTestNow();
+    }
 }
