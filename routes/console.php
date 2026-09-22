@@ -12,11 +12,11 @@ if (app()->runningUnitTests()) {
 
 Schedule::command('rate:create')->hourly();
 
-Schedule::command('trips:credit-finished')->everyFiveMinutes()->timezone('America/Argentina/Buenos_Aires');
+Schedule::command('trips:credit-finished')->everyFiveMinutes()->timezone('America/Argentina/Buenos_Aires')->withoutOverlapping(10);
 
 Schedule::command('trip:remainder')->hourly();
 
-Schedule::command('rating:availables')->everyMinute();
+Schedule::command('rating:availables')->everyMinute()->withoutOverlapping(5);
 
 Schedule::command('live-location:process')->everyMinute();
 

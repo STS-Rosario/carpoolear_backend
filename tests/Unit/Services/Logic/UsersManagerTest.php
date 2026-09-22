@@ -1547,7 +1547,7 @@ class UsersManagerTest extends TestCase
         $this->assertSame(0, (int) $this->manager()->tripsDistance($user));
     }
 
-    public function test_resolve_trips_count_calculates_and_persists_when_null(): void
+    public function test_resolve_trips_count_returns_zero_without_persisting_when_null(): void
     {
         $user = User::factory()->create();
         $this->assertNull($user->fresh()->trips_count);
@@ -1560,8 +1560,8 @@ class UsersManagerTest extends TestCase
 
         $count = $this->manager()->resolveTripsCount($user->fresh());
 
-        $this->assertSame(1, $count);
-        $this->assertSame(1, $user->fresh()->trips_count);
+        $this->assertSame(0, $count);
+        $this->assertNull($user->fresh()->trips_count);
     }
 
     public function test_resolve_trips_count_returns_cached_value_without_recalculating_from_stale_state(): void

@@ -299,8 +299,8 @@ class ProfileTransformerTest extends TestCase
         $this->assertArrayHasKey('created_at', $payload);
         $this->assertSame('2024-03-15 12:34:56', $payload['created_at']);
         $this->assertArrayHasKey('trips_count', $payload);
-        $this->assertSame(1, $payload['trips_count']);
-        $this->assertSame(1, $subject->fresh()->trips_count);
+        $this->assertSame(0, $payload['trips_count']);
+        $this->assertNull($subject->fresh()->trips_count);
     }
 
     public function test_transform_admin_branch_uses_loose_id_equality_for_string_subject_id(): void
