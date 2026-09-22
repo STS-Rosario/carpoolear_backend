@@ -102,6 +102,30 @@ class RatesAvailabilityTest extends TestCase
         $this->assertEquals(1, $ratingBtoA->available);
     }
 
+    public function test_does_not_rewrite_already_available_old_voted_ratings(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $userA->id]);
+
+        $alreadyAvailable = Rating::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id_from' => $userA->id,
+            'user_id_to' => $userB->id,
+            'voted' => 1,
+            'available' => 1,
+            'created_at' => Carbon::now()->subDays(Rating::RATING_INTERVAL + 1),
+            'updated_at' => Carbon::now()->subDays(3),
+        ]);
+        $originalUpdatedAt = $alreadyAvailable->updated_at->toDateTimeString();
+
+        $this->artisan('rating:availables')->assertSuccessful();
+
+        $alreadyAvailable->refresh();
+        $this->assertSame(1, (int) $alreadyAvailable->available);
+        $this->assertSame($originalUpdatedAt, $alreadyAvailable->updated_at->toDateTimeString());
+    }
+
     public function test_does_not_affect_unvoted_ratings()
     {
         $userA = User::factory()->create();
