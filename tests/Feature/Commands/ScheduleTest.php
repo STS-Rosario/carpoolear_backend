@@ -80,6 +80,13 @@ class ScheduleTest extends TestCase
         $this->assertEquals('*/10 * * * *', $event->expression);
     }
 
+    public function test_trips_credit_finished_is_scheduled_every_five_minutes()
+    {
+        $event = $this->findEvent('trips:credit-finished');
+        $this->assertEquals('*/5 * * * *', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+    }
+
     // -- Daily commands with timezone --
 
     public function test_trip_request_is_scheduled_twice_daily()
@@ -170,6 +177,7 @@ class ScheduleTest extends TestCase
             'pulse:check',
             'trip:request',
             'trip:visibilityclean',
+            'trips:credit-finished',
             'node:buildweights',
             'messages:email',
             'users:calculate-active-per-month',

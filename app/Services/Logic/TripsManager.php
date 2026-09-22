@@ -11,6 +11,7 @@ use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
 use STS\Models\Car as CarModel;
+use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\FriendTripInviteNotification;
@@ -66,7 +67,7 @@ class TripsManager extends BaseManager
                 'to_town' => 'string|max:255',
                 'punto_partida' => 'string|max:255',
                 'punto_llegada' => 'string|max:255',
-                'trip_date' => 'nullable|date|after:now',
+                'trip_date' => 'nullable|date',
                 'total_seats' => 'integer|max:5|min:1',
                 'friendship_type_id' => 'integer|in:0,1,2',
                 'estimated_time' => 'string',
@@ -411,7 +412,64 @@ class TripsManager extends BaseManager
                         }
                     }
 
+                    // Check if trip_date is being updated and crosses the finished boundary
+                    $needsTripsCountRefresh = false;
+                    $creditedAtValue = null;
+                    $shouldSetCreditedAt = false;
+                    
+                    if (isset($data['trip_date'])) {
+                        $oldTripDate = $trip->trip_date;
+                        $newTripDate = is_string($data['trip_date']) 
+                            ? \Carbon\Carbon::parse($data['trip_date']) 
+                            : $data['trip_date'];
+                        $now = \Carbon\Carbon::now();
+
+                        // Check if trip_date crosses the boundary (past ↔ future)
+                        $wasFinished = $oldTripDate !== null && $oldTripDate->lt($now);
+                        $willBeFinished = $newTripDate !== null && $newTripDate->lt($now);
+
+                        if ($wasFinished !== $willBeFinished) {
+                            $needsTripsCountRefresh = true;
+                            $shouldSetCreditedAt = true;
+
+                            // If moving from past to future, clear the credited flag
+                            if ($wasFinished && ! $willBeFinished) {
+                                $creditedAtValue = null;
+                            }
+                            // If moving from future to past, set credited flag
+                            elseif (! $wasFinished && $willBeFinished) {
+                                $creditedAtValue = $now;
+                            }
+                        }
+                    }
+
                     $trip = $this->tripRepo->update($trip, $data);
+
+                    // Set trips_count_credited_at explicitly (not via mass assignment)
+                    if ($shouldSetCreditedAt) {
+                        $trip->trips_count_credited_at = $creditedAtValue;
+                        $trip->save();
+                    }
+
+                    // Refresh trips_count if trip_date crossed the boundary
+                    if ($needsTripsCountRefresh) {
+                        $driver = $trip->user;
+                        if ($driver) {
+                            $this->userManager->refreshTripsCount($driver->fresh());
+                        }
+
+                        $acceptedPassengers = $trip->passenger()
+                            ->where('request_state', Passenger::STATE_ACCEPTED)
+                            ->get();
+
+                        foreach ($acceptedPassengers as $passenger) {
+                            $passengerUser = $passenger->user;
+                            if ($passengerUser) {
+                                $this->userManager->refreshTripsCount($passengerUser->fresh());
+                            }
+                        }
+                    }
+
                     event(new UpdateEvent($trip));
 
                     return $trip;
@@ -474,14 +532,30 @@ class TripsManager extends BaseManager
     {
         $trip = $this->tripRepo->show($user, $trip_id);
         if ($trip) {
-            // [TODO] Agregar lógica de pasajeros
             if ($user->id == $trip->user->id || $user->is_admin) {
                 $driver = $trip->user;
+                
+                // Get accepted passengers before deleting
+                $acceptedPassengers = $trip->passenger()
+                    ->where('request_state', Passenger::STATE_ACCEPTED)
+                    ->get();
+                
                 event(new DeleteEvent($trip));
 
                 $deleted = $this->tripRepo->delete($trip);
-                if ($deleted && $driver) {
-                    $this->userManager->refreshTripsCount($driver->fresh());
+                if ($deleted) {
+                    // Refresh driver's trips_count
+                    if ($driver) {
+                        $this->userManager->refreshTripsCount($driver->fresh());
+                    }
+                    
+                    // Refresh each accepted passenger's trips_count
+                    foreach ($acceptedPassengers as $passenger) {
+                        $passengerUser = $passenger->user;
+                        if ($passengerUser) {
+                            $this->userManager->refreshTripsCount($passengerUser->fresh());
+                        }
+                    }
                 }
 
                 return $deleted;

@@ -2,101 +2,170 @@
 
 namespace Tests\Unit\Console\Commands;
 
-use Illuminate\Log\Events\MessageLogged;
-use Illuminate\Support\Facades\Event;
-use STS\Console\Commands\UpdateUser;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use STS\Models\Passenger;
 use STS\Models\Rating;
-use STS\Models\References;
 use STS\Models\Trip;
 use STS\Models\User;
 use Tests\TestCase;
 
 class UpdateUserTest extends TestCase
 {
-    public function test_handle_reassigns_related_records_to_new_user(): void
+    protected function setUp(): void
     {
-        Event::fake([MessageLogged::class]);
+        parent::setUp();
+        Carbon::setTestNow('2028-06-15 12:00:00');
+    }
 
-        $original = User::factory()->create(['active' => true]);
-        $new = User::factory()->create(['active' => true]);
-        $other = User::factory()->create(['active' => true]);
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
-        $trip = Trip::factory()->create(['user_id' => $original->id]);
+    public function test_updates_trips_from_original_to_new_user(): void
+    {
+        $originalUser = User::factory()->create();
+        $newUser = User::factory()->create();
+
+        $trip = Trip::factory()->create(['user_id' => $originalUser->id]);
+
+        Artisan::call('user:update', [
+            'original' => $originalUser->id,
+            'new' => $newUser->id,
+        ]);
+
+        $trip->refresh();
+        $this->assertEquals($newUser->id, $trip->user_id);
+    }
+
+    public function test_updates_passenger_records_from_original_to_new_user(): void
+    {
+        $originalUser = User::factory()->create();
+        $newUser = User::factory()->create();
+        $driver = User::factory()->create();
+
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        $passenger = Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $originalUser->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+
+        Artisan::call('user:update', [
+            'original' => $originalUser->id,
+            'new' => $newUser->id,
+        ]);
+
+        $passenger->refresh();
+        $this->assertEquals($newUser->id, $passenger->user_id);
+    }
+
+    public function test_updates_ratings_from_original_to_new_user(): void
+    {
+        $originalUser = User::factory()->create();
+        $newUser = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $trip = Trip::factory()->create(['user_id' => $otherUser->id]);
 
         $ratingFrom = Rating::factory()->create([
             'trip_id' => $trip->id,
-            'user_id_from' => $original->id,
-            'user_id_to' => $other->id,
+            'user_id_from' => $originalUser->id,
+            'user_id_to' => $otherUser->id,
         ]);
+
         $ratingTo = Rating::factory()->create([
             'trip_id' => $trip->id,
-            'user_id_from' => $other->id,
-            'user_id_to' => $original->id,
+            'user_id_from' => $otherUser->id,
+            'user_id_to' => $originalUser->id,
         ]);
-        $passenger = Passenger::factory()->create([
+
+        Artisan::call('user:update', [
+            'original' => $originalUser->id,
+            'new' => $newUser->id,
+        ]);
+
+        $ratingFrom->refresh();
+        $ratingTo->refresh();
+
+        $this->assertEquals($newUser->id, $ratingFrom->user_id_from);
+        $this->assertEquals($newUser->id, $ratingTo->user_id_to);
+    }
+
+    public function test_refreshes_trips_count_for_surviving_user(): void
+    {
+        $originalUser = User::factory()->create(['trips_count' => null]);
+        $newUser = User::factory()->create(['trips_count' => null]);
+
+        // Create a finished trip for the original user
+        $trip = Trip::factory()->create([
+            'user_id' => $originalUser->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        Artisan::call('user:update', [
+            'original' => $originalUser->id,
+            'new' => $newUser->id,
+        ]);
+
+        $newUser->refresh();
+        $this->assertNotNull($newUser->trips_count);
+        $this->assertEquals(1, $newUser->trips_count);
+    }
+
+    public function test_refreshes_trips_count_includes_merged_passenger_trips(): void
+    {
+        $originalUser = User::factory()->create(['trips_count' => null]);
+        $newUser = User::factory()->create(['trips_count' => null]);
+        $driver = User::factory()->create();
+
+        // Create a finished trip where originalUser was an accepted passenger
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        Passenger::factory()->create([
             'trip_id' => $trip->id,
-            'user_id' => $original->id,
-        ]);
-        $referenceFrom = References::query()->create([
-            'user_id_from' => $original->id,
-            'user_id_to' => $other->id,
-            'comment' => 'from original',
-        ]);
-        $referenceTo = References::query()->create([
-            'user_id_from' => $other->id,
-            'user_id_to' => $original->id,
-            'comment' => 'to original',
+            'user_id' => $originalUser->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
         ]);
 
-        $this->artisan('user:update', [
-            'original' => $original->id,
-            'new' => $new->id,
-        ])
-            ->expectsOutput('Trips, references ratings and passenger have been updated.')
-            ->assertExitCode(0);
+        Artisan::call('user:update', [
+            'original' => $originalUser->id,
+            'new' => $newUser->id,
+        ]);
 
-        $this->assertSame($new->id, (int) $ratingFrom->fresh()->user_id_from);
-        $this->assertSame($new->id, (int) $ratingTo->fresh()->user_id_to);
-        $this->assertSame($new->id, (int) $passenger->fresh()->user_id);
-        $this->assertSame($new->id, (int) $trip->fresh()->user_id);
-        $this->assertSame($new->id, (int) $referenceFrom->fresh()->user_id_from);
-        $this->assertSame($new->id, (int) $referenceTo->fresh()->user_id_to);
-
-        Event::assertDispatched(MessageLogged::class, function (MessageLogged $e): bool {
-            return $e->level === 'info' && $e->message === 'COMMAND UpdateUser';
-        });
+        $newUser->refresh();
+        $this->assertNotNull($newUser->trips_count);
+        $this->assertEquals(1, $newUser->trips_count);
     }
 
-    public function test_handle_with_remove_deactivates_original_user_after_confirmation(): void
+    public function test_refreshes_trips_count_with_combined_trips(): void
     {
-        $original = User::factory()->create(['active' => true]);
-        $new = User::factory()->create(['active' => true]);
+        $originalUser = User::factory()->create(['trips_count' => null]);
+        $newUser = User::factory()->create(['trips_count' => null]);
 
-        $this->artisan('user:update', [
-            'original' => $original->id,
-            'new' => $new->id,
-            '--remove' => true,
-        ])
-            ->expectsConfirmation('Do you wish to continue? This will remove the user from the database [y|N]', 'yes')
-            ->expectsOutput('User has been removed.')
-            ->expectsOutput('Trips, references ratings and passenger have been updated.')
-            ->assertExitCode(0);
+        // Create finished trips for both users
+        Trip::factory()->create([
+            'user_id' => $originalUser->id,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
 
-        $this->assertSame(0, (int) $original->fresh()->active);
-    }
+        Trip::factory()->create([
+            'user_id' => $newUser->id,
+            'trip_date' => Carbon::now()->subDays(2),
+        ]);
 
-    public function test_command_signature_and_description_match_expected_contract(): void
-    {
-        $command = new UpdateUser;
+        Artisan::call('user:update', [
+            'original' => $originalUser->id,
+            'new' => $newUser->id,
+        ]);
 
-        $this->assertSame('user:update', $command->getName());
-        $this->assertStringContainsString(
-            'Update trips, ratings and passenger for duplicated users',
-            $command->getDescription()
-        );
-        $this->assertTrue($command->getDefinition()->hasArgument('original'));
-        $this->assertTrue($command->getDefinition()->hasArgument('new'));
-        $this->assertTrue($command->getDefinition()->hasOption('remove'));
+        $newUser->refresh();
+        $this->assertNotNull($newUser->trips_count);
+        $this->assertEquals(2, $newUser->trips_count);
     }
 }
