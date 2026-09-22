@@ -67,7 +67,7 @@ class TripsManager extends BaseManager
                 'to_town' => 'string|max:255',
                 'punto_partida' => 'string|max:255',
                 'punto_llegada' => 'string|max:255',
-                'trip_date' => 'nullable|date|after:now',
+                'trip_date' => 'nullable|date',
                 'total_seats' => 'integer|max:5|min:1',
                 'friendship_type_id' => 'integer|in:0,1,2',
                 'estimated_time' => 'string',
@@ -414,6 +414,9 @@ class TripsManager extends BaseManager
 
                     // Check if trip_date is being updated and crosses the finished boundary
                     $needsTripsCountRefresh = false;
+                    $creditedAtValue = null;
+                    $shouldSetCreditedAt = false;
+                    
                     if (isset($data['trip_date'])) {
                         $oldTripDate = $trip->trip_date;
                         $newTripDate = is_string($data['trip_date']) 
@@ -427,19 +430,26 @@ class TripsManager extends BaseManager
 
                         if ($wasFinished !== $willBeFinished) {
                             $needsTripsCountRefresh = true;
+                            $shouldSetCreditedAt = true;
 
                             // If moving from past to future, clear the credited flag
                             if ($wasFinished && ! $willBeFinished) {
-                                $data['trips_count_credited_at'] = null;
+                                $creditedAtValue = null;
                             }
-                            // If moving from future to past, refresh and set credited flag
+                            // If moving from future to past, set credited flag
                             elseif (! $wasFinished && $willBeFinished) {
-                                $data['trips_count_credited_at'] = $now;
+                                $creditedAtValue = $now;
                             }
                         }
                     }
 
                     $trip = $this->tripRepo->update($trip, $data);
+
+                    // Set trips_count_credited_at explicitly (not via mass assignment)
+                    if ($shouldSetCreditedAt) {
+                        $trip->trips_count_credited_at = $creditedAtValue;
+                        $trip->save();
+                    }
 
                     // Refresh trips_count if trip_date crossed the boundary
                     if ($needsTripsCountRefresh) {
