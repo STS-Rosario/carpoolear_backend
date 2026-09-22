@@ -60,6 +60,8 @@ class ScheduleTest extends TestCase
     {
         $event = $this->findEvent('rating:availables');
         $this->assertEquals('* * * * *', $event->expression);
+        $this->assertTrue($event->withoutOverlapping);
+        $this->assertSame(5, $event->expiresAt);
     }
 
     public function test_maintenance_tick_is_scheduled_every_minute()
@@ -85,6 +87,8 @@ class ScheduleTest extends TestCase
         $event = $this->findEvent('trips:credit-finished');
         $this->assertEquals('*/5 * * * *', $event->expression);
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+        $this->assertTrue($event->withoutOverlapping);
+        $this->assertSame(10, $event->expiresAt);
     }
 
     // -- Daily commands with timezone --
