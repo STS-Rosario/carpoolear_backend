@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\IdentityVerificationEvent;
 use STS\Models\ManualIdentityValidation;
+use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\User;
 use Tests\TestCase;
 
@@ -93,5 +94,56 @@ class AdminIdentityVerificationEventsTest extends TestCase
         ])->assertOk();
 
         $this->assertSame(0, IdentityVerificationEvent::query()->where('name', 'admin_state_changed')->count());
+    }
+
+    private function mpRejection(User $user): MercadoPagoRejectedValidation
+    {
+        return MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['first_name' => 'Jane'],
+        ]);
+    }
+
+    public function test_mp_rejection_review_reject_records_failed_with_reason(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = $this->mpRejection($user);
+
+        $this->postJson('api/admin/mercado-pago-rejected-validations/'.$row->id.'/review', [
+            'action' => 'reject',
+            'note' => 'DNI does not match.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'method' => 'manual',
+            'name' => 'failed',
+            'reason' => 'rejected_from_mp_rejection',
+            'related_type' => 'mercado_pago_rejected_validations',
+            'related_id' => $row->id,
+        ]);
+    }
+
+    public function test_mp_rejection_review_pending_records_info_requested_with_reason(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create(['identity_validated' => false]);
+        $row = $this->mpRejection($user);
+
+        $this->postJson('api/admin/mercado-pago-rejected-validations/'.$row->id.'/review', [
+            'action' => 'pending',
+            'note' => 'Please contact support.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'method' => 'manual',
+            'name' => 'info_requested',
+            'reason' => 'pending_from_mp_rejection',
+            'related_type' => 'mercado_pago_rejected_validations',
+            'related_id' => $row->id,
+        ]);
     }
 }
