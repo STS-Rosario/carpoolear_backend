@@ -139,4 +139,65 @@ class IdentityVerificationReportApiTest extends TestCase
         $this->assertSame(['count' => 0, 'pct' => 0], $totals['automatic']['approved']);
         $this->assertSame(['count' => 0, 'pct' => 0], $totals['manual']['pending_review']);
     }
+
+    /**
+     * Seeds the event history of one manual request, one minute apart.
+     *
+     * @param  list<string|array{0: string, 1: string}>  $events  name, or [name, reason]
+     */
+    private function manualRequest(int $userId, int $requestId, array $events, string $start = '2026-09-20 10:00:00', string $relatedType = 'manual_identity_validations'): void
+    {
+        $at = Carbon::parse($start);
+        foreach ($events as $event) {
+            [$name, $reason] = is_array($event) ? $event : [$event, null];
+            $this->event([
+                'user_id' => $userId,
+                'method' => 'manual',
+                'name' => $name,
+                'reason' => $reason,
+                'related_type' => $relatedType,
+                'related_id' => $requestId,
+                'created_at' => $at->copy(),
+            ]);
+            $at->addMinute();
+        }
+    }
+
+    public function test_classifies_each_paid_manual_request_once_by_its_latest_state(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+
+        // Paid, never sent documents: inconclusive.
+        $this->manualRequest($user->id, 1, ['payment_started', 'payment_succeeded']);
+        // Waiting for an admin: pending_review.
+        $this->manualRequest($user->id, 2, ['payment_succeeded', 'docs_submitted']);
+        // Rejected, resubmitted on the same row, then approved: one attempt, approved.
+        $this->manualRequest($user->id, 3, ['payment_succeeded', 'docs_submitted', ['failed', 'docs_illegible'], 'docs_submitted', 'succeeded']);
+        // Rejected.
+        $this->manualRequest($user->id, 4, ['payment_succeeded', 'docs_submitted', ['failed', 'selfie_mismatch'], 'upload_rejected']);
+        // Asked for more info, never re-sent: inconclusive.
+        $this->manualRequest($user->id, 5, ['payment_succeeded', 'docs_submitted', 'info_requested']);
+        // Closed without a decision after an MP success: inconclusive.
+        $this->manualRequest($user->id, 6, ['payment_succeeded', 'docs_submitted', 'closed_after_mp_success']);
+        // Never paid: not an attempt (even when later closed).
+        $this->manualRequest($user->id, 7, ['payment_started', 'closed_after_mp_success']);
+        // Admin override to approved.
+        $this->manualRequest($user->id, 8, ['payment_succeeded', 'docs_submitted', ['admin_state_changed', 'approved']]);
+        // Approval of an MP rejection is not a manual request.
+        $this->manualRequest($user->id, 9, [['succeeded', 'approved_from_mp_rejection']], '2026-09-20 10:00:00', 'mercado_pago_rejected_validations');
+        // Paid before the range: belongs to August even if documents arrive in September.
+        $this->manualRequest($user->id, 10, ['payment_succeeded'], '2026-08-31 23:59:00');
+        $this->manualRequest($user->id, 10, ['docs_submitted'], '2026-09-02 10:00:00');
+
+        $totals = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30')->assertOk()->json('totals');
+
+        $this->assertSame(7, $totals['attempts']);
+        $manual = $totals['manual'];
+        $this->assertSame(7, $manual['attempts']);
+        $this->assertSame(['count' => 2, 'pct' => 28.57], $manual['approved']);
+        $this->assertSame(['count' => 1, 'pct' => 14.29], $manual['rejected']);
+        $this->assertSame(['count' => 3, 'pct' => 42.86], $manual['inconclusive']);
+        $this->assertSame(['count' => 1, 'pct' => 14.29], $manual['pending_review']);
+    }
 }
