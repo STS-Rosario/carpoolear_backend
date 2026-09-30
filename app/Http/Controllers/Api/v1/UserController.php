@@ -154,9 +154,22 @@ class UserController extends Controller
         }
 
         $changedKeys = $this->adminUpdateChangedKeys($user, $data);
+        $wasIdentityValidated = (bool) $user->identity_validated;
         $profile = $this->userLogic->update($user, $data, false, true);
         if (! $profile) {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
+        }
+
+        if ((bool) $profile->identity_validated !== $wasIdentityValidated) {
+            app(IdentityVerificationOutcome::class)->emit([
+                'user_id' => $profile->id,
+                'method' => IdentityVerificationOutcome::METHOD_ADMIN,
+                'name' => IdentityVerificationOutcome::NAME_ADMIN_IDENTITY_EDITED,
+                'reason' => $profile->identity_validated ? IdentityVerificationOutcome::REASON_VALIDATED : IdentityVerificationOutcome::REASON_UNVALIDATED,
+                'related_type' => 'users',
+                'related_id' => $profile->id,
+                'metadata' => ['admin_id' => $me->id],
+            ]);
         }
 
         if ($changedKeys !== []) {

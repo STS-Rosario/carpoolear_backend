@@ -10,6 +10,9 @@ class IdentityVerificationOutcome
 
     public const METHOD_MANUAL = 'manual';
 
+    /** Admin actions on the user that belong to neither verification flow (profile edit, reset). */
+    public const METHOD_ADMIN = 'admin';
+
     public const NAME_ATTEMPT_STARTED = 'attempt_started';
 
     public const NAME_SUCCEEDED = 'succeeded';
@@ -35,6 +38,8 @@ class IdentityVerificationOutcome
     public const NAME_CONFIRM_MODAL_CANCELLED = 'confirm_modal_cancelled';
 
     public const NAME_ADMIN_STATE_CHANGED = 'admin_state_changed';
+
+    public const NAME_ADMIN_IDENTITY_EDITED = 'admin_identity_edited';
 
     public const REASON_OAUTH_CANCELLED = 'oauth_cancelled';
 
@@ -79,6 +84,10 @@ class IdentityVerificationOutcome
     public const REASON_REJECTED_FROM_MP_REJECTION = 'rejected_from_mp_rejection';
 
     public const REASON_PENDING_FROM_MP_REJECTION = 'pending_from_mp_rejection';
+
+    public const REASON_VALIDATED = 'validated';
+
+    public const REASON_UNVALIDATED = 'unvalidated';
 
     /**
      * @var list<string>
