@@ -105,6 +105,15 @@ class MercadoPagoRejectedValidationController extends Controller
             $user->identity_validation_rejected_at = null;
             $user->identity_validation_reject_reason = null;
             $user->save();
+            $isReject = $validated['action'] === 'reject';
+            app(IdentityVerificationOutcome::class)->emit([
+                'user_id' => $user->id,
+                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+                'name' => $isReject ? IdentityVerificationOutcome::NAME_FAILED : IdentityVerificationOutcome::NAME_INFO_REQUESTED,
+                'reason' => $isReject ? IdentityVerificationOutcome::REASON_REJECTED_FROM_MP_REJECTION : IdentityVerificationOutcome::REASON_PENDING_FROM_MP_REJECTION,
+                'related_type' => 'mercado_pago_rejected_validations',
+                'related_id' => $item->id,
+            ]);
         }
 
         $item->save();

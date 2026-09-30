@@ -76,6 +76,10 @@ class IdentityVerificationOutcome
 
     public const REASON_APPROVED_FROM_MP_REJECTION = 'approved_from_mp_rejection';
 
+    public const REASON_REJECTED_FROM_MP_REJECTION = 'rejected_from_mp_rejection';
+
+    public const REASON_PENDING_FROM_MP_REJECTION = 'pending_from_mp_rejection';
+
     /**
      * @var list<string>
      */
