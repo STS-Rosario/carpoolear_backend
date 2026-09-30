@@ -33,6 +33,13 @@ class IdentityVerificationAttemptClassifier
     /** @var list<string> */
     public const MANUAL_CLASSES = [self::APPROVED, self::REJECTED, self::INCONCLUSIVE, self::PENDING_REVIEW];
 
+    /**
+     * Automatic classes that put a user into the "who falls through" funnel (cancelled/abandoned do not).
+     *
+     * @var list<string>
+     */
+    public const FUNNEL_FAILURE_CLASSES = [self::REJECTED, self::ERROR];
+
     public const RESOLVED_BY_MERCADO_PAGO = 'mercado_pago';
 
     public const RESOLVED_BY_MANUAL = 'manual';
@@ -240,6 +247,14 @@ class IdentityVerificationAttemptClassifier
             .' AND '.$reasonColumn.' = '.$this->quote(IdentityVerificationOutcome::REASON_VALIDATED)
             .' THEN '.$this->quote(self::RESOLVED_BY_ADMIN_EDIT)
             .' ELSE NULL END';
+    }
+
+    /**
+     * SQL list literal of the funnel failure classes, e.g. ('rejected', 'error').
+     */
+    public function funnelFailureClassesSql(): string
+    {
+        return '('.$this->quoteList(self::FUNNEL_FAILURE_CLASSES).')';
     }
 
     /**

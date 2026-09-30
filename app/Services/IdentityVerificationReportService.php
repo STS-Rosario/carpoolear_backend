@@ -59,7 +59,7 @@ class IdentityVerificationReportService
     private function funnel(Builder $mercadoPago, array $filters): array
     {
         [$from] = $this->range($filters);
-        $failures = "('".Classifier::REJECTED."', '".Classifier::ERROR."')";
+        $failures = $this->classifier->funnelFailureClassesSql();
 
         $failedUsers = DB::query()
             ->fromSub($mercadoPago, 'a')
@@ -112,7 +112,7 @@ class IdentityVerificationReportService
                 'count' => $failedCount - $resolvedCount,
                 'pct' => $this->percent($failedCount - $resolvedCount, $failedCount),
             ],
-            'unlinked_failures' => $this->unlinkedFailures($filters, $failures),
+            'unlinked_failures' => $this->unlinkedFailures($filters),
         ];
     }
 
@@ -121,9 +121,10 @@ class IdentityVerificationReportService
      *
      * @param  array<string, mixed>  $filters
      */
-    private function unlinkedFailures(array $filters, string $failures): int
+    private function unlinkedFailures(array $filters): int
     {
         [$from, $to] = $this->range($filters);
+        $failures = $this->classifier->funnelFailureClassesSql();
 
         return DB::table(self::TABLE)
             ->where('method', IdentityVerificationOutcome::METHOD_MERCADO_PAGO)
@@ -131,7 +132,7 @@ class IdentityVerificationReportService
             ->whereNull('user_id')
             ->whereBetween('created_at', [$from, $to])
             ->whereRaw($this->classifier->mercadoPagoOutcomeSql('name', 'reason').' IN '.$failures)
-            ->when($filters['method'] === IdentityVerificationOutcome::METHOD_MANUAL, fn (Builder $q) => $q->whereRaw('1 = 0'))
+            ->tap(fn (Builder $q) => $this->restrictToMethod($q, $filters, IdentityVerificationOutcome::METHOD_MERCADO_PAGO))
             ->tap(fn (Builder $q) => $this->applyClientFilters($q, $filters))
             ->count();
     }
@@ -190,10 +191,22 @@ class IdentityVerificationReportService
             ->where('s.method', IdentityVerificationOutcome::METHOD_MERCADO_PAGO)
             ->where('s.name', IdentityVerificationOutcome::NAME_ATTEMPT_STARTED)
             ->whereBetween('s.created_at', [$from, $to])
-            ->when($filters['method'] === IdentityVerificationOutcome::METHOD_MANUAL, fn (Builder $q) => $q->whereRaw('1 = 0'))
+            ->tap(fn (Builder $q) => $this->restrictToMethod($q, $filters, IdentityVerificationOutcome::METHOD_MERCADO_PAGO))
             ->tap(fn (Builder $q) => $this->applyClientFilters($q, $filters, 's.'))
             ->selectRaw('s.user_id, s.created_at AS started_at, o.created_at AS outcome_at, '
                 .$this->classifier->mercadoPagoOutcomeSql('o.name', 'o.reason').' AS outcome');
+    }
+
+    /**
+     * Makes $query empty when the method filter excludes $method (keeps the response shape stable with zeros).
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function restrictToMethod(Builder $query, array $filters, string $method): void
+    {
+        if ($filters['method'] !== 'all' && $filters['method'] !== $method) {
+            $query->whereRaw('1 = 0');
+        }
     }
 
     /**
@@ -223,7 +236,7 @@ class IdentityVerificationReportService
         $requests = $this->manualRequestEvents()
             ->selectRaw('related_id, MIN(user_id) AS user_id, MIN(created_at) AS started_at')
             ->whereRaw($this->classifier->manualAttemptEvidenceSql('name', 'reason'))
-            ->when($filters['method'] === IdentityVerificationOutcome::METHOD_MERCADO_PAGO, fn (Builder $q) => $q->whereRaw('1 = 0'))
+            ->tap(fn (Builder $q) => $this->restrictToMethod($q, $filters, IdentityVerificationOutcome::METHOD_MANUAL))
             ->tap(fn (Builder $q) => $this->applyClientFilters($q, $filters))
             ->groupBy('related_id')
             ->havingRaw('MIN(created_at) BETWEEN ? AND ?', [$from, $to]);
