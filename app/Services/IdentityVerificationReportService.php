@@ -102,8 +102,24 @@ class IdentityVerificationReportService
             ->where('s.method', IdentityVerificationOutcome::METHOD_MERCADO_PAGO)
             ->where('s.name', IdentityVerificationOutcome::NAME_ATTEMPT_STARTED)
             ->whereBetween('s.created_at', [$from, $to])
+            ->when($filters['method'] === IdentityVerificationOutcome::METHOD_MANUAL, fn (Builder $q) => $q->whereRaw('1 = 0'))
+            ->tap(fn (Builder $q) => $this->applyClientFilters($q, $filters, 's.'))
             ->selectRaw('s.user_id, s.created_at AS started_at, o.created_at AS outcome_at, '
                 .$this->classifier->mercadoPagoOutcomeSql('o.name', 'o.reason').' AS outcome');
+    }
+
+    /**
+     * surface / platform / app_version match the event that starts the attempt.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyClientFilters(Builder $query, array $filters, string $prefix = ''): void
+    {
+        foreach (['surface', 'platform', 'app_version'] as $field) {
+            if ($filters[$field] !== null && $filters[$field] !== '') {
+                $query->where($prefix.$field, $filters[$field]);
+            }
+        }
     }
 
     /**
@@ -119,6 +135,8 @@ class IdentityVerificationReportService
         $requests = $this->manualRequestEvents()
             ->selectRaw('related_id, MIN(user_id) AS user_id, MIN(created_at) AS started_at')
             ->whereRaw($this->classifier->manualAttemptEvidenceSql('name', 'reason'))
+            ->when($filters['method'] === IdentityVerificationOutcome::METHOD_MERCADO_PAGO, fn (Builder $q) => $q->whereRaw('1 = 0'))
+            ->tap(fn (Builder $q) => $this->applyClientFilters($q, $filters))
             ->groupBy('related_id')
             ->havingRaw('MIN(created_at) BETWEEN ? AND ?', [$from, $to]);
 
