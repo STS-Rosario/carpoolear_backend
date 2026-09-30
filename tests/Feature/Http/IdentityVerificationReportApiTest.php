@@ -200,4 +200,67 @@ class IdentityVerificationReportApiTest extends TestCase
         $this->assertSame(['count' => 3, 'pct' => 42.86], $manual['inconclusive']);
         $this->assertSame(['count' => 1, 'pct' => 14.29], $manual['pending_review']);
     }
+
+    public function test_series_groups_by_month_by_default_and_fills_empty_periods(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+
+        $this->mpAttempt($user->id, $this->uuid(1), 'succeeded', null, '2026-08-05 10:00:00');
+        $this->mpAttempt($user->id, $this->uuid(2), 'failed', 'dni_mismatch', '2026-08-06 10:00:00');
+        $this->manualRequest($user->id, 1, ['payment_succeeded', 'docs_submitted'], '2026-10-10 10:00:00');
+
+        $data = $this->getJson(self::URL.'?from=2026-08-01&to=2026-10-31')->assertOk()->json();
+
+        $this->assertSame(['2026-08', '2026-09', '2026-10'], array_column($data['series'], 'period'));
+
+        $august = $data['series'][0];
+        $this->assertSame(2, $august['attempts']);
+        $this->assertSame(2, $august['automatic']['attempts']);
+        $this->assertSame(['count' => 1, 'pct' => 50], $august['automatic']['approved']);
+        $this->assertSame(['count' => 1, 'pct' => 50], $august['automatic']['rejected']);
+        $this->assertSame(0, $august['manual']['attempts']);
+
+        $september = $data['series'][1];
+        $this->assertSame(0, $september['attempts']);
+        $this->assertSame(['count' => 0, 'pct' => 0], $september['automatic']['abandoned']);
+        $this->assertSame(['count' => 0, 'pct' => 0], $september['manual']['inconclusive']);
+
+        $october = $data['series'][2];
+        $this->assertSame(1, $october['attempts']);
+        $this->assertSame(['count' => 1, 'pct' => 100], $october['manual']['pending_review']);
+
+        $this->assertSame(3, $data['totals']['attempts']);
+    }
+
+    public function test_series_groups_by_iso_week_starting_monday(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+
+        $this->mpAttempt($user->id, $this->uuid(1), 'succeeded', null, '2026-09-14 00:30:00');
+        $this->mpAttempt($user->id, $this->uuid(2), null, null, '2026-09-20 23:00:00');
+        $this->mpAttempt($user->id, $this->uuid(3), 'failed', 'oauth_denied', '2026-09-21 09:00:00');
+
+        $series = $this->getJson(self::URL.'?from=2026-09-15&to=2026-09-22&group_by=week')->assertOk()->json('series');
+
+        $this->assertSame(['2026-09-14', '2026-09-21'], array_column($series, 'period'));
+        $this->assertSame(1, $series[0]['attempts']);
+        $this->assertSame(['count' => 1, 'pct' => 100], $series[0]['automatic']['abandoned']);
+        $this->assertSame(['count' => 1, 'pct' => 100], $series[1]['automatic']['cancelled']);
+    }
+
+    public function test_series_groups_by_day(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+
+        $this->mpAttempt($user->id, $this->uuid(1), 'succeeded', null, '2026-09-20 23:59:00');
+        $this->mpAttempt($user->id, $this->uuid(2), 'succeeded', null, '2026-09-22 00:00:00');
+
+        $series = $this->getJson(self::URL.'?from=2026-09-20&to=2026-09-22&group_by=day')->assertOk()->json('series');
+
+        $this->assertSame(['2026-09-20', '2026-09-21', '2026-09-22'], array_column($series, 'period'));
+        $this->assertSame([1, 0, 1], array_column($series, 'attempts'));
+    }
 }
