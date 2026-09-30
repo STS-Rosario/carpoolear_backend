@@ -146,4 +146,71 @@ class AdminIdentityVerificationEventsTest extends TestCase
             'related_id' => $row->id,
         ]);
     }
+
+    private function superadmin(): User
+    {
+        $admin = User::factory()->create(['active' => true, 'banned' => false]);
+        $admin->forceFill(['is_admin' => true, 'admin_role' => 'superadmin'])->saveQuietly();
+        $admin = $admin->fresh();
+        $this->actingAs($admin, 'api');
+
+        return $admin;
+    }
+
+    public function test_admin_profile_edit_validating_identity_records_admin_identity_edited(): void
+    {
+        $admin = $this->superadmin();
+        $target = User::factory()->create(['active' => true, 'banned' => false, 'identity_validated' => false]);
+
+        $this->putJson('api/users/modify', [
+            'user' => ['id' => $target->id],
+            'identity_validated' => true,
+        ])->assertOk();
+
+        $this->assertTrue((bool) $target->fresh()->identity_validated);
+        $event = IdentityVerificationEvent::query()->where('name', 'admin_identity_edited')->sole();
+        $this->assertSame($target->id, $event->user_id);
+        $this->assertSame('admin', $event->method);
+        $this->assertSame('validated', $event->reason);
+        $this->assertSame('users', $event->related_type);
+        $this->assertSame($target->id, $event->related_id);
+        $this->assertSame($admin->id, $event->metadata['admin_id'] ?? null);
+    }
+
+    public function test_admin_profile_edit_unvalidating_identity_records_unvalidated(): void
+    {
+        $this->superadmin();
+        $target = User::factory()->create([
+            'active' => true,
+            'banned' => false,
+            'identity_validated' => true,
+            'identity_validated_at' => now(),
+        ]);
+
+        $this->putJson('api/users/modify', [
+            'user' => ['id' => $target->id],
+            'identity_validated' => false,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $target->id,
+            'method' => 'admin',
+            'name' => 'admin_identity_edited',
+            'reason' => 'unvalidated',
+        ]);
+    }
+
+    public function test_admin_profile_edit_without_identity_change_records_nothing(): void
+    {
+        $this->superadmin();
+        $target = User::factory()->create(['active' => true, 'banned' => false, 'identity_validated' => false]);
+
+        $this->putJson('api/users/modify', [
+            'user' => ['id' => $target->id],
+            'description' => 'changed',
+            'identity_validated' => false,
+        ])->assertOk();
+
+        $this->assertSame(0, IdentityVerificationEvent::query()->count());
+    }
 }
