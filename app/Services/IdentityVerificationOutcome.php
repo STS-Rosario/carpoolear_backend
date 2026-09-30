@@ -34,6 +34,8 @@ class IdentityVerificationOutcome
 
     public const NAME_CONFIRM_MODAL_CANCELLED = 'confirm_modal_cancelled';
 
+    public const NAME_ADMIN_STATE_CHANGED = 'admin_state_changed';
+
     public const REASON_OAUTH_CANCELLED = 'oauth_cancelled';
 
     public const REASON_OAUTH_DENIED = 'oauth_denied';

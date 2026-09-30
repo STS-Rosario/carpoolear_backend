@@ -258,6 +258,8 @@ class ManualIdentityValidationController extends Controller
         }
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
+        $previousStatus = $item->review_status;
+        $previousPaid = (bool) $item->paid;
 
         if (array_key_exists('paid', $validated)) {
             $this->applyPaidState($item, (bool) $validated['paid']);
@@ -275,6 +277,23 @@ class ManualIdentityValidationController extends Controller
         }
 
         $item->save();
+
+        if ($item->review_status !== $previousStatus || (bool) $item->paid !== $previousPaid) {
+            app(IdentityVerificationOutcome::class)->emit([
+                'user_id' => $item->user_id,
+                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+                'name' => IdentityVerificationOutcome::NAME_ADMIN_STATE_CHANGED,
+                'reason' => $item->review_status,
+                'related_type' => 'manual_identity_validations',
+                'related_id' => $item->id,
+                'metadata' => [
+                    'previous_status' => $previousStatus,
+                    'previous_paid' => $previousPaid,
+                    'paid' => (bool) $item->paid,
+                    'admin_id' => auth()->id(),
+                ],
+            ]);
+        }
 
         $admin = $request->user();
         if ($admin) {
