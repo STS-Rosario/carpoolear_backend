@@ -30,7 +30,7 @@ class IdentityVerificationReportService
         ];
 
         $automatic = $this->aggregate($this->mercadoPagoAttempts($filters), Classifier::AUTOMATIC_CLASSES);
-        $manual = $this->section(0, array_fill_keys(Classifier::MANUAL_CLASSES, 0));
+        $manual = $this->aggregate($this->manualAttempts($filters), Classifier::MANUAL_CLASSES);
 
         return [
             'filters' => $filters,
@@ -67,6 +67,44 @@ class IdentityVerificationReportService
             ->whereBetween('s.created_at', [$from, $to])
             ->selectRaw('s.user_id, s.created_at AS started_at, o.created_at AS outcome_at, '
                 .$this->classifier->mercadoPagoOutcomeSql('o.name', 'o.reason').' AS outcome');
+    }
+
+    /**
+     * One row per paid manual request whose first paid-evidence event is in range: user_id, started_at,
+     * outcome (manual class of the request's latest state event, as of now).
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function manualAttempts(array $filters): Builder
+    {
+        [$from, $to] = $this->range($filters);
+
+        $requests = $this->manualRequestEvents()
+            ->selectRaw('related_id, MIN(user_id) AS user_id, MIN(created_at) AS started_at')
+            ->whereRaw($this->classifier->manualAttemptEvidenceSql('name', 'reason'))
+            ->groupBy('related_id')
+            ->havingRaw('MIN(created_at) BETWEEN ? AND ?', [$from, $to]);
+
+        $stateSql = $this->classifier->manualStateSql('name', 'reason');
+        $states = $this->manualRequestEvents()
+            ->selectRaw('related_id, '.$stateSql.' AS state, ROW_NUMBER() OVER (PARTITION BY related_id ORDER BY created_at DESC, id DESC) AS rn')
+            ->whereRaw($stateSql.' IS NOT NULL')
+            ->where('created_at', '>=', $from);
+
+        return DB::query()
+            ->fromSub($requests, 'r')
+            ->joinSub($states, 'st', function ($join) {
+                $join->on('st.related_id', '=', 'r.related_id')->where('st.rn', '=', 1);
+            })
+            ->selectRaw('r.user_id, r.started_at, st.state AS outcome');
+    }
+
+    private function manualRequestEvents(): Builder
+    {
+        return DB::table(self::TABLE)
+            ->where('method', IdentityVerificationOutcome::METHOD_MANUAL)
+            ->where('related_type', Classifier::MANUAL_RELATED_TYPE)
+            ->whereNotNull('related_id');
     }
 
     /**
