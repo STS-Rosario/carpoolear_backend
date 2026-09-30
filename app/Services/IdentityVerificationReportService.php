@@ -45,7 +45,95 @@ class IdentityVerificationReportService
                 $this->aggregate($mercadoPago, Classifier::AUTOMATIC_CLASSES)[self::TOTAL],
             ),
             'series' => $series,
+            'funnel' => $this->funnel($mercadoPago, $filters),
         ];
+    }
+
+    /**
+     * Users whose MP attempt in range ended rejected/error, and whether an approval (any method) followed.
+     * Each resolved user is attributed to their earliest approval at or after their first failure in range.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array<string, mixed>
+     */
+    private function funnel(Builder $mercadoPago, array $filters): array
+    {
+        [$from] = $this->range($filters);
+        $failures = "('".Classifier::REJECTED."', '".Classifier::ERROR."')";
+
+        $failedUsers = DB::query()
+            ->fromSub($mercadoPago, 'a')
+            ->whereRaw('outcome IN '.$failures)
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
+            ->selectRaw('user_id, MIN(outcome_at) AS failed_at');
+
+        $approvalSql = $this->classifier->approvalMethodSql('method', 'name', 'reason', 'related_type');
+        $approvals = DB::table(self::TABLE)
+            ->selectRaw('id, user_id, created_at, '.$approvalSql.' AS resolved_by')
+            ->whereNotNull('user_id')
+            ->where('created_at', '>=', $from)
+            ->whereRaw($approvalSql.' IS NOT NULL');
+
+        $firstApproval = DB::query()
+            ->fromSub($failedUsers, 'f')
+            ->joinSub($approvals, 'ap', function ($join) {
+                $join->on('ap.user_id', '=', 'f.user_id')->on('ap.created_at', '>=', 'f.failed_at');
+            })
+            ->selectRaw('f.user_id, ap.resolved_by, ROW_NUMBER() OVER (PARTITION BY f.user_id ORDER BY ap.created_at, ap.id) AS rn');
+
+        $select = ['COUNT(*) AS failed_users', 'COALESCE(SUM(CASE WHEN r.resolved_by IS NOT NULL THEN 1 ELSE 0 END), 0) AS resolved'];
+        foreach (Classifier::RESOLUTION_METHODS as $method) {
+            $select[] = "COALESCE(SUM(CASE WHEN r.resolved_by = '{$method}' THEN 1 ELSE 0 END), 0) AS by_{$method}";
+        }
+        $row = (array) DB::query()
+            ->fromSub($failedUsers, 'fu')
+            ->leftJoinSub($firstApproval, 'r', function ($join) {
+                $join->on('r.user_id', '=', 'fu.user_id')->where('r.rn', '=', 1);
+            })
+            ->selectRaw(implode(', ', $select))
+            ->first();
+
+        $failedCount = (int) $row['failed_users'];
+        $resolvedCount = (int) $row['resolved'];
+        $byMethod = [];
+        foreach (Classifier::RESOLUTION_METHODS as $method) {
+            $byMethod[$method] = (int) $row['by_'.$method];
+        }
+
+        return [
+            'failed_users' => $failedCount,
+            'resolved' => [
+                'count' => $resolvedCount,
+                'pct' => $this->percent($resolvedCount, $failedCount),
+                'by_method' => $byMethod,
+            ],
+            'unresolved' => [
+                'count' => $failedCount - $resolvedCount,
+                'pct' => $this->percent($failedCount - $resolvedCount, $failedCount),
+            ],
+            'unlinked_failures' => $this->unlinkedFailures($filters, $failures),
+        ];
+    }
+
+    /**
+     * MP rejected/error failures in range with no user_id (e.g. missing/expired OAuth state, deleted user).
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function unlinkedFailures(array $filters, string $failures): int
+    {
+        [$from, $to] = $this->range($filters);
+
+        return DB::table(self::TABLE)
+            ->where('method', IdentityVerificationOutcome::METHOD_MERCADO_PAGO)
+            ->where('name', IdentityVerificationOutcome::NAME_FAILED)
+            ->whereNull('user_id')
+            ->whereBetween('created_at', [$from, $to])
+            ->whereRaw($this->classifier->mercadoPagoOutcomeSql('name', 'reason').' IN '.$failures)
+            ->when($filters['method'] === IdentityVerificationOutcome::METHOD_MANUAL, fn (Builder $q) => $q->whereRaw('1 = 0'))
+            ->tap(fn (Builder $q) => $this->applyClientFilters($q, $filters))
+            ->count();
     }
 
     /**
@@ -172,7 +260,7 @@ class IdentityVerificationReportService
     {
         $select = [($periodSql ?? "'".self::TOTAL."'").' AS period', 'COUNT(*) AS attempts'];
         foreach ($classes as $class) {
-            $select[] = "COALESCE(SUM(CASE WHEN outcome = '{$class}' THEN 1 ELSE 0 END), 0) AS {$class}";
+            $select[] = "COALESCE(SUM(CASE WHEN outcome = '{$class}' THEN 1 ELSE 0 END), 0) AS count_{$class}";
         }
 
         $query = DB::query()->fromSub($attempts, 'a')->selectRaw(implode(', ', $select));
@@ -185,7 +273,7 @@ class IdentityVerificationReportService
             $row = (array) $row;
             $counts = ['attempts' => (int) $row['attempts']];
             foreach ($classes as $class) {
-                $counts[$class] = (int) $row[$class];
+                $counts[$class] = (int) $row['count_'.$class];
             }
             $result[(string) $row['period']] = $counts;
         }
