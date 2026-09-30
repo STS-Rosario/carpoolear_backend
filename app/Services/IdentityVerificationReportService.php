@@ -11,6 +11,8 @@ class IdentityVerificationReportService
 {
     private const TABLE = 'identity_verification_events';
 
+    private const TOTAL = 'total';
+
     public function __construct(private Classifier $classifier) {}
 
     /**
@@ -29,16 +31,42 @@ class IdentityVerificationReportService
             'app_version' => $input['app_version'] ?? null,
         ];
 
-        $automatic = $this->aggregate($this->mercadoPagoAttempts($filters), Classifier::AUTOMATIC_CLASSES);
-        $manual = $this->aggregate($this->manualAttempts($filters), Classifier::MANUAL_CLASSES);
+        $mercadoPago = $this->mercadoPagoAttempts($filters);
+        $manual = $this->manualAttempts($filters);
+        $periodSql = $this->periodSql($filters['group_by']);
+
+        $manualByPeriod = $this->aggregate($manual, Classifier::MANUAL_CLASSES, $periodSql);
+        $automaticByPeriod = $this->aggregate($mercadoPago, Classifier::AUTOMATIC_CLASSES, $periodSql);
+
+        $series = [];
+        foreach ($this->periods($filters) as $period) {
+            $series[] = ['period' => $period] + $this->combine(
+                $manualByPeriod[$period] ?? $this->zeroCounts(Classifier::MANUAL_CLASSES),
+                $automaticByPeriod[$period] ?? $this->zeroCounts(Classifier::AUTOMATIC_CLASSES),
+            );
+        }
 
         return [
             'filters' => $filters,
-            'totals' => [
-                'attempts' => $manual['attempts'] + $automatic['attempts'],
-                'manual' => $manual,
-                'automatic' => $automatic,
-            ],
+            'totals' => $this->combine(
+                $this->aggregate($manual, Classifier::MANUAL_CLASSES)[self::TOTAL] ?? $this->zeroCounts(Classifier::MANUAL_CLASSES),
+                $this->aggregate($mercadoPago, Classifier::AUTOMATIC_CLASSES)[self::TOTAL] ?? $this->zeroCounts(Classifier::AUTOMATIC_CLASSES),
+            ),
+            'series' => $series,
+        ];
+    }
+
+    /**
+     * @param  array<string, int>  $manual
+     * @param  array<string, int>  $automatic
+     * @return array<string, mixed>
+     */
+    private function combine(array $manual, array $automatic): array
+    {
+        return [
+            'attempts' => $manual['attempts'] + $automatic['attempts'],
+            'manual' => $this->section($manual),
+            'automatic' => $this->section($automatic),
         ];
     }
 
@@ -108,37 +136,97 @@ class IdentityVerificationReportService
     }
 
     /**
+     * Counts per outcome class, in SQL. Keyed by period when $periodSql is given, else by self::TOTAL.
+     *
      * @param  list<string>  $classes
-     * @return array<string, mixed>
+     * @return array<string, array<string, int>>
      */
-    private function aggregate(Builder $attempts, array $classes): array
+    private function aggregate(Builder $attempts, array $classes, ?string $periodSql = null): array
     {
-        $select = ['COUNT(*) AS attempts'];
+        $select = [($periodSql ?? "'".self::TOTAL."'").' AS period', 'COUNT(*) AS attempts'];
         foreach ($classes as $class) {
             $select[] = "COALESCE(SUM(CASE WHEN outcome = '{$class}' THEN 1 ELSE 0 END), 0) AS {$class}";
         }
 
-        $row = (array) DB::query()->fromSub($attempts, 'a')->selectRaw(implode(', ', $select))->first();
-        $counts = [];
-        foreach ($classes as $class) {
-            $counts[$class] = (int) $row[$class];
+        $query = DB::query()->fromSub($attempts, 'a')->selectRaw(implode(', ', $select));
+        if ($periodSql !== null) {
+            $query->groupByRaw($periodSql);
         }
 
-        return $this->section((int) $row['attempts'], $counts);
+        $result = [];
+        foreach ($query->get() as $row) {
+            $row = (array) $row;
+            $counts = ['attempts' => (int) $row['attempts']];
+            foreach ($classes as $class) {
+                $counts[$class] = (int) $row[$class];
+            }
+            $result[(string) $row['period']] = $counts;
+        }
+
+        return $result;
     }
 
     /**
-     * @param  array<string, int>  $counts
+     * @param  list<string>  $classes
+     * @return array<string, int>
+     */
+    private function zeroCounts(array $classes): array
+    {
+        return ['attempts' => 0] + array_fill_keys($classes, 0);
+    }
+
+    /**
+     * @param  array<string, int>  $counts  attempts + one count per class
      * @return array<string, mixed>
      */
-    private function section(int $attempts, array $counts): array
+    private function section(array $counts): array
     {
+        $attempts = $counts['attempts'];
         $section = ['attempts' => $attempts];
         foreach ($counts as $class => $count) {
+            if ($class === 'attempts') {
+                continue;
+            }
             $section[$class] = ['count' => $count, 'pct' => $this->percent($count, $attempts)];
         }
 
         return $section;
+    }
+
+    /**
+     * MySQL expression bucketing a.started_at: YYYY-MM (month), Monday YYYY-MM-DD (week), YYYY-MM-DD (day).
+     */
+    private function periodSql(string $groupBy): string
+    {
+        return match ($groupBy) {
+            'week' => "DATE_FORMAT(DATE_SUB(DATE(started_at), INTERVAL WEEKDAY(started_at) DAY), '%Y-%m-%d')",
+            'day' => "DATE_FORMAT(started_at, '%Y-%m-%d')",
+            default => "DATE_FORMAT(started_at, '%Y-%m')",
+        };
+    }
+
+    /**
+     * Every period between from and to (inclusive), so empty periods are reported with zeros.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return list<string>
+     */
+    private function periods(array $filters): array
+    {
+        [$from, $to] = $this->range($filters);
+        [$cursor, $step, $format] = match ($filters['group_by']) {
+            'week' => [$from->copy()->startOfWeek(Carbon::MONDAY), 'addWeek', 'Y-m-d'],
+            'day' => [$from->copy(), 'addDay', 'Y-m-d'],
+            default => [$from->copy()->startOfMonth(), 'addMonthNoOverflow', 'Y-m'],
+        };
+
+        $periods = [];
+        while ($cursor->lessThanOrEqualTo($to)) {
+            $periods[] = $cursor->format($format);
+            $cursor->{$step}();
+        }
+
+        return $periods;
     }
 
     /**
