@@ -41,6 +41,8 @@ class IdentityVerificationOutcome
 
     public const NAME_ADMIN_IDENTITY_EDITED = 'admin_identity_edited';
 
+    public const NAME_VERIFICATION_RESET = 'verification_reset';
+
     public const REASON_OAUTH_CANCELLED = 'oauth_cancelled';
 
     public const REASON_OAUTH_DENIED = 'oauth_denied';
