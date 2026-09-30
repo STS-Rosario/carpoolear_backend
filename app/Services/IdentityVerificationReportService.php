@@ -21,16 +21,7 @@ class IdentityVerificationReportService
      */
     public function build(array $input): array
     {
-        $filters = [
-            'from' => Carbon::parse($input['from'])->toDateString(),
-            'to' => Carbon::parse($input['to'])->toDateString(),
-            'group_by' => $input['group_by'] ?? 'month',
-            'method' => $input['method'] ?? 'all',
-            'surface' => $input['surface'] ?? null,
-            'platform' => $input['platform'] ?? null,
-            'app_version' => $input['app_version'] ?? null,
-        ];
-
+        $filters = $this->normalizeFilters($input);
         $mercadoPago = $this->mercadoPagoAttempts($filters);
         $manual = $this->manualAttempts($filters);
         $periodSql = $this->periodSql($filters['group_by']);
@@ -46,13 +37,31 @@ class IdentityVerificationReportService
             );
         }
 
+        // Without a period expression the aggregate is a single ungrouped row, always present.
         return [
             'filters' => $filters,
             'totals' => $this->combine(
-                $this->aggregate($manual, Classifier::MANUAL_CLASSES)[self::TOTAL] ?? $this->zeroCounts(Classifier::MANUAL_CLASSES),
-                $this->aggregate($mercadoPago, Classifier::AUTOMATIC_CLASSES)[self::TOTAL] ?? $this->zeroCounts(Classifier::AUTOMATIC_CLASSES),
+                $this->aggregate($manual, Classifier::MANUAL_CLASSES)[self::TOTAL],
+                $this->aggregate($mercadoPago, Classifier::AUTOMATIC_CLASSES)[self::TOTAL],
             ),
             'series' => $series,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    private function normalizeFilters(array $input): array
+    {
+        return [
+            'from' => Carbon::parse($input['from'])->toDateString(),
+            'to' => Carbon::parse($input['to'])->toDateString(),
+            'group_by' => $input['group_by'] ?? 'month',
+            'method' => $input['method'] ?? 'all',
+            'surface' => $input['surface'] ?? null,
+            'platform' => $input['platform'] ?? null,
+            'app_version' => $input['app_version'] ?? null,
         ];
     }
 
