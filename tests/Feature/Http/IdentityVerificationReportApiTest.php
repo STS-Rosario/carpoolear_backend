@@ -263,4 +263,47 @@ class IdentityVerificationReportApiTest extends TestCase
         $this->assertSame(['2026-09-20', '2026-09-21', '2026-09-22'], array_column($series, 'period'));
         $this->assertSame([1, 0, 1], array_column($series, 'attempts'));
     }
+
+    public function test_method_filter_limits_attempts_to_one_method(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+        $this->mpAttempt($user->id, $this->uuid(1), 'succeeded');
+        $this->manualRequest($user->id, 1, ['payment_succeeded', 'docs_submitted', 'succeeded']);
+
+        $manualOnly = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30&method=manual')->assertOk()->json();
+        $this->assertSame('manual', $manualOnly['filters']['method']);
+        $this->assertSame(1, $manualOnly['totals']['attempts']);
+        $this->assertSame(1, $manualOnly['totals']['manual']['attempts']);
+        $this->assertSame(0, $manualOnly['totals']['automatic']['attempts']);
+        $this->assertSame(0, $manualOnly['series'][0]['automatic']['approved']['count']);
+
+        $mpOnly = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30&method=mercado_pago')->assertOk()->json();
+        $this->assertSame(1, $mpOnly['totals']['attempts']);
+        $this->assertSame(0, $mpOnly['totals']['manual']['attempts']);
+        $this->assertSame(1, $mpOnly['totals']['automatic']['attempts']);
+    }
+
+    public function test_client_context_filters_apply_to_the_attempt_start(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+        $android = ['surface' => 'choice_cards', 'platform' => 'android', 'app_version' => '4.1.0'];
+        $this->mpAttempt($user->id, $this->uuid(1), 'succeeded', null, '2026-09-20 12:00:00', $android);
+        $this->mpAttempt($user->id, $this->uuid(2), 'succeeded', null, '2026-09-20 12:00:00', ['surface' => 'choice_cards', 'platform' => 'web', 'app_version' => '4.1.0']);
+        $this->mpAttempt($user->id, $this->uuid(3), 'succeeded', null, '2026-09-20 12:00:00', ['surface' => 'pending_switch', 'platform' => 'android', 'app_version' => '4.1.0']);
+        // Manual events carry no client context, so they never match a client filter.
+        $this->manualRequest($user->id, 1, ['payment_succeeded']);
+
+        $data = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30&surface=choice_cards&platform=android&app_version=4.1.0')
+            ->assertOk()
+            ->json();
+
+        $this->assertSame('android', $data['filters']['platform']);
+        $this->assertSame(1, $data['totals']['automatic']['attempts']);
+        $this->assertSame(0, $data['totals']['manual']['attempts']);
+
+        $byPlatform = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30&platform=android')->assertOk()->json('totals');
+        $this->assertSame(2, $byPlatform['automatic']['attempts']);
+    }
 }
