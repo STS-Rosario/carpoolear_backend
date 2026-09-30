@@ -278,22 +278,7 @@ class ManualIdentityValidationController extends Controller
 
         $item->save();
 
-        if ($item->review_status !== $previousStatus || (bool) $item->paid !== $previousPaid) {
-            app(IdentityVerificationOutcome::class)->emit([
-                'user_id' => $item->user_id,
-                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
-                'name' => IdentityVerificationOutcome::NAME_ADMIN_STATE_CHANGED,
-                'reason' => $item->review_status,
-                'related_type' => 'manual_identity_validations',
-                'related_id' => $item->id,
-                'metadata' => [
-                    'previous_status' => $previousStatus,
-                    'previous_paid' => $previousPaid,
-                    'paid' => (bool) $item->paid,
-                    'admin_id' => auth()->id(),
-                ],
-            ]);
-        }
+        $this->emitStateOverride($item, $previousStatus, $previousPaid);
 
         $admin = $request->user();
         if ($admin) {
@@ -311,6 +296,32 @@ class ManualIdentityValidationController extends Controller
         }
 
         return $this->show($id);
+    }
+
+    /**
+     * Admin overrides bypass review(); record them so reports can classify the request.
+     * Only emitted when the review status or the paid flag actually changed.
+     */
+    private function emitStateOverride(ManualIdentityValidation $item, ?string $previousStatus, bool $previousPaid): void
+    {
+        if ($item->review_status === $previousStatus && (bool) $item->paid === $previousPaid) {
+            return;
+        }
+
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $item->user_id,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'name' => IdentityVerificationOutcome::NAME_ADMIN_STATE_CHANGED,
+            'reason' => $item->review_status,
+            'related_type' => 'manual_identity_validations',
+            'related_id' => $item->id,
+            'metadata' => [
+                'previous_status' => $previousStatus,
+                'previous_paid' => $previousPaid,
+                'paid' => (bool) $item->paid,
+                'admin_id' => auth()->id(),
+            ],
+        ]);
     }
 
     private function applyPaidState(ManualIdentityValidation $item, bool $paid): void
