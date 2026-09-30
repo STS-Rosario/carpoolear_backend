@@ -306,4 +306,73 @@ class IdentityVerificationReportApiTest extends TestCase
         $byPlatform = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30&platform=android')->assertOk()->json('totals');
         $this->assertSame(2, $byPlatform['automatic']['attempts']);
     }
+
+    public function test_funnel_follows_mp_failures_to_their_eventual_resolution(): void
+    {
+        $this->actingAsAdmin();
+        $u = User::factory()->count(9)->create()->pluck('id')->all();
+
+        // U1: rejected, later MP success.
+        $this->mpAttempt($u[0], $this->uuid(1), 'failed', 'dni_mismatch', '2026-09-05 12:00:00');
+        $this->mpAttempt($u[0], $this->uuid(2), 'succeeded', null, '2026-09-06 12:00:00');
+        // U2: technical error, later manual approval.
+        $this->mpAttempt($u[1], $this->uuid(3), 'failed', 'token_exchange_failed', '2026-09-05 12:00:00');
+        $this->manualRequest($u[1], 1, ['payment_succeeded', 'docs_submitted', 'succeeded'], '2026-09-10 10:00:00');
+        // U3: rejected, admin approved the MP rejection.
+        $this->mpAttempt($u[2], $this->uuid(4), 'failed', 'both_mismatch', '2026-09-05 12:00:00');
+        $this->manualRequest($u[2], 7, [['succeeded', 'approved_from_mp_rejection']], '2026-09-07 10:00:00', 'mercado_pago_rejected_validations');
+        // U4: rejected, never resolved.
+        $this->mpAttempt($u[3], $this->uuid(5), 'failed', 'name_mismatch', '2026-09-05 12:00:00');
+        // U5: rejected twice (one user), then an admin validated the profile directly.
+        $this->mpAttempt($u[4], $this->uuid(6), 'failed', 'missing_identification', '2026-09-05 12:00:00');
+        $this->mpAttempt($u[4], $this->uuid(7), 'failed', 'missing_identification', '2026-09-06 12:00:00');
+        $this->event(['user_id' => $u[4], 'method' => 'admin', 'name' => 'admin_identity_edited', 'reason' => 'validated', 'created_at' => Carbon::parse('2026-09-08 10:00:00')]);
+        // U6: cancelled is not a failure for the funnel.
+        $this->mpAttempt($u[5], $this->uuid(8), 'failed', 'oauth_cancelled', '2026-09-05 12:00:00');
+        // U7: approval before the failure does not resolve it.
+        $this->manualRequest($u[6], 2, ['payment_succeeded', 'docs_submitted', 'succeeded'], '2026-09-01 10:00:00');
+        $this->mpAttempt($u[6], $this->uuid(9), 'failed', 'dni_mismatch', '2026-09-05 12:00:00');
+        // U8: failure before the range is out of scope.
+        $this->mpAttempt($u[7], $this->uuid(10), 'failed', 'dni_mismatch', '2026-08-20 12:00:00');
+        $this->mpAttempt($u[7], $this->uuid(11), 'succeeded', null, '2026-09-02 12:00:00');
+        // U9: resolution after `to` still counts.
+        $this->mpAttempt($u[8], $this->uuid(12), 'failed', 'users_me_failed', '2026-09-28 12:00:00');
+        $this->mpAttempt($u[8], $this->uuid(13), 'succeeded', null, '2026-10-02 12:00:00');
+        // Failures without a user: reported apart (only rejected/error in range).
+        $this->event(['user_id' => null, 'method' => 'mercado_pago', 'name' => 'failed', 'reason' => 'missing_code_or_state', 'created_at' => Carbon::parse('2026-09-10 10:00:00')]);
+        $this->event(['user_id' => null, 'method' => 'mercado_pago', 'name' => 'failed', 'reason' => 'oauth_cancelled', 'created_at' => Carbon::parse('2026-09-10 10:00:00')]);
+        $this->event(['user_id' => null, 'method' => 'mercado_pago', 'name' => 'failed', 'reason' => 'user_not_found', 'created_at' => Carbon::parse('2026-08-10 10:00:00')]);
+
+        $funnel = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30')->assertOk()->json('funnel');
+
+        $this->assertSame([
+            'failed_users' => 7,
+            'resolved' => [
+                'count' => 5,
+                'pct' => 71.43,
+                'by_method' => [
+                    'mercado_pago' => 2,
+                    'manual' => 1,
+                    'mp_rejection_approved' => 1,
+                    'admin_edit' => 1,
+                ],
+            ],
+            'unresolved' => ['count' => 2, 'pct' => 28.57],
+            'unlinked_failures' => 1,
+        ], $funnel);
+    }
+
+    public function test_funnel_is_empty_when_only_manual_is_requested(): void
+    {
+        $this->actingAsAdmin();
+        $user = User::factory()->create();
+        $this->mpAttempt($user->id, $this->uuid(1), 'failed', 'dni_mismatch');
+        $this->event(['user_id' => null, 'method' => 'mercado_pago', 'name' => 'failed', 'reason' => 'callback_exception']);
+
+        $funnel = $this->getJson(self::URL.'?from=2026-09-01&to=2026-09-30&method=manual')->assertOk()->json('funnel');
+
+        $this->assertSame(0, $funnel['failed_users']);
+        $this->assertSame(['count' => 0, 'pct' => 0], $funnel['unresolved']);
+        $this->assertSame(0, $funnel['unlinked_failures']);
+    }
 }
