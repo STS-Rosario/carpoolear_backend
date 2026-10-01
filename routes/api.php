@@ -13,6 +13,7 @@ use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
+use STS\Http\Controllers\Api\Admin\IdentityVerificationReportController;
 use STS\Http\Controllers\Api\Admin\IdentityVerificationStatsController;
 use STS\Http\Controllers\Api\Admin\ImpersonationController as AdminImpersonationController;
 use STS\Http\Controllers\Api\Admin\MaintenanceController;
@@ -272,6 +273,7 @@ Route::middleware(['api'])->group(function () {
         });
         Route::middleware('can:admin.identity.stats')->group(function () {
             Route::get('identity-verification-stats', [IdentityVerificationStatsController::class, 'show']);
+            Route::get('identity-verification-report', [IdentityVerificationReportController::class, 'show']);
         });
         Route::middleware('can:admin.trips.excess_contribution')->group(function () {
             Route::get('trip-excess-contributions', [AdminTripExcessContributionController::class, 'index']);

@@ -71,6 +71,7 @@ class AdminRoleAuthorizationTest extends TestCase
         $this->getJson('api/admin/car-brands')->assertForbidden();
         $this->getJson('api/admin/trip-excess-contributions')->assertForbidden();
         $this->getJson('api/admin/identity-verification-stats')->assertForbidden();
+        $this->getJson('api/admin/identity-verification-report')->assertForbidden();
         $this->getJson('api/admin/badges')->assertForbidden();
         $this->postJson('api/admin/manual-identity-validations/1/purge')->assertForbidden();
         $this->patchJson('api/admin/ratings/1', ['comment' => 'nope'])->assertForbidden();

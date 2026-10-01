@@ -90,14 +90,6 @@ class MercadoPagoRejectedValidationController extends Controller
             ]);
             $item->approved_at = now();
             $item->approved_by = $admin->id;
-            app(IdentityVerificationOutcome::class)->emit([
-                'user_id' => $user->id,
-                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
-                'name' => IdentityVerificationOutcome::NAME_SUCCEEDED,
-                'reason' => IdentityVerificationOutcome::REASON_APPROVED_FROM_MP_REJECTION,
-                'related_type' => 'mercado_pago_rejected_validations',
-                'related_id' => $item->id,
-            ]);
         } else {
             $user->identity_validated = false;
             $user->identity_validated_at = null;
@@ -106,6 +98,7 @@ class MercadoPagoRejectedValidationController extends Controller
             $user->identity_validation_reject_reason = null;
             $user->save();
         }
+        $this->emitReviewOutcome($item, (int) $user->id, $validated['action']);
 
         $item->save();
         $item->load(['user:id,name,nro_doc,email,identity_validated', 'approvedBy:id,name', 'reviewedBy:id,name']);
@@ -145,6 +138,27 @@ class MercadoPagoRejectedValidationController extends Controller
         $request->merge(['action' => 'approve', 'note' => '']);
 
         return $this->review($request, $id);
+    }
+
+    /**
+     * approve => succeeded, reject => failed, pending => info_requested (method manual, related to the MP rejection row).
+     */
+    private function emitReviewOutcome(MercadoPagoRejectedValidation $item, int $userId, string $action): void
+    {
+        [$name, $reason] = match ($action) {
+            'approve' => [IdentityVerificationOutcome::NAME_SUCCEEDED, IdentityVerificationOutcome::REASON_APPROVED_FROM_MP_REJECTION],
+            'reject' => [IdentityVerificationOutcome::NAME_FAILED, IdentityVerificationOutcome::REASON_REJECTED_FROM_MP_REJECTION],
+            default => [IdentityVerificationOutcome::NAME_INFO_REQUESTED, IdentityVerificationOutcome::REASON_PENDING_FROM_MP_REJECTION],
+        };
+
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $userId,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'name' => $name,
+            'reason' => $reason,
+            'related_type' => 'mercado_pago_rejected_validations',
+            'related_id' => $item->id,
+        ]);
     }
 
     private function serializeItem(MercadoPagoRejectedValidation $item): array
