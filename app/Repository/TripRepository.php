@@ -6,9 +6,7 @@ use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
 use STS\Helpers\OngoingTripHelper;
-use STS\Helpers\TripDescriptionContributionHelper;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
 use STS\Jobs\CheckTripContributionWithLlm;
@@ -326,25 +324,6 @@ class TripRepository
                 'trip_id' => $trip->id,
                 'error' => $e->getMessage(),
             ]);
-        }
-    }
-
-    private function syncPotentialExcessContributionFlag(Trip $trip): void
-    {
-        $stashedPaymentUrl = null;
-        $paymentUrlWasStashed = false;
-        if ($trip->isDirty('payment_url') && ! Schema::hasColumn($trip->getTable(), 'payment_url')) {
-            $stashedPaymentUrl = $trip->getAttribute('payment_url');
-            $trip->offsetUnset('payment_url');
-            $paymentUrlWasStashed = true;
-        }
-
-        TripDescriptionContributionHelper::syncPotentialExcessContributionAttributes($trip);
-        $trip->save();
-
-        if ($paymentUrlWasStashed) {
-            $trip->setAttribute('payment_url', $stashedPaymentUrl);
-            $trip->syncOriginalAttribute('payment_url');
         }
     }
 

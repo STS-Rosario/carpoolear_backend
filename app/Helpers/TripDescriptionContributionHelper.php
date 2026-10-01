@@ -5,6 +5,15 @@ namespace STS\Helpers;
 use STS\Models\Trip;
 use STS\Support\TripExcessContributionStatus;
 
+/**
+ * Regex heuristic for money amounts in trip descriptions ("$24000", "$24K",
+ * "24 lucas"). Trip create/update no longer use it: descriptions are reviewed
+ * by the queued LLM check (STS\Jobs\CheckTripContributionWithLlm). It is kept
+ * because the 2026_08 backfill migrations call syncPotentialExcessContributionAttributes(),
+ * the LLM result applier reuses the average/percentage helpers, and the
+ * frontend trip-creation warning mirrors these rules
+ * (carpoolear src/utils/tripDescriptionContribution.js).
+ */
 class TripDescriptionContributionHelper
 {
     /**
