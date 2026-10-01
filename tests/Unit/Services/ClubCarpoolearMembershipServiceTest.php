@@ -54,14 +54,16 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
     {
         Carbon::setTestNow('2026-06-15 10:00:00');
 
-        $badge = Badge::create([
-            'title' => 'Club Carpoolear',
-            'slug' => ClubCarpoolearMembershipService::BADGE_SLUG,
-            'description' => 'Miembro del Club Carpoolear',
-            'image_path' => 'badges/club-carpoolear.png',
-            'rules' => ['type' => 'club_carpoolear'],
-            'visible' => true,
-        ]);
+        $badge = Badge::query()->firstOrCreate(
+            ['slug' => ClubCarpoolearMembershipService::BADGE_SLUG],
+            [
+                'title' => 'Club Carpoolear',
+                'description' => 'Miembro del Club Carpoolear',
+                'image_path' => 'badges/club-carpoolear.png',
+                'rules' => ['type' => 'club_carpoolear'],
+                'visible' => true,
+            ]
+        );
 
         $user = User::factory()->create([
             'monthly_donate' => false,
@@ -81,12 +83,14 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
     {
         Carbon::setTestNow('2026-07-01 12:00:00');
 
-        Badge::create([
-            'title' => 'Club Carpoolear',
-            'slug' => ClubCarpoolearMembershipService::BADGE_SLUG,
-            'rules' => ['type' => 'club_carpoolear'],
-            'visible' => true,
-        ]);
+        Badge::query()->firstOrCreate(
+            ['slug' => ClubCarpoolearMembershipService::BADGE_SLUG],
+            [
+                'title' => 'Club Carpoolear',
+                'rules' => ['type' => 'club_carpoolear'],
+                'visible' => true,
+            ]
+        );
 
         $user = User::factory()->create([
             'club_carpoolear_joined_at' => Carbon::parse('2020-01-01'),
@@ -104,12 +108,14 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
 
     public function test_apply_cancelled_clears_joined_at_and_removes_club_badge(): void
     {
-        $badge = Badge::create([
-            'title' => 'Club Carpoolear',
-            'slug' => ClubCarpoolearMembershipService::BADGE_SLUG,
-            'rules' => ['type' => 'club_carpoolear'],
-            'visible' => true,
-        ]);
+        $badge = Badge::query()->firstOrCreate(
+            ['slug' => ClubCarpoolearMembershipService::BADGE_SLUG],
+            [
+                'title' => 'Club Carpoolear',
+                'rules' => ['type' => 'club_carpoolear'],
+                'visible' => true,
+            ]
+        );
 
         $user = User::factory()->create([
             'club_carpoolear_joined_at' => now(),
