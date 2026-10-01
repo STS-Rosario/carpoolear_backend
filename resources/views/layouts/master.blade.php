@@ -4,6 +4,8 @@
         <meta charset="utf-8">
         <title>@yield('title')</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="icon" type="image/png" href="{{ asset('img/carpoolear_logo_square.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('img/icon-1024.png') }}">
         <link href="css/bootstrap.css" rel="stylesheet" type="text/css" media="all" />
         <link href="css/themify-icons.css" rel="stylesheet" type="text/css" media="all" />
         <link href="css/flexslider.css" rel="stylesheet" type="text/css" media="all" />
