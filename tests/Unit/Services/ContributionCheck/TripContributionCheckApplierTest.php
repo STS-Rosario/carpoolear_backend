@@ -10,10 +10,21 @@ use Tests\TestCase;
 
 class TripContributionCheckApplierTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['carpoolear.module_max_price_enabled' => true]);
+    }
+
+    /**
+     * Chosen contribution $15000; maximum allowed $20000 per seat ($100000 trip / 5).
+     */
     private function trip(array $overrides = []): Trip
     {
         return Trip::factory()->create(array_merge([
             'seat_price_cents' => 1500000,
+            'maximum_trip_price_cents' => 10000000,
             'description' => 'La contribución es de 24 lucas por persona',
             'recommended_trip_price_cents' => 5000000,
             'rear_max_two_passengers' => false,
@@ -99,12 +110,52 @@ class TripContributionCheckApplierTest extends TestCase
         $this->assertSame(24000.0, $trip->suspected_contribution);
     }
 
-    public function test_ignores_excess_claims_when_the_suspected_amount_is_within_the_max(): void
+    public function test_ignores_excess_claims_when_the_suspected_amount_equals_the_max(): void
     {
-        $trip = $this->apply($this->trip(), new ContributionCheckResult(15000.0, true, false));
+        $trip = $this->apply($this->trip(), new ContributionCheckResult(20000.0, true, false));
 
         $this->assertFalse($trip->has_potential_excess_contribution);
         $this->assertNull($trip->exceso_contribucion_status);
+    }
+
+    public function test_asking_more_than_the_chosen_price_but_within_the_max_is_not_an_excess(): void
+    {
+        $trip = $this->apply($this->trip(), new ContributionCheckResult(18000.0, true, false));
+
+        $this->assertFalse($trip->has_potential_excess_contribution);
+        $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertSame(18000.0, $trip->suspected_contribution);
+    }
+
+    public function test_cannot_exceed_when_the_max_price_module_is_disabled(): void
+    {
+        config(['carpoolear.module_max_price_enabled' => false]);
+
+        $trip = $this->apply($this->trip(), new ContributionCheckResult(24000.0, true, false));
+
+        $this->assertFalse($trip->has_potential_excess_contribution);
+        $this->assertNull($trip->exceso_contribucion_status);
+    }
+
+    public function test_cannot_exceed_when_the_trip_has_no_computed_maximum(): void
+    {
+        $trip = $this->apply(
+            $this->trip(['maximum_trip_price_cents' => null]),
+            new ContributionCheckResult(24000.0, true, false)
+        );
+
+        $this->assertFalse($trip->has_potential_excess_contribution);
+    }
+
+    public function test_uses_the_rear_seat_comfort_divisor_for_the_max(): void
+    {
+        // $100000 / 4 occupants = $25000 per seat.
+        $trip = $this->apply(
+            $this->trip(['rear_max_two_passengers' => true]),
+            new ContributionCheckResult(24000.0, true, false)
+        );
+
+        $this->assertFalse($trip->has_potential_excess_contribution);
     }
 
     public function test_excess_without_an_amount_is_flagged_without_potential_price(): void
@@ -120,7 +171,7 @@ class TripContributionCheckApplierTest extends TestCase
     {
         $trip = $this->apply(
             $this->trip(['recommended_trip_price_cents' => 15000000]),
-            new ContributionCheckResult(20000.0, true, false)
+            new ContributionCheckResult(24000.0, true, false)
         );
 
         $this->assertSame(3000000, $trip->average_contribution_cents);

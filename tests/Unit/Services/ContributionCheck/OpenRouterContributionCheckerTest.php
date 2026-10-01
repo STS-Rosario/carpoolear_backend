@@ -178,6 +178,15 @@ class OpenRouterContributionCheckerTest extends TestCase
         $this->assertStringContainsString('no tiene una contribución máxima', $this->sentPrompt());
     }
 
+    public function test_prompt_states_there_is_no_max_when_none_is_given(): void
+    {
+        $this->fakeAnswer();
+
+        $this->checker()->check(self::DESCRIPTION, null);
+
+        $this->assertStringContainsString('no tiene una contribución máxima', $this->sentPrompt());
+    }
+
     public function test_returns_the_parsed_answer(): void
     {
         $this->fakeAnswer("```json\n{\"suspected_contribution\": 24000, \"exceeds_max\": true, \"phone_in_description\": true}\n```");

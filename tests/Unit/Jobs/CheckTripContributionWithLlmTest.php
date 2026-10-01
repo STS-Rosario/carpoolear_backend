@@ -23,6 +23,7 @@ class CheckTripContributionWithLlmTest extends TestCase
             'services.openrouter.api_key' => 'test-openrouter-key',
             'services.openrouter.base_url' => 'https://openrouter.test/api/v1',
             'services.openrouter.timeout' => 30,
+            'carpoolear.module_max_price_enabled' => true,
         ]);
     }
 
@@ -30,6 +31,7 @@ class CheckTripContributionWithLlmTest extends TestCase
     {
         return Trip::factory()->create(array_merge([
             'seat_price_cents' => 1500000,
+            'maximum_trip_price_cents' => 10000000,
             'description' => 'Son 24 lucas por persona, escribime al 341 555 1234',
             'recommended_trip_price_cents' => 5000000,
             'rear_max_two_passengers' => false,
@@ -79,7 +81,7 @@ class CheckTripContributionWithLlmTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_sends_the_trip_description_and_seat_price_as_max(): void
+    public function test_sends_the_trip_description_and_the_maximum_allowed_contribution(): void
     {
         $this->fakeAnswer('{"suspected_contribution": null, "exceeds_max": false, "phone_in_description": false}');
         $trip = $this->trip();
@@ -89,9 +91,26 @@ class CheckTripContributionWithLlmTest extends TestCase
         Http::assertSent(function ($request) {
             $prompt = collect($request->data()['messages'])->pluck('content')->implode("\n");
 
+            // $100000 maximum trip price / 5 occupants; not the chosen $15000.
             return str_contains($prompt, 'Son 24 lucas por persona, escribime al 341 555 1234')
-                && str_contains($prompt, '15000');
+                && str_contains($prompt, ': 20000')
+                && ! str_contains($prompt, '15000');
         });
+    }
+
+    public function test_tells_the_llm_there_is_no_max_when_the_trip_has_none(): void
+    {
+        $this->fakeAnswer('{"suspected_contribution": 24000, "exceeds_max": true, "phone_in_description": false}');
+        $trip = $this->trip(['maximum_trip_price_cents' => null]);
+
+        $this->runJob($trip)->assertNotFailed();
+
+        Http::assertSent(function ($request) {
+            $prompt = collect($request->data()['messages'])->pluck('content')->implode("\n");
+
+            return str_contains($prompt, 'no tiene una contribución máxima');
+        });
+        $this->assertFalse($trip->fresh()->has_potential_excess_contribution);
     }
 
     public function test_skips_quietly_with_a_log_line_when_api_key_is_missing(): void
