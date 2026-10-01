@@ -85,6 +85,7 @@ class SupportTicket extends Model
         'user_id',
         'type',
         'source',
+        'trip_id',
         'subject',
         'status',
         'priority',
@@ -254,6 +255,20 @@ class SupportTicket extends Model
      * @param  list<int|string|null>  $userIds
      * @return array<int, int>
      */
+    /**
+     * Id of the excess-contribution ticket linked to the trip (any status), or null.
+     */
+    public static function excessContributionTicketIdForTrip(int $tripId): ?int
+    {
+        $id = static::query()
+            ->where('trip_id', $tripId)
+            ->where('type', 'excess_contribution')
+            ->orderBy('id')
+            ->value('id');
+
+        return $id === null ? null : (int) $id;
+    }
+
     public static function countsOpenExcessContributionByUserIds(array $userIds): array
     {
         $ids = [];

@@ -171,6 +171,53 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->assertSame(1, $data['excess_contribution_support_tickets_count']);
     }
 
+    public function test_show_exposes_the_maximum_trip_and_seat_contribution(): void
+    {
+        config(['carpoolear.module_max_price_enabled' => true]);
+        $admin = $this->admin();
+        $trip = Trip::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'seat_price_cents' => 1500000,
+            'maximum_trip_price_cents' => 6000000,
+            'rear_max_two_passengers' => false,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->getJson('api/admin/trip-excess-contributions/'.$trip->id)
+            ->assertOk()
+            ->assertJsonPath('data.maximum_trip_price_cents', 6000000)
+            ->assertJsonPath('data.maximum_seat_price_cents', 1200000);
+    }
+
+    public function test_show_returns_null_maximums_when_the_trip_has_no_maximum(): void
+    {
+        config(['carpoolear.module_max_price_enabled' => true]);
+        $admin = $this->admin();
+        $trip = Trip::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'seat_price_cents' => 1500000,
+            'maximum_trip_price_cents' => null,
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => 2400000,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $data = $this->getJson('api/admin/trip-excess-contributions/'.$trip->id)->assertOk()->json('data');
+
+        $this->assertArrayHasKey('maximum_trip_price_cents', $data);
+        $this->assertNull($data['maximum_trip_price_cents']);
+        $this->assertArrayHasKey('maximum_seat_price_cents', $data);
+        $this->assertNull($data['maximum_seat_price_cents']);
+    }
+
     public function test_update_status_changes_exceso_contribucion_status(): void
     {
         $admin = $this->admin();

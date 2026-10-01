@@ -5,11 +5,13 @@ namespace STS\Http\Controllers\Api\Admin;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
 use STS\Models\AdminActionLog;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
+use STS\Models\Trip;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\AdminActionLogger;
 use STS\Services\SupportTicketService;
@@ -118,12 +120,29 @@ class SupportTicketController extends Controller
             'type' => SupportTicket::typeValidationRule(),
             'subject' => 'required|string|min:3|max:160',
             'message_markdown' => 'required|string|min:1',
+            'trip_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('trips', 'id')->where('user_id', (int) $request->input('user_id')),
+            ],
         ]);
 
         $admin = auth()->user();
-        $ticket = DB::transaction(function () use ($validated, $admin) {
+        $tripId = isset($validated['trip_id']) ? (int) $validated['trip_id'] : null;
+        $existingTicketId = null;
+        $ticket = DB::transaction(function () use ($validated, $admin, $tripId, &$existingTicketId) {
+            if ($tripId !== null && $validated['type'] === 'excess_contribution') {
+                // Lock the trip row so concurrent requests cannot both create its excess ticket.
+                Trip::query()->whereKey($tripId)->lockForUpdate()->first();
+                $existingTicketId = SupportTicket::excessContributionTicketIdForTrip($tripId);
+                if ($existingTicketId !== null) {
+                    return null;
+                }
+            }
+
             $ticket = SupportTicket::create([
                 'user_id' => (int) $validated['user_id'],
+                'trip_id' => $tripId,
                 'type' => $validated['type'],
                 'subject' => $validated['subject'],
                 'status' => self::ADMIN_CREATED_TICKET_STATUS,
@@ -145,6 +164,13 @@ class SupportTicketController extends Controller
 
             return $ticket->fresh();
         });
+
+        if ($ticket === null) {
+            return response()->json([
+                'error' => 'This trip already has an excess contribution ticket.',
+                'existing_ticket_id' => $existingTicketId,
+            ], 409);
+        }
 
         $this->logTicketMutation($admin, $ticket, 'create');
 

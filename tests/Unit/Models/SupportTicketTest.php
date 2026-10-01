@@ -92,6 +92,7 @@ class SupportTicketTest extends TestCase
             'user_id',
             'type',
             'source',
+            'trip_id',
             'subject',
             'status',
             'priority',

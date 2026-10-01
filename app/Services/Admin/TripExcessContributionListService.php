@@ -5,6 +5,7 @@ namespace STS\Services\Admin;
 use Illuminate\Pagination\LengthAwarePaginator;
 use STS\Models\SupportTicket;
 use STS\Models\Trip;
+use STS\Services\ContributionCheck\TripMaximumSeatPrice;
 use STS\Support\TripExcessContributionSort;
 
 class TripExcessContributionListService
@@ -70,6 +71,9 @@ class TripExcessContributionListService
             'description' => $trip->description,
             'trip_date' => $trip->trip_date?->toDateTimeString(),
             'user_email' => $trip->user?->email,
+            'excess_contribution_ticket_id' => SupportTicket::excessContributionTicketIdForTrip((int) $trip->id),
+            'maximum_trip_price_cents' => $trip->maximum_trip_price_cents,
+            'maximum_seat_price_cents' => TripMaximumSeatPrice::centsFor($trip),
         ]);
     }
 
