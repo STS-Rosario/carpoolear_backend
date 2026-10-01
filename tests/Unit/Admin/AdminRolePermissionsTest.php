@@ -77,6 +77,7 @@ class AdminRolePermissionsTest extends TestCase
         $this->assertNotContains(AdminPermission::PulseView, $granted);
         $this->assertNotContains(AdminPermission::BadgesManage, $granted);
         $this->assertNotContains(AdminPermission::CampaignsManage, $granted);
+        $this->assertNotContains(AdminPermission::DonationsManage, $granted);
     }
 
     public function test_values_for_returns_permission_strings_for_helpdesk(): void
