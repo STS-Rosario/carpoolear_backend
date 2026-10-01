@@ -32,9 +32,11 @@ PROMPT;
     }
 
     /**
+     * @param  int|null  $maxSeatPriceCents  Maximum allowed contribution per seat; null when the trip has none.
+     *
      * @throws ContributionCheckFailedException
      */
-    public function check(string $description, int $maxSeatPriceCents): ContributionCheckResult
+    public function check(string $description, ?int $maxSeatPriceCents): ContributionCheckResult
     {
         try {
             $response = Http::withToken((string) config('services.openrouter.api_key'))
@@ -71,7 +73,7 @@ PROMPT;
     /**
      * @return array<string, mixed>
      */
-    public function buildPayload(string $description, int $maxSeatPriceCents): array
+    public function buildPayload(string $description, ?int $maxSeatPriceCents): array
     {
         return [
             'model' => (string) config('services.openrouter.contribution_check.model'),
@@ -85,9 +87,9 @@ PROMPT;
         ];
     }
 
-    private function buildUserPrompt(string $description, int $maxSeatPriceCents): string
+    private function buildUserPrompt(string $description, ?int $maxSeatPriceCents): string
     {
-        $maxLine = $maxSeatPriceCents > 0
+        $maxLine = $maxSeatPriceCents !== null && $maxSeatPriceCents > 0
             ? 'Contribución máxima permitida por asiento (por persona): '.$this->formatAmount($maxSeatPriceCents).$this->currencySuffix().'.'
             : 'El viaje no tiene una contribución máxima definida (aporte voluntario): en ese caso "exceeds_max" debe ser false.';
 

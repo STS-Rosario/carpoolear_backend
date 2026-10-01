@@ -13,6 +13,7 @@ use STS\Services\ContributionCheck\ContributionCheckHttpException;
 use STS\Services\ContributionCheck\ContributionCheckResult;
 use STS\Services\ContributionCheck\OpenRouterContributionChecker;
 use STS\Services\ContributionCheck\TripContributionCheckApplier;
+use STS\Services\ContributionCheck\TripMaximumSeatPrice;
 use Throwable;
 
 /**
@@ -61,7 +62,7 @@ class CheckTripContributionWithLlm implements ShouldQueue
         }
 
         try {
-            $result = $checker->check($description, (int) $trip->seat_price_cents);
+            $result = $checker->check($description, TripMaximumSeatPrice::centsFor($trip));
         } catch (ContributionCheckHttpException $e) {
             if (! $e->isRetryable()) {
                 $this->fail($e);
