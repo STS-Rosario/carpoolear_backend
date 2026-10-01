@@ -74,6 +74,9 @@ class TripTest extends TestCase
             'average_contribution_cents',
             'excess_contribution_percentage',
             'exceso_contribucion_status',
+            'suspected_contribution',
+            'phone_in_description',
+            'maximum_trip_price_cents',
         ];
 
         $this->assertSame($expected, (new Trip)->getFillable());
@@ -109,6 +112,9 @@ class TripTest extends TestCase
             'excess_contribution_percentage' => 'integer',
             'has_potential_excess_contribution' => 'boolean',
             'exceso_contribucion_status' => 'string',
+            'suspected_contribution' => 'float',
+            'phone_in_description' => 'boolean',
+            'maximum_trip_price_cents' => 'integer',
             'state' => 'string',
         ];
 
@@ -116,6 +122,34 @@ class TripTest extends TestCase
         foreach ($expected as $key => $type) {
             $this->assertSame($type, $casts[$key] ?? null, 'casts['.$key.']');
         }
+    }
+
+    public function test_llm_contribution_check_columns_default_to_unflagged(): void
+    {
+        $trip = Trip::factory()->create()->fresh();
+
+        $this->assertNull($trip->suspected_contribution);
+        $this->assertFalse($trip->phone_in_description);
+    }
+
+    public function test_llm_contribution_check_columns_persist_amounts_with_cents(): void
+    {
+        $trip = Trip::factory()->create([
+            'suspected_contribution' => 24000.5,
+            'phone_in_description' => true,
+        ])->fresh();
+
+        $this->assertSame(24000.5, $trip->suspected_contribution);
+        $this->assertTrue($trip->phone_in_description);
+    }
+
+    public function test_maximum_trip_price_cents_defaults_to_null_and_persists(): void
+    {
+        $this->assertNull(Trip::factory()->create()->fresh()->maximum_trip_price_cents);
+
+        $trip = Trip::factory()->create(['maximum_trip_price_cents' => 10000000])->fresh();
+
+        $this->assertSame(10000000, $trip->maximum_trip_price_cents);
     }
 
     public function test_to_array_includes_each_appended_accessor_key(): void

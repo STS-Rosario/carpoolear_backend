@@ -5,9 +5,11 @@ namespace Tests\Feature\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use STS\Models\IdentityVerificationEvent;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\User;
+use STS\Services\IdentityVerificationOutcome;
 use Tests\TestCase;
 
 class MercadoPagoOAuthCallbackTest extends TestCase
@@ -50,9 +52,57 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?error=access_denied&state=ignored')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'method' => IdentityVerificationOutcome::METHOD_MERCADO_PAGO,
+            'name' => IdentityVerificationOutcome::NAME_FAILED,
+            'reason' => IdentityVerificationOutcome::REASON_OAUTH_CANCELLED,
+        ]);
+
         Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: MP error param'
-                && ($args[1]['error'] ?? null) === 'access_denied';
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=oauth_cancelled'
+                && ($args[1]['mp_error'] ?? null) === 'access_denied'
+                && ($args[1]['reason'] ?? null) === 'oauth_cancelled';
+        })->once();
+    }
+
+    public function test_oauth_cancel_with_state_attaches_user_and_attempt(): void
+    {
+        $user = User::factory()->create(['nro_doc' => '30123456']);
+        $attemptId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+        Cache::put('mp_oauth_state:cancel-state', [
+            'user_id' => $user->id,
+            'attempt_id' => $attemptId,
+            'surface' => 'choice_cards',
+        ], 600);
+
+        Log::spy();
+
+        $this->get('/api/mercadopago/oauth/callback?error=access_denied&state=cancel-state')
+            ->assertRedirect($this->identityRedirect('error'));
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'reason' => IdentityVerificationOutcome::REASON_OAUTH_CANCELLED,
+            'attempt_id' => $attemptId,
+            'surface' => 'choice_cards',
+        ]);
+        $this->assertNull(Cache::get('mp_oauth_state:cancel-state'));
+    }
+
+    public function test_redirects_to_error_when_mp_error_is_not_access_denied(): void
+    {
+        Log::spy();
+
+        $this->get('/api/mercadopago/oauth/callback?error=server_error&state=ignored')
+            ->assertRedirect($this->identityRedirect('error'));
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'reason' => IdentityVerificationOutcome::REASON_OAUTH_DENIED,
+        ]);
+
+        Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=oauth_denied'
+                && ($args[1]['mp_error'] ?? null) === 'server_error';
         })->once();
     }
 
@@ -63,8 +113,12 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?code=only-code')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'reason' => IdentityVerificationOutcome::REASON_MISSING_CODE_OR_STATE,
+        ]);
+
         Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: missing code or state'
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=missing_code_or_state'
                 && ($args[1]['has_code'] ?? null) === true
                 && ($args[1]['has_state'] ?? null) === false;
         })->once();
@@ -75,7 +129,7 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             ->assertRedirect($this->identityRedirect('error'));
 
         Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: missing code or state'
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=missing_code_or_state'
                 && ($args[1]['has_code'] ?? null) === false
                 && ($args[1]['has_state'] ?? null) === true;
         })->once();
@@ -88,8 +142,12 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=unknown-state')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'reason' => IdentityVerificationOutcome::REASON_INVALID_OR_EXPIRED_STATE,
+        ]);
+
         Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: invalid or expired state'
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=invalid_or_expired_state'
                 && ($args[1]['state'] ?? null) === 'unknown-state';
         })->once();
     }
@@ -104,7 +162,7 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             ->assertRedirect($this->identityRedirect('error'));
 
         Log::shouldHaveReceived('warning')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: invalid or expired state'
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=invalid_or_expired_state'
                 && ($args[1]['state'] ?? null) === 'no-user';
         })->once();
     }
@@ -119,9 +177,14 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=orphan-state')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => null,
+            'reason' => IdentityVerificationOutcome::REASON_USER_NOT_FOUND,
+        ]);
+
         Log::shouldHaveReceived('warning')->withArgs(function (...$args) use ($missingUserId): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: user not found'
-                && (int) ($args[1]['user_id'] ?? 0) === $missingUserId;
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=user_not_found'
+                && (int) ($args[1]['missing_user_id'] ?? 0) === $missingUserId;
         })->once();
     }
 
@@ -139,8 +202,13 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=no-token-state')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'reason' => IdentityVerificationOutcome::REASON_MISSING_ACCESS_TOKEN,
+        ]);
+
         Log::shouldHaveReceived('warning')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: no access_token in token response'
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=missing_access_token'
                 && (int) ($args[1]['user_id'] ?? 0) === $user->id;
         })->once();
     }
@@ -159,11 +227,22 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?code=bad-code&state=bad-http-state')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'reason' => IdentityVerificationOutcome::REASON_TOKEN_EXCHANGE_FAILED,
+        ]);
+
         Log::shouldHaveReceived('error')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback exception'
-                && is_string($args[1]['message'] ?? null)
-                && $args[1]['message'] !== '';
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=token_exchange_failed'
+                && ($args[1]['http_status'] ?? null) === 400;
         })->once();
+
+        Log::shouldNotHaveReceived('error', function (...$args): bool {
+            $message = (string) ($args[0] ?? '');
+
+            return $message === 'MercadoPago OAuth callback exception'
+                || str_contains($message, 'callback exception');
+        });
     }
 
     public function test_redirects_to_error_when_users_me_fails_after_token(): void
@@ -184,14 +263,22 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=me-fail-state')
             ->assertRedirect($this->identityRedirect('error'));
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'reason' => IdentityVerificationOutcome::REASON_USERS_ME_FAILED,
+        ]);
+
         Log::shouldHaveReceived('error')->withArgs(function (...$args): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback exception'
-                && is_string($args[1]['message'] ?? null)
-                && ($args[1]['message'] ?? '') !== '';
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=users_me_failed'
+                && ($args[1]['http_status'] ?? null) === 401;
         })->once();
+
+        Log::shouldNotHaveReceived('error', function (...$args): bool {
+            return ($args[0] ?? null) === 'MercadoPago OAuth callback exception';
+        });
     }
 
-    public function test_redirects_to_error_when_users_me_has_no_identification(): void
+    public function test_redirects_to_missing_identification_when_users_me_has_no_identification(): void
     {
         $user = User::factory()->create([
             'name' => 'Jane Doe',
@@ -199,22 +286,33 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         ]);
         Cache::put('mp_oauth_state:no-id-state', ['user_id' => $user->id], 600);
 
+        $me = [
+            'first_name' => 'Jane',
+            'last_name' => 'Doe',
+            'company' => ['identification' => '20123456789'],
+        ];
+
         Http::fake([
             '*oauth/token*' => Http::response(['access_token' => 'tok'], 200),
-            '*users/me*' => Http::response([
-                'first_name' => 'Jane',
-                'last_name' => 'Doe',
-            ], 200),
+            '*users/me*' => Http::response($me, 200),
         ]);
 
         Log::spy();
 
         $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=no-id-state')
-            ->assertRedirect($this->identityRedirect('error'));
+            ->assertRedirect($this->identityRedirect('missing_identification'));
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'reason' => IdentityVerificationOutcome::REASON_MISSING_IDENTIFICATION,
+        ]);
 
         Log::shouldHaveReceived('warning')->withArgs(function (...$args) use ($user): bool {
-            return ($args[0] ?? null) === 'MercadoPago OAuth callback: no identification in users/me'
-                && (int) ($args[1]['user_id'] ?? 0) === $user->id;
+            $context = $args[1] ?? [];
+
+            return ($args[0] ?? null) === 'Identity verification mercado_pago failed reason=missing_identification'
+                && (int) ($context['user_id'] ?? 0) === $user->id
+                && ! array_key_exists('mp_payload', $context);
         })->once();
     }
 
@@ -251,6 +349,12 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             'reject_reason' => 'name_mismatch',
         ]);
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'method' => 'mercado_pago',
+            'name' => 'failed',
+            'reason' => 'name_mismatch',
+        ]);
     }
 
     public function test_redirects_name_mismatch_when_local_name_is_empty(): void
@@ -311,6 +415,11 @@ class MercadoPagoOAuthCallbackTest extends TestCase
             'reject_reason' => 'dni_mismatch',
         ]);
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'name' => 'failed',
+            'reason' => 'dni_mismatch',
+        ]);
     }
 
     public function test_redirects_success_and_sets_identity_when_name_and_dni_match(): void
@@ -341,6 +450,54 @@ class MercadoPagoOAuthCallbackTest extends TestCase
 
         $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
 
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'name' => 'succeeded',
+            'method' => 'mercado_pago',
+        ]);
+        $this->assertSame(1, IdentityVerificationEvent::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_success_closes_open_manual_identity_validations_for_the_user(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Jane Doe',
+            'nro_doc' => '30.123.456',
+            'identity_validated' => false,
+        ]);
+        $otherUser = User::factory()->create();
+        Cache::put('mp_oauth_state:close-manual-state', ['user_id' => $user->id], 600);
+
+        $openManual = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $otherUserManual = ManualIdentityValidation::create([
+            'user_id' => $otherUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        Http::fake([
+            '*oauth/token*' => Http::response(['access_token' => 'tok'], 200),
+            '*users/me*' => Http::response([
+                'first_name' => 'Jane',
+                'last_name' => 'Doe',
+                'identification' => ['type' => 'DNI', 'number' => '30123456'],
+            ], 200),
+        ]);
+
+        $this->get('/api/mercadopago/oauth/callback?code=auth-code&state=close-manual-state')
+            ->assertRedirect($this->identityRedirect('success'));
+
+        $this->assertTrue($user->fresh()->identity_validated);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $openManual->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $otherUserManual->fresh()->review_status);
     }
 
     public function test_success_clears_prior_manual_rejection_state(): void
@@ -387,6 +544,10 @@ class MercadoPagoOAuthCallbackTest extends TestCase
         $this->assertNull($user->identity_validation_reject_reason);
         $this->assertDatabaseMissing('manual_identity_validations', ['id' => $rejectedManual->id]);
         $this->assertSame(0, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'name' => 'succeeded',
+        ]);
     }
 
     public function test_resolves_user_when_cached_user_id_is_numeric_string(): void
@@ -437,5 +598,10 @@ class MercadoPagoOAuthCallbackTest extends TestCase
                 'user_dni' => '30123456',
                 'mp_dni' => '30999999',
             ]));
+
+        $this->assertDatabaseHas('identity_verification_events', [
+            'user_id' => $user->id,
+            'reason' => 'both_mismatch',
+        ]);
     }
 }

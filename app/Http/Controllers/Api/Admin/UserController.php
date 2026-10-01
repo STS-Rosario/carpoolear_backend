@@ -13,6 +13,7 @@ use STS\Models\BannedUser;
 use STS\Models\DeleteAccountRequest;
 use STS\Models\Rating;
 use STS\Models\User;
+use STS\Services\AdminActionLogger;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
@@ -105,6 +106,19 @@ class UserController extends Controller
         $deleteRequest->action_taken_date = now();
         $deleteRequest->save();
 
+        $admin = $request->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_ACCOUNT_DELETE_REQUEST_UPDATE,
+                (int) $deleteRequest->user_id,
+                [
+                    'request_id' => $deleteRequest->id,
+                    'action_taken' => $validated['action_taken'],
+                ]
+            );
+        }
+
         $deleteRequest->load('user:id,name,email');
 
         return response()->json(['data' => $deleteRequest]);
@@ -118,6 +132,16 @@ class UserController extends Controller
     public function clearIdentityValidation(User $user): JsonResponse
     {
         $this->identityVerificationResetService->clearForUser($user);
+
+        $admin = auth()->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $user->id,
+                ['mutation' => 'clear_identity_validation']
+            );
+        }
 
         return response()->json([
             'message' => 'Identity validation cleared',

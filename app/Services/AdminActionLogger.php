@@ -7,7 +7,7 @@ use STS\Models\User;
 
 class AdminActionLogger
 {
-    public static function log(User $admin, string $action, int $targetUserId, array $details): AdminActionLog
+    public static function log(User $admin, string $action, ?int $targetUserId, array $details = []): AdminActionLog
     {
         return AdminActionLog::create([
             'admin_user_id' => $admin->id,

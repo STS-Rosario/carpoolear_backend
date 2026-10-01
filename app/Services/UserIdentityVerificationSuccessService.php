@@ -18,6 +18,34 @@ class UserIdentityVerificationSuccessService
         $user->identity_validation_rejected_at = null;
         $user->identity_validation_reject_reason = null;
         $user->save();
+
+        if ($validationType === 'mercado_pago') {
+            $this->closeOpenManualIdentityValidationsForUser($user);
+        }
+    }
+
+    private function closeOpenManualIdentityValidationsForUser(User $user): void
+    {
+        $open = ManualIdentityValidation::query()
+            ->where('user_id', $user->id)
+            ->where(function ($query) {
+                $query->whereNull('review_status')
+                    ->orWhereNotIn('review_status', ManualIdentityValidation::resolvedReviewStatusAliases());
+            })
+            ->get();
+
+        $outcome = app(IdentityVerificationOutcome::class);
+        foreach ($open as $item) {
+            $item->review_status = ManualIdentityValidation::REVIEW_STATUS_CLOSED;
+            $item->save();
+            $outcome->emit([
+                'user_id' => $user->id,
+                'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+                'name' => IdentityVerificationOutcome::NAME_CLOSED_AFTER_MP_SUCCESS,
+                'related_type' => 'manual_identity_validations',
+                'related_id' => $item->id,
+            ]);
+        }
     }
 
     public function clearPriorRejectionState(User $user, array $options = []): void

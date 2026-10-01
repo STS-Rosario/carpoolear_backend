@@ -4,6 +4,7 @@ namespace STS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use STS\Admin\AdminPermission;
 
 class BadgeRequest extends FormRequest
 {
@@ -12,7 +13,7 @@ class BadgeRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return (bool) $this->user()?->is_admin;
+        return (bool) $this->user()?->hasAdminPermission(AdminPermission::BadgesManage);
     }
 
     /**

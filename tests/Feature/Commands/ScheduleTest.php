@@ -60,6 +60,8 @@ class ScheduleTest extends TestCase
     {
         $event = $this->findEvent('rating:availables');
         $this->assertEquals('* * * * *', $event->expression);
+        $this->assertTrue($event->withoutOverlapping);
+        $this->assertSame(5, $event->expiresAt);
     }
 
     public function test_maintenance_tick_is_scheduled_every_minute()
@@ -78,6 +80,15 @@ class ScheduleTest extends TestCase
     {
         $event = $this->findEvent('messages:email');
         $this->assertEquals('*/10 * * * *', $event->expression);
+    }
+
+    public function test_trips_credit_finished_is_scheduled_every_five_minutes()
+    {
+        $event = $this->findEvent('trips:credit-finished');
+        $this->assertEquals('*/5 * * * *', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+        $this->assertTrue($event->withoutOverlapping);
+        $this->assertSame(10, $event->expiresAt);
     }
 
     // -- Daily commands with timezone --
@@ -125,6 +136,13 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
+    public function test_manual_identity_validation_remind_upload_photos_is_scheduled_daily_at8_pm()
+    {
+        $event = $this->findEvent('manual-identity-validation:remind-upload-photos');
+        $this->assertEquals('0 20 * * *', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+    }
+
     public function test_support_tickets_release_expired_assignments_is_scheduled_every_minute()
     {
         $event = $this->findEvent('support-tickets:release-expired-assignments');
@@ -163,12 +181,14 @@ class ScheduleTest extends TestCase
             'pulse:check',
             'trip:request',
             'trip:visibilityclean',
+            'trips:credit-finished',
             'node:buildweights',
             'messages:email',
             'users:calculate-active-per-month',
             'auth:cleanup-reset-tokens',
             'support-tickets:autoclose',
             'manual-identity-validation:purge-rejected-photos',
+            'manual-identity-validation:remind-upload-photos',
             'support-tickets:release-expired-assignments',
             'car-catalog:sync-argautos',
             'donations:sync-subscription-amounts',

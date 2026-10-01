@@ -78,6 +78,22 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertInstanceOf(Carbon::class, $row->fresh()->images_purged_at);
     }
 
+    public function test_photo_upload_reminder_sent_at_fields_are_cast_to_datetime(): void
+    {
+        $user = User::factory()->create();
+
+        $row = $this->makeRow($user, [
+            'photos_upload_reminder_week1_sent_at' => '2026-08-20 10:00:00',
+            'photos_upload_reminder_week2_sent_at' => '2026-08-27 10:00:00',
+        ]);
+
+        $fresh = $row->fresh();
+        $this->assertInstanceOf(Carbon::class, $fresh->photos_upload_reminder_week1_sent_at);
+        $this->assertInstanceOf(Carbon::class, $fresh->photos_upload_reminder_week2_sent_at);
+        $this->assertSame('2026-08-20 10:00:00', $fresh->photos_upload_reminder_week1_sent_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-08-27 10:00:00', $fresh->photos_upload_reminder_week2_sent_at->format('Y-m-d H:i:s'));
+    }
+
     public function test_has_images_detects_any_uploaded_path(): void
     {
         $user = User::factory()->create();
@@ -108,6 +124,15 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame('awaiting_photos', ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS);
         $this->assertSame('approved', ManualIdentityValidation::REVIEW_STATUS_APPROVED);
         $this->assertSame('rejected', ManualIdentityValidation::REVIEW_STATUS_REJECTED);
+        $this->assertSame('closed', ManualIdentityValidation::REVIEW_STATUS_CLOSED);
+        $this->assertSame(
+            ['approved', 'rejected', 'closed'],
+            ManualIdentityValidation::resolvedReviewStatuses()
+        );
+        $this->assertSame(
+            ['approved', 'rejected', 'closed', 'approve', 'reject'],
+            ManualIdentityValidation::resolvedReviewStatusAliases()
+        );
     }
 
     public function test_mark_paid_and_awaiting_photos_if_needed_sets_status_only_before_submission(): void
@@ -138,6 +163,24 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $submitted->fresh()->review_status);
     }
 
+    public function test_mark_paid_and_awaiting_photos_if_needed_does_not_reopen_closed_requests(): void
+    {
+        $user = User::factory()->create();
+        $closed = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ]);
+
+        $closed->markPaidAndAwaitingPhotosIfNeeded();
+        $closed->save();
+
+        $fresh = $closed->fresh();
+        $this->assertTrue($fresh->paid);
+        $this->assertNotNull($fresh->paid_at);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $fresh->review_status);
+    }
+
     public function test_table_name_is_manual_identity_validations(): void
     {
         $this->assertSame('manual_identity_validations', (new ManualIdentityValidation)->getTable());
@@ -159,9 +202,12 @@ class ManualIdentityValidationTest extends TestCase
             'reviewed_by',
             'reviewed_at',
             'review_note',
+            'reject_reason',
             'private_admin_note',
             'manual_validation_started_at',
             'images_purged_at',
+            'photos_upload_reminder_week1_sent_at',
+            'photos_upload_reminder_week2_sent_at',
         ], (new ManualIdentityValidation)->getFillable());
     }
 
@@ -183,6 +229,7 @@ class ManualIdentityValidationTest extends TestCase
             'reviewed_by' => $reviewer->id,
             'reviewed_at' => '2026-07-01 10:10:00',
             'review_note' => 'Looks good',
+            'reject_reason' => 'docs_illegible',
             'manual_validation_started_at' => '2026-07-01 09:59:00',
         ])->fresh();
 
@@ -195,6 +242,7 @@ class ManualIdentityValidationTest extends TestCase
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_APPROVED, $row->review_status);
         $this->assertSame($reviewer->id, (int) $row->reviewed_by);
         $this->assertSame('Looks good', $row->review_note);
+        $this->assertSame('docs_illegible', $row->reject_reason);
         $this->assertNotNull($row->paid_at);
         $this->assertNotNull($row->reviewed_at);
         $this->assertNotNull($row->manual_validation_started_at);

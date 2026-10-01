@@ -15,15 +15,20 @@ class UncoveredEndpointsSmokeTest extends TestCase
 {
     private function adminUser(): User
     {
-        return User::query()->create([
+        $user = User::factory()->create([
             'name' => 'Admin Coverage '.uniqid(),
             'email' => uniqid('admin_cov_', true).'@example.com',
             'password' => Hash::make('123456'),
             'active' => 1,
-            'is_admin' => 1,
             'terms_and_conditions' => 1,
             'emails_notifications' => 1,
         ]);
+        $user->forceFill([
+            'is_admin' => true,
+            'admin_role' => 'superadmin',
+        ])->saveQuietly();
+
+        return $user->fresh();
     }
 
     public function test_public_data_endpoints_return_json(): void

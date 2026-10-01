@@ -43,8 +43,10 @@ return [
     'module_max_price_enabled' => env('MODULE_MAX_PRICE_ENABLED', false),
     'module_max_price_fuel_price' => (float) env('MODULE_MAX_PRICE_FUEL_PRICE', 1500),
     'module_max_price_price_variance_tolls' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS', 10),
+    'module_max_price_price_variance_tolls_costa_atlantica' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_TOLLS_COSTA_ATLANTICA', 25),
     'module_max_price_price_variance_max_extra' => (float) env('MODULE_MAX_PRICE_PRICE_VARIANCE_MAX_EXTRA', 15),
     'module_max_price_kilometer_by_liter' => (float) env('MODULE_MAX_PRICE_KILOMETER_BY_LITER', 10),
+    'module_max_price_show_breakdown' => filter_var(env('MODULE_MAX_PRICE_SHOW_BREAKDOWN', true), FILTER_VALIDATE_BOOLEAN),
 
     'manual_identity_validation_cost_cents' => (int) env('MANUAL_IDENTITY_VALIDATION_COST_CENTS', 0),
     // Max document submissions per paid manual validation request (including the first upload).
@@ -158,7 +160,7 @@ return [
     // User edit property security: allowlist-based filtering for all user update paths
     'user_edit_properties' => [
         // NEVER editable by anyone (including admins)
-        'forbidden' => ['is_admin'],
+        'forbidden' => ['is_admin', 'admin_role'],
 
         // Editable by regular users (self-edit). email is only set at registration.
         // name is editable until identity is validated (see UserEditablePropertiesService).

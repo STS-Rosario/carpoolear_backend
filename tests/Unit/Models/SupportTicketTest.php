@@ -91,6 +91,7 @@ class SupportTicketTest extends TestCase
         $this->assertSame([
             'user_id',
             'type',
+            'source',
             'subject',
             'status',
             'priority',

@@ -116,4 +116,5 @@ return [
     'manual_identity_validation.approved' => 'Tu verificación de cuenta fue aprobada. Click acá para ver más información.',
     'manual_identity_validation.rejected' => 'Tu verificación de cuenta fue rechazada. Click acá para ver más información.',
     'manual_identity_validation.photos_purged' => 'Las fotos de tu validación manual fueron eliminadas, volvelas a subir para continuar',
+    'manual_identity_validation.upload_photos_reminder' => 'Pagaste la verificación manual, no te olvides de subir las imágenes así te verificamos la cuenta. ¿Tuviste problemas? Entrá al Menú -> Mesa de ayuda y te ayudamos',
 ];

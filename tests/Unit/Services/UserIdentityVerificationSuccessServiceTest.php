@@ -69,4 +69,91 @@ class UserIdentityVerificationSuccessServiceTest extends TestCase
         $this->assertDatabaseHas('mercado_pago_rejected_validations', ['id' => $preserved->id]);
         $this->assertSame(1, MercadoPagoRejectedValidation::query()->where('user_id', $user->id)->count());
     }
+
+    public function test_apply_verification_with_mercado_pago_closes_open_manual_validations(): void
+    {
+        $user = User::factory()->create(['identity_validated' => false]);
+        $otherUser = User::factory()->create(['identity_validated' => false]);
+
+        $pending = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $awaitingPhotos = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS,
+        ]);
+        $unpaid = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $approved = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_APPROVED,
+        ]);
+        $alreadyClosed = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED,
+        ]);
+        $historicalApprove = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => 'approve',
+        ]);
+        $historicalReject = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => 'reject',
+        ]);
+        $otherUserPending = ManualIdentityValidation::create([
+            'user_id' => $otherUser->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'mercado_pago');
+
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $pending->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $awaitingPhotos->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $unpaid->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_APPROVED, $approved->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $alreadyClosed->fresh()->review_status);
+        $this->assertSame('approve', $historicalApprove->fresh()->review_status);
+        $this->assertSame('reject', $historicalReject->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $otherUserPending->fresh()->review_status);
+    }
+
+    public function test_apply_verification_with_manual_does_not_close_open_manual_validations(): void
+    {
+        $user = User::factory()->create(['identity_validated' => false]);
+
+        $pending = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
+
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $pending->fresh()->review_status);
+    }
 }

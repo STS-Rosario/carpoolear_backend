@@ -2,12 +2,43 @@
 
 namespace Tests\Unit\Models;
 
+use Carbon\Carbon;
 use STS\Models\References;
 use STS\Models\User;
 use Tests\TestCase;
 
 class ReferencesTest extends TestCase
 {
+    public function test_fillable_contains_reply_fields(): void
+    {
+        $this->assertSame([
+            'user_id_from',
+            'user_id_to',
+            'comment',
+            'reply_comment',
+            'reply_comment_created_at',
+        ], (new References)->getFillable());
+    }
+
+    public function test_reply_comment_created_at_casts_to_carbon(): void
+    {
+        $author = User::factory()->create();
+        $subject = User::factory()->create();
+
+        $ref = References::query()->create([
+            'user_id_from' => $author->id,
+            'user_id_to' => $subject->id,
+            'comment' => 'Reliable carpool partner.',
+            'reply_comment' => 'Thanks!',
+            'reply_comment_created_at' => '2026-08-30 12:00:00',
+        ]);
+
+        $ref = $ref->fresh();
+        $this->assertInstanceOf(Carbon::class, $ref->reply_comment_created_at);
+        $this->assertSame('2026-08-30 12:00:00', $ref->reply_comment_created_at->format('Y-m-d H:i:s'));
+        $this->assertSame('Thanks!', $ref->reply_comment);
+    }
+
     public function test_from_and_to_relationships_resolve_users(): void
     {
         $author = User::factory()->create();

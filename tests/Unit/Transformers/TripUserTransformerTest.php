@@ -82,7 +82,7 @@ class TripUserTransformerTest extends TestCase
         $this->assertNotNull($payload['created_at']);
         $this->assertIsObject($payload['driver_data_docs']);
         $this->assertSame(0, $payload['trips_count']);
-        $this->assertSame(0, $user->fresh()->trips_count);
+        $this->assertNull($user->fresh()->trips_count);
     }
 
     public function test_transform_uses_cached_trips_count_when_present(): void

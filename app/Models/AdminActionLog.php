@@ -20,6 +20,18 @@ class AdminActionLog extends Model
 
     const ACTION_USER_IMPERSONATE_STOP = 'user_impersonate_stop';
 
+    const ACTION_USER_UPDATE = 'user_update';
+
+    const ACTION_IDENTITY_REVIEW = 'identity_review';
+
+    const ACTION_ACCOUNT_DELETE_REQUEST_UPDATE = 'account_delete_request_update';
+
+    const ACTION_SUPPORT_TICKET_UPDATE = 'support_ticket_update';
+
+    const ACTION_MAINTENANCE_UPDATE = 'maintenance_update';
+
+    const ACTION_USER_MIGRATE = 'user_migrate';
+
     protected $table = 'admin_action_logs';
 
     protected $fillable = [
@@ -34,5 +46,15 @@ class AdminActionLog extends Model
         return [
             'details' => 'array',
         ];
+    }
+
+    public function adminUser()
+    {
+        return $this->belongsTo(User::class, 'admin_user_id');
+    }
+
+    public function targetUser()
+    {
+        return $this->belongsTo(User::class, 'target_user_id');
     }
 }

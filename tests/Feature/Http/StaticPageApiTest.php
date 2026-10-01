@@ -40,6 +40,26 @@ class StaticPageApiTest extends TestCase
         $response->assertOk();
         $decoded = json_decode($response->getContent(), true);
         $this->assertStringContainsString('Verificación de cuenta', $decoded['content']);
+        $this->assertStringContainsString(
+            'es un tema de Mercado Pago ese otorgamiento',
+            $decoded['content']
+        );
+        $this->assertStringContainsString(
+            'eliminar la integración con Mercado Pago',
+            $decoded['content']
+        );
+        $this->assertStringContainsString(
+            '¿Cómo hacer el pago con QR?',
+            $decoded['content']
+        );
+        $this->assertStringContainsString(
+            'www.carpoolear.com.ar/app',
+            $decoded['content']
+        );
+        $this->assertStringContainsString(
+            'las fotos se borran automáticamente',
+            $decoded['content']
+        );
     }
 
     public function test_unknown_static_page_returns_not_found(): void

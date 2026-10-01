@@ -12,9 +12,11 @@ if (app()->runningUnitTests()) {
 
 Schedule::command('rate:create')->hourly();
 
+Schedule::command('trips:credit-finished')->everyFiveMinutes()->timezone('America/Argentina/Buenos_Aires')->withoutOverlapping(10);
+
 Schedule::command('trip:remainder')->hourly();
 
-Schedule::command('rating:availables')->everyMinute();
+Schedule::command('rating:availables')->everyMinute()->withoutOverlapping(5);
 
 Schedule::command('live-location:process')->everyMinute();
 
@@ -48,6 +50,11 @@ Schedule::command('support-tickets:autoclose')->dailyAt('04:30')->timezone('Amer
 // Purge photos from rejected manual identity validations after retention period
 Schedule::command('manual-identity-validation:purge-rejected-photos')
     ->dailyAt('05:00')
+    ->timezone('America/Argentina/Buenos_Aires');
+
+// Remind users who paid for manual validation but have not uploaded photos
+Schedule::command('manual-identity-validation:remind-upload-photos')
+    ->dailyAt('20:00')
     ->timezone('America/Argentina/Buenos_Aires');
 
 Schedule::command('support-tickets:release-expired-assignments')

@@ -56,6 +56,16 @@ class SupportTicket extends Model
         'Cerrado',
     ];
 
+    public const SOURCE_WEB_FORM = 'web_form';
+
+    public const SOURCE_FEEDBACK_TAB = 'feedback_tab';
+
+    /** @var list<string> */
+    public const SOURCES = [
+        self::SOURCE_WEB_FORM,
+        self::SOURCE_FEEDBACK_TAB,
+    ];
+
     public static function typeValidationRule(): string
     {
         return 'required|in:'.implode(',', self::TYPES);
@@ -66,9 +76,15 @@ class SupportTicket extends Model
         return 'required|in:'.implode(',', self::STATUSES);
     }
 
+    public static function sourceValidationRule(): string
+    {
+        return 'nullable|in:'.implode(',', self::SOURCES);
+    }
+
     protected $fillable = [
         'user_id',
         'type',
+        'source',
         'subject',
         'status',
         'priority',

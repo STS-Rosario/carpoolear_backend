@@ -62,7 +62,7 @@ class AdminRatingControllerIntegrationTest extends TestCase
         $this->patchJson('api/admin/ratings/'.$rating->id, [
             'rating' => Rating::STATE_NEGATIVO,
             'comment' => 'Updated',
-        ])->assertUnauthorized();
+        ])->assertForbidden();
     }
 
     public function test_admin_update_persists_fields_and_logs_action(): void
@@ -171,7 +171,7 @@ class AdminRatingControllerIntegrationTest extends TestCase
         $this->withoutMiddleware(UserAdmin::class);
 
         $this->getJson('api/admin/users/'.$target->id.'/ratings')
-            ->assertUnauthorized();
+            ->assertForbidden();
     }
 
     public function test_index_returns_received_and_given_ratings_with_links(): void

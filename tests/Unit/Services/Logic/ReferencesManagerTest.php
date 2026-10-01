@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services\Logic;
 
+use Carbon\Carbon;
 use STS\Models\References;
 use STS\Models\User;
 use STS\Repository\ReferencesRepository;
@@ -189,5 +190,42 @@ class ReferencesManagerTest extends TestCase
             'user_id_to' => $from->id,
             'comment' => 'Reverse',
         ]);
+    }
+
+    public function test_reply_persists_comment_once(): void
+    {
+        Carbon::setTestNow('2026-08-30 18:00:00');
+        $author = User::factory()->create();
+        $recipient = User::factory()->create();
+        References::create([
+            'user_id_from' => $author->id,
+            'user_id_to' => $recipient->id,
+            'comment' => 'Great person.',
+        ]);
+
+        $manager = $this->manager();
+        $this->assertTrue($manager->reply($recipient, $author->id, 'Thanks!'));
+
+        $row = (new ReferencesRepository)->get($author->id, $recipient->id);
+        $this->assertSame('Thanks!', $row->reply_comment);
+        $this->assertNotNull($row->reply_comment_created_at);
+        $this->assertSame('2026-08-30 18:00:00', $row->reply_comment_created_at->format('Y-m-d H:i:s'));
+
+        $this->assertNull($manager->reply($recipient, $author->id, 'Again'));
+        $this->assertSame('user_have_already_replay', $manager->getErrors()['error']);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_reply_sets_error_when_reference_does_not_exist(): void
+    {
+        $author = User::factory()->create();
+        $recipient = User::factory()->create();
+        $manager = $this->manager();
+
+        $result = $manager->reply($recipient, $author->id, 'No row');
+
+        $this->assertNull($result);
+        $this->assertSame('user_have_already_replay', $manager->getErrors()['error']);
     }
 }

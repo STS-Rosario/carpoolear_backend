@@ -6,9 +6,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use STS\Http\Controllers\Controller;
+use STS\Models\AdminActionLog;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
+use STS\Services\AdminActionLogger;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\ManualIdentityValidationDeletion;
 use STS\Services\ManualIdentityValidationReviewNotifier;
 use STS\Services\UserIdentityVerificationSuccessService;
@@ -28,12 +31,12 @@ class ManualIdentityValidationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = ManualIdentityValidation::with('user:id,name');
+        $query = ManualIdentityValidation::with('user:id,name,identity_validated,identity_validation_type');
 
         if (! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
             $query->where(function ($builder) {
                 $builder->whereNull('review_status')
-                    ->orWhereNotIn('review_status', ['approved', 'approve', 'rejected', 'reject']);
+                    ->orWhereNotIn('review_status', ManualIdentityValidation::resolvedReviewStatusAliases());
             });
         }
 
@@ -80,6 +83,8 @@ class ManualIdentityValidationController extends Controller
             'id' => $item->id,
             'user_id' => $item->user_id,
             'user_name' => $item->user ? $item->user->name : null,
+            'identity_validated' => $item->user ? (bool) $item->user->identity_validated : false,
+            'identity_validation_type' => $item->user ? $item->user->identity_validation_type : null,
             'paid_at' => $item->paid_at ? $item->paid_at->toDateTimeString() : null,
             'submitted_at' => $item->submitted_at ? $item->submitted_at->toDateTimeString() : null,
             'manual_validation_started_at' => $item->manual_validation_started_at ? $item->manual_validation_started_at->toDateTimeString() : null,
@@ -131,6 +136,7 @@ class ManualIdentityValidationController extends Controller
             'paid' => $item->paid,
             'review_status' => $item->review_status,
             'review_note' => $item->review_note,
+            'reject_reason' => $item->reject_reason,
             'private_admin_note' => $item->private_admin_note,
             'reviewed_at' => $item->reviewed_at ? $item->reviewed_at->toDateTimeString() : null,
             'reviewed_by' => $item->reviewed_by,
@@ -184,6 +190,7 @@ class ManualIdentityValidationController extends Controller
         $validated = $request->validate([
             'action' => 'required|in:approve,reject,pending',
             'note' => 'required_if:action,reject,pending|nullable|string|min:1',
+            'reject_reason' => 'required_if:action,reject|nullable|in:'.implode(',', IdentityVerificationOutcome::MANUAL_REJECT_REASONS),
         ]);
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
@@ -200,9 +207,24 @@ class ManualIdentityValidationController extends Controller
         $item->reviewed_by = $admin->id;
         $item->reviewed_at = now();
         $item->review_note = $validated['note'] ?? '';
+        if ($validated['action'] === 'reject') {
+            $item->reject_reason = $validated['reject_reason'];
+        }
         $item->save();
 
         $this->syncUserIdentityForReviewStatus($item->review_status, $item->user);
+        $this->emitReviewOutcome($item, $validated['action']);
+
+        AdminActionLogger::log(
+            $admin,
+            AdminActionLog::ACTION_IDENTITY_REVIEW,
+            (int) $item->user_id,
+            [
+                'source' => 'manual',
+                'validation_id' => $item->id,
+                'action' => $validated['action'],
+            ]
+        );
 
         if (in_array($validated['action'], ['approve', 'reject'], true)) {
             $this->reviewNotifier->notify(
@@ -211,7 +233,9 @@ class ManualIdentityValidationController extends Controller
             );
         }
 
-        return response()->json(['data' => $item->fresh(['user:id,name,nro_doc'])]);
+        $item->loadMissing('user:id,name,nro_doc', 'reviewedBy:id,name');
+
+        return response()->json(['data' => $this->buildShowPayload($item)]);
     }
 
     /**
@@ -220,7 +244,7 @@ class ManualIdentityValidationController extends Controller
     public function updateState(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'review_status' => 'sometimes|in:pending,awaiting_photos,approved,rejected',
+            'review_status' => 'sometimes|in:pending,awaiting_photos,approved,rejected,closed',
             'paid' => 'sometimes|boolean',
             'photos_submitted' => 'sometimes|boolean',
         ]);
@@ -234,6 +258,8 @@ class ManualIdentityValidationController extends Controller
         }
 
         $item = ManualIdentityValidation::with('user')->findOrFail($id);
+        $previousStatus = $item->review_status;
+        $previousPaid = (bool) $item->paid;
 
         if (array_key_exists('paid', $validated)) {
             $this->applyPaidState($item, (bool) $validated['paid']);
@@ -252,7 +278,50 @@ class ManualIdentityValidationController extends Controller
 
         $item->save();
 
+        $this->emitStateOverride($item, $previousStatus, $previousPaid);
+
+        $admin = $request->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $item->user_id,
+                [
+                    'source' => 'manual',
+                    'validation_id' => $item->id,
+                    'mutation' => 'state',
+                    'changes' => $validated,
+                ]
+            );
+        }
+
         return $this->show($id);
+    }
+
+    /**
+     * Admin overrides bypass review(); record them so reports can classify the request.
+     * Only emitted when the review status or the paid flag actually changed.
+     */
+    private function emitStateOverride(ManualIdentityValidation $item, ?string $previousStatus, bool $previousPaid): void
+    {
+        if ($item->review_status === $previousStatus && (bool) $item->paid === $previousPaid) {
+            return;
+        }
+
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $item->user_id,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'name' => IdentityVerificationOutcome::NAME_ADMIN_STATE_CHANGED,
+            'reason' => $item->review_status,
+            'related_type' => 'manual_identity_validations',
+            'related_id' => $item->id,
+            'metadata' => [
+                'previous_status' => $previousStatus,
+                'previous_paid' => $previousPaid,
+                'paid' => (bool) $item->paid,
+                'admin_id' => auth()->id(),
+            ],
+        ]);
     }
 
     private function applyPaidState(ManualIdentityValidation $item, bool $paid): void
@@ -301,12 +370,48 @@ class ManualIdentityValidationController extends Controller
             return;
         }
 
+        if ($reviewStatus === ManualIdentityValidation::REVIEW_STATUS_CLOSED) {
+            return;
+        }
+
         $user->identity_validated = false;
         $user->identity_validated_at = null;
         $user->identity_validation_type = null;
         $user->identity_validation_rejected_at = null;
         $user->identity_validation_reject_reason = null;
         $user->save();
+    }
+
+    private function emitReviewOutcome(ManualIdentityValidation $item, string $action): void
+    {
+        $outcome = app(IdentityVerificationOutcome::class);
+        $payload = [
+            'user_id' => $item->user_id,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'related_type' => 'manual_identity_validations',
+            'related_id' => $item->id,
+        ];
+
+        if ($action === 'approve') {
+            $outcome->emit(array_merge($payload, [
+                'name' => IdentityVerificationOutcome::NAME_SUCCEEDED,
+            ]));
+
+            return;
+        }
+
+        if ($action === 'reject') {
+            $outcome->emit(array_merge($payload, [
+                'name' => IdentityVerificationOutcome::NAME_FAILED,
+                'reason' => $item->reject_reason,
+            ]));
+
+            return;
+        }
+
+        $outcome->emit(array_merge($payload, [
+            'name' => IdentityVerificationOutcome::NAME_INFO_REQUESTED,
+        ]));
     }
 
     /**
@@ -322,6 +427,20 @@ class ManualIdentityValidationController extends Controller
         $item->private_admin_note = $validated['private_admin_note'] ?? null;
         $item->save();
 
+        $admin = $request->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $item->user_id,
+                [
+                    'source' => 'manual',
+                    'validation_id' => $item->id,
+                    'mutation' => 'private_note',
+                ]
+            );
+        }
+
         return $this->show($id);
     }
 
@@ -333,6 +452,20 @@ class ManualIdentityValidationController extends Controller
         $item = ManualIdentityValidation::findOrFail($id);
 
         ManualIdentityValidationDeletion::purgeStoredPhotos($item);
+
+        $admin = auth()->user();
+        if ($admin) {
+            AdminActionLogger::log(
+                $admin,
+                AdminActionLog::ACTION_IDENTITY_REVIEW,
+                (int) $item->user_id,
+                [
+                    'source' => 'manual',
+                    'validation_id' => $item->id,
+                    'mutation' => 'purge',
+                ]
+            );
+        }
 
         return response()->json(['message' => 'Photos purged', 'data' => $item->fresh()]);
     }

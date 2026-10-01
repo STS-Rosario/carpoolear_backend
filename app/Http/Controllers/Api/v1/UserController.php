@@ -4,16 +4,20 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Http\Resources\UserBadgeResource;
 use STS\Jobs\SendDeleteAccountRequestEmail;
+use STS\Models\AdminActionLog;
 use STS\Models\DeleteAccountRequest;
 use STS\Models\Donation;
 use STS\Models\Rating;
 use STS\Models\User;
+use STS\Services\AdminActionLogger;
 use STS\Services\AnonymizationService;
+use STS\Services\IdentityVerificationOutcome;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\MercadoPagoOAuthService;
@@ -149,12 +153,61 @@ class UserController extends Controller
             throw new ExceptionWithErrors('User not found.');
         }
 
+        $changedKeys = $this->adminUpdateChangedKeys($user, $data);
+        $wasIdentityValidated = (bool) $user->identity_validated;
         $profile = $this->userLogic->update($user, $data, false, true);
         if (! $profile) {
             throw new ExceptionWithErrors('Could not update user.', $this->userLogic->getErrors());
         }
 
+        if ((bool) $profile->identity_validated !== $wasIdentityValidated) {
+            app(IdentityVerificationOutcome::class)->emit([
+                'user_id' => $profile->id,
+                'method' => IdentityVerificationOutcome::METHOD_ADMIN,
+                'name' => IdentityVerificationOutcome::NAME_ADMIN_IDENTITY_EDITED,
+                'reason' => $profile->identity_validated ? IdentityVerificationOutcome::REASON_VALIDATED : IdentityVerificationOutcome::REASON_UNVALIDATED,
+                'related_type' => 'users',
+                'related_id' => $profile->id,
+                'metadata' => ['admin_id' => $me->id],
+            ]);
+        }
+
+        if ($changedKeys !== []) {
+            AdminActionLogger::log(
+                $me,
+                AdminActionLog::ACTION_USER_UPDATE,
+                (int) $profile->id,
+                ['keys' => $changedKeys]
+            );
+        }
+
         return $this->item($profile, new ProfileTransformer($me));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return list<string>
+     */
+    private function adminUpdateChangedKeys(User $user, array $data): array
+    {
+        $changed = [];
+        foreach ($data as $key => $value) {
+            if (! is_string($key) || in_array($key, ['user', 'password_confirmation'], true)) {
+                continue;
+            }
+            if ($key === 'password') {
+                if ($value) {
+                    $changed[] = 'password';
+                }
+
+                continue;
+            }
+            if ($user->getAttribute($key) != $value) {
+                $changed[] = $key;
+            }
+        }
+
+        return $changed;
     }
 
     public function updatePhoto(Request $request)
@@ -338,18 +391,38 @@ class UserController extends Controller
         }
 
         $state = bin2hex(random_bytes(16));
+        $attemptId = (string) Str::uuid();
+        $surface = $request->query('surface');
+        $platform = $request->query('platform');
+        $appVersion = $request->query('app_version');
         $authResult = $oauthService->getAuthorizationUrl($state);
+
+        $cachePayload = [
+            'user_id' => $user->id,
+            'attempt_id' => $attemptId,
+            'surface' => $surface,
+            'platform' => $platform,
+            'app_version' => $appVersion,
+        ];
 
         if (is_array($authResult)) {
             $authorizationUrl = $authResult['authorization_url'];
-            Cache::put('mp_oauth_state:'.$state, [
-                'user_id' => $user->id,
-                'code_verifier' => $authResult['code_verifier'],
-            ], 600);
+            $cachePayload['code_verifier'] = $authResult['code_verifier'];
         } else {
             $authorizationUrl = $authResult;
-            Cache::put('mp_oauth_state:'.$state, ['user_id' => $user->id], 600);
         }
+
+        Cache::put('mp_oauth_state:'.$state, $cachePayload, 600);
+
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $user->id,
+            'method' => IdentityVerificationOutcome::METHOD_MERCADO_PAGO,
+            'name' => IdentityVerificationOutcome::NAME_ATTEMPT_STARTED,
+            'attempt_id' => $attemptId,
+            'surface' => $surface,
+            'platform' => $platform,
+            'app_version' => $appVersion,
+        ]);
 
         return response()->json(['authorization_url' => $authorizationUrl]);
     }

@@ -10,6 +10,7 @@ use STS\Http\Controllers\Controller;
 use STS\Models\AdminActionLog;
 use STS\Models\User;
 use STS\Models\UserMigration;
+use STS\Services\AdminActionLogger;
 use STS\Services\AnonymizationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\UserDeletionService;
@@ -99,6 +100,17 @@ class UserMigrationController extends Controller
         ]);
 
         $row->load('admin:id,name');
+
+        AdminActionLogger::log(
+            $admin,
+            AdminActionLog::ACTION_USER_MIGRATE,
+            $keptId,
+            [
+                'migration_id' => $row->id,
+                'user_id_removed' => $removedId,
+                'removal_action' => $removalAction,
+            ]
+        );
 
         return response()->json([
             'data' => [

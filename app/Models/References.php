@@ -3,8 +3,6 @@
 namespace STS\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use STS\Models\User;
 
 class References extends Model
 {
@@ -13,13 +11,22 @@ class References extends Model
     protected $fillable = [
         'user_id_from',
         'user_id_to',
-        'comment'
-    ]; 
+        'comment',
+        'reply_comment',
+        'reply_comment_created_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'reply_comment_created_at' => 'datetime',
+        ];
+    }
 
     protected $hidden = [];
 
     protected $appends = [
-        'from'
+        'from',
     ];
 
     public function from()

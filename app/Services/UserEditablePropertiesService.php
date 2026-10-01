@@ -3,6 +3,7 @@
 namespace STS\Services;
 
 use Illuminate\Support\Facades\Http;
+use STS\Admin\AdminPermission;
 use STS\Models\User;
 
 class UserEditablePropertiesService
@@ -12,7 +13,7 @@ class UserEditablePropertiesService
      */
     public function getForbiddenProperties(): array
     {
-        return config('carpoolear.user_edit_properties.forbidden', ['is_admin']);
+        return config('carpoolear.user_edit_properties.forbidden', ['is_admin', 'admin_role']);
     }
 
     /**
@@ -57,7 +58,7 @@ class UserEditablePropertiesService
     /**
      * Check if a property is allowed for the given role.
      */
-    public function isPropertyAllowed(string $property, bool $isAdmin, ?User $user = null): bool
+    public function isPropertyAllowed(string $property, bool $isAdmin, ?User $user = null, ?User $actor = null): bool
     {
         $forbidden = $this->getForbiddenProperties();
         if (in_array($property, $forbidden)) {
@@ -75,11 +76,34 @@ class UserEditablePropertiesService
 
         if ($isAdmin) {
             $adminAllowed = $this->getAdminAllowedProperties();
+            if (! in_array($property, $adminAllowed)) {
+                return false;
+            }
 
-            return in_array($property, $adminAllowed);
+            $permission = $this->permissionRequiredForAdminProperty($property);
+            if ($permission && $actor?->is_admin && ! $actor->hasAdminPermission($permission)) {
+                return false;
+            }
+
+            return true;
         }
 
         return false;
+    }
+
+    private function permissionRequiredForAdminProperty(string $property): ?AdminPermission
+    {
+        return match ($property) {
+            'banned' => AdminPermission::UsersSuspend,
+            'active' => AdminPermission::UsersSetActive,
+            'driver_is_verified' => AdminPermission::UsersDriverVerified,
+            'identity_validated',
+            'identity_validated_at',
+            'identity_validation_type',
+            'identity_validation_reject_reason',
+            'validate_by_date' => AdminPermission::UsersVerify,
+            default => null,
+        };
     }
 
     /**
@@ -94,12 +118,12 @@ class UserEditablePropertiesService
      * Filter data to only include editable keys for the given role.
      * Returns the filtered array. Does not modify the input.
      */
-    public function filterForUser(array $data, bool $isAdmin, ?User $user = null): array
+    public function filterForUser(array $data, bool $isAdmin, ?User $user = null, ?User $actor = null): array
     {
         $filtered = [];
 
         foreach ($data as $key => $value) {
-            if ($this->isPropertyAllowed($key, $isAdmin, $user)) {
+            if ($this->isPropertyAllowed($key, $isAdmin, $user, $actor)) {
                 $filtered[$key] = $value;
             }
         }

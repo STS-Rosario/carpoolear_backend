@@ -17,6 +17,32 @@ class ManualIdentityValidation extends Model
 
     const REVIEW_STATUS_REJECTED = 'rejected';
 
+    const REVIEW_STATUS_CLOSED = 'closed';
+
+    /**
+     * Terminal review statuses that are hidden from the default admin queue.
+     *
+     * @return list<string>
+     */
+    public static function resolvedReviewStatuses(): array
+    {
+        return [
+            self::REVIEW_STATUS_APPROVED,
+            self::REVIEW_STATUS_REJECTED,
+            self::REVIEW_STATUS_CLOSED,
+        ];
+    }
+
+    /**
+     * Resolved statuses plus historical aliases stored in older rows.
+     *
+     * @return list<string>
+     */
+    public static function resolvedReviewStatusAliases(): array
+    {
+        return array_merge(self::resolvedReviewStatuses(), ['approve', 'reject']);
+    }
+
     protected $fillable = [
         'user_id',
         'submitted_at',
@@ -31,9 +57,12 @@ class ManualIdentityValidation extends Model
         'reviewed_by',
         'reviewed_at',
         'review_note',
+        'reject_reason',
         'private_admin_note',
         'manual_validation_started_at',
         'images_purged_at',
+        'photos_upload_reminder_week1_sent_at',
+        'photos_upload_reminder_week2_sent_at',
     ];
 
     protected function casts(): array
@@ -46,6 +75,8 @@ class ManualIdentityValidation extends Model
             'reviewed_at' => 'datetime',
             'manual_validation_started_at' => 'datetime',
             'images_purged_at' => 'datetime',
+            'photos_upload_reminder_week1_sent_at' => 'datetime',
+            'photos_upload_reminder_week2_sent_at' => 'datetime',
         ];
     }
 
@@ -80,9 +111,14 @@ class ManualIdentityValidation extends Model
         if ($this->paid_at === null) {
             $this->paid_at = now();
         }
-        if ($this->submitted_at === null) {
+        if ($this->submitted_at === null && ! $this->isResolved()) {
             $this->markAwaitingPhotos();
         }
+    }
+
+    public function isResolved(): bool
+    {
+        return in_array((string) $this->review_status, self::resolvedReviewStatusAliases(), true);
     }
 
     /**

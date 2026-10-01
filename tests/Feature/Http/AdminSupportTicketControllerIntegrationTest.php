@@ -210,7 +210,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['user_id'] ?? 0) === $target->id));
     }
 
-    public function test_index_paginates_with_default_twenty_per_page(): void
+    public function test_index_paginates_with_default_hundred_per_page(): void
     {
         $admin = $this->adminUser();
         $owner = User::factory()->create();
@@ -224,11 +224,11 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
 
         $this->getJson('api/admin/support/tickets')
             ->assertOk()
-            ->assertJsonPath('meta.pagination.per_page', 20)
+            ->assertJsonPath('meta.pagination.per_page', 100)
             ->assertJsonPath('meta.pagination.current_page', 1)
             ->assertJsonPath('meta.pagination.total', 25)
-            ->assertJsonPath('meta.pagination.total_pages', 2)
-            ->assertJsonCount(20, 'data');
+            ->assertJsonPath('meta.pagination.total_pages', 1)
+            ->assertJsonCount(25, 'data');
     }
 
     public function test_index_paginates_with_requested_per_page(): void

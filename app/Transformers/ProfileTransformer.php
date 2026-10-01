@@ -98,6 +98,8 @@ class ProfileTransformer extends TransformerAbstract
             // True when enforcement is active and this user must validate as a "new" user (created_at >= cutoff).
             $data['identity_validation_required_for_user'] = IdentityValidationHelper::isNewUserRequiringValidation($user);
             $data['validate_by_date'] = $user->validate_by_date ? $user->validate_by_date->format('Y-m-d') : null;
+            $data['admin_role'] = $user->admin_role;
+            $data['admin_permissions'] = $user->adminPermissionValues();
         }
         if ($this->user && ($user->id == $this->user->id || $this->user->is_admin)) {
             $data['emails_notifications'] = $user->emails_notifications;

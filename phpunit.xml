@@ -33,6 +33,8 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <!-- Never call the real OpenRouter API from tests (tests opt in with config() + Http::fake) -->
+        <env name="OPENROUTER_API_KEY" value="" force="true"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>

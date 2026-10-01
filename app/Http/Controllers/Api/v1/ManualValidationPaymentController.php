@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\ManualIdentityValidation;
+use STS\Services\IdentityVerificationOutcome;
 
 class ManualValidationPaymentController extends Controller
 {
@@ -25,11 +26,24 @@ class ManualValidationPaymentController extends Controller
         if ($requestId) {
             $validationRequest = ManualIdentityValidation::find($requestId);
             if ($validationRequest && $result === 'success') {
+                $alreadyPaid = (bool) $validationRequest->paid;
                 $validationRequest->markPaidAndAwaitingPhotosIfNeeded();
                 if ($paymentId !== null && $paymentId !== '') {
                     $validationRequest->payment_id = (string) $paymentId;
                 }
                 $validationRequest->save();
+                if (! $alreadyPaid) {
+                    $this->emitManualPaymentEvent(
+                        $validationRequest,
+                        IdentityVerificationOutcome::NAME_PAYMENT_SUCCEEDED
+                    );
+                }
+            } elseif ($validationRequest && $result !== 'success') {
+                $this->emitManualPaymentEvent(
+                    $validationRequest,
+                    IdentityVerificationOutcome::NAME_PAYMENT_FAILED,
+                    ['payment_result' => $result]
+                );
             }
             $redirectUrl .= '?request_id='.$requestId;
             if ($result !== 'success') {
@@ -40,5 +54,23 @@ class ManualValidationPaymentController extends Controller
         }
 
         return redirect($redirectUrl);
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     */
+    private function emitManualPaymentEvent(
+        ManualIdentityValidation $validationRequest,
+        string $name,
+        array $metadata = []
+    ): void {
+        app(IdentityVerificationOutcome::class)->emit([
+            'user_id' => $validationRequest->user_id,
+            'method' => IdentityVerificationOutcome::METHOD_MANUAL,
+            'name' => $name,
+            'related_type' => 'manual_identity_validations',
+            'related_id' => $validationRequest->id,
+            'metadata' => $metadata,
+        ]);
     }
 }

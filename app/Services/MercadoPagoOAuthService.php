@@ -3,7 +3,7 @@
 namespace STS\Services;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
+use STS\Exceptions\MercadoPagoOAuthRequestException;
 
 class MercadoPagoOAuthService
 {
@@ -118,11 +118,12 @@ class MercadoPagoOAuthService
             ->post('https://api.mercadopago.com/oauth/token', $body);
 
         if (! $response->successful()) {
-            Log::error('MercadoPago OAuth token exchange failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-            throw new \Exception('Failed to exchange code for token');
+            throw new MercadoPagoOAuthRequestException(
+                IdentityVerificationOutcome::REASON_TOKEN_EXCHANGE_FAILED,
+                'Failed to exchange code for token',
+                $response->status(),
+                $this->truncateResponseBody($response->body()),
+            );
         }
 
         $payload = $response->json();
@@ -144,11 +145,12 @@ class MercadoPagoOAuthService
             ->get('https://api.mercadopago.com/users/me');
 
         if (! $response->successful()) {
-            Log::error('MercadoPago users/me failed', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-            throw new \Exception('Failed to get user info from Mercado Pago');
+            throw new MercadoPagoOAuthRequestException(
+                IdentityVerificationOutcome::REASON_USERS_ME_FAILED,
+                'Failed to get user info from Mercado Pago',
+                $response->status(),
+                $this->truncateResponseBody($response->body()),
+            );
         }
 
         $payload = $response->json();
@@ -452,5 +454,14 @@ class MercadoPagoOAuthService
         $query = array_merge(['result' => $result], $details);
 
         return $this->frontendRedirectBase.'/setting/identity-validation?'.http_build_query($query);
+    }
+
+    private function truncateResponseBody(?string $body): ?string
+    {
+        if ($body === null || $body === '') {
+            return $body;
+        }
+
+        return mb_substr($body, 0, 200);
     }
 }

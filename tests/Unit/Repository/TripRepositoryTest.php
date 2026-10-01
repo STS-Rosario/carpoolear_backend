@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
 use STS\Events\Trip\Create as CreateEvent;
+use STS\Jobs\CheckTripContributionWithLlm;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -55,6 +57,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn($routeNeedsPayment);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
 
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
@@ -534,6 +537,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $mapboxService->shouldReceive('isEnabled')->andReturn(false);
@@ -589,6 +593,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $mapboxService->shouldReceive('isEnabled')->andReturn(false);
@@ -678,6 +683,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $mapboxService->shouldReceive('isEnabled')->andReturn(false);
@@ -725,6 +731,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $mapboxService->shouldReceive('isEnabled')->once()->andReturn(true);
@@ -3211,6 +3218,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
 
@@ -3308,6 +3316,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
 
@@ -4160,6 +4169,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
@@ -4204,6 +4214,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
@@ -4240,6 +4251,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(true);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
@@ -4273,6 +4285,7 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->once()->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(false);
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
         $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
@@ -4430,15 +4443,12 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($all->contains($allowsKids->id));
     }
 
-    public function test_create_sets_potential_excess_contribution_flag_from_description(): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function createTripPayload(User $user, array $overrides = []): array
     {
-        Config::set('carpoolear.module_max_price_enabled', false);
-        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
-
-        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
-        $user = User::factory()->create();
-
-        $trip = $repo->create([
+        return array_merge([
             'user_id' => $user->id,
             'is_passenger' => 0,
             'from_town' => 'A',
@@ -4455,32 +4465,214 @@ class TripRepositoryTest extends TestCase
             'points' => [
                 ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 9001, 'ciudad' => 'Origen']],
             ],
-        ]);
-
-        $trip->refresh();
-        $this->assertTrue($trip->has_potential_excess_contribution);
-        $this->assertSame(2400000, (int) $trip->description_potential_seat_price_cents);
+        ], $overrides);
     }
 
-    public function test_update_recomputes_potential_excess_contribution_flag(): void
+    public function test_create_dispatches_llm_contribution_check_for_the_saved_trip(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $this->assertNotNull($trip->id);
+        Queue::assertPushed(
+            CheckTripContributionWithLlm::class,
+            fn (CheckTripContributionWithLlm $job) => $job->tripId === $trip->id
+        );
+    }
+
+    public function test_create_no_longer_runs_the_description_amount_heuristic(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $trip->refresh();
+        $this->assertFalse($trip->has_potential_excess_contribution);
+        $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertNull($trip->exceso_contribucion_status);
+    }
+
+    public function test_create_skips_llm_contribution_check_without_description(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $repo->create($this->createTripPayload(User::factory()->create(), ['description' => '  ']));
+
+        Queue::assertNotPushed(CheckTripContributionWithLlm::class);
+    }
+
+    public function test_create_succeeds_even_when_the_llm_contribution_check_fails(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('queue.default', 'sync');
+        Config::set('services.openrouter.api_key', 'test-openrouter-key');
+        Config::set('services.openrouter.base_url', 'https://openrouter.test/api/v1');
+        Http::fake(['openrouter.test/*' => Http::response('upstream down', 503)]);
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $this->assertTrue($trip->exists);
+        $this->assertNotNull(Trip::find($trip->id));
+        Http::assertSentCount(1);
+    }
+
+    public function test_update_dispatches_llm_contribution_check_when_description_changes(): void
     {
         Config::set('carpoolear.module_trip_creation_payment_enabled', false);
         Config::set('carpoolear.module_max_price_enabled', false);
+        Queue::fake();
 
         $trip = Trip::factory()->create([
             'seat_price_cents' => 1500000,
-            'description' => 'La contribución es de $24000 por persona',
+            'description' => 'Contribución $15000',
             'has_potential_excess_contribution' => false,
             'description_potential_seat_price_cents' => null,
         ]);
 
         $updated = $this->repo()->update($trip, [
-            'description' => 'Contribución $15000',
+            'description' => 'La contribución es de $24000 por persona',
             'seat_price_cents' => 1500000,
         ]);
 
+        Queue::assertPushed(
+            CheckTripContributionWithLlm::class,
+            fn (CheckTripContributionWithLlm $job) => $job->tripId === $trip->id
+        );
         $updated->refresh();
         $this->assertFalse($updated->has_potential_excess_contribution);
         $this->assertNull($updated->description_potential_seat_price_cents);
+    }
+
+    public function test_update_dispatches_llm_contribution_check_when_seat_price_changes(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Queue::fake();
+
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'Contribución $15000',
+        ]);
+
+        $this->repo()->update($trip, ['seat_price_cents' => 1000000]);
+
+        Queue::assertPushed(CheckTripContributionWithLlm::class, 1);
+    }
+
+    public function test_update_skips_llm_contribution_check_when_description_and_price_are_unchanged(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Queue::fake();
+
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'Contribución $15000',
+        ]);
+
+        $this->repo()->update($trip, [
+            'description' => 'Contribución $15000',
+            'seat_price_cents' => 1500000,
+            'total_seats' => 2,
+        ]);
+
+        Queue::assertNotPushed(CheckTripContributionWithLlm::class);
+    }
+
+    public function test_create_stores_maximum_trip_price_cents_from_trip_info(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 10000000,
+                'recommended_trip_price_cents' => 8000000,
+            ],
+        ], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create(), [
+            'seat_price_cents' => 1500000,
+        ]));
+
+        $this->assertSame(10000000, $trip->fresh()->maximum_trip_price_cents);
+    }
+
+    public function test_create_leaves_maximum_trip_price_cents_null_without_trip_info(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $this->assertNull($trip->fresh()->maximum_trip_price_cents);
+    }
+
+    public function test_update_with_points_refreshes_maximum_and_rechecks_the_description(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 10000000,
+                'recommended_trip_price_cents' => 8000000,
+            ],
+        ], false);
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'Contribución $18000',
+            'maximum_trip_price_cents' => 5000000,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        $repo->update($trip, [
+            'seat_price_cents' => 1500000,
+            'points' => [
+                ['lat' => -34.61, 'lng' => -58.41, 'json_address' => ['id' => 9101, 'ciudad' => 'C']],
+                ['lat' => -31.42, 'lng' => -64.18, 'json_address' => ['id' => 9102, 'ciudad' => 'D']],
+            ],
+        ]);
+
+        $this->assertSame(10000000, $trip->fresh()->maximum_trip_price_cents);
+        Queue::assertPushed(
+            CheckTripContributionWithLlm::class,
+            fn (CheckTripContributionWithLlm $job) => $job->tripId === $trip->id
+        );
+    }
+
+    public function test_update_rechecks_the_description_when_rear_seat_comfort_changes_the_seat_maximum(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Queue::fake();
+
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'Contribución $22000',
+            'maximum_trip_price_cents' => 10000000,
+            'rear_max_two_passengers' => false,
+        ]);
+
+        $this->repo()->update($trip, ['rear_max_two_passengers' => true]);
+
+        Queue::assertPushed(CheckTripContributionWithLlm::class, 1);
     }
 }

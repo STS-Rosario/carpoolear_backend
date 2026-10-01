@@ -29,6 +29,7 @@ class SupportTicketApiTest extends TestCase
                 $table->increments('id');
                 $table->unsignedInteger('user_id');
                 $table->string('type');
+                $table->string('source')->default('web_form');
                 $table->string('subject');
                 $table->string('status')->default('Open');
                 $table->string('priority')->default('normal');
@@ -751,6 +752,46 @@ class SupportTicketApiTest extends TestCase
         $ticket->assertStatus(200);
         $ticket->assertJsonPath('data.type', 'account_recovery');
         $ticket->assertJsonPath('data.priority', 'high');
+    }
+
+    public function test_create_persists_feedback_tab_source(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $this->post('api/support/tickets', [
+            'type' => 'feedback',
+            'subject' => 'Side tab idea',
+            'message_markdown' => 'From the ayuda tab',
+            'source' => 'feedback_tab',
+        ])->assertOk()->assertJsonPath('data.source', 'feedback_tab');
+
+        $this->assertSame('feedback_tab', SupportTicket::query()->latest('id')->first()->source);
+    }
+
+    public function test_create_defaults_source_to_web_form(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $this->post('api/support/tickets', [
+            'type' => 'bug_report',
+            'subject' => 'App crash',
+            'message_markdown' => 'Steps to reproduce',
+        ])->assertOk()->assertJsonPath('data.source', 'web_form');
+    }
+
+    public function test_create_rejects_unknown_source(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $this->postJson('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Hello there',
+            'message_markdown' => 'Need help',
+            'source' => 'email',
+        ])->assertStatus(422)->assertJsonValidationErrors(['source']);
     }
 
     private function createUser(bool $isAdmin = false): User

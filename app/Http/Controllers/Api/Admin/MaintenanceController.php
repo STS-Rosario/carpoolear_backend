@@ -7,8 +7,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use STS\Http\Controllers\Controller;
+use STS\Models\AdminActionLog;
 use STS\Models\MaintenanceAuditLog;
 use STS\Models\MaintenanceSchedule;
+use STS\Services\AdminActionLogger;
 use STS\Services\Maintenance\MaintenanceStateService;
 
 class MaintenanceController extends Controller
@@ -57,6 +59,9 @@ class MaintenanceController extends Controller
         ]);
 
         $this->maintenanceStateService->writeAudit((int) auth()->id(), 'schedule_create', [
+            'schedule_id' => $schedule->id,
+        ]);
+        $this->logMaintenanceMutation($request->user(), 'schedule_create', [
             'schedule_id' => $schedule->id,
         ]);
 
@@ -115,6 +120,9 @@ class MaintenanceController extends Controller
         $this->maintenanceStateService->writeAudit((int) auth()->id(), 'schedule_update', [
             'schedule_id' => $schedule->id,
         ]);
+        $this->logMaintenanceMutation(auth()->user(), 'schedule_update', [
+            'schedule_id' => $schedule->id,
+        ]);
 
         return response()->json(['data' => $schedule]);
     }
@@ -122,6 +130,9 @@ class MaintenanceController extends Controller
     public function schedulesCancel(MaintenanceSchedule $schedule): JsonResponse
     {
         $this->maintenanceStateService->cancelSchedule($schedule, auth()->id() ? (int) auth()->id() : null);
+        $this->logMaintenanceMutation(auth()->user(), 'schedule_cancel', [
+            'schedule_id' => $schedule->id,
+        ]);
 
         return response()->json(['data' => ['schedule_id' => $schedule->id, 'cancelled' => true]]);
     }
@@ -167,6 +178,10 @@ class MaintenanceController extends Controller
             null,
             auth()->id() ? (int) auth()->id() : null
         );
+        $this->logMaintenanceMutation($request->user(), 'state_update', [
+            'active' => (bool) $validated['active'],
+            'mode' => $validated['mode'] ?? null,
+        ]);
 
         return response()->json(['data' => $this->maintenanceStateService->state()->fresh()]);
     }
@@ -193,5 +208,22 @@ class MaintenanceController extends Controller
                 'ends_at' => ['Must be after starts_at.'],
             ]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $details
+     */
+    private function logMaintenanceMutation($admin, string $mutation, array $details = []): void
+    {
+        if (! $admin) {
+            return;
+        }
+
+        AdminActionLogger::log(
+            $admin,
+            AdminActionLog::ACTION_MAINTENANCE_UPDATE,
+            null,
+            array_merge(['mutation' => $mutation], $details)
+        );
     }
 }

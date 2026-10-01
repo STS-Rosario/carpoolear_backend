@@ -22,6 +22,7 @@ class ExampleTest extends TestCase
         $this->assertNotNull(config('carpoolear.module_max_price_fuel_price'));
         $this->assertNotNull(config('carpoolear.module_max_price_kilometer_by_liter'));
         $this->assertNotNull(config('carpoolear.module_max_price_price_variance_tolls'));
+        $this->assertNotNull(config('carpoolear.module_max_price_price_variance_tolls_costa_atlantica'));
         $this->assertNotNull(config('carpoolear.module_max_price_price_variance_max_extra'));
     }
 

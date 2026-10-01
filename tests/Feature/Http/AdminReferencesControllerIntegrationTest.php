@@ -34,7 +34,7 @@ class AdminReferencesControllerIntegrationTest extends TestCase
 
         $this->patchJson('api/admin/references/'.$reference->id, [
             'comment' => 'Updated',
-        ])->assertUnauthorized();
+        ])->assertForbidden();
     }
 
     public function test_admin_update_persists_comment_and_logs_action(): void

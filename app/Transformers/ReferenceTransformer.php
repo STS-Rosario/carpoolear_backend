@@ -14,6 +14,10 @@ class ReferenceTransformer extends TransformerAbstract
             'user_id_from' => $reference->user_id_from,
             'user_id_to' => $reference->user_id_to,
             'comment' => $reference->comment,
+            'reply_comment' => $reference->reply_comment,
+            'reply_comment_created_at' => $reference->reply_comment_created_at
+                ? $reference->reply_comment_created_at->toDateTimeString()
+                : null,
         ];
     }
 }

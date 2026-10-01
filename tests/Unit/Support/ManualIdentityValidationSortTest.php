@@ -12,6 +12,7 @@ class ManualIdentityValidationSortTest extends TestCase
     {
         $this->assertSame('id', ManualIdentityValidationSort::resolveSort('id'));
         $this->assertSame('user_name', ManualIdentityValidationSort::resolveSort('user_name'));
+        $this->assertSame('identity_validated', ManualIdentityValidationSort::resolveSort('identity_validated'));
         $this->assertSame('waiting_time', ManualIdentityValidationSort::resolveSort('waiting_time'));
         $this->assertSame(
             'open_account_verification_tickets_count',
@@ -53,6 +54,20 @@ class ManualIdentityValidationSortTest extends TestCase
         );
 
         $this->assertStringContainsString('order by `manual_identity_validations`.`id` desc', strtolower($query->toSql()));
+    }
+
+    public function test_apply_orders_by_identity_validated_with_users_join(): void
+    {
+        $query = ManualIdentityValidationSort::apply(
+            \STS\Models\ManualIdentityValidation::query(),
+            'identity_validated',
+            'desc'
+        );
+
+        $sql = strtolower($query->toSql());
+
+        $this->assertStringContainsString('left join `users` on `users`.`id` = `manual_identity_validations`.`user_id`', $sql);
+        $this->assertStringContainsString('order by users.identity_validated is null, `users`.`identity_validated` desc', $sql);
     }
 
     public function test_apply_orders_by_open_account_verification_ticket_count_and_workflow_state(): void

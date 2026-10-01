@@ -2,6 +2,7 @@
 
 namespace STS\Services\Logic;
 
+use Carbon\Carbon;
 use STS\Models\References as ReferencesModel;
 use STS\Models\User as UserModel;
 use STS\Repository\ReferencesRepository;
@@ -60,5 +61,19 @@ class ReferencesManager extends BaseManager
         $this->referencesRepo->create($reference);
 
         return $reference;
+    }
+
+    public function reply($userTo, $userFromId, $comment)
+    {
+        $reference = $this->referencesRepo->get($userFromId, $userTo->id);
+        if ($reference && ! $reference->reply_comment_created_at) {
+            $reference->reply_comment_created_at = Carbon::now();
+            $reference->reply_comment = $comment;
+
+            return $this->referencesRepo->update($reference);
+        }
+
+        $this->setErrors(['error' => 'user_have_already_replay']);
+
     }
 }
