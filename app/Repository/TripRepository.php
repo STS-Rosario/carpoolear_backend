@@ -4,12 +4,12 @@ namespace STS\Repository;
 
 use Carbon\Carbon;
 use DB;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Schema;
 use STS\Helpers\OngoingTripHelper;
-use STS\Helpers\TripDescriptionContributionHelper;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
+use STS\Jobs\CheckTripContributionWithLlm;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -100,27 +100,11 @@ class TripRepository
         // Get trip info for price calculations and route data
         $tripInfo = $this->getTripInfo($points);
 
-        // Calculate maximum allowed price if seat_price_cents is provided
-        if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
-            $rearMaxTwoPassengers = $data['rear_max_two_passengers'] ?? false;
-            if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                $maximum_seat_price_cents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
-                    (int) $tripInfo['data']['maximum_trip_price_cents'],
-                    $rearMaxTwoPassengers
-                );
-                if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                    $data['seat_price_cents'] = $maximum_seat_price_cents;
-                }
-            }
-        }
+        $data = $this->capSeatPriceAtMaximum($data, $tripInfo, $data['rear_max_two_passengers'] ?? false);
 
         $trip = Trip::create($data);
 
-        // Save recommended trip price if available from trip info
-        if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
-            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
-            $trip->save();
-        }
+        $this->storeTripInfoPrices($trip, $tripInfo);
 
         $this->addPoints($trip, $points);
 
@@ -175,7 +159,9 @@ class TripRepository
 
         $this->generateTripFriendVisibility($trip);
 
-        $this->syncPotentialExcessContributionFlag($trip);
+        if (trim((string) $trip->description) !== '') {
+            $this->dispatchContributionCheck($trip);
+        }
 
         // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay
         // for this trip (origin and destination in paid cities),
@@ -185,6 +171,11 @@ class TripRepository
 
     public function update($trip, array $data)
     {
+        $descriptionBefore = (string) $trip->description;
+        $seatPriceCentsBefore = (int) $trip->seat_price_cents;
+        $maximumTripPriceCentsBefore = $trip->maximum_trip_price_cents;
+        $rearMaxTwoPassengersBefore = (bool) $trip->rear_max_two_passengers;
+
         $points = null;
         if (isset($data['points'])) {
             $points = $data['points'];
@@ -207,28 +198,18 @@ class TripRepository
         if ($points) {
             $tripInfo = $this->getTripInfo($points);
 
-            // Calculate maximum allowed price if seat_price_cents is provided
-            if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
-                $rearMaxTwoPassengers = $data['rear_max_two_passengers'] ?? $trip->rear_max_two_passengers;
-                if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                    $maximum_seat_price_cents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
-                        (int) $tripInfo['data']['maximum_trip_price_cents'],
-                        $rearMaxTwoPassengers
-                    );
-                    if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                        $data['seat_price_cents'] = $maximum_seat_price_cents;
-                    }
-                }
-            }
+            $data = $this->capSeatPriceAtMaximum(
+                $data,
+                $tripInfo,
+                $data['rear_max_two_passengers'] ?? $trip->rear_max_two_passengers
+            );
         }
 
-        return DB::transaction(function () use ($trip, $data, $points, $tripInfo, $oldRouteNeedsPayment) {
+        $trip = DB::transaction(function () use ($trip, $data, $points, $tripInfo, $oldRouteNeedsPayment) {
             $trip->update($data);
 
-            // Save recommended trip price if available from trip info
-            if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
-                $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
-                $trip->save();
+            if ($tripInfo) {
+                $this->storeTripInfoPrices($trip, $tripInfo);
             }
 
             if ($points) {
@@ -293,28 +274,87 @@ class TripRepository
                 }
             }
 
-            $this->syncPotentialExcessContributionFlag($trip);
-
             return $trip;
         });
-    }
 
-    private function syncPotentialExcessContributionFlag(Trip $trip): void
-    {
-        $stashedPaymentUrl = null;
-        $paymentUrlWasStashed = false;
-        if ($trip->isDirty('payment_url') && ! Schema::hasColumn($trip->getTable(), 'payment_url')) {
-            $stashedPaymentUrl = $trip->getAttribute('payment_url');
-            $trip->offsetUnset('payment_url');
-            $paymentUrlWasStashed = true;
+        if (
+            (string) $trip->description !== $descriptionBefore
+            || (int) $trip->seat_price_cents !== $seatPriceCentsBefore
+            || $trip->maximum_trip_price_cents !== $maximumTripPriceCentsBefore
+            || (bool) $trip->rear_max_two_passengers !== $rearMaxTwoPassengersBefore
+        ) {
+            $this->dispatchContributionCheck($trip);
         }
 
-        TripDescriptionContributionHelper::syncPotentialExcessContributionAttributes($trip);
-        $trip->save();
+        return $trip;
+    }
 
-        if ($paymentUrlWasStashed) {
-            $trip->setAttribute('payment_url', $stashedPaymentUrl);
-            $trip->syncOriginalAttribute('payment_url');
+    /**
+     * Cap seat_price_cents at the maximum allowed seat price from trip info
+     * (only when the max price module is enabled).
+     */
+    private function capSeatPriceAtMaximum(array $data, array $tripInfo, $rearMaxTwoPassengers): array
+    {
+        if (! isset($data['seat_price_cents']) || ! config('carpoolear.module_max_price_enabled')) {
+            return $data;
+        }
+
+        if (! $tripInfo['status'] || ! isset($tripInfo['data']['maximum_trip_price_cents'])) {
+            return $data;
+        }
+
+        $maximumSeatPriceCents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
+            (int) $tripInfo['data']['maximum_trip_price_cents'],
+            $rearMaxTwoPassengers
+        );
+
+        if ($data['seat_price_cents'] > $maximumSeatPriceCents) {
+            $data['seat_price_cents'] = $maximumSeatPriceCents;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Persist the recommended and maximum allowed trip prices from trip info.
+     * The maximum is what the queued LLM contribution check compares against.
+     */
+    private function storeTripInfoPrices(Trip $trip, array $tripInfo): void
+    {
+        if (! $tripInfo['status']) {
+            return;
+        }
+
+        $changed = false;
+
+        if (isset($tripInfo['data']['recommended_trip_price_cents'])) {
+            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+            $changed = true;
+        }
+
+        if (isset($tripInfo['data']['maximum_trip_price_cents'])) {
+            $trip->maximum_trip_price_cents = (int) $tripInfo['data']['maximum_trip_price_cents'];
+            $changed = true;
+        }
+
+        if ($changed) {
+            $trip->save();
+        }
+    }
+
+    /**
+     * Queue the LLM review of the description (after the trip is saved and
+     * outside any transaction). It must never block or fail the save.
+     */
+    private function dispatchContributionCheck(Trip $trip): void
+    {
+        try {
+            Bus::dispatch(new CheckTripContributionWithLlm((int) $trip->id));
+        } catch (\Throwable $e) {
+            \Log::warning('Trip contribution LLM check could not be queued', [
+                'trip_id' => $trip->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

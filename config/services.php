@@ -57,6 +57,20 @@ return [
         'oauth_auth_url_base' => env('MERCADO_PAGO_OAUTH_AUTH_URL_BASE', 'https://auth.mercadopago.com'),
     ],
 
+    'openrouter' => [
+        // OpenAI-compatible chat completions API (https://openrouter.ai/docs).
+        'api_key' => env('OPENROUTER_API_KEY'),
+        'base_url' => rtrim(env('OPENROUTER_BASE_URL') ?: 'https://openrouter.ai/api/v1', '/'),
+        // Seconds before an OpenRouter request is aborted (the queued job then retries).
+        'timeout' => (int) (env('OPENROUTER_TIMEOUT') ?: 30),
+        // Queued LLM review of trip descriptions (contribution above the max, phone numbers).
+        'contribution_check' => [
+            'model' => env('OPENROUTER_CONTRIBUTION_CHECK_MODEL') ?: 'deepseek/deepseek-v4.1-flash',
+            // "off" disables reasoning; "low" (or another OpenRouter effort level) enables it.
+            'reasoning' => env('OPENROUTER_CONTRIBUTION_CHECK_REASONING') ?: 'off',
+        ],
+    ],
+
     'whatsapp' => [
         'verify_token' => env('WHATSAPP_VERIFY_TOKEN', 'your_verify_token_here'),
         'app_secret' => env('WHATSAPP_APP_SECRET'),

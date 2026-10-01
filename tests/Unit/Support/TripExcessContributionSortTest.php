@@ -18,6 +18,18 @@ class TripExcessContributionSortTest extends TestCase
         );
     }
 
+    public function test_resolve_sort_accepts_llm_contribution_check_columns(): void
+    {
+        $this->assertSame(
+            'suspected_contribution',
+            TripExcessContributionSort::resolveSort('suspected_contribution')
+        );
+        $this->assertSame(
+            'phone_in_description',
+            TripExcessContributionSort::resolveSort('phone_in_description')
+        );
+    }
+
     public function test_resolve_sort_returns_null_for_invalid_columns(): void
     {
         $this->assertNull(TripExcessContributionSort::resolveSort('not_a_column'));

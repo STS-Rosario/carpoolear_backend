@@ -44,6 +44,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'average_contribution_cents' => 1000000,
             'excess_contribution_percentage' => 140,
             'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+            'suspected_contribution' => 24000,
+            'phone_in_description' => false,
         ]);
 
         SupportTicket::query()->create([
@@ -86,6 +88,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'potential_seat_price_cents',
             'average_contribution_cents',
             'excess_contribution_percentage',
+            'suspected_contribution',
+            'phone_in_description',
             'has_private_note',
             'user_id',
             'user_name',
@@ -101,6 +105,9 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->assertSame(2400000, $row['potential_seat_price_cents']);
         $this->assertSame(1000000, $row['average_contribution_cents']);
         $this->assertSame(140, $row['excess_contribution_percentage']);
+        $this->assertSame(24000.0, (float) $row['suspected_contribution']);
+        $this->assertIsNumeric($row['suspected_contribution']);
+        $this->assertFalse($row['phone_in_description']);
         $this->assertTrue($row['has_private_note']);
         $this->assertSame($driverWithNote->id, $row['user_id']);
         $this->assertSame('Driver With Note', $row['user_name']);
@@ -129,6 +136,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'average_contribution_cents' => 1000000,
             'excess_contribution_percentage' => 140,
             'exceso_contribucion_status' => TripExcessContributionStatus::EN_PROCESO,
+            'suspected_contribution' => 24000,
+            'phone_in_description' => true,
         ]);
 
         SupportTicket::query()->create([
@@ -153,6 +162,8 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
         $this->assertSame('Pago $24000', $data['description']);
         $this->assertSame(1000000, $data['average_contribution_cents']);
         $this->assertSame(140, $data['excess_contribution_percentage']);
+        $this->assertSame(24000.0, (float) $data['suspected_contribution']);
+        $this->assertTrue($data['phone_in_description']);
         $this->assertSame(TripExcessContributionStatus::EN_PROCESO, $data['exceso_contribucion_status']);
         $this->assertSame($driver->id, $data['user_id']);
         $this->assertSame('Creator Name', $data['user_name']);
@@ -275,5 +286,91 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
 
         $names = collect($response->json('data'))->pluck('user_name')->all();
         $this->assertSame(['Alpha Driver', 'Beta Driver'], $names);
+    }
+
+    public function test_index_lists_trips_flagged_only_for_a_phone_in_the_description(): void
+    {
+        $admin = $this->admin();
+        $driver = User::factory()->create();
+
+        $phoneTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'seat_price_cents' => 1500000,
+            'description' => 'Escribime al tres cuatro uno cinco cinco cinco',
+            'has_potential_excess_contribution' => true,
+            'description_potential_seat_price_cents' => null,
+            'suspected_contribution' => null,
+            'phone_in_description' => true,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = $this->getJson('api/admin/trip-excess-contributions')->assertOk()->json('data');
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($phoneTrip->id, $rows[0]['id']);
+        $this->assertNull($rows[0]['suspected_contribution']);
+        $this->assertTrue($rows[0]['phone_in_description']);
+        $this->assertNull($rows[0]['potential_seat_price_cents']);
+    }
+
+    public function test_index_sorts_by_suspected_contribution(): void
+    {
+        $admin = $this->admin();
+        $driver = User::factory()->create();
+
+        foreach ([30000, null, 18000] as $amount) {
+            Trip::factory()->create([
+                'user_id' => $driver->id,
+                'has_potential_excess_contribution' => true,
+                'suspected_contribution' => $amount,
+                'phone_in_description' => $amount === null,
+                'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+            ]);
+        }
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $amounts = collect(
+            $this->getJson('api/admin/trip-excess-contributions?sort=suspected_contribution&direction=desc')
+                ->assertOk()
+                ->json('data')
+        )->pluck('suspected_contribution')->map(fn ($amount) => $amount === null ? null : (float) $amount)->all();
+
+        $this->assertSame([30000.0, 18000.0, null], $amounts);
+    }
+
+    public function test_index_sorts_by_phone_in_description(): void
+    {
+        $admin = $this->admin();
+        $driver = User::factory()->create();
+
+        // Created first so the default order (newest first) would list it last.
+        $withPhone = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'has_potential_excess_contribution' => true,
+            'phone_in_description' => true,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+        $withoutPhone = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'has_potential_excess_contribution' => true,
+            'phone_in_description' => false,
+            'exceso_contribucion_status' => TripExcessContributionStatus::PENDIENTE,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect(
+            $this->getJson('api/admin/trip-excess-contributions?sort=phone_in_description&direction=desc')
+                ->assertOk()
+                ->json('data')
+        )->pluck('id')->all();
+
+        $this->assertSame([$withPhone->id, $withoutPhone->id], $ids);
     }
 }
