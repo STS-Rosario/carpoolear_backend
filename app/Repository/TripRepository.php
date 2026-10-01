@@ -100,33 +100,11 @@ class TripRepository
         // Get trip info for price calculations and route data
         $tripInfo = $this->getTripInfo($points);
 
-        // Calculate maximum allowed price if seat_price_cents is provided
-        if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
-            $rearMaxTwoPassengers = $data['rear_max_two_passengers'] ?? false;
-            if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                $maximum_seat_price_cents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
-                    (int) $tripInfo['data']['maximum_trip_price_cents'],
-                    $rearMaxTwoPassengers
-                );
-                if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                    $data['seat_price_cents'] = $maximum_seat_price_cents;
-                }
-            }
-        }
+        $data = $this->capSeatPriceAtMaximum($data, $tripInfo, $data['rear_max_two_passengers'] ?? false);
 
         $trip = Trip::create($data);
 
-        // Save recommended trip price if available from trip info
-        if ($tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
-            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
-            $trip->save();
-        }
-
-        // Keep the maximum allowed trip price (the seat price cap) for the contribution check
-        if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-            $trip->maximum_trip_price_cents = (int) $tripInfo['data']['maximum_trip_price_cents'];
-            $trip->save();
-        }
+        $this->storeTripInfoPrices($trip, $tripInfo);
 
         $this->addPoints($trip, $points);
 
@@ -220,33 +198,18 @@ class TripRepository
         if ($points) {
             $tripInfo = $this->getTripInfo($points);
 
-            // Calculate maximum allowed price if seat_price_cents is provided
-            if (isset($data['seat_price_cents']) && config('carpoolear.module_max_price_enabled')) {
-                $rearMaxTwoPassengers = $data['rear_max_two_passengers'] ?? $trip->rear_max_two_passengers;
-                if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                    $maximum_seat_price_cents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
-                        (int) $tripInfo['data']['maximum_trip_price_cents'],
-                        $rearMaxTwoPassengers
-                    );
-                    if ($data['seat_price_cents'] > $maximum_seat_price_cents) {
-                        $data['seat_price_cents'] = $maximum_seat_price_cents;
-                    }
-                }
-            }
+            $data = $this->capSeatPriceAtMaximum(
+                $data,
+                $tripInfo,
+                $data['rear_max_two_passengers'] ?? $trip->rear_max_two_passengers
+            );
         }
 
         $trip = DB::transaction(function () use ($trip, $data, $points, $tripInfo, $oldRouteNeedsPayment) {
             $trip->update($data);
 
-            // Save recommended trip price if available from trip info
-            if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
-                $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
-                $trip->save();
-            }
-
-            if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
-                $trip->maximum_trip_price_cents = (int) $tripInfo['data']['maximum_trip_price_cents'];
-                $trip->save();
+            if ($tripInfo) {
+                $this->storeTripInfoPrices($trip, $tripInfo);
             }
 
             if ($points) {
@@ -324,6 +287,59 @@ class TripRepository
         }
 
         return $trip;
+    }
+
+    /**
+     * Cap seat_price_cents at the maximum allowed seat price from trip info
+     * (only when the max price module is enabled).
+     */
+    private function capSeatPriceAtMaximum(array $data, array $tripInfo, $rearMaxTwoPassengers): array
+    {
+        if (! isset($data['seat_price_cents']) || ! config('carpoolear.module_max_price_enabled')) {
+            return $data;
+        }
+
+        if (! $tripInfo['status'] || ! isset($tripInfo['data']['maximum_trip_price_cents'])) {
+            return $data;
+        }
+
+        $maximumSeatPriceCents = TripPriceHelper::seatPriceCentsFromTripPriceCents(
+            (int) $tripInfo['data']['maximum_trip_price_cents'],
+            $rearMaxTwoPassengers
+        );
+
+        if ($data['seat_price_cents'] > $maximumSeatPriceCents) {
+            $data['seat_price_cents'] = $maximumSeatPriceCents;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Persist the recommended and maximum allowed trip prices from trip info.
+     * The maximum is what the queued LLM contribution check compares against.
+     */
+    private function storeTripInfoPrices(Trip $trip, array $tripInfo): void
+    {
+        if (! $tripInfo['status']) {
+            return;
+        }
+
+        $changed = false;
+
+        if (isset($tripInfo['data']['recommended_trip_price_cents'])) {
+            $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+            $changed = true;
+        }
+
+        if (isset($tripInfo['data']['maximum_trip_price_cents'])) {
+            $trip->maximum_trip_price_cents = (int) $tripInfo['data']['maximum_trip_price_cents'];
+            $changed = true;
+        }
+
+        if ($changed) {
+            $trip->save();
+        }
     }
 
     /**
