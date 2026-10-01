@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Mockery;
 use STS\Events\Trip\Create as CreateEvent;
+use STS\Jobs\CheckTripContributionWithLlm;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -4441,15 +4443,12 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($all->contains($allowsKids->id));
     }
 
-    public function test_create_sets_potential_excess_contribution_flag_from_description(): void
+    /**
+     * @return array<string, mixed>
+     */
+    private function createTripPayload(User $user, array $overrides = []): array
     {
-        Config::set('carpoolear.module_max_price_enabled', false);
-        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
-
-        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
-        $user = User::factory()->create();
-
-        $trip = $repo->create([
+        return array_merge([
             'user_id' => $user->id,
             'is_passenger' => 0,
             'from_town' => 'A',
@@ -4466,32 +4465,129 @@ class TripRepositoryTest extends TestCase
             'points' => [
                 ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 9001, 'ciudad' => 'Origen']],
             ],
-        ]);
-
-        $trip->refresh();
-        $this->assertTrue($trip->has_potential_excess_contribution);
-        $this->assertSame(2400000, (int) $trip->description_potential_seat_price_cents);
+        ], $overrides);
     }
 
-    public function test_update_recomputes_potential_excess_contribution_flag(): void
+    public function test_create_dispatches_llm_contribution_check_for_the_saved_trip(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $this->assertNotNull($trip->id);
+        Queue::assertPushed(
+            CheckTripContributionWithLlm::class,
+            fn (CheckTripContributionWithLlm $job) => $job->tripId === $trip->id
+        );
+    }
+
+    public function test_create_no_longer_runs_the_description_amount_heuristic(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $trip->refresh();
+        $this->assertFalse($trip->has_potential_excess_contribution);
+        $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertNull($trip->exceso_contribucion_status);
+    }
+
+    public function test_create_skips_llm_contribution_check_without_description(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $repo->create($this->createTripPayload(User::factory()->create(), ['description' => '  ']));
+
+        Queue::assertNotPushed(CheckTripContributionWithLlm::class);
+    }
+
+    public function test_create_succeeds_even_when_the_llm_contribution_check_fails(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('queue.default', 'sync');
+        Config::set('services.openrouter.api_key', 'test-openrouter-key');
+        Config::set('services.openrouter.base_url', 'https://openrouter.test/api/v1');
+        Http::fake(['openrouter.test/*' => Http::response('upstream down', 503)]);
+
+        $repo = $this->makeTripRepoPartialForCreate(['status' => false], false);
+        $trip = $repo->create($this->createTripPayload(User::factory()->create()));
+
+        $this->assertTrue($trip->exists);
+        $this->assertNotNull(Trip::find($trip->id));
+        Http::assertSentCount(1);
+    }
+
+    public function test_update_dispatches_llm_contribution_check_when_description_changes(): void
     {
         Config::set('carpoolear.module_trip_creation_payment_enabled', false);
         Config::set('carpoolear.module_max_price_enabled', false);
+        Queue::fake();
 
         $trip = Trip::factory()->create([
             'seat_price_cents' => 1500000,
-            'description' => 'La contribución es de $24000 por persona',
+            'description' => 'Contribución $15000',
             'has_potential_excess_contribution' => false,
             'description_potential_seat_price_cents' => null,
         ]);
 
         $updated = $this->repo()->update($trip, [
-            'description' => 'Contribución $15000',
+            'description' => 'La contribución es de $24000 por persona',
             'seat_price_cents' => 1500000,
         ]);
 
+        Queue::assertPushed(
+            CheckTripContributionWithLlm::class,
+            fn (CheckTripContributionWithLlm $job) => $job->tripId === $trip->id
+        );
         $updated->refresh();
         $this->assertFalse($updated->has_potential_excess_contribution);
         $this->assertNull($updated->description_potential_seat_price_cents);
+    }
+
+    public function test_update_dispatches_llm_contribution_check_when_seat_price_changes(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Queue::fake();
+
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'Contribución $15000',
+        ]);
+
+        $this->repo()->update($trip, ['seat_price_cents' => 1000000]);
+
+        Queue::assertPushed(CheckTripContributionWithLlm::class, 1);
+    }
+
+    public function test_update_skips_llm_contribution_check_when_description_and_price_are_unchanged(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Queue::fake();
+
+        $trip = Trip::factory()->create([
+            'seat_price_cents' => 1500000,
+            'description' => 'Contribución $15000',
+        ]);
+
+        $this->repo()->update($trip, [
+            'description' => 'Contribución $15000',
+            'seat_price_cents' => 1500000,
+            'total_seats' => 2,
+        ]);
+
+        Queue::assertNotPushed(CheckTripContributionWithLlm::class);
     }
 }
