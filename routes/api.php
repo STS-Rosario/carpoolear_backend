@@ -297,12 +297,14 @@ Route::middleware(['api'])->group(function () {
             Route::apiResource('campaigns.donations', CampaignDonationController::class);
             Route::apiResource('campaigns.rewards', CampaignRewardController::class);
         });
-        Route::get('donation-tiers', [AdminDonationTierController::class, 'index']);
-        Route::put('donation-tiers/{donationTier}', [AdminDonationTierController::class, 'update']);
-        Route::post('donation-tiers/{donationTier}/apply-inflation', [AdminDonationTierController::class, 'applyInflation']);
-        Route::get('donation-payments', [AdminDonationPaymentController::class, 'index']);
-        Route::get('donation-subscriptions', [AdminDonationSubscriptionController::class, 'index']);
-        Route::get('donations/summary', [AdminDonationSummaryController::class, 'show']);
+        Route::middleware('can:admin.donations.manage')->group(function () {
+            Route::get('donation-tiers', [AdminDonationTierController::class, 'index']);
+            Route::put('donation-tiers/{donationTier}', [AdminDonationTierController::class, 'update']);
+            Route::post('donation-tiers/{donationTier}/apply-inflation', [AdminDonationTierController::class, 'applyInflation']);
+            Route::get('donation-payments', [AdminDonationPaymentController::class, 'index']);
+            Route::get('donation-subscriptions', [AdminDonationSubscriptionController::class, 'index']);
+            Route::get('donations/summary', [AdminDonationSummaryController::class, 'show']);
+        });
         Route::middleware('can:admin.cars.catalog')->group(function () {
             Route::apiResource('cars', AdminCarController::class);
             Route::apiResource('car-colors', AdminCarColorController::class)->except(['create', 'edit']);
