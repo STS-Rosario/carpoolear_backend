@@ -109,6 +109,7 @@ class Trip extends Model
             'exceso_contribucion_status',
             'suspected_contribution',
             'phone_in_description',
+            'maximum_trip_price_cents',
         ];
     }
 
@@ -167,6 +168,7 @@ class Trip extends Model
             'exceso_contribucion_status' => 'string',
             'suspected_contribution' => 'float',
             'phone_in_description' => 'boolean',
+            'maximum_trip_price_cents' => 'integer',
             'state' => 'string',
         ];
     }
