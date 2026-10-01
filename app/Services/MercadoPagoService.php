@@ -400,6 +400,21 @@ class MercadoPagoService
         return $this->createPaymentPreference($preferenceData);
     }
 
+    public function clubCarpoolearWelcomeReturnUrl(string $result = 'success'): string
+    {
+        $baseUrl = rtrim((string) config('carpoolear.frontend_url'), '/');
+        if ($baseUrl === '') {
+            throw new \InvalidArgumentException('carpoolear.frontend_url must be set for Club Carpoolear welcome return URL');
+        }
+
+        $normalizedResult = match ($result) {
+            'success', 'failed', 'pending' => $result,
+            default => 'success',
+        };
+
+        return $baseUrl.'/app/club-carpoolear/welcome?result='.$normalizedResult;
+    }
+
     /**
      * Create a Mercado Pago preapproval plan for a donation tier.
      */
@@ -421,7 +436,7 @@ class MercadoPagoService
                 'transaction_amount' => $amount,
                 'currency_id' => 'ARS',
             ],
-            'back_url' => rtrim(config('carpoolear.frontend_url'), '/').'/trips?donation=success',
+            'back_url' => $this->clubCarpoolearWelcomeReturnUrl('success'),
         ], $requestOptions);
     }
 
