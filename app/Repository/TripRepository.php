@@ -4,12 +4,14 @@ namespace STS\Repository;
 
 use Carbon\Carbon;
 use DB;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\TripDescriptionContributionHelper;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
+use STS\Jobs\CheckTripContributionWithLlm;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -175,7 +177,9 @@ class TripRepository
 
         $this->generateTripFriendVisibility($trip);
 
-        $this->syncPotentialExcessContributionFlag($trip);
+        if (trim((string) $trip->description) !== '') {
+            $this->dispatchContributionCheck($trip);
+        }
 
         // TODO: check if trip.needs_payment (temp flag), and if total_trips_created > 2, we need to pay
         // for this trip (origin and destination in paid cities),
@@ -185,6 +189,9 @@ class TripRepository
 
     public function update($trip, array $data)
     {
+        $descriptionBefore = (string) $trip->description;
+        $seatPriceCentsBefore = (int) $trip->seat_price_cents;
+
         $points = null;
         if (isset($data['points'])) {
             $points = $data['points'];
@@ -222,7 +229,7 @@ class TripRepository
             }
         }
 
-        return DB::transaction(function () use ($trip, $data, $points, $tripInfo, $oldRouteNeedsPayment) {
+        $trip = DB::transaction(function () use ($trip, $data, $points, $tripInfo, $oldRouteNeedsPayment) {
             $trip->update($data);
 
             // Save recommended trip price if available from trip info
@@ -293,10 +300,33 @@ class TripRepository
                 }
             }
 
-            $this->syncPotentialExcessContributionFlag($trip);
-
             return $trip;
         });
+
+        if (
+            (string) $trip->description !== $descriptionBefore
+            || (int) $trip->seat_price_cents !== $seatPriceCentsBefore
+        ) {
+            $this->dispatchContributionCheck($trip);
+        }
+
+        return $trip;
+    }
+
+    /**
+     * Queue the LLM review of the description (after the trip is saved and
+     * outside any transaction). It must never block or fail the save.
+     */
+    private function dispatchContributionCheck(Trip $trip): void
+    {
+        try {
+            Bus::dispatch(new CheckTripContributionWithLlm((int) $trip->id));
+        } catch (\Throwable $e) {
+            \Log::warning('Trip contribution LLM check could not be queued', [
+                'trip_id' => $trip->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function syncPotentialExcessContributionFlag(Trip $trip): void
