@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Http;
 
+use Database\Seeders\DonationTierSeeder;
 use STS\Admin\AdminPermission;
 use STS\Http\Middleware\UserAdmin;
+use STS\Models\DonationTier;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Services\Logic\TripsManager;
@@ -76,6 +78,33 @@ class AdminRoleAuthorizationTest extends TestCase
         $this->postJson('api/admin/manual-identity-validations/1/purge')->assertForbidden();
         $this->patchJson('api/admin/ratings/1', ['comment' => 'nope'])->assertForbidden();
         $this->patchJson('api/admin/references/1', ['comment' => 'nope'])->assertForbidden();
+    }
+
+    public function test_helpdesk_is_forbidden_from_platform_donation_admin_routes(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $this->actingAsStaff($this->helpdesk());
+
+        $this->getJson('api/admin/donation-tiers')->assertForbidden();
+        $this->putJson('api/admin/donation-tiers/'.$tier->id, ['amount_cents' => 999900])->assertForbidden();
+        $this->postJson('api/admin/donation-tiers/'.$tier->id.'/apply-inflation', ['new_amount_cents' => 999900])->assertForbidden();
+        $this->getJson('api/admin/donation-payments')->assertForbidden();
+        $this->getJson('api/admin/donation-subscriptions')->assertForbidden();
+        $this->getJson('api/admin/donations/summary')->assertForbidden();
+
+        $this->assertSame($tier->amount_cents, $tier->fresh()->amount_cents);
+    }
+
+    public function test_superadmin_can_read_platform_donation_admin_routes(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        $this->actingAsStaff($this->superadmin());
+
+        $this->getJson('api/admin/donation-tiers')->assertOk();
+        $this->getJson('api/admin/donation-payments')->assertOk();
+        $this->getJson('api/admin/donation-subscriptions')->assertOk();
+        $this->getJson('api/admin/donations/summary')->assertOk();
     }
 
     public function test_superadmin_can_still_call_destructive_user_routes(): void

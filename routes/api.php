@@ -13,6 +13,10 @@ use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
+use STS\Http\Controllers\Api\Admin\DonationPaymentController as AdminDonationPaymentController;
+use STS\Http\Controllers\Api\Admin\DonationSubscriptionController as AdminDonationSubscriptionController;
+use STS\Http\Controllers\Api\Admin\DonationSummaryController as AdminDonationSummaryController;
+use STS\Http\Controllers\Api\Admin\DonationTierController as AdminDonationTierController;
 use STS\Http\Controllers\Api\Admin\IdentityVerificationReportController;
 use STS\Http\Controllers\Api\Admin\IdentityVerificationStatsController;
 use STS\Http\Controllers\Api\Admin\ImpersonationController as AdminImpersonationController;
@@ -36,6 +40,7 @@ use STS\Http\Controllers\Api\v1\ConversationController;
 use STS\Http\Controllers\Api\v1\DataController;
 use STS\Http\Controllers\Api\v1\DebugController;
 use STS\Http\Controllers\Api\v1\DeviceController;
+use STS\Http\Controllers\Api\v1\DonationTierController;
 use STS\Http\Controllers\Api\v1\FriendsController;
 use STS\Http\Controllers\Api\v1\HealthController;
 use STS\Http\Controllers\Api\v1\IdentityVerificationClientEventController;
@@ -47,6 +52,7 @@ use STS\Http\Controllers\Api\v1\MercadoPagoOAuthController;
 use STS\Http\Controllers\Api\v1\NotificationController;
 use STS\Http\Controllers\Api\v1\OsrmProxyController;
 use STS\Http\Controllers\Api\v1\PassengerController;
+use STS\Http\Controllers\Api\v1\PlatformDonationController;
 use STS\Http\Controllers\Api\v1\RatingController;
 use STS\Http\Controllers\Api\v1\ReferencesController;
 use STS\Http\Controllers\Api\v1\RoutesController;
@@ -73,6 +79,9 @@ Route::middleware(['api'])->group(function () {
     Route::get('car-brands', [CarCatalogController::class, 'brands']);
     Route::get('car-brands/{carBrand}/models', [CarCatalogController::class, 'models']);
     Route::get('car-colors', [CarCatalogController::class, 'colors']);
+    Route::get('donation-tiers', [DonationTierController::class, 'index']);
+    Route::post('donations/checkout/once', [PlatformDonationController::class, 'checkoutOnce']);
+    Route::post('donations/checkout/monthly', [PlatformDonationController::class, 'checkoutMonthly']);
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('impersonate/stop', [ImpersonationStopController::class, 'stop'])->middleware('logged');
@@ -109,6 +118,7 @@ Route::middleware(['api'])->group(function () {
 
         Route::post('/', [UserController::class, 'create']);
         Route::get('/me', [UserController::class, 'show']);
+        Route::get('/me/donations', [PlatformDonationController::class, 'myDonations'])->middleware('logged');
         Route::get('/{id}/badges', [UserController::class, 'badges']);
         Route::get('/bank-data', [UserController::class, 'bankData']);
         Route::get('/terms', [UserController::class, 'terms']);
@@ -286,6 +296,14 @@ Route::middleware(['api'])->group(function () {
             Route::apiResource('campaigns.milestones', CampaignMilestoneController::class);
             Route::apiResource('campaigns.donations', CampaignDonationController::class);
             Route::apiResource('campaigns.rewards', CampaignRewardController::class);
+        });
+        Route::middleware('can:admin.donations.manage')->group(function () {
+            Route::get('donation-tiers', [AdminDonationTierController::class, 'index']);
+            Route::put('donation-tiers/{donationTier}', [AdminDonationTierController::class, 'update']);
+            Route::post('donation-tiers/{donationTier}/apply-inflation', [AdminDonationTierController::class, 'applyInflation']);
+            Route::get('donation-payments', [AdminDonationPaymentController::class, 'index']);
+            Route::get('donation-subscriptions', [AdminDonationSubscriptionController::class, 'index']);
+            Route::get('donations/summary', [AdminDonationSummaryController::class, 'show']);
         });
         Route::middleware('can:admin.cars.catalog')->group(function () {
             Route::apiResource('cars', AdminCarController::class);

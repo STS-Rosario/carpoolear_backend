@@ -37,4 +37,5 @@ enum AdminPermission: string
     case PulseView = 'admin.pulse.view';
     case BadgesManage = 'admin.badges.manage';
     case CampaignsManage = 'admin.campaigns.manage';
+    case DonationsManage = 'admin.donations.manage';
 }

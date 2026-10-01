@@ -416,11 +416,11 @@ class TripsManager extends BaseManager
                     $needsTripsCountRefresh = false;
                     $creditedAtValue = null;
                     $shouldSetCreditedAt = false;
-                    
+
                     if (isset($data['trip_date'])) {
                         $oldTripDate = $trip->trip_date;
-                        $newTripDate = is_string($data['trip_date']) 
-                            ? \Carbon\Carbon::parse($data['trip_date']) 
+                        $newTripDate = is_string($data['trip_date'])
+                            ? \Carbon\Carbon::parse($data['trip_date'])
                             : $data['trip_date'];
                         $now = \Carbon\Carbon::now();
 
@@ -534,12 +534,12 @@ class TripsManager extends BaseManager
         if ($trip) {
             if ($user->id == $trip->user->id || $user->is_admin) {
                 $driver = $trip->user;
-                
+
                 // Get accepted passengers before deleting
                 $acceptedPassengers = $trip->passenger()
                     ->where('request_state', Passenger::STATE_ACCEPTED)
                     ->get();
-                
+
                 event(new DeleteEvent($trip));
 
                 $deleted = $this->tripRepo->delete($trip);
@@ -548,7 +548,7 @@ class TripsManager extends BaseManager
                     if ($driver) {
                         $this->userManager->refreshTripsCount($driver->fresh());
                     }
-                    
+
                     // Refresh each accepted passenger's trips_count
                     foreach ($acceptedPassengers as $passenger) {
                         $passengerUser = $passenger->user;
