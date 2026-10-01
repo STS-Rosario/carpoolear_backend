@@ -70,6 +70,7 @@ class TripExcessContributionListService
             'description' => $trip->description,
             'trip_date' => $trip->trip_date?->toDateTimeString(),
             'user_email' => $trip->user?->email,
+            'excess_contribution_ticket_id' => SupportTicket::excessContributionTicketIdForTrip((int) $trip->id),
         ]);
     }
 
