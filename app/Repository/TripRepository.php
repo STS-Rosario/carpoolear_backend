@@ -540,7 +540,7 @@ class TripRepository
                     });
 
                     $trips->orderBy(DB::Raw("IF(ABS(DATEDIFF(DATE(trip_date), '".date_to_string($date_search)."' )) = 0, 0, 1)"));
-                    $trips->orderBy('trip_date');
+                    $this->applyClubCarpoolearDriverPriorityOrdering($trips);
                 }
             } elseif (isset($data['weekly_schedule'])) {
                 // Search by weekly schedule flag using bitwise AND operation
@@ -629,6 +629,10 @@ class TripRepository
             $this->excludeCarpooleadoTrips($trips);
         }
 
+        if (! (isset($data['date']) && ! isset($data['strict']) && empty($data['from_date']) && empty($data['to_date']))) {
+            $this->applyClubCarpoolearDriverPriorityOrdering($trips);
+        }
+
         $trips->with([
             'user',
             'user.accounts',
@@ -649,6 +653,15 @@ class TripRepository
         // $pagination = $trips->take(7)->get();
         // \Log::info(DB::getQueryLog());
         return $pagination;
+    }
+
+    private function applyClubCarpoolearDriverPriorityOrdering($trips): void
+    {
+        $trips->leftJoin('users as club_trip_drivers', 'trips.user_id', '=', 'club_trip_drivers.id');
+        $trips->select('trips.*');
+        $trips->orderByRaw("DATE_FORMAT(trips.trip_date, '%Y-%m-%d %H:00:00')");
+        $trips->orderByRaw('CASE WHEN COALESCE(club_trip_drivers.monthly_donate, 0) = 1 THEN 0 ELSE 1 END');
+        $trips->orderBy('trips.trip_date');
     }
 
     private function whereLocation($trips, $lat, $lng, $way, $distance = 1000.0)

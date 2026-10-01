@@ -41,6 +41,7 @@ class BadgeRequest extends FormRequest
                 'donated_to_campaign',
                 'total_donated',
                 'monthly_donor',
+                'club_carpoolear',
                 'carpoolear_member',
             ])],
             'rules.days' => ['required_if:rules.type,registration_duration', 'integer', 'min:1'],

@@ -59,6 +59,7 @@ class BadgeEvaluatorService
             'donated_to_campaign' => $this->checkCampaignDonation($user, $rules),
             'total_donated' => $this->checkTotalDonations($user, $rules),
             'monthly_donor' => $this->checkMonthlyDonor($user),
+            'club_carpoolear' => $this->checkClubCarpoolear($user),
             'carpoolear_member' => $this->checkCarpoolearMember($user),
             default => false,
         };
@@ -111,6 +112,11 @@ class BadgeEvaluatorService
     protected function checkMonthlyDonor(User $user): bool
     {
         return $user->donations()->where('has_donated', true)->exists();
+    }
+
+    protected function checkClubCarpoolear(User $user): bool
+    {
+        return app(ClubCarpoolearMembershipService::class)->isActiveMember($user);
     }
 
     /**

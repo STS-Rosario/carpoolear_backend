@@ -80,6 +80,7 @@ Route::middleware(['api'])->group(function () {
     Route::get('car-brands/{carBrand}/models', [CarCatalogController::class, 'models']);
     Route::get('car-colors', [CarCatalogController::class, 'colors']);
     Route::get('donation-tiers', [DonationTierController::class, 'index']);
+    Route::get('club-carpoolear/members', [\STS\Http\Controllers\Api\v1\ClubCarpoolearMembersController::class, 'index']);
     Route::post('donations/checkout/once', [PlatformDonationController::class, 'checkoutOnce']);
     Route::post('donations/checkout/monthly', [PlatformDonationController::class, 'checkoutMonthly']);
 

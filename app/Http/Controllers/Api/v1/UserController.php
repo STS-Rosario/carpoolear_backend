@@ -17,6 +17,7 @@ use STS\Models\Rating;
 use STS\Models\User;
 use STS\Services\AdminActionLogger;
 use STS\Services\AnonymizationService;
+use STS\Services\ClubCarpoolearMembershipService;
 use STS\Services\IdentityVerificationOutcome;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
@@ -278,6 +279,9 @@ class UserController extends Controller
         $badges = $user->badges()
             ->where('visible', true)
             ->get();
+
+        $membership = app(ClubCarpoolearMembershipService::class);
+        $badges = $membership->filterVisibleBadges($user, $badges);
 
         return UserBadgeResource::collection($badges);
     }
