@@ -154,5 +154,6 @@ class PlatformDonationWebhookTest extends TestCase
         $user->refresh();
         $this->assertSame('authorized', $subscription->status);
         $this->assertTrue($user->monthly_donate);
+        $this->assertNotNull($user->club_carpoolear_joined_at);
     }
 }
