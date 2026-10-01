@@ -122,6 +122,12 @@ class TripRepository
             $trip->save();
         }
 
+        // Keep the maximum allowed trip price (the seat price cap) for the contribution check
+        if ($tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+            $trip->maximum_trip_price_cents = (int) $tripInfo['data']['maximum_trip_price_cents'];
+            $trip->save();
+        }
+
         $this->addPoints($trip, $points);
 
         $this->generateTripPath($trip);
@@ -189,6 +195,8 @@ class TripRepository
     {
         $descriptionBefore = (string) $trip->description;
         $seatPriceCentsBefore = (int) $trip->seat_price_cents;
+        $maximumTripPriceCentsBefore = $trip->maximum_trip_price_cents;
+        $rearMaxTwoPassengersBefore = (bool) $trip->rear_max_two_passengers;
 
         $points = null;
         if (isset($data['points'])) {
@@ -233,6 +241,11 @@ class TripRepository
             // Save recommended trip price if available from trip info
             if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['recommended_trip_price_cents'])) {
                 $trip->recommended_trip_price_cents = $tripInfo['data']['recommended_trip_price_cents'];
+                $trip->save();
+            }
+
+            if ($tripInfo && $tripInfo['status'] && isset($tripInfo['data']['maximum_trip_price_cents'])) {
+                $trip->maximum_trip_price_cents = (int) $tripInfo['data']['maximum_trip_price_cents'];
                 $trip->save();
             }
 
@@ -304,6 +317,8 @@ class TripRepository
         if (
             (string) $trip->description !== $descriptionBefore
             || (int) $trip->seat_price_cents !== $seatPriceCentsBefore
+            || $trip->maximum_trip_price_cents !== $maximumTripPriceCentsBefore
+            || (bool) $trip->rear_max_two_passengers !== $rearMaxTwoPassengersBefore
         ) {
             $this->dispatchContributionCheck($trip);
         }
