@@ -78,7 +78,7 @@
                 <p>Por eso necesitamos tu APORTE para poder avanzar con el desarrollo de la plataforma más rápido manteniendo nuestra filosofía de trabajo. Si Carpoolear es útil para vos, te gusta lo que hacemos, querés cuidar el medio ambiente, tomate 1 MINUTO y COLABORÁ :D
                 Podés aportar $1000, $2000 y más allá también. O sea, que nos podés invitar un café con leche, una pinta o por qué no, salir a comer.</p>
 
-                <p>Carpoolear es un proyecto de STS Rosario, una ONG sin fines de lucro, constituida como asociación civil desde el 2014. A través de proyectos concretos, divulga las problemáticas socioambientales actuales y genera herramientas, para provocar un cambio cultural hacia una sociedad sustentable, resiliente y equitativa. Del total del aporte realizado a nosotros, un 10% será destinada al sostenimiento de nuestra organización, para que pueda haber más proyectos como Carpoolear. Podés enterarte más acerca de <a href="www.stsrosario.org.ar" target="_blank">STS en www.stsrosario.org.ar</a></p>
+                <p>Carpoolear es un proyecto de STS Rosario, una ONG sin fines de lucro, constituida como asociación civil desde el 2014. A través de proyectos concretos, divulga las problemáticas socioambientales actuales y genera herramientas, para provocar un cambio cultural hacia una sociedad sustentable, resiliente y equitativa. Del total del aporte realizado a nosotros, un 10% será destinada al sostenimiento de nuestra organización, para que pueda haber más proyectos como Carpoolear. Podés enterarte más acerca de <a href="https://www.stsrosario.org.ar" target="_blank">STS en www.stsrosario.org.ar</a></p>
 
                 <div class="donation hidden-sm hidden-md hidden-lg">
                     <div class="radio">
