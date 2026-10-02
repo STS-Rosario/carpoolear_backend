@@ -4,6 +4,7 @@ namespace STS\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use STS\Jobs\UpdateDonationSubscriptionAmountsJob;
 use STS\Models\DonationAmountAdjustment;
 use STS\Models\DonationPayment;
@@ -165,8 +166,15 @@ class PlatformDonationService
      */
     public function handleSubscriptionPreapproval(array $preapproval): void
     {
-        $subscription = $this->findSubscriptionFromPreapproval($preapproval);
+        $subscription = $this->findSubscriptionFromPreapproval($preapproval)
+            ?? $this->createSubscriptionFromPreapproval($preapproval);
+
         if (! $subscription) {
+            Log::warning('MercadoPago preapproval webhook could not be matched or created', [
+                'preapproval_id' => $preapproval['id'] ?? null,
+                'has_external_reference' => ! empty($preapproval['external_reference']),
+            ]);
+
             return;
         }
 
@@ -181,19 +189,27 @@ class PlatformDonationService
             $subscription->next_payment_date = Carbon::parse($preapproval['next_payment_date'])->toDateString();
         }
 
+        if (! empty($preapproval['preapproval_plan_id']) && empty($subscription->mp_preapproval_plan_id)) {
+            $subscription->mp_preapproval_plan_id = $preapproval['preapproval_plan_id'];
+        }
+
         $subscription->save();
 
-        if ($subscription->user_id) {
-            $user = User::find($subscription->user_id);
-            if ($user) {
-                $user->monthly_donate = $subscription->status === 'authorized';
-                $user->save();
+        $user = $subscription->user_id ? User::find($subscription->user_id) : null;
+        if (! $user) {
+            Log::warning('MercadoPago preapproval webhook could not resolve user', [
+                'subscription_id' => $subscription->id,
+                'preapproval_id' => $preapproval['id'] ?? null,
+                'user_id' => $subscription->user_id,
+            ]);
+        } else {
+            $user->monthly_donate = $subscription->status === 'authorized';
+            $user->save();
 
-                if ($subscription->status === 'authorized') {
-                    $this->clubCarpoolearMembershipService->applyAuthorizedMembership($user);
-                } elseif (in_array($subscription->status, ['cancelled', 'paused'], true)) {
-                    $this->clubCarpoolearMembershipService->applyCancelledMembership($user);
-                }
+            if ($subscription->status === 'authorized') {
+                $this->clubCarpoolearMembershipService->applyAuthorizedMembership($user);
+            } elseif (in_array($subscription->status, ['cancelled', 'paused'], true)) {
+                $this->clubCarpoolearMembershipService->applyCancelledMembership($user);
             }
         }
 
@@ -428,6 +444,80 @@ class PlatformDonationService
         $decodedReference = $this->decodeExternalReference($externalReference);
         if ($decodedReference && preg_match('/Donación Plataforma ID: (\d+)/', $decodedReference, $matches)) {
             return DonationSubscription::find((int) $matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $preapproval
+     */
+    private function createSubscriptionFromPreapproval(array $preapproval): ?DonationSubscription
+    {
+        $preapprovalId = $preapproval['id'] ?? null;
+        if (! $preapprovalId) {
+            return null;
+        }
+
+        $decodedReference = $this->decodeExternalReference((string) ($preapproval['external_reference'] ?? ''));
+        $user = $this->resolveUserFromDecodedPlatformReference($decodedReference);
+        $tier = $this->resolveTierFromPreapproval($preapproval, $decodedReference);
+        $amountCents = $this->amountCentsFromMp(
+            $preapproval['auto_recurring']['transaction_amount'] ?? 0
+        );
+
+        return DonationSubscription::create([
+            'user_id' => $user?->id,
+            'donation_tier_id' => $tier?->id,
+            'mp_preapproval_id' => (string) $preapprovalId,
+            'mp_preapproval_plan_id' => $preapproval['preapproval_plan_id'] ?? $tier?->mp_preapproval_plan_id,
+            'status' => 'pending',
+            'transaction_amount_cents' => $amountCents > 0 ? $amountCents : (int) ($tier?->amount_cents ?? 0),
+            'external_reference' => $preapproval['external_reference'] ?? null,
+            'source' => 'monthly',
+        ]);
+    }
+
+    private function resolveUserFromDecodedPlatformReference(?string $decodedReference): ?User
+    {
+        if ($decodedReference === null) {
+            return null;
+        }
+
+        if (! preg_match('/User ID: ([^;]+)/', $decodedReference, $matches)) {
+            return null;
+        }
+
+        if ($matches[1] === 'Anonymous') {
+            return null;
+        }
+
+        return User::find((int) $matches[1]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $preapproval
+     */
+    private function resolveTierFromPreapproval(array $preapproval, ?string $decodedReference): ?DonationTier
+    {
+        $planId = $preapproval['preapproval_plan_id'] ?? null;
+        if ($planId) {
+            $byPlan = DonationTier::query()->where('mp_preapproval_plan_id', $planId)->first();
+            if ($byPlan) {
+                return $byPlan;
+            }
+        }
+
+        if ($decodedReference && preg_match('/Tier: (\w+)/', $decodedReference, $matches)) {
+            $bySlug = DonationTier::query()->where('slug', $matches[1])->first();
+            if ($bySlug) {
+                return $bySlug;
+            }
+        }
+
+        $amountCents = $this->amountCentsFromMp($preapproval['auto_recurring']['transaction_amount'] ?? 0);
+        if ($amountCents > 0) {
+            return DonationTier::query()->where('amount_cents', $amountCents)->first();
         }
 
         return null;
