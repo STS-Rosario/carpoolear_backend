@@ -416,6 +416,29 @@ class MercadoPagoService
     }
 
     /**
+     * Payload for Mercado Pago preapproval plan creation.
+     *
+     * @return array<string, mixed>
+     */
+    public function buildPreapprovalPlanRequest(DonationTier $tier): array
+    {
+        $amount = floatval($tier->amount_cents) / 100;
+        $baseUrl = rtrim((string) config('app.url'), '/');
+
+        return [
+            'reason' => 'Donación mensual Carpoolear - '.$tier->slug,
+            'auto_recurring' => [
+                'frequency' => 1,
+                'frequency_type' => 'months',
+                'transaction_amount' => $amount,
+                'currency_id' => 'ARS',
+            ],
+            'back_url' => $this->clubCarpoolearWelcomeReturnUrl('success'),
+            'notification_url' => $baseUrl.'/webhooks/mercadopago?source_news=webhooks',
+        ];
+    }
+
+    /**
      * Create a Mercado Pago preapproval plan for a donation tier.
      */
     public function createPreapprovalPlan(DonationTier $tier): \MercadoPago\Resources\PreApprovalPlan
@@ -426,18 +449,7 @@ class MercadoPagoService
         $requestOptions = new RequestOptions;
         $requestOptions->setAccessToken($this->accessToken);
 
-        $amount = floatval($tier->amount_cents) / 100;
-
-        return $client->create([
-            'reason' => 'Donación mensual Carpoolear - '.$tier->slug,
-            'auto_recurring' => [
-                'frequency' => 1,
-                'frequency_type' => 'months',
-                'transaction_amount' => $amount,
-                'currency_id' => 'ARS',
-            ],
-            'back_url' => $this->clubCarpoolearWelcomeReturnUrl('success'),
-        ], $requestOptions);
+        return $client->create($this->buildPreapprovalPlanRequest($tier), $requestOptions);
     }
 
     /**
