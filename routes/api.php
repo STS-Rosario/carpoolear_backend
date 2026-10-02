@@ -81,6 +81,7 @@ Route::middleware(['api'])->group(function () {
     Route::get('car-colors', [CarCatalogController::class, 'colors']);
     Route::get('donation-tiers', [DonationTierController::class, 'index']);
     Route::get('club-carpoolear/members', [\STS\Http\Controllers\Api\v1\ClubCarpoolearMembersController::class, 'index']);
+    Route::post('club-carpoolear/welcome-shown', [\STS\Http\Controllers\Api\v1\ClubCarpoolearMembersController::class, 'markWelcomeShown'])->middleware('logged');
     Route::post('donations/checkout/once', [PlatformDonationController::class, 'checkoutOnce']);
     Route::post('donations/checkout/monthly', [PlatformDonationController::class, 'checkoutMonthly']);
 
