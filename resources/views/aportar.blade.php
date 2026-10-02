@@ -137,6 +137,7 @@
         5000: "https://mpago.la/1SB6on8",
         10000: "https://mpago.la/2USgEBv"
     };
+    // TODO: hardcoded plan URLs bypass POST /api/donations/checkout/monthly and Club tables.
     var linksMensual = {
         50: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c938084749ef7f70174ad5d6f151110",
         2000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380848a2fd5c9018a33702cc50181",
