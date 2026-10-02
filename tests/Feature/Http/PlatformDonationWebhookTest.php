@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Database\Seeders\DonationTierSeeder;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -238,5 +239,89 @@ class PlatformDonationWebhookTest extends TestCase
         $this->assertSame('authorized', $subscription->status);
         $this->assertTrue($user->monthly_donate);
         $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
+    public function test_subscription_preapproval_webhook_creates_row_when_none_exists(): void
+    {
+        $user = User::factory()->create([
+            'monthly_donate' => false,
+            'club_carpoolear_joined_at' => null,
+        ]);
+        $this->assertSame(0, DonationSubscription::query()->count());
+
+        $preapprovalId = 'preapproval-orphan-1';
+        $externalReference = $this->hashedPlatformReference(999999, 'monthly', $user->id, 'cafe');
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $externalReference) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'external_reference' => $externalReference,
+                    'preapproval_plan_id' => 'plan-cafe',
+                    'auto_recurring' => ['transaction_amount' => 5000],
+                    'next_payment_date' => '2026-11-01T00:00:00.000-00:00',
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-orphan-preapproval', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.urlencode($preapprovalId), [
+            'type' => 'subscription_preapproval',
+            'action' => 'created',
+            'data_id' => $preapprovalId,
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $subscription = DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->first();
+        $this->assertNotNull($subscription);
+        $this->assertSame($user->id, $subscription->user_id);
+        $this->assertSame('authorized', $subscription->status);
+        $this->assertSame(500000, $subscription->transaction_amount_cents);
+        $this->assertSame($externalReference, $subscription->external_reference);
+
+        $user->refresh();
+        $this->assertTrue((bool) $user->monthly_donate);
+        $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
+    public function test_subscription_preapproval_webhook_logs_warning_when_user_cannot_be_resolved(): void
+    {
+        Log::spy();
+
+        $preapprovalId = 'preapproval-no-user';
+        $externalReference = $this->hashedPlatformReference(888888, 'monthly', 42424242, 'cafe');
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $externalReference) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'external_reference' => $externalReference,
+                    'auto_recurring' => ['transaction_amount' => 5000],
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-preapproval-no-user', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.urlencode($preapprovalId), [
+            'type' => 'subscription_preapproval',
+            'action' => 'updated',
+            'data_id' => $preapprovalId,
+        ], $headers)
+            ->assertOk();
+
+        $this->assertTrue(
+            DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()
+        );
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
+            return str_contains($message, 'could not resolve user')
+                && ($context['preapproval_id'] ?? null) === 'preapproval-no-user';
+        });
     }
 }
