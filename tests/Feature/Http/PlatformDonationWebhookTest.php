@@ -241,6 +241,60 @@ class PlatformDonationWebhookTest extends TestCase
         $this->assertNotNull($user->club_carpoolear_joined_at);
     }
 
+    public function test_subscription_preapproval_webhook_links_pending_checkout_when_mp_has_no_external_reference(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'club-member@example.test',
+            'monthly_donate' => false,
+            'club_carpoolear_joined_at' => null,
+        ]);
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $planId = 'plan-cafe-shared';
+        $tier->update(['mp_preapproval_plan_id' => $planId]);
+
+        $subscription = DonationSubscription::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'mp_preapproval_plan_id' => $planId,
+            'status' => 'pending',
+            'transaction_amount_cents' => 500000,
+            'external_reference' => $this->hashedPlatformReference(42, 'monthly', $user->id, 'cafe'),
+        ]);
+
+        $preapprovalId = 'preapproval-from-mp-hosted-checkout';
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $planId, $user) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'preapproval_plan_id' => $planId,
+                    'payer_email' => $user->email,
+                    'auto_recurring' => ['transaction_amount' => 5000],
+                    'next_payment_date' => '2026-11-01T00:00:00.000-00:00',
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-pending-no-mp-ref', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.urlencode($preapprovalId), [
+            'type' => 'subscription_preapproval',
+            'action' => 'created',
+            'data_id' => $preapprovalId,
+        ], $headers)
+            ->assertOk();
+
+        $this->assertSame(1, DonationSubscription::query()->count());
+        $subscription->refresh();
+        $user->refresh();
+        $this->assertSame($preapprovalId, $subscription->mp_preapproval_id);
+        $this->assertSame('authorized', $subscription->status);
+        $this->assertTrue($user->monthly_donate);
+        $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
     public function test_subscription_preapproval_webhook_creates_row_when_none_exists(): void
     {
         $user = User::factory()->create([

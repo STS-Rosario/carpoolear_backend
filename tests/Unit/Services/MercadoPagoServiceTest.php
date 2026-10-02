@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Services;
 
+use Database\Seeders\DonationTierSeeder;
 use InvalidArgumentException;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Net\MPResponse;
@@ -9,8 +10,10 @@ use MercadoPago\Resources\Order;
 use MercadoPago\Resources\Preference;
 use ReflectionProperty;
 use STS\Models\Campaign;
+use STS\Models\DonationSubscription;
 use STS\Models\DonationTier;
 use STS\Models\Trip;
+use STS\Models\User;
 use STS\Services\MercadoPagoService;
 use Tests\TestCase;
 
@@ -294,5 +297,35 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('ARS', $payload['auto_recurring']['currency_id']);
         $this->assertSame(1, $payload['auto_recurring']['frequency']);
         $this->assertSame('months', $payload['auto_recurring']['frequency_type']);
+    }
+
+    public function test_create_preapproval_checkout_url_uses_plan_id_only_like_mercado_pago_init_point(): void
+    {
+        config(['services.mercadopago.access_token' => 'test-token']);
+        $this->seed(DonationTierSeeder::class);
+
+        $user = User::factory()->create();
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $planId = 'b1e39e90a1b84d759ff2a5a3cb636ac6';
+        $tier->update(['mp_preapproval_plan_id' => $planId]);
+
+        $subscription = DonationSubscription::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'mp_preapproval_plan_id' => $planId,
+            'status' => 'pending',
+            'transaction_amount_cents' => 500000,
+            'external_reference' => 'deadbeef:'.base64_encode('Donación Plataforma ID: 99'),
+        ]);
+
+        $service = new MercadoPagoService;
+        $url = $service->createPreapprovalCheckoutUrl($subscription);
+
+        $this->assertSame(
+            'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id='.$planId,
+            $url
+        );
+        $this->assertStringNotContainsString('external_reference', $url);
+        $this->assertNotNull($subscription->fresh()->external_reference);
     }
 }
