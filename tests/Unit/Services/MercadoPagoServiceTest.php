@@ -9,6 +9,7 @@ use MercadoPago\Resources\Order;
 use MercadoPago\Resources\Preference;
 use ReflectionProperty;
 use STS\Models\Campaign;
+use STS\Models\DonationTier;
 use STS\Models\Trip;
 use STS\Services\MercadoPagoService;
 use Tests\TestCase;
@@ -263,5 +264,35 @@ class MercadoPagoServiceTest extends TestCase
         $service->createPaymentPreferenceForManualValidation(3, 1600, 'https://custom/success');
 
         $this->assertSame('https://custom/success', $service->capturedPayload['back_urls']['success']);
+    }
+
+    public function test_create_preapproval_plan_sends_notification_url_and_welcome_back_url(): void
+    {
+        config([
+            'app.url' => 'https://carpoolear.com.ar',
+            'carpoolear.frontend_url' => 'https://carpoolear.com.ar',
+            'services.mercadopago.access_token' => 'test-token',
+        ]);
+
+        $tier = new DonationTier([
+            'slug' => 'cafe',
+            'amount_cents' => 500000,
+        ]);
+
+        $service = new MercadoPagoService;
+        $payload = $service->buildPreapprovalPlanRequest($tier);
+
+        $this->assertSame(
+            'https://carpoolear.com.ar/webhooks/mercadopago?source_news=webhooks',
+            $payload['notification_url']
+        );
+        $this->assertSame(
+            'https://carpoolear.com.ar/app/club-carpoolear/welcome?result=success',
+            $payload['back_url']
+        );
+        $this->assertSame(5000.0, $payload['auto_recurring']['transaction_amount']);
+        $this->assertSame('ARS', $payload['auto_recurring']['currency_id']);
+        $this->assertSame(1, $payload['auto_recurring']['frequency']);
+        $this->assertSame('months', $payload['auto_recurring']['frequency_type']);
     }
 }
