@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -160,6 +161,32 @@ class MercadoPagoWebhookTest extends TestCase
         ])
             ->assertOk()
             ->assertExactJson(['status' => 'success']);
+    }
+
+    public function test_incoming_mercadopago_webhook_is_logged_at_info_without_secrets(): void
+    {
+        Log::spy();
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data.id' => 'pay-log-1',
+            'type' => 'payment',
+        ]), [
+            'action' => 'merchant_order',
+            'type' => 'payment',
+        ])
+            ->assertOk();
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+            $hasSecret = collect($context)->contains(function ($value) {
+                return is_string($value) && str_contains(strtolower($value), 'secret');
+            });
+
+            return str_contains($message, 'MercadoPago webhook received')
+                && ($context['type'] ?? null) === 'payment'
+                && ($context['action'] ?? null) === 'merchant_order'
+                && ($context['data.id'] ?? null) === 'pay-log-1'
+                && ! $hasSecret;
+        });
     }
 
     public function test_payment_created_without_verification_headers_is_rejected(): void
