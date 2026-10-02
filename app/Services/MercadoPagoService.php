@@ -2,6 +2,7 @@
 
 namespace STS\Services;
 
+use Illuminate\Support\Facades\Http;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Order\OrderClient;
 use MercadoPago\Client\Payment\PaymentClient;
@@ -505,6 +506,41 @@ class MercadoPagoService
     /**
      * @return array<string, mixed>|null
      */
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getAuthorizedPayment(string $id): ?array
+    {
+        $this->ensureConfigured();
+
+        try {
+            $response = Http::withToken($this->accessToken)
+                ->acceptJson()
+                ->get('https://api.mercadopago.com/authorized_payments/'.$id);
+
+            if (! $response->successful()) {
+                \Log::error('MercadoPago getAuthorizedPayment error', [
+                    'id' => $id,
+                    'status' => $response->status(),
+                    'response' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            $payload = $response->json();
+
+            return is_array($payload) ? $payload : null;
+        } catch (\Throwable $e) {
+            \Log::error('MercadoPago getAuthorizedPayment error', [
+                'id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function getPreapproval(string $id): ?array
     {
         $this->ensureConfigured();

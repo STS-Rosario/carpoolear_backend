@@ -87,6 +87,15 @@ Incoming webhooks are logged at info with `type`, `action`, and `data.id` (no se
 
 | Webhook | Action |
 |---------|--------|
-| `payment.created` / `payment.updated` | One-time platform donations (`Donación Plataforma`) |
+| `payment.created` / `payment.updated` | One-time platform donations (`Donación Plataforma`); subscription charges with **empty** `external_reference` but matching `preapproval_id` |
 | `subscription_preapproval` (`action` is `created` / `updated`) | Subscription authorized / paused / cancelled; creates a Club row if none exists |
-| `subscription_authorized_payment` | Each monthly charge |
+| `subscription_authorized_payment` | Each monthly charge — fetch `GET /authorized_payments/{data.id}`, upsert charge using nested `payment.id` |
+
+### Fetching charge data
+
+| Topic | Mercado Pago API |
+|-------|------------------|
+| `subscription_authorized_payment` | `GET https://api.mercadopago.com/authorized_payments/{data.id}` — use nested `payment.id` as `donation_subscription_charges.mp_payment_id` (not the invoice id) |
+| `payment` for a subscription installment | `GET /v1/payments/{id}` — `external_reference` may be empty; match Club via `preapproval_id` / `metadata.preapproval_id` |
+
+Returning **400** on empty `external_reference` caused Mercado Pago to retry `payment.created` in production. Unreferenced payments (no Club preapproval) are acknowledged with **200** and an info log.

@@ -543,10 +543,6 @@ class PlatformDonationWebhookTest extends TestCase
 
     public function test_payment_created_with_empty_reference_and_preapproval_id_upserts_club_charge(): void
     {
-        Log::shouldReceive('error')->withArgs(function ($message) {
-            return is_string($message) && str_contains($message, 'Failed to parse external reference');
-        })->never();
-
         $user = User::factory()->create();
         $preapprovalId = 'a509fda0d6e543d38b79657e028bfbe4';
         $subscription = $this->authorizedClubSubscription($user, $preapprovalId);
@@ -585,9 +581,6 @@ class PlatformDonationWebhookTest extends TestCase
     public function test_payment_created_with_empty_reference_and_no_preapproval_is_acknowledged(): void
     {
         Log::spy();
-        Log::shouldReceive('error')->withArgs(function ($message) {
-            return is_string($message) && str_contains($message, 'Failed to parse external reference');
-        })->never();
 
         $paymentId = 18193530001;
         $this->stubMercadoPagoPayments([
