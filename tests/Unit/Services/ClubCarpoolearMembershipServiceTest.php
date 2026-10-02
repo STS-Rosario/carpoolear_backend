@@ -128,4 +128,25 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
         $this->assertNull($user->club_carpoolear_joined_at);
         $this->assertFalse($user->badges->contains($badge->id));
     }
+
+    public function test_apply_cancelled_resets_welcome_shown_so_rejoin_can_see_welcome(): void
+    {
+        Badge::query()->firstOrCreate(
+            ['slug' => ClubCarpoolearMembershipService::BADGE_SLUG],
+            [
+                'title' => 'Club Carpoolear',
+                'rules' => ['type' => 'club_carpoolear'],
+                'visible' => true,
+            ]
+        );
+
+        $user = User::factory()->create([
+            'club_carpoolear_joined_at' => now(),
+        ]);
+        $user->forceFill(['club_carpoolear_welcome_shown' => true])->save();
+
+        $this->service->applyCancelledMembership($user);
+
+        $this->assertFalse($user->fresh()->club_carpoolear_welcome_shown);
+    }
 }
