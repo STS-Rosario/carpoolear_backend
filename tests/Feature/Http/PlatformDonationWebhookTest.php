@@ -3,6 +3,9 @@
 namespace Tests\Feature\Http;
 
 use Database\Seeders\DonationTierSeeder;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -59,6 +62,36 @@ class PlatformDonationWebhookTest extends TestCase
             'x-request-id' => $requestId,
             'x-signature' => "ts={$ts},v1={$v1}",
         ];
+    }
+
+    /**
+     * @param  array<string, string>  $query
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     */
+    private function postMercadoPagoWebhookPreservingDottedDataIdQuery(
+        string $dataId,
+        array $query,
+        array $payload,
+        array $headers
+    ): \Symfony\Component\HttpFoundation\Response {
+        $request = Request::create(
+            '/webhooks/mercadopago',
+            'POST',
+            $payload,
+            [],
+            [],
+            [
+                'HTTP_ACCEPT' => 'application/json',
+                'HTTP_X_REQUEST_ID' => $headers['x-request-id'],
+                'HTTP_X_SIGNATURE' => $headers['x-signature'],
+            ]
+        );
+        $request->headers->set('x-request-id', $headers['x-request-id']);
+        $request->headers->set('x-signature', $headers['x-signature']);
+        $request->query->replace(array_merge($query, ['data.id' => $dataId]));
+
+        return $this->app->make(Kernel::class)->handle($request);
     }
 
     public function test_platform_payment_webhook_marks_donation_as_approved(): void
@@ -155,5 +188,140 @@ class PlatformDonationWebhookTest extends TestCase
         $this->assertSame('authorized', $subscription->status);
         $this->assertTrue($user->monthly_donate);
         $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
+    public function test_subscription_preapproval_webhook_accepts_production_data_id_and_action_created(): void
+    {
+        $user = User::factory()->create(['monthly_donate' => false]);
+        $tier = DonationTier::where('slug', 'beer')->firstOrFail();
+        $subscription = DonationSubscription::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'status' => 'pending',
+            'transaction_amount_cents' => 750000,
+            'external_reference' => $this->hashedPlatformReference(1, 'monthly', $user->id, 'beer'),
+        ]);
+
+        $preapprovalId = 'preapproval-prod-data-id';
+        $subscription->update(['mp_preapproval_id' => $preapprovalId]);
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $subscription) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'external_reference' => $subscription->external_reference,
+                    'auto_recurring' => ['transaction_amount' => 7500],
+                    'next_payment_date' => '2026-09-24T00:00:00.000-00:00',
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-preapproval-data-id', 'wh-secret-test');
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            $preapprovalId,
+            ['type' => 'subscription_preapproval'],
+            [
+                'type' => 'subscription_preapproval',
+                'action' => 'created',
+                'data' => ['id' => $preapprovalId],
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode(), $response->getContent());
+        $this->assertSame(['status' => 'success'], json_decode($response->getContent(), true));
+
+        $subscription->refresh();
+        $user->refresh();
+        $this->assertSame('authorized', $subscription->status);
+        $this->assertTrue($user->monthly_donate);
+        $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
+    public function test_subscription_preapproval_webhook_creates_row_when_none_exists(): void
+    {
+        $user = User::factory()->create([
+            'monthly_donate' => false,
+            'club_carpoolear_joined_at' => null,
+        ]);
+        $this->assertSame(0, DonationSubscription::query()->count());
+
+        $preapprovalId = 'preapproval-orphan-1';
+        $externalReference = $this->hashedPlatformReference(999999, 'monthly', $user->id, 'cafe');
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $externalReference) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'external_reference' => $externalReference,
+                    'preapproval_plan_id' => 'plan-cafe',
+                    'auto_recurring' => ['transaction_amount' => 5000],
+                    'next_payment_date' => '2026-11-01T00:00:00.000-00:00',
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-orphan-preapproval', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.urlencode($preapprovalId), [
+            'type' => 'subscription_preapproval',
+            'action' => 'created',
+            'data_id' => $preapprovalId,
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $subscription = DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->first();
+        $this->assertNotNull($subscription);
+        $this->assertSame($user->id, $subscription->user_id);
+        $this->assertSame('authorized', $subscription->status);
+        $this->assertSame(500000, $subscription->transaction_amount_cents);
+        $this->assertSame($externalReference, $subscription->external_reference);
+
+        $user->refresh();
+        $this->assertTrue((bool) $user->monthly_donate);
+        $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
+    public function test_subscription_preapproval_webhook_logs_warning_when_user_cannot_be_resolved(): void
+    {
+        Log::spy();
+
+        $preapprovalId = 'preapproval-no-user';
+        $externalReference = $this->hashedPlatformReference(888888, 'monthly', 42424242, 'cafe');
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $externalReference) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'external_reference' => $externalReference,
+                    'auto_recurring' => ['transaction_amount' => 5000],
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-preapproval-no-user', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.urlencode($preapprovalId), [
+            'type' => 'subscription_preapproval',
+            'action' => 'updated',
+            'data_id' => $preapprovalId,
+        ], $headers)
+            ->assertOk();
+
+        $this->assertTrue(
+            DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()
+        );
+        Log::shouldHaveReceived('warning')->withArgs(function (string $message, array $context): bool {
+            return str_contains($message, 'could not resolve user')
+                && ($context['preapproval_id'] ?? null) === 'preapproval-no-user';
+        });
     }
 }

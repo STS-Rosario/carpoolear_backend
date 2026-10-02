@@ -27,7 +27,26 @@ class PlatformDonationApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(3)
-            ->assertJsonFragment(['slug' => 'cafe', 'amount' => 5000]);
+            ->assertJsonFragment(['slug' => 'cafe', 'amount' => 5000])
+            ->assertJsonFragment(['slug' => 'beer', 'amount' => 7500])
+            ->assertJsonFragment(['slug' => 'food', 'amount' => 12000]);
+    }
+
+    public function test_donation_tier_seeder_is_idempotent(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        $this->seed(DonationTierSeeder::class);
+
+        $this->assertSame(3, DonationTier::query()->count());
+        $this->assertSame(500000, DonationTier::query()->where('slug', 'cafe')->value('amount_cents'));
+    }
+
+    public function test_database_seeder_registers_donation_tier_seeder(): void
+    {
+        $this->assertStringContainsString(
+            'DonationTierSeeder::class',
+            (string) file_get_contents(database_path('seeders/DatabaseSeeder.php'))
+        );
     }
 
     public function test_checkout_once_requires_authentication(): void

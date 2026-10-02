@@ -50,6 +50,12 @@ class MercadoPagoWebhookController extends Controller
 
     public function handle(Request $request)
     {
+        Log::info('MercadoPago webhook received', [
+            'type' => $request->query('type') ?? $request->input('type'),
+            'action' => $request->input('action'),
+            'data.id' => $this->signedWebhookDataId($request) ?? $this->webhookResourceId($request),
+        ]);
+
         // Handle order.processed (QR/Orders API) - sent when QR order is paid
         if ($request->input('action') === 'order.processed') {
             try {
@@ -114,7 +120,7 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['status' => 'success']);
         }
 
-        $paymentId = $request->query('data_id') ?? $request->input('data_id');
+        $paymentId = $this->webhookResourceId($request);
         if ($action === 'payment.updated' && empty($paymentId)) {
             return response()->json(['status' => 'success']);
         }
@@ -216,10 +222,51 @@ class MercadoPagoWebhookController extends Controller
     }
 
     /**
+     * Query id Mercado Pago signed in x-signature (`data.id` or `data_id`).
+     * Body ids are not used here — only the query string MP HMAC'd.
+     */
+    protected function signedWebhookDataId(Request $request): ?string
+    {
+        $dataId = $request->query->get('data.id')
+            ?? $request->query('data.id')
+            ?? $request->query('data_id')
+            ?? $request->query->get('data_id');
+
+        if ($dataId === null || $dataId === '') {
+            return null;
+        }
+
+        return (string) $dataId;
+    }
+
+    /**
+     * Resource id for fetching a payment or preapproval.
+     * Prefer the signed query id; fall back to body `data.id` / `data_id`.
+     */
+    protected function webhookResourceId(Request $request): ?string
+    {
+        $signedId = $this->signedWebhookDataId($request);
+        if ($signedId !== null) {
+            return $signedId;
+        }
+
+        $bodyId = $request->input('data.id')
+            ?? $request->input('data_id')
+            ?? data_get($request->all(), 'data.id');
+
+        if ($bodyId === null || $bodyId === '') {
+            return null;
+        }
+
+        return (string) $bodyId;
+    }
+
+    /**
      * Verify webhook signature from MercadoPago.
      *
      * @param  bool  $isOrderWebhook  True for Orders API (QR), false for Payments API (Checkout Pro / Sellado).
-     *                                Orders API uses data.id in query (lowercased); Payments API uses data_id.
+     *                                Orders API uses data.id in query (lowercased); Payments/subscriptions use
+     *                                query data.id or data_id (the id MP signed).
      * @param  array<int, string>|null  $secretCandidates  Secrets to try, in order. Defaults from webhook type.
      */
     protected function verifyMercadoPagoRequest(Request $request, bool $isOrderWebhook = false, ?array $secretCandidates = null)
@@ -234,8 +281,7 @@ class MercadoPagoWebhookController extends Controller
                 ?? $request->input('data.id');
             $dataId = $dataId ? strtolower($dataId) : null;
         } else {
-            // Payments API (Checkout Pro, Sellado): data_id from query params
-            $dataId = $request->query('data_id');
+            $dataId = $this->signedWebhookDataId($request);
         }
 
         if (! $xSignature || ! $xRequestId || ! $dataId) {
@@ -824,7 +870,7 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Invalid request'], 400);
         }
 
-        $preapprovalId = $request->query('data_id') ?? $request->input('data_id') ?? $request->input('data.id');
+        $preapprovalId = $this->webhookResourceId($request);
         if (! $preapprovalId) {
             return response()->json(['error' => 'No preapproval ID'], 400);
         }
@@ -847,7 +893,7 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Invalid request'], 400);
         }
 
-        $paymentId = $request->query('data_id') ?? $request->input('data_id') ?? $request->input('data.id');
+        $paymentId = $this->webhookResourceId($request);
         if (! $paymentId) {
             return response()->json(['error' => 'No payment ID'], 400);
         }

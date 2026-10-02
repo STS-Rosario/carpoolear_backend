@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Http;
 
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -103,6 +106,39 @@ class MercadoPagoWebhookTest extends TestCase
     }
 
     /**
+     * PHP's parse_str rewrites `data.id` to `data_id`. Production still signs the dotted query
+     * key, so keep it as a literal ParameterBag entry the way some SAPIs expose it.
+     *
+     * @param  array<string, string>  $query
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     */
+    private function postMercadoPagoWebhookPreservingDottedDataIdQuery(
+        string $dataId,
+        array $query,
+        array $payload,
+        array $headers
+    ): \Symfony\Component\HttpFoundation\Response {
+        $request = Request::create(
+            '/webhooks/mercadopago',
+            'POST',
+            $payload,
+            [],
+            [],
+            [
+                'HTTP_ACCEPT' => 'application/json',
+                'HTTP_X_REQUEST_ID' => $headers['x-request-id'],
+                'HTTP_X_SIGNATURE' => $headers['x-signature'],
+            ]
+        );
+        $request->headers->set('x-request-id', $headers['x-request-id']);
+        $request->headers->set('x-signature', $headers['x-signature']);
+        $request->query->replace(array_merge($query, ['data.id' => $dataId]));
+
+        return $this->app->make(Kernel::class)->handle($request);
+    }
+
+    /**
      * @return array<string, string>
      */
     private function orderProcessedSignatureHeaders(string $orderIdForQuery, string $requestId, string $secret): array
@@ -125,6 +161,32 @@ class MercadoPagoWebhookTest extends TestCase
         ])
             ->assertOk()
             ->assertExactJson(['status' => 'success']);
+    }
+
+    public function test_incoming_mercadopago_webhook_is_logged_at_info_without_secrets(): void
+    {
+        Log::spy();
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data.id' => 'pay-log-1',
+            'type' => 'payment',
+        ]), [
+            'action' => 'merchant_order',
+            'type' => 'payment',
+        ])
+            ->assertOk();
+
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+            $hasSecret = collect($context)->contains(function ($value) {
+                return is_string($value) && str_contains(strtolower($value), 'secret');
+            });
+
+            return str_contains($message, 'MercadoPago webhook received')
+                && ($context['type'] ?? null) === 'payment'
+                && ($context['action'] ?? null) === 'merchant_order'
+                && ($context['data.id'] ?? null) === 'pay-log-1'
+                && ! $hasSecret;
+        });
     }
 
     public function test_payment_created_without_verification_headers_is_rejected(): void
@@ -166,6 +228,43 @@ class MercadoPagoWebhookTest extends TestCase
         ], $headers)
             ->assertStatus(400)
             ->assertJson(['error' => 'Invalid request']);
+    }
+
+    public function test_payment_created_accepts_production_data_id_query_param_with_valid_hmac(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $user = User::factory()->create();
+        $row = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => false,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $paymentId = 77110066;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $paymentId, 'req-manual-data-id', 'wh-secret-test');
+
+        $this->stubMercadoPagoPayments([
+            $paymentId => $this->mercadoPagoPaymentPayload('manual_validation:'.$row->id, $paymentId),
+        ]);
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            (string) $paymentId,
+            ['type' => 'payment'],
+            [
+                'action' => 'payment.created',
+                'type' => 'payment',
+                'data' => ['id' => (string) $paymentId],
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode(), $response->getContent());
+        $this->assertSame(['status' => 'success'], json_decode($response->getContent(), true));
+
+        $row->refresh();
+        $this->assertTrue($row->paid);
+        $this->assertSame((string) $paymentId, $row->payment_id);
     }
 
     public function test_payment_created_when_provider_returns_no_payment_returns_server_error(): void
