@@ -50,6 +50,12 @@ class MercadoPagoWebhookController extends Controller
 
     public function handle(Request $request)
     {
+        Log::info('MercadoPago webhook received', [
+            'type' => $request->query('type') ?? $request->input('type'),
+            'action' => $request->input('action'),
+            'data.id' => $this->signedWebhookDataId($request) ?? $this->webhookResourceId($request),
+        ]);
+
         // Handle order.processed (QR/Orders API) - sent when QR order is paid
         if ($request->input('action') === 'order.processed') {
             try {
