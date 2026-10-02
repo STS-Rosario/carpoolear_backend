@@ -40,6 +40,12 @@ class ClubCarpoolearMembershipService
         $this->syncClubBadge($user, false);
     }
 
+    public function markWelcomeShown(User $user): void
+    {
+        $user->club_carpoolear_welcome_shown = true;
+        $user->save();
+    }
+
     public function shouldShowMembershipPublicly(User $user): bool
     {
         return $this->isActiveMember($user) && (bool) $user->show_club_carpoolear_membership;
