@@ -96,6 +96,8 @@ class PlatformDonationService
     public function checkoutMonthly(User $user, array $data): array
     {
         $tier = $this->resolveTier($data);
+        // One Mercado Pago preapproval *plan* per tier (shared price template). Each user still
+        // gets their own MP preapproval/subscription row after they complete hosted checkout.
         if (empty($tier->mp_preapproval_plan_id)) {
             $plan = $this->mercadoPagoService->createPreapprovalPlan($tier);
             $tier->mp_preapproval_plan_id = $plan->id ?? null;
@@ -446,7 +448,40 @@ class PlatformDonationService
             return DonationSubscription::find((int) $matches[1]);
         }
 
-        return null;
+        return $this->findPendingSubscriptionForPreapproval($preapproval);
+    }
+
+    /**
+     * Hosted plan checkout does not send our hashed external_reference to Mercado Pago.
+     *
+     * @param  array<string, mixed>  $preapproval
+     */
+    private function findPendingSubscriptionForPreapproval(array $preapproval): ?DonationSubscription
+    {
+        $planId = $preapproval['preapproval_plan_id'] ?? null;
+        if (! $planId) {
+            return null;
+        }
+
+        $query = DonationSubscription::query()
+            ->where('status', 'pending')
+            ->where(function ($builder) {
+                $builder->whereNull('mp_preapproval_id')->orWhere('mp_preapproval_id', '');
+            })
+            ->where(function ($builder) use ($planId) {
+                $builder->where('mp_preapproval_plan_id', $planId)
+                    ->orWhereHas('tier', fn ($tier) => $tier->where('mp_preapproval_plan_id', $planId));
+            });
+
+        $payerEmail = $preapproval['payer_email'] ?? null;
+        if (is_string($payerEmail) && $payerEmail !== '') {
+            $userId = User::query()->where('email', $payerEmail)->value('id');
+            if ($userId) {
+                $query->where('user_id', $userId);
+            }
+        }
+
+        return $query->orderByDesc('id')->first();
     }
 
     /**

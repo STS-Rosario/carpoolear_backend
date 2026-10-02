@@ -453,7 +453,11 @@ class MercadoPagoService
     }
 
     /**
-     * Build subscription checkout URL for a pending platform donation subscription.
+     * Build hosted checkout URL for a tier's shared Mercado Pago preapproval plan.
+     *
+     * All users on the same tier (cafe, beer, food) share one plan id on donation_tiers.
+     * Each user gets their own MP preapproval after checkout; do not append external_reference
+     * here — Mercado Pago rejects long hashed references on this URL (404 checkout page).
      */
     public function createPreapprovalCheckoutUrl(DonationSubscription $subscription): string
     {
@@ -464,26 +468,19 @@ class MercadoPagoService
             throw new \InvalidArgumentException('Mercado Pago preapproval plan ID is not configured for this tier');
         }
 
-        $externalReference = $subscription->external_reference;
-        if (empty($externalReference)) {
+        if (empty($subscription->external_reference)) {
             $tierSlug = $subscription->tier?->slug ?? 'unknown';
-            $externalReference = $this->createHashedExternalReferenceForPlatformDonation(
+            $subscription->external_reference = $this->createHashedExternalReferenceForPlatformDonation(
                 $subscription->id,
                 'monthly',
                 $subscription->user_id ?? 'Anonymous',
                 $tierSlug
             );
-            $subscription->external_reference = $externalReference;
             $subscription->save();
         }
 
-        $baseCheckoutUrl = 'https://www.mercadopago.com.ar/subscriptions/checkout';
-        $query = http_build_query([
-            'preapproval_plan_id' => $planId,
-            'external_reference' => $externalReference,
-        ]);
-
-        return $baseCheckoutUrl.'?'.$query;
+        return 'https://www.mercadopago.com.ar/subscriptions/checkout?'
+            .http_build_query(['preapproval_plan_id' => $planId]);
     }
 
     /**
