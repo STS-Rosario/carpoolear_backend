@@ -45,6 +45,8 @@ class ProfileTransformerTest extends TestCase
             'do_not_alert_pending_rates',
             'do_not_alert_pricing',
             'monthly_donate',
+            'club_carpoolear_active',
+            'club_carpoolear_public_member',
             'unaswered_messages_limit',
             'autoaccept_requests',
             'driver_is_verified',

@@ -10,6 +10,7 @@ use STS\Models\User;
 use STS\Repository\TripRepository;
 use STS\Repository\UserRepository;
 use STS\Services\AdminUserProfileCounts;
+use STS\Services\ClubCarpoolearMembershipService;
 use STS\Services\GeoService;
 use STS\Services\Logic\TripsManager;
 use STS\Services\Logic\UsersManager;
@@ -49,6 +50,8 @@ class ProfileTransformer extends TransformerAbstract
             ? $lastConnection->toDateTimeString()
             : '';
 
+        $clubMembership = app(ClubCarpoolearMembershipService::class);
+
         $data = [
             'id' => $user->id,
             'name' => $user->name,
@@ -75,6 +78,8 @@ class ProfileTransformer extends TransformerAbstract
             'do_not_alert_pending_rates' => intval($user->do_not_alert_pending_rates),
             'do_not_alert_pricing' => intval($user->do_not_alert_pricing),
             'monthly_donate' => intval($user->monthly_donate),
+            'club_carpoolear_active' => intval($clubMembership->isActiveMember($user)),
+            'club_carpoolear_public_member' => intval($clubMembership->shouldShowMembershipPublicly($user)),
             'unaswered_messages_limit' => intval($user->unaswered_messages_limit),
             'autoaccept_requests' => intval($user->autoaccept_requests),
             'driver_is_verified' => intval($user->driver_is_verified),
@@ -95,6 +100,7 @@ class ProfileTransformer extends TransformerAbstract
         ];
 
         if ($this->user && $user->id == $this->user->id) {
+            $data['show_club_carpoolear_membership'] = intval($user->show_club_carpoolear_membership);
             // True when enforcement is active and this user must validate as a "new" user (created_at >= cutoff).
             $data['identity_validation_required_for_user'] = IdentityValidationHelper::isNewUserRequiringValidation($user);
             $data['validate_by_date'] = $user->validate_by_date ? $user->validate_by_date->format('Y-m-d') : null;

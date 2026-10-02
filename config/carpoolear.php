@@ -176,6 +176,7 @@ return [
             'account_number', 'account_type', 'account_bank',
             'facebook_profile_url',
             'locale',
+            'show_club_carpoolear_membership',
         ],
 
         // Additional properties editable only by admin (email only at registration for users)

@@ -14,7 +14,10 @@ use STS\Models\User;
 
 class PlatformDonationService
 {
-    public function __construct(private MercadoPagoService $mercadoPagoService) {}
+    public function __construct(
+        private MercadoPagoService $mercadoPagoService,
+        private ClubCarpoolearMembershipService $clubCarpoolearMembershipService
+    ) {}
 
     public function isEnabled(): bool
     {
@@ -185,6 +188,12 @@ class PlatformDonationService
             if ($user) {
                 $user->monthly_donate = $subscription->status === 'authorized';
                 $user->save();
+
+                if ($subscription->status === 'authorized') {
+                    $this->clubCarpoolearMembershipService->applyAuthorizedMembership($user);
+                } elseif (in_array($subscription->status, ['cancelled', 'paused'], true)) {
+                    $this->clubCarpoolearMembershipService->applyCancelledMembership($user);
+                }
             }
         }
 
