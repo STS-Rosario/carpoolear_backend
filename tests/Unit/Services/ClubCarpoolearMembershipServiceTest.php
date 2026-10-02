@@ -149,4 +149,14 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
 
         $this->assertFalse($user->fresh()->club_carpoolear_welcome_shown);
     }
+
+    public function test_mark_welcome_shown_sets_flag_true(): void
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['club_carpoolear_welcome_shown' => false])->save();
+
+        $this->service->markWelcomeShown($user);
+
+        $this->assertTrue($user->fresh()->club_carpoolear_welcome_shown);
+    }
 }
