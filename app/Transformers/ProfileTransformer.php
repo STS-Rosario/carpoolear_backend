@@ -101,6 +101,7 @@ class ProfileTransformer extends TransformerAbstract
 
         if ($this->user && $user->id == $this->user->id) {
             $data['show_club_carpoolear_membership'] = intval($user->show_club_carpoolear_membership);
+            $data['club_carpoolear_welcome_shown'] = intval($user->club_carpoolear_welcome_shown);
             // True when enforcement is active and this user must validate as a "new" user (created_at >= cutoff).
             $data['identity_validation_required_for_user'] = IdentityValidationHelper::isNewUserRequiringValidation($user);
             $data['validate_by_date'] = $user->validate_by_date ? $user->validate_by_date->format('Y-m-d') : null;
