@@ -31,11 +31,11 @@ The seeder is idempotent (`updateOrCreate` by slug) and is also called from `Dat
 
 Monthly Club subscribe should go through **`POST /api/donations/checkout/monthly`**. That endpoint:
 
-1. Resolves an active donation tier.
-2. Creates a **pending** `donation_subscriptions` row and hashed `external_reference`.
-3. Redirects to hosted checkout (`/subscriptions/checkout?preapproval_plan_id=&external_reference=`).
+1. Resolves an active donation tier (one shared Mercado Pago **plan** per tier on `donation_tiers.mp_preapproval_plan_id`).
+2. Creates a **pending** `donation_subscriptions` row (per user) and stores a hashed `external_reference` locally for debugging/support.
+3. Redirects to hosted checkout with **only** `preapproval_plan_id` (same URL shape as the plan’s `init_point`). Do **not** append `external_reference` — Mercado Pago returns a broken checkout page for long hashed values.
 
-Webhooks then update that row and call `ClubCarpoolearMembershipService::applyAuthorizedMembership()`.
+Webhooks then attach the user’s Mercado Pago **preapproval** to that pending row (by `mp_preapproval_id`, decoded reference when present, or pending row + plan id + `payer_email`) and call `ClubCarpoolearMembershipService::applyAuthorizedMembership()`.
 
 If the client opens a raw Mercado Pago plan URL instead, a late `subscription_preapproval` webhook can still create the row when `external_reference` decodes, but checkout-pending + hashed reference is the intended path.
 
