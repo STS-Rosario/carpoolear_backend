@@ -188,7 +188,18 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['status' => 'success']);
         }
 
-        Log::info('Unreferenced MercadoPago payment ignored', ['payment_id' => $paymentId]);
+        if ($this->looksLikeClubSubscriptionPayment($mpPayment)) {
+            if ($this->handleClubSubscriptionPaymentViaInvoiceSearch($mpPayment, (string) $paymentId)) {
+                return response()->json(['status' => 'success']);
+            }
+        }
+
+        Log::info('Unreferenced MercadoPago payment ignored', [
+            'payment_id' => $paymentId,
+            'preapproval_id' => $preapprovalId,
+            'point_of_interaction_type' => $this->pointOfInteractionType($mpPayment),
+            'description' => $mpPayment['description'] ?? null,
+        ]);
 
         return response()->json(['status' => 'success']);
     }
@@ -439,6 +450,9 @@ class MercadoPagoWebhookController extends Controller
                     'preapproval_id' => $decoded['preapproval_id'] ?? null,
                     'metadata' => is_array($metadata) ? $metadata : null,
                     'description' => $decoded['description'] ?? null,
+                    'point_of_interaction' => is_array($decoded['point_of_interaction'] ?? null)
+                        ? $decoded['point_of_interaction']
+                        : null,
                     'date_created' => $decoded['date_created'] ?? null,
                     'date_approved' => $decoded['date_approved'] ?? null,
                     'date_last_updated' => $decoded['date_last_updated'] ?? null,
@@ -458,6 +472,7 @@ class MercadoPagoWebhookController extends Controller
                 'preapproval_id' => null,
                 'metadata' => null,
                 'description' => $payment->description,
+                'point_of_interaction' => null,
                 'date_created' => $payment->date_created,
                 'date_approved' => $payment->date_approved,
                 'date_last_updated' => $payment->date_last_updated,
@@ -991,5 +1006,78 @@ class MercadoPagoWebhookController extends Controller
         }
 
         return $preapprovalId ? (string) $preapprovalId : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    protected function looksLikeClubSubscriptionPayment(array $mpPayment): bool
+    {
+        $interactionType = $this->pointOfInteractionType($mpPayment);
+        if ($interactionType === 'SUBSCRIPTIONS') {
+            return true;
+        }
+
+        $description = $mpPayment['description'] ?? '';
+        if (is_string($description) && str_starts_with($description, 'Donación mensual Carpoolear')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    protected function pointOfInteractionType(array $mpPayment): ?string
+    {
+        $poi = $mpPayment['point_of_interaction'] ?? null;
+        if (! is_array($poi)) {
+            return null;
+        }
+
+        $type = $poi['type'] ?? null;
+
+        return is_string($type) ? $type : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    protected function handleClubSubscriptionPaymentViaInvoiceSearch(array $mpPayment, string $paymentId): bool
+    {
+        $results = $this->mercadoPagoService->searchAuthorizedPayments(['payment_id' => $paymentId]);
+        $invoice = $results[0] ?? null;
+        if (! is_array($invoice)) {
+            Log::info('Club subscription payment could not resolve invoice by payment_id', [
+                'payment_id' => $paymentId,
+            ]);
+
+            return false;
+        }
+
+        $preapprovalId = $invoice['preapproval_id'] ?? null;
+        if (! is_string($preapprovalId) || $preapprovalId === '') {
+            Log::info('Club subscription invoice missing preapproval_id', [
+                'payment_id' => $paymentId,
+                'invoice_id' => $invoice['id'] ?? null,
+            ]);
+
+            return false;
+        }
+
+        $chargePayment = $mpPayment;
+        $chargePayment['preapproval_id'] = $preapprovalId;
+
+        if (! DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()) {
+            $preapproval = $this->mercadoPagoService->getPreapproval($preapprovalId);
+            if ($preapproval) {
+                $this->platformDonationService->handleSubscriptionPreapproval($preapproval);
+            }
+        }
+
+        $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayment);
+
+        return true;
     }
 }

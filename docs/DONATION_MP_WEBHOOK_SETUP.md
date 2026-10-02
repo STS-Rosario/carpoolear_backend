@@ -87,7 +87,7 @@ Incoming webhooks are logged at info with `type`, `action`, and `data.id` (no se
 
 | Webhook | Action |
 |---------|--------|
-| `payment.created` / `payment.updated` | One-time platform donations (`Donación Plataforma`); subscription charges with **empty** `external_reference` but matching `preapproval_id` |
+| `payment.created` / `payment.updated` | One-time platform donations (`Donación Plataforma`); Club subscription charges with empty `external_reference` via `preapproval_id` on the payment **or** invoice search when `point_of_interaction.type` is `SUBSCRIPTIONS` |
 | `subscription_preapproval` (`action` is `created` / `updated`) | Subscription authorized / paused / cancelled; creates a Club row if none exists |
 | `subscription_authorized_payment` | Each monthly charge — fetch `GET /authorized_payments/{data.id}`, upsert charge using nested `payment.id` |
 
@@ -95,7 +95,7 @@ Incoming webhooks are logged at info with `type`, `action`, and `data.id` (no se
 
 | Topic | Mercado Pago API |
 |-------|------------------|
-| `subscription_authorized_payment` | `GET https://api.mercadopago.com/authorized_payments/{data.id}` — use nested `payment.id` as `donation_subscription_charges.mp_payment_id` (not the invoice id) |
-| `payment` for a subscription installment | `GET /v1/payments/{id}` — `external_reference` may be empty; match Club via `preapproval_id` / `metadata.preapproval_id` |
+| `subscription_authorized_payment` | `GET https://api.mercadopago.com/authorized_payments/{data.id}` — if **404** (MP eventual consistency), fall back to `GET /authorized_payments/search?id={data.id}`; use nested `payment.id` as `donation_subscription_charges.mp_payment_id` (not the invoice id). Still **500** when the invoice cannot be resolved so MP retries. |
+| `payment` for a subscription installment | `GET /v1/payments/{id}` — `external_reference` is often empty and **`preapproval_id` is often null** on the payment object. Use `point_of_interaction.type === SUBSCRIPTIONS` (or description `Donación mensual Carpoolear…`), then `GET /authorized_payments/search?payment_id={payment.id}` for `preapproval_id`, link pending rows via `subscription_preapproval` logic if needed, then upsert the charge. |
 
-Returning **400** on empty `external_reference` caused Mercado Pago to retry `payment.created` in production. Unreferenced payments (no Club preapproval) are acknowledged with **200** and an info log.
+Returning **400** on empty `external_reference` caused Mercado Pago to retry `payment.created` in production. Unrelated empty-ref payments (not Club subscriptions) are acknowledged with **200** and an info log (`preapproval_id`, `point_of_interaction.type`, `description`).

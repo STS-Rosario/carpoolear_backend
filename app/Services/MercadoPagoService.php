@@ -504,8 +504,41 @@ class MercadoPagoService
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @param  array<string, string|int>  $query
+     * @return list<array<string, mixed>>
      */
+    public function searchAuthorizedPayments(array $query): array
+    {
+        $this->ensureConfigured();
+
+        try {
+            $response = Http::withToken($this->accessToken)
+                ->acceptJson()
+                ->get('https://api.mercadopago.com/authorized_payments/search', $query);
+
+            if (! $response->successful()) {
+                \Log::error('MercadoPago searchAuthorizedPayments error', [
+                    'query' => $query,
+                    'status' => $response->status(),
+                    'response' => $response->body(),
+                ]);
+
+                return [];
+            }
+
+            $results = $response->json('results');
+
+            return is_array($results) ? array_values(array_filter($results, 'is_array')) : [];
+        } catch (\Throwable $e) {
+            \Log::error('MercadoPago searchAuthorizedPayments error', [
+                'query' => $query,
+                'message' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
     /**
      * @return array<string, mixed>|null
      */
@@ -513,24 +546,54 @@ class MercadoPagoService
     {
         $this->ensureConfigured();
 
+        $maxAttempts = 3;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $direct = $this->fetchAuthorizedPaymentDirect($id);
+            if ($direct !== null) {
+                return $direct;
+            }
+
+            $fromSearch = $this->fetchAuthorizedPaymentFromSearchById($id);
+            if ($fromSearch !== null) {
+                return $fromSearch;
+            }
+
+            if ($attempt < $maxAttempts) {
+                $this->pauseForAuthorizedPaymentConsistency();
+            }
+        }
+
+        \Log::error('MercadoPago getAuthorizedPayment not found after retries', ['id' => $id]);
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function fetchAuthorizedPaymentDirect(string $id): ?array
+    {
         try {
             $response = Http::withToken($this->accessToken)
                 ->acceptJson()
                 ->get('https://api.mercadopago.com/authorized_payments/'.$id);
 
-            if (! $response->successful()) {
+            if ($response->successful()) {
+                $payload = $response->json();
+
+                return is_array($payload) ? $payload : null;
+            }
+
+            if ($response->status() !== 404) {
                 \Log::error('MercadoPago getAuthorizedPayment error', [
                     'id' => $id,
                     'status' => $response->status(),
                     'response' => $response->body(),
                 ]);
-
-                return null;
             }
 
-            $payload = $response->json();
-
-            return is_array($payload) ? $payload : null;
+            return null;
         } catch (\Throwable $e) {
             \Log::error('MercadoPago getAuthorizedPayment error', [
                 'id' => $id,
@@ -539,6 +602,25 @@ class MercadoPagoService
 
             return null;
         }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function fetchAuthorizedPaymentFromSearchById(string $id): ?array
+    {
+        $results = $this->searchAuthorizedPayments(['id' => $id]);
+
+        return $results[0] ?? null;
+    }
+
+    private function pauseForAuthorizedPaymentConsistency(): void
+    {
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        sleep(1);
     }
 
     public function getPreapproval(string $id): ?array
