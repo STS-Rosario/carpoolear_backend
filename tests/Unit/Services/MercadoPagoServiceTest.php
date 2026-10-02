@@ -350,4 +350,29 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('preapproval-1', $invoice['preapproval_id']);
         $this->assertSame(181935207242, $invoice['payment']['id']);
     }
+
+    public function test_get_authorized_payment_falls_back_to_search_when_direct_get_is_404(): void
+    {
+        config(['services.mercadopago.access_token' => 'test-access-token']);
+
+        Http::fake([
+            'api.mercadopago.com/authorized_payments/7032480114' => Http::response(['message' => 'not found'], 404),
+            'api.mercadopago.com/authorized_payments/search*' => Http::response([
+                'results' => [
+                    [
+                        'id' => 7032480114,
+                        'preapproval_id' => 'preapproval-from-search',
+                        'payment' => ['id' => 181937405304, 'status' => 'approved'],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $service = new MercadoPagoService;
+        $invoice = $service->getAuthorizedPayment('7032480114');
+
+        $this->assertIsArray($invoice);
+        $this->assertSame(7032480114, $invoice['id']);
+        $this->assertSame('preapproval-from-search', $invoice['preapproval_id']);
+    }
 }

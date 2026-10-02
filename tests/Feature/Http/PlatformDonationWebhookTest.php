@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Database\Seeders\DonationTierSeeder;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
@@ -420,6 +421,75 @@ class PlatformDonationWebhookTest extends TestCase
         });
     }
 
+    public function test_subscription_authorized_payment_webhook_uses_search_when_direct_get_returns_404(): void
+    {
+        $user = User::factory()->create();
+        $preapprovalId = '2aaba7fe9f9d40348e4020ccd2e6f494';
+        $subscription = $this->authorizedClubSubscription($user, $preapprovalId);
+
+        $invoiceId = '7032480114';
+        $nestedPaymentId = 181937405304;
+
+        Http::fake([
+            'api.mercadopago.com/authorized_payments/'.$invoiceId => Http::response(['message' => 'not found'], 404),
+            'api.mercadopago.com/authorized_payments/search*' => Http::response([
+                'results' => [
+                    [
+                        'id' => (int) $invoiceId,
+                        'preapproval_id' => $preapprovalId,
+                        'transaction_amount' => 5000,
+                        'status' => 'processed',
+                        'payment' => [
+                            'id' => $nestedPaymentId,
+                            'status' => 'approved',
+                            'transaction_amount' => 5000,
+                            'date_approved' => '2026-10-02T03:01:00.000-00:00',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $headers = $this->signatureHeaders($invoiceId, 'req-invoice-404-search', 'wh-secret-test');
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            $invoiceId,
+            ['type' => 'subscription_authorized_payment'],
+            [
+                'type' => 'subscription_authorized_payment',
+                'action' => 'created',
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertDatabaseHas('donation_subscription_charges', [
+            'donation_subscription_id' => $subscription->id,
+            'mp_payment_id' => (string) $nestedPaymentId,
+            'status' => 'approved',
+        ]);
+    }
+
+    public function test_subscription_authorized_payment_webhook_returns_500_when_invoice_missing_after_search(): void
+    {
+        $invoiceId = '7032480999';
+
+        Http::fake([
+            'api.mercadopago.com/authorized_payments/'.$invoiceId => Http::response(['message' => 'not found'], 404),
+            'api.mercadopago.com/authorized_payments/search*' => Http::response(['results' => []], 200),
+        ]);
+
+        $headers = $this->signatureHeaders($invoiceId, 'req-invoice-missing', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$invoiceId, [
+            'type' => 'subscription_authorized_payment',
+            'action' => 'created',
+        ], $headers)
+            ->assertStatus(500);
+
+        $this->assertSame(0, DonationSubscriptionCharge::query()->count());
+    }
+
     public function test_subscription_authorized_payment_webhook_upserts_charge_from_invoice(): void
     {
         $user = User::factory()->create();
@@ -578,6 +648,128 @@ class PlatformDonationWebhookTest extends TestCase
         ]);
     }
 
+    public function test_payment_created_with_subscriptions_type_resolves_preapproval_via_invoice_search(): void
+    {
+        $user = User::factory()->create();
+        $preapprovalId = '2aaba7fe9f9d40348e4020ccd2e6f494';
+        $subscription = $this->authorizedClubSubscription($user, $preapprovalId);
+
+        $paymentId = 181937405304;
+        $this->stubMercadoPagoPayments([
+            $paymentId => [
+                'id' => $paymentId,
+                'status' => 'approved',
+                'status_detail' => 'accredited',
+                'transaction_amount' => 5000.0,
+                'external_reference' => null,
+                'preapproval_id' => null,
+                'metadata' => [],
+                'description' => 'Donación mensual Carpoolear - cafe',
+                'point_of_interaction' => ['type' => 'SUBSCRIPTIONS'],
+                'date_approved' => '2026-10-02T03:01:00.000-00:00',
+            ],
+        ]);
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($paymentId, $preapprovalId) {
+            $mock->shouldReceive('searchAuthorizedPayments')
+                ->once()
+                ->with(['payment_id' => (string) $paymentId])
+                ->andReturn([
+                    [
+                        'id' => 7032480114,
+                        'preapproval_id' => $preapprovalId,
+                        'payment' => ['id' => $paymentId, 'status' => 'approved'],
+                    ],
+                ]);
+            $mock->shouldReceive('getPreapproval')->never();
+        });
+
+        $headers = $this->signatureHeaders((string) $paymentId, 'req-club-subscriptions-payment', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data.id' => (string) $paymentId,
+            'type' => 'payment',
+        ]), [
+            'action' => 'payment.created',
+            'type' => 'payment',
+        ], $headers)
+            ->assertOk();
+
+        $this->assertDatabaseHas('donation_subscription_charges', [
+            'donation_subscription_id' => $subscription->id,
+            'mp_payment_id' => (string) $paymentId,
+            'status' => 'approved',
+        ]);
+    }
+
+    public function test_payment_created_with_subscriptions_type_links_pending_subscription_and_upserts_charge(): void
+    {
+        $user = User::factory()->create(['email' => 'charge-pending@example.test']);
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $planId = 'b1e39e90a1b84d759ff2a5a3cb636ac6';
+        $subscription = DonationSubscription::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'mp_preapproval_plan_id' => $planId,
+            'status' => 'pending',
+            'transaction_amount_cents' => 500000,
+            'mp_preapproval_id' => null,
+        ]);
+
+        $preapprovalId = '2aaba7fe9f9d40348e4020ccd2e6f494';
+        $paymentId = 181937405305;
+
+        $this->stubMercadoPagoPayments([
+            $paymentId => [
+                'id' => $paymentId,
+                'status' => 'approved',
+                'transaction_amount' => 5000.0,
+                'external_reference' => '',
+                'preapproval_id' => null,
+                'point_of_interaction' => ['type' => 'SUBSCRIPTIONS'],
+                'description' => 'Donación mensual Carpoolear - cafe',
+                'date_approved' => '2026-10-02T03:01:00.000-00:00',
+            ],
+        ]);
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($paymentId, $preapprovalId, $planId, $user) {
+            $mock->shouldReceive('searchAuthorizedPayments')
+                ->once()
+                ->with(['payment_id' => (string) $paymentId])
+                ->andReturn([
+                    [
+                        'id' => 7032480115,
+                        'preapproval_id' => $preapprovalId,
+                    ],
+                ]);
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'preapproval_plan_id' => $planId,
+                    'payer_email' => $user->email,
+                    'auto_recurring' => ['transaction_amount' => 5000],
+                ]);
+        });
+
+        $headers = $this->signatureHeaders((string) $paymentId, 'req-club-pending-charge', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
+            'action' => 'payment.created',
+        ], $headers)
+            ->assertOk();
+
+        $subscription->refresh();
+        $this->assertSame($preapprovalId, $subscription->mp_preapproval_id);
+        $this->assertSame('authorized', $subscription->status);
+        $this->assertDatabaseHas('donation_subscription_charges', [
+            'donation_subscription_id' => $subscription->id,
+            'mp_payment_id' => (string) $paymentId,
+        ]);
+    }
+
     public function test_payment_created_with_empty_reference_and_no_preapproval_is_acknowledged(): void
     {
         Log::spy();
@@ -589,6 +781,7 @@ class PlatformDonationWebhookTest extends TestCase
                 'status' => 'approved',
                 'transaction_amount' => 10.0,
                 'external_reference' => '',
+                'point_of_interaction' => ['type' => 'CHECKOUT'],
             ],
         ]);
 
@@ -602,8 +795,9 @@ class PlatformDonationWebhookTest extends TestCase
             ->assertExactJson(['status' => 'success']);
 
         $this->assertSame(0, DonationSubscriptionCharge::query()->count());
-        Log::shouldHaveReceived('info')->withArgs(function (string $message): bool {
-            return str_contains($message, 'Unreferenced MercadoPago payment ignored');
+        Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
+            return str_contains($message, 'Unreferenced MercadoPago payment ignored')
+                && array_key_exists('point_of_interaction_type', $context);
         });
     }
 }
