@@ -10,6 +10,7 @@ use MercadoPago\MercadoPagoConfig;
 use STS\Http\Controllers\Controller;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
+use STS\Models\DonationSubscription;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\PaymentAttempt;
 use STS\Models\Trip;
@@ -150,34 +151,46 @@ class MercadoPagoWebhookController extends Controller
             return $this->handleManualValidationPayment($mpPayment);
         }
 
-        // parse external reference to determine payment type
-        $decodedReference = $this->parseExternalReference($externalReference);
+        if ($externalReference !== '') {
+            $decodedReference = $this->parseExternalReference($externalReference);
 
-        if (! $decodedReference) {
-            Log::error('Failed to parse external reference', ['external_reference' => $externalReference]);
+            if (! $decodedReference) {
+                Log::error('Failed to parse external reference', ['external_reference' => $externalReference]);
 
-            return response()->json(['error' => 'Invalid external reference'], 400);
-        }
-
-        if (stripos($decodedReference, 'sellado') !== false) {
-            if ($action !== 'payment.created') {
-                return response()->json(['status' => 'success']);
+                return response()->json(['error' => 'Invalid external reference'], 400);
             }
 
-            return $this->handleTripPayment($mpPayment);
-        } elseif (stripos($decodedReference, 'campaña') !== false) {
-            if ($action !== 'payment.created') {
-                return response()->json(['status' => 'success']);
+            if (stripos($decodedReference, 'sellado') !== false) {
+                if ($action !== 'payment.created') {
+                    return response()->json(['status' => 'success']);
+                }
+
+                return $this->handleTripPayment($mpPayment);
+            } elseif (stripos($decodedReference, 'campaña') !== false) {
+                if ($action !== 'payment.created') {
+                    return response()->json(['status' => 'success']);
+                }
+
+                return $this->handleCampaignDonation($mpPayment);
+            } elseif (stripos($decodedReference, 'plataforma') !== false) {
+                return $this->handlePlatformDonationPayment($mpPayment);
             }
 
-            return $this->handleCampaignDonation($mpPayment);
-        } elseif (stripos($decodedReference, 'plataforma') !== false) {
-            return $this->handlePlatformDonationPayment($mpPayment);
+            Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
+
+            return response()->json(['error' => 'Unknown payment type'], 400);
         }
 
-        Log::error('Unknown payment type in external reference', ['external_reference' => $externalReference, 'decoded_reference' => $decodedReference]);
+        $preapprovalId = $this->resolveClubPreapprovalIdFromPayment($mpPayment);
+        if ($preapprovalId && DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()) {
+            $this->platformDonationService->handleSubscriptionAuthorizedPayment($mpPayment);
 
-        return response()->json(['error' => 'Unknown payment type'], 400);
+            return response()->json(['status' => 'success']);
+        }
+
+        Log::info('Unreferenced MercadoPago payment ignored', ['payment_id' => $paymentId]);
+
+        return response()->json(['status' => 'success']);
     }
 
     /**
@@ -407,6 +420,31 @@ class MercadoPagoWebhookController extends Controller
                 return null;
             }
 
+            $content = $payment->getResponse()?->getContent();
+            $decoded = is_array($content) ? $content : json_decode((string) $content, true);
+
+            if (is_array($decoded) && isset($decoded['id'])) {
+                $metadata = $decoded['metadata'] ?? null;
+
+                return [
+                    'id' => $decoded['id'],
+                    'status' => $decoded['status'] ?? 'pending',
+                    'status_detail' => $decoded['status_detail'] ?? null,
+                    'transaction_amount' => $decoded['transaction_amount'] ?? ($decoded['amount'] ?? 0),
+                    'amount' => $decoded['transaction_amount'] ?? ($decoded['amount'] ?? 0),
+                    'currency_id' => $decoded['currency_id'] ?? null,
+                    'payment_method_id' => $decoded['payment_method_id'] ?? null,
+                    'payment_type_id' => $decoded['payment_type_id'] ?? null,
+                    'external_reference' => $decoded['external_reference'] ?? '',
+                    'preapproval_id' => $decoded['preapproval_id'] ?? null,
+                    'metadata' => is_array($metadata) ? $metadata : null,
+                    'description' => $decoded['description'] ?? null,
+                    'date_created' => $decoded['date_created'] ?? null,
+                    'date_approved' => $decoded['date_approved'] ?? null,
+                    'date_last_updated' => $decoded['date_last_updated'] ?? null,
+                ];
+            }
+
             return [
                 'id' => $payment->id,
                 'status' => $payment->status,
@@ -417,6 +455,8 @@ class MercadoPagoWebhookController extends Controller
                 'payment_method_id' => $payment->payment_method_id,
                 'payment_type_id' => $payment->payment_type_id,
                 'external_reference' => $payment->external_reference,
+                'preapproval_id' => null,
+                'metadata' => null,
                 'description' => $payment->description,
                 'date_created' => $payment->date_created,
                 'date_approved' => $payment->date_approved,
@@ -893,18 +933,63 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Invalid request'], 400);
         }
 
-        $paymentId = $this->webhookResourceId($request);
-        if (! $paymentId) {
-            return response()->json(['error' => 'No payment ID'], 400);
+        $invoiceId = $this->webhookResourceId($request);
+        if (! $invoiceId) {
+            return response()->json(['error' => 'No authorized payment ID'], 400);
         }
 
-        $mpPayment = $this->getMercadoPagoPayment($paymentId);
-        if (! $mpPayment) {
-            return response()->json(['error' => 'Could not fetch payment'], 500);
+        $invoice = $this->mercadoPagoService->getAuthorizedPayment((string) $invoiceId);
+        if (! $invoice) {
+            return response()->json(['error' => 'Could not fetch authorized payment'], 500);
         }
 
-        $this->platformDonationService->handleSubscriptionAuthorizedPayment($mpPayment);
+        $chargePayload = $this->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
+        if ($chargePayload === null) {
+            Log::info('MercadoPago authorized payment without nested payment yet', [
+                'invoice_id' => $invoiceId,
+                'preapproval_id' => $invoice['preapproval_id'] ?? null,
+            ]);
+
+            return response()->json(['status' => 'success']);
+        }
+
+        $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayload);
 
         return response()->json(['status' => 'success']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $invoice
+     * @return array<string, mixed>|null
+     */
+    protected function mapAuthorizedPaymentInvoiceToChargePayload(array $invoice): ?array
+    {
+        $nestedPayment = $invoice['payment'] ?? null;
+        if (! is_array($nestedPayment) || empty($nestedPayment['id'])) {
+            return null;
+        }
+
+        return [
+            'id' => $nestedPayment['id'],
+            'preapproval_id' => $invoice['preapproval_id'] ?? null,
+            'status' => $nestedPayment['status'] ?? ($invoice['status'] ?? 'pending'),
+            'transaction_amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
+            'amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
+            'date_approved' => $nestedPayment['date_approved'] ?? null,
+            'external_reference' => $invoice['external_reference'] ?? '',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    protected function resolveClubPreapprovalIdFromPayment(array $mpPayment): ?string
+    {
+        $preapprovalId = $mpPayment['preapproval_id'] ?? null;
+        if (! $preapprovalId && is_array($mpPayment['metadata'] ?? null)) {
+            $preapprovalId = $mpPayment['metadata']['preapproval_id'] ?? null;
+        }
+
+        return $preapprovalId ? (string) $preapprovalId : null;
     }
 }

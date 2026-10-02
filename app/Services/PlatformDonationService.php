@@ -229,7 +229,8 @@ class PlatformDonationService
      */
     public function handleSubscriptionAuthorizedPayment(array $mpPayment): void
     {
-        $preapprovalId = $mpPayment['preapproval_id'] ?? ($mpPayment['metadata']['preapproval_id'] ?? null);
+        $metadata = $mpPayment['metadata'] ?? null;
+        $preapprovalId = $mpPayment['preapproval_id'] ?? (is_array($metadata) ? ($metadata['preapproval_id'] ?? null) : null);
         $subscription = null;
 
         if ($preapprovalId) {
@@ -247,6 +248,12 @@ class PlatformDonationService
         }
 
         if (! $subscription) {
+            Log::warning('MercadoPago subscription charge webhook could not match subscription', [
+                'payment_id' => $mpPayment['id'] ?? null,
+                'preapproval_id' => $preapprovalId,
+                'external_reference' => $mpPayment['external_reference'] ?? null,
+            ]);
+
             return;
         }
 

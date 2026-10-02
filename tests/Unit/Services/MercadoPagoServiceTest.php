@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services;
 
 use Database\Seeders\DonationTierSeeder;
+use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Net\MPResponse;
@@ -327,5 +328,26 @@ class MercadoPagoServiceTest extends TestCase
         );
         $this->assertStringNotContainsString('external_reference', $url);
         $this->assertNotNull($subscription->fresh()->external_reference);
+    }
+
+    public function test_get_authorized_payment_fetches_invoice_from_mercado_pago_api(): void
+    {
+        config(['services.mercadopago.access_token' => 'test-access-token']);
+
+        Http::fake([
+            'api.mercadopago.com/authorized_payments/7032479654' => Http::response([
+                'id' => 7032479654,
+                'preapproval_id' => 'preapproval-1',
+                'payment' => ['id' => 181935207242, 'status' => 'approved'],
+            ], 200),
+        ]);
+
+        $service = new MercadoPagoService;
+        $invoice = $service->getAuthorizedPayment('7032479654');
+
+        $this->assertIsArray($invoice);
+        $this->assertSame(7032479654, $invoice['id']);
+        $this->assertSame('preapproval-1', $invoice['preapproval_id']);
+        $this->assertSame(181935207242, $invoice['payment']['id']);
     }
 }

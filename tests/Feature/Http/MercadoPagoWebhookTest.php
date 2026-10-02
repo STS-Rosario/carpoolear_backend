@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use Database\Seeders\DonationTierSeeder;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -11,6 +12,8 @@ use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
 use MercadoPago\Net\MPRequest;
 use MercadoPago\Net\MPResponse;
+use STS\Models\DonationSubscription;
+use STS\Models\DonationTier;
 use STS\Models\ManualIdentityValidation;
 use STS\Models\PaymentAttempt;
 use STS\Models\Trip;
@@ -72,9 +75,13 @@ class MercadoPagoWebhookTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function mercadoPagoPaymentPayload(string $externalReference, int $id): array
+    /**
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function mercadoPagoPaymentPayload(string $externalReference, int $id, array $overrides = []): array
     {
-        return [
+        return array_merge([
             'id' => $id,
             'status' => 'approved',
             'status_detail' => 'accredited',
@@ -87,7 +94,7 @@ class MercadoPagoWebhookTest extends TestCase
             'date_created' => '2026-01-01T00:00:00.000-00:00',
             'date_approved' => '2026-01-01T00:00:01.000-00:00',
             'date_last_updated' => '2026-01-01T00:00:02.000-00:00',
-        ];
+        ], $overrides);
     }
 
     /**
@@ -559,6 +566,52 @@ class MercadoPagoWebhookTest extends TestCase
         ]);
 
         $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
+    }
+
+    public function test_payment_created_for_trip_sellado_with_preapproval_id_still_routes_to_trip_not_club(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => 0,
+            'state' => Trip::STATE_PENDING_PAYMENT,
+        ]);
+
+        $clubUser = User::factory()->create();
+        $this->seed(DonationTierSeeder::class);
+        DonationSubscription::create([
+            'user_id' => $clubUser->id,
+            'donation_tier_id' => DonationTier::where('slug', 'cafe')->firstOrFail()->id,
+            'mp_preapproval_id' => 'dummy-club-preapproval-on-payment',
+            'status' => 'authorized',
+            'transaction_amount_cents' => 500000,
+        ]);
+
+        $paymentId = 55001144;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $paymentId, 'req-sellado-club-ref', 'wh-secret-test');
+
+        $external = $this->hashedSelladoExternalReference($trip->id);
+        $this->stubMercadoPagoPayments([
+            $paymentId => $this->mercadoPagoPaymentPayload($external, $paymentId, [
+                'preapproval_id' => 'dummy-club-preapproval-on-payment',
+            ]),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
+            'action' => 'payment.created',
+            'data_id' => (string) $paymentId,
+        ], $headers)
+            ->assertOk();
+
+        $this->assertDatabaseHas('payment_attempts', [
+            'trip_id' => $trip->id,
+            'payment_id' => $paymentId,
+        ]);
+        $this->assertDatabaseMissing('donation_subscription_charges', [
+            'mp_payment_id' => (string) $paymentId,
+        ]);
     }
 
     public function test_payment_created_for_trip_sellado_persists_mercadopago_metadata_fields(): void
