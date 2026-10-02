@@ -3,6 +3,8 @@
 namespace Tests\Feature\Http;
 
 use Database\Seeders\DonationTierSeeder;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
@@ -59,6 +61,36 @@ class PlatformDonationWebhookTest extends TestCase
             'x-request-id' => $requestId,
             'x-signature' => "ts={$ts},v1={$v1}",
         ];
+    }
+
+    /**
+     * @param  array<string, string>  $query
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, string>  $headers
+     */
+    private function postMercadoPagoWebhookPreservingDottedDataIdQuery(
+        string $dataId,
+        array $query,
+        array $payload,
+        array $headers
+    ): \Symfony\Component\HttpFoundation\Response {
+        $request = Request::create(
+            '/webhooks/mercadopago',
+            'POST',
+            $payload,
+            [],
+            [],
+            [
+                'HTTP_ACCEPT' => 'application/json',
+                'HTTP_X_REQUEST_ID' => $headers['x-request-id'],
+                'HTTP_X_SIGNATURE' => $headers['x-signature'],
+            ]
+        );
+        $request->headers->set('x-request-id', $headers['x-request-id']);
+        $request->headers->set('x-signature', $headers['x-signature']);
+        $request->query->replace(array_merge($query, ['data.id' => $dataId]));
+
+        return $this->app->make(Kernel::class)->handle($request);
     }
 
     public function test_platform_payment_webhook_marks_donation_as_approved(): void
@@ -149,6 +181,57 @@ class PlatformDonationWebhookTest extends TestCase
             'data_id' => $preapprovalId,
         ], $headers)
             ->assertOk();
+
+        $subscription->refresh();
+        $user->refresh();
+        $this->assertSame('authorized', $subscription->status);
+        $this->assertTrue($user->monthly_donate);
+        $this->assertNotNull($user->club_carpoolear_joined_at);
+    }
+
+    public function test_subscription_preapproval_webhook_accepts_production_data_id_and_action_created(): void
+    {
+        $user = User::factory()->create(['monthly_donate' => false]);
+        $tier = DonationTier::where('slug', 'beer')->firstOrFail();
+        $subscription = DonationSubscription::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'status' => 'pending',
+            'transaction_amount_cents' => 750000,
+            'external_reference' => $this->hashedPlatformReference(1, 'monthly', $user->id, 'beer'),
+        ]);
+
+        $preapprovalId = 'preapproval-prod-data-id';
+        $subscription->update(['mp_preapproval_id' => $preapprovalId]);
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($preapprovalId, $subscription) {
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with($preapprovalId)
+                ->andReturn([
+                    'id' => $preapprovalId,
+                    'status' => 'authorized',
+                    'external_reference' => $subscription->external_reference,
+                    'auto_recurring' => ['transaction_amount' => 7500],
+                    'next_payment_date' => '2026-09-24T00:00:00.000-00:00',
+                ]);
+        });
+
+        $headers = $this->signatureHeaders($preapprovalId, 'req-preapproval-data-id', 'wh-secret-test');
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            $preapprovalId,
+            ['type' => 'subscription_preapproval'],
+            [
+                'type' => 'subscription_preapproval',
+                'action' => 'created',
+                'data' => ['id' => $preapprovalId],
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode(), $response->getContent());
+        $this->assertSame(['status' => 'success'], json_decode($response->getContent(), true));
 
         $subscription->refresh();
         $user->refresh();
