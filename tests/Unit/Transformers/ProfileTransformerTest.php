@@ -219,6 +219,8 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame('self-profile@example.test', $payload['email']);
         $this->assertSame('+5491112345678', $payload['mobile_phone']);
         $this->assertArrayHasKey('validate_by_date', $payload);
+        $this->assertArrayHasKey('club_carpoolear_welcome_shown', $payload);
+        $this->assertSame(0, $payload['club_carpoolear_welcome_shown']);
     }
 
     public function test_transform_own_profile_branch_uses_loose_id_equality_for_string_subject_id(): void

@@ -34,9 +34,16 @@ class ClubCarpoolearMembershipService
     public function applyCancelledMembership(User $user): void
     {
         $user->club_carpoolear_joined_at = null;
+        $user->club_carpoolear_welcome_shown = false;
         $user->save();
 
         $this->syncClubBadge($user, false);
+    }
+
+    public function markWelcomeShown(User $user): void
+    {
+        $user->club_carpoolear_welcome_shown = true;
+        $user->save();
     }
 
     public function shouldShowMembershipPublicly(User $user): bool
