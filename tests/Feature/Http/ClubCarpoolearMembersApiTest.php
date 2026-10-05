@@ -33,6 +33,13 @@ class ClubCarpoolearMembersApiTest extends TestCase
             'club_carpoolear_joined_at' => now()->subDays(1),
             'name' => 'Not Active',
         ]);
+        $former = User::factory()->create([
+            'monthly_donate' => false,
+            'show_club_carpoolear_membership' => true,
+            'club_carpoolear_joined_at' => now()->subDays(40),
+            'club_carpoolear_left_at' => now()->subDays(2),
+            'name' => 'Former Member',
+        ]);
 
         $response = $this->getJson('/api/club-carpoolear/members');
 
@@ -40,5 +47,6 @@ class ClubCarpoolearMembersApiTest extends TestCase
         $ids = collect($response->json('data'))->pluck('id')->all();
         $this->assertSame([$older->id, $newer->id], $ids);
         $this->assertNotContains($hidden->id, $ids);
+        $this->assertNotContains($former->id, $ids);
     }
 }

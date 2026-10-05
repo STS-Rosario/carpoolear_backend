@@ -106,8 +106,10 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_apply_cancelled_clears_joined_at_and_removes_club_badge(): void
+    public function test_apply_cancelled_keeps_joined_at_sets_left_at_and_removes_club_badge(): void
     {
+        Carbon::setTestNow('2026-08-20 15:00:00');
+
         $badge = Badge::query()->firstOrCreate(
             ['slug' => ClubCarpoolearMembershipService::BADGE_SLUG],
             [
@@ -117,16 +119,48 @@ class ClubCarpoolearMembershipServiceTest extends TestCase
             ]
         );
 
+        $joinedAt = Carbon::parse('2026-01-10 09:00:00');
         $user = User::factory()->create([
-            'club_carpoolear_joined_at' => now(),
+            'club_carpoolear_joined_at' => $joinedAt,
+            'club_carpoolear_left_at' => null,
         ]);
         $user->badges()->attach($badge->id, ['awarded_at' => now()]);
 
         $this->service->applyCancelledMembership($user);
 
         $user->refresh();
-        $this->assertNull($user->club_carpoolear_joined_at);
+        $this->assertSame('2026-01-10 09:00:00', $user->club_carpoolear_joined_at->toDateTimeString());
+        $this->assertSame('2026-08-20 15:00:00', $user->club_carpoolear_left_at->toDateTimeString());
         $this->assertFalse($user->badges->contains($badge->id));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_apply_authorized_clears_left_at_on_rejoin(): void
+    {
+        Carbon::setTestNow('2026-09-01 08:00:00');
+
+        Badge::query()->firstOrCreate(
+            ['slug' => ClubCarpoolearMembershipService::BADGE_SLUG],
+            [
+                'title' => 'Club Carpoolear',
+                'rules' => ['type' => 'club_carpoolear'],
+                'visible' => true,
+            ]
+        );
+
+        $user = User::factory()->create([
+            'club_carpoolear_joined_at' => Carbon::parse('2026-01-10 09:00:00'),
+            'club_carpoolear_left_at' => Carbon::parse('2026-08-20 15:00:00'),
+        ]);
+
+        $this->service->applyAuthorizedMembership($user);
+
+        $user->refresh();
+        $this->assertSame('2026-09-01 08:00:00', $user->club_carpoolear_joined_at->toDateTimeString());
+        $this->assertNull($user->club_carpoolear_left_at);
+
+        Carbon::setTestNow();
     }
 
     public function test_apply_cancelled_resets_welcome_shown_so_rejoin_can_see_welcome(): void
