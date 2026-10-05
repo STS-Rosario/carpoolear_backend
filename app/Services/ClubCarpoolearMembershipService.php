@@ -26,6 +26,7 @@ class ClubCarpoolearMembershipService
     public function applyAuthorizedMembership(User $user): void
     {
         $user->club_carpoolear_joined_at = now();
+        $user->club_carpoolear_left_at = null;
         $user->save();
 
         $this->syncClubBadge($user, true);
@@ -33,7 +34,7 @@ class ClubCarpoolearMembershipService
 
     public function applyCancelledMembership(User $user): void
     {
-        $user->club_carpoolear_joined_at = null;
+        $user->club_carpoolear_left_at = now();
         $user->club_carpoolear_welcome_shown = false;
         $user->save();
 

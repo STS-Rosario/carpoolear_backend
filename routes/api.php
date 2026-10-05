@@ -13,6 +13,8 @@ use STS\Http\Controllers\Api\Admin\CarColorController as AdminCarColorController
 use STS\Http\Controllers\Api\Admin\CarController as AdminCarController;
 use STS\Http\Controllers\Api\Admin\CarModelController as AdminCarModelController;
 use STS\Http\Controllers\Api\Admin\ChangelogController as AdminChangelogController;
+use STS\Http\Controllers\Api\Admin\ClubCarpoolearMembersController as AdminClubCarpoolearMembersController;
+use STS\Http\Controllers\Api\Admin\DonationLedgerController as AdminDonationLedgerController;
 use STS\Http\Controllers\Api\Admin\DonationPaymentController as AdminDonationPaymentController;
 use STS\Http\Controllers\Api\Admin\DonationSubscriptionController as AdminDonationSubscriptionController;
 use STS\Http\Controllers\Api\Admin\DonationSummaryController as AdminDonationSummaryController;
@@ -306,6 +308,8 @@ Route::middleware(['api'])->group(function () {
             Route::get('donation-payments', [AdminDonationPaymentController::class, 'index']);
             Route::get('donation-subscriptions', [AdminDonationSubscriptionController::class, 'index']);
             Route::get('donations/summary', [AdminDonationSummaryController::class, 'show']);
+            Route::get('donations/payments', [AdminDonationLedgerController::class, 'index']);
+            Route::get('club-carpoolear/members', [AdminClubCarpoolearMembersController::class, 'index']);
         });
         Route::middleware('can:admin.cars.catalog')->group(function () {
             Route::apiResource('cars', AdminCarController::class);

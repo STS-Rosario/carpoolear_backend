@@ -50,18 +50,15 @@
                 <img src="/img/economia-colaborativa.jpg" style="float: right; width: 100%; max-width: 450px;" class="hidden-xs" />
                 <div class="donation donation-top">
                     <h3>Aportar</h3>
-                    <div class="radio">
+                    <div class="radio" data-donation-tiers>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation50" value="2000" v-model="donateValue"><span>$ 2000</span>
+                            <input type="radio" name="donationValor" value="5000"><span>$ 5000</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation100" value="5000" v-model="donateValue"><span>$ 5000</span>
+                            <input type="radio" name="donationValor" value="7500"><span>$ 7500</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation200" value="10000" v-model="donateValue"><span>$ 10000</span>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation500" value="50" v-model="donateValue"><span>Elegí tu propia aventura (solo mensual)</span>
+                            <input type="radio" name="donationValor" value="12000"><span>$ 12000</span>
                         </label>
                     </div>
                     <div>
@@ -81,18 +78,15 @@
                 <p>Carpoolear es un proyecto de STS Rosario, una ONG sin fines de lucro, constituida como asociación civil desde el 2014. A través de proyectos concretos, divulga las problemáticas socioambientales actuales y genera herramientas, para provocar un cambio cultural hacia una sociedad sustentable, resiliente y equitativa. Del total del aporte realizado a nosotros, un 10% será destinada al sostenimiento de nuestra organización, para que pueda haber más proyectos como Carpoolear. Podés enterarte más acerca de <a href="https://www.stsrosario.org.ar" target="_blank">STS en www.stsrosario.org.ar</a></p>
 
                 <div class="donation hidden-sm hidden-md hidden-lg">
-                    <div class="radio">
+                    <div class="radio" data-donation-tiers>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation50" value="50" v-model="donateValue"><span>$ 50</span>
+                            <input type="radio" name="donationValor" value="5000"><span>$ 5000</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation100" value="1000" v-model="donateValue"><span>$ 1000</span>
+                            <input type="radio" name="donationValor" value="7500"><span>$ 7500</span>
                         </label>
                         <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation200" value="2000" v-model="donateValue"><span>$ 2000</span>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" id="donation500" value="5000" v-model="donateValue"><span>$ 5000</span>
+                            <input type="radio" name="donationValor" value="12000"><span>$ 12000</span>
                         </label>
                     </div>
                     <div>
@@ -107,22 +101,6 @@
     </div>
 </section>
 <script>
-    function post (user, ammount) {
-        var http = new XMLHttpRequest();
-        var url = '/api/users/donation';
-        var params = 'has_donated=1&ammount=' + ammount + '&user=' + user;
-        http.open('POST', url, true);
-
-        //Send the proper header information along with the request
-        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-
-        http.onreadystatechange = function() {//Call a function when the state changes.
-            if(http.readyState == 4 && http.status == 200) {
-                console.log('success');
-            }
-        }
-        http.send(params);
-    }
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
         name = name.replace(/[\[\]]/g, '\\$&');
@@ -132,34 +110,61 @@
         if (!results[2]) return '';
         return decodeURIComponent(results[2].replace(/\+/g, ' '));
     }
-    var linksUnicaVez = {
-        2000: "https://mpago.la/1WhaoLf",
-        5000: "https://mpago.la/1SB6on8",
-        10000: "https://mpago.la/2USgEBv"
-    };
-    // TODO: hardcoded plan URLs bypass POST /api/donations/checkout/monthly and Club tables.
-    var linksMensual = {
-        50: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c938084749ef7f70174ad5d6f151110",
-        2000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380848a2fd5c9018a33702cc50181",
-        5000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c9380848cee0ea5018d0e9ea71016d7 ",
-        10000: "https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=2c93808497030fc7019705478b370068"
-    };
-    var btns = document.querySelectorAll(".btn-donar");
-    btns.forEach(function (btn) {
-        btn.addEventListener("click", function (event) {
-            var rdb = document.querySelector('input[name="donationValor"]:checked');
-            if (rdb) {
-                var value = rdb.value;
-                if (event.target.className.indexOf("btn-unica") >= 0) {
-                    window.open(linksUnicaVez[value], '_blank');
-                } else {
-                    window.open(linksMensual[value], '_blank');
-                }
-                var user_id = getParameterByName('u');
-                post(user_id, value);
-            } else {
-                alert("Debes seleccionar un monto de donación. Gracias!");
+    function checkoutUserId() {
+        var user_id = getParameterByName('u') || getParameterByName('user');
+        return user_id ? parseInt(user_id, 10) : null;
+    }
+    function startAportarCheckout(type, amount) {
+        var payload = { amount: parseInt(amount, 10), source: 'aportar' };
+        var user_id = checkoutUserId();
+        if (user_id) {
+            payload.user_id = user_id;
+        }
+        var path = type === 'monthly'
+            ? '/api/donations/checkout/monthly'
+            : '/api/donations/checkout/once';
+        fetch(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                return { ok: response.ok, data: data };
+            });
+        }).then(function (result) {
+            if (result.ok && result.data && result.data.init_point) {
+                window.open(result.data.init_point, '_blank');
+                return;
             }
+            alert('No pudimos iniciar el aporte. Probá de nuevo.');
+        }).catch(function () {
+            alert('No pudimos iniciar el aporte. Probá de nuevo.');
+        });
+    }
+    function renderDonationTiers(tiers) {
+        document.querySelectorAll('[data-donation-tiers]').forEach(function (container) {
+            container.innerHTML = tiers.map(function (tier) {
+                return '<label class="radio-inline"><input type="radio" name="donationValor" value="'
+                    + tier.amount + '"><span>$ ' + tier.amount + '</span></label>';
+            }).join('');
+        });
+    }
+    fetch('/api/donation-tiers').then(function (response) {
+        return response.json();
+    }).then(function (tiers) {
+        if (Array.isArray(tiers) && tiers.length) {
+            renderDonationTiers(tiers);
+        }
+    }).catch(function () {});
+    document.querySelectorAll('.btn-donar').forEach(function (btn) {
+        btn.addEventListener('click', function (event) {
+            var rdb = document.querySelector('input[name="donationValor"]:checked');
+            if (!rdb) {
+                alert('Debes seleccionar un monto de donación. Gracias!');
+                return;
+            }
+            var type = event.currentTarget.className.indexOf('btn-unica') >= 0 ? 'once' : 'monthly';
+            startAportarCheckout(type, rdb.value);
         });
     });
 </script>

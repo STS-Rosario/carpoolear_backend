@@ -18,6 +18,7 @@ class ClubCarpoolearMembersController extends Controller
             ->where('monthly_donate', true)
             ->where('show_club_carpoolear_membership', true)
             ->whereNotNull('club_carpoolear_joined_at')
+            ->whereNull('club_carpoolear_left_at')
             ->orderBy('club_carpoolear_joined_at')
             ->get(['id', 'name', 'image', 'club_carpoolear_joined_at']);
 

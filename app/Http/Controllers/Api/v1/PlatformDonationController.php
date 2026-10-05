@@ -7,13 +7,15 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\DonationPayment;
 use STS\Models\DonationSubscription;
+use STS\Models\User;
 use STS\Services\PlatformDonationService;
 
 class PlatformDonationController extends Controller
 {
     public function __construct(private PlatformDonationService $platformDonationService)
     {
-        $this->middleware('logged');
+        $this->middleware('logged.optional')->only(['checkoutOnce', 'checkoutMonthly']);
+        $this->middleware('logged')->only(['myDonations']);
     }
 
     public function checkoutOnce(Request $request): JsonResponse
@@ -25,13 +27,15 @@ class PlatformDonationController extends Controller
             'amount' => 'nullable|integer|min:1',
             'source' => 'nullable|string|max:64',
             'trip_id' => 'nullable|integer',
+            'user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         if (empty($validated['tier_id']) && empty($validated['amount'])) {
             return response()->json(['error' => 'tier_id or amount is required'], 422);
         }
 
-        $result = $this->platformDonationService->checkoutOnce($request->user(), $validated);
+        $user = $this->resolveCheckoutUser($request, $validated);
+        $result = $this->platformDonationService->checkoutOnce($user, $validated);
 
         return response()->json($result);
     }
@@ -45,13 +49,19 @@ class PlatformDonationController extends Controller
             'amount' => 'nullable|integer|min:1',
             'source' => 'nullable|string|max:64',
             'trip_id' => 'nullable|integer',
+            'user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         if (empty($validated['tier_id']) && empty($validated['amount'])) {
             return response()->json(['error' => 'tier_id or amount is required'], 422);
         }
 
-        $result = $this->platformDonationService->checkoutMonthly($request->user(), $validated);
+        $user = $this->resolveCheckoutUser($request, $validated);
+        if (! $user) {
+            return response()->json(['error' => 'user_id or authentication is required'], 422);
+        }
+
+        $result = $this->platformDonationService->checkoutMonthly($user, $validated);
 
         return response()->json($result);
     }
@@ -84,5 +94,23 @@ class PlatformDonationController extends Controller
         if (! $this->platformDonationService->isEnabled()) {
             abort(503, 'Platform donations API is disabled');
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     */
+    private function resolveCheckoutUser(Request $request, array $validated): ?User
+    {
+        $authenticated = $request->user();
+        if ($authenticated) {
+            return $authenticated;
+        }
+
+        $guestUserId = $validated['user_id'] ?? $request->query('u') ?? $request->query('user');
+        if (! $guestUserId) {
+            return null;
+        }
+
+        return User::query()->find((int) $guestUserId);
     }
 }
