@@ -60,11 +60,11 @@ class PlatformDonationService
      * @param  array<string, mixed>  $data
      * @return array{init_point: string, payment_id: int}
      */
-    public function checkoutOnce(User $user, array $data): array
+    public function checkoutOnce(?User $user, array $data): array
     {
         $tier = $this->resolveTier($data);
         $payment = DonationPayment::create([
-            'user_id' => $user->id,
+            'user_id' => $user?->id,
             'donation_tier_id' => $tier->id,
             'amount_cents' => $tier->amount_cents,
             'currency' => 'ARS',
@@ -78,7 +78,7 @@ class PlatformDonationService
         $payment->external_reference = $this->mercadoPagoService->createHashedExternalReferenceForPlatformDonation(
             $payment->id,
             'once',
-            $user->id,
+            $user?->id ?? 'Anonymous',
             $tier->slug
         );
         $payment->save();
