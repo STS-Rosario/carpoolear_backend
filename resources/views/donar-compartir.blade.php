@@ -79,18 +79,15 @@
                 </div>
                 <div class="card-body text-center">
                     <div class="donation donation-top">
-                        <div class="radio">
+                        <div class="radio" data-donation-tiers>
                             <label class="radio-inline">
-                                <input type="radio" name="donationValor" id="donation50" value="200" v-model="donateValue"><span>$ 200</span>
+                                <input type="radio" name="donationValor" value="5000"><span>$ 5000</span>
                             </label>
                             <label class="radio-inline">
-                                <input type="radio" name="donationValor" id="donation100" value="400" v-model="donateValue"><span>$ 400</span>
+                                <input type="radio" name="donationValor" value="7500"><span>$ 7500</span>
                             </label>
                             <label class="radio-inline">
-                                <input type="radio" name="donationValor" id="donation200" value="1000" v-model="donateValue"><span>$ 1000</span>
-                            </label>
-                            <label class="radio-inline">
-                                <input type="radio" name="donationValor" id="donation500" value="0" v-model="donateValue"><span>Elige tu propia aventura (solo mensual)</span>
+                                <input type="radio" name="donationValor" value="12000"><span>$ 12000</span>
                             </label>
                         </div>
                         <div>
@@ -106,22 +103,6 @@
         </div>
     </body>
     <script>
-        function post (user, ammount) {
-            var http = new XMLHttpRequest();
-            var url = '/api/users/donation';
-            var params = 'has_donated=1&ammount=' + ammount + '&user=' + user;
-            http.open('POST', url, true);
-    
-            //Send the proper header information along with the request
-            http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-    
-            http.onreadystatechange = function() {//Call a function when the state changes.
-                if(http.readyState == 4 && http.status == 200) {
-                    console.log('success');
-                }
-            }
-            http.send(params);
-        }
         function getParameterByName(name, url) {
             if (!url) url = window.location.href;
             name = name.replace(/[\[\]]/g, '\\$&');
@@ -131,34 +112,61 @@
             if (!results[2]) return '';
             return decodeURIComponent(results[2].replace(/\+/g, ' '));
         }
-        var linksUnicaVez = {
-            200: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-f94a3145-7336-4d79-9eb9-76c5402894fa",
-            400: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-42de1d74-f967-455f-80bf-a7a77650db06",
-            1000: "https://www.mercadopago.com.ar/checkout/v1/redirect?preference-id=201279444-c693bd88-7fd4-49d8-9f22-2b80151d184e",
-            0: ""
-        };
-        var linksMensual = {
-            200: "http://mpago.la/2k6JFz6",
-            400: "http://mpago.la/1FE4px6",
-            1000: "http://mpago.la/1EcA6f4",
-            0: "http://mpago.la/2XdoxpF"
-        };
-        var btns = document.querySelectorAll(".btn-donar");
-        btns.forEach(function (btn) {
-            btn.addEventListener("click", function (event) {
-                var rdb = document.querySelector('input[name="donationValor"]:checked');
-                if (rdb) {
-                    var value = rdb.value;
-                    if (event.target.className.indexOf("btn-unica") >= 0) {
-                        window.open(linksUnicaVez[value], '_blank');
-                    } else {
-                        window.open(linksMensual[value], '_blank');
-                    }
-                    var user_id = getParameterByName('u');
-                    post(user_id, value);
-                } else {
-                    alert("Debes seleccionar un monto de aporte. Gracias!");
+        function checkoutUserId() {
+            var user_id = getParameterByName('u') || getParameterByName('user');
+            return user_id ? parseInt(user_id, 10) : null;
+        }
+        function startAportarCheckout(type, amount) {
+            var payload = { amount: parseInt(amount, 10), source: 'aportar' };
+            var user_id = checkoutUserId();
+            if (user_id) {
+                payload.user_id = user_id;
+            }
+            var path = type === 'monthly'
+                ? '/api/donations/checkout/monthly'
+                : '/api/donations/checkout/once';
+            fetch(path, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(function (response) {
+                return response.json().then(function (data) {
+                    return { ok: response.ok, data: data };
+                });
+            }).then(function (result) {
+                if (result.ok && result.data && result.data.init_point) {
+                    window.open(result.data.init_point, '_blank');
+                    return;
                 }
+                alert('No pudimos iniciar el aporte. Probá de nuevo.');
+            }).catch(function () {
+                alert('No pudimos iniciar el aporte. Probá de nuevo.');
+            });
+        }
+        function renderDonationTiers(tiers) {
+            document.querySelectorAll('[data-donation-tiers]').forEach(function (container) {
+                container.innerHTML = tiers.map(function (tier) {
+                    return '<label class="radio-inline"><input type="radio" name="donationValor" value="'
+                        + tier.amount + '"><span>$ ' + tier.amount + '</span></label>';
+                }).join('');
+            });
+        }
+        fetch('/api/donation-tiers').then(function (response) {
+            return response.json();
+        }).then(function (tiers) {
+            if (Array.isArray(tiers) && tiers.length) {
+                renderDonationTiers(tiers);
+            }
+        }).catch(function () {});
+        document.querySelectorAll('.btn-donar').forEach(function (btn) {
+            btn.addEventListener('click', function (event) {
+                var rdb = document.querySelector('input[name="donationValor"]:checked');
+                if (!rdb) {
+                    alert('Debes seleccionar un monto de aporte. Gracias!');
+                    return;
+                }
+                var type = event.currentTarget.className.indexOf('btn-unica') >= 0 ? 'once' : 'monthly';
+                startAportarCheckout(type, rdb.value);
             });
         });
     </script>
