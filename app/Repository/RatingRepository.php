@@ -77,7 +77,6 @@ class RatingRepository
         $ratings->where('voted', false);
         $ratings->with(['from', 'to', 'trip']);
         $ratings->where('created_at', '>=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
-        $this->applyExcludeAlreadyRatedUsers($ratings, $user->id);
 
         return $ratings->get();
     }
@@ -92,7 +91,7 @@ class RatingRepository
             return false;
         }
 
-        return ! $this->hasPriorVoteForPair($rating->user_id_from, $rating->user_id_to);
+        return true;
     }
 
     public function hasPriorVoteForPair(int $fromId, int $toId): bool
