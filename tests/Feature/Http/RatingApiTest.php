@@ -593,6 +593,28 @@ class RatingApiTest extends TestCase
             ->assertJsonFragment(['message' => 'Could not rate user.']);
     }
 
+    public function test_rate_with_only_pending_request_and_no_rating_row_returns_error(): void
+    {
+        $passenger = User::factory()->create(['active' => true, 'banned' => false]);
+        $driver = User::factory()->create(['active' => true, 'banned' => false]);
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $this->actingAs($passenger, 'api');
+
+        $this->postJson("api/trips/{$trip->id}/rate/{$driver->id}", [
+            'rating' => 1,
+            'comment' => 'ok',
+        ])
+            ->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Could not rate user.']);
+    }
+
     public function test_reply_persists_comment_and_returns_ok(): void
     {
         $voter = User::factory()->create(['active' => true, 'banned' => false]);

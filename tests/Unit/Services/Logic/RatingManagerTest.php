@@ -614,6 +614,79 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_eligible_ratings_only_creates_pairs_for_accepted_or_later_canceled_passengers(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-06-01 14:00:00');
+
+        $cases = [
+            'pending' => [Passenger::STATE_PENDING, null, 0],
+            'rejected' => [Passenger::STATE_REJECTED, null, 0],
+            'waiting_payment' => [Passenger::STATE_WAITING_PAYMENT, null, 0],
+            'canceled_request' => [Passenger::STATE_CANCELED, Passenger::CANCELED_REQUEST, 0],
+            'accepted' => [Passenger::STATE_ACCEPTED, null, 2],
+            'canceled_passenger' => [Passenger::STATE_CANCELED, Passenger::CANCELED_PASSENGER, 2],
+            'canceled_driver' => [Passenger::STATE_CANCELED, Passenger::CANCELED_DRIVER, 2],
+        ];
+
+        $created = [];
+        foreach ($cases as $label => [$requestState, $canceledState, $expectedCount]) {
+            $created[$label] = $this->seedPastDriverTripWithPassenger($requestState, $canceledState) + ['expected' => $expectedCount];
+        }
+
+        $this->manager()->createEligibleRatings();
+
+        foreach ($created as $label => $fixture) {
+            $ratings = Rating::query()->where('trip_id', $fixture['trip']->id)->get();
+            $this->assertCount($fixture['expected'], $ratings, $label);
+
+            if ($fixture['expected'] === 2) {
+                $this->assertTrue($ratings->contains(
+                    fn ($row) => (int) $row->user_id_from === $fixture['driver']->id
+                        && (int) $row->user_id_to === $fixture['passenger']->id
+                ), $label);
+                $this->assertTrue($ratings->contains(
+                    fn ($row) => (int) $row->user_id_from === $fixture['passenger']->id
+                        && (int) $row->user_id_to === $fixture['driver']->id
+                ), $label);
+            }
+        }
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * @return array{driver: User, passenger: User, trip: Trip}
+     */
+    private function seedPastDriverTripWithPassenger(int $requestState, ?int $canceledState): array
+    {
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-06-01 10:00:00',
+            'estimated_time' => '04:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+
+        $attributes = [
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+            'request_state' => $requestState,
+        ];
+        if ($canceledState !== null) {
+            $attributes['canceled_state'] = $canceledState;
+        }
+        Passenger::factory()->create($attributes);
+
+        return [
+            'driver' => $driver,
+            'passenger' => $passengerUser,
+            'trip' => $trip,
+        ];
+    }
+
     public function test_create_eligible_ratings_skips_trips_before_eighty_percent_of_estimated_time(): void
     {
         Event::fake([PendingRateEvent::class]);
