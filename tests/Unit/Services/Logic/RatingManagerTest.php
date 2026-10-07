@@ -119,7 +119,7 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_get_pending_ratings_by_hash_excludes_repeat_user_when_already_rated_them(): void
+    public function test_get_pending_ratings_by_hash_includes_repeat_user_when_already_rated_them(): void
     {
         Carbon::setTestNow('2026-10-01 12:00:00');
         $user = User::factory()->create();
@@ -138,14 +138,15 @@ class RatingManagerTest extends TestCase
 
         $hash = 'batch-'.uniqid('', true);
         $repeatTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
-        $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, $hash);
+        $repeat = $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, $hash);
 
         $firstTrip = Trip::factory()->create(['user_id' => $firstTime->id]);
         $mandatory = $repo->create($user->id, $firstTime->id, $firstTrip->id, 0, 0, $hash);
 
         $collection = $this->manager()->getPendingRatingsByHash($hash);
-        $this->assertCount(1, $collection);
-        $this->assertTrue($collection->first()->is($mandatory));
+        $this->assertCount(2, $collection);
+        $this->assertTrue($collection->contains(fn ($row) => $row->is($repeat)));
+        $this->assertTrue($collection->contains(fn ($row) => $row->is($mandatory)));
 
         Carbon::setTestNow();
     }
@@ -365,6 +366,37 @@ class RatingManagerTest extends TestCase
         $errors = $manager->getErrors();
         $this->assertIsArray($errors);
         $this->assertSame('user_have_already_voted', $errors['error']);
+    }
+
+    public function test_rate_user_succeeds_on_later_trip_after_prior_vote_for_same_pair(): void
+    {
+        Carbon::setTestNow('2026-11-10 15:00:00');
+        $voter = User::factory()->create();
+        $driver = User::factory()->create();
+        $repo = new RatingRepository;
+
+        $trip1 = Trip::factory()->create(['user_id' => $driver->id]);
+        Rating::factory()->create([
+            'trip_id' => $trip1->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $driver->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'voted' => true,
+        ]);
+
+        $trip2 = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo->create($voter->id, $driver->id, $trip2->id, 0, 0, 'later-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($voter, $driver->id, $trip2->id, [
+            'rating' => 1,
+            'comment' => 'ok',
+        ]));
+
+        $row = $repo->getRating($voter->id, $driver->id, $trip2->id);
+        $this->assertNotNull($row);
+        $this->assertTrue((bool) $row->voted);
+
+        Carbon::setTestNow();
     }
 
     public function test_reply_rating_persists_comment_once(): void
