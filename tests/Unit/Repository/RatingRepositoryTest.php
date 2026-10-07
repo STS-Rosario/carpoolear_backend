@@ -319,7 +319,7 @@ class RatingRepositoryTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_get_pending_ratings_excludes_repeat_user_when_already_rated_them(): void
+    public function test_get_pending_ratings_includes_repeat_user_when_already_rated_them(): void
     {
         Carbon::setTestNow('2026-06-15 12:00:00');
         $user = User::factory()->create();
@@ -331,15 +331,16 @@ class RatingRepositoryTest extends TestCase
         $this->seedRating($user, $alreadyRated, $priorTrip);
 
         $repeatTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
-        $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, 'repeat-'.uniqid('', true));
+        $repeat = $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, 'repeat-'.uniqid('', true));
 
         $firstTrip = Trip::factory()->create(['user_id' => $firstTime->id]);
         $mandatory = $repo->create($user->id, $firstTime->id, $firstTrip->id, 0, 0, 'first-'.uniqid('', true));
 
         $listed = $repo->getPendingRatings($user);
 
-        $this->assertCount(1, $listed);
-        $this->assertTrue($listed->first()->is($mandatory));
+        $this->assertCount(2, $listed);
+        $this->assertTrue($listed->contains(fn ($row) => $row->is($repeat)));
+        $this->assertTrue($listed->contains(fn ($row) => $row->is($mandatory)));
 
         Carbon::setTestNow();
     }

@@ -280,7 +280,7 @@ class RatingApiTest extends TestCase
         $this->assertContains($pending->id, $ids);
     }
 
-    public function test_pending_omits_repeat_user_when_voter_already_rated_them(): void
+    public function test_pending_includes_repeat_user_when_voter_already_rated_them(): void
     {
         Carbon::setTestNow('2026-06-15 12:00:00');
         $voter = User::factory()->create(['active' => true, 'banned' => false]);
@@ -340,7 +340,7 @@ class RatingApiTest extends TestCase
         $response = $this->getJson('api/users/ratings/pending');
         $response->assertOk();
         $ids = array_column($response->json('data'), 'id');
-        $this->assertNotContains($repeatPending->id, $ids);
+        $this->assertContains($repeatPending->id, $ids);
         $this->assertContains($mandatoryPending->id, $ids);
 
         Carbon::setTestNow();
@@ -416,6 +416,63 @@ class RatingApiTest extends TestCase
             'user_id_to' => $rated->id,
             'voted' => 1,
         ]);
+    }
+
+    public function test_rate_succeeds_on_later_trip_after_prior_vote_for_same_pair(): void
+    {
+        Carbon::setTestNow('2026-06-15 12:00:00');
+        $voter = User::factory()->create(['active' => true, 'banned' => false]);
+        $driver = User::factory()->create(['active' => true, 'banned' => false]);
+
+        $trip1 = Trip::factory()->create(['user_id' => $driver->id]);
+        $this->persistRating([
+            'trip_id' => $trip1->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $driver->id,
+            'user_to_type' => Passenger::TYPE_CONDUCTOR,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => Rating::STATE_POSITIVO,
+            'comment' => 'ok',
+            'reply_comment' => '',
+            'voted' => true,
+            'voted_hash' => 'prior-vote',
+            'rate_at' => Carbon::now(),
+            'available' => 0,
+        ]);
+
+        $trip2 = Trip::factory()->create(['user_id' => $driver->id]);
+        $this->persistRating([
+            'trip_id' => $trip2->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $driver->id,
+            'user_to_type' => Passenger::TYPE_CONDUCTOR,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => null,
+            'comment' => '',
+            'reply_comment' => '',
+            'voted' => false,
+            'voted_hash' => 'later-pending',
+            'rate_at' => null,
+            'available' => 0,
+        ]);
+
+        $this->actingAs($voter, 'api');
+
+        $this->postJson("api/trips/{$trip2->id}/rate/{$driver->id}", [
+            'rating' => 1,
+            'comment' => 'ok',
+        ])
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertDatabaseHas('rating', [
+            'trip_id' => $trip2->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $driver->id,
+            'voted' => 1,
+        ]);
+
+        Carbon::setTestNow();
     }
 
     public function test_rate_as_guest_with_hash_persists_vote(): void
@@ -531,6 +588,28 @@ class RatingApiTest extends TestCase
         $this->postJson("api/trips/{$trip->id}/rate/{$other->id}", [
             'rating' => 1,
             'comment' => 'No row',
+        ])
+            ->assertStatus(422)
+            ->assertJsonFragment(['message' => 'Could not rate user.']);
+    }
+
+    public function test_rate_with_only_pending_request_and_no_rating_row_returns_error(): void
+    {
+        $passenger = User::factory()->create(['active' => true, 'banned' => false]);
+        $driver = User::factory()->create(['active' => true, 'banned' => false]);
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+        ]);
+
+        $this->actingAs($passenger, 'api');
+
+        $this->postJson("api/trips/{$trip->id}/rate/{$driver->id}", [
+            'rating' => 1,
+            'comment' => 'ok',
         ])
             ->assertStatus(422)
             ->assertJsonFragment(['message' => 'Could not rate user.']);

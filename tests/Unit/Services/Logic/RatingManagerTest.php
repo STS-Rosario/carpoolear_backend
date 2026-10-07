@@ -119,7 +119,7 @@ class RatingManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_get_pending_ratings_by_hash_excludes_repeat_user_when_already_rated_them(): void
+    public function test_get_pending_ratings_by_hash_includes_repeat_user_when_already_rated_them(): void
     {
         Carbon::setTestNow('2026-10-01 12:00:00');
         $user = User::factory()->create();
@@ -138,14 +138,15 @@ class RatingManagerTest extends TestCase
 
         $hash = 'batch-'.uniqid('', true);
         $repeatTrip = Trip::factory()->create(['user_id' => $alreadyRated->id]);
-        $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, $hash);
+        $repeat = $repo->create($user->id, $alreadyRated->id, $repeatTrip->id, 0, 0, $hash);
 
         $firstTrip = Trip::factory()->create(['user_id' => $firstTime->id]);
         $mandatory = $repo->create($user->id, $firstTime->id, $firstTrip->id, 0, 0, $hash);
 
         $collection = $this->manager()->getPendingRatingsByHash($hash);
-        $this->assertCount(1, $collection);
-        $this->assertTrue($collection->first()->is($mandatory));
+        $this->assertCount(2, $collection);
+        $this->assertTrue($collection->contains(fn ($row) => $row->is($repeat)));
+        $this->assertTrue($collection->contains(fn ($row) => $row->is($mandatory)));
 
         Carbon::setTestNow();
     }
@@ -367,6 +368,37 @@ class RatingManagerTest extends TestCase
         $this->assertSame('user_have_already_voted', $errors['error']);
     }
 
+    public function test_rate_user_succeeds_on_later_trip_after_prior_vote_for_same_pair(): void
+    {
+        Carbon::setTestNow('2026-11-10 15:00:00');
+        $voter = User::factory()->create();
+        $driver = User::factory()->create();
+        $repo = new RatingRepository;
+
+        $trip1 = Trip::factory()->create(['user_id' => $driver->id]);
+        Rating::factory()->create([
+            'trip_id' => $trip1->id,
+            'user_id_from' => $voter->id,
+            'user_id_to' => $driver->id,
+            'rating' => Rating::STATE_POSITIVO,
+            'voted' => true,
+        ]);
+
+        $trip2 = Trip::factory()->create(['user_id' => $driver->id]);
+        $repo->create($voter->id, $driver->id, $trip2->id, 0, 0, 'later-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($voter, $driver->id, $trip2->id, [
+            'rating' => 1,
+            'comment' => 'ok',
+        ]));
+
+        $row = $repo->getRating($voter->id, $driver->id, $trip2->id);
+        $this->assertNotNull($row);
+        $this->assertTrue((bool) $row->voted);
+
+        Carbon::setTestNow();
+    }
+
     public function test_reply_rating_persists_comment_once(): void
     {
         Carbon::setTestNow('2026-11-12 14:00:00');
@@ -580,6 +612,79 @@ class RatingManagerTest extends TestCase
         Event::assertNotDispatched(PendingRateEvent::class);
 
         Carbon::setTestNow();
+    }
+
+    public function test_create_eligible_ratings_only_creates_pairs_for_accepted_or_later_canceled_passengers(): void
+    {
+        Event::fake([PendingRateEvent::class]);
+        Carbon::setTestNow('2026-06-01 14:00:00');
+
+        $cases = [
+            'pending' => [Passenger::STATE_PENDING, null, 0],
+            'rejected' => [Passenger::STATE_REJECTED, null, 0],
+            'waiting_payment' => [Passenger::STATE_WAITING_PAYMENT, null, 0],
+            'canceled_request' => [Passenger::STATE_CANCELED, Passenger::CANCELED_REQUEST, 0],
+            'accepted' => [Passenger::STATE_ACCEPTED, null, 2],
+            'canceled_passenger' => [Passenger::STATE_CANCELED, Passenger::CANCELED_PASSENGER, 2],
+            'canceled_driver' => [Passenger::STATE_CANCELED, Passenger::CANCELED_DRIVER, 2],
+        ];
+
+        $created = [];
+        foreach ($cases as $label => [$requestState, $canceledState, $expectedCount]) {
+            $created[$label] = $this->seedPastDriverTripWithPassenger($requestState, $canceledState) + ['expected' => $expectedCount];
+        }
+
+        $this->manager()->createEligibleRatings();
+
+        foreach ($created as $label => $fixture) {
+            $ratings = Rating::query()->where('trip_id', $fixture['trip']->id)->get();
+            $this->assertCount($fixture['expected'], $ratings, $label);
+
+            if ($fixture['expected'] === 2) {
+                $this->assertTrue($ratings->contains(
+                    fn ($row) => (int) $row->user_id_from === $fixture['driver']->id
+                        && (int) $row->user_id_to === $fixture['passenger']->id
+                ), $label);
+                $this->assertTrue($ratings->contains(
+                    fn ($row) => (int) $row->user_id_from === $fixture['passenger']->id
+                        && (int) $row->user_id_to === $fixture['driver']->id
+                ), $label);
+            }
+        }
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * @return array{driver: User, passenger: User, trip: Trip}
+     */
+    private function seedPastDriverTripWithPassenger(int $requestState, ?int $canceledState): array
+    {
+        $driver = User::factory()->create();
+        $passengerUser = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'trip_date' => '2026-06-01 10:00:00',
+            'estimated_time' => '04:00',
+            'mail_send' => false,
+            'is_passenger' => false,
+        ]);
+
+        $attributes = [
+            'trip_id' => $trip->id,
+            'user_id' => $passengerUser->id,
+            'request_state' => $requestState,
+        ];
+        if ($canceledState !== null) {
+            $attributes['canceled_state'] = $canceledState;
+        }
+        Passenger::factory()->create($attributes);
+
+        return [
+            'driver' => $driver,
+            'passenger' => $passengerUser,
+            'trip' => $trip,
+        ];
     }
 
     public function test_create_eligible_ratings_skips_trips_before_eighty_percent_of_estimated_time(): void
