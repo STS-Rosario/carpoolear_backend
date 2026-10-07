@@ -94,26 +94,6 @@ class RatingRepository
         return true;
     }
 
-    public function hasPriorVoteForPair(int $fromId, int $toId): bool
-    {
-        return RatingModel::query()
-            ->where('user_id_from', $fromId)
-            ->where('user_id_to', $toId)
-            ->where('voted', true)
-            ->exists();
-    }
-
-    private function applyExcludeAlreadyRatedUsers($query, int $userId): void
-    {
-        $query->whereNotExists(function ($subquery) use ($userId) {
-            $subquery->select(DB::raw(1))
-                ->from('rating as prior_ratings')
-                ->whereColumn('prior_ratings.user_id_to', 'rating.user_id_to')
-                ->where('prior_ratings.user_id_from', $userId)
-                ->where('prior_ratings.voted', true);
-        });
-    }
-
     public function find($id)
     {
         return RatingModel::find($id);
