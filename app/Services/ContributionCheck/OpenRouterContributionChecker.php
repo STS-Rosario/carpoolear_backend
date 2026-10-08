@@ -102,7 +102,7 @@ Descripción del viaje (entre las etiquetas <descripcion>):
 </descripcion>
 
 Respondé:
-a) ¿La descripción pide una contribución o precio por persona mayor a la contribución máxima permitida? Extraé el monto por persona sospechado, en la misma moneda y como número (por ejemplo "$24.000", "24k" o "24 lucas" son 24000). Si no se menciona ningún monto que se le pida a los pasajeros, usá null.
+a) ¿La descripción pide una contribución o precio por persona mayor a la contribución máxima permitida? Extraé el monto por persona sospechado, en la misma moneda y como número (por ejemplo "$24.000", "24k" o "24 lucas" son 24000). Si no se menciona ningún monto que se le pida a los pasajeros, usá null. También marcá exceeds_max true si el monto por persona extraído es mayor a 1 y menor a 2000 (un valor demasiado bajo, típico de quien escribió $16 queriendo pedir $16000). En ese caso suspected_contribution es ese monto bajo, no lo multipliques.
 b) ¿La descripción contiene un número de teléfono, aunque esté ofuscado (dígitos separados por espacios, puntos o guiones, números escritos con palabras como "tres cuatro uno", mezcla de letras y dígitos, prefijos como +54, +56, 0341 o 15)?
 
 Respondé solo con este JSON estricto:
