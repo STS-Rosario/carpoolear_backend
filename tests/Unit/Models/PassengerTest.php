@@ -233,6 +233,30 @@ class PassengerTest extends TestCase
 
         $pending = Passenger::factory()->make(['request_state' => Passenger::STATE_PENDING]);
         $this->assertFalse($pending->isEligibleForRating());
+
+        $canceledByPassenger = Passenger::factory()->make([
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_PASSENGER,
+        ]);
+        $this->assertTrue($canceledByPassenger->isEligibleForRating());
+
+        $canceledBySystem = Passenger::factory()->make([
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_SYSTEM,
+        ]);
+        $this->assertTrue($canceledBySystem->isEligibleForRating());
+
+        $canceledWhilePaying = Passenger::factory()->make([
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_PASSENGER_WHILE_PAYING,
+        ]);
+        $this->assertTrue($canceledWhilePaying->isEligibleForRating());
+
+        $rejected = Passenger::factory()->make(['request_state' => Passenger::STATE_REJECTED]);
+        $this->assertFalse($rejected->isEligibleForRating());
+
+        $waitingPayment = Passenger::factory()->make(['request_state' => Passenger::STATE_WAITING_PAYMENT]);
+        $this->assertFalse($waitingPayment->isEligibleForRating());
     }
 
     public function test_table_name_is_trip_passengers(): void

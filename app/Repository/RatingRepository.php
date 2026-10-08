@@ -77,7 +77,6 @@ class RatingRepository
         $ratings->where('voted', false);
         $ratings->with(['from', 'to', 'trip']);
         $ratings->where('created_at', '>=', Carbon::Now()->subDays(RatingModel::RATING_INTERVAL));
-        $this->applyExcludeAlreadyRatedUsers($ratings, $user->id);
 
         return $ratings->get();
     }
@@ -92,27 +91,7 @@ class RatingRepository
             return false;
         }
 
-        return ! $this->hasPriorVoteForPair($rating->user_id_from, $rating->user_id_to);
-    }
-
-    public function hasPriorVoteForPair(int $fromId, int $toId): bool
-    {
-        return RatingModel::query()
-            ->where('user_id_from', $fromId)
-            ->where('user_id_to', $toId)
-            ->where('voted', true)
-            ->exists();
-    }
-
-    private function applyExcludeAlreadyRatedUsers($query, int $userId): void
-    {
-        $query->whereNotExists(function ($subquery) use ($userId) {
-            $subquery->select(DB::raw(1))
-                ->from('rating as prior_ratings')
-                ->whereColumn('prior_ratings.user_id_to', 'rating.user_id_to')
-                ->where('prior_ratings.user_id_from', $userId)
-                ->where('prior_ratings.voted', true);
-        });
+        return true;
     }
 
     public function find($id)
