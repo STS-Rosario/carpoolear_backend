@@ -167,6 +167,62 @@ class TripContributionCheckApplierTest extends TestCase
         $this->assertNull($trip->excess_contribution_percentage);
     }
 
+    public function test_implausibly_low_seat_price_flags_trip_even_with_a_clean_llm_result(): void
+    {
+        $trip = $this->apply(
+            $this->trip(['seat_price_cents' => 1600, 'description' => 'Salgo puntual']),
+            new ContributionCheckResult(null, false, false)
+        );
+
+        $this->assertTrue($trip->has_potential_excess_contribution);
+        $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertNull($trip->excess_contribution_percentage);
+        $this->assertSame(TripExcessContributionStatus::PENDIENTE, $trip->exceso_contribucion_status);
+    }
+
+    public function test_clean_result_does_not_clear_an_implausibly_low_seat_price_flag(): void
+    {
+        $trip = $this->trip([
+            'seat_price_cents' => 1600,
+            'description' => 'Contribución $16',
+            'has_potential_excess_contribution' => true,
+            'exceso_contribucion_status' => TripExcessContributionStatus::EN_PROCESO,
+        ]);
+
+        $trip = $this->apply($trip, new ContributionCheckResult(16.0, false, false));
+
+        $this->assertTrue($trip->has_potential_excess_contribution);
+        $this->assertSame(16.0, $trip->suspected_contribution);
+        $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertSame(TripExcessContributionStatus::EN_PROCESO, $trip->exceso_contribucion_status);
+    }
+
+    public function test_implausibly_low_suspected_amount_flags_without_inventing_potential_price(): void
+    {
+        $trip = $this->apply($this->trip(), new ContributionCheckResult(16.0, false, false));
+
+        $this->assertTrue($trip->has_potential_excess_contribution);
+        $this->assertSame(16.0, $trip->suspected_contribution);
+        $this->assertNull($trip->description_potential_seat_price_cents);
+        $this->assertNull($trip->excess_contribution_percentage);
+        $this->assertSame(TripExcessContributionStatus::PENDIENTE, $trip->exceso_contribucion_status);
+    }
+
+    public function test_one_peso_or_two_thousand_are_not_implausibly_low(): void
+    {
+        $onePeso = $this->apply(
+            $this->trip(['seat_price_cents' => 100, 'description' => 'Aporte minimo']),
+            new ContributionCheckResult(1.0, false, false)
+        );
+        $this->assertFalse($onePeso->has_potential_excess_contribution);
+
+        $twoThousand = $this->apply(
+            $this->trip(['seat_price_cents' => 200000, 'description' => 'Contribución $2000']),
+            new ContributionCheckResult(2000.0, false, false)
+        );
+        $this->assertFalse($twoThousand->has_potential_excess_contribution);
+    }
+
     public function test_excess_percentage_is_never_negative(): void
     {
         $trip = $this->apply(
