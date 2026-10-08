@@ -360,6 +360,48 @@ class PlatformDonationApiTest extends TestCase
         ])->assertStatus(503);
     }
 
+    public function test_donation_payment_status_returns_pending_payload(): void
+    {
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => $tier->amount_cents,
+            'status' => 'pending',
+            'source' => 'aportar',
+        ]);
+
+        $this->getJson('/api/donations/payments/'.$payment->id)
+            ->assertOk()
+            ->assertExactJson([
+                'payment_id' => $payment->id,
+                'status' => 'pending',
+            ]);
+    }
+
+    public function test_donation_payment_status_returns_approved_after_payment(): void
+    {
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => $tier->amount_cents,
+            'status' => 'approved',
+            'source' => 'aportar',
+            'paid_at' => now(),
+        ]);
+
+        $this->getJson('/api/donations/payments/'.$payment->id)
+            ->assertOk()
+            ->assertJson([
+                'payment_id' => $payment->id,
+                'status' => 'approved',
+            ]);
+    }
+
+    public function test_donation_payment_status_returns_not_found_for_unknown_id(): void
+    {
+        $this->getJson('/api/donations/payments/999999')->assertNotFound();
+    }
+
     public function test_admin_donation_summary_returns_totals(): void
     {
         $this->withoutMiddleware(UserAdmin::class);
