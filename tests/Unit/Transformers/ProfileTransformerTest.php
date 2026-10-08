@@ -257,6 +257,15 @@ class ProfileTransformerTest extends TestCase
         $this->assertSame(1, $payload['banned']);
     }
 
+    public function test_transform_exposes_banned_when_user_views_own_profile(): void
+    {
+        $user = User::factory()->create(['banned' => true, 'is_admin' => false]);
+
+        $payload = (new ProfileTransformer($user))->transform($user->fresh());
+
+        $this->assertSame(1, $payload['banned']);
+    }
+
     public function test_transform_includes_sensitive_fields_for_admin_viewing_other_user(): void
     {
         $admin = User::factory()->create(['is_admin' => true]);
