@@ -161,16 +161,10 @@ class AuthController extends Controller
         }
 
         if (isset($user)) {
-            // Validar si está baneado
-            $user_to_validate = $this->userLogic->find($user->id);
-            if ($user_to_validate->banned) {
-                return response()->json('banned', 403);
-            } else {
-                return response()->json([
-                    'token' => $token,
-                    'config' => $config,
-                ]);
-            }
+            return response()->json([
+                'token' => $token,
+                'config' => $config,
+            ]);
         }
 
         return response()->json([
@@ -196,11 +190,6 @@ class AuthController extends Controller
     {
         $session = $this->impersonationService->findSessionOrFail((int) $payload->get('session_id'));
         $this->impersonationService->assertImpersonationSessionActive($session);
-
-        $user_to_validate = $this->userLogic->find($user->id);
-        if ($user_to_validate->banned) {
-            return response()->json('banned', 403);
-        }
 
         try {
             JWTAuth::setToken($currentToken);
