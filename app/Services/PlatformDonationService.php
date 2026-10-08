@@ -178,6 +178,28 @@ class PlatformDonationService
     }
 
     /**
+     * QR Orders API cannot use hashed references (colons are rejected).
+     * external_reference: donation_once_{id}
+     *
+     * @param  array<string, mixed>  $mpPayment
+     */
+    public function handleQrOnceOrder(string $externalReference, array $mpPayment): bool
+    {
+        if (! str_starts_with($externalReference, 'donation_once_')) {
+            return false;
+        }
+
+        $paymentId = (int) substr($externalReference, strlen('donation_once_'));
+        if ($paymentId <= 0) {
+            return false;
+        }
+
+        $this->applyOneTimePayment($paymentId, null, $mpPayment);
+
+        return true;
+    }
+
+    /**
      * @param  array<string, mixed>  $mpPayment
      */
     public function handlePlatformPayment(array $mpPayment): void

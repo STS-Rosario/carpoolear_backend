@@ -151,6 +151,10 @@ class MercadoPagoWebhookController extends Controller
             return $this->handleManualValidationPayment($mpPayment);
         }
 
+        if ($this->isDonationOnceQrExternalReference($externalReference)) {
+            return $this->handleDonationOnceQrPayment($mpPayment);
+        }
+
         if ($externalReference !== '') {
             $decodedReference = $this->parseExternalReference($externalReference);
 
@@ -417,6 +421,35 @@ class MercadoPagoWebhookController extends Controller
     {
         return strpos($externalReference, 'manual_validation:') === 0
             || strpos($externalReference, 'manual_validation_') === 0;
+    }
+
+    protected function isDonationOnceQrExternalReference(string $externalReference): bool
+    {
+        return str_starts_with($externalReference, 'donation_once_');
+    }
+
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    protected function handleDonationOnceQrPayment(array $mpPayment)
+    {
+        $externalReference = $mpPayment['external_reference'] ?? '';
+        try {
+            $handled = $this->platformDonationService->handleQrOnceOrder($externalReference, $mpPayment);
+        } catch (\Throwable $e) {
+            Log::error('Failed to handle donation QR payment', [
+                'payment_id' => $mpPayment['id'] ?? null,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Failed to process platform donation'], 500);
+        }
+
+        if (! $handled) {
+            return response()->json(['error' => 'Invalid external reference'], 400);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     protected function getMercadoPagoPayment($paymentId)
@@ -702,21 +735,27 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['status' => 'success']);
         }
 
-        if (! $this->isManualValidationExternalReference($externalReference)) {
-            return response()->json(['status' => 'success']);
-        }
-
         $paymentId = null;
         if (! empty($payments) && isset($payments[0]['id'])) {
             $paymentId = $payments[0]['id'];
         }
 
-        return $this->handleManualValidationPayment([
+        $approvedPayload = [
             'id' => $paymentId,
             'status' => 'approved',
             'status_detail' => $orderStatusDetail,
             'external_reference' => $externalReference,
-        ]);
+        ];
+
+        if ($this->isManualValidationExternalReference($externalReference)) {
+            return $this->handleManualValidationPayment($approvedPayload);
+        }
+
+        if ($this->isDonationOnceQrExternalReference($externalReference)) {
+            return $this->handleDonationOnceQrPayment($approvedPayload);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     /**
