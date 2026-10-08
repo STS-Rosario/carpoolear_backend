@@ -72,6 +72,8 @@ class AuthControllerApiTest extends TestCase
         $this->assertArrayHasKey('banner', $response->json());
         $this->assertArrayHasKey('identity_validation_manual_qr_enabled', $response->json());
         $this->assertIsBool($response->json('identity_validation_manual_qr_enabled'));
+        $this->assertArrayHasKey('platform_donations_qr_enabled', $response->json());
+        $this->assertIsBool($response->json('platform_donations_qr_enabled'));
         $this->assertArrayNotHasKey('qr_payment_pos_external_id', $response->json());
         $this->assertArrayNotHasKey('donation_month_days', $response->json());
         $this->assertArrayNotHasKey('donation_trips_count', $response->json());
@@ -468,6 +470,52 @@ class AuthControllerApiTest extends TestCase
             config(['services.mercadopago' => $mercado]);
             config(['carpoolear.qr_payment_pos_external_id' => '']);
             $this->getJson('api/config')->assertOk()->assertJsonPath('identity_validation_manual_qr_enabled', false);
+        } finally {
+            config($snapshot);
+        }
+    }
+
+    public function test_get_config_platform_donations_qr_enabled_matches_conjunctive_gate(): void
+    {
+        $snapshot = [
+            'services.mercadopago' => config('services.mercadopago'),
+            'carpoolear.platform_donations_api_enabled' => config('carpoolear.platform_donations_api_enabled'),
+            'carpoolear.platform_donations_qr_enabled' => config('carpoolear.platform_donations_qr_enabled'),
+            'carpoolear.qr_payment_pos_external_id' => config('carpoolear.qr_payment_pos_external_id'),
+        ];
+
+        try {
+            $mercado = config('services.mercadopago', []);
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.platform_donations_api_enabled' => true,
+                'carpoolear.platform_donations_qr_enabled' => true,
+                'carpoolear.qr_payment_pos_external_id' => 'pos-external-1',
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', true);
+
+            config(['carpoolear.platform_donations_api_enabled' => false]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+
+            config([
+                'carpoolear.platform_donations_api_enabled' => true,
+                'carpoolear.platform_donations_qr_enabled' => false,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = '';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.platform_donations_api_enabled' => true,
+                'carpoolear.platform_donations_qr_enabled' => true,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config(['carpoolear.qr_payment_pos_external_id' => '']);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
         } finally {
             config($snapshot);
         }
