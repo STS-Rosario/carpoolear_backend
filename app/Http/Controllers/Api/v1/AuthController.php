@@ -11,6 +11,7 @@ use STS\Services\Admin\ImpersonationService;
 use STS\Services\Logic\DeviceManager;
 use STS\Services\Logic\UsersManager;
 use STS\Services\Maintenance\MaintenanceStateService;
+use STS\Services\PlatformDonationService;
 use STS\User;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
@@ -74,6 +75,7 @@ class AuthController extends Controller
             && config('carpoolear.identity_validation_manual_qr_enabled')
             && ! empty(config('services.mercadopago.qr_payment_access_token'))
             && ! empty(config('carpoolear.qr_payment_pos_external_id'));
+        $config->platform_donations_qr_enabled = app(PlatformDonationService::class)->isQrEnabled();
 
         $maintenancePayload = app(MaintenanceStateService::class)->publicPayload();
         $config->maintenance = (object) [

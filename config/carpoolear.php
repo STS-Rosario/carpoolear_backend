@@ -34,6 +34,7 @@ return [
     // Frontend app base URL (e.g. for payment redirects, OAuth callbacks). Defaults to APP_URL.
     'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost:8080')),
     'platform_donations_api_enabled' => filter_var(env('PLATFORM_DONATIONS_API_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+    'platform_donations_qr_enabled' => filter_var(env('PLATFORM_DONATIONS_QR_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 
     // Minimum app version enforcement for Capacitor (null = no enforcement)
     'min_version_android' => env('MIN_VERSION_ANDROID') ? (int) env('MIN_VERSION_ANDROID') : null,

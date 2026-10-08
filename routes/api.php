@@ -86,6 +86,8 @@ Route::middleware(['api'])->group(function () {
     Route::post('club-carpoolear/welcome-shown', [\STS\Http\Controllers\Api\v1\ClubCarpoolearMembersController::class, 'markWelcomeShown'])->middleware('logged');
     Route::post('donations/checkout/once', [PlatformDonationController::class, 'checkoutOnce']);
     Route::post('donations/checkout/monthly', [PlatformDonationController::class, 'checkoutMonthly']);
+    Route::post('donations/checkout/qr-order', [PlatformDonationController::class, 'checkoutQrOrder']);
+    Route::get('donations/payments/{payment}', [PlatformDonationController::class, 'paymentStatus']);
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::post('impersonate/stop', [ImpersonationStopController::class, 'stop'])->middleware('logged');

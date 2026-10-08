@@ -258,6 +258,58 @@ class MercadoPagoService
      */
     public function createQrOrderForManualValidation(int $requestId, ?int $amountInCents = null): array
     {
+        if ($amountInCents === null) {
+            $amountInCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
+        }
+        if ($amountInCents <= 0) {
+            throw new \InvalidArgumentException('Manual identity validation cost must be positive');
+        }
+
+        $order = $this->createQrOrder(
+            $amountInCents,
+            'manual_validation_'.$requestId,
+            'Validación manual de identidad',
+            'manual_qr_'.$requestId.'_'.uniqid('', true),
+        );
+
+        return [
+            'request_id' => $requestId,
+            'order_id' => $order['order_id'],
+            'qr_data' => $order['qr_data'],
+            'payment_id' => $order['mp_payment_id'],
+        ];
+    }
+
+    /**
+     * Create a Mercado Pago QR order for a one-time platform donation.
+     *
+     * @return array{payment_id: int, order_id: string, qr_data: string}
+     */
+    public function createQrOrderForPlatformDonation(DonationPayment $payment): array
+    {
+        $order = $this->createQrOrder(
+            (int) $payment->amount_cents,
+            'donation_once_'.$payment->id,
+            'Donación a Carpoolear',
+            'donation_qr_'.$payment->id.'_'.uniqid('', true),
+        );
+
+        return [
+            'payment_id' => (int) $payment->id,
+            'order_id' => $order['order_id'],
+            'qr_data' => $order['qr_data'],
+        ];
+    }
+
+    /**
+     * @return array{order_id: string, qr_data: string, mp_payment_id: string|null}
+     */
+    private function createQrOrder(
+        int $amountInCents,
+        string $externalReference,
+        string $description,
+        string $idempotencyKey
+    ): array {
         $qrAccessToken = config('services.mercadopago.qr_payment_access_token', '');
         if ($qrAccessToken === '' || $qrAccessToken === null) {
             throw new \InvalidArgumentException('Mercado Pago QR payment access token is not configured (MERCADO_PAGO_QR_PAYMENT_ACCESS_TOKEN)');
@@ -266,28 +318,18 @@ class MercadoPagoService
         if ($posExternalId === '' || $posExternalId === null) {
             throw new \InvalidArgumentException('QR POS external_id is not configured');
         }
-        if ($amountInCents === null) {
-            $amountInCents = config('carpoolear.manual_identity_validation_cost_cents', 0);
-        }
-        if ($amountInCents <= 0) {
-            throw new \InvalidArgumentException('Manual identity validation cost must be positive');
-        }
-        // Mercado Pago QR Orders API minimum amount is 15.00 (see error "Amount must be greater than or equal to 15.00")
-        $minAmountCents = 1500;
-        if ($amountInCents < $minAmountCents) {
+        if ($amountInCents < 1500) {
             throw new \InvalidArgumentException(
-                'Mercado Pago QR orders require amount >= 15.00. Got '.($amountInCents / 100).'. Set MANUAL_IDENTITY_VALIDATION_COST_CENTS >= 1500.'
+                'Mercado Pago QR orders require amount >= 15.00. Got '.($amountInCents / 100).'.'
             );
         }
 
         $amount = number_format(floatval($amountInCents) / 100, 2, '.', '');
-        // Orders API allows only alphanumeric/underscore (max 64 chars); colon is rejected
-        $externalReference = 'manual_validation_'.$requestId;
 
         $orderPayload = [
             'type' => 'qr',
             'total_amount' => $amount,
-            'description' => 'Validación manual de identidad',
+            'description' => $description,
             'external_reference' => $externalReference,
             'expiration_time' => 'PT15M',
             'config' => [
@@ -303,7 +345,7 @@ class MercadoPagoService
             ],
             'items' => [
                 [
-                    'title' => 'Validación manual de identidad',
+                    'title' => $description,
                     'unit_price' => $amount,
                     'quantity' => 1,
                     'unit_measure' => 'unit',
@@ -313,9 +355,8 @@ class MercadoPagoService
 
         $requestOptions = new RequestOptions;
         $requestOptions->setAccessToken($qrAccessToken);
-        // SDK expects lowercase key: getIdempotencyKey() checks array_change_key_case($headers) but returns $headers[strtolower($key)]
         $requestOptions->setCustomHeaders([
-            'x-idempotency-key' => 'manual_qr_'.$requestId.'_'.uniqid('', true),
+            'x-idempotency-key' => $idempotencyKey,
         ]);
 
         $this->ensureOrderClient();
@@ -333,11 +374,11 @@ class MercadoPagoService
             throw $e;
         }
 
-        $paymentId = null;
+        $mpPaymentId = null;
         if (is_object($order->transactions) && isset($order->transactions->payments) && is_array($order->transactions->payments)) {
             $first = $order->transactions->payments[0] ?? null;
             if ($first && isset($first->id)) {
-                $paymentId = $first->id;
+                $mpPaymentId = $first->id;
             }
         }
 
@@ -353,10 +394,9 @@ class MercadoPagoService
         }
 
         return [
-            'request_id' => $requestId,
             'order_id' => $order->id ?? '',
             'qr_data' => $qrData,
-            'payment_id' => $paymentId,
+            'mp_payment_id' => $mpPaymentId,
         ];
     }
 
