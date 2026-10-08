@@ -39,7 +39,7 @@ class CheckUserBanned
      */
     public function handle($request, Closure $next)
     {
-        $this->user = $this->resolveUser($request);
+        $this->user = $this->resolveUser();
 
         if ($this->user && $this->user->banned && ! BannedUserAccess::allows($request)) {
             abort(403, 'Access denied');
@@ -48,7 +48,7 @@ class CheckUserBanned
         return $next($request);
     }
 
-    private function resolveUser($request): ?User
+    private function resolveUser(): ?User
     {
         try {
             if ($this->auth && $this->auth->parser()->hasToken()) {
