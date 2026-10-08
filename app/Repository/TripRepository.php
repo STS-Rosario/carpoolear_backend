@@ -117,17 +117,20 @@ class TripRepository
         $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
         // if route is paid, and user should pay, create payment
         if (config('carpoolear.module_trip_creation_payment_enabled') && $routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
-            $trip->state = Trip::STATE_AWAITING_PAYMENT;
+            $redeemedCredit = SelladoEmptyTripCredit::redeemOldestUnusedCredit($trip->user_id);
+            if (! $redeemedCredit) {
+                $trip->state = Trip::STATE_AWAITING_PAYMENT;
 
-            // Create MercadoPago payment preference
-            $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
-            $trip->payment_id = $preference->id;
-            $trip->needs_sellado = true;
+                // Create MercadoPago payment preference
+                $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
+                $trip->payment_id = $preference->id;
+                $trip->needs_sellado = true;
 
-            $trip->save();
+                $trip->save();
 
-            // Return the preference URL to redirect the user
-            $trip->payment_url = $preference->init_point;
+                // Return the preference URL to redirect the user
+                $trip->payment_url = $preference->init_point;
+            }
         }
 
         // obtener ruta o crear
