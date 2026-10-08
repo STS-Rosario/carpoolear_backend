@@ -15,6 +15,7 @@ class TripExcessContributionSort
         'from_town',
         'to_town',
         'seat_price_cents',
+        'maximum_seat_price_cents',
         'potential_seat_price_cents',
         'average_contribution_cents',
         'excess_contribution_percentage',
@@ -106,6 +107,9 @@ class TripExcessContributionSort
                 break;
             case 'seat_price_cents':
                 $query->orderBy("{$table}.seat_price_cents", $direction);
+                break;
+            case 'maximum_seat_price_cents':
+                $query->orderBy("{$table}.maximum_trip_price_cents", $direction);
                 break;
             case 'potential_seat_price_cents':
                 $query

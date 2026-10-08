@@ -73,7 +73,6 @@ class TripExcessContributionListService
             'user_email' => $trip->user?->email,
             'excess_contribution_ticket_id' => SupportTicket::excessContributionTicketIdForTrip((int) $trip->id),
             'maximum_trip_price_cents' => $trip->maximum_trip_price_cents,
-            'maximum_seat_price_cents' => TripMaximumSeatPrice::centsFor($trip),
         ]);
     }
 
@@ -89,6 +88,7 @@ class TripExcessContributionListService
             'from_town' => $trip->from_town,
             'to_town' => $trip->to_town,
             'seat_price_cents' => $seatPriceCents,
+            'maximum_seat_price_cents' => TripMaximumSeatPrice::centsFor($trip),
             'potential_seat_price_cents' => $trip->description_potential_seat_price_cents,
             'average_contribution_cents' => $trip->average_contribution_cents,
             'excess_contribution_percentage' => $trip->excess_contribution_percentage,
