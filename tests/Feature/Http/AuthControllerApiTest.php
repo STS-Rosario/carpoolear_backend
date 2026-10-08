@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Middleware\BlockImpersonationDestructiveActions;
-use STS\Http\Middleware\UserLoggin;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
 use STS\Services\Admin\ImpersonationService;
@@ -681,13 +680,11 @@ class AuthControllerApiTest extends TestCase
         }
     }
 
-    public function test_retoken_with_banned_user_returns_forbidden_banned_payload(): void
+    public function test_retoken_with_banned_user_returns_token_and_config(): void
     {
-        $this->withoutMiddleware(UserLoggin::class);
-
         $user = User::factory()->create([
             'active' => true,
-            'banned' => false,
+            'banned' => true,
         ]);
 
         $token = $this->postJson('api/login', [
@@ -695,14 +692,13 @@ class AuthControllerApiTest extends TestCase
             'password' => '123456',
         ])->assertOk()->json('token');
 
-        $user->forceFill(['banned' => true])->save();
-
         $retoken = $this->postJson('api/retoken', [], [
             'Authorization' => 'Bearer '.$token,
         ]);
 
-        $retoken->assertForbidden();
-        $this->assertSame('banned', $retoken->json());
+        $retoken->assertOk();
+        $this->assertNotEmpty($retoken->json('token'));
+        $retoken->assertJsonStructure(['token', 'config']);
     }
 
     public function test_logout_logs_error_when_jwt_invalidate_throws(): void
