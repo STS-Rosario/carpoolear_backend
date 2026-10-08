@@ -108,10 +108,6 @@ class AuthController extends Controller
 
         $user = auth()->user();
 
-        if ($user->banned) {
-            throw new UnauthorizedHttpException('', 'user_banned');
-        }
-
         if (! $user->active) {
             throw new UnauthorizedHttpException('', 'user_not_active');
         }

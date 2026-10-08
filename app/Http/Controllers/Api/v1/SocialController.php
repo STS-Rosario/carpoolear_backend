@@ -56,10 +56,6 @@ class SocialController extends Controller
             return response()->json(['error' => 'provider not supported'], 401);
         }
 
-        if ($user->banned) {
-            throw new ExceptionWithErrors('User banned.', ['code' => 'user_banned']);
-        }
-
         // Registro mi devices
         /*
         if ($request->has('device_id') && $request->has('device_type')) {
