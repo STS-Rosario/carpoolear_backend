@@ -474,19 +474,21 @@ class AuthControllerApiTest extends TestCase
         }
     }
 
-    public function test_login_with_banned_user_returns_user_banned_message(): void
+    public function test_login_with_banned_user_returns_token_and_config_envelope(): void
     {
         $user = User::factory()->create([
             'active' => true,
             'banned' => true,
         ]);
 
-        $this->postJson('api/login', [
+        $response = $this->postJson('api/login', [
             'email' => $user->email,
             'password' => '123456',
-        ])
-            ->assertStatus(401)
-            ->assertSee('user_banned');
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonStructure(['token', 'config' => ['donation']]);
+        $this->assertNotEmpty($response->json('token'));
     }
 
     public function test_login_with_inactive_user_returns_user_not_active_message(): void
