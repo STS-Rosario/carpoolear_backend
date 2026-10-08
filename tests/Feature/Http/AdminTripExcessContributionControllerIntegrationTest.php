@@ -85,6 +85,7 @@ class AdminTripExcessContributionControllerIntegrationTest extends TestCase
             'from_town',
             'to_town',
             'seat_price_cents',
+            'maximum_seat_price_cents',
             'potential_seat_price_cents',
             'average_contribution_cents',
             'excess_contribution_percentage',

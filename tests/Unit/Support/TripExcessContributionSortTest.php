@@ -28,6 +28,22 @@ class TripExcessContributionSortTest extends TestCase
             'phone_in_description',
             TripExcessContributionSort::resolveSort('phone_in_description')
         );
+        $this->assertSame(
+            'maximum_seat_price_cents',
+            TripExcessContributionSort::resolveSort('maximum_seat_price_cents')
+        );
+    }
+
+    public function test_apply_orders_maximum_seat_price_by_stored_trip_maximum(): void
+    {
+        $query = TripExcessContributionSort::apply(
+            \STS\Models\Trip::query(),
+            'maximum_seat_price_cents',
+            'asc'
+        );
+
+        $sql = strtolower($query->toSql());
+        $this->assertStringContainsString('order by `trips`.`maximum_trip_price_cents` asc', $sql);
     }
 
     public function test_resolve_sort_returns_null_for_invalid_columns(): void
