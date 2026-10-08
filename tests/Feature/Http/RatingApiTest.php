@@ -418,6 +418,47 @@ class RatingApiTest extends TestCase
         ]);
     }
 
+    public function test_rate_as_passenger_stores_paid_more_report_for_the_driver(): void
+    {
+        $passenger = User::factory()->create(['active' => true, 'banned' => false]);
+        $driver = User::factory()->create(['active' => true, 'banned' => false]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'seat_price_cents' => 1500000,
+        ]);
+
+        $this->persistRating([
+            'trip_id' => $trip->id,
+            'user_id_from' => $passenger->id,
+            'user_id_to' => $driver->id,
+            'user_to_type' => Passenger::TYPE_CONDUCTOR,
+            'user_to_state' => Passenger::STATE_ACCEPTED,
+            'rating' => null,
+            'comment' => '',
+            'reply_comment' => '',
+            'voted' => false,
+            'voted_hash' => '',
+            'rate_at' => null,
+            'available' => 0,
+        ]);
+
+        $this->actingAs($passenger, 'api');
+
+        $this->postJson("api/trips/{$trip->id}/rate/{$driver->id}", [
+            'rating' => 1,
+            'comment' => 'Paid more',
+            'paid_more' => true,
+        ])
+            ->assertOk()
+            ->assertExactJson(['data' => 'ok']);
+
+        $this->assertDatabaseHas('trip_contribution_overcharge_reports', [
+            'user_id' => $passenger->id,
+            'trip_id' => $trip->id,
+            'paid_more' => 1,
+        ]);
+    }
+
     public function test_rate_as_guest_with_hash_persists_vote(): void
     {
         $voter = User::factory()->create(['active' => true, 'banned' => false]);
