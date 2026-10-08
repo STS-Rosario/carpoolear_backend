@@ -14,7 +14,7 @@ class PlatformDonationController extends Controller
 {
     public function __construct(private PlatformDonationService $platformDonationService)
     {
-        $this->middleware('logged.optional')->only(['checkoutOnce', 'checkoutMonthly', 'checkoutQrOrder']);
+        $this->middleware('logged.optional')->only(['checkoutOnce', 'checkoutMonthly', 'checkoutQrOrder', 'paymentStatus']);
         $this->middleware('logged')->only(['myDonations']);
     }
 
@@ -51,6 +51,19 @@ class PlatformDonationController extends Controller
         $result = $this->platformDonationService->checkoutMonthly($user, $validated);
 
         return response()->json($result);
+    }
+
+    public function paymentStatus(int $paymentId): JsonResponse
+    {
+        $payment = DonationPayment::query()->find($paymentId);
+        if (! $payment) {
+            abort(404);
+        }
+
+        return response()->json([
+            'payment_id' => $payment->id,
+            'status' => $payment->status,
+        ]);
     }
 
     public function myDonations(Request $request): JsonResponse
