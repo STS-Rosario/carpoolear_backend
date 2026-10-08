@@ -39,15 +39,19 @@ class CheckTripContributionWithLlm implements ShouldQueue
 
     public function handle(OpenRouterContributionChecker $checker, TripContributionCheckApplier $applier): void
     {
+        $trip = Trip::find($this->tripId);
+
         if (! $checker->isConfigured()) {
             Log::info('Trip contribution LLM check skipped: OPENROUTER_API_KEY is not set.', [
                 'trip_id' => $this->tripId,
             ]);
 
+            if ($trip !== null) {
+                $applier->apply($trip, new ContributionCheckResult(null, false, false));
+            }
+
             return;
         }
-
-        $trip = Trip::find($this->tripId);
 
         if ($trip === null) {
             return;

@@ -747,4 +747,96 @@ class RatingManagerTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    public function test_rate_user_requires_paid_more_when_a_passenger_rates_a_driver_with_a_contribution(): void
+    {
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'seat_price_cents' => 1500000,
+        ]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, 0, 'pm-'.uniqid('', true));
+
+        $manager = $this->manager();
+        $this->assertNull($manager->rateUser($passenger, $driver->id, $trip->id, [
+            'rating' => 1,
+            'comment' => 'Good trip',
+        ]));
+        $this->assertTrue($manager->getErrors()->has('paid_more'));
+        $this->assertFalse((bool) $repo->getRating($passenger->id, $driver->id, $trip->id)->voted);
+        $this->assertDatabaseMissing('trip_contribution_overcharge_reports', [
+            'user_id' => $passenger->id,
+            'trip_id' => $trip->id,
+        ]);
+    }
+
+    public function test_rate_user_stores_paid_more_when_a_passenger_rates_a_driver_with_a_contribution(): void
+    {
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'seat_price_cents' => 1500000,
+        ]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, 0, 'pm-yes-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($passenger, $driver->id, $trip->id, [
+            'rating' => 1,
+            'comment' => 'Paid extra',
+            'paid_more' => true,
+        ]));
+
+        $this->assertDatabaseHas('trip_contribution_overcharge_reports', [
+            'user_id' => $passenger->id,
+            'trip_id' => $trip->id,
+            'paid_more' => 1,
+        ]);
+    }
+
+    public function test_rate_user_ignores_paid_more_when_rating_a_passenger(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'seat_price_cents' => 1500000,
+        ]);
+        $repo = new RatingRepository;
+        $repo->create($driver->id, $passenger->id, $trip->id, Passenger::TYPE_PASAJERO, 0, 'pm-drv-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($driver, $passenger->id, $trip->id, [
+            'rating' => 1,
+            'comment' => 'Nice passenger',
+        ]));
+
+        $this->assertDatabaseMissing('trip_contribution_overcharge_reports', [
+            'user_id' => $driver->id,
+            'trip_id' => $trip->id,
+        ]);
+    }
+
+    public function test_rate_user_ignores_paid_more_when_the_trip_has_no_contribution(): void
+    {
+        $passenger = User::factory()->create();
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'seat_price_cents' => -1,
+        ]);
+        $repo = new RatingRepository;
+        $repo->create($passenger->id, $driver->id, $trip->id, Passenger::TYPE_CONDUCTOR, 0, 'pm-vol-'.uniqid('', true));
+
+        $this->assertTrue($this->manager()->rateUser($passenger, $driver->id, $trip->id, [
+            'rating' => 1,
+            'comment' => 'Voluntary',
+        ]));
+
+        $this->assertDatabaseMissing('trip_contribution_overcharge_reports', [
+            'user_id' => $passenger->id,
+            'trip_id' => $trip->id,
+        ]);
+    }
 }

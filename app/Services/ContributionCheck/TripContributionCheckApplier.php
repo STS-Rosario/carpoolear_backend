@@ -10,8 +10,9 @@ use STS\Support\TripExcessContributionStatus;
  * Stores an LLM contribution check result on the trip. A trip shows up in the
  * admin "exceso de contribución" list (has_potential_excess_contribution)
  * when the description asks for more than the maximum allowed contribution
- * per seat (TripMaximumSeatPrice, not the price the driver chose) OR contains
- * a phone number.
+ * per seat (TripMaximumSeatPrice, not the price the driver chose), contains
+ * a phone number, or the chosen / suspected per-person amount looks
+ * implausibly low ($16 instead of $16000).
  */
 class TripContributionCheckApplier
 {
@@ -29,7 +30,10 @@ class TripContributionCheckApplier
         $exceedsMax = $result->exceedsMax
             && $maxSeatPriceCents !== null
             && ($suspectedCents === null || $suspectedCents > $maxSeatPriceCents);
-        $flagged = $exceedsMax || $result->phoneInDescription;
+        $implausiblyLow = ImplausiblyLowContribution::matchesSeatPriceCents(
+            (int) $trip->seat_price_cents
+        ) || ImplausiblyLowContribution::matches($result->suspectedContribution);
+        $flagged = $exceedsMax || $result->phoneInDescription || $implausiblyLow;
 
         $potentialSeatPriceCents = $exceedsMax && $suspectedCents !== null && $suspectedCents <= self::MAX_UNSIGNED_INT
             ? $suspectedCents
