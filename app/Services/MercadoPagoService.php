@@ -361,6 +361,97 @@ class MercadoPagoService
     }
 
     /**
+     * Create a Mercado Pago QR order for a one-time platform donation.
+     *
+     * @return array{payment_id: int, order_id: string, qr_data: string}
+     */
+    public function createQrOrderForPlatformDonation(DonationPayment $payment): array
+    {
+        $qrAccessToken = config('services.mercadopago.qr_payment_access_token', '');
+        if ($qrAccessToken === '' || $qrAccessToken === null) {
+            throw new \InvalidArgumentException('Mercado Pago QR payment access token is not configured (MERCADO_PAGO_QR_PAYMENT_ACCESS_TOKEN)');
+        }
+        $posExternalId = config('carpoolear.qr_payment_pos_external_id', '');
+        if ($posExternalId === '' || $posExternalId === null) {
+            throw new \InvalidArgumentException('QR POS external_id is not configured');
+        }
+        $amountInCents = (int) $payment->amount_cents;
+        if ($amountInCents < 1500) {
+            throw new \InvalidArgumentException(
+                'Mercado Pago QR orders require amount >= 15.00. Got '.($amountInCents / 100).'.'
+            );
+        }
+
+        $amount = number_format(floatval($amountInCents) / 100, 2, '.', '');
+        $externalReference = 'donation_once_'.$payment->id;
+
+        $orderPayload = [
+            'type' => 'qr',
+            'total_amount' => $amount,
+            'description' => 'Donación a Carpoolear',
+            'external_reference' => $externalReference,
+            'expiration_time' => 'PT15M',
+            'config' => [
+                'qr' => [
+                    'external_pos_id' => $posExternalId,
+                    'mode' => 'dynamic',
+                ],
+            ],
+            'transactions' => [
+                'payments' => [
+                    ['amount' => $amount],
+                ],
+            ],
+            'items' => [
+                [
+                    'title' => 'Donación a Carpoolear',
+                    'unit_price' => $amount,
+                    'quantity' => 1,
+                    'unit_measure' => 'unit',
+                ],
+            ],
+        ];
+
+        $requestOptions = new RequestOptions;
+        $requestOptions->setAccessToken($qrAccessToken);
+        $requestOptions->setCustomHeaders([
+            'x-idempotency-key' => 'donation_qr_'.$payment->id.'_'.uniqid('', true),
+        ]);
+
+        $this->ensureOrderClient();
+
+        try {
+            $order = $this->orderClient->create($orderPayload, $requestOptions);
+        } catch (MPApiException $e) {
+            \Log::error('MercadoPago QR Order API Error:', [
+                'message' => $e->getMessage(),
+                'status' => $e->getApiResponse()->getStatusCode(),
+                'response' => $e->getApiResponse()->getContent(),
+                'request_payload' => $orderPayload,
+                'config_qr_external_pos_id' => $posExternalId,
+            ]);
+            throw $e;
+        }
+
+        $qrData = '';
+        $responseContent = $order->getResponse()->getContent();
+        if ($responseContent !== null && $responseContent !== '') {
+            $decoded = is_array($responseContent)
+                ? $responseContent
+                : json_decode($responseContent, true);
+            if (is_array($decoded) && isset($decoded['type_response']['qr_data'])) {
+                $qrData = (string) $decoded['type_response']['qr_data'];
+            }
+        }
+
+        return [
+            'payment_id' => (int) $payment->id,
+            'order_id' => $order->id ?? '',
+            'qr_data' => $qrData,
+        ];
+    }
+
+    /**
      * Create a payment preference for platform donations (one-time).
      */
     public function createPaymentPreferenceForPlatformDonation(DonationPayment $payment): \MercadoPago\Resources\Preference
