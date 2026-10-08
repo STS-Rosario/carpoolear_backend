@@ -31,6 +31,18 @@ class AportarPageTest extends TestCase
         $this->assertStringNotContainsString('value="10000"', $html);
     }
 
+    public function test_aportar_offers_qr_checkout_for_one_time_payments(): void
+    {
+        $html = $this->get('/aportar')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Pagar con QR', $html);
+        $this->assertStringContainsString('/api/donations/checkout/qr-order', $html);
+        $this->assertStringContainsString('/api/donations/payments/', $html);
+        $this->assertStringContainsString('platform_donations_qr_enabled', $html);
+        $this->assertStringContainsString('qr-payment-panel', $html);
+        $this->assertStringContainsString('Escanéa con una billetera virtual', $html);
+    }
+
     public function test_donar_compartir_uses_tracked_checkout(): void
     {
         $html = $this->get('/donar-compartir')->assertOk()->getContent();

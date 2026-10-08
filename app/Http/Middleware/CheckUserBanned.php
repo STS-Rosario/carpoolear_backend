@@ -4,6 +4,8 @@ namespace STS\Http\Middleware;
 
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use STS\Models\User;
+use STS\Support\BannedUserAccess;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tymon\JWTAuth\JWTAuth;
 
@@ -37,12 +39,22 @@ class CheckUserBanned
      */
     public function handle($request, Closure $next)
     {
+        $this->user = $this->resolveUser();
+
+        if ($this->user && $this->user->banned && ! BannedUserAccess::allows($request)) {
+            abort(403, 'Access denied');
+        }
+
+        return $next($request);
+    }
+
+    private function resolveUser(): ?User
+    {
         try {
-            // Only try to parse token if it exists
             if ($this->auth && $this->auth->parser()->hasToken()) {
-                $this->user = $this->auth->parseToken()->authenticate();
-                if ($this->user && $this->user->banned) {
-                    abort(403, 'Access denied');
+                $user = $this->auth->parseToken()->authenticate();
+                if ($user instanceof User) {
+                    return $user;
                 }
             }
         } catch (\Throwable $e) {
@@ -52,6 +64,8 @@ class CheckUserBanned
             \Log::warning('CheckUserBanned middleware error: '.$e->getMessage());
         }
 
-        return $next($request);
+        $sessionUser = auth()->user();
+
+        return $sessionUser instanceof User ? $sessionUser : null;
     }
 }

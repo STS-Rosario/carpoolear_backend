@@ -77,7 +77,7 @@ class UserLogginTest extends TestCase
         $this->assertSame(['message' => 'Unauthorized.'], $response->getData(true));
     }
 
-    public function test_banned_user_receives_401(): void
+    public function test_banned_user_proceeds_and_sets_auth(): void
     {
         $this->assertGuest();
 
@@ -90,9 +90,15 @@ class UserLogginTest extends TestCase
         $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
 
         $middleware = new UserLoggin($jwt);
-        $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('no'));
+        $response = $middleware->handle(Request::create('/', 'GET'), function () use ($user) {
+            $this->assertTrue(auth()->check());
+            $this->assertTrue(auth()->user()->is($user));
 
-        $this->assertSame(401, $response->getStatusCode());
+            return response('banned-ok', 200);
+        });
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('banned-ok', $response->getContent());
     }
 
     public function test_inactive_user_receives_401(): void

@@ -42,6 +42,30 @@
         background-color: #5bc0de;
         border-color: #46b8da;
     }
+    .btn-qr {
+        color: #fff;
+        background-color: #337ab7;
+        border-color: #2e6da4;
+        display: none;
+    }
+    .qr-payment-panel {
+        display: none;
+        margin-top: 1.5em;
+        padding: 1.5em;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        background: #fff;
+        text-align: center;
+        max-width: 360px;
+    }
+    .qr-payment-panel.is-open {
+        display: block;
+    }
+    .qr-image {
+        max-width: 256px;
+        height: auto;
+        margin: 1em 0;
+    }
 </style>
 <section>
     <div class="container">
@@ -63,7 +87,14 @@
                     </div>
                     <div>
                         <button class="btn-unica-vez btn-donar btn-unica" id="btn-unica">ÚNICA VEZ</button>
+                        <button class="btn-qr btn-donar" type="button">Pagar con QR</button>
                         <button class="btn-mensualmente btn-donar" id="btn-mensual">MENSUALMENTE <br />(cancelá cuando quieras)</button>
+                    </div>
+                    <div class="qr-payment-panel" data-qr-panel>
+                        <p><strong>Escanéa con una billetera virtual</strong></p>
+                        <img class="qr-image" alt="QR" hidden />
+                        <p class="qr-expiry">El QR expira en 15 minutos.</p>
+                        <button type="button" data-qr-close>Cerrar</button>
                     </div>
                 </div>
                 <p>¡Hola Carpooler@s!</p>
@@ -91,6 +122,7 @@
                     </div>
                     <div>
                         <button class="btn-unica-vez btn-donar btn-unica" id="btn-unica">ÚNICA VEZ</button>
+                        <button class="btn-qr btn-donar" type="button">Pagar con QR</button>
                         <button class="btn-mensualmente btn-donar" id="btn-mensual">MENSUALMENTE <br />(cancelá cuando quieras)</button>
                     </div>
                 </div>
@@ -114,19 +146,22 @@
         var user_id = getParameterByName('u') || getParameterByName('user');
         return user_id ? parseInt(user_id, 10) : null;
     }
-    function startAportarCheckout(type, amount) {
+    function donationPayload(amount) {
         var payload = { amount: parseInt(amount, 10), source: 'aportar' };
         var user_id = checkoutUserId();
         if (user_id) {
             payload.user_id = user_id;
         }
+        return payload;
+    }
+    function startAportarCheckout(type, amount) {
         var path = type === 'monthly'
             ? '/api/donations/checkout/monthly'
             : '/api/donations/checkout/once';
         fetch(path, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(donationPayload(amount))
         }).then(function (response) {
             return response.json().then(function (data) {
                 return { ok: response.ok, data: data };
@@ -139,6 +174,72 @@
             alert('No pudimos iniciar el aporte. Probá de nuevo.');
         }).catch(function () {
             alert('No pudimos iniciar el aporte. Probá de nuevo.');
+        });
+    }
+    var qrPollId = null;
+    function selectedAmount() {
+        var rdb = document.querySelector('input[name="donationValor"]:checked');
+        return rdb ? rdb.value : null;
+    }
+    function qrPanel() {
+        return document.querySelector('[data-qr-panel]');
+    }
+    function closeQrPanel() {
+        var panel = qrPanel();
+        if (panel) {
+            panel.classList.remove('is-open');
+        }
+        if (qrPollId) {
+            clearInterval(qrPollId);
+            qrPollId = null;
+        }
+    }
+    function startAportarQrCheckout(amount) {
+        fetch('/api/donations/checkout/qr-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(donationPayload(amount))
+        }).then(function (response) {
+            return response.json().then(function (data) {
+                return { ok: response.ok, data: data };
+            });
+        }).then(function (result) {
+            if (!result.ok || !result.data || !result.data.qr_data || !result.data.payment_id) {
+                alert('No pudimos iniciar el aporte con QR. Probá de nuevo.');
+                return;
+            }
+            var panel = qrPanel();
+            var img = panel ? panel.querySelector('.qr-image') : null;
+            if (!panel || !img || typeof QRCode === 'undefined') {
+                alert('No pudimos mostrar el QR. Probá de nuevo.');
+                return;
+            }
+            QRCode.toDataURL(result.data.qr_data, { width: 256, margin: 2 }, function (err, url) {
+                if (err) {
+                    alert('No pudimos mostrar el QR. Probá de nuevo.');
+                    return;
+                }
+                img.src = url;
+                img.hidden = false;
+                panel.classList.add('is-open');
+            });
+            if (qrPollId) {
+                clearInterval(qrPollId);
+            }
+            qrPollId = setInterval(function () {
+                fetch('/api/donations/payments/' + result.data.payment_id, {
+                    headers: { 'Accept': 'application/json' }
+                }).then(function (response) {
+                    return response.json();
+                }).then(function (statusPayload) {
+                    if (statusPayload && statusPayload.status === 'approved') {
+                        closeQrPanel();
+                        alert('¡Gracias por tu aporte!');
+                    }
+                }).catch(function () {});
+            }, 3000);
+        }).catch(function () {
+            alert('No pudimos iniciar el aporte con QR. Probá de nuevo.');
         });
     }
     function renderDonationTiers(tiers) {
@@ -156,16 +257,38 @@
             renderDonationTiers(tiers);
         }
     }).catch(function () {});
+    fetch('/api/config').then(function (response) {
+        return response.json();
+    }).then(function (config) {
+        if (config && config.platform_donations_qr_enabled) {
+            document.querySelectorAll('.btn-qr').forEach(function (btn) {
+                btn.style.display = 'inline-block';
+            });
+        }
+    }).catch(function () {});
     document.querySelectorAll('.btn-donar').forEach(function (btn) {
         btn.addEventListener('click', function (event) {
-            var rdb = document.querySelector('input[name="donationValor"]:checked');
-            if (!rdb) {
+            if (event.currentTarget.hasAttribute('data-qr-close')) {
+                closeQrPanel();
+                return;
+            }
+            var amount = selectedAmount();
+            if (!amount) {
                 alert('Debes seleccionar un monto de donación. Gracias!');
                 return;
             }
+            if (event.currentTarget.className.indexOf('btn-qr') >= 0) {
+                startAportarQrCheckout(amount);
+                return;
+            }
             var type = event.currentTarget.className.indexOf('btn-unica') >= 0 ? 'once' : 'monthly';
-            startAportarCheckout(type, rdb.value);
+            startAportarCheckout(type, amount);
         });
     });
+    var closeQr = document.querySelector('[data-qr-close]');
+    if (closeQr) {
+        closeQr.addEventListener('click', closeQrPanel);
+    }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 @endsection

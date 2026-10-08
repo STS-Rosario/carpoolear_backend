@@ -11,6 +11,7 @@ use MercadoPago\Resources\Order;
 use MercadoPago\Resources\Preference;
 use ReflectionProperty;
 use STS\Models\Campaign;
+use STS\Models\DonationPayment;
 use STS\Models\DonationSubscription;
 use STS\Models\DonationTier;
 use STS\Models\Trip;
@@ -148,6 +149,72 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('ORD-123', $result['order_id']);
         $this->assertSame('EMV_QR_DATA', $result['qr_data']);
         $this->assertSame('PAY-456', $result['payment_id']);
+    }
+
+    public function test_create_qr_order_for_platform_donation_rejects_amount_below_provider_minimum(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $payment = new DonationPayment;
+        $payment->id = 10;
+        $payment->amount_cents = 1400;
+
+        $service = new MercadoPagoService;
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Mercado Pago QR orders require amount >= 15.00');
+
+        $service->createQrOrderForPlatformDonation($payment);
+    }
+
+    public function test_create_qr_order_for_platform_donation_returns_qr_data_with_donation_once_reference(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $payment = new DonationPayment;
+        $payment->id = 77;
+        $payment->amount_cents = 500000;
+
+        $orderClient = new class
+        {
+            public array $payload = [];
+
+            public function create(array $request, ?RequestOptions $requestOptions = null): Order
+            {
+                $this->payload = $request;
+                $order = new Order;
+                $order->id = 'ORD-DONATE-1';
+                $order->transactions = (object) ['payments' => [(object) ['id' => 'PAY-DONATE-1']]];
+                $order->setResponse(new MPResponse(200, [
+                    'type_response' => ['qr_data' => 'DONATION_EMV_QR'],
+                ]));
+
+                return $order;
+            }
+        };
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $orderClientRef->setValue($service, $orderClient);
+
+        $result = $service->createQrOrderForPlatformDonation($payment);
+
+        $this->assertSame(77, $result['payment_id']);
+        $this->assertSame('ORD-DONATE-1', $result['order_id']);
+        $this->assertSame('DONATION_EMV_QR', $result['qr_data']);
+        $this->assertSame('qr', $orderClient->payload['type']);
+        $this->assertSame('5000.00', $orderClient->payload['total_amount']);
+        $this->assertSame('donation_once_77', $orderClient->payload['external_reference']);
+        $this->assertSame('Donación a Carpoolear', $orderClient->payload['description']);
+        $this->assertSame('POS-1', $orderClient->payload['config']['qr']['external_pos_id']);
+        $this->assertSame('dynamic', $orderClient->payload['config']['qr']['mode']);
     }
 
     public function test_sellado_trims_trailing_slash_on_frontend_url_for_back_urls(): void

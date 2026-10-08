@@ -53,7 +53,7 @@ class UserLoggin
         }
 
         // Require authentication
-        if ($this->user && ! $this->user->banned && $this->user->active) {
+        if ($this->user && $this->user->active) {
             auth()->setUser($this->user);
 
             return $next($request);

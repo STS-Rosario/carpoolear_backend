@@ -14,28 +14,27 @@ class PlatformDonationController extends Controller
 {
     public function __construct(private PlatformDonationService $platformDonationService)
     {
-        $this->middleware('logged.optional')->only(['checkoutOnce', 'checkoutMonthly']);
+        $this->middleware('logged.optional')->only(['checkoutOnce', 'checkoutMonthly', 'checkoutQrOrder', 'paymentStatus']);
         $this->middleware('logged')->only(['myDonations']);
     }
 
     public function checkoutOnce(Request $request): JsonResponse
     {
         $this->ensureEnabled();
-
-        $validated = $request->validate([
-            'tier_id' => 'nullable|integer|exists:donation_tiers,id',
-            'amount' => 'nullable|integer|min:1',
-            'source' => 'nullable|string|max:64',
-            'trip_id' => 'nullable|integer',
-            'user_id' => 'nullable|integer|exists:users,id',
-        ]);
-
-        if (empty($validated['tier_id']) && empty($validated['amount'])) {
-            return response()->json(['error' => 'tier_id or amount is required'], 422);
-        }
-
+        $validated = $this->validateCheckoutRequest($request);
         $user = $this->resolveCheckoutUser($request, $validated);
         $result = $this->platformDonationService->checkoutOnce($user, $validated);
+
+        return response()->json($result);
+    }
+
+    public function checkoutQrOrder(Request $request): JsonResponse
+    {
+        $this->ensureEnabled();
+        $this->ensureQrEnabled();
+        $validated = $this->validateCheckoutRequest($request);
+        $user = $this->resolveCheckoutUser($request, $validated);
+        $result = $this->platformDonationService->checkoutOnceQr($user, $validated);
 
         return response()->json($result);
     }
@@ -43,19 +42,7 @@ class PlatformDonationController extends Controller
     public function checkoutMonthly(Request $request): JsonResponse
     {
         $this->ensureEnabled();
-
-        $validated = $request->validate([
-            'tier_id' => 'nullable|integer|exists:donation_tiers,id',
-            'amount' => 'nullable|integer|min:1',
-            'source' => 'nullable|string|max:64',
-            'trip_id' => 'nullable|integer',
-            'user_id' => 'nullable|integer|exists:users,id',
-        ]);
-
-        if (empty($validated['tier_id']) && empty($validated['amount'])) {
-            return response()->json(['error' => 'tier_id or amount is required'], 422);
-        }
-
+        $validated = $this->validateCheckoutRequest($request);
         $user = $this->resolveCheckoutUser($request, $validated);
         if (! $user) {
             return response()->json(['error' => 'user_id or authentication is required'], 422);
@@ -64,6 +51,19 @@ class PlatformDonationController extends Controller
         $result = $this->platformDonationService->checkoutMonthly($user, $validated);
 
         return response()->json($result);
+    }
+
+    public function paymentStatus(int $paymentId): JsonResponse
+    {
+        $payment = DonationPayment::query()->find($paymentId);
+        if (! $payment) {
+            abort(404);
+        }
+
+        return response()->json([
+            'payment_id' => $payment->id,
+            'status' => $payment->status,
+        ]);
     }
 
     public function myDonations(Request $request): JsonResponse
@@ -94,6 +94,33 @@ class PlatformDonationController extends Controller
         if (! $this->platformDonationService->isEnabled()) {
             abort(503, 'Platform donations API is disabled');
         }
+    }
+
+    private function ensureQrEnabled(): void
+    {
+        if (! $this->platformDonationService->isQrEnabled()) {
+            abort(503, 'QR payment is not available');
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validateCheckoutRequest(Request $request): array
+    {
+        $validated = $request->validate([
+            'tier_id' => 'nullable|integer|exists:donation_tiers,id',
+            'amount' => 'nullable|integer|min:1',
+            'source' => 'nullable|string|max:64',
+            'trip_id' => 'nullable|integer',
+            'user_id' => 'nullable|integer|exists:users,id',
+        ]);
+
+        if (empty($validated['tier_id']) && empty($validated['amount'])) {
+            abort(response()->json(['error' => 'tier_id or amount is required'], 422));
+        }
+
+        return $validated;
     }
 
     /**

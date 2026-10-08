@@ -12,6 +12,7 @@ use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
 use MercadoPago\Net\MPRequest;
 use MercadoPago\Net\MPResponse;
+use STS\Models\DonationPayment;
 use STS\Models\DonationSubscription;
 use STS\Models\DonationTier;
 use STS\Models\ManualIdentityValidation;
@@ -531,6 +532,164 @@ class MercadoPagoWebhookTest extends TestCase
         ], $headers)
             ->assertOk()
             ->assertExactJson(['status' => 'success']);
+    }
+
+    public function test_order_processed_for_donation_once_qr_prefix_marks_paid_when_accredited(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $user = User::factory()->create();
+        $payment = DonationPayment::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => 500000,
+            'status' => 'pending',
+        ]);
+        $payment->external_reference = 'donation_once_'.$payment->id;
+        $payment->save();
+
+        $orderId = 'ORD-DONATE-QR-1';
+        $headers = $this->orderProcessedSignatureHeaders($orderId, 'req-order-donate-qr', 'wh-secret-qr-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
+            'action' => 'order.processed',
+            'data' => [
+                'external_reference' => 'donation_once_'.$payment->id,
+                'status' => 'processed',
+                'status_detail' => 'accredited',
+                'transactions' => [
+                    'payments' => [
+                        ['id' => 'P-DONATE-QR-1'],
+                    ],
+                ],
+            ],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $payment->refresh();
+        $this->assertSame('approved', $payment->status);
+        $this->assertSame('P-DONATE-QR-1', $payment->mp_payment_id);
+        $this->assertNotNull($payment->paid_at);
+    }
+
+    public function test_order_processed_before_accredited_does_not_mark_donation_once_paid(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => 500000,
+            'status' => 'pending',
+        ]);
+
+        $orderId = 'ord-donate-pending';
+        $headers = $this->orderProcessedSignatureHeaders($orderId, 'req-order-donate-pending', 'wh-secret-qr-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
+            'action' => 'order.processed',
+            'data' => [
+                'external_reference' => 'donation_once_'.$payment->id,
+                'status' => 'processed',
+                'status_detail' => 'pending_contingency',
+            ],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $this->assertSame('pending', $payment->fresh()->status);
+    }
+
+    public function test_payment_created_for_donation_once_qr_prefix_marks_paid_when_approved(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $user = User::factory()->create();
+        $payment = DonationPayment::create([
+            'user_id' => $user->id,
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => 500000,
+            'status' => 'pending',
+        ]);
+
+        $mpPaymentId = 555666777;
+        $externalReference = 'donation_once_'.$payment->id;
+        $this->stubMercadoPagoPayments([
+            $mpPaymentId => $this->mercadoPagoPaymentPayload($externalReference, $mpPaymentId, [
+                'transaction_amount' => 5000.0,
+                'date_approved' => '2026-10-08T12:00:00.000-00:00',
+            ]),
+        ]);
+
+        $headers = $this->paymentCreatedSignatureHeaders((string) $mpPaymentId, 'req-donate-qr-created', 'wh-secret-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => (string) $mpPaymentId]), [
+            'action' => 'payment.created',
+            'data_id' => (string) $mpPaymentId,
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $payment->refresh();
+        $this->assertSame('approved', $payment->status);
+        $this->assertSame((string) $mpPaymentId, $payment->mp_payment_id);
+        $this->assertNotNull($payment->paid_at);
+    }
+
+    public function test_merchant_order_closed_marks_donation_once_paid_when_signed_with_qr_secret(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        config([
+            'services.mercadopago.webhook_secret' => 'wh-secret-checkout',
+            'services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr',
+            'services.mercadopago.qr_payment_client_id' => '2333034981366591',
+            'services.mercadopago.access_token' => 'test-access-token',
+        ]);
+
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => 500000,
+            'status' => 'pending',
+        ]);
+
+        $merchantOrderId = 42085488099;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-donate-qr', 'wh-secret-qr');
+
+        Http::fake([
+            'api.mercadopago.com/merchant_orders/'.$merchantOrderId => Http::response([
+                'id' => $merchantOrderId,
+                'status' => 'closed',
+                'external_reference' => 'donation_once_'.$payment->id,
+                'payments' => [
+                    ['id' => 88990011, 'status' => 'approved'],
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'update',
+            'status' => 'closed',
+            'application_id' => '2333034981366591',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'closed'],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $payment->refresh();
+        $this->assertSame('approved', $payment->status);
+        $this->assertSame('88990011', $payment->mp_payment_id);
     }
 
     public function test_payment_created_for_trip_sellado_marks_payment_and_trip_ready_when_approved(): void
