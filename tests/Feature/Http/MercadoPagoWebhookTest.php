@@ -642,6 +642,56 @@ class MercadoPagoWebhookTest extends TestCase
         $this->assertNotNull($payment->paid_at);
     }
 
+    public function test_merchant_order_closed_marks_donation_once_paid_when_signed_with_qr_secret(): void
+    {
+        $this->seed(DonationTierSeeder::class);
+        config([
+            'services.mercadopago.webhook_secret' => 'wh-secret-checkout',
+            'services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr',
+            'services.mercadopago.qr_payment_client_id' => '2333034981366591',
+            'services.mercadopago.access_token' => 'test-access-token',
+        ]);
+
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => 500000,
+            'status' => 'pending',
+        ]);
+
+        $merchantOrderId = 42085488099;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-donate-qr', 'wh-secret-qr');
+
+        Http::fake([
+            'api.mercadopago.com/merchant_orders/'.$merchantOrderId => Http::response([
+                'id' => $merchantOrderId,
+                'status' => 'closed',
+                'external_reference' => 'donation_once_'.$payment->id,
+                'payments' => [
+                    ['id' => 88990011, 'status' => 'approved'],
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'update',
+            'status' => 'closed',
+            'application_id' => '2333034981366591',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'closed'],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $payment->refresh();
+        $this->assertSame('approved', $payment->status);
+        $this->assertSame('88990011', $payment->mp_payment_id);
+    }
+
     public function test_payment_created_for_trip_sellado_marks_payment_and_trip_ready_when_approved(): void
     {
         config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
