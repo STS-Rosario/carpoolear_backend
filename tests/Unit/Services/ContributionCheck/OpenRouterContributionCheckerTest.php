@@ -167,6 +167,8 @@ class OpenRouterContributionCheckerTest extends TestCase
         $this->assertStringContainsString('"exceeds_max"', $prompt);
         $this->assertStringContainsString('"phone_in_description"', $prompt);
         $this->assertStringContainsString('JSON', $prompt);
+        $this->assertStringContainsString('mayor a 1 y menor a 2000', $prompt);
+        $this->assertStringContainsString('no lo multipliques', $prompt);
     }
 
     public function test_prompt_states_there_is_no_max_for_voluntary_contributions(): void

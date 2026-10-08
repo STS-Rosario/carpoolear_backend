@@ -130,6 +130,23 @@ class CheckTripContributionWithLlmTest extends TestCase
         $this->assertFalse($trip->fresh()->has_potential_excess_contribution);
     }
 
+    public function test_missing_api_key_still_flags_an_implausibly_low_seat_price(): void
+    {
+        config(['services.openrouter.api_key' => '']);
+        Http::fake();
+        Log::spy();
+        $trip = $this->trip(['seat_price_cents' => 1600]);
+
+        $this->runJob($trip)->assertNotFailed();
+
+        Http::assertNothingSent();
+        Log::shouldHaveReceived('info')->once()->withArgs(
+            fn (string $message, array $context = []) => str_contains($message, 'OPENROUTER_API_KEY')
+                && ($context['trip_id'] ?? null) === $trip->id
+        );
+        $this->assertTrue($trip->fresh()->has_potential_excess_contribution);
+    }
+
     public function test_empty_description_clears_flags_without_calling_the_api(): void
     {
         Http::fake();
@@ -144,6 +161,20 @@ class CheckTripContributionWithLlmTest extends TestCase
         Http::assertNothingSent();
         $this->assertFalse($trip->fresh()->has_potential_excess_contribution);
         $this->assertFalse($trip->fresh()->phone_in_description);
+    }
+
+    public function test_empty_description_still_flags_an_implausibly_low_seat_price(): void
+    {
+        Http::fake();
+        $trip = $this->trip([
+            'description' => '   ',
+            'seat_price_cents' => 1600,
+        ]);
+
+        $this->runJob($trip)->assertNotFailed();
+
+        Http::assertNothingSent();
+        $this->assertTrue($trip->fresh()->has_potential_excess_contribution);
     }
 
     public function test_deleted_trips_are_ignored(): void
