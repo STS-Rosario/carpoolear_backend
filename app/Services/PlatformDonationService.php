@@ -25,6 +25,14 @@ class PlatformDonationService
         return (bool) config('carpoolear.platform_donations_api_enabled', false);
     }
 
+    public function isQrEnabled(): bool
+    {
+        return $this->isEnabled()
+            && (bool) config('carpoolear.platform_donations_qr_enabled', false)
+            && ! empty(config('services.mercadopago.qr_payment_access_token'))
+            && ! empty(config('carpoolear.qr_payment_pos_external_id'));
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -86,6 +94,45 @@ class PlatformDonationService
         return [
             'init_point' => $preference->init_point,
             'payment_id' => $payment->id,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{payment_id: int, qr_data: string, order_id: string}
+     */
+    public function checkoutOnceQr(?User $user, array $data): array
+    {
+        $tier = $this->resolveTier($data);
+        $payment = DonationPayment::create([
+            'user_id' => $user?->id,
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => $tier->amount_cents,
+            'currency' => 'ARS',
+            'status' => 'pending',
+            'source' => $data['source'] ?? null,
+            'trip_id' => $data['trip_id'] ?? null,
+        ]);
+
+        try {
+            $result = $this->mercadoPagoService->createQrOrderForPlatformDonation($payment);
+        } catch (\Throwable $e) {
+            $payment->delete();
+            throw $e;
+        }
+
+        if (empty($result['qr_data'])) {
+            $payment->delete();
+            throw new \RuntimeException('Failed to create QR order.');
+        }
+
+        $payment->external_reference = 'donation_once_'.$payment->id;
+        $payment->save();
+
+        return [
+            'payment_id' => $payment->id,
+            'qr_data' => $result['qr_data'],
+            'order_id' => $result['order_id'] ?? '',
         ];
     }
 
