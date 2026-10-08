@@ -7,6 +7,7 @@ use DB;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use STS\Helpers\OngoingTripHelper;
+use STS\Helpers\SelladoEmptyTripCredit;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
 use STS\Jobs\CheckTripContributionWithLlm;
@@ -1061,6 +1062,7 @@ class TripRepository
             'free_trips_amount' => $freeTripsAmount,
             'trips_created_by_user_amount' => $tripsCreatedByUser,
             'user_over_free_limit' => $userOverFreeLimit,
+            'has_complimentary_sellado' => SelladoEmptyTripCredit::userHasUnusedCredit($user->id),
         ];
     }
 
