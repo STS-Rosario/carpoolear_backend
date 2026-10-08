@@ -10,6 +10,7 @@ use STS\Helpers\RatingHelper;
 use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\Trip;
+use STS\Models\TripContributionOverchargeReport;
 use STS\Models\User;
 use STS\Repository\RatingRepository;
 use STS\Repository\TripRepository;
@@ -102,6 +103,17 @@ class RatingManager extends BaseManager
         }
 
         if ($rate = $this->getRate($user_from, $user_to_id, $trip_id)) {
+            if (TripContributionOverchargeReport::shouldAsk($rate, $rate->trip)) {
+                $paidMore = Validator::make($data, [
+                    'paid_more' => 'required|boolean',
+                ]);
+                if ($paidMore->fails()) {
+                    $this->setErrors($paidMore->errors());
+
+                    return;
+                }
+            }
+
             $rate->voted = true;
             $rate->comment = $data['comment'];
             $rate->voted_hash = '';
@@ -110,6 +122,14 @@ class RatingManager extends BaseManager
 
             $result = $this->ratingRepository->update($rate);
             $this->ratingRepository->update_rating_availability($rate);
+
+            if (TripContributionOverchargeReport::shouldAsk($rate, $rate->trip)) {
+                TripContributionOverchargeReport::query()->create([
+                    'user_id' => $rate->user_id_from,
+                    'trip_id' => $rate->trip_id,
+                    'paid_more' => $data['paid_more'],
+                ]);
+            }
 
             return $result;
         } else {
