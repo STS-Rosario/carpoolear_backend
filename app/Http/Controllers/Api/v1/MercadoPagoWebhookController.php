@@ -428,6 +428,26 @@ class MercadoPagoWebhookController extends Controller
         return str_starts_with($externalReference, 'donation_once_');
     }
 
+    protected function routeAccreditedQrCompatiblePayment(string $externalReference, mixed $paymentId, string $statusDetail)
+    {
+        $approvedPayload = [
+            'id' => $paymentId,
+            'status' => 'approved',
+            'status_detail' => $statusDetail,
+            'external_reference' => $externalReference,
+        ];
+
+        if ($this->isManualValidationExternalReference($externalReference)) {
+            return $this->handleManualValidationPayment($approvedPayload);
+        }
+
+        if ($this->isDonationOnceQrExternalReference($externalReference)) {
+            return $this->handleDonationOnceQrPayment($approvedPayload);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
     /**
      * @param  array<string, mixed>  $mpPayment
      */
@@ -740,22 +760,7 @@ class MercadoPagoWebhookController extends Controller
             $paymentId = $payments[0]['id'];
         }
 
-        $approvedPayload = [
-            'id' => $paymentId,
-            'status' => 'approved',
-            'status_detail' => $orderStatusDetail,
-            'external_reference' => $externalReference,
-        ];
-
-        if ($this->isManualValidationExternalReference($externalReference)) {
-            return $this->handleManualValidationPayment($approvedPayload);
-        }
-
-        if ($this->isDonationOnceQrExternalReference($externalReference)) {
-            return $this->handleDonationOnceQrPayment($approvedPayload);
-        }
-
-        return response()->json(['status' => 'success']);
+        return $this->routeAccreditedQrCompatiblePayment($externalReference, $paymentId, $orderStatusDetail);
     }
 
     /**
@@ -819,22 +824,7 @@ class MercadoPagoWebhookController extends Controller
             }
         }
 
-        $approvedPayload = [
-            'id' => $paymentId,
-            'status' => 'approved',
-            'status_detail' => 'accredited',
-            'external_reference' => $externalReference,
-        ];
-
-        if ($this->isManualValidationExternalReference($externalReference)) {
-            return $this->handleManualValidationPayment($approvedPayload);
-        }
-
-        if ($this->isDonationOnceQrExternalReference($externalReference)) {
-            return $this->handleDonationOnceQrPayment($approvedPayload);
-        }
-
-        return response()->json(['status' => 'success']);
+        return $this->routeAccreditedQrCompatiblePayment($externalReference, $paymentId, 'accredited');
     }
 
     /**
