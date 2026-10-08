@@ -95,4 +95,16 @@ class SelladoEmptyTripCreditTest extends TestCase
 
         $this->assertFalse(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
     }
+
+    public function test_redeeming_credit_prevents_using_the_same_empty_trip_again(): void
+    {
+        $user = User::factory()->create();
+        $trip = $this->paidFinishedEmptyTrip($user);
+
+        $redeemed = SelladoEmptyTripCredit::redeemOldestUnusedCredit($user->id);
+
+        $this->assertSame($trip->id, $redeemed->id);
+        $this->assertFalse(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
+        $this->assertNull(SelladoEmptyTripCredit::redeemOldestUnusedCredit($user->id));
+    }
 }
