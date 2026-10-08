@@ -805,10 +805,6 @@ class MercadoPagoWebhookController extends Controller
         }
 
         $externalReference = $merchantOrder['external_reference'] ?? '';
-        if (! $this->isManualValidationExternalReference($externalReference)) {
-            return response()->json(['status' => 'success']);
-        }
-
         $paymentId = null;
         $payments = $merchantOrder['payments'] ?? [];
         if (is_array($payments)) {
@@ -823,12 +819,22 @@ class MercadoPagoWebhookController extends Controller
             }
         }
 
-        return $this->handleManualValidationPayment([
+        $approvedPayload = [
             'id' => $paymentId,
             'status' => 'approved',
             'status_detail' => 'accredited',
             'external_reference' => $externalReference,
-        ]);
+        ];
+
+        if ($this->isManualValidationExternalReference($externalReference)) {
+            return $this->handleManualValidationPayment($approvedPayload);
+        }
+
+        if ($this->isDonationOnceQrExternalReference($externalReference)) {
+            return $this->handleDonationOnceQrPayment($approvedPayload);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 
     /**
