@@ -114,24 +114,7 @@ class TripRepository
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-        $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
-        // if route is paid, and user should pay, create payment
-        if (config('carpoolear.module_trip_creation_payment_enabled') && $routeNeedsPayment && $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold')) {
-            $redeemedCredit = SelladoEmptyTripCredit::redeemOldestUnusedCredit($trip->user_id);
-            if (! $redeemedCredit) {
-                $trip->state = Trip::STATE_AWAITING_PAYMENT;
-
-                // Create MercadoPago payment preference
-                $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado($trip, config('carpoolear.module_trip_creation_payment_amount_cents'));
-                $trip->payment_id = $preference->id;
-                $trip->needs_sellado = true;
-
-                $trip->save();
-
-                // Return the preference URL to redirect the user
-                $trip->payment_url = $preference->init_point;
-            }
-        }
+        $this->maybeRequireSelladoPayment($trip, $routeNeedsPayment);
 
         // obtener ruta o crear
         $routeIds = [];
@@ -1051,6 +1034,32 @@ class TripRepository
             'message' => trans('errors.routing_service_unavailable'),
             'error_code' => 'routing_service_unavailable',
         ];
+    }
+
+    private function maybeRequireSelladoPayment(Trip $trip, bool $routeNeedsPayment): void
+    {
+        if (! config('carpoolear.module_trip_creation_payment_enabled') || ! $routeNeedsPayment) {
+            return;
+        }
+
+        $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+        if ($tripsCreatedByUser < config('carpoolear.module_trip_creation_payment_trips_threshold')) {
+            return;
+        }
+
+        if (SelladoEmptyTripCredit::redeemOldestUnusedCredit($trip->user_id)) {
+            return;
+        }
+
+        $trip->state = Trip::STATE_AWAITING_PAYMENT;
+        $preference = $this->mercadoPagoService->createPaymentPreferenceForSellado(
+            $trip,
+            config('carpoolear.module_trip_creation_payment_amount_cents')
+        );
+        $trip->payment_id = $preference->id;
+        $trip->needs_sellado = true;
+        $trip->save();
+        $trip->payment_url = $preference->init_point;
     }
 
     public function selladoViaje($user)
