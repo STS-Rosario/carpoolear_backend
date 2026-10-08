@@ -887,6 +887,38 @@ class TripRepositoryTest extends TestCase
         $this->assertTrue($info['user_over_free_limit']);
     }
 
+    public function test_sellado_viaje_flags_complimentary_after_empty_paid_trip(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+
+        $user = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $user->id,
+            'is_passenger' => false,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        $info = $this->repo()->selladoViaje($user);
+
+        $this->assertTrue($info['has_complimentary_sellado']);
+    }
+
+    public function test_sellado_viaje_does_not_flag_complimentary_without_empty_paid_trip(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+
+        $user = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]);
+
+        $info = $this->repo()->selladoViaje($user);
+
+        $this->assertFalse($info['has_complimentary_sellado']);
+    }
+
     public function test_get_recent_trips_filters_by_created_at_window(): void
     {
         $user = User::factory()->create();
