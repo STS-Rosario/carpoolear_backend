@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Queue;
 use Mockery;
 use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Middleware\BlockImpersonationDestructiveActions;
-use STS\Http\Middleware\UserLoggin;
 use STS\Jobs\SendPasswordResetEmail;
 use STS\Models\User;
 use STS\Services\Admin\ImpersonationService;
@@ -73,6 +72,8 @@ class AuthControllerApiTest extends TestCase
         $this->assertArrayHasKey('banner', $response->json());
         $this->assertArrayHasKey('identity_validation_manual_qr_enabled', $response->json());
         $this->assertIsBool($response->json('identity_validation_manual_qr_enabled'));
+        $this->assertArrayHasKey('platform_donations_qr_enabled', $response->json());
+        $this->assertIsBool($response->json('platform_donations_qr_enabled'));
         $this->assertArrayNotHasKey('qr_payment_pos_external_id', $response->json());
         $this->assertArrayNotHasKey('donation_month_days', $response->json());
         $this->assertArrayNotHasKey('donation_trips_count', $response->json());
@@ -474,19 +475,67 @@ class AuthControllerApiTest extends TestCase
         }
     }
 
-    public function test_login_with_banned_user_returns_user_banned_message(): void
+    public function test_get_config_platform_donations_qr_enabled_matches_conjunctive_gate(): void
+    {
+        $snapshot = [
+            'services.mercadopago' => config('services.mercadopago'),
+            'carpoolear.platform_donations_api_enabled' => config('carpoolear.platform_donations_api_enabled'),
+            'carpoolear.platform_donations_qr_enabled' => config('carpoolear.platform_donations_qr_enabled'),
+            'carpoolear.qr_payment_pos_external_id' => config('carpoolear.qr_payment_pos_external_id'),
+        ];
+
+        try {
+            $mercado = config('services.mercadopago', []);
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.platform_donations_api_enabled' => true,
+                'carpoolear.platform_donations_qr_enabled' => true,
+                'carpoolear.qr_payment_pos_external_id' => 'pos-external-1',
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', true);
+
+            config(['carpoolear.platform_donations_api_enabled' => false]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+
+            config([
+                'carpoolear.platform_donations_api_enabled' => true,
+                'carpoolear.platform_donations_qr_enabled' => false,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = '';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.platform_donations_api_enabled' => true,
+                'carpoolear.platform_donations_qr_enabled' => true,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config(['carpoolear.qr_payment_pos_external_id' => '']);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+        } finally {
+            config($snapshot);
+        }
+    }
+
+    public function test_login_with_banned_user_returns_token_and_config_envelope(): void
     {
         $user = User::factory()->create([
             'active' => true,
             'banned' => true,
         ]);
 
-        $this->postJson('api/login', [
+        $response = $this->postJson('api/login', [
             'email' => $user->email,
             'password' => '123456',
-        ])
-            ->assertStatus(401)
-            ->assertSee('user_banned');
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonStructure(['token', 'config' => ['donation']]);
+        $this->assertNotEmpty($response->json('token'));
     }
 
     public function test_login_with_inactive_user_returns_user_not_active_message(): void
@@ -679,13 +728,11 @@ class AuthControllerApiTest extends TestCase
         }
     }
 
-    public function test_retoken_with_banned_user_returns_forbidden_banned_payload(): void
+    public function test_retoken_with_banned_user_returns_token_and_config(): void
     {
-        $this->withoutMiddleware(UserLoggin::class);
-
         $user = User::factory()->create([
             'active' => true,
-            'banned' => false,
+            'banned' => true,
         ]);
 
         $token = $this->postJson('api/login', [
@@ -693,14 +740,13 @@ class AuthControllerApiTest extends TestCase
             'password' => '123456',
         ])->assertOk()->json('token');
 
-        $user->forceFill(['banned' => true])->save();
-
         $retoken = $this->postJson('api/retoken', [], [
             'Authorization' => 'Bearer '.$token,
         ]);
 
-        $retoken->assertForbidden();
-        $this->assertSame('banned', $retoken->json());
+        $retoken->assertOk();
+        $this->assertNotEmpty($retoken->json('token'));
+        $retoken->assertJsonStructure(['token', 'config']);
     }
 
     public function test_logout_logs_error_when_jwt_invalidate_throws(): void

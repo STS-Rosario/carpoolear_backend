@@ -71,27 +71,32 @@ class CheckUserBannedTest extends TestCase
 
     public function test_banned_user_aborts_with_403(): void
     {
-        $user = User::factory()->create([
-            'banned' => true,
-            'active' => true,
-        ]);
+        $this->assertBannedRequestIsDenied('GET', '/api/trips');
+    }
 
-        $parser = Mockery::mock();
-        $parser->shouldReceive('hasToken')->andReturn(true);
+    public function test_banned_user_is_allowed_to_list_support_tickets(): void
+    {
+        $this->assertBannedRequestIsAllowed('GET', '/api/support/tickets');
+    }
 
-        $jwt = Mockery::mock(JWTAuth::class);
-        $jwt->shouldReceive('parser')->andReturn($parser);
-        $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
+    public function test_banned_user_is_blocked_from_creating_support_tickets(): void
+    {
+        $this->assertBannedRequestIsDenied('POST', '/api/support/tickets');
+    }
 
-        $middleware = $this->middlewareWithInjectedAuth($jwt);
+    public function test_banned_user_is_allowed_to_view_and_reply_to_support_tickets(): void
+    {
+        $this->assertBannedRequestIsAllowed('GET', '/api/support/tickets/12');
+        $this->assertBannedRequestIsAllowed('POST', '/api/support/tickets/12/replies');
+        $this->assertBannedRequestIsAllowed('POST', '/api/support/tickets/12/close');
+        $this->assertBannedRequestIsAllowed('GET', '/api/support/tickets/12/attachments/3/image');
+    }
 
-        try {
-            $middleware->handle(Request::create('/', 'GET'), fn () => response('should-not-run'));
-            $this->fail('Expected HttpException 403');
-        } catch (HttpException $e) {
-            $this->assertSame(403, $e->getStatusCode());
-            $this->assertSame('Access denied', $e->getMessage());
-        }
+    public function test_banned_user_is_allowed_to_load_own_profile_and_refresh_session(): void
+    {
+        $this->assertBannedRequestIsAllowed('GET', '/api/users/me');
+        $this->assertBannedRequestIsAllowed('POST', '/api/retoken');
+        $this->assertBannedRequestIsAllowed('POST', '/api/logout');
     }
 
     public function test_null_user_from_authenticate_continues(): void
@@ -109,7 +114,7 @@ class CheckUserBannedTest extends TestCase
         $this->assertSame('null-user-ok', $response->getContent());
     }
 
-    public function test_banned_session_user_without_token_is_not_blocked_by_this_middleware(): void
+    public function test_banned_session_user_without_token_is_restricted_by_allowlist(): void
     {
         $bannedUser = User::factory()->create([
             'banned' => true,
@@ -118,16 +123,27 @@ class CheckUserBannedTest extends TestCase
         $this->actingAs($bannedUser, 'api');
 
         $parser = Mockery::mock();
-        $parser->shouldReceive('hasToken')->once()->andReturn(false);
+        $parser->shouldReceive('hasToken')->andReturn(false);
 
         $jwt = Mockery::mock(JWTAuth::class);
-        $jwt->shouldReceive('parser')->once()->andReturn($parser);
+        $jwt->shouldReceive('parser')->andReturn($parser);
         $jwt->shouldNotReceive('parseToken');
 
         $middleware = $this->middlewareWithInjectedAuth($jwt);
-        $response = $middleware->handle(Request::create('/', 'GET'), fn () => response('no-token-path'));
 
-        $this->assertSame('no-token-path', $response->getContent());
+        $allowed = $middleware->handle(
+            Request::create('/api/support/tickets', 'GET'),
+            fn () => response('tickets-ok')
+        );
+        $this->assertSame('tickets-ok', $allowed->getContent());
+
+        try {
+            $middleware->handle(Request::create('/api/trips', 'GET'), fn () => response('should-not-run'));
+            $this->fail('Expected HttpException 403');
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+            $this->assertSame('Access denied', $e->getMessage());
+        }
     }
 
     public function test_authenticate_exception_is_swallowed_and_request_continues(): void
@@ -166,5 +182,42 @@ class CheckUserBannedTest extends TestCase
         $prop->setValue($middleware, $jwt);
 
         return $middleware;
+    }
+
+    private function assertBannedRequestIsAllowed(string $method, string $uri): void
+    {
+        $response = $this->handleBannedRequest($method, $uri, fn () => response('allowed'));
+
+        $this->assertSame('allowed', $response->getContent());
+    }
+
+    private function assertBannedRequestIsDenied(string $method, string $uri): void
+    {
+        try {
+            $this->handleBannedRequest($method, $uri, fn () => response('should-not-run'));
+            $this->fail('Expected HttpException 403 for '.$method.' '.$uri);
+        } catch (HttpException $e) {
+            $this->assertSame(403, $e->getStatusCode());
+            $this->assertSame('Access denied', $e->getMessage());
+        }
+    }
+
+    private function handleBannedRequest(string $method, string $uri, callable $next)
+    {
+        $user = User::factory()->create([
+            'banned' => true,
+            'active' => true,
+        ]);
+
+        $parser = Mockery::mock();
+        $parser->shouldReceive('hasToken')->andReturn(true);
+
+        $jwt = Mockery::mock(JWTAuth::class);
+        $jwt->shouldReceive('parser')->andReturn($parser);
+        $jwt->shouldReceive('parseToken->authenticate')->andReturn($user);
+
+        $middleware = $this->middlewareWithInjectedAuth($jwt);
+
+        return $middleware->handle(Request::create($uri, $method), $next);
     }
 }

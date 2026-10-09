@@ -198,7 +198,7 @@ class SocialApiTest extends TestCase
             ->assertJsonStructure(['token']);
     }
 
-    public function test_social_login_rejects_banned_linked_account(): void
+    public function test_social_login_allows_banned_linked_account(): void
     {
         $user = User::factory()->create([
             'active' => true,
@@ -219,9 +219,8 @@ class SocialApiTest extends TestCase
         ]);
 
         $this->postJson('api/social/login/test', ['access_token' => $accessToken])
-            ->assertStatus(422)
-            ->assertJsonPath('message', 'User banned.')
-            ->assertJsonPath('errors.code', 'user_banned');
+            ->assertOk()
+            ->assertJsonStructure(['token']);
     }
 
     public function test_social_update_returns_ok_when_token_matches_linked_account(): void

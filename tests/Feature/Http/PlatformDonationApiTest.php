@@ -239,6 +239,15 @@ class PlatformDonationApiTest extends TestCase
         ]);
     }
 
+    private function enableDonationQr(): void
+    {
+        config([
+            'carpoolear.platform_donations_qr_enabled' => true,
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+    }
+
     private function stubOnceCheckoutMercadoPago(): void
     {
         $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) {
@@ -252,6 +261,145 @@ class PlatformDonationApiTest extends TestCase
                 ->once()
                 ->andReturn('hash:encoded');
         });
+    }
+
+    public function test_checkout_qr_order_returns_qr_payload_when_mp_is_stubbed(): void
+    {
+        $this->enableDonationQr();
+        $user = User::factory()->create();
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) {
+            $mock->shouldReceive('createQrOrderForPlatformDonation')
+                ->once()
+                ->andReturnUsing(function (DonationPayment $payment) {
+                    return [
+                        'payment_id' => $payment->id,
+                        'order_id' => 'ord-donate',
+                        'qr_data' => 'DONATE_QR',
+                    ];
+                });
+        });
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson('/api/donations/checkout/qr-order', [
+                'tier_id' => $tier->id,
+                'source' => 'aportar',
+                'trip_id' => 99,
+            ]);
+
+        $payment = DonationPayment::query()->where('user_id', $user->id)->first();
+        $this->assertNotNull($payment);
+
+        $response->assertOk()
+            ->assertJson([
+                'payment_id' => $payment->id,
+                'qr_data' => 'DONATE_QR',
+                'order_id' => 'ord-donate',
+            ]);
+
+        $this->assertSame('pending', $payment->status);
+        $this->assertSame('aportar', $payment->source);
+        $this->assertSame(99, $payment->trip_id);
+        $this->assertSame('donation_once_'.$payment->id, $payment->external_reference);
+        $this->assertNull($payment->mp_preference_id);
+    }
+
+    public function test_checkout_qr_order_allows_anonymous_guest(): void
+    {
+        $this->enableDonationQr();
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) {
+            $mock->shouldReceive('createQrOrderForPlatformDonation')
+                ->once()
+                ->andReturnUsing(function (DonationPayment $payment) {
+                    return [
+                        'payment_id' => $payment->id,
+                        'order_id' => 'ord-guest',
+                        'qr_data' => 'GUEST_QR',
+                    ];
+                });
+        });
+
+        $this->postJson('/api/donations/checkout/qr-order', [
+            'tier_id' => $tier->id,
+            'source' => 'aportar',
+        ])->assertOk()->assertJson(['qr_data' => 'GUEST_QR']);
+
+        $this->assertDatabaseHas('donation_payments', [
+            'user_id' => null,
+            'donation_tier_id' => $tier->id,
+            'status' => 'pending',
+            'source' => 'aportar',
+        ]);
+    }
+
+    public function test_checkout_qr_order_is_unavailable_when_qr_flag_is_off(): void
+    {
+        config([
+            'carpoolear.platform_donations_qr_enabled' => false,
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $this->postJson('/api/donations/checkout/qr-order', [
+            'amount' => 5000,
+            'source' => 'aportar',
+        ])->assertStatus(503);
+    }
+
+    public function test_checkout_qr_order_is_unavailable_when_platform_donations_are_disabled(): void
+    {
+        $this->enableDonationQr();
+        config(['carpoolear.platform_donations_api_enabled' => false]);
+
+        $this->postJson('/api/donations/checkout/qr-order', [
+            'amount' => 5000,
+            'source' => 'aportar',
+        ])->assertStatus(503);
+    }
+
+    public function test_donation_payment_status_returns_pending_payload(): void
+    {
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => $tier->amount_cents,
+            'status' => 'pending',
+            'source' => 'aportar',
+        ]);
+
+        $this->getJson('/api/donations/payments/'.$payment->id)
+            ->assertOk()
+            ->assertExactJson([
+                'payment_id' => $payment->id,
+                'status' => 'pending',
+            ]);
+    }
+
+    public function test_donation_payment_status_returns_approved_after_payment(): void
+    {
+        $tier = DonationTier::where('slug', 'cafe')->firstOrFail();
+        $payment = DonationPayment::create([
+            'donation_tier_id' => $tier->id,
+            'amount_cents' => $tier->amount_cents,
+            'status' => 'approved',
+            'source' => 'aportar',
+            'paid_at' => now(),
+        ]);
+
+        $this->getJson('/api/donations/payments/'.$payment->id)
+            ->assertOk()
+            ->assertJson([
+                'payment_id' => $payment->id,
+                'status' => 'approved',
+            ]);
+    }
+
+    public function test_donation_payment_status_returns_not_found_for_unknown_id(): void
+    {
+        $this->getJson('/api/donations/payments/999999')->assertNotFound();
     }
 
     public function test_admin_donation_summary_returns_totals(): void
