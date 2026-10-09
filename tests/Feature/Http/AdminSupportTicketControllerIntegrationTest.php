@@ -7,6 +7,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Mockery;
 use STS\Http\Middleware\UserAdmin;
+use STS\Models\DonationSubscription;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
@@ -292,6 +293,142 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertIsArray($row['user']);
         $this->assertSame($owner->id, (int) $row['user']['id']);
         $this->assertSame('Ticket Owner Person', $row['user']['name']);
+    }
+
+    public function test_index_includes_club_carpoolear_active_for_current_members(): void
+    {
+        $admin = $this->adminUser();
+        $hiddenMember = User::factory()->create([
+            'monthly_donate' => true,
+            'show_club_carpoolear_membership' => false,
+        ]);
+        $subscriber = User::factory()->create(['monthly_donate' => false]);
+        DonationSubscription::create([
+            'user_id' => $subscriber->id,
+            'status' => 'authorized',
+            'transaction_amount_cents' => 500000,
+        ]);
+        $outsider = User::factory()->create(['monthly_donate' => false]);
+
+        $hiddenTicket = $this->makeTicket($hiddenMember, ['subject' => 'hidden-club']);
+        $subscriberTicket = $this->makeTicket($subscriber, ['subject' => 'subscriber-club']);
+        $outsiderTicket = $this->makeTicket($outsider, ['subject' => 'non-club']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'));
+        $hiddenRow = $rows->firstWhere('id', $hiddenTicket->id);
+        $subscriberRow = $rows->firstWhere('id', $subscriberTicket->id);
+        $outsiderRow = $rows->firstWhere('id', $outsiderTicket->id);
+
+        $this->assertIsArray($hiddenRow);
+        $this->assertArrayHasKey('club_carpoolear_active', $hiddenRow);
+        $this->assertSame(1, $hiddenRow['club_carpoolear_active']);
+        $this->assertSame(1, $subscriberRow['club_carpoolear_active']);
+        $this->assertSame(0, $outsiderRow['club_carpoolear_active']);
+    }
+
+    public function test_index_lists_older_open_club_ticket_before_newer_open_non_club_ticket(): void
+    {
+        $admin = $this->adminUser();
+        $clubOwner = User::factory()->create(['monthly_donate' => true]);
+        $nonClubOwner = User::factory()->create(['monthly_donate' => false]);
+
+        $clubTicket = $this->makeTicket($clubOwner, ['status' => 'Open', 'subject' => 'older-open-club']);
+        $nonClubTicket = $this->makeTicket($nonClubOwner, ['status' => 'Open', 'subject' => 'newer-open-non-club']);
+        $this->assertGreaterThan($clubTicket->id, $nonClubTicket->id);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+        $clubIdx = $ids->search($clubTicket->id);
+        $nonClubIdx = $ids->search($nonClubTicket->id);
+
+        $this->assertNotFalse($clubIdx);
+        $this->assertNotFalse($nonClubIdx);
+        $this->assertLessThan($nonClubIdx, $clubIdx, 'Open Club ticket must list before newer open non-club');
+    }
+
+    public function test_index_does_not_boost_older_closed_club_ticket_over_newer_open_non_club_ticket(): void
+    {
+        $admin = $this->adminUser();
+        $clubOwner = User::factory()->create(['monthly_donate' => true]);
+        $nonClubOwner = User::factory()->create(['monthly_donate' => false]);
+
+        $closedClubTicket = $this->makeTicket($clubOwner, ['status' => 'Cerrado', 'subject' => 'older-closed-club']);
+        $openNonClubTicket = $this->makeTicket($nonClubOwner, ['status' => 'Open', 'subject' => 'newer-open-non-club']);
+        $this->assertGreaterThan($closedClubTicket->id, $openNonClubTicket->id);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+        $closedClubIdx = $ids->search($closedClubTicket->id);
+        $openNonClubIdx = $ids->search($openNonClubTicket->id);
+
+        $this->assertNotFalse($closedClubIdx);
+        $this->assertNotFalse($openNonClubIdx);
+        $this->assertLessThan(
+            $closedClubIdx,
+            $openNonClubIdx,
+            'Closed Club must not get Club-first boost over newer open non-club'
+        );
+    }
+
+    public function test_index_keeps_open_club_first_when_sorting_by_priority_desc(): void
+    {
+        $admin = $this->adminUser();
+        $clubOwner = User::factory()->create(['monthly_donate' => true]);
+        $nonClubOwner = User::factory()->create(['monthly_donate' => false]);
+
+        $clubLow = $this->makeTicket($clubOwner, ['status' => 'Open', 'priority' => 'low', 'subject' => 'club-low']);
+        $clubHigh = $this->makeTicket($clubOwner, ['status' => 'Open', 'priority' => 'high', 'subject' => 'club-high']);
+        $nonClubHigh = $this->makeTicket($nonClubOwner, ['status' => 'Open', 'priority' => 'high', 'subject' => 'non-club-high']);
+        $nonClubLow = $this->makeTicket($nonClubOwner, ['status' => 'Open', 'priority' => 'low', 'subject' => 'non-club-low']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect($this->getJson('api/admin/support/tickets?sort=priority&direction=desc')->assertOk()->json('data'))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $this->assertSame(
+            [$clubHigh->id, $clubLow->id, $nonClubHigh->id, $nonClubLow->id],
+            $ids
+        );
+    }
+
+    public function test_index_ignores_invalid_sort_and_still_applies_club_first(): void
+    {
+        $admin = $this->adminUser();
+        $clubOwner = User::factory()->create(['monthly_donate' => true]);
+        $nonClubOwner = User::factory()->create(['monthly_donate' => false]);
+
+        $clubTicket = $this->makeTicket($clubOwner, ['status' => 'Open', 'subject' => 'open-club']);
+        $olderNonClub = $this->makeTicket($nonClubOwner, ['status' => 'Open', 'subject' => 'older-non-club']);
+        $newerNonClub = $this->makeTicket($nonClubOwner, ['status' => 'Open', 'subject' => 'newer-non-club']);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $ids = collect($this->getJson('api/admin/support/tickets?sort=not_a_column')->assertOk()->json('data'))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $this->assertSame([$clubTicket->id, $newerNonClub->id, $olderNonClub->id], $ids);
     }
 
     public function test_show_includes_user_ticket_attachments_and_reply_attachments(): void
