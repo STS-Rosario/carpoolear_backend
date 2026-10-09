@@ -17,6 +17,7 @@ use STS\Services\AdminActionLogger;
 use STS\Services\SupportTicketService;
 use STS\Support\AdminPagination;
 use STS\Support\ImageAttachmentRules;
+use STS\Support\SupportTicketAdminListSort;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -57,7 +58,13 @@ class SupportTicketController extends Controller
         $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
         $page = AdminPagination::resolvePage($request->query('page'));
 
-        $paginator = $query->orderByDesc('id')->paginate($perPage, ['*'], 'page', $page);
+        $query = SupportTicketAdminListSort::apply(
+            $query,
+            $request->query('sort'),
+            $request->query('direction')
+        );
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+        SupportTicketAdminListSort::decorateClubActive($paginator->items());
 
         return response()->json([
             'data' => $paginator->items(),
