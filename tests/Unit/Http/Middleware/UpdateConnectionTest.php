@@ -137,7 +137,7 @@ class UpdateConnectionTest extends TestCase
 
         Log::shouldHaveReceived('warning')
             ->once()
-            ->with('UpdateConnection middleware error: token bad');
+            ->with('UpdateConnection middleware error: token bad', Mockery::type('array'));
         $this->assertSame('recovered', $response->getContent());
     }
 
