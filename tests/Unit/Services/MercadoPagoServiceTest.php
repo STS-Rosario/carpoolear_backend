@@ -151,6 +151,42 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('PAY-456', $result['payment_id']);
     }
 
+    public function test_create_qr_order_for_manual_validation_uses_carpoolear_item_title(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+        ]);
+
+        $orderClient = new class
+        {
+            public array $payload = [];
+
+            public function create(array $request, ?RequestOptions $requestOptions = null): Order
+            {
+                $this->payload = $request;
+                $order = new Order;
+                $order->id = 'ORD-TITLE-1';
+                $order->transactions = (object) ['payments' => [(object) ['id' => 'PAY-TITLE-1']]];
+                $order->setResponse(new MPResponse(200, [
+                    'type_response' => ['qr_data' => 'EMV_QR_TITLE'],
+                ]));
+
+                return $order;
+            }
+        };
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $orderClientRef->setValue($service, $orderClient);
+
+        $service->createQrOrderForManualValidation(42, 1500);
+
+        $this->assertSame('Validación manual de identidad Carpoolear', $orderClient->payload['description']);
+        $this->assertSame('Validación manual de identidad Carpoolear', $orderClient->payload['items'][0]['title']);
+    }
+
     public function test_create_qr_order_for_platform_donation_rejects_amount_below_provider_minimum(): void
     {
         config([
@@ -311,7 +347,7 @@ class MercadoPagoServiceTest extends TestCase
         $service->createPaymentPreferenceForManualValidation(77, 2500, null);
 
         $p = $service->capturedPayload;
-        $this->assertSame('Validación manual de identidad', $p['items'][0]['title']);
+        $this->assertSame('Validación manual de identidad Carpoolear', $p['items'][0]['title']);
         $this->assertSame(25.0, $p['items'][0]['unit_price']);
         $this->assertSame('manual_validation:77', $p['external_reference']);
     }
