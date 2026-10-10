@@ -222,7 +222,7 @@ class MercadoPagoService
         $preferenceData = [
             'items' => [
                 [
-                    'title' => 'Validación manual de identidad',
+                    'title' => 'Validación manual de identidad Carpoolear',
                     'quantity' => 1,
                     'unit_price' => floatval($amountInCents) / 100,
                     'currency_id' => 'ARS',
@@ -268,7 +268,7 @@ class MercadoPagoService
         $order = $this->createQrOrder(
             $amountInCents,
             'manual_validation_'.$requestId,
-            'Validación manual de identidad',
+            'Validación manual de identidad Carpoolear',
             'manual_qr_'.$requestId.'_'.uniqid('', true),
         );
 
