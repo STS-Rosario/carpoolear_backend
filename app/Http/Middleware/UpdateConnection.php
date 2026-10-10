@@ -5,6 +5,7 @@ namespace STS\Http\Middleware;
 use Carbon\Carbon;
 use Closure;
 use Illuminate\Contracts\Auth\Guard;
+use STS\Support\JwtTokenDebugContext;
 use Tymon\JWTAuth\JWTAuth;
 
 class UpdateConnection
@@ -47,7 +48,10 @@ class UpdateConnection
                 }
             }
         } catch (\Exception $e) {
-            \Log::warning('UpdateConnection middleware error: '.$e->getMessage());
+            \Log::warning(
+                'UpdateConnection middleware error: '.$e->getMessage(),
+                JwtTokenDebugContext::forRequest($request, $this->auth)
+            );
         }
 
         return $next($request);

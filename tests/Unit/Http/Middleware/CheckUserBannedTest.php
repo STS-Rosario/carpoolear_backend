@@ -162,7 +162,7 @@ class CheckUserBannedTest extends TestCase
 
         Log::shouldHaveReceived('warning')
             ->once()
-            ->with('CheckUserBanned middleware error: bad token');
+            ->with('CheckUserBanned middleware error: bad token', Mockery::type('array'));
         $this->assertSame('recovered', $response->getContent());
     }
 
