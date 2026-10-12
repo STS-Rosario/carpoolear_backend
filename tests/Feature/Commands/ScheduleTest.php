@@ -54,6 +54,12 @@ class ScheduleTest extends TestCase
         $this->assertEquals('0 * * * *', $event->expression);
     }
 
+    public function test_close_finished_group_chats_is_scheduled_hourly()
+    {
+        $event = $this->findEvent('conversation:close-finished-group-chats');
+        $this->assertEquals('0 * * * *', $event->expression);
+    }
+
     // -- Every minute / every N minutes --
 
     public function test_rating_availables_is_scheduled_every_minute()
@@ -175,6 +181,7 @@ class ScheduleTest extends TestCase
         $expectedCommands = [
             'rate:create',
             'trip:remainder',
+            'conversation:close-finished-group-chats',
             'rating:availables',
             'live-location:process',
             'maintenance:tick',
