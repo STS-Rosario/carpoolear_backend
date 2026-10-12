@@ -2,10 +2,12 @@
 
 namespace STS\Services;
 
+use STS\Models\Conversation;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\TripGroupChatCreatedNotification;
+use STS\Notifications\TripGroupChatMemberJoinedNotification;
 use STS\Repository\ConversationRepository;
 use STS\Services\Logic\ConversationsManager;
 
@@ -34,7 +36,12 @@ class TripGroupChatService
             foreach ($this->participants($trip) as $participant) {
                 $this->conversationRepo->addUser($conversation, $participant);
             }
-            $this->notifyUsers($trip, $conversation->fresh(), $this->participants($trip));
+            $this->notifyUsers(
+                $trip,
+                $conversation->fresh(),
+                new TripGroupChatCreatedNotification,
+                $this->participants($trip)->reject(fn (User $user) => $user->is($acceptedUser))
+            );
 
             return;
         }
@@ -47,20 +54,27 @@ class TripGroupChatService
                 'notifications.group_chat_user_joined',
                 ['name' => $acceptedUser->name]
             );
-            $this->notifyUsers($trip, $conversation->fresh(), collect([$acceptedUser]));
+            $notification = new TripGroupChatMemberJoinedNotification;
+            $notification->setAttribute('user', $acceptedUser);
+            $this->notifyUsers(
+                $trip,
+                $conversation->fresh(),
+                $notification,
+                $conversation->fresh()->users->reject(fn (User $user) => $user->is($acceptedUser))
+            );
         }
     }
 
     /**
      * @param  \Illuminate\Support\Collection<int, User>  $users
      */
-    private function notifyUsers(Trip $trip, $conversation, $users): void
+    private function notifyUsers(Trip $trip, Conversation $conversation, $notification, $users): void
     {
         foreach ($users as $user) {
-            $notification = new TripGroupChatCreatedNotification;
-            $notification->setAttribute('trip', $trip);
-            $notification->setAttribute('conversation', $conversation);
-            $notification->notify($user);
+            $instance = clone $notification;
+            $instance->setAttribute('trip', $trip);
+            $instance->setAttribute('conversation', $conversation);
+            $instance->notify($user);
         }
     }
 

@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Notifications;
 
+use Carbon\Carbon;
+use STS\Models\Conversation;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -161,5 +163,62 @@ class AcceptPassengerNotificationTest extends TestCase
 
         $this->assertSame('trip', $extras['type']);
         $this->assertSame($trip->id, $extras['trip_id']);
+    }
+
+    public function test_combined_group_chat_message_when_conversation_attribute_is_present(): void
+    {
+        config([
+            'app.url' => 'https://app.test',
+            'carpoolear.name_app' => 'Carpoolear Test',
+        ]);
+
+        $from = User::factory()->create(['name' => 'Ana']);
+        $trip = Trip::factory()->create([
+            'user_id' => $from->id,
+            'to_town' => 'Mar del Plata',
+            'trip_date' => Carbon::parse('2026-08-01 09:00:00'),
+        ]);
+        $conversation = Conversation::factory()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+        ]);
+
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('trip', $trip);
+        $notification->setAttribute('from', $from);
+        $notification->setAttribute('conversation', $conversation);
+
+        $expectedMessage = __('notifications.accept_passenger.message', ['name' => 'Ana']).' '
+            .__('notifications.accept_passenger.group_chat_created', [
+                'destination' => 'Mar del Plata',
+                'day' => '01/08/2026',
+                'hour' => '09:00',
+            ]);
+
+        $this->assertSame($expectedMessage, $notification->toString());
+
+        $push = $notification->toPush(null, null);
+        $this->assertSame($expectedMessage, $push['message']);
+        $this->assertSame('/conversations/'.$conversation->id, $push['url']);
+
+        $extras = $notification->getExtras();
+        $this->assertSame('conversation', $extras['type']);
+        $this->assertSame($conversation->id, $extras['conversation_id']);
+
+        $email = $notification->toEmail(null);
+        $this->assertSame('https://app.test/app/conversations/'.$conversation->id, $email['url']);
+    }
+
+    public function test_combined_message_and_url_use_fallbacks_without_conversation(): void
+    {
+        $notification = new AcceptPassengerNotification;
+        $notification->setAttribute('conversation', null);
+
+        $expectedMessage = __('notifications.accept_passenger.message', ['name' => __('notifications.someone')]);
+        $this->assertSame($expectedMessage, $notification->toString());
+
+        $push = $notification->toPush(null, null);
+        $this->assertSame($expectedMessage, $push['message']);
+        $this->assertSame('/trips/', $push['url']);
     }
 }

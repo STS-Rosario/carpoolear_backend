@@ -25,6 +25,8 @@ class ConversationsTransformer extends TransformerAbstract
         $data = [
             'id' => $conversation->id,
             'type' => $conversation->type,
+            'closed_at' => $conversation->closed_at ? $conversation->closed_at->toDateTimeString() : null,
+            'closed' => $conversation->isClosed(),
         ];
 
         $trip = null;

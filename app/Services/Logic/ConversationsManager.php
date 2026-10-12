@@ -280,6 +280,11 @@ class ConversationsManager extends BaseManager
         if (! $validator->fails()) {
             $conversation = $this->getConversation($user, $conversationId);
             if ($conversation) {
+                if ($conversation->isClosed()) {
+                    $this->setErrors(['conversation_id' => 'conversation_closed']);
+
+                    return;
+                }
                 $newMessage = $this->newMessage($data);
                 $otherUsers = $conversation->users()->where('user_id', '!=', $user->id)->get()->unique('id');
                 foreach ($otherUsers as $to) {

@@ -38,6 +38,12 @@ class PassengerAccept implements ShouldQueue
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
             $notification->setAttribute('token', $to);
+
+            $conversation = $trip->conversation;
+            if ($conversation && $conversation->users()->whereKey($to->id)->exists()) {
+                $notification->setAttribute('conversation', $conversation->fresh());
+            }
+
             $notification->notify($to);
         }
     }

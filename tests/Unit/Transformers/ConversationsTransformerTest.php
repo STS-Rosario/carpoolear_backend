@@ -214,6 +214,43 @@ class ConversationsTransformerTest extends TestCase
         $this->assertNull($payload['other_user_identity_validated_at']);
     }
 
+    public function test_transform_exposes_closed_state_fields(): void
+    {
+        config(['carpoolear.module_coordinate_by_message' => false]);
+
+        $viewer = User::factory()->create();
+        $trip = Trip::factory()->create(['trip_date' => Carbon::parse('2026-06-10 14:30:00')]);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+            'closed_at' => Carbon::parse('2026-06-12 10:00:00'),
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertTrue($payload['closed']);
+        $this->assertSame('2026-06-12 10:00:00', $payload['closed_at']);
+    }
+
+    public function test_transform_exposes_open_state_fields_when_not_closed(): void
+    {
+        config(['carpoolear.module_coordinate_by_message' => false]);
+
+        $viewer = User::factory()->create();
+        $trip = Trip::factory()->create(['trip_date' => Carbon::parse('2026-06-10 14:30:00')]);
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'trip_id' => $trip->id,
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => true]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertFalse($payload['closed']);
+        $this->assertNull($payload['closed_at']);
+    }
+
     public function test_transform_users_include_positive_and_negative_ratings(): void
     {
         $viewer = User::factory()->create();
