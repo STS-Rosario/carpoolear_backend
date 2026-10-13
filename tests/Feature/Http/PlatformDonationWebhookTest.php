@@ -7,11 +7,13 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
 use MercadoPago\Net\MPRequest;
 use MercadoPago\Net\MPResponse;
+use STS\Jobs\ReconcileClubSubscriptionInvoiceJob;
 use STS\Models\DonationPayment;
 use STS\Models\DonationSubscription;
 use STS\Models\DonationSubscriptionCharge;
@@ -543,6 +545,8 @@ class PlatformDonationWebhookTest extends TestCase
 
     public function test_subscription_authorized_payment_without_nested_payment_acknowledges_without_charge(): void
     {
+        Queue::fake();
+
         $user = User::factory()->create();
         $preapprovalId = 'preapproval-pending-invoice';
         $this->authorizedClubSubscription($user, $preapprovalId);
@@ -573,6 +577,9 @@ class PlatformDonationWebhookTest extends TestCase
             ->assertOk();
 
         $this->assertSame(0, DonationSubscriptionCharge::query()->count());
+        Queue::assertPushed(ReconcileClubSubscriptionInvoiceJob::class, function (ReconcileClubSubscriptionInvoiceJob $job) use ($invoiceId) {
+            return $job->invoiceId === $invoiceId;
+        });
     }
 
     public function test_subscription_authorized_payment_logs_warning_when_subscription_not_found(): void
