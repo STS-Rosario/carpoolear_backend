@@ -8,6 +8,8 @@ use Log;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
 use STS\Http\Controllers\Controller;
+use STS\Jobs\ReconcileClubSubscriptionInvoiceJob;
+use STS\Jobs\ReconcileClubSubscriptionPaymentJob;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
 use STS\Models\DonationSubscription;
@@ -193,9 +195,13 @@ class MercadoPagoWebhookController extends Controller
         }
 
         if ($this->looksLikeClubSubscriptionPayment($mpPayment)) {
-            if ($this->handleClubSubscriptionPaymentViaInvoiceSearch($mpPayment, (string) $paymentId)) {
+            if ($this->platformDonationService->handleClubSubscriptionPaymentViaInvoiceSearch($mpPayment, (string) $paymentId)) {
                 return response()->json(['status' => 'success']);
             }
+
+            ReconcileClubSubscriptionPaymentJob::dispatch((string) $paymentId);
+
+            return response()->json(['status' => 'success']);
         }
 
         Log::info('Unreferenced MercadoPago payment ignored', [
@@ -993,12 +999,14 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Could not fetch authorized payment'], 500);
         }
 
-        $chargePayload = $this->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
+        $chargePayload = $this->platformDonationService->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
         if ($chargePayload === null) {
             Log::info('MercadoPago authorized payment without nested payment yet', [
                 'invoice_id' => $invoiceId,
                 'preapproval_id' => $invoice['preapproval_id'] ?? null,
             ]);
+
+            ReconcileClubSubscriptionInvoiceJob::dispatch((string) $invoiceId);
 
             return response()->json(['status' => 'success']);
         }
@@ -1006,28 +1014,6 @@ class MercadoPagoWebhookController extends Controller
         $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayload);
 
         return response()->json(['status' => 'success']);
-    }
-
-    /**
-     * @param  array<string, mixed>  $invoice
-     * @return array<string, mixed>|null
-     */
-    protected function mapAuthorizedPaymentInvoiceToChargePayload(array $invoice): ?array
-    {
-        $nestedPayment = $invoice['payment'] ?? null;
-        if (! is_array($nestedPayment) || empty($nestedPayment['id'])) {
-            return null;
-        }
-
-        return [
-            'id' => $nestedPayment['id'],
-            'preapproval_id' => $invoice['preapproval_id'] ?? null,
-            'status' => $nestedPayment['status'] ?? ($invoice['status'] ?? 'pending'),
-            'transaction_amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
-            'amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
-            'date_approved' => $nestedPayment['date_approved'] ?? null,
-            'external_reference' => $invoice['external_reference'] ?? '',
-        ];
     }
 
     /**
@@ -1074,45 +1060,5 @@ class MercadoPagoWebhookController extends Controller
         $type = $poi['type'] ?? null;
 
         return is_string($type) ? $type : null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $mpPayment
-     */
-    protected function handleClubSubscriptionPaymentViaInvoiceSearch(array $mpPayment, string $paymentId): bool
-    {
-        $results = $this->mercadoPagoService->searchAuthorizedPayments(['payment_id' => $paymentId]);
-        $invoice = $results[0] ?? null;
-        if (! is_array($invoice)) {
-            Log::info('Club subscription payment could not resolve invoice by payment_id', [
-                'payment_id' => $paymentId,
-            ]);
-
-            return false;
-        }
-
-        $preapprovalId = $invoice['preapproval_id'] ?? null;
-        if (! is_string($preapprovalId) || $preapprovalId === '') {
-            Log::info('Club subscription invoice missing preapproval_id', [
-                'payment_id' => $paymentId,
-                'invoice_id' => $invoice['id'] ?? null,
-            ]);
-
-            return false;
-        }
-
-        $chargePayment = $mpPayment;
-        $chargePayment['preapproval_id'] = $preapprovalId;
-
-        if (! DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()) {
-            $preapproval = $this->mercadoPagoService->getPreapproval($preapprovalId);
-            if ($preapproval) {
-                $this->platformDonationService->handleSubscriptionPreapproval($preapproval);
-            }
-        }
-
-        $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayment);
-
-        return true;
     }
 }
