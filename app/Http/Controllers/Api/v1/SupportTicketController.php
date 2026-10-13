@@ -170,7 +170,7 @@ class SupportTicketController extends Controller
         return response()->json(['data' => $ticket->fresh()]);
     }
 
-    public function close(int $id, Request $request): JsonResponse
+    public function close(int $id): JsonResponse
     {
         $user = auth()->user();
         $ticket = SupportTicket::where('user_id', $user->id)->find($id);
