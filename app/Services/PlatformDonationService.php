@@ -316,6 +316,23 @@ class PlatformDonationService
             }
         }
 
+        if (! $subscription && $preapprovalId) {
+            $alreadyLinked = DonationSubscription::query()
+                ->where('mp_preapproval_id', $preapprovalId)
+                ->exists();
+
+            if (! $alreadyLinked) {
+                $preapproval = $this->mercadoPagoService->getPreapproval((string) $preapprovalId);
+                if ($preapproval) {
+                    $this->handleSubscriptionPreapproval($preapproval);
+                }
+            }
+
+            $subscription = DonationSubscription::query()
+                ->where('mp_preapproval_id', $preapprovalId)
+                ->first();
+        }
+
         if (! $subscription) {
             Log::warning('MercadoPago subscription charge webhook could not match subscription', [
                 'payment_id' => $mpPayment['id'] ?? null,

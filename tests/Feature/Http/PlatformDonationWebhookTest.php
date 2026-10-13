@@ -595,6 +595,10 @@ class PlatformDonationWebhookTest extends TestCase
                         'transaction_amount' => 5000,
                     ],
                 ]);
+            $mock->shouldReceive('getPreapproval')
+                ->once()
+                ->with('unknown-preapproval')
+                ->andReturn(null);
         });
 
         $headers = $this->signatureHeaders($invoiceId, 'req-invoice-no-sub', 'wh-secret-test');
