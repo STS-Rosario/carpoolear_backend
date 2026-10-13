@@ -14,6 +14,7 @@ use MercadoPago\Net\MPHttpClient;
 use MercadoPago\Net\MPRequest;
 use MercadoPago\Net\MPResponse;
 use STS\Jobs\ReconcileClubSubscriptionInvoiceJob;
+use STS\Jobs\ReconcileClubSubscriptionPaymentJob;
 use STS\Models\DonationPayment;
 use STS\Models\DonationSubscription;
 use STS\Models\DonationSubscriptionCharge;
@@ -863,8 +864,58 @@ class PlatformDonationWebhookTest extends TestCase
         ]);
     }
 
+    public function test_payment_created_club_subscription_with_empty_invoice_search_dispatches_retry_job(): void
+    {
+        Queue::fake();
+        Log::spy();
+
+        $paymentId = 181833469289;
+        $this->stubMercadoPagoPayments([
+            $paymentId => [
+                'id' => $paymentId,
+                'status' => 'approved',
+                'transaction_amount' => 5000.0,
+                'external_reference' => '',
+                'preapproval_id' => null,
+                'point_of_interaction' => ['type' => 'SUBSCRIPTIONS'],
+                'description' => 'Donación mensual Carpoolear - cafe',
+                'date_approved' => '2026-10-07T11:09:56.000-00:00',
+            ],
+        ]);
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($paymentId) {
+            $mock->shouldReceive('searchAuthorizedPayments')
+                ->once()
+                ->with(['payment_id' => (string) $paymentId])
+                ->andReturn([]);
+        });
+
+        $headers = $this->signatureHeaders((string) $paymentId, 'req-club-empty-invoice-search', 'wh-secret-test');
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            (string) $paymentId,
+            ['type' => 'payment'],
+            [
+                'action' => 'payment.created',
+                'type' => 'payment',
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame(0, DonationSubscriptionCharge::query()->count());
+        Queue::assertPushed(ReconcileClubSubscriptionPaymentJob::class, function (ReconcileClubSubscriptionPaymentJob $job) use ($paymentId) {
+            return $job->paymentId === (string) $paymentId;
+        });
+        Queue::assertNotPushed(ReconcileClubSubscriptionInvoiceJob::class);
+        Log::shouldNotHaveReceived('info', function (string $message): bool {
+            return str_contains($message, 'Unreferenced MercadoPago payment ignored');
+        });
+    }
+
     public function test_payment_created_with_empty_reference_and_no_preapproval_is_acknowledged(): void
     {
+        Queue::fake();
         Log::spy();
 
         $paymentId = 18193530001;
@@ -888,6 +939,8 @@ class PlatformDonationWebhookTest extends TestCase
             ->assertExactJson(['status' => 'success']);
 
         $this->assertSame(0, DonationSubscriptionCharge::query()->count());
+        Queue::assertNotPushed(ReconcileClubSubscriptionPaymentJob::class);
+        Queue::assertNotPushed(ReconcileClubSubscriptionInvoiceJob::class);
         Log::shouldHaveReceived('info')->withArgs(function (string $message, array $context): bool {
             return str_contains($message, 'Unreferenced MercadoPago payment ignored')
                 && array_key_exists('point_of_interaction_type', $context);
