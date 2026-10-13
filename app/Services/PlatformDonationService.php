@@ -346,6 +346,28 @@ class PlatformDonationService
         $this->upsertSubscriptionCharge($subscription, $mpPayment);
     }
 
+    /**
+     * @param  array<string, mixed>  $invoice
+     * @return array<string, mixed>|null
+     */
+    public function mapAuthorizedPaymentInvoiceToChargePayload(array $invoice): ?array
+    {
+        $nestedPayment = $invoice['payment'] ?? null;
+        if (! is_array($nestedPayment) || empty($nestedPayment['id'])) {
+            return null;
+        }
+
+        return [
+            'id' => $nestedPayment['id'],
+            'preapproval_id' => $invoice['preapproval_id'] ?? null,
+            'status' => $nestedPayment['status'] ?? ($invoice['status'] ?? 'pending'),
+            'transaction_amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
+            'amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
+            'date_approved' => $nestedPayment['date_approved'] ?? null,
+            'external_reference' => $invoice['external_reference'] ?? '',
+        ];
+    }
+
     public function applyInflation(DonationTier $tier, int $newAmountCents, int $adminUserId): DonationAmountAdjustment
     {
         $oldAmountCents = $tier->amount_cents;

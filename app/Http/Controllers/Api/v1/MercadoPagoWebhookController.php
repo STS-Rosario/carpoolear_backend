@@ -8,6 +8,7 @@ use Log;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
 use STS\Http\Controllers\Controller;
+use STS\Jobs\ReconcileClubSubscriptionInvoiceJob;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
 use STS\Models\DonationSubscription;
@@ -993,12 +994,14 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Could not fetch authorized payment'], 500);
         }
 
-        $chargePayload = $this->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
+        $chargePayload = $this->platformDonationService->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
         if ($chargePayload === null) {
             Log::info('MercadoPago authorized payment without nested payment yet', [
                 'invoice_id' => $invoiceId,
                 'preapproval_id' => $invoice['preapproval_id'] ?? null,
             ]);
+
+            ReconcileClubSubscriptionInvoiceJob::dispatch((string) $invoiceId);
 
             return response()->json(['status' => 'success']);
         }
@@ -1006,28 +1009,6 @@ class MercadoPagoWebhookController extends Controller
         $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayload);
 
         return response()->json(['status' => 'success']);
-    }
-
-    /**
-     * @param  array<string, mixed>  $invoice
-     * @return array<string, mixed>|null
-     */
-    protected function mapAuthorizedPaymentInvoiceToChargePayload(array $invoice): ?array
-    {
-        $nestedPayment = $invoice['payment'] ?? null;
-        if (! is_array($nestedPayment) || empty($nestedPayment['id'])) {
-            return null;
-        }
-
-        return [
-            'id' => $nestedPayment['id'],
-            'preapproval_id' => $invoice['preapproval_id'] ?? null,
-            'status' => $nestedPayment['status'] ?? ($invoice['status'] ?? 'pending'),
-            'transaction_amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
-            'amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
-            'date_approved' => $nestedPayment['date_approved'] ?? null,
-            'external_reference' => $invoice['external_reference'] ?? '',
-        ];
     }
 
     /**
