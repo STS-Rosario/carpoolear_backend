@@ -529,7 +529,7 @@ class SupportTicketApiTest extends TestCase
         $this->assertSame('En revision', SupportTicket::query()->findOrFail($ticketId)->status);
     }
 
-    public function test_close_without_message_does_not_add_second_reply(): void
+    public function test_owner_cannot_close_ticket_without_message(): void
     {
         $user = $this->createUser();
         $this->actingAs($user, 'api');
@@ -541,17 +541,21 @@ class SupportTicketApiTest extends TestCase
         ])->json(), 'data.id');
 
         $this->assertSame(1, SupportTicketReply::query()->where('ticket_id', $ticketId)->count());
+        $originalStatus = SupportTicket::query()->findOrFail($ticketId)->status;
 
         $this->postJson("api/support/tickets/{$ticketId}/close", [])
-            ->assertStatus(200)
-            ->assertJsonPath('data.status', 'Cerrado');
+            ->assertForbidden()
+            ->assertExactJson(['error' => 'Only admins can close tickets']);
 
+        $ticket = SupportTicket::query()->findOrFail($ticketId);
+        $this->assertSame($originalStatus, $ticket->status);
+        $this->assertNull($ticket->closed_by);
+        $this->assertNull($ticket->closed_at);
         $this->assertSame(1, SupportTicketReply::query()->where('ticket_id', $ticketId)->count());
     }
 
-    public function test_close_persists_status_and_optional_closing_message(): void
+    public function test_owner_cannot_close_ticket_with_closing_message(): void
     {
-        Storage::fake('local');
         $user = $this->createUser();
         $this->actingAs($user, 'api');
 
@@ -561,21 +565,22 @@ class SupportTicketApiTest extends TestCase
             'message_markdown' => 'Initial',
         ])->json(), 'data.id');
 
+        $originalStatus = SupportTicket::query()->findOrFail($ticketId)->status;
+
         $this->postJson("api/support/tickets/{$ticketId}/close", [
             'message_markdown' => 'Thanks, closing now.',
-        ])->assertStatus(200)->assertJsonPath('data.status', 'Cerrado');
+        ])
+            ->assertForbidden()
+            ->assertExactJson(['error' => 'Only admins can close tickets']);
 
         $ticket = SupportTicket::query()->findOrFail($ticketId);
-        $this->assertSame('Cerrado', $ticket->status);
-        $this->assertSame($user->id, (int) $ticket->closed_by);
-        $this->assertNotNull($ticket->closed_at);
-
-        $closingReply = SupportTicketReply::query()
-            ->where('ticket_id', $ticketId)
-            ->where('message_markdown', 'Thanks, closing now.')
-            ->first();
-        $this->assertNotNull($closingReply);
-        $this->assertFalse((bool) $closingReply->is_admin);
+        $this->assertSame($originalStatus, $ticket->status);
+        $this->assertNull($ticket->closed_by);
+        $this->assertNull($ticket->closed_at);
+        $this->assertDatabaseMissing('support_ticket_replies', [
+            'ticket_id' => $ticketId,
+            'message_markdown' => 'Thanks, closing now.',
+        ]);
     }
 
     public function test_priority_is_assigned_by_type_and_not_by_user_input(): void
