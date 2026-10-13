@@ -125,7 +125,7 @@ class TripGroupChatServiceTest extends TestCase
         $this->assertSame(3, $conversation->users()->count());
     }
 
-    public function test_all_participants_notified_when_group_chat_is_created(): void
+    public function test_all_participants_but_accepted_user_notified_when_group_chat_is_created(): void
     {
         $driver = User::factory()->create();
         $passengerOne = User::factory()->create();
@@ -145,17 +145,18 @@ class TripGroupChatServiceTest extends TestCase
 
         $this->mock(\STS\Services\Notifications\NotificationServices::class)
             ->shouldReceive('send')
-            ->times(6)
-            ->withArgs(function ($notification, $users, $channel) {
+            ->times(4)
+            ->withArgs(function ($notification, $users, $channel) use ($passengerTwo) {
                 return $notification instanceof \STS\Notifications\TripGroupChatCreatedNotification
                     && $users instanceof User
+                    && ! $users->is($passengerTwo)
                     && is_string($channel);
             });
 
         $this->service->syncOnPassengerAccept($trip->fresh(), $passengerTwo);
     }
 
-    public function test_new_passenger_notified_when_added_to_existing_group_chat(): void
+    public function test_existing_members_notified_when_new_passenger_joins_group_chat(): void
     {
         $driver = User::factory()->create();
         $passengerOne = User::factory()->create();
@@ -184,11 +185,12 @@ class TripGroupChatServiceTest extends TestCase
 
         $this->mock(\STS\Services\Notifications\NotificationServices::class)
             ->shouldReceive('send')
-            ->times(2)
+            ->times(6)
             ->withArgs(function ($notification, $users, $channel) use ($passengerThree) {
-                return $notification instanceof \STS\Notifications\TripGroupChatCreatedNotification
+                return $notification instanceof \STS\Notifications\TripGroupChatMemberJoinedNotification
                     && $users instanceof User
-                    && $users->is($passengerThree)
+                    && $notification->getAttribute('user')->is($passengerThree)
+                    && ! $users->is($passengerThree)
                     && is_string($channel);
             });
 

@@ -9,6 +9,7 @@ return [
     // AcceptPassengerNotification
     'accept_passenger.title' => ':name ha aceptado tu solicitud.',
     'accept_passenger.message' => ':name ha aceptado tu solicitud.',
+    'accept_passenger.group_chat_created' => 'Te incorporamos al chat grupal del viaje a :destination del :day a las :hour para coordinar.',
 
     // AnnouncementNotification
     'announcement.default_title' => 'Anuncio de Carpoolear',
