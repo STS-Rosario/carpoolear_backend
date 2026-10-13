@@ -1,6 +1,6 @@
 # Carpoolear backend
 
-Carpoolear es la primera aplicación argentina de Facebook que permite a los usuarios de dicha red social compartir viajes en automóvil con otros usuarios de su entorno.
+Carpoolear es una aplicación web argentina de carpooling que permite a los usuarios compartir viajes en automóvil con otras personas.
 
 Es una customización ad-hoc para Argentina de la filosofía carpooling, la cual consiste en compartir nuestros viajes en auto con otras personas de forma cotidiana. El carpooling es una práctica popular en Estados Unidos y Europa, donde se realiza de manera organizada para lograr aumentar el número de viajes compartidos y que estos sean concretados con otras personas además de nuestros vecinos y amigos.
 
@@ -60,7 +60,7 @@ php artisan config:clear
 php artisan cache:clear
 ```
 
-You will need to use a local webserver and point it to the public folder. You can use Herd, use 8.2 as the PHP version. This will create a site like carpoolear_backend and you'll be able to point the frontend to https://carpoolear_backend.test
+You will need to use a local webserver and point it to the public folder. You can use Herd, use 8.5 as the PHP version. This will create a site like carpoolear_backend and you'll be able to point the frontend to https://carpoolear_backend.test
 
 ### Notifications
 For notifications to work, you need to run the worker: 
