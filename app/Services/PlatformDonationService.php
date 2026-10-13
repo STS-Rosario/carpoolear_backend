@@ -368,6 +368,46 @@ class PlatformDonationService
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    public function handleClubSubscriptionPaymentViaInvoiceSearch(array $mpPayment, string $paymentId): bool
+    {
+        $results = $this->mercadoPagoService->searchAuthorizedPayments(['payment_id' => $paymentId]);
+        $invoice = $results[0] ?? null;
+        if (! is_array($invoice)) {
+            Log::info('Club subscription payment could not resolve invoice by payment_id', [
+                'payment_id' => $paymentId,
+            ]);
+
+            return false;
+        }
+
+        $preapprovalId = $invoice['preapproval_id'] ?? null;
+        if (! is_string($preapprovalId) || $preapprovalId === '') {
+            Log::info('Club subscription invoice missing preapproval_id', [
+                'payment_id' => $paymentId,
+                'invoice_id' => $invoice['id'] ?? null,
+            ]);
+
+            return false;
+        }
+
+        $chargePayment = $mpPayment;
+        $chargePayment['preapproval_id'] = $preapprovalId;
+
+        if (! DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()) {
+            $preapproval = $this->mercadoPagoService->getPreapproval($preapprovalId);
+            if ($preapproval) {
+                $this->handleSubscriptionPreapproval($preapproval);
+            }
+        }
+
+        $this->handleSubscriptionAuthorizedPayment($chargePayment);
+
+        return true;
+    }
+
     public function applyInflation(DonationTier $tier, int $newAmountCents, int $adminUserId): DonationAmountAdjustment
     {
         $oldAmountCents = $tier->amount_cents;
