@@ -4,7 +4,7 @@ namespace Tests\Unit\Listeners\Notification;
 
 use STS\Events\Passenger\Accept;
 use STS\Listeners\Notification\PassengerAccept;
-use STS\Models\Conversation;
+use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
 use STS\Notifications\AcceptPassengerNotification;
@@ -13,63 +13,96 @@ use Tests\TestCase;
 
 class PassengerAcceptListenerTest extends TestCase
 {
-    public function test_handle_attaches_group_chat_when_accepted_user_is_already_a_member(): void
-    {
-        $driver = User::factory()->create();
-        $to = User::factory()->create();
-        $trip = Trip::factory()->create(['user_id' => $driver->id]);
-        $conversation = Conversation::factory()->create([
-            'trip_id' => $trip->id,
-            'type' => Conversation::TYPE_TRIP_CONVERSATION,
-        ]);
-        $conversation->users()->attach($driver->id, ['read' => true]);
-        $conversation->users()->attach($to->id, ['read' => true]);
+    /** @var array<int, mixed> */
+    private array $captured = [];
 
-        $captured = [];
+    private function captureNotifications(): void
+    {
+        $this->captured = [];
         $this->mock(NotificationServices::class)
             ->shouldReceive('send')
-            ->times(3)
-            ->withArgs(function ($notification) use (&$captured) {
-                $captured[] = $notification;
+            ->withArgs(function ($notification) {
+                $this->captured[] = $notification;
 
                 return true;
             });
-
-        (new PassengerAccept)->handle(new Accept($trip->fresh(), $driver, $to));
-
-        $sent = collect($captured)->first(fn ($n) => $n instanceof AcceptPassengerNotification);
-        $this->assertNotNull($sent);
-        $this->assertNotNull($sent->getAttribute('conversation'));
-        $this->assertTrue($sent->getAttribute('conversation')->is($conversation));
-        $this->assertSame('conversation', $sent->getExtras()['type']);
     }
 
-    public function test_handle_leaves_conversation_unset_when_accepted_user_is_not_a_member(): void
+    private function acceptedPassenger(Trip $trip, User $user): void
+    {
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $user->id,
+            'request_state' => Passenger::STATE_ACCEPTED,
+        ]);
+    }
+
+    private function acceptNotification(): ?AcceptPassengerNotification
+    {
+        return collect($this->captured)
+            ->first(fn ($notification) => $notification instanceof AcceptPassengerNotification);
+    }
+
+    public function test_second_passenger_notification_attaches_the_created_group_chat(): void
     {
         $driver = User::factory()->create();
-        $to = User::factory()->create();
+        $first = User::factory()->create();
+        $second = User::factory()->create();
         $trip = Trip::factory()->create(['user_id' => $driver->id]);
-        $conversation = Conversation::factory()->create([
-            'trip_id' => $trip->id,
-            'type' => Conversation::TYPE_TRIP_CONVERSATION,
-        ]);
-        $conversation->users()->attach($driver->id, ['read' => true]);
 
-        $captured = [];
-        $this->mock(NotificationServices::class)
-            ->shouldReceive('send')
-            ->times(3)
-            ->withArgs(function ($notification) use (&$captured) {
-                $captured[] = $notification;
+        $this->acceptedPassenger($trip, $first);
+        $this->acceptedPassenger($trip, $second);
 
-                return true;
-            });
+        $this->captureNotifications();
 
-        (new PassengerAccept)->handle(new Accept($trip->fresh(), $driver, $to));
+        event(new Accept($trip->fresh(), $driver, $second));
 
-        $sent = collect($captured)->first(fn ($n) => $n instanceof AcceptPassengerNotification);
-        $this->assertNotNull($sent);
-        $this->assertNull($sent->getAttribute('conversation'));
-        $this->assertSame('trip', $sent->getExtras()['type']);
+        $notification = $this->acceptNotification();
+        $this->assertNotNull($notification);
+
+        $conversation = $notification->getAttribute('conversation');
+        $this->assertNotNull($conversation);
+        $this->assertSame(3, $conversation->users()->count());
+        $this->assertTrue($conversation->users()->whereKey($second->id)->exists());
+        $this->assertSame('conversation', $notification->getExtras()['type']);
+    }
+
+    public function test_third_passenger_notification_attaches_the_existing_group_chat(): void
+    {
+        $driver = User::factory()->create();
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+        $third = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        $this->captureNotifications();
+
+        $this->acceptedPassenger($trip, $first);
+        $this->acceptedPassenger($trip, $second);
+        event(new Accept($trip->fresh(), $driver, $second)); // creates the group chat
+
+        $this->acceptedPassenger($trip, $third);
+        $this->captured = [];
+
+        event(new Accept($trip->fresh(), $driver, $third));
+
+        $notification = $this->acceptNotification();
+        $this->assertNotNull($notification);
+
+        $conversation = $notification->getAttribute('conversation');
+        $this->assertNotNull($conversation);
+        $this->assertSame(4, $conversation->users()->count());
+        $this->assertTrue($conversation->users()->whereKey($third->id)->exists());
+        $this->assertSame('conversation', $notification->getExtras()['type']);
+    }
+
+    public function test_handle_does_nothing_when_recipient_is_null(): void
+    {
+        $trip = Trip::factory()->create();
+        $from = User::factory()->create();
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
+
+        $this->app->make(PassengerAccept::class)->handle(new Accept($trip, $from, null));
     }
 }

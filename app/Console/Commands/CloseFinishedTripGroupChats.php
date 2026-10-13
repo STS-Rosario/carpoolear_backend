@@ -4,6 +4,7 @@ namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
 use STS\Models\Conversation;
+use STS\Models\Trip;
 
 class CloseFinishedTripGroupChats extends Command
 {
@@ -11,6 +12,11 @@ class CloseFinishedTripGroupChats extends Command
 
     protected $description = 'Close trip group chats 48 hours after the trip date';
 
+    /**
+     * Trip group chats are closed 48 hours after the trip departure (trip_date).
+     * As a safety net (e.g. when the delete event never fired) the chats of
+     * canceled or soft-deleted trips are closed as well.
+     */
     public function handle(): int
     {
         $threshold = now()->subHours(48);
@@ -19,13 +25,21 @@ class CloseFinishedTripGroupChats extends Command
             ->where('conversations.type', Conversation::TYPE_TRIP_CONVERSATION)
             ->whereNull('conversations.closed_at')
             ->join('trips', 'trips.id', '=', 'conversations.trip_id')
-            ->whereNull('trips.deleted_at')
-            ->where(function ($query) {
-                $query->where('trips.weekly_schedule', 0)
-                    ->orWhereNull('trips.weekly_schedule');
+            ->where(function ($query) use ($threshold) {
+                // 48 hours after departure, for regular (non weekly) trips.
+                $query->where(function ($finished) use ($threshold) {
+                    $finished->whereNull('trips.deleted_at')
+                        ->where(function ($schedule) {
+                            $schedule->where('trips.weekly_schedule', 0)
+                                ->orWhereNull('trips.weekly_schedule');
+                        })
+                        ->whereNotNull('trips.trip_date')
+                        ->where('trips.trip_date', '<=', $threshold);
+                })
+                    // ...or as soon as the trip is canceled or deleted.
+                    ->orWhereNotNull('trips.deleted_at')
+                    ->orWhere('trips.state', Trip::STATE_CANCELED);
             })
-            ->whereNotNull('trips.trip_date')
-            ->where('trips.trip_date', '<=', $threshold)
             ->update(['closed_at' => now()]);
 
         $this->info('Trip group chats closed: '.$closed);

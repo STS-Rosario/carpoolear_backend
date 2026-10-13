@@ -459,6 +459,10 @@ class ConversationsManager extends BaseManager
 
     public function sendSystemMessage(Conversation $conversation, User $subjectUser, string $translationKey, array $params = [])
     {
+        if ($conversation->isClosed()) {
+            return;
+        }
+
         $message = new Message;
         $message->user_id = $subjectUser->id;
         $message->text = __($translationKey, $params);

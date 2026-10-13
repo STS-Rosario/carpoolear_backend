@@ -552,4 +552,26 @@ class ConversationsManagerTest extends TestCase
         $this->assertTrue($message->is_system);
         $this->assertStringContainsString('Ana', $message->text);
     }
+
+    public function test_send_system_message_does_not_create_message_when_conversation_is_closed(): void
+    {
+        $subject = User::factory()->create(['name' => 'Ana']);
+        $other = User::factory()->create();
+        $conversation = Conversation::factory()->create([
+            'type' => Conversation::TYPE_TRIP_CONVERSATION,
+            'closed_at' => now(),
+        ]);
+        $conversation->users()->attach($subject->id, ['read' => true]);
+        $conversation->users()->attach($other->id, ['read' => true]);
+
+        $message = $this->manager()->sendSystemMessage(
+            $conversation->fresh(),
+            $subject,
+            'notifications.group_chat_user_joined',
+            ['name' => 'Ana']
+        );
+
+        $this->assertNull($message);
+        $this->assertSame(0, Message::where('conversation_id', $conversation->id)->count());
+    }
 }

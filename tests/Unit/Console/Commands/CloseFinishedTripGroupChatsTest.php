@@ -82,27 +82,20 @@ class CloseFinishedTripGroupChatsTest extends TestCase
         $this->assertNull($chat->fresh()->closed_at);
     }
 
-    public function test_command_skips_already_closed_and_soft_deleted_trips(): void
+    public function test_command_leaves_already_closed_chats_untouched(): void
     {
         Carbon::setTestNow('2026-08-05 12:00:00');
         $user = User::factory()->create();
 
-        $alreadyClosedTrip = Trip::factory()->create([
+        $trip = Trip::factory()->create([
             'user_id' => $user->id,
             'trip_date' => Carbon::parse('2026-08-01 09:00:00'),
         ]);
         $alreadyClosed = Conversation::factory()->create([
-            'trip_id' => $alreadyClosedTrip->id,
+            'trip_id' => $trip->id,
             'type' => Conversation::TYPE_TRIP_CONVERSATION,
-            'closed_at' => now(),
+            'closed_at' => now()->subDay(),
         ]);
-
-        $deletedTrip = Trip::factory()->create([
-            'user_id' => $user->id,
-            'trip_date' => Carbon::parse('2026-08-01 09:00:00'),
-        ]);
-        $deletedTrip->delete();
-        $deletedTripChat = $this->tripConversation($deletedTrip);
 
         $this->artisan('conversation:close-finished-group-chats')->assertExitCode(0);
 
@@ -110,6 +103,39 @@ class CloseFinishedTripGroupChatsTest extends TestCase
             $alreadyClosed->closed_at->toDateTimeString(),
             $alreadyClosed->fresh()->closed_at->toDateTimeString()
         );
-        $this->assertNull($deletedTripChat->fresh()->closed_at);
+    }
+
+    public function test_command_closes_chats_of_soft_deleted_trips(): void
+    {
+        Carbon::setTestNow('2026-08-05 12:00:00');
+        $user = User::factory()->create();
+
+        $deletedTrip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::parse('2026-08-20 09:00:00'),
+        ]);
+        $deletedTrip->delete();
+        $chat = $this->tripConversation($deletedTrip);
+
+        $this->artisan('conversation:close-finished-group-chats')->assertExitCode(0);
+
+        $this->assertNotNull($chat->fresh()->closed_at);
+    }
+
+    public function test_command_closes_chats_of_canceled_trips(): void
+    {
+        Carbon::setTestNow('2026-08-05 12:00:00');
+        $user = User::factory()->create();
+
+        $canceledTrip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => Carbon::parse('2026-08-20 09:00:00'),
+            'state' => Trip::STATE_CANCELED,
+        ]);
+        $chat = $this->tripConversation($canceledTrip);
+
+        $this->artisan('conversation:close-finished-group-chats')->assertExitCode(0);
+
+        $this->assertNotNull($chat->fresh()->closed_at);
     }
 }
