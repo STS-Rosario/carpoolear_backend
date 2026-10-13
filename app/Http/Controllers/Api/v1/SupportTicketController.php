@@ -172,34 +172,13 @@ class SupportTicketController extends Controller
 
     public function close(int $id, Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'message_markdown' => 'nullable|string',
-        ]);
         $user = auth()->user();
         $ticket = SupportTicket::where('user_id', $user->id)->find($id);
         if (! $ticket) {
             return response()->json(['error' => 'Ticket not found'], 404);
         }
 
-        DB::transaction(function () use ($ticket, $user, $validated) {
-            if (! empty($validated['message_markdown'])) {
-                SupportTicketReply::create([
-                    'ticket_id' => $ticket->id,
-                    'user_id' => $user->id,
-                    'is_admin' => false,
-                    'message_markdown' => $validated['message_markdown'],
-                    'created_by' => $user->id,
-                ]);
-            }
-
-            $ticket->status = 'Cerrado';
-            $ticket->closed_by = $user->id;
-            $ticket->closed_at = now();
-            $ticket->updated_by = $user->id;
-            $ticket->save();
-        });
-
-        return response()->json(['data' => $ticket->fresh()]);
+        return response()->json(['error' => 'Only admins can close tickets'], 403);
     }
 
     public function attachmentImage(int $ticketId, int $attachmentId): StreamedResponse|JsonResponse
