@@ -138,14 +138,13 @@ class GeoService
     {
         $paidPolygonIndexes = [];
         foreach ($points as $point) {
-            foreach ($this->paidRegions as $index => $polygon) {
-                if ($this->isPointInPolygon($polygon, $point)) {
-                    $paidPolygonIndexes[$index] = true;
-                    if (count($paidPolygonIndexes) >= 2) {
-                        return true;
-                    }
-                    break;
-                }
+            $index = $this->paidPolygonIndexContaining($point);
+            if ($index === null) {
+                continue;
+            }
+            $paidPolygonIndexes[$index] = true;
+            if (count($paidPolygonIndexes) >= 2) {
+                return true;
             }
         }
 
@@ -163,15 +162,20 @@ class GeoService
         return true;
     }
 
-    private function isPointInPolygons(array $point): bool
+    private function paidPolygonIndexContaining(array $point): ?int
     {
-        foreach ($this->paidRegions as $polygon) {
+        foreach ($this->paidRegions as $index => $polygon) {
             if ($this->isPointInPolygon($polygon, $point)) {
-                return true;
+                return $index;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    private function isPointInPolygons(array $point): bool
+    {
+        return $this->paidPolygonIndexContaining($point) !== null;
     }
 
     private function isPointInPolygon(array $polygon, array $point): bool
