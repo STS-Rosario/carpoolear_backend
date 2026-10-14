@@ -253,6 +253,49 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('dynamic', $orderClient->payload['config']['qr']['mode']);
     }
 
+    public function test_create_qr_order_for_sellado_returns_qr_data_with_trip_sellado_reference(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+            'carpoolear.module_trip_creation_payment_amount_cents' => 160000,
+        ]);
+
+        $trip = Trip::factory()->make(['id' => 88]);
+
+        $orderClient = new class
+        {
+            public array $payload = [];
+
+            public function create(array $request, ?RequestOptions $requestOptions = null): Order
+            {
+                $this->payload = $request;
+                $order = new Order;
+                $order->id = 'ORD-SELLADO-1';
+                $order->transactions = (object) ['payments' => [(object) ['id' => 'PAY-SELLADO-1']]];
+                $order->setResponse(new MPResponse(200, [
+                    'type_response' => ['qr_data' => 'SELLADO_EMV_QR'],
+                ]));
+
+                return $order;
+            }
+        };
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $orderClientRef->setValue($service, $orderClient);
+
+        $result = $service->createQrOrderForSellado($trip);
+
+        $this->assertSame(88, $result['trip_id']);
+        $this->assertSame('ORD-SELLADO-1', $result['order_id']);
+        $this->assertSame('SELLADO_EMV_QR', $result['qr_data']);
+        $this->assertSame('trip_sellado_88', $orderClient->payload['external_reference']);
+        $this->assertSame('Un litro para Carpoolear', $orderClient->payload['description']);
+        $this->assertSame('1600.00', $orderClient->payload['total_amount']);
+    }
+
     public function test_sellado_trims_trailing_slash_on_frontend_url_for_back_urls(): void
     {
         config([
