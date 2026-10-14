@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\SelladoEmptyTripCredit;
+use STS\Helpers\SelladoTripCount;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
 use STS\Jobs\CheckTripContributionWithLlm;
@@ -208,7 +209,7 @@ class TripRepository
                 $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
                 $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-                $tripsCreatedByUser = $this->countTripsCreatedForSellado((int) $trip->user_id);
+                $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id);
 
                 // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
                 if (config('carpoolear.module_trip_creation_payment_enabled') &&
@@ -1042,7 +1043,7 @@ class TripRepository
             return;
         }
 
-        $tripsCreatedByUser = $this->countTripsCreatedForSellado((int) $trip->user_id);
+        $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id);
         if ($tripsCreatedByUser < config('carpoolear.module_trip_creation_payment_trips_threshold')) {
             return;
         }
@@ -1062,38 +1063,10 @@ class TripRepository
         $trip->payment_url = $preference->init_point;
     }
 
-    /**
-     * Count trips that consume the sellado free-trip quota.
-     *
-     * Canceled driver trips without accepted passengers at cancel time are
-     * skipped. Passenger-seeking trips and driver trips that still have
-     * accepted passengers keep counting after cancel.
-     */
-    private function countTripsCreatedForSellado(int $userId): int
-    {
-        return Trip::withTrashed()
-            ->where('user_id', $userId)
-            ->where(function ($query) {
-                $query->where('is_passenger', true)
-                    ->orWhereHas('passenger', function ($passengerQuery) {
-                        $passengerQuery->where('request_state', Passenger::STATE_ACCEPTED)
-                            ->whereColumn('trip_passengers.user_id', '<>', 'trips.user_id');
-                    })
-                    ->orWhere(function ($active) {
-                        $active->whereNull('deleted_at')
-                            ->where(function ($state) {
-                                $state->whereNull('state')
-                                    ->orWhere('state', '!=', Trip::STATE_CANCELED);
-                            });
-                    });
-            })
-            ->count();
-    }
-
     public function selladoViaje($user)
     {
         // if user has created enough free trips, they have to pay for the next one
-        $tripsCreatedByUser = $this->countTripsCreatedForSellado((int) $user->id);
+        $tripsCreatedByUser = SelladoTripCount::forUser((int) $user->id);
         $freeTripsAmount = config('carpoolear.module_trip_creation_payment_trips_threshold');
         $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
 
