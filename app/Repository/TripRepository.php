@@ -205,7 +205,7 @@ class TripRepository
                 $this->addPoints($trip, $points);
                 $this->generateTripPath($trip);
 
-                // Check if the updated route needs payment (2+ stops in paid zones)
+                // Check if the updated route needs payment (stops in 2+ distinct paid polygons)
                 $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
                 $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
