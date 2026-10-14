@@ -89,7 +89,7 @@ class MercadoPagoService
             throw new \InvalidArgumentException('carpoolear.frontend_url must be set for MercadoPago sellado (auto_return requires valid back_urls.success)');
         }
         $selladoUrls = [
-            'success' => $baseUrl.'/app/trips/'.$trip->id,
+            'success' => $baseUrl.'/app/trips/'.$trip->id.'?sellado_paid=1',
             'failure' => $baseUrl.'/app/trips/'.$trip->id,
             'pending' => $baseUrl.'/app/trips/'.$trip->id,
         ];
