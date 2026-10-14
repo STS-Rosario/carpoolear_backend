@@ -71,7 +71,7 @@ class MercadoPagoServiceTest extends TestCase
         $payload = $service->capturedPayload;
 
         $expectedTripUrl = 'https://frontend.test/app/trips/'.$trip->id;
-        $this->assertSame($expectedTripUrl, $payload['back_urls']['success']);
+        $this->assertSame($expectedTripUrl.'?sellado_paid=1', $payload['back_urls']['success']);
         $this->assertSame($expectedTripUrl, $payload['back_urls']['failure']);
         $this->assertSame($expectedTripUrl, $payload['back_urls']['pending']);
         $this->assertSame(25.0, $payload['items'][0]['unit_price']);
@@ -320,7 +320,10 @@ class MercadoPagoServiceTest extends TestCase
         $service->createPaymentPreferenceForSellado($trip, 1000);
         $success = $service->capturedPayload['back_urls']['success'];
 
-        $this->assertSame('https://frontend.test/app/trips/'.$trip->id, $success);
+        $this->assertSame(
+            'https://frontend.test/app/trips/'.$trip->id.'?sellado_paid=1',
+            $success
+        );
         $this->assertStringNotContainsString('test//app', $success);
     }
 
