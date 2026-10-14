@@ -962,7 +962,8 @@ class TripRepository
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled');
+        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled')
+            && $routeNeedsPayment;
         $selladoViajePrice = $includesSellado
             ? (int) config('carpoolear.module_trip_creation_payment_amount_cents')
             : 0;

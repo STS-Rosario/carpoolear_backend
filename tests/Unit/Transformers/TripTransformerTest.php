@@ -120,11 +120,13 @@ class TripTransformerTest extends TestCase
 
         $geo = \Mockery::mock(\STS\Services\GeoService::class);
         $geo->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
+        $geo->shouldReceive('doStopsRequireSellado')->andReturn(true);
         $this->app->instance(\STS\Services\GeoService::class, $geo);
 
         $fiveOccupantsTrip = $this->makeTrip([
             'distance' => 1000,
             'rear_max_two_passengers' => 0,
+            'needs_sellado' => true,
         ]);
         $fivePayload = (new TripTransformer(null))->transform($fiveOccupantsTrip->fresh());
 
@@ -138,6 +140,7 @@ class TripTransformerTest extends TestCase
         $fourOccupantsTrip = $this->makeTrip([
             'distance' => 1000,
             'rear_max_two_passengers' => 1,
+            'needs_sellado' => true,
         ]);
         $fourPayload = (new TripTransformer(null))->transform($fourOccupantsTrip->fresh());
 
@@ -192,6 +195,7 @@ class TripTransformerTest extends TestCase
 
         $geo = \Mockery::mock(\STS\Services\GeoService::class);
         $geo->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->once()->andReturn(true);
+        $geo->shouldReceive('doStopsRequireSellado')->andReturn(false);
         $this->app->instance(\STS\Services\GeoService::class, $geo);
 
         $trip = $this->makeTrip(['distance' => 100000]);

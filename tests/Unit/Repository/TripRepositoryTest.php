@@ -4581,8 +4581,11 @@ class TripRepositoryTest extends TestCase
         $response = $this->invokeStoreTripInfoSuccess($repo, $points, $hashedPoints, $distanceM, 90.0, 'osrm');
 
         $this->assertSame(150.0, (float) $response['data']['co2']);
-        $this->assertSame(11050, (int) $response['data']['recommended_trip_price_cents']);
-        $this->assertSame(12700, (int) $response['data']['maximum_trip_price_cents']);
+        $this->assertFalse($response['data']['route_needs_payment']);
+        $this->assertFalse($response['data']['pricing_breakdown']['includes_sellado']);
+        $this->assertSame(0, (int) $response['data']['pricing_breakdown']['sellado_cents']);
+        $this->assertSame(11000, (int) $response['data']['recommended_trip_price_cents']);
+        $this->assertSame(12650, (int) $response['data']['maximum_trip_price_cents']);
     }
 
     public function test_routing_service_unavailable_response_returns_translated_error_payload(): void
