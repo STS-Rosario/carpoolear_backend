@@ -145,6 +145,43 @@ class TripTransformerTest extends TestCase
         $this->assertSame(2763, $fourPayload['pricing_breakdown']['per_person_cents']);
     }
 
+    public function test_transform_pricing_breakdown_matches_route_sellado_and_whether_the_trip_was_charged(): void
+    {
+        config()->set('carpoolear.module_max_price_fuel_price', 1000);
+        config()->set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        config()->set('carpoolear.module_max_price_price_variance_tolls', 10);
+        config()->set('carpoolear.module_trip_creation_payment_enabled', true);
+        config()->set('carpoolear.module_trip_creation_payment_amount_cents', 50);
+
+        $geo = \Mockery::mock(\STS\Services\GeoService::class);
+        $geo->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
+        $geo->shouldReceive('doStopsRequireSellado')->andReturn(true);
+        $this->app->instance(\STS\Services\GeoService::class, $geo);
+
+        $charged = (new TripTransformer(null))->transform(
+            $this->makeTrip(['distance' => 1000, 'needs_sellado' => true])->fresh()
+        );
+        $this->assertTrue($charged['pricing_breakdown']['includes_sellado']);
+        $this->assertSame(50, $charged['pricing_breakdown']['sellado_cents']);
+
+        $bonificado = (new TripTransformer(null))->transform(
+            $this->makeTrip(['distance' => 1000, 'needs_sellado' => false])->fresh()
+        );
+        $this->assertTrue($bonificado['pricing_breakdown']['includes_sellado']);
+        $this->assertSame(0, $bonificado['pricing_breakdown']['sellado_cents']);
+
+        $geoNoRoute = \Mockery::mock(\STS\Services\GeoService::class);
+        $geoNoRoute->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
+        $geoNoRoute->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $this->app->instance(\STS\Services\GeoService::class, $geoNoRoute);
+
+        $unrelatedRoute = (new TripTransformer(null))->transform(
+            $this->makeTrip(['distance' => 1000, 'needs_sellado' => false])->fresh()
+        );
+        $this->assertFalse($unrelatedRoute['pricing_breakdown']['includes_sellado']);
+        $this->assertSame(0, $unrelatedRoute['pricing_breakdown']['sellado_cents']);
+    }
+
     public function test_transform_pricing_breakdown_uses_costa_atlantica_tolls_when_in_zone(): void
     {
         config()->set('carpoolear.module_max_price_fuel_price', 1000);
