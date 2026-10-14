@@ -5,6 +5,7 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use STS\Helpers\OldCordovaAppHelper;
+use STS\Helpers\SelladoQrPayment;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Admin\ImpersonationService;
@@ -76,6 +77,7 @@ class AuthController extends Controller
             && ! empty(config('services.mercadopago.qr_payment_access_token'))
             && ! empty(config('carpoolear.qr_payment_pos_external_id'));
         $config->platform_donations_qr_enabled = app(PlatformDonationService::class)->isQrEnabled();
+        $config->module_trip_creation_payment_qr_enabled = SelladoQrPayment::isEnabled();
 
         $maintenancePayload = app(MaintenanceStateService::class)->publicPayload();
         $config->maintenance = (object) [

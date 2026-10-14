@@ -195,6 +195,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/{id?}', [TripController::class, 'show']);
         Route::post('/{id?}/changeSeats', [TripController::class, 'changeTripSeats']);
         Route::post('/{id}/invite-friends', [TripController::class, 'inviteFriends'])->middleware('throttle:trip-invite-friends');
+        Route::post('/{id}/sellado/qr-order', [TripController::class, 'createSelladoQrOrder']);
         Route::post('/{id}/change-visibility', [TripController::class, 'changeVisibility']);
         Route::post('/price', [TripController::class, 'price']);
         Route::post('/trip-info', [TripController::class, 'getTripInfo']);
