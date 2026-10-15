@@ -716,7 +716,7 @@ class TripsManager extends BaseManager
         }
 
         if ($trip->needs_sellado == true && $trip->state !== Trip::STATE_READY) {
-            return false;
+            return (bool) $user->is_admin;
         }
 
         if ($trip->friendship_type_id == Trip::PRIVACY_PUBLIC) {
