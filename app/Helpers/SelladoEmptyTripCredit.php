@@ -29,6 +29,13 @@ class SelladoEmptyTripCredit
         return $trip;
     }
 
+    public static function redeemUnusedCredits(int $userId): int
+    {
+        return static::unusedCreditQuery($userId)->update([
+            'sellado_empty_trip_credit_redeemed_at' => Carbon::now(),
+        ]);
+    }
+
     /**
      * @return \Illuminate\Database\Eloquent\Builder<Trip>
      */
