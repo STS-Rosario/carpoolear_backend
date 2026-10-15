@@ -1156,6 +1156,39 @@ class TripsManagerTest extends TestCase
         $this->assertFalse($this->manager()->userCanSeeTrip($stranger, $trip));
     }
 
+    public function test_admin_can_see_unpaid_sellado_trip_by_direct_id(): void
+    {
+        $driver = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+        ]);
+
+        $this->assertTrue($this->manager()->userCanSeeTrip($admin, $trip));
+        $shown = $this->manager()->show($admin, $trip->id);
+        $this->assertNotNull($shown);
+        $this->assertTrue($shown->is($trip));
+    }
+
+    public function test_show_hides_unpaid_sellado_trip_from_non_admin_stranger(): void
+    {
+        $driver = User::factory()->create();
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+        ]);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->show($stranger, $trip->id));
+        $this->assertSame('trip_not_foound', $manager->getErrors()['error']);
+    }
+
     public function test_user_can_see_public_trip_when_passing_trip_id_integer(): void
     {
         $driver = User::factory()->create();
