@@ -1049,7 +1049,7 @@ class TripRepository
             return;
         }
 
-        if (SelladoEmptyTripCredit::redeemOldestUnusedCredit($trip->user_id)) {
+        if (SelladoEmptyTripCredit::userHasUnusedCredit($trip->user_id)) {
             return;
         }
 
