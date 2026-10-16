@@ -33,6 +33,9 @@ return [
     'module_trip_creation_payment_trips_threshold' => (int) env('MODULE_TRIP_CREATION_PAYMENT_TRIPS_THRESHOLD', 2),
     // Frontend app base URL (e.g. for payment redirects, OAuth callbacks). Defaults to APP_URL.
     'frontend_url' => env('FRONTEND_URL', env('APP_URL', 'http://localhost:8080')),
+    // Mailer used for the Club Carpoolear welcome email (e.g. "resend").
+    // Falls back to the default mailer when empty or when Resend has no API key configured.
+    'club_welcome_mailer' => env('CLUB_WELCOME_MAILER', 'resend'),
     'platform_donations_api_enabled' => filter_var(env('PLATFORM_DONATIONS_API_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
     'platform_donations_qr_enabled' => filter_var(env('PLATFORM_DONATIONS_QR_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
 

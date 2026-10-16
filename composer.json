@@ -16,6 +16,7 @@
         "laravel/tinker": "^2.9",
         "league/fractal": "^0.20.1",
         "mercadopago/dx-php": "^3.5",
+        "resend/resend-php": "^1.16",
         "tymon/jwt-auth": "^2.1"
     },
     "require-dev": {

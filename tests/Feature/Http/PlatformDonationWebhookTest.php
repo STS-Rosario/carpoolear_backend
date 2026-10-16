@@ -7,11 +7,13 @@ use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Queue;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Net\MPDefaultHttpClient;
 use MercadoPago\Net\MPHttpClient;
 use MercadoPago\Net\MPRequest;
 use MercadoPago\Net\MPResponse;
+use STS\Jobs\SendClubCarpoolearWelcomeEmail;
 use STS\Models\DonationPayment;
 use STS\Models\DonationSubscription;
 use STS\Models\DonationSubscriptionCharge;
@@ -539,6 +541,103 @@ class PlatformDonationWebhookTest extends TestCase
             'amount_cents' => 500000,
         ]);
         $this->assertNotNull($subscription->fresh()->last_charged_at);
+    }
+
+    public function test_subscription_authorized_payment_webhook_queues_club_welcome_email_once(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create();
+        $preapprovalId = 'a509fda0d6e543d38b79657e028bfbe4';
+        $this->authorizedClubSubscription($user, $preapprovalId);
+
+        $invoiceId = '7032479654';
+        $nestedPaymentId = 181935207242;
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($invoiceId, $preapprovalId, $nestedPaymentId) {
+            $mock->shouldReceive('getAuthorizedPayment')
+                ->once()
+                ->with($invoiceId)
+                ->andReturn([
+                    'id' => (int) $invoiceId,
+                    'preapproval_id' => $preapprovalId,
+                    'transaction_amount' => 5000,
+                    'status' => 'processed',
+                    'payment' => [
+                        'id' => $nestedPaymentId,
+                        'status' => 'approved',
+                        'status_detail' => 'accredited',
+                        'transaction_amount' => 5000,
+                        'date_approved' => '2026-10-02T02:36:39.000-00:00',
+                    ],
+                ]);
+            $mock->shouldReceive('getPayment')->never();
+        });
+
+        $headers = $this->signatureHeaders($invoiceId, 'req-invoice-welcome', 'wh-secret-test');
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            $invoiceId,
+            ['type' => 'subscription_authorized_payment'],
+            [
+                'type' => 'subscription_authorized_payment',
+                'action' => 'updated',
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        Queue::assertPushed(SendClubCarpoolearWelcomeEmail::class);
+        $this->assertNotNull($user->fresh()->club_carpoolear_welcome_email_sent_at);
+    }
+
+    public function test_subscription_authorized_payment_webhook_does_not_queue_welcome_email_when_already_sent(): void
+    {
+        Queue::fake();
+
+        $user = User::factory()->create([
+            'club_carpoolear_welcome_email_sent_at' => now()->subDay(),
+        ]);
+        $preapprovalId = 'b509fda0d6e543d38b79657e028bfbe5';
+        $this->authorizedClubSubscription($user, $preapprovalId);
+
+        $invoiceId = '7032479655';
+        $nestedPaymentId = 181935207243;
+
+        $this->mock(\STS\Services\MercadoPagoService::class, function ($mock) use ($invoiceId, $preapprovalId, $nestedPaymentId) {
+            $mock->shouldReceive('getAuthorizedPayment')
+                ->once()
+                ->with($invoiceId)
+                ->andReturn([
+                    'id' => (int) $invoiceId,
+                    'preapproval_id' => $preapprovalId,
+                    'transaction_amount' => 5000,
+                    'status' => 'processed',
+                    'payment' => [
+                        'id' => $nestedPaymentId,
+                        'status' => 'approved',
+                        'status_detail' => 'accredited',
+                        'transaction_amount' => 5000,
+                        'date_approved' => '2026-10-03T02:36:39.000-00:00',
+                    ],
+                ]);
+            $mock->shouldReceive('getPayment')->never();
+        });
+
+        $headers = $this->signatureHeaders($invoiceId, 'req-invoice-welcome-2', 'wh-secret-test');
+
+        $response = $this->postMercadoPagoWebhookPreservingDottedDataIdQuery(
+            $invoiceId,
+            ['type' => 'subscription_authorized_payment'],
+            [
+                'type' => 'subscription_authorized_payment',
+                'action' => 'updated',
+            ],
+            $headers
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        Queue::assertNotPushed(SendClubCarpoolearWelcomeEmail::class);
     }
 
     public function test_subscription_authorized_payment_without_nested_payment_acknowledges_without_charge(): void
