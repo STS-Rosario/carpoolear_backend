@@ -3,6 +3,7 @@
 namespace STS\Repository;
 
 use Carbon\Carbon;
+use STS\Helpers\SelladoEmptyTripCredit;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 
@@ -130,6 +131,13 @@ class PassengersRepository
                 $passenger->{$key} = $value;
             }
             $passenger->save();
+
+            if ((int) $newState === Passenger::STATE_ACCEPTED) {
+                $ownerId = (int) Trip::query()->whereKey($tripId)->value('user_id');
+                if ($ownerId > 0) {
+                    SelladoEmptyTripCredit::redeemUnusedCredits($ownerId);
+                }
+            }
 
             return $passenger;
         } else {
