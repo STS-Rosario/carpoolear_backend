@@ -88,6 +88,7 @@ class UserTest extends TestCase
             'club_carpoolear_left_at',
             'show_club_carpoolear_membership',
             'club_carpoolear_welcome_shown',
+            'club_carpoolear_welcome_email_sent_at',
             'unaswered_messages_limit',
             'do_not_alert_request_seat',
             'do_not_alert_accept_passenger',
