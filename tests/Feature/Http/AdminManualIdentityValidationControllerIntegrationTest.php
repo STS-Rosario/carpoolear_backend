@@ -262,6 +262,100 @@ class AdminManualIdentityValidationControllerIntegrationTest extends TestCase
         $this->assertContains($closedUser->id, $resolvedIds);
     }
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function manualValidationRow(array $attributes): ManualIdentityValidation
+    {
+        return ManualIdentityValidation::create(array_merge([
+            'user_id' => User::factory()->create()->id,
+            'paid' => true,
+            'paid_at' => now(),
+        ], $attributes));
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function indexIds(string $query): array
+    {
+        return collect($this->getJson('api/admin/manual-identity-validations?'.$query)->json('data'))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
+    }
+
+    public function test_index_status_filter_matches_the_status_label_shown_in_the_table(): void
+    {
+        $admin = $this->admin();
+        $pending = ManualIdentityValidation::REVIEW_STATUS_PENDING;
+
+        $unpaid = $this->manualValidationRow(['paid' => false, 'paid_at' => null, 'review_status' => $pending]);
+        $awaitingPhotos = $this->manualValidationRow(['review_status' => ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS]);
+        // Legacy rows: paid, no photos yet, still on the column default 'pending'.
+        $legacyAwaitingPhotos = $this->manualValidationRow(['review_status' => $pending]);
+        $pendingReview = $this->manualValidationRow(['review_status' => $pending, 'submitted_at' => now()]);
+        $approved = $this->manualValidationRow(['review_status' => ManualIdentityValidation::REVIEW_STATUS_APPROVED, 'submitted_at' => now()]);
+        $approvedAlias = $this->manualValidationRow(['review_status' => 'approve', 'submitted_at' => now()]);
+        $rejected = $this->manualValidationRow(['review_status' => ManualIdentityValidation::REVIEW_STATUS_REJECTED, 'submitted_at' => now()]);
+        $rejectedAlias = $this->manualValidationRow(['review_status' => 'reject', 'submitted_at' => now()]);
+        $closed = $this->manualValidationRow(['paid' => false, 'paid_at' => null, 'review_status' => ManualIdentityValidation::REVIEW_STATUS_CLOSED]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $expected = [
+            'pending_payment' => [$unpaid->id],
+            'awaiting_photos' => [$awaitingPhotos->id, $legacyAwaitingPhotos->id],
+            'pending_review' => [$pendingReview->id],
+            'approved' => [$approved->id, $approvedAlias->id],
+            'rejected' => [$rejected->id, $rejectedAlias->id],
+            'closed' => [$closed->id],
+        ];
+
+        foreach ($expected as $status => $ids) {
+            sort($ids);
+            // Resolved statuses must not depend on show_resolved being set.
+            $this->assertSame($ids, $this->indexIds('status='.$status), "status={$status}");
+        }
+    }
+
+    public function test_index_ignores_unknown_status_and_keeps_hiding_resolved_rows(): void
+    {
+        $admin = $this->admin();
+        $open = $this->manualValidationRow(['review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING, 'submitted_at' => now()]);
+        $this->manualValidationRow(['review_status' => ManualIdentityValidation::REVIEW_STATUS_APPROVED, 'submitted_at' => now()]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->assertSame([$open->id], $this->indexIds('status=bogus'));
+    }
+
+    public function test_index_search_matches_user_name_or_validation_id(): void
+    {
+        $admin = $this->admin();
+        $jane = $this->manualValidationRow([
+            'user_id' => User::factory()->create(['name' => 'Jane Doe'])->id,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $john = $this->manualValidationRow([
+            'user_id' => User::factory()->create(['name' => 'John Smith'])->id,
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->assertSame([$jane->id], $this->indexIds('q=jane'));
+        $this->assertSame([$john->id], $this->indexIds('q='.$john->id));
+        // The user_name sort joins users; filters must not hit ambiguous columns.
+        $this->assertSame([$jane->id], $this->indexIds('q=jane&status=awaiting_photos&sort=user_name&direction=asc'));
+        $this->assertSame([$john->id], $this->indexIds('q='.$john->id.'&sort=user_name'));
+    }
+
     public function test_index_sorts_by_open_account_verification_tickets_count_desc(): void
     {
         $admin = $this->admin();

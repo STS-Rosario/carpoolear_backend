@@ -28,17 +28,26 @@ class ManualIdentityValidationController extends Controller
     /**
      * GET /api/admin/manual-identity-validations - list: paid first; within paid: with submitted_at (docs sent) first, then pending review, approved, rejected; then by waiting time (oldest first).
      * Waiting time = submitted_at (if submitted), else paid_at, else created_at.
+     * Filters: show_resolved (bool), status (see applyStatusFilter; a valid status ignores show_resolved),
+     * q (partial user name, or exact validation id when numeric).
      */
     public function index(Request $request): JsonResponse
     {
         $query = ManualIdentityValidation::with('user:id,name,identity_validated,identity_validation_type');
 
-        if (! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
+        $status = $this->normalizeStatusFilter($request->query('status'));
+
+        if ($status === null && ! $this->queryFlagIsTruthy($request->query('show_resolved'))) {
             $query->where(function ($builder) {
                 $builder->whereNull('review_status')
                     ->orWhereNotIn('review_status', ManualIdentityValidation::resolvedReviewStatusAliases());
             });
         }
+
+        if ($status !== null) {
+            $this->applyStatusFilter($query, $status);
+        }
+        $this->applySearchFilter($query, $request->query('q'));
 
         ManualIdentityValidationSort::apply(
             $query,
@@ -93,6 +102,84 @@ class ManualIdentityValidationController extends Controller
             'has_images' => $item->hasImages(),
             'open_account_verification_tickets_count' => $openAccountVerificationTicketsCount,
         ];
+    }
+
+    private const STATUS_FILTERS = [
+        'pending_payment',
+        'awaiting_photos',
+        'pending_review',
+        'approved',
+        'rejected',
+        'closed',
+    ];
+
+    private function normalizeStatusFilter(mixed $status): ?string
+    {
+        return is_string($status) && in_array($status, self::STATUS_FILTERS, true) ? $status : null;
+    }
+
+    /**
+     * Mirrors the status label the admin table derives from paid / submitted_at / review_status,
+     * so each option returns exactly the rows shown with that label.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<ManualIdentityValidation>  $query
+     */
+    private function applyStatusFilter($query, string $status): void
+    {
+        // Qualified: the user_name sort joins the users table.
+        $reviewStatus = $query->qualifyColumn('review_status');
+        $paid = $query->qualifyColumn('paid');
+        $submittedAt = $query->qualifyColumn('submitted_at');
+
+        if ($status === 'closed') {
+            $query->where($reviewStatus, ManualIdentityValidation::REVIEW_STATUS_CLOSED);
+
+            return;
+        }
+
+        $query->where(function ($builder) use ($reviewStatus) {
+            $builder->whereNull($reviewStatus)
+                ->orWhere($reviewStatus, '!=', ManualIdentityValidation::REVIEW_STATUS_CLOSED);
+        });
+
+        if ($status === 'pending_payment') {
+            $query->where($paid, false);
+
+            return;
+        }
+
+        $query->where($paid, true);
+
+        match ($status) {
+            'awaiting_photos' => $query->whereNull($submittedAt)->whereIn($reviewStatus, [
+                ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS,
+                ManualIdentityValidation::REVIEW_STATUS_PENDING,
+            ]),
+            'pending_review' => $query->whereNotNull($submittedAt)
+                ->where($reviewStatus, ManualIdentityValidation::REVIEW_STATUS_PENDING),
+            'approved' => $query->whereIn($reviewStatus, [ManualIdentityValidation::REVIEW_STATUS_APPROVED, 'approve']),
+            'rejected' => $query->whereIn($reviewStatus, [ManualIdentityValidation::REVIEW_STATUS_REJECTED, 'reject']),
+        };
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<ManualIdentityValidation>  $query
+     */
+    private function applySearchFilter($query, mixed $q): void
+    {
+        if (! is_string($q) || trim($q) === '') {
+            return;
+        }
+
+        $search = trim($q);
+        $query->where(function ($builder) use ($query, $search) {
+            $builder->whereHas('user', function ($userQuery) use ($search) {
+                $userQuery->where('name', 'like', '%'.$search.'%');
+            });
+            if (ctype_digit($search)) {
+                $builder->orWhere($query->qualifyColumn('id'), (int) $search);
+            }
+        });
     }
 
     private function queryFlagIsTruthy(mixed $value): bool
