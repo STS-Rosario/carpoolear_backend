@@ -89,7 +89,7 @@ class MercadoPagoService
             throw new \InvalidArgumentException('carpoolear.frontend_url must be set for MercadoPago sellado (auto_return requires valid back_urls.success)');
         }
         $selladoUrls = [
-            'success' => $baseUrl.'/app/trips/'.$trip->id,
+            'success' => $baseUrl.'/app/trips/'.$trip->id.'?sellado_paid=1',
             'failure' => $baseUrl.'/app/trips/'.$trip->id,
             'pending' => $baseUrl.'/app/trips/'.$trip->id,
         ];
@@ -276,6 +276,32 @@ class MercadoPagoService
 
         return [
             'request_id' => $requestId,
+            'order_id' => $order['order_id'],
+            'qr_data' => $order['qr_data'],
+            'payment_id' => $order['mp_payment_id'],
+        ];
+    }
+
+    /**
+     * Create a Mercado Pago QR order for Un litro (sellado) on a trip.
+     *
+     * @return array{trip_id: int, order_id: string, qr_data: string, payment_id: string|null}
+     */
+    public function createQrOrderForSellado($trip, ?int $amountInCents = null): array
+    {
+        if ($amountInCents === null) {
+            $amountInCents = (int) config('carpoolear.module_trip_creation_payment_amount_cents');
+        }
+
+        $order = $this->createQrOrder(
+            $amountInCents,
+            'trip_sellado_'.$trip->id,
+            'Un litro para Carpoolear',
+            'sellado_qr_'.$trip->id.'_'.uniqid('', true),
+        );
+
+        return [
+            'trip_id' => (int) $trip->id,
             'order_id' => $order['order_id'],
             'qr_data' => $order['qr_data'],
             'payment_id' => $order['mp_payment_id'],

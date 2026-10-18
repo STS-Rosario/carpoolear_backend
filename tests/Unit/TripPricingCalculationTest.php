@@ -46,13 +46,14 @@ class TripPricingCalculationTest extends TestCase
         $repository = new TripRepository($geoService, $mercadoPagoService, $mapboxDirectionsRouteService);
 
         $response = $this->invokeStoreTripInfoSuccess($repository, $distanceMeters);
+        $includesSellado = $selladoEnabled && $routeNeedsPayment;
         $expected = $this->calculateExpectedPricing(
             $distanceMeters,
             $fuelPrice,
             $kilometersPerLiter,
             $tollsVariancePercent,
             $maxPriceVariancePercent,
-            $selladoEnabled ? $selladoAmountCents : 0
+            $includesSellado ? $selladoAmountCents : 0
         );
 
         $this->assertTrue($response['status']);
@@ -67,8 +68,8 @@ class TripPricingCalculationTest extends TestCase
             $expected['recommended_trip_price_cents'],
             $response['data']['pricing_breakdown']['total_cents']
         );
-        $this->assertSame($selladoEnabled, $response['data']['pricing_breakdown']['includes_sellado']);
-        $this->assertSame($selladoEnabled ? $selladoAmountCents : 0, $response['data']['pricing_breakdown']['sellado_cents']);
+        $this->assertSame($includesSellado, $response['data']['pricing_breakdown']['includes_sellado']);
+        $this->assertSame($includesSellado ? $selladoAmountCents : 0, $response['data']['pricing_breakdown']['sellado_cents']);
         $this->assertSame($tollsVariancePercent, $response['data']['pricing_breakdown']['tolls_percent']);
         $this->assertNull($response['data']['pricing_breakdown']['occupants']);
         $this->assertNull($response['data']['pricing_breakdown']['per_person_cents']);
@@ -241,6 +242,16 @@ class TripPricingCalculationTest extends TestCase
                 true,
                 9500,
                 true,
+            ],
+            'same-polygon-module-on-does-not-include-sellado' => [
+                12650.4,
+                2378.5,
+                12.5,
+                10.0,
+                15.0,
+                true,
+                9500,
+                false,
             ],
         ];
     }

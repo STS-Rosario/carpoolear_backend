@@ -129,20 +129,22 @@ class GeoService
     }
 
     /**
-     * Returns true if Sellado should be charged: 2 or more stops (origin, destination, intermediate)
-     * are in a paid zone.
+     * Returns true if Sellado should be charged: stops fall in two or more
+     * distinct paid-region polygons (origin, destination, or intermediate).
      *
      * @param  array  $points  Array of points, each [lat, lng]
      */
     public function doStopsRequireSellado(array $points): bool
     {
-        $stopsInPaidZone = 0;
+        $paidPolygonIndexes = [];
         foreach ($points as $point) {
-            if ($this->isPointInPaidZone($point)) {
-                $stopsInPaidZone++;
-                if ($stopsInPaidZone >= 2) {
-                    return true;
-                }
+            $index = $this->paidPolygonIndexContaining($point);
+            if ($index === null) {
+                continue;
+            }
+            $paidPolygonIndexes[$index] = true;
+            if (count($paidPolygonIndexes) >= 2) {
+                return true;
             }
         }
 
@@ -160,15 +162,20 @@ class GeoService
         return true;
     }
 
-    private function isPointInPolygons(array $point): bool
+    private function paidPolygonIndexContaining(array $point): ?int
     {
-        foreach ($this->paidRegions as $polygon) {
+        foreach ($this->paidRegions as $index => $polygon) {
             if ($this->isPointInPolygon($polygon, $point)) {
-                return true;
+                return $index;
             }
         }
 
-        return false;
+        return null;
+    }
+
+    private function isPointInPolygons(array $point): bool
+    {
+        return $this->paidPolygonIndexContaining($point) !== null;
     }
 
     private function isPointInPolygon(array $polygon, array $point): bool

@@ -62,8 +62,10 @@ class TripPricingBreakdown
         $tollsPercent = $inCostaAtlantica
             ? (float) config('carpoolear.module_max_price_price_variance_tolls_costa_atlantica', 25)
             : (float) config('carpoolear.module_max_price_price_variance_tolls', 0);
-        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled');
-        $selladoCents = $includesSellado
+        $routeNeedsPayment = $geoService->doStopsRequireSellado($points);
+        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled')
+            && $routeNeedsPayment;
+        $selladoCents = $includesSellado && $trip->needs_sellado
             ? (int) config('carpoolear.module_trip_creation_payment_amount_cents')
             : 0;
 

@@ -157,6 +157,10 @@ class MercadoPagoWebhookController extends Controller
             return $this->handleDonationOnceQrPayment($mpPayment);
         }
 
+        if ($this->isSelladoQrExternalReference($externalReference)) {
+            return $this->handleTripPayment($mpPayment);
+        }
+
         if ($externalReference !== '') {
             $decodedReference = $this->parseExternalReference($externalReference);
 
@@ -434,6 +438,20 @@ class MercadoPagoWebhookController extends Controller
         return str_starts_with($externalReference, 'donation_once_');
     }
 
+    protected function isSelladoQrExternalReference(string $externalReference): bool
+    {
+        return (bool) preg_match('/^trip_sellado_\d+$/', $externalReference);
+    }
+
+    protected function tripIdFromSelladoQrExternalReference(string $externalReference): ?int
+    {
+        if (preg_match('/^trip_sellado_(\d+)$/', $externalReference, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
     protected function routeAccreditedQrCompatiblePayment(string $externalReference, mixed $paymentId, string $statusDetail)
     {
         $approvedPayload = [
@@ -449,6 +467,10 @@ class MercadoPagoWebhookController extends Controller
 
         if ($this->isDonationOnceQrExternalReference($externalReference)) {
             return $this->handleDonationOnceQrPayment($approvedPayload);
+        }
+
+        if ($this->isSelladoQrExternalReference($externalReference)) {
+            return $this->handleTripPayment($approvedPayload);
         }
 
         return response()->json(['status' => 'success']);
@@ -628,15 +650,19 @@ class MercadoPagoWebhookController extends Controller
     {
         // parse tripId from external reference
         $externalReference = $mpPayment['external_reference'];
-        $decodedReference = $this->parseExternalReference($externalReference);
+        $tripId = $this->tripIdFromSelladoQrExternalReference($externalReference);
 
-        if (! $decodedReference) {
-            Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+        if ($tripId === null) {
+            $decodedReference = $this->parseExternalReference($externalReference);
 
-            return response()->json(['error' => 'Invalid external reference'], 400);
+            if (! $decodedReference) {
+                Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+
+                return response()->json(['error' => 'Invalid external reference'], 400);
+            }
+
+            $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
         }
-
-        $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
 
         // get the trip for this payment
         $trip = Trip::where('id', $tripId)->first();
