@@ -200,4 +200,85 @@ class SendClubCarpoolearWelcomeEmailTest extends TestCase
 
         (new SendClubCarpoolearWelcomeEmail($user))->failed(new \RuntimeException('exhausted'));
     }
+
+    public function test_handle_skips_send_when_already_sent(): void
+    {
+        Mail::fake();
+        config([
+            'carpoolear.log_emails' => false,
+            'carpoolear.club_welcome_mailer' => null,
+        ]);
+
+        $user = User::factory()->create([
+            'club_carpoolear_welcome_email_sent_at' => now()->subDay(),
+        ]);
+
+        (new SendClubCarpoolearWelcomeEmail($user))->handle();
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_handle_skips_send_and_claim_when_email_is_empty(): void
+    {
+        Mail::fake();
+        config([
+            'carpoolear.log_emails' => false,
+            'carpoolear.club_welcome_mailer' => null,
+        ]);
+
+        $user = User::factory()->create(['email' => '']);
+
+        (new SendClubCarpoolearWelcomeEmail($user))->handle();
+
+        Mail::assertNothingSent();
+        $this->assertNull($user->fresh()->club_carpoolear_welcome_email_sent_at);
+    }
+
+    public function test_handle_releases_claim_when_mail_fails_after_claiming(): void
+    {
+        config([
+            'carpoolear.log_emails' => false,
+            'carpoolear.club_welcome_mailer' => null,
+        ]);
+
+        $user = User::factory()->create();
+
+        Mail::shouldReceive('mailer')->once()->with(null)->andReturnSelf();
+        Mail::shouldReceive('to')->once()->with($user->email)->andReturnSelf();
+        Mail::shouldReceive('send')->once()->with(Mockery::type(ClubCarpoolearWelcome::class))
+            ->andThrow(new \RuntimeException('resend transport down'));
+
+        Log::shouldReceive('error')->once();
+
+        $job = new SendClubCarpoolearWelcomeEmail($user);
+
+        try {
+            $job->handle();
+            $this->fail('Expected RuntimeException was not thrown.');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('resend transport down', $e->getMessage());
+        }
+
+        $this->assertNull($user->fresh()->club_carpoolear_welcome_email_sent_at);
+    }
+
+    public function test_failed_releases_claim_when_job_had_claimed(): void
+    {
+        Mail::fake();
+        config([
+            'carpoolear.log_emails' => false,
+            'carpoolear.club_welcome_mailer' => null,
+        ]);
+
+        $user = User::factory()->create();
+        $job = new SendClubCarpoolearWelcomeEmail($user);
+
+        $job->handle();
+        $this->assertNotNull($user->fresh()->club_carpoolear_welcome_email_sent_at);
+
+        Log::shouldReceive('error')->once();
+
+        $job->failed(new \RuntimeException('exhausted'));
+        $this->assertNull($user->fresh()->club_carpoolear_welcome_email_sent_at);
+    }
 }

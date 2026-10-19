@@ -600,14 +600,11 @@ class PlatformDonationService
             return;
         }
 
-        $claimed = User::query()
-            ->whereKey($user->id)
-            ->whereNull('club_carpoolear_welcome_email_sent_at')
-            ->update(['club_carpoolear_welcome_email_sent_at' => now()]);
-
-        if ($claimed) {
-            SendClubCarpoolearWelcomeEmail::dispatch($user)->onQueue('emails');
+        if ($user->club_carpoolear_welcome_email_sent_at !== null) {
+            return;
         }
+
+        SendClubCarpoolearWelcomeEmail::dispatch($user)->onQueue('emails');
     }
 
     /**

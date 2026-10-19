@@ -35,7 +35,7 @@ class TestClubCarpoolearWelcomeEmail extends Command
         $this->line("Locale: {$locale}");
 
         try {
-            dispatch_sync(new SendClubCarpoolearWelcomeEmail($user, $override));
+            dispatch_sync(new SendClubCarpoolearWelcomeEmail($user, $override, skipClaim: true));
         } catch (\Throwable $e) {
             $this->error("Welcome email could not be sent: {$e->getMessage()}");
 

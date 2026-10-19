@@ -28,10 +28,9 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
 
     protected $user;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct(User $user, private ?string $recipientEmail = null)
+    private bool $claimed = false;
+
+    public function __construct(User $user, private ?string $recipientEmail = null, private bool $skipClaim = false)
     {
         $this->tries = 3;
         $this->backoff = [60, 300, 900];
@@ -40,11 +39,27 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
         $this->user = $user;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
+        $recipient = $this->recipient();
+
+        if ($recipient === '') {
+            return;
+        }
+
+        if (! $this->skipClaim) {
+            $claimed = User::query()
+                ->whereKey($this->user->id)
+                ->whereNull('club_carpoolear_welcome_email_sent_at')
+                ->update(['club_carpoolear_welcome_email_sent_at' => now()]);
+
+            if (! $claimed) {
+                return;
+            }
+
+            $this->claimed = true;
+        }
+
         $enableEmailLogging = config('carpoolear.log_emails', false);
         $locale = UserLocale::resolve($this->user, 'arg');
         $mailer = $this->resolveMailer();
@@ -53,7 +68,7 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('CLUB_CARPOOLEAR_WELCOME_EMAIL_SENDING', [
                     'user_id' => $this->user->id,
-                    'email' => $this->recipient(),
+                    'email' => $recipient,
                     'locale' => $locale,
                     'mailer' => $mailer ?? 'default',
                     'attempt' => $this->attempts(),
@@ -61,7 +76,6 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
                 ]);
             }
 
-            $recipient = $this->recipient();
             $tripsUrl = $this->tripsUrl();
             $heroImageUrl = $this->heroImageUrl();
 
@@ -75,14 +89,18 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('CLUB_CARPOOLEAR_WELCOME_EMAIL_SUCCESS', [
                     'user_id' => $this->user->id,
-                    'email' => $this->recipient(),
+                    'email' => $recipient,
                     'timestamp' => now()->toIso8601String(),
                 ]);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            if ($this->claimed) {
+                $this->releaseClaim();
+            }
+
             $errorData = [
                 'user_id' => $this->user->id,
-                'email' => $this->recipient(),
+                'email' => $recipient,
                 'error' => $e->getMessage(),
                 'error_code' => $e->getCode(),
                 'attempt' => $this->attempts(),
@@ -101,11 +119,12 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
         }
     }
 
-    /**
-     * Handle a job failure.
-     */
     public function failed(\Throwable $exception): void
     {
+        if ($this->claimed) {
+            $this->releaseClaim();
+        }
+
         $enableEmailLogging = config('carpoolear.log_emails', false);
 
         $failureData = [
@@ -125,12 +144,11 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
         }
     }
 
-    /**
-     * Resolve the mailer used for the welcome email.
-     *
-     * Returns null to use the default mailer when none is configured, or when
-     * the Resend mailer is selected but no Resend API key is available.
-     */
+    private function releaseClaim(): void
+    {
+        User::query()->whereKey($this->user->id)->update(['club_carpoolear_welcome_email_sent_at' => null]);
+    }
+
     private function resolveMailer(): ?string
     {
         $mailer = config('carpoolear.club_welcome_mailer');
@@ -146,14 +164,11 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
         return $mailer;
     }
 
-    /**
-     * Recipient email: an explicit override when provided, otherwise the user's email.
-     */
     private function recipient(): string
     {
         return is_string($this->recipientEmail) && $this->recipientEmail !== ''
             ? $this->recipientEmail
-            : $this->user->email;
+            : (string) $this->user->email;
     }
 
     private function tripsUrl(): string
