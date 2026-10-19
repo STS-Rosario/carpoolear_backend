@@ -308,7 +308,7 @@ class TripTransformerTest extends TestCase
 
         $this->assertSame(true, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
-        $this->assertSame('Falta pagar Sellado', $payload['sellado_pending_label']);
+        $this->assertSame('Falta pagar 1L para Carpoolear', $payload['sellado_pending_label']);
     }
 
     public function test_transform_requires_needs_sellado_and_non_ready_state_for_pending_flag(): void
