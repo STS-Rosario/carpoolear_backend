@@ -90,6 +90,7 @@ class TripTransformerTest extends TestCase
             'rear_max_two_passengers',
             'payment_id',
             'needs_sellado',
+            'sellado_complimentary',
             'existing',
             'sellado_pending',
             'sellado_pending_label',
@@ -103,11 +104,22 @@ class TripTransformerTest extends TestCase
         $this->assertSame(15000, $payload['seat_price_cents']);
         $this->assertSame(false, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
+        $this->assertFalse($payload['sellado_complimentary']);
         $this->assertSame(false, $payload['existing']);
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
         $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_marks_trip_as_sellado_complimentary_when_empty_trip_credit_was_applied(): void
+    {
+        $trip = $this->makeTrip();
+        $trip->sellado_empty_trip_credit_applied_at = Carbon::now();
+
+        $payload = (new TripTransformer(null))->transform($trip);
+
+        $this->assertTrue($payload['sellado_complimentary']);
     }
 
     public function test_transform_includes_pricing_breakdown_with_comfort_occupants(): void
