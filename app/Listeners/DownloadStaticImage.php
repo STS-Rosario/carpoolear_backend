@@ -3,7 +3,7 @@
 namespace STS\Listeners;
 
 use STS\Events\Trip\Create;
-use STS\Repository\FileRepository; 
+use STS\Repository\FileRepository;
 
 class DownloadStaticImage
 {
@@ -22,15 +22,14 @@ class DownloadStaticImage
     /**
      * Handle the event.
      *
-     * @param Create $event
-     *
+     * @param  Create  $event
      * @return void
      */
     public function handle($event)
     {
         $trip = $event->trip;
         $enc_path = $trip->enc_path;
-        //$target_dir = public_path("image/paths/" . $id . ".png");
+        // $target_dir = public_path("image/paths/" . $id . ".png");
 
         if ($enc_path) {
             $temp_url = 'https://maps.googleapis.com/maps/api/staticmap?size=640x320&path=color:0x0000ff|weight:5';

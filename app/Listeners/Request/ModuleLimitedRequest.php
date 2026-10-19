@@ -3,10 +3,10 @@
 namespace STS\Listeners\Request;
 
 use STS\Events\Passenger\Accept as AcceptEvent;
+use STS\Events\Passenger\AutoCancel as AutoCancelEvent;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
-use STS\Events\Passenger\AutoCancel as AutoCancelEvent;
 
 class ModuleLimitedRequest
 {
@@ -15,15 +15,11 @@ class ModuleLimitedRequest
      *
      * @return void
      */
-
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     /**
      * Handle the event.
      *
-     * @param  AcceptEvent  $event
      * @return void
      */
     public function handle(AcceptEvent $event)
@@ -35,15 +31,15 @@ class ModuleLimitedRequest
 
         if ($module_user_request_limited_enabled) {
             $hours_range = (int) config('carpoolear.module_user_request_limited_hours_range', 2);
-            
+
             $requests = $acceptedUser->pendingRequests($hours_range, $trip->trip_date)
-            ->where('trip_id', '<>', $trip->id)
-            ->with('trip')  // Eager load the trip relation
-            ->get()
-            ->filter(function($request) use ($trip) {
-                // Check if destination is the same or similar
-                return $request->trip && $request->trip->to_town === $trip->to_town;
-            });
+                ->where('trip_id', '<>', $trip->id)
+                ->with('trip')  // Eager load the trip relation
+                ->get()
+                ->filter(function ($request) use ($trip) {
+                    // Check if destination is the same or similar
+                    return $request->trip && $request->trip->to_town === $trip->to_town;
+                });
 
             if ($requests->isNotEmpty()) {
                 foreach ($requests as $request) {

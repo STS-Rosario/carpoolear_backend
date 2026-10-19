@@ -6,9 +6,7 @@ use GuzzleHttp\Client;
 
 class FacebookChannel
 {
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function getFacebookSecret()
     {
@@ -33,7 +31,7 @@ class FacebookChannel
         if ($account) {
             $message = $this->getData($notification, $user);
 
-            $client = new Client();
+            $client = new Client;
             $url = $this->createUrl($account, $message);
 
             $res = $client->request('POST', $url, []);

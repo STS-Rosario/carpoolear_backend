@@ -2,11 +2,11 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use STS\Http\Controllers\Controller;
 use STS\Models\Campaign;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
 
 class CampaignController extends Controller
 {
@@ -19,9 +19,10 @@ class CampaignController extends Controller
             ->get()
             ->map(function ($campaign) {
                 $campaign->total_donated = $campaign->total_donated ?? 0;
+
                 return $campaign;
             });
-            
+
         return response()->json($campaigns);
     }
 
@@ -41,7 +42,7 @@ class CampaignController extends Controller
         ]);
 
         // Generate slug from title if not provided
-        if (!$request->has('slug')) {
+        if (! $request->has('slug')) {
             $validated['slug'] = Str::slug($request->title);
         }
 
@@ -61,7 +62,7 @@ class CampaignController extends Controller
             $query->where('is_active', true);
         }]);
         $campaign->total_donated = $campaign->total_donated ?? 0;
-        
+
         return response()->json($campaign);
     }
 
@@ -95,6 +96,7 @@ class CampaignController extends Controller
     public function destroy(Campaign $campaign): JsonResponse
     {
         $campaign->delete();
+
         return response()->json(null, 204);
     }
 }

@@ -2,21 +2,21 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class PendingRateNotification extends BaseNotification
 {
     protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class, 
-        PushChannel::class, 
+        DatabaseChannel::class,
+        MailChannel::class,
+        PushChannel::class,
         // FacebookChannel::class
     ];
-    
+
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
@@ -27,7 +27,7 @@ class PendingRateNotification extends BaseNotification
             'email_view' => 'pending_rate',
             'url' => config('app.url').'/app/profile/me#0',
             'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
+            'domain' => config('app.url'),
         ];
     }
 

@@ -19,7 +19,7 @@ class HeicToJpegConverter
             return false;
         }
         try {
-            $converter = new self();
+            $converter = new self;
             $result = $converter->convert($file);
             @unlink($file->getRealPath());
 
@@ -32,8 +32,6 @@ class HeicToJpegConverter
     /**
      * Create a valid minimal HEIC UploadedFile for testing.
      * Returns null if HEIC creation is not supported.
-     *
-     * @return UploadedFile|null
      */
     public static function createValidHeicFile(): ?UploadedFile
     {
@@ -45,7 +43,7 @@ class HeicToJpegConverter
             return null;
         }
         try {
-            $imagick = new \Imagick();
+            $imagick = new \Imagick;
             $imagick->newImage(1, 1, new \ImagickPixel('white'));
             $imagick->setImageFormat('heic');
             $blob = $imagick->getImageBlob();
@@ -95,7 +93,7 @@ class HeicToJpegConverter
 
             return $blob !== '' ? $blob : null;
         } catch (\Throwable $e) {
-            \Log::warning('HEIC conversion failed: ' . $e->getMessage());
+            \Log::warning('HEIC conversion failed: '.$e->getMessage());
 
             return null;
         }

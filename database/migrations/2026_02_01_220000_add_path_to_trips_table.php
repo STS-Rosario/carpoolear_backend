@@ -1,9 +1,10 @@
 <?php
+
+use Carbon\Carbon;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -30,13 +31,14 @@ return new class extends Migration
             $nodeIds = collect($points)
                 ->map(function ($point) {
                     $jsonAddress = json_decode($point->json_address);
+
                     return $jsonAddress->id ?? null;
                 })
-                ->filter(fn($id) => $id !== null && $id > 0)
+                ->filter(fn ($id) => $id !== null && $id > 0)
                 ->values();
 
             if ($nodeIds->isNotEmpty()) {
-                $path = '.' . $nodeIds->implode('.') . '.';
+                $path = '.'.$nodeIds->implode('.').'.';
                 DB::table('trips')
                     ->where('id', $trip->id)
                     ->update(['path' => $path]);

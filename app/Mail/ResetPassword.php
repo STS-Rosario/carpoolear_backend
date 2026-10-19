@@ -1,17 +1,16 @@
 <?php
- 
+
 namespace STS\Mail;
- 
-use App\Models\Order;
+
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Queue\SerializesModels;
- 
+
 class ResetPassword extends Mailable
 {
     use Queueable, SerializesModels;
- 
+
     /**
      * Create a new message instance.
      */
@@ -22,7 +21,7 @@ class ResetPassword extends Mailable
         public $name_app,
         public $domain,
     ) {}
- 
+
     /**
      * Get the message content definition.
      */

@@ -5,6 +5,7 @@ namespace STS\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use STS\Jobs\SendClubCarpoolearWelcomeEmail;
 use STS\Jobs\UpdateDonationSubscriptionAmountsJob;
 use STS\Models\DonationAmountAdjustment;
 use STS\Models\DonationPayment;
@@ -581,7 +582,29 @@ class PlatformDonationService
                 : now();
             $subscription->save();
             $this->writeLegacyDonationIntent($subscription->user_id, (float) ($amountCents / 100), true);
+            $this->maybeSendClubCarpoolearWelcomeEmail($subscription->user_id);
         }
+    }
+
+    /**
+     * Send the Club Carpoolear welcome email once, on the member's first approved charge.
+     */
+    private function maybeSendClubCarpoolearWelcomeEmail(?int $userId): void
+    {
+        if (empty($userId)) {
+            return;
+        }
+
+        $user = User::find($userId);
+        if (! $user) {
+            return;
+        }
+
+        if ($user->club_carpoolear_welcome_email_sent_at !== null) {
+            return;
+        }
+
+        SendClubCarpoolearWelcomeEmail::dispatch($user)->onQueue('emails');
     }
 
     /**

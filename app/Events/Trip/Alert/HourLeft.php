@@ -2,8 +2,8 @@
 
 namespace STS\Events\Trip\Alert;
 
-use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
+use STS\Events\Event;
 
 class HourLeft extends Event
 {

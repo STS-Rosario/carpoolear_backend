@@ -11,11 +11,11 @@ class UserBadge extends Pivot
     protected $fillable = [
         'user_id',
         'badge_id',
-        'awarded_at'
+        'awarded_at',
     ];
 
     protected $casts = [
-        'awarded_at' => 'datetime'
+        'awarded_at' => 'datetime',
     ];
 
     /**
@@ -33,4 +33,4 @@ class UserBadge extends Pivot
     {
         return $this->belongsTo(Badge::class);
     }
-} 
+}

@@ -2,8 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Models\User;
 use STS\Models\Device;
+use STS\Models\User;
 
 class DeviceRepository
 {

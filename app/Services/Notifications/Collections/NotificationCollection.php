@@ -8,7 +8,7 @@ class NotificationCollection extends Collection
 {
     public function asNotifications()
     {
-        $colection = new Collection();
+        $colection = new Collection;
         foreach ($this as $notification) {
             $colection->push($notification->asNotification());
         }

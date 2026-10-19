@@ -13,12 +13,12 @@ class Badge extends Model
         'description',
         'image_path',
         'rules',
-        'visible'
+        'visible',
     ];
 
     protected $casts = [
         'rules' => 'array',
-        'visible' => 'boolean'
+        'visible' => 'boolean',
     ];
 
     /**
@@ -30,4 +30,4 @@ class Badge extends Model
             ->withPivot('awarded_at')
             ->withTimestamps();
     }
-} 
+}

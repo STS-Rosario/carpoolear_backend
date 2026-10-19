@@ -2,12 +2,8 @@
 
 namespace STS\Console\Commands;
 
-use STS\Models\User;
-use STS\Models\Device;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
-use STS\Notifications\AnnouncementNotification;
-use STS\Services\Notifications\Channels\PushChannel;
+use STS\Models\User;
 use STS\Services\AnnouncementService;
 
 class SendAnnouncement extends Command
@@ -63,16 +59,16 @@ class SendAnnouncement extends Command
         $deviceActivityDays = (int) $this->option('device-activity-days');
         $userIds = $this->option('user-ids');
 
-        $this->info("=== Carpoolear Announcement Tool ===");
+        $this->info('=== Carpoolear Announcement Tool ===');
         $this->info("Message: {$message}");
         $this->info("Title: {$title}");
         if ($externalUrl) {
             $this->info("External URL: {$externalUrl}");
         }
         $this->info("Batch Size: {$batchSize}");
-        $this->info("Dry Run: " . ($dryRun ? 'Yes' : 'No'));
-        $this->info("Active Users Only: " . ($activeOnly ? 'Yes' : 'No'));
-        $this->info("Device Activity Days: " . ($deviceActivityDays > 0 ? $deviceActivityDays : 'All devices'));
+        $this->info('Dry Run: '.($dryRun ? 'Yes' : 'No'));
+        $this->info('Active Users Only: '.($activeOnly ? 'Yes' : 'No'));
+        $this->info('Device Activity Days: '.($deviceActivityDays > 0 ? $deviceActivityDays : 'All devices'));
         if ($userIds) {
             $this->info("Target User IDs: {$userIds}");
         }
@@ -86,24 +82,27 @@ class SendAnnouncement extends Command
         $this->info("Total devices: {$stats['total_devices']}");
         $this->info("Active devices (30 days): {$stats['active_devices']}");
 
-        if (!$this->confirm('Do you want to proceed with sending this announcement?')) {
+        if (! $this->confirm('Do you want to proceed with sending this announcement?')) {
             $this->info('Announcement cancelled.');
+
             return;
         }
 
         if ($dryRun) {
-            $this->warn("DRY RUN MODE - No notifications will be sent");
+            $this->warn('DRY RUN MODE - No notifications will be sent');
             if ($userIds) {
                 $this->info("Would send to specified user IDs: {$userIds}");
             } else {
                 $this->info("Would send to approximately {$stats['users_with_devices']} users");
             }
+
             return;
         }
 
         // Check rate limiting
-        if (!$this->announcementService->canSendAnnouncement()) {
+        if (! $this->announcementService->canSendAnnouncement()) {
             $this->error('Rate limit exceeded. Please wait before sending another announcement.');
+
             return;
         }
 
@@ -117,7 +116,7 @@ class SendAnnouncement extends Command
         ];
 
         $this->info("\nSending announcement...");
-        
+
         // Send the announcement
         if ($userIds) {
             $result = $this->announcementService->sendToUsers($userIds, $message, $options);
@@ -136,7 +135,7 @@ class SendAnnouncement extends Command
             $this->info("Skipped: {$stats['skipped']}");
             $this->info("\n✓ Announcement completed successfully!");
         } else {
-            $this->error("✗ Announcement failed: " . $result['message']);
+            $this->error('✗ Announcement failed: '.$result['message']);
         }
     }
-} 
+}

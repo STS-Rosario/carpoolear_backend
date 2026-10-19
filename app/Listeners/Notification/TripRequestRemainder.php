@@ -21,7 +21,6 @@ class TripRequestRemainder implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  RequestRemainder  $event
      * @return void
      */
     public function handle(RequestRemainder $event)
@@ -29,7 +28,7 @@ class TripRequestRemainder implements ShouldQueue
         $trip = $event->trip;
         $to = $trip->user;
         if ($to) {
-            $notification = new RequestRemainderNotification();
+            $notification = new RequestRemainderNotification;
             $notification->setAttribute('trip', $trip);
             $notification->notify($to);
         }

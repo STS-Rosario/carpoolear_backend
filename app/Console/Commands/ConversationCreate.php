@@ -2,10 +2,9 @@
 
 namespace STS\Console\Commands;
 
-use STS\Models\User;
-use Carbon\Carbon;
-use STS\Models\Conversation;
 use Illuminate\Console\Command;
+use STS\Models\Conversation;
+use STS\Models\User;
 use STS\Services\Logic\ConversationsManager as ConversationManager;
 
 class ConversationCreate extends Command
@@ -44,11 +43,11 @@ class ConversationCreate extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND ConversationCreate");
+        \Log::info('COMMAND ConversationCreate');
         $userTo = User::find($this->argument('to'));
         $userFrom = User::find($this->argument('from'));
 
-        //Create new conversation
+        // Create new conversation
         $newConversation = $this->conversation->findOrCreatePrivateConversation($userFrom, $userTo);
         if ($newConversation) {
             $this->info('Conversation has been created.');

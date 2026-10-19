@@ -18,7 +18,7 @@ class AuthOptional
     {
         try {
             $user = $this->auth->parseToken()->authenticate();
-            if ($user && !$user->banned && $user->active) {
+            if ($user && ! $user->banned && $user->active) {
                 auth()->setUser($user);
             }
         } catch (\Exception $e) {
@@ -27,4 +27,4 @@ class AuthOptional
 
         return $next($request);  // Always continue, regardless of auth status
     }
-} 
+}

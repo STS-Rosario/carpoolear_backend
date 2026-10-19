@@ -3,7 +3,7 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
-use STS\Http\Controllers\Controller;  
+use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\CarsManager;
 

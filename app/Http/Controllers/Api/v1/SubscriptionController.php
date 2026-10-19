@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
 use STS\Services\Logic\SubscriptionsManager;
+
 class SubscriptionController extends Controller
 {
     protected $user;

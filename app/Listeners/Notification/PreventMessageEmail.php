@@ -2,11 +2,11 @@
 
 namespace STS\Listeners\Notification;
 
+use STS\Events\Notification\NotificationSending;
 use STS\Notifications\NewMessageNotification;
-use  STS\Events\Notification\NotificationSending;
 use STS\Repository\ConversationRepository;
-use  STS\Services\Notifications\Channels\MailChannel;
-use STS\Services\Notifications\Channels\DatabaseChannel; 
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\MailChannel;
 
 class PreventMessageEmail
 {
@@ -25,7 +25,6 @@ class PreventMessageEmail
     /**
      * Handle the event.
      *
-     * @param  NotificationSending  $event
      * @return void
      */
     public function handle(NotificationSending $event)
@@ -36,7 +35,7 @@ class PreventMessageEmail
                 $u = $event->user;
                 $readState = $this->conversationsRepository->getConversationReadState($c, $u);
 
-                return  $readState != 1;
+                return $readState != 1;
             }
         }
     }

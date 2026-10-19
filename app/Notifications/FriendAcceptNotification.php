@@ -2,21 +2,21 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class FriendAcceptNotification extends BaseNotification
 {
     protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class, 
-        PushChannel::class, 
+        DatabaseChannel::class,
+        MailChannel::class,
+        PushChannel::class,
         // FacebookChannel::class
     ];
-    
+
     public function toEmail($user)
     {
         $from = $this->getAttribute('from');
@@ -27,7 +27,7 @@ class FriendAcceptNotification extends BaseNotification
             'email_view' => 'friends_accept',
             'url' => config('app.url').'/app/profile/'.$from->id,
             'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
+            'domain' => config('app.url'),
         ];
     }
 
@@ -35,12 +35,14 @@ class FriendAcceptNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : __('notifications.someone');
+
         return __('notifications.friend_accept.message', ['name' => $senderName]);
     }
 
     public function getExtras()
     {
         $from = $this->getAttribute('from');
+
         return [
             'type' => 'friend',
             'user_id' => $from ? $from->id : null,

@@ -2,7 +2,6 @@
 
 namespace STS\Models;
 
-use STS\Models\User;
 use Illuminate\Database\Eloquent\Model;
 
 class SocialAccount extends Model

@@ -7,18 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 class RouteCache extends Model
 {
     protected $table = 'route_cache';
-    
+
     protected $fillable = [
         'points',
         'route_data',
         'expires_at',
-        'hashed_points'
+        'hashed_points',
     ];
 
     protected $casts = [
         'points' => 'array',
         'route_data' => 'array',
-        'expires_at' => 'datetime'
+        'expires_at' => 'datetime',
     ];
 
     protected static function boot()
@@ -35,4 +35,4 @@ class RouteCache extends Model
             }
         });
     }
-} 
+}

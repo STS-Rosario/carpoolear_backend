@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class RecurrentTripDayTable extends Migration
 {
@@ -19,8 +19,8 @@ class RecurrentTripDayTable extends Migration
             $table->string('day', 45);
             $table->string('hour', 45);
             $table->foreign('trip_id')->references('id')->on('trips')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

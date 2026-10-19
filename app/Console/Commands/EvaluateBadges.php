@@ -3,9 +3,9 @@
 namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use STS\Models\User;
 use STS\Services\BadgeEvaluatorService;
-use Illuminate\Support\Facades\Log;
 
 class EvaluateBadges extends Command
 {
@@ -41,12 +41,14 @@ class EvaluateBadges extends Command
 
         if ($stats['total_users'] === 0) {
             $this->warn('No users found matching the criteria.');
+
             return 0;
         }
 
         // Confirm before proceeding (unless dry run)
-        if (!$this->option('dry-run') && !$this->confirm('Proceed with badge evaluation?')) {
+        if (! $this->option('dry-run') && ! $this->confirm('Proceed with badge evaluation?')) {
             $this->info('Badge evaluation cancelled.');
+
             return 0;
         }
 
@@ -54,6 +56,7 @@ class EvaluateBadges extends Command
         $this->processUsersInBatches($stats);
 
         $this->info('Badge evaluation completed!');
+
         return 0;
     }
 
@@ -82,7 +85,7 @@ class EvaluateBadges extends Command
 
         return [
             'total_users' => $totalUsers,
-            'query' => $query
+            'query' => $query,
         ];
     }
 
@@ -91,22 +94,22 @@ class EvaluateBadges extends Command
      */
     protected function displayUserStats(array $stats): void
     {
-        $this->info("User Statistics:");
+        $this->info('User Statistics:');
         $this->line("  Total users to evaluate: {$stats['total_users']}");
-        
+
         if ($this->option('user-ids')) {
-            $this->line("  Filtering by specific user IDs");
+            $this->line('  Filtering by specific user IDs');
         }
-        
+
         if ($this->option('active-only')) {
             $days = $this->option('activity-days');
             $this->line("  Only users with recent connections (last {$days} days)");
         }
-        
+
         if ($this->option('dry-run')) {
-            $this->warn("  DRY RUN MODE - No badges will be awarded");
+            $this->warn('  DRY RUN MODE - No badges will be awarded');
         }
-        
+
         $this->line('');
     }
 
@@ -131,24 +134,24 @@ class EvaluateBadges extends Command
         $query->chunk($batchSize, function ($users) use (&$processed, &$badgesAwarded, &$errors, $progressBar) {
             foreach ($users as $user) {
                 try {
-                    if (!$this->option('dry-run')) {
-                        $badgeEvaluator = new BadgeEvaluatorService();
+                    if (! $this->option('dry-run')) {
+                        $badgeEvaluator = new BadgeEvaluatorService;
                         $badgeEvaluator->evaluate($user);
-                        
+
                         // Count newly awarded badges
                         $newBadges = $user->badges()->wherePivot('awarded_at', '>=', now()->subMinutes(5))->count();
                         $badgesAwarded += $newBadges;
                     }
-                    
+
                     $processed++;
                 } catch (\Exception $e) {
                     $errors++;
                     Log::error('Error evaluating badges for user', [
                         'user_id' => $user->id,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
-                
+
                 $progressBar->advance();
             }
         });
@@ -168,15 +171,15 @@ class EvaluateBadges extends Command
         $this->line('');
         $this->info('Evaluation Results:');
         $this->line("  Users processed: {$processed}");
-        
-        if (!$this->option('dry-run')) {
+
+        if (! $this->option('dry-run')) {
             $this->line("  Badges awarded: {$badgesAwarded}");
         }
-        
+
         if ($errors > 0) {
             $this->error("  Errors encountered: {$errors}");
         }
-        
+
         $this->line('');
     }
 }
