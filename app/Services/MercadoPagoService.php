@@ -108,6 +108,10 @@ class MercadoPagoService
             'auto_return' => 'approved',
             'external_reference' => $this->createHashedExternalReferenceForSellado((int) $trip->id),
         ];
+        $backendUrl = rtrim((string) config('app.url'), '/');
+        if ($backendUrl !== '') {
+            $preferenceData['notification_url'] = $backendUrl.'/webhooks/mercadopago?source_news=webhooks';
+        }
 
         return $this->createPaymentPreference($preferenceData);
     }
