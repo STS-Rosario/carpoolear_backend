@@ -74,6 +74,7 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame($expectedTripUrl.'?sellado_paid=1', $payload['back_urls']['success']);
         $this->assertSame($expectedTripUrl, $payload['back_urls']['failure']);
         $this->assertSame($expectedTripUrl.'?sellado_paid=1', $payload['back_urls']['pending']);
+        $this->assertSame('Un litro para Carpoolear', $payload['items'][0]['title']);
         $this->assertSame(25.0, $payload['items'][0]['unit_price']);
         $this->assertSame('approved', $payload['auto_return']);
         $this->assertIsString($payload['external_reference']);
