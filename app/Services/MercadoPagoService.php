@@ -98,7 +98,7 @@ class MercadoPagoService
         $preferenceData = [
             'items' => [
                 [
-                    'title' => 'Sellado Carpoolear',
+                    'title' => 'Un litro para Carpoolear',
                     'quantity' => 1,
                     'unit_price' => floatval($amountInCents) / 100,
                     'currency_id' => 'ARS',
