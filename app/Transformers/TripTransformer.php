@@ -70,6 +70,7 @@ class TripTransformer extends TransformerAbstract
             'payment_id' => $trip->payment_id,
             'needs_sellado' => $trip->needs_sellado,
             'sellado_complimentary' => $trip->sellado_empty_trip_credit_applied_at !== null,
+            'sellado_empty_trip_credit_redeemed' => $trip->sellado_empty_trip_credit_redeemed_at !== null,
             'existing' => (bool) $trip->getAttribute('existing'),
         ];
 
