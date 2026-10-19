@@ -3335,6 +3335,7 @@ class TripRepositoryTest extends TestCase
 
         $user = User::factory()->create();
         $rider = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]);
         $prior = Trip::factory()->create([
             'user_id' => $user->id,
             'is_passenger' => false,
@@ -3944,6 +3945,7 @@ class TripRepositoryTest extends TestCase
         $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
 
         $user = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]);
         $trip = Trip::factory()->create([
             'user_id' => $user->id,
             'state' => Trip::STATE_READY,
@@ -4278,7 +4280,7 @@ class TripRepositoryTest extends TestCase
             'payment_id' => 'existing_pref',
             'needs_sellado' => false,
         ]);
-        Trip::factory()->create(['user_id' => $user->id]); // count == threshold boundary (2)
+        Trip::factory()->count(2)->create(['user_id' => $user->id]);
 
         $repo->addPoints($trip, [
             ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1001, 'ciudad' => 'OldA']],
@@ -4340,7 +4342,7 @@ class TripRepositoryTest extends TestCase
             'payment_id' => null,
             'needs_sellado' => false,
         ]);
-        Trip::factory()->create(['user_id' => $user->id]);
+        Trip::factory()->count(2)->create(['user_id' => $user->id]);
 
         $repo->addPoints($trip, [
             ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1201, 'ciudad' => 'OldA']],

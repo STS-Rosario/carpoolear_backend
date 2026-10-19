@@ -14,10 +14,13 @@ class SelladoTripCount
      * skipped. Passenger-seeking trips and driver trips that still have
      * accepted passengers keep counting after cancel.
      */
-    public static function forUser(int $userId): int
+    public static function forUser(int $userId, ?int $exceptTripId = null): int
     {
         return Trip::withTrashed()
             ->where('user_id', $userId)
+            ->when($exceptTripId, function ($query, $exceptTripId) {
+                $query->where('id', '<>', $exceptTripId);
+            })
             ->where(function ($query) {
                 $query->where('is_passenger', true)
                     ->orWhereHas('passenger', function ($passengerQuery) {
