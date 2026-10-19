@@ -78,6 +78,10 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('approved', $payload['auto_return']);
         $this->assertIsString($payload['external_reference']);
         $this->assertStringContainsString(':', $payload['external_reference']);
+        $this->assertSame(
+            rtrim((string) config('app.url'), '/').'/webhooks/mercadopago?source_news=webhooks',
+            $payload['notification_url']
+        );
     }
 
     public function test_create_qr_order_for_manual_validation_rejects_amount_below_provider_minimum(): void
