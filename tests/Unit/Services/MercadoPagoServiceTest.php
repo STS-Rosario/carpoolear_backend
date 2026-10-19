@@ -296,7 +296,7 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('1600.00', $orderClient->payload['total_amount']);
     }
 
-    public function test_create_qr_order_for_sellado_redirects_to_trip_with_paid_query(): void
+    public function test_create_qr_order_for_sellado_does_not_send_online_config(): void
     {
         config([
             'services.mercadopago.qr_payment_access_token' => 'qr-token',
@@ -332,11 +332,10 @@ class MercadoPagoServiceTest extends TestCase
 
         $service->createQrOrderForSellado($trip);
 
-        $paidUrl = 'https://frontend.test/app/trips/101?sellado_paid=1';
-        $this->assertSame($paidUrl, $orderClient->payload['config']['online']['success_url']);
-        $this->assertSame($paidUrl, $orderClient->payload['config']['online']['pending_url']);
-        $this->assertSame('approved', $orderClient->payload['config']['online']['auto_return']);
+        $this->assertSame(['qr'], array_keys($orderClient->payload['config']));
+        $this->assertArrayNotHasKey('online', $orderClient->payload['config']);
         $this->assertSame('POS-1', $orderClient->payload['config']['qr']['external_pos_id']);
+        $this->assertSame('dynamic', $orderClient->payload['config']['qr']['mode']);
     }
 
     public function test_sellado_trims_trailing_slash_on_frontend_url_for_back_urls(): void
