@@ -15,6 +15,7 @@ class AssignMsMjmsCampaignBadge extends Command
     protected $description = 'Create the +S+J+S campaign badge and assign it to users who donated (campaign_id=1, status=paid)';
 
     private const BADGE_SLUG = 'aportante-msmjms';
+
     private const CAMPAIGN_ID = 1;
 
     public function handle(): int
@@ -37,13 +38,13 @@ class AssignMsMjmsCampaignBadge extends Command
         $badge = Badge::where('slug', self::BADGE_SLUG)->first();
         if ($badge) {
             $this->info("Badge already exists (id: {$badge->id}).");
-            if (!$dryRun) {
+            if (! $dryRun) {
                 $badge->update($badgeData);
                 $this->line('Badge data updated.');
             }
         } else {
             if ($dryRun) {
-                $this->info('Would create badge: ' . $badgeData['title']);
+                $this->info('Would create badge: '.$badgeData['title']);
             } else {
                 $badge = Badge::create($badgeData);
                 $this->info("Badge created (id: {$badge->id}).");
@@ -61,7 +62,7 @@ class AssignMsMjmsCampaignBadge extends Command
             ->pluck('user_id');
 
         $total = $donorUserIds->count();
-        $this->info("Found {$total} unique donor(s) with paid donations for campaign " . self::CAMPAIGN_ID . '.');
+        $this->info("Found {$total} unique donor(s) with paid donations for campaign ".self::CAMPAIGN_ID.'.');
 
         if ($total === 0) {
             return 0;
@@ -87,6 +88,7 @@ class AssignMsMjmsCampaignBadge extends Command
         }
         if ($toAssignCount === 0) {
             $this->info('No new user_badges to assign.');
+
             return 0;
         }
 
@@ -98,6 +100,7 @@ class AssignMsMjmsCampaignBadge extends Command
                 $toAssign->map(fn ($id) => [$id])->toArray()
             );
             $this->info('Dry run complete. Run without --dry-run to apply.');
+
             return 0;
         }
 

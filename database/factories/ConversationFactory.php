@@ -21,8 +21,8 @@ class ConversationFactory extends Factory
     {
         return [
             'trip_id' => null,
-            'title'   => fake()->safeEmail(),
-            'type'    => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => fake()->safeEmail(),
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
         ];
     }
 }

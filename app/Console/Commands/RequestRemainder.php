@@ -3,9 +3,9 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Models\Trip;
 use Illuminate\Console\Command;
-use STS\Events\Trip\Alert\RequestRemainder as  RequestRemainderEvent;
+use STS\Events\Trip\Alert\RequestRemainder as RequestRemainderEvent;
+use STS\Models\Trip;
 
 class RequestRemainder extends Command
 {
@@ -44,7 +44,7 @@ class RequestRemainder extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND RequestRemainder");
+        \Log::info('COMMAND RequestRemainder');
         $now = Carbon::now();
 
         $trips = Trip::where('trip_date', '>=', $now->toDateTimeString())->where('is_passenger', 0);

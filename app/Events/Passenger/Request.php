@@ -2,8 +2,8 @@
 
 namespace STS\Events\Passenger;
 
-use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
+use STS\Events\Event;
 
 class Request extends Event
 {

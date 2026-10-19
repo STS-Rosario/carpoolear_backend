@@ -3,10 +3,9 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Models\Trip;
-use STS\Models\Passenger;
 use Illuminate\Console\Command;
-use STS\Events\Trip\Alert\RequestNotAnswer as  RequestNotAnswerEvent;
+use STS\Events\Trip\Alert\RequestNotAnswer as RequestNotAnswerEvent;
+use STS\Models\Passenger;
 
 class RequestNotAnswer extends Command
 {
@@ -45,7 +44,7 @@ class RequestNotAnswer extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND RequestNotAnswer");
+        \Log::info('COMMAND RequestNotAnswer');
         $now = Carbon::now();
 
         $passengers = Passenger::whereIn('request_state', [Passenger::STATE_PENDING]);

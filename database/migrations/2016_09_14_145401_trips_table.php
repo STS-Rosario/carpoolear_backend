@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class TripsTable extends Migration
 {
@@ -23,23 +23,23 @@ class TripsTable extends Migration
             $table->string('description', 1500);
             $table->integer('total_seats');
             $table->integer('friendship_type_id');
-            //$table->integer("is_active");
+            // $table->integer("is_active");
             $table->double('distance');
             $table->string('estimated_time', 500);
             $table->integer('co2');
             $table->integer('es_recurrente');
-            //$table->integer("esta_carpooleado");
+            // $table->integer("esta_carpooleado");
             $table->boolean('is_passenger');
             $table->boolean('mail_send');
-            //$table->string('tripscol', 45);
+            // $table->string('tripscol', 45);
             $table->string('enc_path');
 
             $table->timestamps();
             $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

@@ -18,10 +18,10 @@ return new class extends Migration
             $table->timestamp('saved_at');
             $table->unsignedInteger('value');
             $table->timestamps();
-            
+
             // Add unique constraint to prevent duplicate entries for the same year/month
             $table->unique(['year', 'month']);
-            
+
             // Add indexes for better query performance
             $table->index(['year', 'month']);
         });

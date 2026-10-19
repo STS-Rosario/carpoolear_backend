@@ -2,12 +2,10 @@
 
 namespace STS\Console\Commands;
 
-use Carbon\Carbon;
-use Illuminate\Console\Command;
-use STS\Services\Logic\RoutesManager as RoutesManager;
-use STS\Models\Route;
-use STS\Models\NodeGeo;
 use DB;
+use Illuminate\Console\Command;
+use STS\Models\NodeGeo;
+use STS\Services\Logic\RoutesManager;
 
 class BuildNodesWeights extends Command
 {
@@ -46,7 +44,7 @@ class BuildNodesWeights extends Command
     public function handle()
     {
         // Borro todas las importancias
-        \Log::info("COMMAND BuildNodesWeights");
+        \Log::info('COMMAND BuildNodesWeights');
         $query = "
             SELECT id, SUM(importance) as importance FROM (
                 (SELECT id, 1000 as importance FROM nodes_geo WHERE type = 'city')

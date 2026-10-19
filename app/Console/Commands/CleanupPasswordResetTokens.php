@@ -2,10 +2,10 @@
 
 namespace STS\Console\Commands;
 
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
 
 class CleanupPasswordResetTokens extends Command
 {
@@ -31,15 +31,15 @@ class CleanupPasswordResetTokens extends Command
     {
         $hours = $this->option('hours');
         $cutoffTime = Carbon::now()->subHours($hours);
-        
+
         $this->info("Cleaning up password reset tokens older than {$hours} hours...");
-        
+
         $deletedCount = DB::table('password_resets')
             ->where('created_at', '<', $cutoffTime)
             ->delete();
-            
+
         $this->info("Deleted {$deletedCount} expired password reset tokens.");
-        
+
         // Also clean up failed jobs related to email sending
         if (Schema::hasTable('failed_jobs')) {
             $failedEmailJobs = DB::table('failed_jobs')

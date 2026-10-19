@@ -2,8 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Friend\Accept;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Friend\Accept;
 use STS\Notifications\FriendAcceptNotification;
 
 class FriendAccept implements ShouldQueue
@@ -21,14 +21,13 @@ class FriendAccept implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  Accept  $event
      * @return void
      */
     public function handle(Accept $event)
     {
         $from = $event->from;
         $to = $event->to;
-        $notification = new FriendAcceptNotification();
+        $notification = new FriendAcceptNotification;
         $notification->setAttribute('from', $from);
         $notification->notify($to);
     }

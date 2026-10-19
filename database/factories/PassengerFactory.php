@@ -20,7 +20,7 @@ class PassengerFactory extends Factory
     public function definition(): array
     {
         return [
-            'request_state'  => Passenger::STATE_PENDING,
+            'request_state' => Passenger::STATE_PENDING,
             'passenger_type' => Passenger::TYPE_PASAJERO,
         ];
     }
@@ -31,7 +31,7 @@ class PassengerFactory extends Factory
     public function aceptado(): static
     {
         return $this->state(fn (array $attributes) => [
-            'request_state'  => Passenger::STATE_ACCEPTED,
+            'request_state' => Passenger::STATE_ACCEPTED,
             'passenger_type' => Passenger::TYPE_PASAJERO,
         ]);
     }

@@ -12,9 +12,6 @@ class AnonymizationService
 {
     /**
      * Anonymize a user's personal info and deactivate the account.
-     *
-     * @param User $user
-     * @return User
      */
     public function anonymize(User $user): User
     {

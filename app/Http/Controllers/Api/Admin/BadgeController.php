@@ -2,12 +2,12 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use STS\Http\Controllers\Controller;
 use STS\Http\Requests\BadgeRequest;
 use STS\Http\Resources\BadgeResource;
 use STS\Models\Badge;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response;
 
 class BadgeController extends Controller
 {
@@ -17,6 +17,7 @@ class BadgeController extends Controller
     public function index(): AnonymousResourceCollection
     {
         $badges = Badge::withCount('users')->get();
+
         return BadgeResource::collection($badges);
     }
 
@@ -26,6 +27,7 @@ class BadgeController extends Controller
     public function store(BadgeRequest $request): BadgeResource
     {
         $badge = Badge::create($request->validated());
+
         return new BadgeResource($badge);
     }
 
@@ -43,6 +45,7 @@ class BadgeController extends Controller
     public function update(BadgeRequest $request, Badge $badge): BadgeResource
     {
         $badge->update($request->validated());
+
         return new BadgeResource($badge);
     }
 
@@ -52,6 +55,7 @@ class BadgeController extends Controller
     public function destroy(Badge $badge): Response
     {
         $badge->delete();
+
         return response()->noContent();
     }
 }

@@ -16,12 +16,12 @@ class TestingSeeder extends Seeder
     {
         $users = [];
         for ($i = 0; $i < 10; $i++) {
-            $data = ['email' => 'user' . $i . '@g.com'];
+            $data = ['email' => 'user'.$i.'@g.com'];
             if ($i === 0) {
                 $data['is_admin'] = true;
             }
             $user = User::factory()->create($data);
-            $user->description = 'Test user ' . $i . ' for e2e testing';
+            $user->description = 'Test user '.$i.' for e2e testing';
             $user->image = 'default.png';
             $user->save();
             $users[] = $user;

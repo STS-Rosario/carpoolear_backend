@@ -10,9 +10,10 @@ use STS\Models\ActiveUsersPerMonth;
 class DataController extends Controller
 {
     private const LIMIT_TOP = 25;
+
     private const LIMIT_RANKING = 50;
 
-    public function trips() 
+    public function trips()
     {
         try {
             $queryViajes = "
@@ -25,15 +26,16 @@ class DataController extends Controller
                 WHERE is_passenger = 0
                 GROUP BY DATE_FORMAT(trip_date, '%Y-%m')
             ";
-            
+
             $viajes = DB::select($queryViajes);
+
             return response()->json(['trips' => $viajes]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving trips data'], 500);
         }
     }
 
-    public function seats() 
+    public function seats()
     {
         try {
             $querySolicitudes = "
@@ -53,15 +55,16 @@ class DataController extends Controller
                 WHERE t.is_passenger = 0
                 GROUP BY DATE_FORMAT(t.trip_date, '%Y-%m'), tp.request_state
             ";
-            
+
             $asientos = DB::select($querySolicitudes);
+
             return response()->json(['seats' => $asientos]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving seats data'], 500);
         }
     }
-    
-    public function users() 
+
+    public function users()
     {
         try {
             $queryUsuarios = "
@@ -73,15 +76,16 @@ class DataController extends Controller
                 WHERE created_at IS NOT NULL
                 GROUP BY DATE_FORMAT(created_at, '%Y-%m')
             ";
-            
+
             $usuarios = DB::select($queryUsuarios);
+
             return response()->json(['users' => $usuarios]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving users data'], 500);
         }
     }
 
-    public function monthlyUsers() 
+    public function monthlyUsers()
     {
         try {
             // Get active users per month data
@@ -94,25 +98,25 @@ class DataController extends Controller
                         'año' => $item->year,
                         'mes' => $item->month,
                         'cantidad' => $item->value,
-                        'saved_at' => $item->saved_at
+                        'saved_at' => $item->saved_at,
                     ];
                 });
-            
+
             return response()->json(['monthly_users' => $activeUsersPerMonth]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving monthly users data'], 500);
         }
     }
 
-    public function data() 
+    public function data()
     {
         try {
             // Get trips data
             $viajes = $this->trips()->original['trips'];
-            
+
             // Get seats data
             $solicitudes = $this->seats()->original['seats'];
-            
+
             // Get users data
             $usuarios = $this->users()->original['users'];
 
@@ -129,7 +133,7 @@ class DataController extends Controller
                 ORDER BY COUNT(*) DESC
                 LIMIT ?
             ";
-            
+
             $frecuencia_origenes = DB::select($queryOrigenesFrecuencia, [self::LIMIT_TOP]);
 
             $queryDestinosFrecuencia = "
@@ -145,7 +149,7 @@ class DataController extends Controller
                 ORDER BY COUNT(*) DESC
                 LIMIT ?
             ";
-            
+
             $frecuencia_destinos = DB::select($queryDestinosFrecuencia, [self::LIMIT_TOP]);
 
             $queryOrigenesDestinosFrecuencia = "
@@ -173,7 +177,7 @@ class DataController extends Controller
                 ORDER BY COUNT(*) DESC
                 LIMIT ?
             ";
-            
+
             $frecuencia_origenes_destinos = DB::select($queryOrigenesDestinosFrecuencia, [self::LIMIT_TOP]);
 
             // Get active users per month data
@@ -186,7 +190,7 @@ class DataController extends Controller
                         'año' => $item->year,
                         'mes' => $item->month,
                         'cantidad' => $item->value,
-                        'saved_at' => $item->saved_at
+                        'saved_at' => $item->saved_at,
                     ];
                 });
 
@@ -197,17 +201,17 @@ class DataController extends Controller
                 'frecuencia_origenes_posterior_ago_2017' => $frecuencia_origenes,
                 'frecuencia_destinos_posterior_ago_2017' => $frecuencia_destinos,
                 'frecuencia_origenes_destinos_posterior_ago_2017' => $frecuencia_origenes_destinos,
-                'usuarios_activos' => $activeUsersPerMonth
+                'usuarios_activos' => $activeUsersPerMonth,
             ]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving data'], 500);
         }
     }
 
-    public function moreData() 
+    public function moreData()
     {
         try {
-            $queryCalificaciones = "
+            $queryCalificaciones = '
                 SELECT r.user_id_to, u.name, COUNT(*) as rating
                 FROM rating r
                 INNER JOIN users u ON r.user_id_to = u.id
@@ -215,11 +219,11 @@ class DataController extends Controller
                 GROUP BY r.user_id_to, u.name
                 ORDER BY COUNT(*) DESC
                 LIMIT ?
-            ";
-            
+            ';
+
             $calificaciones = DB::select($queryCalificaciones, [self::LIMIT_RANKING]);
 
-            $queryViajesConductores = "
+            $queryViajesConductores = '
                 SELECT t.user_id, u.name, COUNT(*) as drives
                 FROM trips t
                 INNER JOIN users u ON t.user_id = u.id
@@ -227,11 +231,11 @@ class DataController extends Controller
                 GROUP BY t.user_id, u.name
                 ORDER BY COUNT(*) DESC
                 LIMIT ?
-            ";
-            
+            ';
+
             $conductores = DB::select($queryViajesConductores, [self::LIMIT_RANKING]);
 
-            $queryViajesPasajeros = "
+            $queryViajesPasajeros = '
                 SELECT tp.user_id, u.name, COUNT(*) as drives
                 FROM trip_passengers tp
                 INNER JOIN users u ON tp.user_id = u.id
@@ -239,14 +243,14 @@ class DataController extends Controller
                 GROUP BY tp.user_id, u.name
                 ORDER BY COUNT(*) DESC
                 LIMIT ?
-            ";
-            
+            ';
+
             $pasajeros = DB::select($queryViajesPasajeros, [self::LIMIT_RANKING]);
 
             return response()->json([
                 'ranking_calificaciones' => $calificaciones,
                 'ranking_conductores' => $conductores,
-                'ranking_pasajeros' => $pasajeros
+                'ranking_pasajeros' => $pasajeros,
             ]);
         } catch (Exception $e) {
             return response()->json(['error' => 'Error retrieving rankings data'], 500);

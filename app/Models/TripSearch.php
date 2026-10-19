@@ -17,19 +17,21 @@ class TripSearch extends Model
         'amount_trips_carpooleados',
         'client_platform',
         'is_passenger',
-        'results_json'
+        'results_json',
     ];
 
     protected $casts = [
         'search_date' => 'datetime',
         'results_json' => 'array',
         'client_platform' => 'integer',
-        'is_passenger' => 'boolean'
+        'is_passenger' => 'boolean',
     ];
 
     // Client platform constants
     const PLATFORM_WEB = 0;
+
     const PLATFORM_IOS = 1;
+
     const PLATFORM_ANDROID = 2;
 
     public function user()
@@ -46,4 +48,4 @@ class TripSearch extends Model
     {
         return $this->belongsTo('STS\Models\NodeGeo', 'destination_id');
     }
-} 
+}

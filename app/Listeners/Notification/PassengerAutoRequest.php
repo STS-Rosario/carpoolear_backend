@@ -2,8 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Passenger\AutoRequest;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Passenger\AutoRequest;
 use STS\Notifications\AutoRequestPassengerNotification;
 
 class PassengerAutoRequest implements ShouldQueue
@@ -25,7 +25,6 @@ class PassengerAutoRequest implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  AutoRequest  $event
      * @return void
      */
     public function handle(AutoRequest $event)
@@ -34,10 +33,10 @@ class PassengerAutoRequest implements ShouldQueue
         $from = $event->from;
         $to = $event->to;
         if ($to) {
-            $notification = new AutoRequestPassengerNotification();
+            $notification = new AutoRequestPassengerNotification;
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
-            //$notification->setAttribute('token', $to);
+            // $notification->setAttribute('token', $to);
             $notification->notify($to);
         }
     }

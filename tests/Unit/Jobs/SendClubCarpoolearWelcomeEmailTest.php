@@ -43,6 +43,23 @@ class SendClubCarpoolearWelcomeEmailTest extends TestCase
         });
     }
 
+    public function test_handle_sends_welcome_mailable_to_recipient_override(): void
+    {
+        Mail::fake();
+        config([
+            'carpoolear.log_emails' => false,
+            'carpoolear.club_welcome_mailer' => null,
+        ]);
+
+        $user = User::factory()->create();
+
+        (new SendClubCarpoolearWelcomeEmail($user, 'override@example.com'))->handle();
+
+        Mail::assertSent(ClubCarpoolearWelcome::class, function (ClubCarpoolearWelcome $mail) {
+            return $mail->hasTo('override@example.com');
+        });
+    }
+
     public function test_handle_uses_configured_resend_mailer_when_key_present(): void
     {
         config([

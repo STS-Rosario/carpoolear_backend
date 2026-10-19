@@ -21,7 +21,6 @@ class TripRequestNotAnswer implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  RequestNotAnswer  $event
      * @return void
      */
     public function handle(RequestNotAnswer $event)
@@ -29,7 +28,7 @@ class TripRequestNotAnswer implements ShouldQueue
         $trip = $event->trip;
         $to = $event->to;
         if ($to) {
-            $notification = new RequestNotAnswerNotification();
+            $notification = new RequestNotAnswerNotification;
             $notification->setAttribute('trip', $trip);
             $notification->notify($to);
         }

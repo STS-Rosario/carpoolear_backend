@@ -3,8 +3,8 @@
 namespace STS\Listeners\Notification;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
-use STS\Notifications\PendingRateNotification;
 use STS\Events\Rating\PendingRate as PendingEvent;
+use STS\Notifications\PendingRateNotification;
 
 class PendingRate implements ShouldQueue
 {
@@ -30,10 +30,10 @@ class PendingRate implements ShouldQueue
         $trip = $event->trip;
         $hash = $event->hash;
 
-        $notification = new PendingRateNotification();
+        $notification = new PendingRateNotification;
         $notification->setAttribute('trip', $trip);
         $notification->setAttribute('hash', $hash);
-        //$notification->setAttribute('token', $to);
+        // $notification->setAttribute('token', $to);
         $notification->notify($to);
     }
 }

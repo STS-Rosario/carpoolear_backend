@@ -31,7 +31,7 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(User $user)
+    public function __construct(User $user, private ?string $recipientEmail = null)
     {
         $this->tries = 3;
         $this->backoff = [60, 300, 900];
@@ -53,7 +53,7 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('CLUB_CARPOOLEAR_WELCOME_EMAIL_SENDING', [
                     'user_id' => $this->user->id,
-                    'email' => $this->user->email,
+                    'email' => $this->recipient(),
                     'locale' => $locale,
                     'mailer' => $mailer ?? 'default',
                     'attempt' => $this->attempts(),
@@ -61,12 +61,12 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
                 ]);
             }
 
-            $user = $this->user;
+            $recipient = $this->recipient();
             $tripsUrl = $this->tripsUrl();
             $heroImageUrl = $this->heroImageUrl();
 
-            UserLocale::withLocale($locale, function () use ($user, $mailer, $tripsUrl, $heroImageUrl) {
-                Mail::mailer($mailer)->to($user->email)->send(new ClubCarpoolearWelcome(
+            UserLocale::withLocale($locale, function () use ($recipient, $mailer, $tripsUrl, $heroImageUrl) {
+                Mail::mailer($mailer)->to($recipient)->send(new ClubCarpoolearWelcome(
                     tripsUrl: $tripsUrl,
                     heroImageUrl: $heroImageUrl,
                 ));
@@ -75,14 +75,14 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
             if ($enableEmailLogging) {
                 Log::channel('email_logs')->info('CLUB_CARPOOLEAR_WELCOME_EMAIL_SUCCESS', [
                     'user_id' => $this->user->id,
-                    'email' => $this->user->email,
+                    'email' => $this->recipient(),
                     'timestamp' => now()->toIso8601String(),
                 ]);
             }
         } catch (\Exception $e) {
             $errorData = [
                 'user_id' => $this->user->id,
-                'email' => $this->user->email,
+                'email' => $this->recipient(),
                 'error' => $e->getMessage(),
                 'error_code' => $e->getCode(),
                 'attempt' => $this->attempts(),
@@ -110,7 +110,7 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
 
         $failureData = [
             'user_id' => $this->user->id,
-            'email' => $this->user->email,
+            'email' => $this->recipient(),
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
             'timestamp' => now()->toIso8601String(),
@@ -144,6 +144,16 @@ class SendClubCarpoolearWelcomeEmail implements ShouldQueue
         }
 
         return $mailer;
+    }
+
+    /**
+     * Recipient email: an explicit override when provided, otherwise the user's email.
+     */
+    private function recipient(): string
+    {
+        return is_string($this->recipientEmail) && $this->recipientEmail !== ''
+            ? $this->recipientEmail
+            : $this->user->email;
     }
 
     private function tripsUrl(): string

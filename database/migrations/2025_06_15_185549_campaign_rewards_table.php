@@ -37,7 +37,7 @@ return new class extends Migration
             $table->dropForeign(['campaign_reward_id']);
             $table->dropColumn('campaign_reward_id');
         });
-        
-        Schema::dropIfExists('campaign_rewards');//
+
+        Schema::dropIfExists('campaign_rewards'); //
     }
 };

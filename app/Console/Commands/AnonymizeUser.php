@@ -2,9 +2,9 @@
 
 namespace STS\Console\Commands;
 
+use Illuminate\Console\Command;
 use STS\Models\User;
 use STS\Services\AnonymizationService;
-use Illuminate\Console\Command;
 
 /*
  * Console/Commands/AnonymizeUser.php
@@ -57,7 +57,7 @@ class AnonymizeUser extends Command
         $this->info("User (id=$userId) current data:");
         $this->info($user);
 
-        $service = new AnonymizationService();
+        $service = new AnonymizationService;
         $service->anonymize($user);
 
         $this->info('User deactivated and personal info has been anonymized.');

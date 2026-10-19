@@ -24,5 +24,5 @@ class Donation extends Model
             'has_donated' => 'boolean',
             'has_denied' => 'boolean',
         ];
-    }  
+    }
 }

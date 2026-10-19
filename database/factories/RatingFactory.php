@@ -21,7 +21,7 @@ class RatingFactory extends Factory
     {
         return [
             'comment' => fake()->sentence(),
-            'rating'  => Rating::STATE_POSITIVO,
+            'rating' => Rating::STATE_POSITIVO,
         ];
     }
 }
