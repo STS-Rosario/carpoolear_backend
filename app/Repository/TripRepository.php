@@ -209,7 +209,7 @@ class TripRepository
                 $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
                 $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-                $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id);
+                $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id, (int) $trip->id);
 
                 // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
                 if (config('carpoolear.module_trip_creation_payment_enabled') &&
@@ -1044,7 +1044,7 @@ class TripRepository
             return;
         }
 
-        $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id);
+        $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id, (int) $trip->id);
         if ($tripsCreatedByUser < config('carpoolear.module_trip_creation_payment_trips_threshold')) {
             return;
         }
