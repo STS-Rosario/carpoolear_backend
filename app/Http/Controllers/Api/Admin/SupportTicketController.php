@@ -104,6 +104,13 @@ class SupportTicketController extends Controller
             $query->createdByAdmin();
         }
 
+        if ($this->queryFlagIsTruthy($request->query('assigned_to_me'))) {
+            $admin = auth()->user();
+            if ($admin) {
+                $query->where('assigned_to_user_id', $admin->id);
+            }
+        }
+
         $userId = $request->query('user_id');
         if (is_numeric($userId) && (int) $userId > 0) {
             $query->where('user_id', (int) $userId);

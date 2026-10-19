@@ -193,6 +193,65 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertNotContains($userOpened->id, $ids);
     }
 
+    public function test_index_filters_by_assigned_to_me_when_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $otherAdmin = $this->adminUser();
+        $owner = User::factory()->create();
+        $assignedToMe = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'assigned-to-me',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+        $assignedToOther = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'assigned-to-other',
+            'assigned_to_user_id' => $otherAdmin->id,
+            'assigned_at' => now(),
+        ]);
+        $unassigned = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'unassigned',
+            'assigned_to_user_id' => null,
+            'assigned_at' => null,
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?assigned_to_me=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($assignedToMe->id, $ids);
+        $this->assertNotContains($assignedToOther->id, $ids);
+        $this->assertNotContains($unassigned->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['assigned_to_user_id'] ?? 0) === $admin->id));
+    }
+
+    public function test_index_assigned_to_me_ignores_expired_assignment(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $expired = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'expired-assigned-to-me',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?assigned_to_me=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertNotContains($expired->id, $ids);
+    }
+
     public function test_index_filters_by_user_id_when_query_param_is_set(): void
     {
         $admin = $this->adminUser();
