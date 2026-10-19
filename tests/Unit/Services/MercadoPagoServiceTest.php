@@ -73,7 +73,7 @@ class MercadoPagoServiceTest extends TestCase
         $expectedTripUrl = 'https://frontend.test/app/trips/'.$trip->id;
         $this->assertSame($expectedTripUrl.'?sellado_paid=1', $payload['back_urls']['success']);
         $this->assertSame($expectedTripUrl, $payload['back_urls']['failure']);
-        $this->assertSame($expectedTripUrl, $payload['back_urls']['pending']);
+        $this->assertSame($expectedTripUrl.'?sellado_paid=1', $payload['back_urls']['pending']);
         $this->assertSame(25.0, $payload['items'][0]['unit_price']);
         $this->assertSame('approved', $payload['auto_return']);
         $this->assertIsString($payload['external_reference']);
@@ -294,6 +294,49 @@ class MercadoPagoServiceTest extends TestCase
         $this->assertSame('trip_sellado_88', $orderClient->payload['external_reference']);
         $this->assertSame('Un litro para Carpoolear', $orderClient->payload['description']);
         $this->assertSame('1600.00', $orderClient->payload['total_amount']);
+    }
+
+    public function test_create_qr_order_for_sellado_redirects_to_trip_with_paid_query(): void
+    {
+        config([
+            'services.mercadopago.qr_payment_access_token' => 'qr-token',
+            'carpoolear.qr_payment_pos_external_id' => 'POS-1',
+            'carpoolear.module_trip_creation_payment_amount_cents' => 160000,
+            'carpoolear.frontend_url' => 'https://frontend.test/',
+        ]);
+
+        $trip = Trip::factory()->make(['id' => 101]);
+
+        $orderClient = new class
+        {
+            public array $payload = [];
+
+            public function create(array $request, ?RequestOptions $requestOptions = null): Order
+            {
+                $this->payload = $request;
+                $order = new Order;
+                $order->id = 'ORD-SELLADO-QR-RETURN';
+                $order->transactions = (object) ['payments' => [(object) ['id' => 'PAY-SELLADO-QR-RETURN']]];
+                $order->setResponse(new MPResponse(200, [
+                    'type_response' => ['qr_data' => 'SELLADO_EMV_QR_RETURN'],
+                ]));
+
+                return $order;
+            }
+        };
+
+        $service = new MercadoPagoService;
+        $orderClientRef = new ReflectionProperty(MercadoPagoService::class, 'orderClient');
+        $orderClientRef->setAccessible(true);
+        $orderClientRef->setValue($service, $orderClient);
+
+        $service->createQrOrderForSellado($trip);
+
+        $paidUrl = 'https://frontend.test/app/trips/101?sellado_paid=1';
+        $this->assertSame($paidUrl, $orderClient->payload['config']['online']['success_url']);
+        $this->assertSame($paidUrl, $orderClient->payload['config']['online']['pending_url']);
+        $this->assertSame('approved', $orderClient->payload['config']['online']['auto_return']);
+        $this->assertSame('POS-1', $orderClient->payload['config']['qr']['external_pos_id']);
     }
 
     public function test_sellado_trims_trailing_slash_on_frontend_url_for_back_urls(): void
