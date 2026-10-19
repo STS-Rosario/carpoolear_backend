@@ -300,7 +300,6 @@ class MercadoPagoService
             'trip_sellado_'.$trip->id,
             'Un litro para Carpoolear',
             'sellado_qr_'.$trip->id.'_'.uniqid('', true),
-            $this->selladoQrOnlineReturnConfig((int) $trip->id),
         );
 
         return [
@@ -333,33 +332,13 @@ class MercadoPagoService
     }
 
     /**
-     * @return array{success_url: string, pending_url: string, auto_return: string}|null
-     */
-    private function selladoQrOnlineReturnConfig(int $tripId): ?array
-    {
-        $baseUrl = rtrim((string) config('carpoolear.frontend_url'), '/');
-        if ($baseUrl === '') {
-            return null;
-        }
-
-        $paidUrl = $baseUrl.'/app/trips/'.$tripId.'?sellado_paid=1';
-
-        return [
-            'success_url' => $paidUrl,
-            'pending_url' => $paidUrl,
-            'auto_return' => 'approved',
-        ];
-    }
-
-    /**
      * @return array{order_id: string, qr_data: string, mp_payment_id: string|null}
      */
     private function createQrOrder(
         int $amountInCents,
         string $externalReference,
         string $description,
-        string $idempotencyKey,
-        ?array $onlineReturnConfig = null
+        string $idempotencyKey
     ): array {
         $qrAccessToken = config('services.mercadopago.qr_payment_access_token', '');
         if ($qrAccessToken === '' || $qrAccessToken === null) {
@@ -403,10 +382,6 @@ class MercadoPagoService
                 ],
             ],
         ];
-
-        if ($onlineReturnConfig) {
-            $orderPayload['config']['online'] = $onlineReturnConfig;
-        }
 
         $requestOptions = new RequestOptions;
         $requestOptions->setAccessToken($qrAccessToken);
