@@ -1049,7 +1049,12 @@ class TripRepository
             return;
         }
 
-        if (SelladoEmptyTripCredit::userHasUnusedCredit($trip->user_id)) {
+        if (SelladoEmptyTripCredit::userHasUnusedCredit((int) $trip->user_id)) {
+            if (SelladoEmptyTripCredit::redeemOldestUnusedCredit((int) $trip->user_id)) {
+                $trip->sellado_empty_trip_credit_applied_at = Carbon::now();
+                $trip->save();
+            }
+
             return;
         }
 
