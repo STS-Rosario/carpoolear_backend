@@ -109,6 +109,10 @@ class SupportTicketController extends Controller
             $query->where('user_id', (int) $userId);
         }
 
+        if ($this->queryFlagIsTruthy($request->query('assigned_to_me'))) {
+            $query->where('assigned_to_user_id', auth()->id());
+        }
+
         return $query;
     }
 
