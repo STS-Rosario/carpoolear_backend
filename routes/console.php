@@ -16,6 +16,8 @@ Schedule::command('trips:credit-finished')->everyFiveMinutes()->timezone('Americ
 
 Schedule::command('trip:remainder')->hourly();
 
+Schedule::command('conversation:close-finished-group-chats')->hourly();
+
 Schedule::command('rating:availables')->everyMinute()->withoutOverlapping(5);
 
 Schedule::command('live-location:process')->everyMinute();

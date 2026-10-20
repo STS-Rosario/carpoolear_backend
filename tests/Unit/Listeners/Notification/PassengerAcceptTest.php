@@ -31,7 +31,7 @@ class PassengerAcceptTest extends TestCase
                     && is_string($channel);
             });
 
-        $listener = new PassengerAccept;
+        $listener = $this->app->make(PassengerAccept::class);
         $listener->handle(new AcceptEvent($trip, $from, $to));
     }
 
@@ -42,7 +42,7 @@ class PassengerAcceptTest extends TestCase
 
         $this->mock(NotificationServices::class)->shouldNotReceive('send');
 
-        $listener = new PassengerAccept;
+        $listener = $this->app->make(PassengerAccept::class);
         $listener->handle(new AcceptEvent($trip, $from, null));
     }
 }

@@ -26,13 +26,20 @@ class Conversation extends Model
         'type',
         'title',
         'trip_id',
+        'closed_at',
     ];
 
     protected function casts(): array
     {
         return [
             'deleted_at' => 'boolean',
+            'closed_at' => 'datetime',
         ];
+    }
+
+    public function isClosed(): bool
+    {
+        return $this->closed_at !== null;
     }
 
     protected $hidden = [];

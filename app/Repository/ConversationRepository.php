@@ -18,6 +18,16 @@ class ConversationRepository
         return $conversation->delete();
     }
 
+    public function close(Conversation $conversation)
+    {
+        if ($conversation->closed_at === null) {
+            $conversation->closed_at = now();
+            $conversation->save();
+        }
+
+        return $conversation;
+    }
+
     /* CONVERSATION GETTERS */
 
     public function getConversationsFromUser(User $user, $pageNumber, $pageSize)
