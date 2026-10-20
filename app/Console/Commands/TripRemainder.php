@@ -3,8 +3,8 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use Illuminate\Console\Command; 
-use STS\Events\Trip\Alert\HourLeft as  HourLeftEvent;
+use Illuminate\Console\Command;
+use STS\Events\Trip\Alert\HourLeft as HourLeftEvent;
 use STS\Repository\TripRepository;
 use STS\Services\Logic\TripsManager;
 
@@ -47,13 +47,13 @@ class TripRemainder extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND TripRemainder");
+        \Log::info('COMMAND TripRemainder');
         $time = Carbon::now()->minute(0)->second(0)->addHour();
         $time2 = $time->copy()->minute(59)->second(59);
 
         $criterias = [
-             ['key' => 'trip_date', 'op' => '>=', 'value' => $time->toDateTimeString()],
-             ['key' => 'trip_date', 'op' => '<=', 'value' => $time2->toDateTimeString()],
+            ['key' => 'trip_date', 'op' => '>=', 'value' => $time->toDateTimeString()],
+            ['key' => 'trip_date', 'op' => '<=', 'value' => $time2->toDateTimeString()],
         ];
 
         $trips = $this->tripRepo->index($criterias, ['user', 'passengerAccepted']);

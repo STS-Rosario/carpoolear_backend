@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class DevicesTable extends Migration
 {
@@ -22,8 +22,8 @@ class DevicesTable extends Migration
             $table->integer('app_version');
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

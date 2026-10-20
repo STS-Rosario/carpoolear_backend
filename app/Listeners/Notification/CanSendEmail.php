@@ -3,7 +3,7 @@
 namespace STS\Listeners\Notification;
 
 use STS\Events\Notification\NotificationSending;
-use  STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\MailChannel;
 
 class CanSendEmail
 {
@@ -20,7 +20,6 @@ class CanSendEmail
     /**
      * Handle the event.
      *
-     * @param  NotificationSending  $event
      * @return void
      */
     public function handle(NotificationSending $event)

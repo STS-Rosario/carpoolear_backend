@@ -9,7 +9,9 @@ class PaymentAttempt extends Model
     protected $table = 'payment_attempts';
 
     const STATUS_PENDING = 'pending';
+
     const STATUS_COMPLETED = 'completed';
+
     const STATUS_FAILED = 'failed';
 
     protected $fillable = [
@@ -20,12 +22,12 @@ class PaymentAttempt extends Model
         'amount_cents',
         'error_message',
         'payment_data',
-        'paid_at'
+        'paid_at',
     ];
 
     protected $casts = [
         'payment_data' => 'array',
-        'paid_at' => 'datetime'
+        'paid_at' => 'datetime',
     ];
 
     public function trip()
@@ -53,4 +55,4 @@ class PaymentAttempt extends Model
     {
         return $this->payment_status === self::STATUS_FAILED;
     }
-} 
+}

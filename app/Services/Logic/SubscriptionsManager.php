@@ -2,10 +2,10 @@
 
 namespace STS\Services\Logic;
 
+use STS\Models\Subscription as SubscriptionModel;
+use STS\Models\User as UserModel;
 use STS\Repository\SubscriptionsRepository;
 use Validator;
-use STS\Models\User as UserModel;
-use STS\Models\Subscription as SubscriptionModel;
 
 class SubscriptionsManager extends BaseManager
 {
@@ -19,17 +19,17 @@ class SubscriptionsManager extends BaseManager
     public function validator(array $data)
     {
         return Validator::make($data, [
-            'trip_date'     => 'date|after:now',
-            'from_address'      => 'string',
+            'trip_date' => 'date|after:now',
+            'from_address' => 'string',
             // 'from_json_address' => 'required_with:from_address|array',
-            'from_lat'          => 'required_with:from_address|numeric',
-            'from_lng'          => 'required_with:from_address|numeric',
+            'from_lat' => 'required_with:from_address|numeric',
+            'from_lng' => 'required_with:from_address|numeric',
             // 'from_radio'        => 'required_with:from_address|numeric',
 
-            'to_address'      => 'string',
+            'to_address' => 'string',
             // 'to_json_address' => 'required_with:to_address|array',
-            'to_lat'          => 'required_with:to_address|numeric',
-            'to_lng'          => 'required_with:to_address|numeric',
+            'to_lat' => 'required_with:to_address|numeric',
+            'to_lng' => 'required_with:to_address|numeric',
             // 'to_radio'        => 'required_with:to_address|numeric',
         ]);
     }
@@ -42,7 +42,7 @@ class SubscriptionsManager extends BaseManager
 
             return;
         } else {
-            $model = new SubscriptionModel();
+            $model = new SubscriptionModel;
             $model->fill($data);
             $model->state = true;
             if (isset($data['is_passenger'])) {

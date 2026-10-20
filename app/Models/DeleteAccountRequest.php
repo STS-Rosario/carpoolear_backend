@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class DeleteAccountRequest extends Model
 {
     const ACTION_REQUESTED = 0;
+
     const ACTION_DELETED = 1;
+
     const ACTION_REJECTED = 2;
 
     protected $table = 'delete_account_requests';

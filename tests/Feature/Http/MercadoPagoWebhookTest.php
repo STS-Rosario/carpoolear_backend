@@ -525,7 +525,7 @@ class MercadoPagoWebhookTest extends TestCase
         $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
             'action' => 'order.processed',
             'data' => [
-                'external_reference' => 'trip_sellado_non_manual',
+                'external_reference' => 'unrelated_order_ref',
                 'status' => 'processed',
                 'status_detail' => 'accredited',
             ],
@@ -724,6 +724,45 @@ class MercadoPagoWebhookTest extends TestCase
             'payment_status' => PaymentAttempt::STATUS_COMPLETED,
         ]);
 
+        $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
+    }
+
+    public function test_order_processed_for_trip_sellado_qr_prefix_marks_trip_ready_when_accredited(): void
+    {
+        config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);
+
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => 0,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+        ]);
+
+        $orderId = 'ord-sellado-qr';
+        $headers = $this->orderProcessedSignatureHeaders($orderId, 'req-sellado-qr', 'wh-secret-qr-test');
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query(['data.id' => $orderId]), [
+            'action' => 'order.processed',
+            'data' => [
+                'external_reference' => 'trip_sellado_'.$trip->id,
+                'status' => 'processed',
+                'status_detail' => 'accredited',
+                'transactions' => [
+                    'payments' => [
+                        ['id' => 88001122],
+                    ],
+                ],
+            ],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $this->assertDatabaseHas('payment_attempts', [
+            'trip_id' => $trip->id,
+            'payment_id' => 88001122,
+            'payment_status' => PaymentAttempt::STATUS_COMPLETED,
+        ]);
         $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
     }
 

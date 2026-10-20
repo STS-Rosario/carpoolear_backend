@@ -2,9 +2,9 @@
 
 namespace STS\Listeners\Notification;
 
+use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Events\Passenger\Cancel;
 use STS\Models\Passenger;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use STS\Notifications\CancelPassengerNotification;
 
 class PassengerCancel implements ShouldQueue
@@ -26,7 +26,6 @@ class PassengerCancel implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  Cancel  $event
      * @return void
      */
     public function handle(Cancel $event)
@@ -36,7 +35,7 @@ class PassengerCancel implements ShouldQueue
         $to = $event->to;
         $state = $event->canceledState;
         if ($to) {
-            $notification = new CancelPassengerNotification();
+            $notification = new CancelPassengerNotification;
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
             $notification->setAttribute('is_driver', $state === Passenger::CANCELED_DRIVER);

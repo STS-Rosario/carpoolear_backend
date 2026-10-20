@@ -2,8 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Friend\Request;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Friend\Request;
 use STS\Notifications\FriendRequestNotification;
 
 class FriendRequest implements ShouldQueue
@@ -21,7 +21,6 @@ class FriendRequest implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param Request $event
      *
      * @return void
      */
@@ -29,7 +28,7 @@ class FriendRequest implements ShouldQueue
     {
         $from = $event->from;
         $to = $event->to;
-        $notification = new FriendRequestNotification();
+        $notification = new FriendRequestNotification;
         $notification->setAttribute('from', $from);
         $notification->notify($to);
     }

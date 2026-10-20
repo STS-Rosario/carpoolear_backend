@@ -636,6 +636,30 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonPath('message', 'Could not found trip.');
     }
 
+    public function test_show_returns_unpaid_sellado_trip_for_admin_but_not_for_stranger(): void
+    {
+        $driver = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $stranger = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_AWAITING_PAYMENT,
+        ]);
+
+        $this->actingAs($stranger, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not found trip.');
+
+        $this->actingAs($admin, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $trip->id)
+            ->assertJsonPath('data.sellado_pending', true);
+    }
+
     public function test_change_trip_seats_returns_trip_when_increment_succeeds(): void
     {
         $owner = User::factory()->create();

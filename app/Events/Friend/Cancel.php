@@ -2,8 +2,8 @@
 
 namespace STS\Events\Friend;
 
-use STS\Events\Event;
 use Illuminate\Queue\SerializesModels;
+use STS\Events\Event;
 
 class Cancel extends Event
 {

@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class ConversationTripsForeign extends Migration
 {
@@ -14,8 +14,8 @@ class ConversationTripsForeign extends Migration
     {
         Schema::table('conversations', function (Blueprint $table) {
             $table->foreign('trip_id')->references('id')->on('trips')
-                                                        ->onDelete('cascade')
-                                                        ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             //
         });
     }

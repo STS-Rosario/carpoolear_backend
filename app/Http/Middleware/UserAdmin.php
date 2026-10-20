@@ -3,8 +3,8 @@
 namespace STS\Http\Middleware;
 
 use Closure;
-use Tymon\JWTAuth\JWTAuth;
 use Illuminate\Contracts\Auth\Guard;
+use Tymon\JWTAuth\JWTAuth;
 
 class UserAdmin
 {
@@ -20,8 +20,7 @@ class UserAdmin
     /**
      * Create a new filter instance.
      *
-     * @param Guard $auth
-     *
+     * @param  Guard  $auth
      * @return void
      */
     public function __construct(JWTAuth $auth)
@@ -33,9 +32,7 @@ class UserAdmin
     /**
      * Handle an incoming request.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \Closure                 $next
-     *
+     * @param  \Illuminate\Http\Request  $request
      * @return mixed
      */
     public function handle($request, Closure $next)

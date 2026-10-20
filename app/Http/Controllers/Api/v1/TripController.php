@@ -5,10 +5,13 @@ namespace STS\Http\Controllers\Api\v1;
 use Illuminate\Http\Request;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Helpers\OldCordovaAppHelper;
+use STS\Helpers\SelladoQrPayment;
 use STS\Http\Controllers\Controller;
 use STS\Http\ExceptionWithErrors;
+use STS\Models\Trip;
 use STS\Repository\TripSearchRepository;
 use STS\Services\Logic\TripsManager;
+use STS\Services\MercadoPagoService;
 use STS\Transformers\TripTransformer;
 
 class TripController extends Controller
@@ -253,6 +256,32 @@ class TripController extends Controller
             'success' => true,
             'data' => $infoSelladoViaje,
         ]);
+    }
+
+    public function createSelladoQrOrder($id, MercadoPagoService $mpService)
+    {
+        $this->user = auth()->user();
+        if (! SelladoQrPayment::isEnabled()) {
+            throw new ExceptionWithErrors('QR payment is not available.', [], 503);
+        }
+
+        $trip = $this->tripsLogic->show($this->user, $id);
+        if (! $trip) {
+            throw new ExceptionWithErrors('Could not found trip.', $this->tripsLogic->getErrors());
+        }
+        if ((int) $trip->user_id !== (int) $this->user->id) {
+            throw new ExceptionWithErrors('Could not found trip.', []);
+        }
+        if (! $trip->needs_sellado || $trip->state === Trip::STATE_READY) {
+            throw new ExceptionWithErrors('This trip does not need Un litro payment.', []);
+        }
+
+        $result = $mpService->createQrOrderForSellado(
+            $trip,
+            (int) config('carpoolear.module_trip_creation_payment_amount_cents')
+        );
+
+        return response()->json($result);
     }
 
     public function changeVisibility($id, Request $request)

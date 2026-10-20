@@ -100,6 +100,7 @@ class User extends Authenticatable implements JWTSubject
             'monthly_donate' => 'boolean',
             'show_club_carpoolear_membership' => 'boolean',
             'club_carpoolear_welcome_shown' => 'boolean',
+            'club_carpoolear_welcome_email_sent_at' => 'datetime',
             'club_carpoolear_joined_at' => 'datetime',
             'club_carpoolear_left_at' => 'datetime',
             'do_not_alert_request_seat' => 'boolean',

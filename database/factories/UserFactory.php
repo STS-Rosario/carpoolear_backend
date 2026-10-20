@@ -29,7 +29,7 @@ class UserFactory extends Factory
             'password' => static::$password ??= Hash::make('123456'),
             'remember_token' => Str::random(10),
             'last_connection' => \Carbon\Carbon::now(),
-            'active'         => true,
+            'active' => true,
             'emails_notifications' => true,
             'terms_and_conditions' => true,
             'do_not_alert_request_seat' => true,

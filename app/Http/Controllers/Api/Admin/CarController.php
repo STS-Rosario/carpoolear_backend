@@ -2,12 +2,12 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use STS\Http\Controllers\Controller;
 use STS\Models\Car;
 use STS\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Validation\Rule;
 
 class CarController extends Controller
 {
@@ -29,6 +29,7 @@ class CarController extends Controller
     public function show(Car $car): JsonResponse
     {
         $car->load('user:id,name,email');
+
         return response()->json($car);
     }
 
@@ -42,7 +43,7 @@ class CarController extends Controller
                 'required',
                 'string',
                 'max:10',
-                Rule::unique('cars')->ignore($car->id)
+                Rule::unique('cars')->ignore($car->id),
             ],
             'description' => 'required|string|max:255',
         ]);
@@ -58,6 +59,7 @@ class CarController extends Controller
     public function destroy(Car $car): JsonResponse
     {
         $car->delete();
+
         return response()->json(null, 204);
     }
 
@@ -67,6 +69,7 @@ class CarController extends Controller
     public function userCars(User $user): JsonResponse
     {
         $cars = $user->cars()->latest()->get();
+
         return response()->json($cars);
     }
 
@@ -82,7 +85,7 @@ class CarController extends Controller
                 'max:10',
                 Rule::unique('cars')->where(function ($query) use ($user) {
                     return $query->where('user_id', $user->id);
-                })
+                }),
             ],
             'description' => 'required|string|max:255',
         ]);

@@ -4,7 +4,6 @@ namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Log;
 
 class ProcessEmailQueue extends Command
 {
@@ -31,7 +30,7 @@ class ProcessEmailQueue extends Command
     public function handle()
     {
         $this->info('Starting email queue processing...');
-        
+
         // Process emails queue with specific configuration
         $this->call('queue:work', [
             'connection' => 'database',
@@ -39,9 +38,9 @@ class ProcessEmailQueue extends Command
             '--timeout' => $this->option('timeout'),
             '--tries' => $this->option('tries'),
             '--sleep' => $this->option('sleep'),
-            '--verbose' => true
+            '--verbose' => true,
         ]);
-        
+
         $this->info('Email queue processing completed.');
     }
 }

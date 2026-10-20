@@ -28,7 +28,7 @@ class CleanupDuplicateCars extends Command
     public function handle()
     {
         $isDryRun = $this->option('dry-run');
-        
+
         if ($isDryRun) {
             $this->info('🔍 DRY RUN MODE - No changes will be made');
         }
@@ -43,6 +43,7 @@ class CleanupDuplicateCars extends Command
 
         if ($usersWithMultipleCars->isEmpty()) {
             $this->info('✅ No users with multiple cars found. Database is clean!');
+
             return 0;
         }
 
@@ -53,7 +54,7 @@ class CleanupDuplicateCars extends Command
 
         foreach ($usersWithMultipleCars as $user) {
             $this->line("👤 User: {$user->name} (ID: {$user->id}) - {$user->cars_count} cars");
-            
+
             // Sort cars by created_at (newest first)
             $cars = $user->cars->sortByDesc('created_at');
             $newestCar = $cars->first();
@@ -64,17 +65,17 @@ class CleanupDuplicateCars extends Command
 
             foreach ($carsToDelete as $car) {
                 $this->line("   ❌ Deleting: Car ID {$car->id} - Patente: {$car->patente} (Created: {$car->created_at})");
-                
-                if (!$isDryRun) {
+
+                if (! $isDryRun) {
                     // Check if car is used in any trips
                     $tripCount = $car->trips()->count();
                     if ($tripCount > 0) {
                         $this->warn("   ⚠️  Car ID {$car->id} is used in {$tripCount} trips. Updating trips to use newest car...");
-                        
+
                         // Update trips to use the newest car
                         $car->trips()->update(['car_id' => $newestCar->id]);
                     }
-                    
+
                     $car->delete();
                 }
                 $totalDeleted++;
@@ -83,12 +84,12 @@ class CleanupDuplicateCars extends Command
         }
 
         if ($isDryRun) {
-            $this->info("🔍 DRY RUN SUMMARY:");
+            $this->info('🔍 DRY RUN SUMMARY:');
             $this->info("   - Would keep: {$totalKept} cars");
             $this->info("   - Would delete: {$totalDeleted} cars");
             $this->info("   - Total users affected: {$usersWithMultipleCars->count()}");
         } else {
-            $this->info("✅ CLEANUP COMPLETED:");
+            $this->info('✅ CLEANUP COMPLETED:');
             $this->info("   - Kept: {$totalKept} cars");
             $this->info("   - Deleted: {$totalDeleted} cars");
             $this->info("   - Total users affected: {$usersWithMultipleCars->count()}");

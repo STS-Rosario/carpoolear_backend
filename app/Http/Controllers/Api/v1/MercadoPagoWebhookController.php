@@ -8,6 +8,8 @@ use Log;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\MercadoPagoConfig;
 use STS\Http\Controllers\Controller;
+use STS\Jobs\ReconcileClubSubscriptionInvoiceJob;
+use STS\Jobs\ReconcileClubSubscriptionPaymentJob;
 use STS\Models\Campaign;
 use STS\Models\CampaignDonation;
 use STS\Models\DonationSubscription;
@@ -155,6 +157,10 @@ class MercadoPagoWebhookController extends Controller
             return $this->handleDonationOnceQrPayment($mpPayment);
         }
 
+        if ($this->isSelladoQrExternalReference($externalReference)) {
+            return $this->handleTripPayment($mpPayment);
+        }
+
         if ($externalReference !== '') {
             $decodedReference = $this->parseExternalReference($externalReference);
 
@@ -193,9 +199,13 @@ class MercadoPagoWebhookController extends Controller
         }
 
         if ($this->looksLikeClubSubscriptionPayment($mpPayment)) {
-            if ($this->handleClubSubscriptionPaymentViaInvoiceSearch($mpPayment, (string) $paymentId)) {
+            if ($this->platformDonationService->handleClubSubscriptionPaymentViaInvoiceSearch($mpPayment, (string) $paymentId)) {
                 return response()->json(['status' => 'success']);
             }
+
+            ReconcileClubSubscriptionPaymentJob::dispatch((string) $paymentId);
+
+            return response()->json(['status' => 'success']);
         }
 
         Log::info('Unreferenced MercadoPago payment ignored', [
@@ -428,6 +438,20 @@ class MercadoPagoWebhookController extends Controller
         return str_starts_with($externalReference, 'donation_once_');
     }
 
+    protected function isSelladoQrExternalReference(string $externalReference): bool
+    {
+        return (bool) preg_match('/^trip_sellado_\d+$/', $externalReference);
+    }
+
+    protected function tripIdFromSelladoQrExternalReference(string $externalReference): ?int
+    {
+        if (preg_match('/^trip_sellado_(\d+)$/', $externalReference, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
     protected function routeAccreditedQrCompatiblePayment(string $externalReference, mixed $paymentId, string $statusDetail)
     {
         $approvedPayload = [
@@ -443,6 +467,10 @@ class MercadoPagoWebhookController extends Controller
 
         if ($this->isDonationOnceQrExternalReference($externalReference)) {
             return $this->handleDonationOnceQrPayment($approvedPayload);
+        }
+
+        if ($this->isSelladoQrExternalReference($externalReference)) {
+            return $this->handleTripPayment($approvedPayload);
         }
 
         return response()->json(['status' => 'success']);
@@ -622,15 +650,19 @@ class MercadoPagoWebhookController extends Controller
     {
         // parse tripId from external reference
         $externalReference = $mpPayment['external_reference'];
-        $decodedReference = $this->parseExternalReference($externalReference);
+        $tripId = $this->tripIdFromSelladoQrExternalReference($externalReference);
 
-        if (! $decodedReference) {
-            Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+        if ($tripId === null) {
+            $decodedReference = $this->parseExternalReference($externalReference);
 
-            return response()->json(['error' => 'Invalid external reference'], 400);
+            if (! $decodedReference) {
+                Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
+
+                return response()->json(['error' => 'Invalid external reference'], 400);
+            }
+
+            $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
         }
-
-        $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
 
         // get the trip for this payment
         $trip = Trip::where('id', $tripId)->first();
@@ -993,12 +1025,14 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Could not fetch authorized payment'], 500);
         }
 
-        $chargePayload = $this->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
+        $chargePayload = $this->platformDonationService->mapAuthorizedPaymentInvoiceToChargePayload($invoice);
         if ($chargePayload === null) {
             Log::info('MercadoPago authorized payment without nested payment yet', [
                 'invoice_id' => $invoiceId,
                 'preapproval_id' => $invoice['preapproval_id'] ?? null,
             ]);
+
+            ReconcileClubSubscriptionInvoiceJob::dispatch((string) $invoiceId);
 
             return response()->json(['status' => 'success']);
         }
@@ -1006,28 +1040,6 @@ class MercadoPagoWebhookController extends Controller
         $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayload);
 
         return response()->json(['status' => 'success']);
-    }
-
-    /**
-     * @param  array<string, mixed>  $invoice
-     * @return array<string, mixed>|null
-     */
-    protected function mapAuthorizedPaymentInvoiceToChargePayload(array $invoice): ?array
-    {
-        $nestedPayment = $invoice['payment'] ?? null;
-        if (! is_array($nestedPayment) || empty($nestedPayment['id'])) {
-            return null;
-        }
-
-        return [
-            'id' => $nestedPayment['id'],
-            'preapproval_id' => $invoice['preapproval_id'] ?? null,
-            'status' => $nestedPayment['status'] ?? ($invoice['status'] ?? 'pending'),
-            'transaction_amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
-            'amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
-            'date_approved' => $nestedPayment['date_approved'] ?? null,
-            'external_reference' => $invoice['external_reference'] ?? '',
-        ];
     }
 
     /**
@@ -1074,45 +1086,5 @@ class MercadoPagoWebhookController extends Controller
         $type = $poi['type'] ?? null;
 
         return is_string($type) ? $type : null;
-    }
-
-    /**
-     * @param  array<string, mixed>  $mpPayment
-     */
-    protected function handleClubSubscriptionPaymentViaInvoiceSearch(array $mpPayment, string $paymentId): bool
-    {
-        $results = $this->mercadoPagoService->searchAuthorizedPayments(['payment_id' => $paymentId]);
-        $invoice = $results[0] ?? null;
-        if (! is_array($invoice)) {
-            Log::info('Club subscription payment could not resolve invoice by payment_id', [
-                'payment_id' => $paymentId,
-            ]);
-
-            return false;
-        }
-
-        $preapprovalId = $invoice['preapproval_id'] ?? null;
-        if (! is_string($preapprovalId) || $preapprovalId === '') {
-            Log::info('Club subscription invoice missing preapproval_id', [
-                'payment_id' => $paymentId,
-                'invoice_id' => $invoice['id'] ?? null,
-            ]);
-
-            return false;
-        }
-
-        $chargePayment = $mpPayment;
-        $chargePayment['preapproval_id'] = $preapprovalId;
-
-        if (! DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()) {
-            $preapproval = $this->mercadoPagoService->getPreapproval($preapprovalId);
-            if ($preapproval) {
-                $this->platformDonationService->handleSubscriptionPreapproval($preapproval);
-            }
-        }
-
-        $this->platformDonationService->handleSubscriptionAuthorizedPayment($chargePayment);
-
-        return true;
     }
 }

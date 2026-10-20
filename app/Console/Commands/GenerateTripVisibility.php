@@ -3,8 +3,8 @@
 namespace STS\Console\Commands;
 
 use Carbon\Carbon;
-use STS\Models\Trip; 
 use Illuminate\Console\Command;
+use STS\Models\Trip;
 use STS\Repository\TripRepository;
 
 class GenerateTripVisibility extends Command
@@ -24,6 +24,7 @@ class GenerateTripVisibility extends Command
     protected $description = 'Generate trip visibility';
 
     protected $tripLogic;
+
     protected $tripRepo;
 
     /**
@@ -44,11 +45,11 @@ class GenerateTripVisibility extends Command
      */
     public function handle()
     {
-        \Log::info("COMMAND GenerateTripVisibility");
+        \Log::info('COMMAND GenerateTripVisibility');
         $now = Carbon::now();
 
         $trips = Trip::where('trip_date', '>=', $now->toDateTimeString())->where('friendship_type_id', '<', Trip::PRIVACY_PUBLIC);
-        
+
         $trips = $trips->get();
 
         foreach ($trips as $trip) {

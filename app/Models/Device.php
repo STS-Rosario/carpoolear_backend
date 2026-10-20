@@ -2,8 +2,8 @@
 
 namespace STS\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
 
 class Device extends Model
 {
@@ -16,7 +16,7 @@ class Device extends Model
         'user_id',
         'app_version',
         'notifications',
-        "last_activity"
+        'last_activity',
     ];
 
     protected $hidden = [];
@@ -24,9 +24,9 @@ class Device extends Model
     protected function casts(): array
     {
         return [
-            'notifications' => 'boolean'
+            'notifications' => 'boolean',
         ];
-    } 
+    }
 
     public function getLastActivityAttribute($value)
     {

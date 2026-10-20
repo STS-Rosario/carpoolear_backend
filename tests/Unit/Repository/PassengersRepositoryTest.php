@@ -4,6 +4,7 @@ namespace Tests\Unit\Repository;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use STS\Helpers\SelladoEmptyTripCredit;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -56,6 +57,68 @@ class PassengersRepositoryTest extends TestCase
         $this->assertSame(Passenger::STATE_ACCEPTED, (int) $row->fresh()->request_state);
     }
 
+    public function test_accept_request_redeems_empty_trip_credit_for_the_driver(): void
+    {
+        $driver = User::factory()->create();
+        $emptyPaidTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => false,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $complimentaryTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => false,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $complimentaryTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->assertTrue(SelladoEmptyTripCredit::userHasUnusedCredit($driver->id));
+
+        $this->repo()->acceptRequest($complimentaryTrip->id, $passenger->id, $driver, []);
+
+        $this->assertFalse(SelladoEmptyTripCredit::userHasUnusedCredit($driver->id));
+        $this->assertNotNull($emptyPaidTrip->fresh()->sellado_empty_trip_credit_redeemed_at);
+    }
+
+    public function test_reject_request_does_not_redeem_empty_trip_credit(): void
+    {
+        $driver = User::factory()->create();
+        Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => false,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $complimentaryTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $complimentaryTrip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_PENDING,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->repo()->rejectRequest($complimentaryTrip->id, $passenger->id, $driver, []);
+
+        $this->assertTrue(SelladoEmptyTripCredit::userHasUnusedCredit($driver->id));
+    }
+
     public function test_reject_request_updates_pending_passenger(): void
     {
         $trip = Trip::factory()->create();
@@ -91,6 +154,36 @@ class PassengersRepositoryTest extends TestCase
 
         $paid = $repo->payRequest($trip->id, $passenger->id, $driver, []);
         $this->assertSame(Passenger::STATE_ACCEPTED, (int) $paid->fresh()->request_state);
+    }
+
+    public function test_pay_request_redeems_empty_trip_credit_for_the_driver(): void
+    {
+        $driver = User::factory()->create();
+        $emptyPaidTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => false,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $passenger = User::factory()->create();
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $passenger->id,
+            'request_state' => Passenger::STATE_WAITING_PAYMENT,
+            'passenger_type' => Passenger::TYPE_PASAJERO,
+        ]);
+
+        $this->repo()->payRequest($trip->id, $passenger->id, $driver, []);
+
+        $this->assertFalse(SelladoEmptyTripCredit::userHasUnusedCredit($driver->id));
+        $this->assertNotNull($emptyPaidTrip->fresh()->sellado_empty_trip_credit_redeemed_at);
     }
 
     public function test_change_request_state_returns_null_when_no_matching_passenger(): void

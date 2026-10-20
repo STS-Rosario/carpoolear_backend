@@ -2,11 +2,11 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\Campaign;
 use STS\Models\CampaignMilestone;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 
 class CampaignMilestoneController extends Controller
 {
@@ -16,6 +16,7 @@ class CampaignMilestoneController extends Controller
     public function index(Campaign $campaign): JsonResponse
     {
         $milestones = $campaign->milestones()->orderBy('amount_cents')->get();
+
         return response()->json($milestones);
     }
 
@@ -35,7 +36,7 @@ class CampaignMilestoneController extends Controller
 
         return response()->json([
             'message' => 'Milestone created',
-            'data' => $milestone
+            'data' => $milestone,
         ], 201);
     }
 
@@ -70,6 +71,7 @@ class CampaignMilestoneController extends Controller
     public function destroy(CampaignMilestone $milestone): JsonResponse
     {
         $milestone->delete();
+
         return response()->json(null, 204);
     }
 }

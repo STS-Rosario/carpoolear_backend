@@ -211,6 +211,61 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['user_id'] ?? 0) === $target->id));
     }
 
+    public function test_index_filters_by_assigned_to_me_when_query_param_is_set(): void
+    {
+        $admin = $this->adminUser();
+        $otherAdmin = $this->adminUser();
+        $owner = User::factory()->create();
+        $mine = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'assigned-to-me',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+        $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'assigned-to-other-admin',
+            'assigned_to_user_id' => $otherAdmin->id,
+            'assigned_at' => now(),
+        ]);
+        $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'unassigned',
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?assigned_to_me=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertContains($mine->id, $ids);
+        $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['assigned_to_user_id'] ?? 0) === $admin->id));
+    }
+
+    public function test_index_assigned_to_me_ignores_expired_assignment(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $expired = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'expired-assignment',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $rows = collect($this->getJson('api/admin/support/tickets?assigned_to_me=1')->assertOk()->json('data'));
+        $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        $this->assertNotContains($expired->id, $ids);
+    }
+
     public function test_index_paginates_with_default_hundred_per_page(): void
     {
         $admin = $this->adminUser();

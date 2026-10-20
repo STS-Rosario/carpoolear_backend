@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class TripPassengersTable extends Migration
 {
@@ -21,11 +21,11 @@ class TripPassengersTable extends Migration
             $table->integer('request_state');
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

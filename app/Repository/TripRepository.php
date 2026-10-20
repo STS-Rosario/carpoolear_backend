@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\SelladoEmptyTripCredit;
+use STS\Helpers\SelladoTripCount;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
 use STS\Jobs\CheckTripContributionWithLlm;
@@ -204,11 +205,11 @@ class TripRepository
                 $this->addPoints($trip, $points);
                 $this->generateTripPath($trip);
 
-                // Check if the updated route needs payment (2+ stops in paid zones)
+                // Check if the updated route needs payment (stops in 2+ distinct paid polygons)
                 $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
                 $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-                $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+                $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id);
 
                 // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
                 if (config('carpoolear.module_trip_creation_payment_enabled') &&
@@ -961,7 +962,8 @@ class TripRepository
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled');
+        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled')
+            && $routeNeedsPayment;
         $selladoViajePrice = $includesSellado
             ? (int) config('carpoolear.module_trip_creation_payment_amount_cents')
             : 0;
@@ -1042,12 +1044,12 @@ class TripRepository
             return;
         }
 
-        $tripsCreatedByUser = Trip::where('user_id', $trip->user_id)->count();
+        $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id);
         if ($tripsCreatedByUser < config('carpoolear.module_trip_creation_payment_trips_threshold')) {
             return;
         }
 
-        if (SelladoEmptyTripCredit::redeemOldestUnusedCredit($trip->user_id)) {
+        if (SelladoEmptyTripCredit::userHasUnusedCredit($trip->user_id)) {
             return;
         }
 
@@ -1065,7 +1067,7 @@ class TripRepository
     public function selladoViaje($user)
     {
         // if user has created enough free trips, they have to pay for the next one
-        $tripsCreatedByUser = Trip::where('user_id', $user->id)->count();
+        $tripsCreatedByUser = SelladoTripCount::forUser((int) $user->id);
         $freeTripsAmount = config('carpoolear.module_trip_creation_payment_trips_threshold');
         $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
 

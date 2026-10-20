@@ -2,8 +2,8 @@
 
 namespace STS\Listeners\Notification;
 
-use STS\Events\Passenger\Reject;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use STS\Events\Passenger\Reject;
 use STS\Notifications\RejectPassengerNotification;
 
 class PassengerReject implements ShouldQueue
@@ -25,7 +25,6 @@ class PassengerReject implements ShouldQueue
     /**
      * Handle the event.
      *
-     * @param  Reject  $event
      * @return void
      */
     public function handle(Reject $event)
@@ -34,10 +33,10 @@ class PassengerReject implements ShouldQueue
         $from = $event->from;
         $to = $event->to;
         if ($to) {
-            $notification = new RejectPassengerNotification();
+            $notification = new RejectPassengerNotification;
             $notification->setAttribute('trip', $trip);
             $notification->setAttribute('from', $from);
-            //$notification->setAttribute('token', $to);
+            // $notification->setAttribute('token', $to);
             $notification->notify($to);
         }
     }

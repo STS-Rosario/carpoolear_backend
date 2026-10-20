@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateUsersTable extends Migration
 {
@@ -25,7 +25,7 @@ class CreateUsersTable extends Migration
             $table->string('gender', 255)->nullable();
 
             $table->string('nro_doc', 15);
-            //$table->string("patente", 15);
+            // $table->string("patente", 15);
             $table->string('description', 1000);
             $table->string('mobile_phone', 50);
             $table->string('image', 255);

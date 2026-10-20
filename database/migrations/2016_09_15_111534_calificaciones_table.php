@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class CalificacionesTable extends Migration
 {
@@ -29,14 +29,14 @@ class CalificacionesTable extends Migration
             $table->string('voted_hash');
             $table->timestamps();
             $table->foreign('user_id_from')->references('id')->on('users')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             $table->foreign('user_id_to')->references('id')->on('users')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
             $table->foreign('trip_id')->references('id')->on('trips')
-                                         ->onDelete('cascade')
-                                         ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

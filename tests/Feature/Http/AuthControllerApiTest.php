@@ -74,6 +74,8 @@ class AuthControllerApiTest extends TestCase
         $this->assertIsBool($response->json('identity_validation_manual_qr_enabled'));
         $this->assertArrayHasKey('platform_donations_qr_enabled', $response->json());
         $this->assertIsBool($response->json('platform_donations_qr_enabled'));
+        $this->assertArrayHasKey('module_trip_creation_payment_qr_enabled', $response->json());
+        $this->assertIsBool($response->json('module_trip_creation_payment_qr_enabled'));
         $this->assertArrayNotHasKey('qr_payment_pos_external_id', $response->json());
         $this->assertArrayNotHasKey('donation_month_days', $response->json());
         $this->assertArrayNotHasKey('donation_trips_count', $response->json());
@@ -516,6 +518,47 @@ class AuthControllerApiTest extends TestCase
             config(['services.mercadopago' => $mercado]);
             config(['carpoolear.qr_payment_pos_external_id' => '']);
             $this->getJson('api/config')->assertOk()->assertJsonPath('platform_donations_qr_enabled', false);
+        } finally {
+            config($snapshot);
+        }
+    }
+
+    public function test_get_config_module_trip_creation_payment_qr_enabled_matches_conjunctive_gate(): void
+    {
+        $snapshot = [
+            'services.mercadopago' => config('services.mercadopago'),
+            'carpoolear.module_trip_creation_payment_enabled' => config('carpoolear.module_trip_creation_payment_enabled'),
+            'carpoolear.module_trip_creation_payment_qr_enabled' => config('carpoolear.module_trip_creation_payment_qr_enabled'),
+            'carpoolear.qr_payment_pos_external_id' => config('carpoolear.qr_payment_pos_external_id'),
+        ];
+
+        try {
+            $mercado = config('services.mercadopago', []);
+            $mercado['qr_payment_access_token'] = 'mp-qr-token';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.module_trip_creation_payment_enabled' => true,
+                'carpoolear.module_trip_creation_payment_qr_enabled' => true,
+                'carpoolear.qr_payment_pos_external_id' => 'pos-external-1',
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('module_trip_creation_payment_qr_enabled', true);
+
+            config(['carpoolear.module_trip_creation_payment_enabled' => false]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('module_trip_creation_payment_qr_enabled', false);
+
+            config([
+                'carpoolear.module_trip_creation_payment_enabled' => true,
+                'carpoolear.module_trip_creation_payment_qr_enabled' => false,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('module_trip_creation_payment_qr_enabled', false);
+
+            $mercado['qr_payment_access_token'] = '';
+            config(['services.mercadopago' => $mercado]);
+            config([
+                'carpoolear.module_trip_creation_payment_enabled' => true,
+                'carpoolear.module_trip_creation_payment_qr_enabled' => true,
+            ]);
+            $this->getJson('api/config')->assertOk()->assertJsonPath('module_trip_creation_payment_qr_enabled', false);
         } finally {
             config($snapshot);
         }

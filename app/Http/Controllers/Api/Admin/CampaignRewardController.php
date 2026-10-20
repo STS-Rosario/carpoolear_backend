@@ -2,11 +2,10 @@
 
 namespace STS\Http\Controllers\Api\Admin;
 
+use Illuminate\Http\Request;
 use STS\Http\Controllers\Controller;
 use STS\Models\Campaign;
 use STS\Models\CampaignReward;
-use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class CampaignRewardController extends Controller
 {
@@ -26,7 +25,7 @@ class CampaignRewardController extends Controller
             'description' => 'required|string',
             'donation_amount_cents' => 'required|integer|min:1',
             'quantity_available' => 'nullable|integer|min:1',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         $reward = $campaign->rewards()->create($validated);
@@ -56,7 +55,7 @@ class CampaignRewardController extends Controller
             'description' => 'string',
             'donation_amount_cents' => 'integer|min:1',
             'quantity_available' => 'nullable|integer|min:1',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         $reward->update($validated);
@@ -74,4 +73,4 @@ class CampaignRewardController extends Controller
 
         return response()->json(null, 204);
     }
-} 
+}

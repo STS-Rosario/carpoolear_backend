@@ -139,6 +139,40 @@ class GeoServiceTest extends TestCase
         $this->assertTrue($this->geo->doStopsRequireSellado([$inRosario, $inBuenosAires, $outside]));
     }
 
+    public function test_do_stops_require_sellado_false_when_paid_stops_share_the_same_polygon(): void
+    {
+        $inRosario = [-32.95, -60.68];
+        $inFunes = [-32.916, -60.811];
+        $inBuenosAires = [-34.6, -58.45];
+        $alsoInBuenosAires = [-34.707, -58.392];
+        $outside = [0.0, 0.0];
+
+        $this->assertTrue($this->geo->isPointInPaidZone($inRosario));
+        $this->assertTrue($this->geo->isPointInPaidZone($inFunes));
+        $this->assertTrue($this->geo->isPointInPaidZone($inBuenosAires));
+        $this->assertTrue($this->geo->isPointInPaidZone($alsoInBuenosAires));
+
+        $this->assertFalse($this->geo->doStopsRequireSellado([$inRosario, $inFunes]));
+        $this->assertFalse($this->geo->doStopsRequireSellado([$inRosario, $inFunes, $outside]));
+        $this->assertFalse($this->geo->doStopsRequireSellado([$inBuenosAires, $alsoInBuenosAires]));
+    }
+
+    public function test_do_stops_require_sellado_counts_distinct_paid_polygons_not_repeated_stops_in_one(): void
+    {
+        $inRosario = [-32.95, -60.68];
+        $inFunes = [-32.916, -60.811];
+        $inSantaFe = [-31.633, -60.700];
+        $inBuenosAires = [-34.6, -58.45];
+
+        $this->assertTrue($this->geo->isPointInPaidZone($inRosario));
+        $this->assertTrue($this->geo->isPointInPaidZone($inFunes));
+        $this->assertFalse($this->geo->isPointInPaidZone($inSantaFe));
+        $this->assertTrue($this->geo->isPointInPaidZone($inBuenosAires));
+
+        $this->assertFalse($this->geo->doStopsRequireSellado([$inRosario, $inFunes, $inSantaFe]));
+        $this->assertTrue($this->geo->doStopsRequireSellado([$inRosario, $inFunes, $inBuenosAires]));
+    }
+
     /**
      * Costa Atlántica toll polygon — aligned with {@see GeoService::getCostaAtlanticaRegion()}.
      *

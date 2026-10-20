@@ -2,10 +2,8 @@
 
 namespace STS\Repository;
 
-use STS\Models\TripSearch;
-use STS\Models\Trip;
-use STS\Models\Passenger;
 use Carbon\Carbon;
+use STS\Models\TripSearch;
 
 class TripSearchRepository
 {
@@ -18,10 +16,10 @@ class TripSearchRepository
     {
         // Calculate total trips
         $amountTrips = $trips->total() ?? $trips->count();
-        
+
         // Calculate carpooled trips (trips with no available seats)
         $amountTripsCarpooleados = 0;
-        
+
         if ($trips->count() > 0) {
             $amountTripsCarpooleados = $trips->filter(function ($trip) {
                 return $trip->seats_available <= 0;
@@ -37,9 +35,9 @@ class TripSearchRepository
             'amount_trips_carpooleados' => $amountTripsCarpooleados,
             'client_platform' => $clientPlatform,
             'is_passenger' => $isPassenger,
-            'results_json' => [] // Empty for now as requested
+            'results_json' => [], // Empty for now as requested
         ];
 
         return $this->create($searchData);
     }
-} 
+}

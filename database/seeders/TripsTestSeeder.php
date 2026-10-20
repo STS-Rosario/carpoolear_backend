@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use Illuminate\Database\Seeder;
 use STS\Models\Trip;
 use STS\Models\TripPoint;
-use Illuminate\Database\Seeder;
 
 class TripsTestSeeder extends Seeder
 {

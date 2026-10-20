@@ -3,8 +3,8 @@
 namespace STS\Notifications;
 
 use STS\Services\Notifications\BaseNotification;
-use STS\Services\Notifications\Channels\PushChannel;
 use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class AnnouncementNotification extends BaseNotification
 {
@@ -38,7 +38,7 @@ class AnnouncementNotification extends BaseNotification
     public function getExtras()
     {
         $externalUrl = $this->getAttribute('external_url');
-        
+
         return [
             'type' => 'announcement',
             'external_url' => $externalUrl,
@@ -64,4 +64,4 @@ class AnnouncementNotification extends BaseNotification
             'image' => 'https://carpoolear.com.ar/app/static/img/carpoolear_logo.png',
         ];
     }
-} 
+}

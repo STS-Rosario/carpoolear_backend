@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 
 class CreateTableNotificationsParams extends Migration
 {
@@ -21,8 +21,8 @@ class CreateTableNotificationsParams extends Migration
             $table->text('value_text')->nullable();
             $table->timestamps();
             $table->foreign('notification_id')->references('id')->on('notifications')
-                                      ->onDelete('cascade')
-                                      ->onUpdate('cascade');
+                ->onDelete('cascade')
+                ->onUpdate('cascade');
         });
     }
 

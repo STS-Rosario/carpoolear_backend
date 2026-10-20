@@ -19,7 +19,6 @@ class UpdateHandler
     /**
      * Handle the event.
      *
-     * @param Update $event
      *
      * @return void
      */

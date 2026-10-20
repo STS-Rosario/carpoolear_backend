@@ -2,21 +2,21 @@
 
 namespace STS\Notifications;
 
-use  STS\Services\Notifications\BaseNotification;
-use  STS\Services\Notifications\Channels\MailChannel;
-use  STS\Services\Notifications\Channels\PushChannel;
-use  STS\Services\Notifications\Channels\DatabaseChannel;
-use  STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\BaseNotification;
+use STS\Services\Notifications\Channels\DatabaseChannel;
+use STS\Services\Notifications\Channels\FacebookChannel;
+use STS\Services\Notifications\Channels\MailChannel;
+use STS\Services\Notifications\Channels\PushChannel;
 
 class RequestPassengerNotification extends BaseNotification
 {
     protected $via = [
-        DatabaseChannel::class, 
-        MailChannel::class, 
-        PushChannel::class, 
+        DatabaseChannel::class,
+        MailChannel::class,
+        PushChannel::class,
         // FacebookChannel::class
     ];
-    
+
     public function toEmail($user)
     {
         $trip = $this->getAttribute('trip');
@@ -30,7 +30,7 @@ class RequestPassengerNotification extends BaseNotification
             'type' => 'request',
             'url' => config('app.url').'/app/trips/'.($trip ? $trip->id : ''),
             'name_app' => config('carpoolear.name_app'),
-            'domain' => config('app.url')
+            'domain' => config('app.url'),
         ];
     }
 
@@ -38,12 +38,14 @@ class RequestPassengerNotification extends BaseNotification
     {
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : __('notifications.someone');
+
         return __('notifications.request_passenger.message', ['name' => $senderName]);
     }
 
     public function getExtras()
     {
         $trip = $this->getAttribute('trip');
+
         return [
             'type' => 'my-trips',
             'trip_id' => $trip ? $trip->id : null,
@@ -55,7 +57,7 @@ class RequestPassengerNotification extends BaseNotification
         $trip = $this->getAttribute('trip');
         $from = $this->getAttribute('from');
         $senderName = $from ? $from->name : __('notifications.someone');
-        
+
         return [
             'message' => __('notifications.request_passenger.message', ['name' => $senderName]),
             'url' => '/my-trips',

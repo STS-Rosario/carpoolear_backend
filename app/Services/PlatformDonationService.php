@@ -5,6 +5,7 @@ namespace STS\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use STS\Jobs\SendClubCarpoolearWelcomeEmail;
 use STS\Jobs\UpdateDonationSubscriptionAmountsJob;
 use STS\Models\DonationAmountAdjustment;
 use STS\Models\DonationPayment;
@@ -316,6 +317,23 @@ class PlatformDonationService
             }
         }
 
+        if (! $subscription && $preapprovalId) {
+            $alreadyLinked = DonationSubscription::query()
+                ->where('mp_preapproval_id', $preapprovalId)
+                ->exists();
+
+            if (! $alreadyLinked) {
+                $preapproval = $this->mercadoPagoService->getPreapproval((string) $preapprovalId);
+                if ($preapproval) {
+                    $this->handleSubscriptionPreapproval($preapproval);
+                }
+            }
+
+            $subscription = DonationSubscription::query()
+                ->where('mp_preapproval_id', $preapprovalId)
+                ->first();
+        }
+
         if (! $subscription) {
             Log::warning('MercadoPago subscription charge webhook could not match subscription', [
                 'payment_id' => $mpPayment['id'] ?? null,
@@ -327,6 +345,68 @@ class PlatformDonationService
         }
 
         $this->upsertSubscriptionCharge($subscription, $mpPayment);
+    }
+
+    /**
+     * @param  array<string, mixed>  $invoice
+     * @return array<string, mixed>|null
+     */
+    public function mapAuthorizedPaymentInvoiceToChargePayload(array $invoice): ?array
+    {
+        $nestedPayment = $invoice['payment'] ?? null;
+        if (! is_array($nestedPayment) || empty($nestedPayment['id'])) {
+            return null;
+        }
+
+        return [
+            'id' => $nestedPayment['id'],
+            'preapproval_id' => $invoice['preapproval_id'] ?? null,
+            'status' => $nestedPayment['status'] ?? ($invoice['status'] ?? 'pending'),
+            'transaction_amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
+            'amount' => $nestedPayment['transaction_amount'] ?? $invoice['transaction_amount'] ?? 0,
+            'date_approved' => $nestedPayment['date_approved'] ?? null,
+            'external_reference' => $invoice['external_reference'] ?? '',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $mpPayment
+     */
+    public function handleClubSubscriptionPaymentViaInvoiceSearch(array $mpPayment, string $paymentId): bool
+    {
+        $results = $this->mercadoPagoService->searchAuthorizedPayments(['payment_id' => $paymentId]);
+        $invoice = $results[0] ?? null;
+        if (! is_array($invoice)) {
+            Log::info('Club subscription payment could not resolve invoice by payment_id', [
+                'payment_id' => $paymentId,
+            ]);
+
+            return false;
+        }
+
+        $preapprovalId = $invoice['preapproval_id'] ?? null;
+        if (! is_string($preapprovalId) || $preapprovalId === '') {
+            Log::info('Club subscription invoice missing preapproval_id', [
+                'payment_id' => $paymentId,
+                'invoice_id' => $invoice['id'] ?? null,
+            ]);
+
+            return false;
+        }
+
+        $chargePayment = $mpPayment;
+        $chargePayment['preapproval_id'] = $preapprovalId;
+
+        if (! DonationSubscription::query()->where('mp_preapproval_id', $preapprovalId)->exists()) {
+            $preapproval = $this->mercadoPagoService->getPreapproval($preapprovalId);
+            if ($preapproval) {
+                $this->handleSubscriptionPreapproval($preapproval);
+            }
+        }
+
+        $this->handleSubscriptionAuthorizedPayment($chargePayment);
+
+        return true;
     }
 
     public function applyInflation(DonationTier $tier, int $newAmountCents, int $adminUserId): DonationAmountAdjustment
@@ -502,7 +582,29 @@ class PlatformDonationService
                 : now();
             $subscription->save();
             $this->writeLegacyDonationIntent($subscription->user_id, (float) ($amountCents / 100), true);
+            $this->maybeSendClubCarpoolearWelcomeEmail($subscription->user_id);
         }
+    }
+
+    /**
+     * Send the Club Carpoolear welcome email once, on the member's first approved charge.
+     */
+    private function maybeSendClubCarpoolearWelcomeEmail(?int $userId): void
+    {
+        if (empty($userId)) {
+            return;
+        }
+
+        $user = User::find($userId);
+        if (! $user) {
+            return;
+        }
+
+        if ($user->club_carpoolear_welcome_email_sent_at !== null) {
+            return;
+        }
+
+        SendClubCarpoolearWelcomeEmail::dispatch($user)->onQueue('emails');
     }
 
     /**
