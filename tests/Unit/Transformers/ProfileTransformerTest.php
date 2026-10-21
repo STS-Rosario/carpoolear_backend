@@ -4,6 +4,7 @@ namespace Tests\Unit\Transformers;
 
 use STS\Admin\AdminPermission;
 use STS\Models\Car;
+use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\Passenger;
 use STS\Models\Rating;
 use STS\Models\SupportTicket;
@@ -604,5 +605,54 @@ class ProfileTransformerTest extends TestCase
 
         $this->assertArrayNotHasKey('admin_permissions', $payload);
         $this->assertArrayNotHasKey('admin_role', $payload);
+    }
+
+    public function test_transform_exposes_latest_mercado_pago_rejected_validation_id_for_admin(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+
+        MercadoPagoRejectedValidation::create([
+            'user_id' => $subject->id,
+            'reject_reason' => 'name_mismatch',
+            'mp_payload' => ['k' => 'old'],
+        ]);
+        $latest = MercadoPagoRejectedValidation::create([
+            'user_id' => $subject->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['k' => 'new'],
+        ]);
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayHasKey('mercado_pago_rejected_validation_id', $payload);
+        $this->assertSame($latest->id, $payload['mercado_pago_rejected_validation_id']);
+    }
+
+    public function test_transform_mercado_pago_rejected_validation_id_is_null_without_rejections(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $subject = User::factory()->create();
+
+        $payload = (new ProfileTransformer($admin))->transform($subject->fresh());
+
+        $this->assertArrayHasKey('mercado_pago_rejected_validation_id', $payload);
+        $this->assertNull($payload['mercado_pago_rejected_validation_id']);
+    }
+
+    public function test_transform_does_not_expose_mercado_pago_rejected_validation_id_for_non_admin(): void
+    {
+        $viewer = User::factory()->create(['is_admin' => false]);
+        $subject = User::factory()->create(['data_visibility' => '2']);
+
+        MercadoPagoRejectedValidation::create([
+            'user_id' => $subject->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['k' => 'v'],
+        ]);
+
+        $payload = (new ProfileTransformer($viewer))->transform($subject->fresh());
+
+        $this->assertArrayNotHasKey('mercado_pago_rejected_validation_id', $payload);
     }
 }
