@@ -5,6 +5,7 @@ namespace STS\Transformers;
 use Carbon\Carbon;
 use League\Fractal\TransformerAbstract;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
 use STS\Repository\TripRepository;
@@ -136,6 +137,7 @@ class ProfileTransformer extends TransformerAbstract
                 $user->identity_validation_rejected_at
             );
             $data['identity_validation_reject_reason'] = $user->identity_validation_reject_reason;
+            $data['mercado_pago_rejected_validation_id'] = $this->latestMercadoPagoRejectedValidationId($user);
             $data['validate_by_date'] = $user->validate_by_date
                 ? $user->validate_by_date->format('Y-m-d')
                 : null;
@@ -183,5 +185,15 @@ class ProfileTransformer extends TransformerAbstract
     private function nullableDateTimeString(mixed $value): ?string
     {
         return $value instanceof Carbon ? $value->toDateTimeString() : null;
+    }
+
+    private function latestMercadoPagoRejectedValidationId(User $user): ?int
+    {
+        $id = MercadoPagoRejectedValidation::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->value('id');
+
+        return $id !== null ? (int) $id : null;
     }
 }
