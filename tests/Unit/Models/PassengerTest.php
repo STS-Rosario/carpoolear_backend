@@ -244,7 +244,7 @@ class PassengerTest extends TestCase
             'request_state' => Passenger::STATE_CANCELED,
             'canceled_state' => Passenger::CANCELED_SYSTEM,
         ]);
-        $this->assertTrue($canceledBySystem->isEligibleForRating());
+        $this->assertFalse($canceledBySystem->isEligibleForRating());
 
         $canceledWhilePaying = Passenger::factory()->make([
             'request_state' => Passenger::STATE_CANCELED,
