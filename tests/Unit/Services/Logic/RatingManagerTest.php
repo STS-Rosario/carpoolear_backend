@@ -624,6 +624,7 @@ class RatingManagerTest extends TestCase
             'rejected' => [Passenger::STATE_REJECTED, null, 0],
             'waiting_payment' => [Passenger::STATE_WAITING_PAYMENT, null, 0],
             'canceled_request' => [Passenger::STATE_CANCELED, Passenger::CANCELED_REQUEST, 0],
+            'canceled_system' => [Passenger::STATE_CANCELED, Passenger::CANCELED_SYSTEM, 0],
             'accepted' => [Passenger::STATE_ACCEPTED, null, 2],
             'canceled_passenger' => [Passenger::STATE_CANCELED, Passenger::CANCELED_PASSENGER, 2],
             'canceled_driver' => [Passenger::STATE_CANCELED, Passenger::CANCELED_DRIVER, 2],
