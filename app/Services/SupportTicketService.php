@@ -3,10 +3,13 @@
 namespace STS\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketAttachment;
 use STS\Models\SupportTicketReply;
 use STS\Models\User;
+use STS\Support\SupportTicketAutoCloseMessage;
 use STS\Support\SupportTicketOpeningAutoReply;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
@@ -257,5 +260,52 @@ class SupportTicketService
                 'assigned_at' => null,
                 'updated_at' => now(),
             ]);
+    }
+
+    /**
+     * Timestamp of the ticket owner's most recent reply, or null if the owner
+     * has never replied. Used to detect user inactivity regardless of admin replies.
+     */
+    public function latestUserReplyAt(SupportTicket $ticket): ?Carbon
+    {
+        return $ticket->replies()
+            ->where('is_admin', false)
+            ->orderByDesc('id')
+            ->value('created_at');
+    }
+
+    /**
+     * Closes a ticket left waiting on the user: appends the automated closing
+     * message, sets it to Cerrado and releases any active assignment.
+     */
+    public function closeTicketForUserInactivity(SupportTicket $ticket): bool
+    {
+        $actorUserId = $this->resolveAutoReplyActorUserId();
+        if ($actorUserId === null) {
+            return false;
+        }
+
+        $message = SupportTicketAutoCloseMessage::forUser($ticket->user?->name);
+
+        return DB::transaction(function () use ($ticket, $actorUserId, $message) {
+            if (! $this->ticketAlreadyHasReplyWithMessageMarkdown($ticket->id, $message)) {
+                SupportTicketReply::create([
+                    'ticket_id' => $ticket->id,
+                    'user_id' => $actorUserId,
+                    'is_admin' => true,
+                    'message_markdown' => $message,
+                    'created_by' => null,
+                ]);
+            }
+
+            $ticket->status = 'Cerrado';
+            $ticket->closed_at = now();
+            $ticket->last_reply_at = now();
+            $ticket->updated_by = $actorUserId;
+            $this->clearTicketAssignment($ticket);
+            $ticket->save();
+
+            return true;
+        });
     }
 }

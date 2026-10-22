@@ -126,6 +126,7 @@ return [
 
     // Support tickets
     'support_ticket_autoclose_days' => (int) env('SUPPORT_TICKET_AUTOCLOSE_DAYS', 10),
+    'support_ticket_user_inactivity_days' => (int) env('SUPPORT_TICKET_USER_INACTIVITY_DAYS', 30),
     'support_ticket_assignment_timeout_minutes' => (int) env('SUPPORT_TICKET_ASSIGNMENT_TIMEOUT_MINUTES', 10),
     'support_ticket_rate_limit_create_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_CREATE_PER_HOUR', 5),
     'support_ticket_rate_limit_reply_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_REPLY_PER_HOUR', 20),
