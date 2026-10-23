@@ -4,6 +4,7 @@ namespace STS\Console\Commands;
 
 use Illuminate\Console\Command;
 use STS\Models\SupportTicket;
+use STS\Models\User;
 use STS\Notifications\SupportTicketAutoClosedNotification;
 use STS\Services\SupportTicketService;
 
@@ -49,42 +50,68 @@ class SupportTicketsAutoClose extends Command
 
     /**
      * Closes tickets left waiting on the user (status "Esperando respuesta")
-     * when the owner has not replied within the configured threshold. Each one
+     * when there has been no activity within the configured threshold. Each one
      * gets an automated closing message plus a notification to the owner.
+     *
+     * The inactivity clock is last_reply_at (any reply, user or admin), falling
+     * back to updated_at when a ticket never had a reply. A recent admin
+     * follow-up therefore restarts the window.
      */
     private function closeTicketsWaitingOnUser(SupportTicketService $supportTicketService): int
     {
         $days = (int) config('carpoolear.support_ticket_user_inactivity_days', 30);
         $threshold = now()->subDays($days);
 
-        $candidates = SupportTicket::query()
-            ->where('status', 'Esperando respuesta')
-            ->where('last_reply_at', '<=', $threshold)
-            ->with('user')
-            ->get();
+        $actor = $supportTicketService->resolveAutoReplyActorUser();
+        if ($actor === null) {
+            $this->warn('Support tickets auto-close skipped: no auto-reply actor user configured or found.');
+
+            return 0;
+        }
 
         $closed = 0;
 
-        foreach ($candidates as $ticket) {
-            $lastUserReplyAt = $supportTicketService->latestUserReplyAt($ticket);
-            $inactiveSince = $lastUserReplyAt ?? $ticket->created_at;
+        SupportTicket::query()
+            ->where('status', 'Esperando respuesta')
+            ->where(function ($query) use ($threshold) {
+                $query->where('last_reply_at', '<=', $threshold)
+                    ->orWhere(function ($inner) use ($threshold) {
+                        $inner->whereNull('last_reply_at')->where('updated_at', '<=', $threshold);
+                    });
+            })
+            ->with('user')
+            ->chunkById(100, function ($tickets) use ($supportTicketService, $actor, $threshold, &$closed) {
+                foreach ($tickets as $ticket) {
+                    try {
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($ticket, $supportTicketService, $actor, $threshold, &$closed) {
+                            $locked = SupportTicket::query()
+                                ->with('user')
+                                ->whereKey($ticket->id)
+                                ->lockForUpdate()
+                                ->first();
 
-            if ($inactiveSince !== null && $inactiveSince->greaterThan($threshold)) {
-                continue;
-            }
+                            if (! $locked || $locked->status !== 'Esperando respuesta') {
+                                return;
+                            }
 
-            if (! $supportTicketService->closeTicketForUserInactivity($ticket)) {
-                continue;
-            }
+                            if (! $supportTicketService->closeTicketForUserInactivity($locked, (int) $actor->id, $threshold)) {
+                                return;
+                            }
 
-            $closed++;
-            $this->notifyOwner($ticket);
-        }
+                            $closed++;
+                            $this->notifyOwner($locked, $actor);
+                        });
+                    } catch (\Throwable $e) {
+                        report($e);
+                        $this->warn('Could not auto-close support ticket #'.$ticket->id.': '.$e->getMessage());
+                    }
+                }
+            });
 
         return $closed;
     }
 
-    private function notifyOwner(SupportTicket $ticket): void
+    private function notifyOwner(SupportTicket $ticket, User $actor): void
     {
         if ($ticket->user === null) {
             return;
@@ -92,6 +119,7 @@ class SupportTicketsAutoClose extends Command
 
         $notification = new SupportTicketAutoClosedNotification;
         $notification->setAttribute('ticket', $ticket);
+        $notification->setAttribute('from', $actor);
 
         try {
             $notification->notify($ticket->user);
