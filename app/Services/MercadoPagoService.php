@@ -88,15 +88,17 @@ class MercadoPagoService
         if ($baseUrl === '') {
             throw new \InvalidArgumentException('carpoolear.frontend_url must be set for MercadoPago sellado (auto_return requires valid back_urls.success)');
         }
+        $tripUrl = $baseUrl.'/app/trips/'.$trip->id;
+        $paidTripUrl = $tripUrl.'?sellado_paid=1';
         $selladoUrls = [
-            'success' => $baseUrl.'/app/trips/'.$trip->id.'?sellado_paid=1',
-            'failure' => $baseUrl.'/app/trips/'.$trip->id,
-            'pending' => $baseUrl.'/app/trips/'.$trip->id,
+            'success' => $paidTripUrl,
+            'failure' => $tripUrl,
+            'pending' => $paidTripUrl,
         ];
         $preferenceData = [
             'items' => [
                 [
-                    'title' => 'Sellado Carpoolear',
+                    'title' => 'Un litro para Carpoolear',
                     'quantity' => 1,
                     'unit_price' => floatval($amountInCents) / 100,
                     'currency_id' => 'ARS',
@@ -106,6 +108,10 @@ class MercadoPagoService
             'auto_return' => 'approved',
             'external_reference' => $this->createHashedExternalReferenceForSellado((int) $trip->id),
         ];
+        $backendUrl = rtrim((string) config('app.url'), '/');
+        if ($backendUrl !== '') {
+            $preferenceData['notification_url'] = $backendUrl.'/webhooks/mercadopago?source_news=webhooks';
+        }
 
         return $this->createPaymentPreference($preferenceData);
     }

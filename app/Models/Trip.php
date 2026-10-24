@@ -158,6 +158,7 @@ class Trip extends Model
             'trip_date' => 'datetime',
             'trips_count_credited_at' => 'datetime',
             'sellado_empty_trip_credit_redeemed_at' => 'datetime',
+            'sellado_empty_trip_credit_applied_at' => 'datetime',
             'created_at' => 'datetime',
             'deleted_at' => 'datetime',
             'seat_price_cents' => 'integer',
