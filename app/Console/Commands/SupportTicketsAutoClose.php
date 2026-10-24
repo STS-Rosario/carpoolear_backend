@@ -62,7 +62,8 @@ class SupportTicketsAutoClose extends Command
         $days = (int) config('carpoolear.support_ticket_user_inactivity_days', 30);
         $threshold = now()->subDays($days);
 
-        $actor = $supportTicketService->resolveAutoReplyActorUser();
+        $actorId = $supportTicketService->resolveAutoReplyActorUserId();
+        $actor = $actorId !== null ? User::query()->find($actorId) : null;
         if ($actor === null) {
             $this->warn('Support tickets auto-close skipped: no auto-reply actor user configured or found.');
 
@@ -80,10 +81,10 @@ class SupportTicketsAutoClose extends Command
                     });
             })
             ->with('user')
-            ->chunkById(100, function ($tickets) use ($supportTicketService, $actor, $threshold, &$closed) {
+            ->chunkById(100, function ($tickets) use ($supportTicketService, $actor, &$closed) {
                 foreach ($tickets as $ticket) {
                     try {
-                        \Illuminate\Support\Facades\DB::transaction(function () use ($ticket, $supportTicketService, $actor, $threshold, &$closed) {
+                        \Illuminate\Support\Facades\DB::transaction(function () use ($ticket, $supportTicketService, $actor, &$closed) {
                             $locked = SupportTicket::query()
                                 ->with('user')
                                 ->whereKey($ticket->id)
@@ -94,7 +95,7 @@ class SupportTicketsAutoClose extends Command
                                 return;
                             }
 
-                            if (! $supportTicketService->closeTicketForUserInactivity($locked, (int) $actor->id, $threshold)) {
+                            if (! $supportTicketService->closeTicketForUserInactivity($locked)) {
                                 return;
                             }
 

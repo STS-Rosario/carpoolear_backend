@@ -300,6 +300,7 @@ class SupportTicketService
 
             $ticket->status = 'Cerrado';
             $ticket->closed_at = now();
+            $ticket->closed_by = $actorUserId;
             $ticket->last_reply_at = now();
             $ticket->updated_by = $actorUserId;
             $this->clearTicketAssignment($ticket);
