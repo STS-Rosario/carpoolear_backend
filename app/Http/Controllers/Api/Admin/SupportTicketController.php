@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use STS\Admin\AdminPermission;
 use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
 use STS\Models\AdminActionLog;
@@ -14,6 +15,7 @@ use STS\Models\SupportTicketReply;
 use STS\Models\Trip;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\AdminActionLogger;
+use STS\Services\Logic\UsersManager;
 use STS\Services\SupportTicketService;
 use STS\Support\AdminPagination;
 use STS\Support\ImageAttachmentRules;
@@ -49,7 +51,7 @@ class SupportTicketController extends Controller
         return ['user:id,name', 'assignedTo:id,name'];
     }
 
-    public function __construct(private readonly SupportTicketService $supportTicketService) {}
+    public function __construct(private readonly SupportTicketService $supportTicketService, private readonly UsersManager $usersManager) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -136,12 +138,19 @@ class SupportTicketController extends Controller
                 'integer',
                 Rule::exists('trips', 'id')->where('user_id', (int) $request->input('user_id')),
             ],
+            'suspend_user' => 'sometimes|boolean',
+            'private_note' => 'sometimes|nullable|string',
         ]);
 
         $admin = auth()->user();
         $tripId = isset($validated['trip_id']) ? (int) $validated['trip_id'] : null;
         $existingTicketId = null;
-        $ticket = DB::transaction(function () use ($validated, $admin, $tripId, &$existingTicketId) {
+        $suspendUser = ! empty($validated['suspend_user']);
+        $privateNoteProvided = array_key_exists('private_note', $validated) && $validated['private_note'] !== null && trim((string) $validated['private_note']) !== '';
+        $userSuspended = false;
+        $privateNoteUpdated = false;
+
+        $ticket = DB::transaction(function () use ($validated, $admin, $tripId, &$existingTicketId, $suspendUser, $privateNoteProvided, &$userSuspended, &$privateNoteUpdated) {
             if ($tripId !== null && $validated['type'] === 'excess_contribution') {
                 // Lock the trip row so concurrent requests cannot both create its excess ticket.
                 Trip::query()->whereKey($tripId)->lockForUpdate()->first();
@@ -164,6 +173,21 @@ class SupportTicketController extends Controller
                 'updated_by' => $admin->id,
                 'last_reply_at' => now(),
             ]);
+
+            $ticket->loadMissing('user');
+
+            if ($validated['type'] === 'excess_contribution' && $suspendUser) {
+                if (! $admin->hasAdminPermission(AdminPermission::UsersSuspend)) {
+                    abort(403);
+                }
+                $this->usersManager->update($ticket->user, ['banned' => 1], false, true);
+                $userSuspended = true;
+            }
+
+            if ($validated['type'] === 'excess_contribution' && $privateNoteProvided) {
+                $this->usersManager->update($ticket->user, ['private_note' => trim((string) $validated['private_note'])], false, true);
+                $privateNoteUpdated = true;
+            }
 
             SupportTicketReply::create([
                 'ticket_id' => $ticket->id,
@@ -194,7 +218,13 @@ class SupportTicketController extends Controller
             report($e);
         }
 
-        return response()->json(['data' => $ticket]);
+        $response = ['data' => $ticket];
+        if ($validated['type'] === 'excess_contribution') {
+            $response['user_suspended'] = $userSuspended;
+            $response['private_note_updated'] = $privateNoteUpdated;
+        }
+
+        return response()->json($response);
     }
 
     public function reply(int $id, Request $request): JsonResponse
