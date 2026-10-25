@@ -2,10 +2,8 @@
 
 namespace Tests\Feature\Http;
 
-use Illuminate\Support\Facades\DB;
-use STS\Admin\AdminPermission;
+use STS\Admin\AdminRole;
 use STS\Http\Middleware\UserAdmin;
-use STS\Models\AdminPermission as AdminPermissionModel;
 use STS\Models\SupportTicket;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -16,30 +14,16 @@ use Tests\TestCase;
  */
 class AdminSupportTicketExcessTripTest extends TestCase
 {
-    private function actingAsAdmin(): User
+    private function actingAsAdmin(AdminRole $role = AdminRole::Superadmin): User
     {
         $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        $admin->forceFill(['is_admin' => true, 'admin_role' => $role->value])->saveQuietly();
         $admin = $admin->fresh();
 
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
         return $admin;
-    }
-
-    private function grantAdminPermission(User $admin, AdminPermission $permission): void
-    {
-        $permissionId = DB::table('admin_permissions')->where('name', $permission->value)->value('id');
-        if ($permissionId === null) {
-            $permissionId = AdminPermissionModel::query()->where('name', $permission->value)->value('id');
-        }
-        if ($permissionId !== null) {
-            DB::table('admin_user_permission')->updateOrInsert([
-                'user_id' => $admin->id,
-                'admin_permission_id' => $permissionId,
-            ], []);
-        }
     }
 
     /**
@@ -221,11 +205,7 @@ class AdminSupportTicketExcessTripTest extends TestCase
 
     public function test_can_suspend_user_when_creating_excess_contribution_ticket_with_permission(): void
     {
-        $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->saveQuietly();
-        $this->grantAdminPermission($admin, \STS\Admin\AdminPermission::UsersSuspend);
-        $this->actingAs($admin, 'api');
-        $this->withoutMiddleware(UserAdmin::class);
+        $this->actingAsAdmin(AdminRole::Superadmin);
 
         $owner = User::factory()->create(['banned' => 0]);
         $trip = Trip::factory()->create(['user_id' => $owner->id]);
@@ -236,6 +216,8 @@ class AdminSupportTicketExcessTripTest extends TestCase
 
         $owner->refresh();
         $this->assertSame(1, (int) $owner->banned);
+        $trip->refresh();
+        $this->assertStringStartsWith('2000-01-01', $trip->deleted_at->toDateTimeString());
     }
 
     public function test_creating_excess_contribution_without_suspend_user_does_not_change_banned_status(): void
@@ -249,11 +231,13 @@ class AdminSupportTicketExcessTripTest extends TestCase
 
         $owner->refresh();
         $this->assertSame(0, (int) $owner->banned);
+        $trip->refresh();
+        $this->assertNull($trip->deleted_at);
     }
 
     public function test_cannot_suspend_user_when_creating_excess_contribution_ticket_without_permission(): void
     {
-        $this->actingAsAdmin();
+        $this->actingAsAdmin(AdminRole::Helpdesk);
         $owner = User::factory()->create(['banned' => 0]);
         $trip = Trip::factory()->create(['user_id' => $owner->id]);
 
@@ -289,6 +273,25 @@ class AdminSupportTicketExcessTripTest extends TestCase
             ->assertJsonPath('private_note_updated', false);
 
         $owner->refresh();
+        $this->assertSame('nota original', $owner->private_note);
+    }
+
+    public function test_suspend_and_private_note_options_are_ignored_for_other_ticket_types(): void
+    {
+        $this->actingAsAdmin();
+        $owner = User::factory()->create([
+            'banned' => 0,
+            'private_note' => 'nota original',
+        ]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, null, [
+            'type' => 'contact',
+            'suspend_user' => true,
+            'private_note' => 'nota nueva',
+        ]))->assertOk();
+
+        $owner->refresh();
+        $this->assertSame(0, (int) $owner->banned);
         $this->assertSame('nota original', $owner->private_note);
     }
 }
