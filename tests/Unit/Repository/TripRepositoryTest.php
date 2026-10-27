@@ -921,7 +921,7 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($info['has_complimentary_sellado']);
     }
 
-    public function test_sellado_viaje_counts_canceled_trips_only_when_they_had_passengers_or_are_passenger_seeking(): void
+    public function test_sellado_viaje_counts_canceled_driver_trips_only_when_they_had_passengers(): void
     {
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
         Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
@@ -945,16 +945,32 @@ class TripRepositoryTest extends TestCase
         ]);
         $canceledWithPassenger->delete();
 
-        $canceledPassengerSeeking = Trip::factory()->create([
+        Trip::factory()->create([
             'user_id' => $user->id,
             'is_passenger' => true,
-        ]);
-        $canceledPassengerSeeking->delete();
+        ])->delete();
 
         $info = $this->repo()->selladoViaje($user);
 
-        $this->assertSame(2, $info['trips_created_by_user_amount']);
-        $this->assertTrue($info['user_over_free_limit']);
+        $this->assertSame(1, $info['trips_created_by_user_amount']);
+        $this->assertFalse($info['user_over_free_limit']);
+    }
+
+    public function test_sellado_viaje_does_not_count_passenger_trips_toward_free_limit(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+
+        $user = User::factory()->create();
+        Trip::factory()->count(2)->create([
+            'user_id' => $user->id,
+            'is_passenger' => true,
+        ]);
+
+        $info = $this->repo()->selladoViaje($user);
+
+        $this->assertSame(0, $info['trips_created_by_user_amount']);
+        $this->assertFalse($info['user_over_free_limit']);
     }
 
     public function test_get_recent_trips_filters_by_created_at_window(): void
@@ -3096,6 +3112,134 @@ class TripRepositoryTest extends TestCase
         $this->assertSame(650, (int) $trip->recommended_trip_price_cents);
     }
 
+    public function test_create_does_not_charge_un_litro_on_the_last_free_trip(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')->never();
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 700,
+            ],
+        ]);
+        $repo->shouldReceive('addPoints')->andReturnNull();
+        $repo->shouldReceive('generateTripPath')->andReturnNull();
+        $repo->shouldReceive('generateTripFriendVisibility')->andReturnNull();
+
+        $user = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]);
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 501, 'ciudad' => 'Origen']],
+                ['lat' => -34.5, 'lng' => -58.3, 'json_address' => ['id' => 502, 'ciudad' => 'Destino']],
+            ],
+        ]);
+
+        $this->assertNull($trip->payment_url ?? null);
+        $trip->refresh();
+        $this->assertNotSame(Trip::STATE_AWAITING_PAYMENT, $trip->state);
+        $this->assertNull($trip->payment_id);
+        $this->assertFalse((bool) $trip->needs_sellado);
+    }
+
+    public function test_create_charges_un_litro_after_the_free_trip_quota_is_used(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(true);
+
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')
+            ->once()
+            ->andReturn((object) [
+                'id' => 'pref_after_quota',
+                'init_point' => 'https://pay.test/pref_after_quota',
+            ]);
+
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+        $repo->shouldReceive('getTripInfo')->andReturn([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 700,
+            ],
+        ]);
+        $repo->shouldReceive('addPoints')->andReturnNull();
+        $repo->shouldReceive('generateTripPath')->andReturnNull();
+        $repo->shouldReceive('generateTripFriendVisibility')->andReturnNull();
+
+        $user = User::factory()->create();
+        Trip::factory()->count(2)->create(['user_id' => $user->id]);
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 501, 'ciudad' => 'Origen']],
+                ['lat' => -34.5, 'lng' => -58.3, 'json_address' => ['id' => 502, 'ciudad' => 'Destino']],
+            ],
+        ]);
+
+        $this->assertSame('https://pay.test/pref_after_quota', $trip->payment_url);
+        $trip->refresh();
+        $this->assertSame(Trip::STATE_AWAITING_PAYMENT, $trip->state);
+        $this->assertTrue((bool) $trip->needs_sellado);
+    }
+
     public function test_create_sets_awaiting_payment_and_preference_when_route_requires_sellado(): void
     {
         // Mutation intent: keep route payment requirement pipeline and awaiting-payment state transition.
@@ -3207,6 +3351,7 @@ class TripRepositoryTest extends TestCase
 
         $user = User::factory()->create();
         $rider = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]);
         $prior = Trip::factory()->create([
             'user_id' => $user->id,
             'is_passenger' => false,
@@ -3309,12 +3454,62 @@ class TripRepositoryTest extends TestCase
         $this->assertNotSame(Trip::STATE_AWAITING_PAYMENT, $trip->state);
         $this->assertNull($trip->payment_id);
         $this->assertFalse((bool) $trip->needs_sellado);
-        $this->assertTrue(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
-        $this->assertNull($emptyPaidTrip->fresh()->sellado_empty_trip_credit_redeemed_at);
-        $this->assertTrue($this->repo()->selladoViaje($user)['has_complimentary_sellado']);
+        $this->assertNotNull($trip->sellado_empty_trip_credit_applied_at);
+        $this->assertFalse(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
+        $this->assertNotNull($emptyPaidTrip->fresh()->sellado_empty_trip_credit_redeemed_at);
+        $this->assertFalse($this->repo()->selladoViaje($user)['has_complimentary_sellado']);
     }
 
-    public function test_create_skips_sellado_on_later_trips_while_empty_trip_credit_remains(): void
+    public function test_create_does_not_redeem_empty_trip_credit_when_route_does_not_need_sellado(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', false);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 1);
+
+        $repo = $this->makeTripRepoPartialForCreate([
+            'status' => true,
+            'data' => [
+                'maximum_trip_price_cents' => 1000,
+                'recommended_trip_price_cents' => 700,
+            ],
+        ], false);
+
+        $user = User::factory()->create();
+        $emptyPaidTrip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'is_passenger' => false,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_READY,
+            'trip_date' => Carbon::now()->subDay(),
+        ]);
+
+        $trip = $repo->create([
+            'user_id' => $user->id,
+            'is_passenger' => 0,
+            'from_town' => 'A',
+            'to_town' => 'B',
+            'trip_date' => Carbon::now()->addHour(),
+            'total_seats' => 1,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'estimated_time' => '01:00',
+            'distance' => 10,
+            'co2' => 1,
+            'description' => 'test',
+            'mail_send' => false,
+            'seat_price_cents' => 900,
+            'points' => [
+                ['lat' => -34.6, 'lng' => -58.4, 'json_address' => ['id' => 501, 'ciudad' => 'Origen']],
+                ['lat' => -34.5, 'lng' => -58.3, 'json_address' => ['id' => 502, 'ciudad' => 'Destino']],
+            ],
+        ]);
+
+        $trip->refresh();
+        $this->assertNull($trip->sellado_empty_trip_credit_applied_at);
+        $this->assertNull($emptyPaidTrip->fresh()->sellado_empty_trip_credit_redeemed_at);
+        $this->assertTrue(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
+    }
+
+    public function test_create_charges_sellado_on_the_next_trip_after_empty_trip_credit_is_used(): void
     {
         Config::set('carpoolear.module_max_price_enabled', false);
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
@@ -3326,7 +3521,12 @@ class TripRepositoryTest extends TestCase
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(true);
 
         $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
-        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')->never();
+        $mercadoPagoService->shouldReceive('createPaymentPreferenceForSellado')
+            ->once()
+            ->andReturn((object) [
+                'id' => 'pref_after_credit',
+                'init_point' => 'https://pay.test/pref_after_credit',
+            ]);
 
         $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
 
@@ -3379,11 +3579,11 @@ class TripRepositoryTest extends TestCase
         $second = $repo->create($createPayload);
 
         $this->assertNull($first->payment_url ?? null);
-        $this->assertNull($second->payment_url ?? null);
+        $this->assertSame('https://pay.test/pref_after_credit', $second->payment_url);
         $second->refresh();
-        $this->assertNotSame(Trip::STATE_AWAITING_PAYMENT, $second->state);
-        $this->assertFalse((bool) $second->needs_sellado);
-        $this->assertTrue(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
+        $this->assertSame(Trip::STATE_AWAITING_PAYMENT, $second->state);
+        $this->assertTrue((bool) $second->needs_sellado);
+        $this->assertFalse(SelladoEmptyTripCredit::userHasUnusedCredit($user->id));
     }
 
     public function test_create_charges_sellado_after_a_passenger_is_accepted_on_a_complimentary_trip(): void
@@ -3761,6 +3961,7 @@ class TripRepositoryTest extends TestCase
         $repo->shouldReceive('getTripInfo')->andReturn(['status' => false]);
 
         $user = User::factory()->create();
+        Trip::factory()->create(['user_id' => $user->id]);
         $trip = Trip::factory()->create([
             'user_id' => $user->id,
             'state' => Trip::STATE_READY,
@@ -4095,7 +4296,7 @@ class TripRepositoryTest extends TestCase
             'payment_id' => 'existing_pref',
             'needs_sellado' => false,
         ]);
-        Trip::factory()->create(['user_id' => $user->id]); // count == threshold boundary (2)
+        Trip::factory()->count(2)->create(['user_id' => $user->id]);
 
         $repo->addPoints($trip, [
             ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1001, 'ciudad' => 'OldA']],
@@ -4157,7 +4358,7 @@ class TripRepositoryTest extends TestCase
             'payment_id' => null,
             'needs_sellado' => false,
         ]);
-        Trip::factory()->create(['user_id' => $user->id]);
+        Trip::factory()->count(2)->create(['user_id' => $user->id]);
 
         $repo->addPoints($trip, [
             ['lat' => -34.60, 'lng' => -58.40, 'json_address' => ['id' => 1201, 'ciudad' => 'OldA']],
