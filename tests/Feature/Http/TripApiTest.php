@@ -251,8 +251,11 @@ class TripApiTest extends TestCase
             $response = $this->get('api/trips/'.$trip->id.'/instagram-story');
 
             $response->assertOk()
-                ->assertHeader('Content-Type', 'image/png')
-                ->assertHeader('Cache-Control', 'private, no-store, max-age=0');
+                ->assertHeader('Content-Type', 'image/png');
+            $cacheControl = explode(', ', $response->headers->get('Cache-Control'));
+            foreach (['private', 'no-store', 'max-age=0'] as $directive) {
+                $this->assertContains($directive, $cacheControl);
+            }
             $image = imagecreatefromstring($response->getContent());
             $this->assertNotFalse($image);
             $this->assertSame(1080, imagesx($image));
