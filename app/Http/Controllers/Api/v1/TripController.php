@@ -15,6 +15,7 @@ use STS\Repository\TripSearchRepository;
 use STS\Services\Logic\TripsManager;
 use STS\Services\MercadoPagoService;
 use STS\Services\SelladoPaymentApplier;
+use STS\Services\TripInstagramStoryGenerator;
 use STS\Transformers\TripTransformer;
 
 class TripController extends Controller
@@ -119,6 +120,21 @@ class TripController extends Controller
 
         return $this->item($trip, new TripTransformer($this->user));
         // return response()->json(['data' => $trip]);
+    }
+
+    public function instagramStory($id, TripInstagramStoryGenerator $storyGenerator)
+    {
+        $this->user = auth()->user();
+        $trip = $this->tripsLogic->show($this->user, $id);
+        if (! $trip) {
+            throw new ExceptionWithErrors('Could not found trip.', $this->tripsLogic->getErrors());
+        }
+
+        return response($storyGenerator->generate($trip), 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'inline; filename="trip-'.$trip->id.'-instagram-story.png"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+        ]);
     }
 
     public function search(Request $request)

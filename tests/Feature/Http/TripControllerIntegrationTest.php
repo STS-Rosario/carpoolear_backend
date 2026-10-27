@@ -134,6 +134,7 @@ class TripControllerIntegrationTest extends TestCase
             ['PUT', "/api/trips/{$trip->id}"],
             ['DELETE', "/api/trips/{$trip->id}"],
             ['GET', "/api/trips/{$trip->id}"],
+            ['GET', "/api/trips/{$trip->id}/instagram-story"],
             ['POST', "/api/trips/{$trip->id}/changeSeats"],
             ['POST', "/api/trips/{$trip->id}/change-visibility"],
             ['GET', '/api/users/my-trips'],

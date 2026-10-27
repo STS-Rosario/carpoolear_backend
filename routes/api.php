@@ -190,6 +190,7 @@ Route::middleware(['api'])->group(function () {
         Route::get('/autocomplete', [RoutesController::class, 'autocomplete']);
         Route::get('/', [TripController::class, 'search']);
         Route::post('/', [TripController::class, 'create']);
+        Route::get('/{id}/instagram-story', [TripController::class, 'instagramStory'])->middleware('throttle:30,1');
         Route::put('/{id?}', [TripController::class, 'update']);
         Route::delete('/{id?}', [TripController::class, 'delete']);
         Route::get('/{id?}', [TripController::class, 'show']);
