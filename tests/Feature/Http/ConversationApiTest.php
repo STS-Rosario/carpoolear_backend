@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Mockery;
 use STS\Helpers\IdentityValidationHelper;
@@ -143,6 +144,59 @@ class ConversationApiTest extends TestCase
         $this->assertTrue($response->status() == 200);
         $json = json_decode($response->getContent());
         $this->assertTrue(count($json->data) == 0);
+    }
+
+    public function test_api_conversation_get_uses_id_to_page_messages_with_the_same_timestamp()
+    {
+        $sender = User::factory()->create();
+        $recipient = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $recipient);
+        $this->actingAs($recipient, 'api');
+
+        $timestamp = Carbon::parse('2020-06-02 12:00:00');
+        $old = Message::create([
+            'user_id' => $sender->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'old',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $old->forceFill(['created_at' => $timestamp->copy()->subDay()])->saveQuietly();
+
+        $beforeCursor = Message::create([
+            'user_id' => $sender->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'before cursor',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $beforeCursor->forceFill(['created_at' => $timestamp])->saveQuietly();
+
+        $cursor = Message::create([
+            'user_id' => $sender->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'cursor',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $cursor->forceFill(['created_at' => $timestamp])->saveQuietly();
+
+        Message::create([
+            'user_id' => $sender->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'newer than cursor',
+            'estado' => Message::STATE_NOLEIDO,
+        ])->forceFill(['created_at' => $timestamp])->saveQuietly();
+
+        $response = $this->call('GET', 'api/conversations/'.$conversation->id, [
+            'timestamp' => $timestamp->toDateTimeString(),
+            'before_id' => $cursor->id,
+        ]);
+
+        $this->assertSame(200, $response->status());
+        $json = json_decode($response->getContent());
+        $this->assertSame(
+            [$beforeCursor->id, $old->id],
+            array_map(fn ($message) => $message->id, $json->data)
+        );
     }
 
     public function test_users()
