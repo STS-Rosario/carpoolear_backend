@@ -208,6 +208,64 @@ class TripApiTest extends TestCase
         $this->assertTrue($trip->id == $response->data->id);
     }
 
+    public function test_instagram_story_returns_a_private_png_with_story_dimensions(): void
+    {
+        $user = User::factory()->create([
+            'name' => 'Federico Gomez',
+            'driver_is_verified' => true,
+        ]);
+        $trip = Trip::factory()->create([
+            'user_id' => $user->id,
+            'trip_date' => '2025-04-24 18:30:00',
+            'total_seats' => 3,
+        ]);
+        $trip->points()->createMany([
+            [
+                'address' => 'Rosario, Santa Fe',
+                'json_address' => ['ciudad' => 'Rosario', 'provincia' => 'Santa Fe'],
+                'lat' => -32.946525,
+                'lng' => -60.669847,
+            ],
+            [
+                'address' => 'Buenos Aires, CABA',
+                'json_address' => ['ciudad' => 'Buenos Aires', 'provincia' => 'CABA'],
+                'lat' => -34.608903,
+                'lng' => -58.404521,
+            ],
+        ]);
+        $this->actingAs($user, 'api');
+
+        $this->tripsLogic->shouldReceive('show')
+            ->times(4)
+            ->with($user, $trip->id)
+            ->andReturn($trip);
+
+        $expectedSeatColors = [
+            3 => [226, 244, 234],
+            2 => [252, 242, 218],
+            1 => [251, 231, 231],
+            0 => [237, 239, 241],
+        ];
+        foreach ($expectedSeatColors as $availableSeats => $expectedColor) {
+            $trip->total_seats = $availableSeats;
+            $response = $this->get('api/trips/'.$trip->id.'/instagram-story');
+
+            $response->assertOk()
+                ->assertHeader('Content-Type', 'image/png');
+            $cacheControl = explode(', ', $response->headers->get('Cache-Control'));
+            foreach (['private', 'no-store', 'max-age=0'] as $directive) {
+                $this->assertContains($directive, $cacheControl);
+            }
+            $image = imagecreatefromstring($response->getContent());
+            $this->assertNotFalse($image);
+            $this->assertSame(1080, imagesx($image));
+            $this->assertSame(1920, imagesy($image));
+            $pixel = imagecolorsforindex($image, imagecolorat($image, 140, 1094));
+            $this->assertSame($expectedColor, [$pixel['red'], $pixel['green'], $pixel['blue']]);
+            imagedestroy($image);
+        }
+    }
+
     public function test_show_returns_legacy_placeholder_for_old_cordova_without_hitting_trips_logic(): void
     {
         $user = User::factory()->create();
