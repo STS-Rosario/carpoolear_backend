@@ -921,7 +921,7 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($info['has_complimentary_sellado']);
     }
 
-    public function test_sellado_viaje_counts_canceled_trips_only_when_they_had_passengers_or_are_passenger_seeking(): void
+    public function test_sellado_viaje_counts_canceled_driver_trips_only_when_they_had_passengers(): void
     {
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
         Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
@@ -945,16 +945,32 @@ class TripRepositoryTest extends TestCase
         ]);
         $canceledWithPassenger->delete();
 
-        $canceledPassengerSeeking = Trip::factory()->create([
+        Trip::factory()->create([
             'user_id' => $user->id,
             'is_passenger' => true,
-        ]);
-        $canceledPassengerSeeking->delete();
+        ])->delete();
 
         $info = $this->repo()->selladoViaje($user);
 
-        $this->assertSame(2, $info['trips_created_by_user_amount']);
-        $this->assertTrue($info['user_over_free_limit']);
+        $this->assertSame(1, $info['trips_created_by_user_amount']);
+        $this->assertFalse($info['user_over_free_limit']);
+    }
+
+    public function test_sellado_viaje_does_not_count_passenger_trips_toward_free_limit(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+
+        $user = User::factory()->create();
+        Trip::factory()->count(2)->create([
+            'user_id' => $user->id,
+            'is_passenger' => true,
+        ]);
+
+        $info = $this->repo()->selladoViaje($user);
+
+        $this->assertSame(0, $info['trips_created_by_user_amount']);
+        $this->assertFalse($info['user_over_free_limit']);
     }
 
     public function test_get_recent_trips_filters_by_created_at_window(): void
