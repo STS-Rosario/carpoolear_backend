@@ -27,6 +27,7 @@ class Conversation extends Model
         'title',
         'trip_id',
         'closed_at',
+        'messages_purged_at',
     ];
 
     protected function casts(): array
