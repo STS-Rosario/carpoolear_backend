@@ -16,7 +16,18 @@ class PurgeExpiredMessages extends Command
 
     public function handle(): int
     {
-        $cutoff = now()->subYear();
+        $retentionYears = filter_var(
+            config('carpoolear.messages_retention_years'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]],
+        );
+        if ($retentionYears === false) {
+            $this->error('The configured message retention period must be a positive number of years.');
+
+            return self::FAILURE;
+        }
+
+        $cutoff = now()->subYears($retentionYears);
         $limitOption = $this->option('limit');
         $limit = null;
         if ($limitOption !== null) {

@@ -109,4 +109,32 @@ class PurgeExpiredMessagesTest extends TestCase
             ->expectsOutputToContain('The --limit option must be a positive integer.')
             ->assertExitCode(1);
     }
+
+    public function test_it_uses_the_configured_retention_period(): void
+    {
+        config(['carpoolear.messages_retention_years' => 2]);
+        $sender = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+
+        $expired = Message::create([
+            'user_id' => $sender->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Expired',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $expired->forceFill(['created_at' => now()->subYears(2)->subSecond()])->saveQuietly();
+
+        $withinRetention = Message::create([
+            'user_id' => $sender->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Within retention',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $withinRetention->forceFill(['created_at' => now()->subYear()->subSecond()])->saveQuietly();
+
+        $this->artisan('messages:purge-expired --limit=1')->assertExitCode(0);
+
+        $this->assertDatabaseMissing('messages', ['id' => $expired->id]);
+        $this->assertDatabaseHas('messages', ['id' => $withinRetention->id]);
+    }
 }
