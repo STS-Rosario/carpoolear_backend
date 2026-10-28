@@ -349,9 +349,9 @@ class ConversationsManager extends BaseManager
         }
     }
 
-    public function getAllMessagesFromConversation($conversation_id, User $user, $read = false, $pageNumber = null, $pageSize = 20, $beforeId = null)
+    public function getAllMessagesFromConversation($conversation_id, User $user, $read = false, $timestamp = null, $pageSize = 20, $beforeId = null)
     {
-        return $this->getMessagesFromConversation($conversation_id, $user, $read, false, $pageNumber, $pageSize, $beforeId);
+        return $this->getMessagesFromConversation($conversation_id, $user, $read, false, $timestamp, $pageSize, $beforeId);
     }
 
     public function getUnreadMessagesFromConversation($conversation_id, User $user, $read = false)

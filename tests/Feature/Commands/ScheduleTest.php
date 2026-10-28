@@ -147,6 +147,7 @@ class ScheduleTest extends TestCase
         $event = $this->findEvent('messages:purge-expired');
         $this->assertEquals('30 5 * * *', $event->expression);
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+        $this->assertStringContainsString('--limit=5000', $event->command);
         $this->assertTrue($event->withoutOverlapping);
         $this->assertSame(1440, $event->expiresAt);
     }

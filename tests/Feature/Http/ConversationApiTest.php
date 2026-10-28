@@ -199,6 +199,25 @@ class ConversationApiTest extends TestCase
         );
     }
 
+    public function test_api_conversation_get_rejects_a_non_integer_before_id(): void
+    {
+        $recipient = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $this->conversationRepository->addUser($conversation, $recipient);
+        $this->actingAs($recipient, 'api');
+
+        $response = $this->call(
+            'GET',
+            'api/conversations/'.$conversation->id,
+            ['before_id' => 'not-an-integer'],
+            [],
+            [],
+            ['HTTP_ACCEPT' => 'application/json'],
+        );
+
+        $this->assertSame(422, $response->status());
+    }
+
     public function test_users()
     {
         $u = \STS\Models\User::factory()->count(3)->create();

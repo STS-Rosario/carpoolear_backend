@@ -54,7 +54,7 @@ Schedule::command('manual-identity-validation:purge-rejected-photos')
     ->dailyAt('05:00')
     ->timezone('America/Argentina/Buenos_Aires');
 
-Schedule::command('messages:purge-expired')
+Schedule::command('messages:purge-expired --limit=5000')
     ->dailyAt('05:30')
     ->timezone('America/Argentina/Buenos_Aires')
     ->withoutOverlapping(1440);
