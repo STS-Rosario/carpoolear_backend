@@ -59,6 +59,10 @@ class PurgeExpiredMessagesTest extends TestCase
         $this->assertDatabaseMissing('user_message_read', ['message_id' => $expired->id]);
         $this->assertDatabaseHas('messages', ['id' => $boundary->id]);
         $this->assertDatabaseHas('user_message_read', ['message_id' => $boundary->id]);
+        $this->assertDatabaseHas('conversations', [
+            'id' => $conversation->id,
+            'messages_purged_at' => now()->toDateTimeString(),
+        ]);
     }
 
     public function test_it_reports_expired_messages_without_deleting_them_in_dry_run(): void

@@ -49,18 +49,34 @@ class PurgeExpiredMessages extends Command
                 $batchLimit = $limit === null
                     ? 500
                     : min(500, $limit - $deletedCount);
-                $messageIds = (clone $eligibleQuery)
-                    ->select('id')
-                    ->orderBy('created_at')
-                    ->orderBy('id')
-                    ->limit($batchLimit)
-                    ->pluck('id');
+                $batchDeletedCount = DB::transaction(function () use ($eligibleQuery, $batchLimit, $cutoff) {
+                    $messages = (clone $eligibleQuery)
+                        ->select('id', 'conversation_id')
+                        ->orderBy('created_at')
+                        ->orderBy('id')
+                        ->limit($batchLimit)
+                        ->lockForUpdate()
+                        ->get();
 
-                if ($messageIds->isEmpty()) {
+                    if ($messages->isEmpty()) {
+                        return 0;
+                    }
+
+                    DB::table('conversations')
+                        ->whereIn('id', $messages->pluck('conversation_id')->unique())
+                        ->update(['messages_purged_at' => now()]);
+
+                    return DB::table('messages')
+                        ->whereIn('id', $messages->pluck('id'))
+                        ->where('created_at', '<', $cutoff)
+                        ->delete();
+                });
+
+                if ($batchDeletedCount === 0) {
                     break;
                 }
 
-                $deletedCount += DB::table('messages')->whereIn('id', $messageIds)->delete();
+                $deletedCount += $batchDeletedCount;
                 usleep(100_000);
             }
         }

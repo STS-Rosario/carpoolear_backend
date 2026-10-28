@@ -27,6 +27,7 @@ class ConversationsTransformer extends TransformerAbstract
             'type' => $conversation->type,
             'closed_at' => $conversation->closed_at ? $conversation->closed_at->toDateTimeString() : null,
             'closed' => $conversation->isClosed(),
+            'history_pruned' => $conversation->messages_purged_at !== null,
         ];
 
         $trip = null;

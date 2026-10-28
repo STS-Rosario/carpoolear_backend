@@ -34,6 +34,7 @@ class Conversation extends Model
         return [
             'deleted_at' => 'boolean',
             'closed_at' => 'datetime',
+            'messages_purged_at' => 'datetime',
         ];
     }
 
