@@ -42,6 +42,7 @@ class ConversationsTransformerTest extends TestCase
 
         $this->assertSame($conversation->id, $payload['id']);
         $this->assertSame(Conversation::TYPE_PRIVATE_CONVERSATION, $payload['type']);
+        $this->assertFalse($payload['history_pruned']);
         $this->assertSame('Other User', $payload['title']);
         $this->assertSame('/image/profile/other.png', $payload['image']);
         $this->assertSame('2026-04-29 10:00:00', $payload['other_user_identity_validated_at']);
@@ -50,6 +51,21 @@ class ConversationsTransformerTest extends TestCase
         $this->assertSame('Latest text', $payload['last_message']['text']);
         $this->assertCount(2, $payload['users']);
         $this->assertSame($viewer->id, $payload['users'][0]['id']);
+    }
+
+    public function test_transform_reports_when_conversation_history_was_pruned(): void
+    {
+        $viewer = User::factory()->create();
+        $conversation = Conversation::query()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+            'title' => 'Private chat',
+            'messages_purged_at' => Carbon::parse('2026-04-30 12:00:00'),
+        ]);
+        $conversation->users()->attach($viewer->id, ['read' => false]);
+
+        $payload = (new ConversationsTransformer($viewer))->transform($conversation->fresh());
+
+        $this->assertTrue($payload['history_pruned']);
     }
 
     public function test_transform_uses_unknown_user_fallback_when_private_peer_is_missing(): void

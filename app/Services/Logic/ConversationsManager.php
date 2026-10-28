@@ -349,9 +349,9 @@ class ConversationsManager extends BaseManager
         }
     }
 
-    public function getAllMessagesFromConversation($conversation_id, User $user, $read = false, $pageNumber = null, $pageSize = 20)
+    public function getAllMessagesFromConversation($conversation_id, User $user, $read = false, $timestamp = null, $pageSize = 20, $beforeId = null)
     {
-        return $this->getMessagesFromConversation($conversation_id, $user, $read, false, $pageNumber, $pageSize);
+        return $this->getMessagesFromConversation($conversation_id, $user, $read, false, $timestamp, $pageSize, $beforeId);
     }
 
     public function getUnreadMessagesFromConversation($conversation_id, User $user, $read = false)
@@ -359,7 +359,7 @@ class ConversationsManager extends BaseManager
         return $this->getMessagesFromConversation($conversation_id, $user, $read, true, null, null);
     }
 
-    private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $timestamp = null, $pageSize = null)
+    private function getMessagesFromConversation($conversation_id, User $user, $read, $unreadMessages, $timestamp = null, $pageSize = null, $beforeId = null)
     {
         // FALTA CHEQUEAR PERMISOS
         $conversation = $this->getConversation($user, $conversation_id);
@@ -368,7 +368,7 @@ class ConversationsManager extends BaseManager
             if ($unreadMessages) {
                 $messages = $this->messageRepository->getUnreadMessages($conversation, $user);
             } else {
-                $messages = $this->messageRepository->getMessages($conversation, $timestamp, $pageSize);
+                $messages = $this->messageRepository->getMessages($conversation, $timestamp, $pageSize, $beforeId);
             }
 
             if ($read) {

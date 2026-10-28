@@ -20,13 +20,23 @@ class MessageRepository
         return $message->delete();
     }
 
-    public function getMessages(Conversation $conversation, $timestamp, $pageSize)
+    public function getMessages(Conversation $conversation, $timestamp, $pageSize, $beforeId = null)
     {
         $conversationMessages = $conversation->messages()
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc');
         if ($timestamp) {
-            $conversationMessages->where('created_at', '<', $timestamp);
+            if ($beforeId) {
+                $conversationMessages->where(function ($query) use ($timestamp, $beforeId) {
+                    $query->where('created_at', '<', $timestamp)
+                        ->orWhere(function ($query) use ($timestamp, $beforeId) {
+                            $query->where('created_at', '=', $timestamp)
+                                ->where('id', '<', $beforeId);
+                        });
+                });
+            } else {
+                $conversationMessages->where('created_at', '<', $timestamp);
+            }
         }
 
         $conversationMessages->take($pageSize);
