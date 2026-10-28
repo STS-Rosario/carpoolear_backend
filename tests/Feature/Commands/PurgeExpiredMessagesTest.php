@@ -97,7 +97,7 @@ class PurgeExpiredMessagesTest extends TestCase
         });
 
         $this->artisan('messages:purge-expired --limit=2')
-            ->expectsOutputToContain('Eligible: 3; deleted: 2; remaining: 1')
+            ->expectsOutputToContain('Eligible: 3; planned: 2; deleted: 2; remaining: 1')
             ->assertExitCode(0);
 
         $this->assertSame(1, DB::table('messages')->whereIn('id', $messages->pluck('id'))->count());
