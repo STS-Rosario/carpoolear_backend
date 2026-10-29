@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use STS\Admin\AdminRole;
 use STS\Http\Middleware\UserAdmin;
 use STS\Models\SupportTicket;
 use STS\Models\Trip;
@@ -13,10 +14,10 @@ use Tests\TestCase;
  */
 class AdminSupportTicketExcessTripTest extends TestCase
 {
-    private function actingAsAdmin(): User
+    private function actingAsAdmin(AdminRole $role = AdminRole::Superadmin): User
     {
         $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->saveQuietly();
+        $admin->forceFill(['is_admin' => true, 'admin_role' => $role->value])->saveQuietly();
         $admin = $admin->fresh();
 
         $this->actingAs($admin, 'api');
@@ -200,5 +201,97 @@ class AdminSupportTicketExcessTripTest extends TestCase
         $this->getJson('api/admin/trip-excess-contributions/'.$tripWithoutTicket->id)
             ->assertOk()
             ->assertJsonPath('data.excess_contribution_ticket_id', null);
+    }
+
+    public function test_can_suspend_user_when_creating_excess_contribution_ticket_with_permission(): void
+    {
+        $this->actingAsAdmin(AdminRole::Superadmin);
+
+        $owner = User::factory()->create(['banned' => 0]);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $response = $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, ['suspend_user' => true]))
+            ->assertOk()
+            ->assertJsonPath('user_suspended', true);
+
+        $owner->refresh();
+        $this->assertSame(1, (int) $owner->banned);
+        $trip->refresh();
+        $this->assertStringStartsWith('2000-01-01', $trip->deleted_at->toDateTimeString());
+    }
+
+    public function test_creating_excess_contribution_without_suspend_user_does_not_change_banned_status(): void
+    {
+        $this->actingAsAdmin();
+        $owner = User::factory()->create(['banned' => 0]);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $response = $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip))
+            ->assertOk();
+
+        $owner->refresh();
+        $this->assertSame(0, (int) $owner->banned);
+        $trip->refresh();
+        $this->assertNull($trip->deleted_at);
+    }
+
+    public function test_cannot_suspend_user_when_creating_excess_contribution_ticket_without_permission(): void
+    {
+        $this->actingAsAdmin(AdminRole::Helpdesk);
+        $owner = User::factory()->create(['banned' => 0]);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, ['suspend_user' => true]))
+            ->assertStatus(403);
+
+        $owner->refresh();
+        $this->assertSame(0, (int) $owner->banned);
+    }
+
+    public function test_can_update_user_private_note_when_creating_excess_contribution_ticket(): void
+    {
+        $this->actingAsAdmin();
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, ['private_note' => '  Seguimiento por exceso de contribución  ']))
+            ->assertOk()
+            ->assertJsonPath('private_note_updated', true);
+
+        $owner->refresh();
+        $this->assertSame('Seguimiento por exceso de contribución', $owner->private_note);
+    }
+
+    public function test_empty_private_note_does_not_update_user_private_note(): void
+    {
+        $this->actingAsAdmin();
+        $owner = User::factory()->create(['private_note' => 'nota original']);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, ['private_note' => '   ']))
+            ->assertOk()
+            ->assertJsonPath('private_note_updated', false);
+
+        $owner->refresh();
+        $this->assertSame('nota original', $owner->private_note);
+    }
+
+    public function test_suspend_and_private_note_options_are_ignored_for_other_ticket_types(): void
+    {
+        $this->actingAsAdmin();
+        $owner = User::factory()->create([
+            'banned' => 0,
+            'private_note' => 'nota original',
+        ]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, null, [
+            'type' => 'contact',
+            'suspend_user' => true,
+            'private_note' => 'nota nueva',
+        ]))->assertOk();
+
+        $owner->refresh();
+        $this->assertSame(0, (int) $owner->banned);
+        $this->assertSame('nota original', $owner->private_note);
     }
 }

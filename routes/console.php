@@ -46,7 +46,7 @@ Schedule::command('users:calculate-active-per-month')->monthlyOn(1, '03:00')->ti
 // Clean up expired password reset tokens daily at 4 AM
 Schedule::command('auth:cleanup-reset-tokens')->dailyAt('04:00')->timezone('America/Argentina/Buenos_Aires');
 
-// Auto-close resolved support tickets after configured inactivity days
+// Auto-close resolved support tickets and tickets waiting on the user (inactivity) after configured inactivity days
 Schedule::command('support-tickets:autoclose')->dailyAt('04:30')->timezone('America/Argentina/Buenos_Aires');
 
 // Purge photos from rejected manual identity validations after retention period
