@@ -1486,7 +1486,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($admin->name, $data['assigned_to']['name']);
     }
 
-    public function test_assign_me_returns_conflict_when_ticket_assigned_to_another_admin(): void
+    public function test_assign_me_reassigns_when_ticket_assigned_to_another_admin(): void
     {
         $adminA = $this->adminUser();
         $adminB = $this->adminUser();
@@ -1501,8 +1501,13 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->actingAs($adminB, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
-        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/assign-me')
-            ->assertStatus(409);
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/assign-me')
+            ->assertOk();
+        $data = $response->json('data');
+
+        $this->assertSame($adminB->id, (int) $data['assigned_to_user_id']);
+        $this->assertSame($adminB->id, (int) $data['assigned_to']['id']);
+        $this->assertSame($adminB->name, $data['assigned_to']['name']);
     }
 
     public function test_assign_me_returns_unprocessable_when_ticket_not_assignable(): void
@@ -1609,15 +1614,16 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($admin->name, $row['assigned_to']['name']);
     }
 
-    public function test_admin_reply_clears_ticket_assignment(): void
+    public function test_admin_reply_keeps_ticket_assignment(): void
     {
         $admin = $this->adminUser();
         $owner = User::factory()->create();
+        $assignedAt = now();
         $ticket = $this->makeTicket($owner, [
             'status' => 'Open',
-            'subject' => 'reply-clears-assignment',
+            'subject' => 'reply-keeps-assignment',
             'assigned_to_user_id' => $admin->id,
-            'assigned_at' => now(),
+            'assigned_at' => $assignedAt,
         ]);
 
         $this->actingAs($admin, 'api');
@@ -1628,8 +1634,8 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         ])->assertOk();
 
         $fresh = $ticket->fresh();
-        $this->assertNull($fresh->assigned_to_user_id);
-        $this->assertNull($fresh->assigned_at);
+        $this->assertSame($admin->id, (int) $fresh->assigned_to_user_id);
+        $this->assertNotNull($fresh->assigned_at);
     }
 
     public function test_admin_reply_returns_forbidden_when_ticket_assigned_to_another_admin(): void

@@ -9,7 +9,6 @@ use STS\Models\SupportTicketReply;
 use STS\Models\User;
 use STS\Support\SupportTicketOpeningAutoReply;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class SupportTicketService
@@ -137,7 +136,6 @@ class SupportTicketService
         $ticket->unread_for_admin = 0;
         $ticket->last_reply_at = now();
         $ticket->updated_by = $actorUserId;
-        $this->clearTicketAssignment($ticket);
     }
 
     /**
@@ -208,12 +206,10 @@ class SupportTicketService
             $ticket->save();
         }
 
-        if (! $this->ticketIsAssignableByAdmin($ticket)) {
-            throw new UnprocessableEntityHttpException('Ticket cannot be assigned');
-        }
+        $takeover = $ticket->hasActiveAssignment() && ! $ticket->isAssignedTo($admin->id);
 
-        if ($ticket->hasActiveAssignment() && ! $ticket->isAssignedTo($admin->id)) {
-            throw new ConflictHttpException('Ticket is already assigned to another admin');
+        if (! $takeover && ! $this->ticketIsAssignableByAdmin($ticket)) {
+            throw new UnprocessableEntityHttpException('Ticket cannot be assigned');
         }
 
         $ticket->assigned_to_user_id = $admin->id;
