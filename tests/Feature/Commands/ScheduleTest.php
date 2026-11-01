@@ -142,6 +142,16 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
+    public function test_expired_messages_are_scheduled_daily_at530_am()
+    {
+        $event = $this->findEvent('messages:purge-expired');
+        $this->assertEquals('30 5 * * *', $event->expression);
+        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
+        $this->assertStringContainsString('--limit=5000', $event->command);
+        $this->assertTrue($event->withoutOverlapping);
+        $this->assertSame(1440, $event->expiresAt);
+    }
+
     public function test_manual_identity_validation_remind_upload_photos_is_scheduled_daily_at8_pm()
     {
         $event = $this->findEvent('manual-identity-validation:remind-upload-photos');
@@ -196,6 +206,7 @@ class ScheduleTest extends TestCase
             'support-tickets:autoclose',
             'manual-identity-validation:purge-rejected-photos',
             'manual-identity-validation:remind-upload-photos',
+            'messages:purge-expired',
             'support-tickets:release-expired-assignments',
             'car-catalog:sync-argautos',
             'donations:sync-subscription-amounts',

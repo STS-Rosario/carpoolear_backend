@@ -27,6 +27,7 @@ class Conversation extends Model
         'title',
         'trip_id',
         'closed_at',
+        'messages_purged_at',
     ];
 
     protected function casts(): array
@@ -34,6 +35,7 @@ class Conversation extends Model
         return [
             'deleted_at' => 'boolean',
             'closed_at' => 'datetime',
+            'messages_purged_at' => 'datetime',
         ];
     }
 
