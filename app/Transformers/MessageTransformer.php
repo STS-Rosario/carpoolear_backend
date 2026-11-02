@@ -32,6 +32,7 @@ class MessageTransformer extends TransformerAbstract
             $data['no_of_read'] = $message->numberOfRead();
         }
         $data['is_system'] = (bool) $message->is_system;
+        $data['used_for_seat_request'] = $message->seatRequest()->exists();
 
         return $data;
     }

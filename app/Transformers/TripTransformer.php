@@ -62,6 +62,7 @@ class TripTransformer extends TransformerAbstract
             'seats_available' => $trip->seats_available,
             'points' => $trip->points,
             'ratings' => $trip->ratings,
+            'created_at' => $trip->created_at ? $trip->created_at->toDateTimeString() : null,
             'updated_at' => $trip->updated_at->toDateTimeString(),
             'allow_kids' => $trip->allow_kids,
             'allow_animals' => $trip->allow_animals,
