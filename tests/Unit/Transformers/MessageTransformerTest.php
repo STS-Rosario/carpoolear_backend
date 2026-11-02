@@ -5,6 +5,8 @@ namespace Tests\Unit\Transformers;
 use Carbon\Carbon;
 use STS\Models\Conversation;
 use STS\Models\Message;
+use STS\Models\Passenger;
+use STS\Models\Trip;
 use STS\Models\User;
 use STS\Transformers\MessageTransformer;
 use Tests\TestCase;
@@ -34,7 +36,9 @@ class MessageTransformerTest extends TestCase
             'user_id',
             'conversation_id',
             'is_system',
+            'used_for_seat_request',
         ], array_keys($payload));
+        $this->assertFalse($payload['used_for_seat_request']);
         $this->assertSame($message->id, $payload['id']);
         $this->assertSame('Hello there', $payload['text']);
         $this->assertSame('2026-04-30 14:00:00', $payload['created_at']);
@@ -84,5 +88,28 @@ class MessageTransformerTest extends TestCase
 
         $this->assertArrayHasKey('no_of_read', $payload);
         $this->assertSame(1, $payload['no_of_read']);
+    }
+
+    public function test_transform_marks_message_used_for_seat_request_when_linked(): void
+    {
+        $author = User::factory()->create();
+        $driver = User::factory()->create();
+        $conversation = Conversation::factory()->create();
+        $message = Message::query()->create([
+            'user_id' => $author->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Quiero ir',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => $author->id,
+            'message_id' => $message->id,
+        ]);
+
+        $payload = (new MessageTransformer($driver))->transform($message->fresh());
+
+        $this->assertTrue($payload['used_for_seat_request']);
     }
 }
