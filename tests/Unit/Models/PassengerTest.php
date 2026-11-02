@@ -61,6 +61,7 @@ class PassengerTest extends TestCase
             'passenger_type',
             'request_state',
             'canceled_state',
+            'message_id',
         ];
 
         $this->assertSame($expected, (new Passenger)->getFillable());
@@ -272,6 +273,7 @@ class PassengerTest extends TestCase
 
         $this->assertSame([
             'trip_id' => 'integer',
+            'message_id' => 'integer',
             'payment_info' => 'array',
         ], $casts);
     }

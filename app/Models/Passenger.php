@@ -57,6 +57,7 @@ class Passenger extends Model
             'passenger_type',
             'request_state',
             'canceled_state',
+            'message_id',
         ];
     }
 
@@ -72,6 +73,7 @@ class Passenger extends Model
     {
         return [
             'trip_id' => 'integer',
+            'message_id' => 'integer',
             'payment_info' => 'array',
         ];
     }
@@ -84,6 +86,11 @@ class Passenger extends Model
     public function trip()
     {
         return $this->belongsTo('STS\Models\Trip', 'trip_id');
+    }
+
+    public function message()
+    {
+        return $this->belongsTo(Message::class, 'message_id');
     }
 
     public function isEligibleForRating(): bool

@@ -32,6 +32,7 @@ class PassengersTest extends TestCase
         Config::set('carpoolear.module_user_request_limited_enabled', false);
         Config::set('carpoolear.module_trip_seats_payment', false);
         Config::set('carpoolear.module_send_full_trip_message', false);
+        Config::set('carpoolear.module_coordinate_by_message', false);
         Carbon::setTestNow('2028-01-01 10:00:00');
     }
 

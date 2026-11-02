@@ -42,6 +42,11 @@ class Message extends Model
         return $this->belongsTo('STS\Models\User', 'user_id');
     }
 
+    public function seatRequest()
+    {
+        return $this->hasOne(Passenger::class, 'message_id');
+    }
+
     public function users()
     {
         return $this->belongsToMany('STS\Models\User', 'user_message_read', 'message_id', 'user_id')->withPivot('read');

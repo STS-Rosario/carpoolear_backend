@@ -100,6 +100,10 @@ class PassengersRepository
             'passenger_type' => Passenger::TYPE_PASAJERO,
         ];
 
+        if (! empty($data['message_id'])) {
+            $newRequestData['message_id'] = $data['message_id'];
+        }
+
         $newRequest = Passenger::create($newRequestData);
 
         return $newRequest;
