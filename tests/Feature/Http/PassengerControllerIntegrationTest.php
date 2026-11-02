@@ -5,6 +5,8 @@ namespace Tests\Feature\Http;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use STS\Helpers\IdentityValidationHelper;
+use STS\Models\Conversation;
+use STS\Models\Message;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -19,6 +21,7 @@ class PassengerControllerIntegrationTest extends TestCase
         Config::set('carpoolear.module_user_request_limited_enabled', false);
         Config::set('carpoolear.module_trip_seats_payment', false);
         Config::set('carpoolear.module_send_full_trip_message', false);
+        Config::set('carpoolear.module_coordinate_by_message', false);
     }
 
     private function enableStrictNewUserIdentityEnforcement(): void
@@ -117,6 +120,54 @@ class PassengerControllerIntegrationTest extends TestCase
             ->assertJsonStructure(['data' => ['id', 'trip_id', 'user_id']])
             ->assertJsonPath('data.trip_id', $trip->id)
             ->assertJsonPath('data.user_id', $requester->id);
+    }
+
+    public function test_new_request_returns_unprocessable_when_coordinate_by_message_requires_a_message(): void
+    {
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $requester = User::factory()->create(['identity_validated' => true]);
+
+        $this->actingAs($requester, 'api')
+            ->postJson("/api/trips/{$trip->id}/requests")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not create new request.')
+            ->assertJsonPath('errors.error', 'message_required');
+    }
+
+    public function test_new_request_returns_data_when_coordinate_by_message_has_qualifying_message(): void
+    {
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $requester = User::factory()->create(['identity_validated' => true]);
+        $conversation = Conversation::factory()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $conversation->users()->attach($requester->id, ['read' => true]);
+        $conversation->users()->attach($driver->id, ['read' => true]);
+        $message = Message::query()->create([
+            'user_id' => $requester->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'Hola, hay lugar?',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        $this->actingAs($requester, 'api')
+            ->postJson("/api/trips/{$trip->id}/requests")
+            ->assertOk()
+            ->assertJsonPath('data.trip_id', $trip->id)
+            ->assertJsonPath('data.user_id', $requester->id)
+            ->assertJsonPath('data.message_id', $message->id);
     }
 
     public function test_new_request_returns_unprocessable_when_identity_required_and_user_not_validated(): void
