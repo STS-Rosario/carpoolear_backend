@@ -727,6 +727,93 @@ class MercadoPagoWebhookTest extends TestCase
         $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
     }
 
+    public function test_payment_updated_for_trip_sellado_marks_trip_ready_when_approved(): void
+    {
+        config(['services.mercadopago.webhook_secret' => 'wh-secret-test']);
+
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => 0,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_PENDING_PAYMENT,
+        ]);
+
+        $paymentId = 184993400950;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $paymentId, 'req-sellado-updated', 'wh-secret-test');
+
+        $external = $this->hashedSelladoExternalReference($trip->id);
+        $this->stubMercadoPagoPayments([
+            $paymentId => $this->mercadoPagoPaymentPayload($external, $paymentId),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?data_id='.$paymentId, [
+            'action' => 'payment.updated',
+            'data_id' => (string) $paymentId,
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $this->assertDatabaseHas('payment_attempts', [
+            'trip_id' => $trip->id,
+            'payment_id' => $paymentId,
+            'payment_status' => PaymentAttempt::STATUS_COMPLETED,
+        ]);
+        $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
+    }
+
+    public function test_merchant_order_closed_marks_trip_sellado_ready_for_hashed_reference(): void
+    {
+        config([
+            'services.mercadopago.webhook_secret' => 'wh-secret-test',
+            'services.mercadopago.access_token' => 'test-access-token',
+        ]);
+
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'is_passenger' => 0,
+            'needs_sellado' => true,
+            'state' => Trip::STATE_PENDING_PAYMENT,
+        ]);
+
+        $merchantOrderId = 45415219592;
+        $paymentId = 184993400950;
+        $headers = $this->paymentCreatedSignatureHeaders((string) $merchantOrderId, 'req-merchant-order-sellado', 'wh-secret-test');
+        $external = $this->hashedSelladoExternalReference($trip->id);
+
+        Http::fake([
+            'api.mercadopago.com/merchant_orders/'.$merchantOrderId => Http::response([
+                'id' => $merchantOrderId,
+                'status' => 'closed',
+                'external_reference' => $external,
+                'payments' => [
+                    ['id' => $paymentId, 'status' => 'approved'],
+                ],
+            ], 200),
+        ]);
+
+        $this->postJson('/webhooks/mercadopago?'.http_build_query([
+            'data_id' => $merchantOrderId,
+            'type' => 'topic_merchant_order_wh',
+        ]), [
+            'action' => 'update',
+            'status' => 'closed',
+            'type' => 'topic_merchant_order_wh',
+            'data_id' => (string) $merchantOrderId,
+            'data' => ['status' => 'closed'],
+        ], $headers)
+            ->assertOk()
+            ->assertExactJson(['status' => 'success']);
+
+        $this->assertDatabaseHas('payment_attempts', [
+            'trip_id' => $trip->id,
+            'payment_id' => $paymentId,
+            'payment_status' => PaymentAttempt::STATUS_COMPLETED,
+        ]);
+        $this->assertSame(Trip::STATE_READY, $trip->fresh()->state);
+    }
+
     public function test_order_processed_for_trip_sellado_qr_prefix_marks_trip_ready_when_accredited(): void
     {
         config(['services.mercadopago.webhook_secret_qr_payment' => 'wh-secret-qr-test']);

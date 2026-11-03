@@ -221,6 +221,26 @@ class CreateRatingDeleteTripListenerTest extends TestCase
         (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip->fresh()));
     }
 
+    public function test_handle_skips_passenger_canceled_by_system(): void
+    {
+        $driver = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $driver->id]);
+
+        Passenger::factory()->create([
+            'trip_id' => $trip->id,
+            'user_id' => User::factory(),
+            'request_state' => Passenger::STATE_CANCELED,
+            'canceled_state' => Passenger::CANCELED_SYSTEM,
+        ]);
+
+        $ratingRepository = Mockery::mock(RatingRepository::class);
+        $ratingRepository->shouldNotReceive('create');
+
+        $this->mock(NotificationServices::class)->shouldNotReceive('send');
+
+        (new CreateRatingDeleteTrip($ratingRepository))->handle(new TripDeleted($trip->fresh()));
+    }
+
     public function test_handle_skips_when_pending_rating_already_exists(): void
     {
         $driver = User::factory()->create();

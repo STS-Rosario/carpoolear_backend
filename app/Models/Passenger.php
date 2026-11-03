@@ -96,7 +96,10 @@ class Passenger extends Model
         }
 
         if ($requestState === self::STATE_CANCELED) {
-            return ! isset($this->canceled_state) || (int) $this->canceled_state !== self::CANCELED_REQUEST;
+            $canceledState = isset($this->canceled_state) ? (int) $this->canceled_state : null;
+
+            return $canceledState !== self::CANCELED_REQUEST
+                && $canceledState !== self::CANCELED_SYSTEM;
         }
 
         return true;

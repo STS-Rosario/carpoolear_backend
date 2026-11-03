@@ -143,6 +143,24 @@ class MessageRepositoryTest extends TestCase
         $this->assertSame($old->id, $batch->first()->id);
     }
 
+    public function test_get_messages_uses_id_to_page_messages_with_the_same_timestamp(): void
+    {
+        $conversation = Conversation::factory()->create();
+        $sender = User::factory()->create();
+        $timestamp = Carbon::parse('2020-06-02 12:00:00');
+        $old = $this->makeMessage($conversation, $sender, 'old', Carbon::parse('2020-06-01 12:00:00'));
+        $firstAtTimestamp = $this->makeMessage($conversation, $sender, 'first at timestamp', $timestamp);
+        $cursor = $this->makeMessage($conversation, $sender, 'cursor', $timestamp);
+        $this->makeMessage($conversation, $sender, 'newest at timestamp', $timestamp);
+
+        $batch = $this->repo()->getMessages($conversation, $timestamp, 10, $cursor->id);
+
+        $this->assertSame(
+            [$firstAtTimestamp->id, $old->id],
+            $batch->pluck('id')->all()
+        );
+    }
+
     public function test_get_unread_messages_only_includes_messages_where_user_pivot_unread(): void
     {
         $conversation = Conversation::factory()->create();

@@ -90,6 +90,8 @@ class TripTransformerTest extends TestCase
             'rear_max_two_passengers',
             'payment_id',
             'needs_sellado',
+            'sellado_complimentary',
+            'sellado_empty_trip_credit_redeemed',
             'existing',
             'sellado_pending',
             'sellado_pending_label',
@@ -103,11 +105,33 @@ class TripTransformerTest extends TestCase
         $this->assertSame(15000, $payload['seat_price_cents']);
         $this->assertSame(false, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
+        $this->assertFalse($payload['sellado_complimentary']);
+        $this->assertFalse($payload['sellado_empty_trip_credit_redeemed']);
         $this->assertSame(false, $payload['existing']);
         $this->assertNull($payload['sellado_pending_label']);
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
         $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_marks_trip_as_sellado_complimentary_when_empty_trip_credit_was_applied(): void
+    {
+        $trip = $this->makeTrip();
+        $trip->sellado_empty_trip_credit_applied_at = Carbon::now();
+
+        $payload = (new TripTransformer(null))->transform($trip);
+
+        $this->assertTrue($payload['sellado_complimentary']);
+    }
+
+    public function test_transform_marks_empty_trip_credit_as_redeemed_when_it_was_consumed(): void
+    {
+        $trip = $this->makeTrip();
+        $trip->sellado_empty_trip_credit_redeemed_at = Carbon::now();
+
+        $payload = (new TripTransformer(null))->transform($trip);
+
+        $this->assertTrue($payload['sellado_empty_trip_credit_redeemed']);
     }
 
     public function test_transform_includes_pricing_breakdown_with_comfort_occupants(): void
@@ -284,7 +308,7 @@ class TripTransformerTest extends TestCase
 
         $this->assertSame(true, $payload['sellado_pending']);
         $this->assertIsBool($payload['sellado_pending']);
-        $this->assertSame('Falta pagar Sellado', $payload['sellado_pending_label']);
+        $this->assertSame('Falta pagar 1L para Carpoolear', $payload['sellado_pending_label']);
     }
 
     public function test_transform_requires_needs_sellado_and_non_ready_state_for_pending_flag(): void

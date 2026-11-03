@@ -69,12 +69,14 @@ class TripTransformer extends TransformerAbstract
             'rear_max_two_passengers' => $trip->rear_max_two_passengers,
             'payment_id' => $trip->payment_id,
             'needs_sellado' => $trip->needs_sellado,
+            'sellado_complimentary' => $trip->sellado_empty_trip_credit_applied_at !== null,
+            'sellado_empty_trip_credit_redeemed' => $trip->sellado_empty_trip_credit_redeemed_at !== null,
             'existing' => (bool) $trip->getAttribute('existing'),
         ];
 
-        // Flag for frontend: show faded (e.g. 80% opacity) and "Falta pagar Sellado" when sellado is unpaid
+        // Flag for frontend: show faded (e.g. 80% opacity) and "Falta pagar 1L para Carpoolear" when unpaid
         $data['sellado_pending'] = ($trip->needs_sellado && $trip->state !== Trip::STATE_READY) ? true : false;
-        $data['sellado_pending_label'] = $data['sellado_pending'] ? 'Falta pagar Sellado' : null;
+        $data['sellado_pending_label'] = $data['sellado_pending'] ? 'Falta pagar 1L para Carpoolear' : null;
 
         if ($trip->deleted_at) {
             $data['deleted_at'] = $trip->deleted_at->toDateTimeString();
