@@ -9,10 +9,12 @@ use Illuminate\Validation\Rule;
 use STS\Admin\AdminPermission;
 use STS\Http\Controllers\Concerns\StreamsSupportTicketAttachments;
 use STS\Http\Controllers\Controller;
+use STS\Http\ExceptionWithErrors;
 use STS\Models\AdminActionLog;
 use STS\Models\SupportTicket;
 use STS\Models\SupportTicketReply;
 use STS\Models\Trip;
+use STS\Models\User;
 use STS\Notifications\SupportTicketReplyNotification;
 use STS\Services\AdminActionLogger;
 use STS\Services\Logic\UsersManager;
@@ -139,18 +141,36 @@ class SupportTicketController extends Controller
                 Rule::exists('trips', 'id')->where('user_id', (int) $request->input('user_id')),
             ],
             'suspend_user' => 'sometimes|boolean',
-            'private_note' => 'sometimes|nullable|string',
+            'private_note' => 'sometimes|nullable|string|max:255',
         ]);
 
         $admin = auth()->user();
         $tripId = isset($validated['trip_id']) ? (int) $validated['trip_id'] : null;
         $existingTicketId = null;
-        $suspendUser = ! empty($validated['suspend_user']);
-        $privateNoteProvided = array_key_exists('private_note', $validated) && $validated['private_note'] !== null && trim((string) $validated['private_note']) !== '';
+        $isExcessContribution = $validated['type'] === 'excess_contribution';
+        $suspendUser = $isExcessContribution && ! empty($validated['suspend_user']);
+        $privateNoteProvided = $isExcessContribution
+            && array_key_exists('private_note', $validated)
+            && $validated['private_note'] !== null
+            && trim((string) $validated['private_note']) !== '';
         $userSuspended = false;
         $privateNoteUpdated = false;
 
-        $ticket = DB::transaction(function () use ($validated, $admin, $tripId, &$existingTicketId, $suspendUser, $privateNoteProvided, &$userSuspended, &$privateNoteUpdated) {
+        if ($suspendUser && ! $admin->hasAdminPermission(AdminPermission::UsersSuspend)) {
+            abort(403);
+        }
+
+        $targetUser = User::query()->findOrFail((int) $validated['user_id']);
+        $previousPrivateNote = (string) ($targetUser->private_note ?? '');
+        $userPatch = [];
+        if ($suspendUser) {
+            $userPatch['banned'] = 1;
+        }
+        if ($privateNoteProvided) {
+            $userPatch['private_note'] = trim((string) $validated['private_note']);
+        }
+
+        $ticket = DB::transaction(function () use ($validated, $admin, $tripId, &$existingTicketId, $userPatch, $previousPrivateNote, $targetUser, &$userSuspended, &$privateNoteUpdated) {
             if ($tripId !== null && $validated['type'] === 'excess_contribution') {
                 // Lock the trip row so concurrent requests cannot both create its excess ticket.
                 Trip::query()->whereKey($tripId)->lockForUpdate()->first();
@@ -174,19 +194,26 @@ class SupportTicketController extends Controller
                 'last_reply_at' => now(),
             ]);
 
-            $ticket->loadMissing('user');
-
-            if ($validated['type'] === 'excess_contribution' && $suspendUser) {
-                if (! $admin->hasAdminPermission(AdminPermission::UsersSuspend)) {
-                    abort(403);
+            if ($userPatch !== []) {
+                $updatedUser = $this->usersManager->update($targetUser, $userPatch, false, true);
+                if (! $updatedUser) {
+                    throw new ExceptionWithErrors('Could not update user.', $this->usersManager->getErrors());
                 }
-                $this->usersManager->update($ticket->user, ['banned' => 1], false, true);
-                $userSuspended = true;
-            }
-
-            if ($validated['type'] === 'excess_contribution' && $privateNoteProvided) {
-                $this->usersManager->update($ticket->user, ['private_note' => trim((string) $validated['private_note'])], false, true);
-                $privateNoteUpdated = true;
+                $logDetails = [
+                    'keys' => array_keys($userPatch),
+                    'ticket_id' => $ticket->id,
+                ];
+                if (isset($userPatch['private_note']) && $previousPrivateNote !== $userPatch['private_note']) {
+                    $logDetails['previous_private_note'] = $previousPrivateNote;
+                }
+                AdminActionLogger::log(
+                    $admin,
+                    AdminActionLog::ACTION_USER_UPDATE,
+                    (int) $targetUser->id,
+                    $logDetails
+                );
+                $userSuspended = isset($userPatch['banned']);
+                $privateNoteUpdated = isset($userPatch['private_note']);
             }
 
             SupportTicketReply::create([

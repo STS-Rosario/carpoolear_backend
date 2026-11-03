@@ -4,6 +4,7 @@ namespace Tests\Feature\Http;
 
 use STS\Admin\AdminRole;
 use STS\Http\Middleware\UserAdmin;
+use STS\Models\AdminActionLog;
 use STS\Models\SupportTicket;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -246,6 +247,75 @@ class AdminSupportTicketExcessTripTest extends TestCase
 
         $owner->refresh();
         $this->assertSame(0, (int) $owner->banned);
+        $this->assertSame(0, $this->excessTicketsForTrip($trip));
+    }
+
+    public function test_can_suspend_user_and_update_private_note_in_one_excess_contribution_request(): void
+    {
+        $this->actingAsAdmin(AdminRole::Superadmin);
+        $owner = User::factory()->create([
+            'banned' => 0,
+            'private_note' => 'nota previa',
+        ]);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, [
+            'suspend_user' => true,
+            'private_note' => 'exceso 26/10',
+        ]))
+            ->assertOk()
+            ->assertJsonPath('user_suspended', true)
+            ->assertJsonPath('private_note_updated', true);
+
+        $owner->refresh();
+        $this->assertSame(1, (int) $owner->banned);
+        $this->assertSame('exceso 26/10', $owner->private_note);
+        $trip->refresh();
+        $this->assertStringStartsWith('2000-01-01', $trip->deleted_at->toDateTimeString());
+    }
+
+    public function test_private_note_longer_than_255_chars_is_rejected(): void
+    {
+        $this->actingAsAdmin();
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, [
+            'private_note' => str_repeat('a', 256),
+        ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['private_note']);
+
+        $this->assertSame(0, $this->excessTicketsForTrip($trip));
+    }
+
+    public function test_excess_contribution_user_update_is_logged_in_admin_action_log(): void
+    {
+        $admin = $this->actingAsAdmin(AdminRole::Superadmin);
+        $owner = User::factory()->create(['private_note' => 'antes']);
+        $trip = Trip::factory()->create(['user_id' => $owner->id]);
+
+        $response = $this->postJson('api/admin/support/tickets', $this->excessPayload($owner, $trip, [
+            'suspend_user' => true,
+            'private_note' => 'despues',
+        ]))->assertOk();
+
+        $ticketId = (int) $response->json('data.id');
+        $this->assertDatabaseHas('admin_action_logs', [
+            'action' => AdminActionLog::ACTION_USER_UPDATE,
+            'target_user_id' => $owner->id,
+            'admin_user_id' => $admin->id,
+        ]);
+        $log = AdminActionLog::query()
+            ->where('action', AdminActionLog::ACTION_USER_UPDATE)
+            ->where('target_user_id', $owner->id)
+            ->latest('id')
+            ->first();
+        $this->assertNotNull($log);
+        $details = is_array($log->details) ? $log->details : json_decode((string) $log->details, true);
+        $this->assertSame(['banned', 'private_note'], $details['keys']);
+        $this->assertSame($ticketId, $details['ticket_id']);
+        $this->assertSame('antes', $details['previous_private_note']);
     }
 
     public function test_can_update_user_private_note_when_creating_excess_contribution_ticket(): void
