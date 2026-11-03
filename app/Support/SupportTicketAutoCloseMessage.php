@@ -9,7 +9,7 @@ Buenas %s
 
 Te escribimos para avisarte que no hemos tenido novedades en este ticket, así que vamos a cerrarlo para mantener en orden la mesa de ayuda.
 
-No te preocupes: si todavía necesitás ayuda con esto, podés responder este ticket y lo volvemos a abrir sin problema.
+No te preocupes: si todavía necesitás ayuda, podés abrir un nuevo ticket, sea por este o algún otro tema.
 
 ¡Abrazo!
 Equipo Carpoolear
