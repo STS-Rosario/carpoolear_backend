@@ -26,6 +26,24 @@ class AportarPageTest extends TestCase
     }
 
     #[DataProvider('publicDonationPaths')]
+    public function test_public_donation_page_uses_in_app_typefaces(string $path): void
+    {
+        $html = $this->get($path)->assertOk()->getContent();
+
+        $this->assertStringContainsString('family=Barlow', $html);
+        $this->assertStringContainsString('family=Dela+Gothic+One', $html);
+        $this->assertMatchesRegularExpression(
+            '/\.public-donate__title-line[^{]*\{[^}]*font-family:\s*[\'"]Dela Gothic One[\'"]/',
+            $html
+        );
+        $this->assertMatchesRegularExpression(
+            '/\.public-donate[^{]*\{[^}]*font-family:\s*[\'"]Barlow[\'"]/',
+            $html
+        );
+        $this->assertStringContainsString('font-size: 16px', $html);
+    }
+
+    #[DataProvider('publicDonationPaths')]
     public function test_club_carpoolear_asks_guests_to_log_in_inside_the_app(string $path): void
     {
         $html = $this->get($path)->assertOk()->getContent();
