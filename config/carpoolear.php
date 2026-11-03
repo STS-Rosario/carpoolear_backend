@@ -58,6 +58,8 @@ return [
     'manual_identity_validation_max_submissions' => (int) env('MANUAL_IDENTITY_VALIDATION_MAX_SUBMISSIONS', 3),
     // Days to keep photos after admin rejects a manual validation before auto-purging.
     'manual_identity_validation_rejected_photo_retention_days' => (int) env('MANUAL_IDENTITY_VALIDATION_REJECTED_PHOTO_RETENTION_DAYS', 7),
+    // Number of years to retain conversation messages.
+    'messages_retention_years' => (int) env('MESSAGES_RETENTION_YEARS', 1),
 
     // Master switch: when false, hide identity validation UI and do not enforce (except admin flows).
     'identity_validation_enabled' => filter_var(env('IDENTITY_VALIDATION_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
@@ -126,6 +128,7 @@ return [
 
     // Support tickets
     'support_ticket_autoclose_days' => (int) env('SUPPORT_TICKET_AUTOCLOSE_DAYS', 10),
+    'support_ticket_user_inactivity_days' => (int) env('SUPPORT_TICKET_USER_INACTIVITY_DAYS', 30),
     'support_ticket_assignment_timeout_minutes' => (int) env('SUPPORT_TICKET_ASSIGNMENT_TIMEOUT_MINUTES', 10),
     'support_ticket_rate_limit_create_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_CREATE_PER_HOUR', 5),
     'support_ticket_rate_limit_reply_per_hour' => (int) env('SUPPORT_TICKET_RATE_LIMIT_REPLY_PER_HOUR', 20),

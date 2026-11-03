@@ -103,12 +103,16 @@ class ConversationController extends Controller
         $read = $request->get('read');
         $timestamp = $request->get('timestamp');
         $pageSize = $request->get('pageSize');
+        $beforeId = $request->validate([
+            'before_id' => 'sometimes|nullable|integer|min:1',
+        ])['before_id'] ?? null;
+        $beforeId = $beforeId === null ? null : (int) $beforeId;
         $read = parse_boolean($request->get('read'));
         $unread = parse_boolean($request->get('unread'));
         if ($unread) {
             $messages = $this->conversationLogic->getUnreadMessagesFromConversation($id, $this->user, $read);
         } else {
-            $messages = $this->conversationLogic->getAllMessagesFromConversation($id, $this->user, $read, $timestamp, $pageSize);
+            $messages = $this->conversationLogic->getAllMessagesFromConversation($id, $this->user, $read, $timestamp, $pageSize, $beforeId);
         }
         if ($messages) {
             return $this->collection($messages, new MessageTransformer($this->user));

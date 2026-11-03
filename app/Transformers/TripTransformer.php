@@ -67,6 +67,7 @@ class TripTransformer extends TransformerAbstract
             'allow_animals' => $trip->allow_animals,
             'allow_smoking' => $trip->allow_smoking,
             'rear_max_two_passengers' => $trip->rear_max_two_passengers,
+            'autoaccept_friends_requests' => $trip->autoaccept_friends_requests,
             'payment_id' => $trip->payment_id,
             'needs_sellado' => $trip->needs_sellado,
             'sellado_complimentary' => $trip->sellado_empty_trip_credit_applied_at !== null,

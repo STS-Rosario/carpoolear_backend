@@ -833,10 +833,22 @@ class UsersManagerTest extends TestCase
         $user = User::factory()->create(['nro_doc' => '12345678']);
 
         $manager = $this->manager();
-        $result = $manager->update($user, ['nro_doc' => 'ABC123']);
+        $result = $manager->update($user, ['nro_doc' => 'AB12']);
 
         $this->assertNull($result);
         $this->assertArrayHasKey('nro_doc', $manager->getErrors());
+    }
+
+    public function test_update_accepts_flexible_passport_document_number(): void
+    {
+        Event::fake([UpdateEvent::class]);
+        $user = User::factory()->create(['nro_doc' => '12345678']);
+
+        $manager = $this->manager();
+        $result = $manager->update($user, ['nro_doc' => 'ab-c12 3']);
+
+        $this->assertInstanceOf(User::class, $result);
+        $this->assertSame('ABC123', $user->fresh()->nro_doc);
     }
 
     public function test_update_rejects_banned_passport_document_number(): void

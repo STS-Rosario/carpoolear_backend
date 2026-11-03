@@ -158,6 +158,71 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonPath('meta.pagination.per_page', 20);
     }
 
+    public function test_search_hides_trips_from_anonymized_or_banned_drivers(): void
+    {
+        $anonymizedDriver = User::factory()->create(['active' => false]);
+        $bannedDriver = User::factory()->create(['banned' => true]);
+        $activeDriver = User::factory()->create();
+        $viewer = User::factory()->create();
+
+        $hiddenAnonymized = Trip::factory()->create([
+            'user_id' => $anonymizedDriver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+        ]);
+        $hiddenBanned = Trip::factory()->create([
+            'user_id' => $bannedDriver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+        ]);
+        $visible = Trip::factory()->create([
+            'user_id' => $activeDriver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+        ]);
+
+        $this->actingAs($viewer, 'api')
+            ->getJson('/api/trips')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1)
+            ->assertJsonPath('data.0.id', $visible->id);
+
+        // Guests must also get the driver-status filter.
+        $this->app['auth']->forgetGuards();
+        $this->getJson('/api/trips')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1)
+            ->assertJsonPath('data.0.id', $visible->id);
+
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin, 'api')
+            ->getJson('/api/trips')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 3);
+
+        $returnedIds = collect(
+            $this->actingAs($admin, 'api')->getJson('/api/trips')->json('data')
+        )->pluck('id')->all();
+        $this->assertContains($hiddenAnonymized->id, $returnedIds);
+        $this->assertContains($hiddenBanned->id, $returnedIds);
+
+        // Query param is_admin=true must not bypass hidden-driver filter for guests or non-admins.
+        $this->app['auth']->forgetGuards();
+        $this->getJson('/api/trips?is_admin=true')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1)
+            ->assertJsonPath('data.0.id', $visible->id);
+
+        $this->actingAs($viewer, 'api')
+            ->getJson('/api/trips?is_admin=true')
+            ->assertOk()
+            ->assertJsonPath('meta.pagination.total', 1)
+            ->assertJsonPath('data.0.id', $visible->id);
+
+        $this->app['auth']->forgetGuards();
+        $guestBypassIds = collect($this->getJson('/api/trips?is_admin=true')->json('data'))->pluck('id')->all();
+        $this->assertNotContains($hiddenAnonymized->id, $guestBypassIds);
+        $this->assertNotContains($hiddenBanned->id, $guestBypassIds);
+    }
+
+
     public function test_search_respects_custom_page_size(): void
     {
         $this->getJson('/api/trips?page_size=7')
@@ -488,6 +553,21 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonPath('data.punto_llegada', 'Plaza Principal');
     }
 
+    public function test_show_returns_autoaccept_friends_requests_for_edit_prefill(): void
+    {
+        $owner = User::factory()->create();
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'autoaccept_friends_requests' => true,
+        ]);
+
+        $this->actingAs($owner, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertOk()
+            ->assertJsonPath('data.autoaccept_friends_requests', 1);
+    }
+
     public function test_update_persists_punto_partida_and_punto_llegada_and_returns_them_in_payload(): void
     {
         Carbon::setTestNow('2028-04-01 12:00:00');
@@ -634,6 +714,48 @@ class TripControllerIntegrationTest extends TestCase
             ->getJson("/api/trips/{$trip->id}")
             ->assertUnprocessable()
             ->assertJsonPath('message', 'Could not found trip.');
+    }
+
+    public function test_show_hides_trip_from_anonymized_driver_except_for_admin(): void
+    {
+        $driver = User::factory()->create(['active' => false]);
+        $stranger = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+        ]);
+
+        $this->actingAs($stranger, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not found trip.');
+
+        $this->actingAs($admin, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $trip->id);
+    }
+
+    public function test_show_hides_trip_from_banned_driver_except_for_admin(): void
+    {
+        $driver = User::factory()->create(['banned' => true]);
+        $stranger = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+        ]);
+
+        $this->actingAs($stranger, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Could not found trip.');
+
+        $this->actingAs($admin, 'api')
+            ->getJson("/api/trips/{$trip->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $trip->id);
     }
 
     public function test_show_returns_unpaid_sellado_trip_for_admin_but_not_for_stranger(): void
