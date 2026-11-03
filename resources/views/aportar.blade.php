@@ -1,59 +1,141 @@
 @extends('layouts.master')
 
 @section('title', 'Aportar - Carpoolear')
-@section('body-class', 'body-difusion')
+@section('body-class', 'body-difusion public-donate-page')
 
 @section('content')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700&family=Dela+Gothic+One&display=swap" rel="stylesheet">
 <style>
+    body.public-donate-page {
+        background: #F0F0F0;
+        color: #22211F;
+    }
+    body.public-donate-page .main-container {
+        background: #F0F0F0;
+    }
     .public-donate {
         --ds-text-primary: #22211F;
         --ds-text-secondary: #404040;
         --ds-header-donate-bg: #5cb85c;
+        --ds-header-donate-border: #4cae4c;
+        --ds-font-family: 'Barlow', sans-serif;
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto;
+        padding-bottom: 4em;
         color: var(--ds-text-primary);
-        padding-bottom: 4rem;
+        font-family: 'Barlow', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.45;
+    }
+    .public-donate *,
+    .public-donate *::before,
+    .public-donate *::after {
+        box-sizing: border-box;
+    }
+    .public-donate h1,
+    .public-donate h2,
+    .public-donate h3,
+    .public-donate p,
+    .public-donate ul,
+    .public-donate ol,
+    .public-donate li {
+        margin: 0;
+        padding: 0;
+    }
+    .public-donate h1,
+    .public-donate h2,
+    .public-donate h3 {
+        font-size: inherit;
+        font-weight: inherit;
+        line-height: inherit;
+        letter-spacing: normal;
+        color: inherit;
+    }
+    .public-donate p,
+    .public-donate li,
+    .public-donate span,
+    .public-donate strong,
+    .public-donate label {
+        font-family: inherit;
+    }
+    .public-donate a {
+        color: inherit;
+        font-family: inherit;
+        font-weight: 700;
+        text-decoration: underline;
     }
     .public-donate__hero {
         display: grid;
-        gap: 1.5rem;
-        margin: 1.5rem 0 2rem;
+        gap: 1.5em;
+        width: 100%;
+        max-width: 100vw;
+        margin: 1.5em 0 2em;
+        box-sizing: border-box;
     }
     .public-donate__hero-copy {
-        padding: 0 1rem;
+        width: 100%;
+        padding: 0 1em;
         text-align: center;
+        container-type: inline-size;
     }
-    .public-donate__title {
-        margin: 0;
-        font-family: 'Dela Gothic One', sans-serif;
+    .public-donate h1.public-donate__title {
+        width: 100%;
+        font-family: 'Dela Gothic One', var(--ds-font-family);
+        font-size: 16px;
         font-weight: 400;
         line-height: 0.95;
         letter-spacing: -0.02em;
-        text-transform: uppercase;
     }
-    .public-donate__title-line {
+    .public-donate span.public-donate__title-line {
         display: block;
-        font-size: clamp(1.75rem, 8vw, 4.5rem);
+        width: 100%;
+        max-width: 100%;
+        font-family: 'Dela Gothic One', var(--ds-font-family);
+        font-size: clamp(1.75em, 9.5cqw, 4.5em);
+        font-weight: 400;
+        line-height: 0.95;
+        letter-spacing: inherit;
+        text-transform: uppercase;
         color: var(--ds-text-secondary);
     }
-    .public-donate__title-accent {
+    .public-donate span.public-donate__title-line.public-donate__title-accent {
         color: var(--ds-header-donate-bg);
     }
     .public-donate__mission {
-        margin: 1.25rem 0 0;
-        font-size: 1.2rem;
+        display: none;
+        margin: 1.25em 0 0;
+        color: var(--ds-text-secondary);
+        font-family: var(--ds-font-family);
+        font-size: 1.4em;
+        font-weight: 400;
         line-height: 1.45;
         text-align: left;
-        color: var(--ds-text-secondary);
+    }
+    .public-donate__mission-lead,
+    .public-donate__mission-body {
+        font-size: inherit;
+        font-weight: 400;
+        line-height: inherit;
+    }
+    .public-donate__mission-body {
+        margin-top: 0.75em;
     }
     .public-donate__hero-media {
         width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
     }
     .public-donate__image-frame {
         position: relative;
         width: 85vw;
-        max-width: 450px;
+        max-width: 85vw;
+        min-width: 0;
         margin: 0 auto;
         aspect-ratio: 4 / 3;
     }
@@ -63,7 +145,7 @@
         inset: 0;
         width: 100%;
         height: 100%;
-        border-radius: 1.25rem;
+        border-radius: 1.25em;
     }
     .public-donate__image-backdrop {
         background: var(--ds-header-donate-bg);
@@ -74,91 +156,157 @@
         z-index: 1;
     }
     .public-donate__cta {
-        padding: 0 1rem 2rem;
+        width: 100%;
+        max-width: 100vw;
+        padding: 0 1em 2em;
         text-align: center;
     }
-    .public-donate__cta-title {
-        margin: 0 0 1rem;
-        font-family: 'Dela Gothic One', sans-serif;
-        font-size: clamp(1.75rem, 8vw, 3rem);
+    .public-donate h2.public-donate__cta-title,
+    .public-donate span.public-donate__cta-title-accent {
+        font-family: 'Dela Gothic One', var(--ds-font-family);
         font-weight: 400;
-        line-height: 1.05;
+        letter-spacing: -0.02em;
         text-transform: uppercase;
+    }
+    .public-donate h2.public-donate__cta-title {
+        margin: 0 0 1em;
+        font-size: clamp(1.75em, 8vw, 3em);
+        line-height: 1.05;
         color: var(--ds-text-secondary);
     }
-    .public-donate__cta-title-accent {
+    .public-donate span.public-donate__cta-title-accent {
         display: block;
         color: var(--ds-header-donate-bg);
     }
-    .public-donate__benefits {
-        max-width: 42rem;
-        margin: 1.25rem auto 0;
-        padding-inline-start: 2rem;
-        text-align: left;
-        list-style: disc;
-    }
-    .public-donate__benefits li {
-        margin: 0 0 0.75rem;
-        font-size: 1.05rem;
+    .public-donate__cta-intro {
+        margin: 0 auto;
+        color: var(--ds-text-primary);
+        font-size: 1.2em;
         line-height: 1.45;
     }
+    .public-donate__benefits {
+        margin: 1.25em auto 0;
+        padding: 0 0 0 2em;
+        max-width: 42em;
+        list-style: disc;
+        list-style-position: outside;
+        text-align: left;
+    }
+    .public-donate__benefits li {
+        margin: 0 0 0.75em;
+        padding-left: 0.5em;
+        color: var(--ds-text-primary);
+        font-size: 1.05em;
+        line-height: 1.45;
+    }
+    .public-donate__benefits li:last-child {
+        margin-bottom: 0;
+    }
     .public-donate__form {
-        max-width: 42rem;
+        max-width: 42em;
         margin: 0 auto;
-        padding: 0 1rem 2rem;
+        padding: 0 1em 2em;
         text-align: center;
     }
     .public-donate__usage {
-        margin-bottom: 1rem;
-        font-size: 1.2rem;
+        margin-bottom: 1em;
+        color: var(--ds-text-primary);
+        font-size: 1.2em;
         line-height: 1.45;
     }
     .public-donate .radio {
-        margin-bottom: 1.5em;
+        margin: 0 0 1.5em;
+    }
+    .public-donate .radio-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 12px 8px 0;
+        padding: 0;
+        font-weight: 400;
+        color: var(--ds-text-secondary);
+        white-space: nowrap;
+    }
+    .public-donate .radio-inline input {
+        position: static;
+        margin: 0;
     }
     .public-donate .btn-donar,
     .club-login-modal .btn-donar {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15em;
         width: fit-content;
         max-width: 100%;
-        margin: 1rem auto 0;
+        margin: 1em auto 0;
         min-height: auto;
-        padding: 0.85em 1.5em;
-        border: 0;
-        border-radius: 10px;
+        padding: 0.75em 1.25em;
+        border: 1.5px solid var(--ds-header-donate-border);
+        border-radius: 8px;
         color: #fff;
         background: var(--ds-header-donate-bg);
+        font-family: 'Barlow', sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+    }
+    .public-donate__btn-hint {
+        display: block;
+        font-size: 0.85em;
+        font-weight: 400;
+        line-height: 1.2;
     }
     .public-donate .btn-once,
     .public-donate .btn-qr {
         background: transparent;
         border: 2px solid var(--ds-header-donate-bg);
         color: var(--ds-text-primary);
+        flex-direction: row;
     }
     .public-donate .btn-qr {
         display: none;
-        margin-top: 0.75rem;
+        margin-top: 0.75em;
     }
     .public-donate__once {
-        margin-top: 9rem;
+        margin-top: 9em;
+        text-align: center;
+    }
+    .public-donate__once-intro {
+        margin: 0 0 1em;
+        color: var(--ds-text-primary);
+        font-size: 1.05em;
+        line-height: 1.45;
     }
     .public-donate__alt {
-        margin-top: 3rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2.5em;
+        margin-top: 9em;
         text-align: left;
-        font-size: 1.05rem;
+        font-size: 1.05em;
         line-height: 1.45;
+        color: var(--ds-text-primary);
+    }
+    .public-donate__alt ul {
+        margin: 0.75em 0 0;
+        padding-left: 1.5em;
+        list-style: disc;
+    }
+    .public-donate__alt li + li {
+        margin-top: 0.5em;
     }
     .qr-payment-panel {
         display: none;
-        margin-top: 1.5em;
+        margin: 1.25em auto 0;
         padding: 1.5em;
         border: 1px solid #ddd;
         border-radius: 10px;
         background: #fff;
         text-align: center;
         max-width: 360px;
-        margin-left: auto;
-        margin-right: auto;
     }
     .qr-payment-panel.is-open {
         display: block;
@@ -176,7 +324,9 @@
         background: rgba(0, 0, 0, 0.5);
         align-items: center;
         justify-content: center;
-        padding: 1rem;
+        padding: 1em;
+        font-family: 'Barlow', sans-serif;
+        font-size: 16px;
     }
     .club-login-modal.is-open {
         display: flex;
@@ -184,28 +334,77 @@
     .club-login-modal__dialog {
         background: #fff;
         border-radius: 10px;
-        max-width: 28rem;
+        max-width: 28em;
         width: 100%;
-        padding: 1.5rem;
+        padding: 1.5em;
         text-align: center;
+        color: var(--ds-text-primary, #22211F);
     }
     .club-login-modal__dialog h3 {
-        margin-top: 0;
+        margin: 0 0 0.75em;
+        font-family: 'Dela Gothic One', 'Barlow', sans-serif;
+        font-size: 1.5em;
+        font-weight: 400;
+    }
+    .club-login-modal__dialog p {
+        margin: 0 0 1em;
+        font-family: 'Barlow', sans-serif;
+        font-size: 1em;
+        line-height: 1.45;
+    }
+    @media (max-width: 767px) {
+        .public-donate__benefits {
+            padding-left: 1.75em;
+            list-style-position: inside;
+        }
+        .public-donate__benefits li {
+            padding-left: 0;
+        }
     }
     @media (min-width: 768px) {
         .public-donate__hero {
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
             align-items: center;
-            gap: 4rem;
-            padding: 0 2.5rem;
+            gap: 4em;
+            padding: 0 2.5em;
+            margin-top: 2em;
         }
         .public-donate__hero-copy {
             padding: 0;
             text-align: left;
         }
+        .public-donate span.public-donate__title-line {
+            font-size: clamp(2.75em, 4.2vw, 5.5em);
+        }
+        .public-donate__hero-media {
+            padding: 1.5em 0 1.5em 1.5em;
+        }
         .public-donate__image-frame {
             width: 100%;
             max-width: 100%;
+        }
+        .public-donate__cta {
+            padding-left: 2.5em;
+            padding-right: 2.5em;
+        }
+        .public-donate__form {
+            padding-left: 0;
+            padding-right: 0;
+        }
+    }
+    @media (min-width: 992px) {
+        .public-donate {
+            width: 80vw;
+            max-width: 80vw;
+        }
+        .public-donate__mission {
+            display: block;
+        }
+        .public-donate__image-frame {
+            width: 30vw;
+            max-width: 30vw;
+            margin-left: auto;
+            margin-right: 0;
         }
     }
 </style>
@@ -217,8 +416,8 @@
                 <span class="public-donate__title-line public-donate__title-accent">es fundamental</span>
             </h1>
             <div class="public-donate__mission">
-                <p><strong>Queremos seguir siendo la mejor comunidad de carpooling de Argentina.</strong></p>
-                <p>Carpoolear es un proyecto colaborativo sin fines de lucro de la ONG STS Rosario. En ruta desde el 2013, hoy día es la comunidad de Carpooling más grande de Argentina, integrada por más de 450.000 personas y más de 1500 viajes mensuales. Se requiere mucho trabajo, ya no es suficiente sólo con voluntariado. Por eso, es importante tu aporte para poder mantener y mejorar Carpoolear tal como lo venimos haciendo desde que salimos de “Zona de derrumbe” en 2025.</p>
+                <p class="public-donate__mission-lead">Queremos seguir siendo la mejor comunidad de carpooling de Argentina.</p>
+                <p class="public-donate__mission-body">Carpoolear es un proyecto colaborativo sin fines de lucro de la ONG STS Rosario. En ruta desde el 2013, hoy día es la comunidad de Carpooling más grande de Argentina, integrada por más de 450.000 personas y más de 1500 viajes mensuales. Se requiere mucho trabajo, ya no es suficiente sólo con voluntariado. Por eso, es importante tu aporte para poder mantener y mejorar Carpoolear tal como lo venimos haciendo desde que salimos de “Zona de derrumbe” en 2025.</p>
             </div>
         </div>
         <div class="public-donate__hero-media">
@@ -234,7 +433,7 @@
             Sumate al
             <span class="public-donate__cta-title-accent">Club Carpoolear</span>
         </h2>
-        <p>Con tu aporte mensual podemos mantener y seguir mejorando Carpoolear, a cambio obtenés los siguientes beneficios por ser parte:</p>
+        <p class="public-donate__cta-intro">Con tu aporte mensual podemos mantener y seguir mejorando Carpoolear, a cambio obtenés los siguientes beneficios por ser parte:</p>
         <ul class="public-donate__benefits">
             <li><strong>Soporte prioritario:</strong> tus tickets de Mesa de Ayuda tendrán prioridad.</li>
             <li><strong>Acceso anticipado:</strong> vas a poder probar funcionalidades nuevas antes que salgan.</li>
@@ -246,18 +445,21 @@
     <div class="public-donate__form">
         <p class="public-donate__usage">Puedo aportar cada mes con el equivalente a...</p>
         <div class="radio" data-donation-tiers>
-            <label class="radio-inline"><input type="radio" name="donationValor" value="5000"><span>$ 5000 (café)</span></label>
-            <label class="radio-inline"><input type="radio" name="donationValor" value="7500"><span>$ 7500 (pinta de cerveza)</span></label>
-            <label class="radio-inline"><input type="radio" name="donationValor" value="12000"><span>$ 12000 (comida)</span></label>
+            <label class="radio-inline"><input type="radio" name="donationValor" value="5000"><span>$ 5.000 (café)</span></label>
+            <label class="radio-inline"><input type="radio" name="donationValor" value="7500"><span>$ 7.500 (pinta de cerveza)</span></label>
+            <label class="radio-inline"><input type="radio" name="donationValor" value="12000"><span>$ 12.000 (comida)</span></label>
         </div>
-        <button class="btn-donar" type="button" data-club>Quiero formar parte del Club Carpoolear<br />(cancelá cuando quieras)</button>
+        <button class="btn-donar" type="button" data-club>
+            <span class="public-donate__btn-label">Quiero formar parte del Club Carpoolear</span>
+            <span class="public-donate__btn-hint">(cancelá cuando quieras)</span>
+        </button>
 
         <section class="public-donate__once">
-            <p>¿No podés comprometerte a aportar cada mes? Podés hacerlo por única vez:</p>
+            <p class="public-donate__once-intro">¿No podés comprometerte a aportar cada mes? Podés hacerlo por única vez:</p>
             <div class="radio" data-donation-tiers>
-                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="5000"><span>$ 5000 (café)</span></label>
-                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="7500"><span>$ 7500 (pinta de cerveza)</span></label>
-                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="12000"><span>$ 12000 (comida)</span></label>
+                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="5000"><span>$ 5.000 (café)</span></label>
+                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="7500"><span>$ 7.500 (pinta de cerveza)</span></label>
+                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="12000"><span>$ 12.000 (comida)</span></label>
             </div>
             <button class="btn-donar btn-once btn-unica" type="button">Quiero aportar por única vez</button>
             <button class="btn-donar btn-qr" type="button">Pagar con QR</button>
@@ -397,13 +599,21 @@
             alert('No pudimos iniciar el aporte con QR. Probá de nuevo.');
         });
     }
+    function formatAmount(amount) {
+        return Number(amount).toLocaleString('es-AR');
+    }
+    function tierLabel(tier) {
+        var labels = { 5000: 'café', 7500: 'pinta de cerveza', 12000: 'comida' };
+        var extra = tier.label || labels[parseInt(tier.amount, 10)];
+        return extra ? '$ ' + formatAmount(tier.amount) + ' (' + extra + ')' : '$ ' + formatAmount(tier.amount);
+    }
     function renderDonationTiers(tiers) {
         document.querySelectorAll('[data-donation-tiers]').forEach(function (container, index) {
             var name = index === 0 ? 'donationValor' : 'donationValorOnce';
             container.innerHTML = tiers.map(function (tier) {
                 return '<label class="radio-inline"><input type="radio" name="'
-                    + name + '" value="' + tier.amount + '"><span>$ '
-                    + tier.amount + '</span></label>';
+                    + name + '" value="' + tier.amount + '"><span>'
+                    + tierLabel(tier) + '</span></label>';
             }).join('');
         });
     }
