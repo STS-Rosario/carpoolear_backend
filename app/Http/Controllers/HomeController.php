@@ -120,7 +120,9 @@ class HomeController extends Controller
 
     public function aportar()
     {
-        return view('aportar');
+        $query = request()->getQueryString();
+
+        return redirect('/app/donate'.($query ? '?'.$query : ''), 301);
     }
 
     public function covid()
