@@ -246,7 +246,7 @@
         border: 1.5px solid var(--ds-header-donate-border);
         border-radius: 8px;
         color: #fff;
-        background: var(--ds-header-donate-bg);
+        background: var(--ds-header-donate-bg, #5cb85c);
         font-family: 'Barlow', sans-serif;
         font-size: 16px;
         font-weight: 600;
@@ -317,6 +317,9 @@
         margin: 1em 0;
     }
     .club-login-modal {
+        --ds-text-primary: #22211F;
+        --ds-header-donate-bg: #5cb85c;
+        --ds-header-donate-border: #4cae4c;
         display: none;
         position: fixed;
         z-index: 9998;
@@ -333,24 +336,55 @@
     }
     .club-login-modal__dialog {
         background: #fff;
-        border-radius: 10px;
+        border-radius: 20px;
         max-width: 28em;
         width: 100%;
         padding: 1.5em;
         text-align: center;
         color: var(--ds-text-primary, #22211F);
+        box-shadow: 3px 3px 7.3px 0 rgba(0, 0, 0, 0.05);
+    }
+    .club-login-modal__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75em;
+        margin: 0 0 0.75em;
     }
     .club-login-modal__dialog h3 {
-        margin: 0 0 0.75em;
+        margin: 0;
+        flex: 1;
+        min-width: 0;
         font-family: 'Dela Gothic One', 'Barlow', sans-serif;
         font-size: 1.5em;
         font-weight: 400;
+        text-align: left;
+        color: var(--ds-text-primary, #22211F);
+    }
+    .club-login-modal__close {
+        flex-shrink: 0;
+        margin: 0;
+        padding: 0 0.25em;
+        border: 0;
+        background: transparent;
+        color: #333;
+        font-size: 1.5em;
+        line-height: 1;
+        cursor: pointer;
+        appearance: none;
     }
     .club-login-modal__dialog p {
         margin: 0 0 1em;
         font-family: 'Barlow', sans-serif;
         font-size: 1em;
         line-height: 1.45;
+        text-align: left;
+        color: #333;
+    }
+    .club-login-modal .btn-donar {
+        margin-top: 0.5em;
+        margin-left: auto;
+        margin-right: auto;
     }
     @media (max-width: 767px) {
         .public-donate__benefits {
@@ -486,7 +520,10 @@
 
 <div class="club-login-modal" data-club-modal>
     <div class="club-login-modal__dialog">
-        <h3>Club Carpoolear</h3>
+        <div class="club-login-modal__header">
+            <h3>Club Carpoolear</h3>
+            <button type="button" class="club-login-modal__close" data-club-login-close aria-label="Cerrar">&times;</button>
+        </div>
         <p>Para ser miembro del Club Carpoolear tenés que estar logueado en la app, te vamos a redirigir</p>
         <button type="button" class="btn-donar" data-club-login-ok>Ok</button>
     </div>
@@ -620,6 +657,12 @@
     function clubModal() {
         return document.querySelector('[data-club-modal]');
     }
+    function closeClubModal() {
+        var modal = clubModal();
+        if (modal) {
+            modal.classList.remove('is-open');
+        }
+    }
     fetch('/api/donation-tiers').then(function (response) {
         return response.json();
     }).then(function (tiers) {
@@ -666,6 +709,22 @@
     if (closeQr) {
         closeQr.addEventListener('click', closeQrPanel);
     }
+    var clubModalEl = clubModal();
+    if (clubModalEl) {
+        clubModalEl.addEventListener('click', function (event) {
+            if (event.target === event.currentTarget) {
+                closeClubModal();
+            }
+        });
+    }
+    document.querySelectorAll('[data-club-login-close]').forEach(function (btn) {
+        btn.addEventListener('click', closeClubModal);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeClubModal();
+        }
+    });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 @endsection
