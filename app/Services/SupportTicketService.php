@@ -201,11 +201,6 @@ class SupportTicketService
 
     public function assignTicketToAdmin(SupportTicket $ticket, User $admin): void
     {
-        if ($ticket->isAssignmentExpired()) {
-            $this->clearTicketAssignment($ticket);
-            $ticket->save();
-        }
-
         $takeover = $ticket->hasActiveAssignment() && ! $ticket->isAssignedTo($admin->id);
 
         if (! $takeover && ! $this->ticketIsAssignableByAdmin($ticket)) {
@@ -239,19 +234,9 @@ class SupportTicketService
         $ticket->assigned_at = null;
     }
 
+    /** Assignments persist until unassign, resolve, or close — no timed auto-release. */
     public function releaseExpiredAssignments(): int
     {
-        $timeoutMinutes = (int) config('carpoolear.support_ticket_assignment_timeout_minutes', 10);
-        $threshold = now()->subMinutes($timeoutMinutes);
-
-        return SupportTicket::query()
-            ->whereNotNull('assigned_to_user_id')
-            ->whereNotNull('assigned_at')
-            ->where('assigned_at', '<=', $threshold)
-            ->update([
-                'assigned_to_user_id' => null,
-                'assigned_at' => null,
-                'updated_at' => now(),
-            ]);
+        return 0;
     }
 }

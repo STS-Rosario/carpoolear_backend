@@ -44,12 +44,12 @@ class SupportTicketsReleaseExpiredAssignmentsTest extends TestCase
         ]);
 
         $this->artisan('support-tickets:release-expired-assignments')
-            ->expectsOutput('Support ticket assignments released: 1')
+            ->expectsOutput('Support ticket assignments released: 0')
             ->assertExitCode(0);
 
         $this->assertSame($admin->id, (int) $active->fresh()->assigned_to_user_id);
-        $this->assertNull($expired->fresh()->assigned_to_user_id);
-        $this->assertNull($expired->fresh()->assigned_at);
+        $this->assertSame($admin->id, (int) $expired->fresh()->assigned_to_user_id);
+        $this->assertNotNull($expired->fresh()->assigned_at);
     }
 
     public function test_command_contract_is_exposed(): void

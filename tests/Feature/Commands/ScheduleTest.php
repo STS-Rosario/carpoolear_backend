@@ -149,13 +149,6 @@ class ScheduleTest extends TestCase
         $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
     }
 
-    public function test_support_tickets_release_expired_assignments_is_scheduled_every_minute()
-    {
-        $event = $this->findEvent('support-tickets:release-expired-assignments');
-        $this->assertEquals('* * * * *', $event->expression);
-        $this->assertEquals('America/Argentina/Buenos_Aires', $event->timezone);
-    }
-
     // -- Monthly commands --
 
     public function test_calculate_active_users_is_scheduled_monthly_on_first()
@@ -196,7 +189,6 @@ class ScheduleTest extends TestCase
             'support-tickets:autoclose',
             'manual-identity-validation:purge-rejected-photos',
             'manual-identity-validation:remind-upload-photos',
-            'support-tickets:release-expired-assignments',
             'car-catalog:sync-argautos',
             'donations:sync-subscription-amounts',
             'donations:reconcile',

@@ -243,16 +243,16 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertTrue($rows->every(fn (array $row): bool => (int) ($row['assigned_to_user_id'] ?? 0) === $admin->id));
     }
 
-    public function test_index_assigned_to_me_ignores_expired_assignment(): void
+    public function test_index_assigned_to_me_includes_assignment_beyond_timeout_window(): void
     {
         \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
         config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
-        $expired = $this->makeTicket($owner, [
+        $assigned = $this->makeTicket($owner, [
             'status' => 'Open',
-            'subject' => 'expired-assignment',
+            'subject' => 'old-assignment',
             'assigned_to_user_id' => $admin->id,
             'assigned_at' => now()->subMinutes(11),
         ]);
@@ -263,7 +263,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $rows = collect($this->getJson('api/admin/support/tickets?assigned_to_me=1')->assertOk()->json('data'));
         $ids = $rows->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-        $this->assertNotContains($expired->id, $ids);
+        $this->assertContains($assigned->id, $ids);
     }
 
     public function test_index_paginates_with_default_hundred_per_page(): void
@@ -1568,16 +1568,16 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_index_releases_expired_assignment_before_returning_rows(): void
+    public function test_index_keeps_assignment_beyond_timeout_window(): void
     {
         \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
         config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
 
         $admin = $this->adminUser();
         $owner = User::factory()->create();
-        $expired = $this->makeTicket($owner, [
+        $assigned = $this->makeTicket($owner, [
             'status' => 'Open',
-            'subject' => 'expired-assignment',
+            'subject' => 'old-assignment',
             'assigned_to_user_id' => $admin->id,
             'assigned_at' => now()->subMinutes(11),
         ]);
@@ -1586,11 +1586,11 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->withoutMiddleware(UserAdmin::class);
 
         $rows = collect($this->getJson('api/admin/support/tickets')->assertOk()->json('data'));
-        $row = $rows->firstWhere('id', $expired->id);
+        $row = $rows->firstWhere('id', $assigned->id);
 
         $this->assertNotNull($row);
-        $this->assertNull($row['assigned_to_user_id']);
-        $this->assertNull($row['assigned_to']);
+        $this->assertSame($admin->id, (int) $row['assigned_to_user_id']);
+        $this->assertSame($admin->name, $row['assigned_to']['name']);
     }
 
     public function test_index_includes_assigned_admin_for_claimed_ticket(): void
@@ -1636,6 +1636,59 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $fresh = $ticket->fresh();
         $this->assertSame($admin->id, (int) $fresh->assigned_to_user_id);
         $this->assertNotNull($fresh->assigned_at);
+    }
+
+    public function test_admin_reply_keeps_assignment_after_timeout_window(): void
+    {
+        \Carbon\Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Open',
+            'subject' => 'reply-keeps-assignment-over-time',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/support/tickets/'.$ticket->id.'/replies', [
+            'message_markdown' => 'Handled now.',
+        ])->assertOk();
+
+        \Carbon\Carbon::setTestNow('2026-07-19 12:15:00');
+
+        $fresh = $ticket->fresh();
+        $this->assertSame($admin->id, (int) $fresh->assigned_to_user_id);
+        $this->assertNotNull($fresh->assigned_at);
+        $this->assertSame('Esperando respuesta', $fresh->status);
+    }
+
+    public function test_assign_me_reassigns_esperando_respuesta_ticket_assigned_to_another_admin(): void
+    {
+        $adminA = $this->adminUser();
+        $adminB = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner, [
+            'status' => 'Esperando respuesta',
+            'subject' => 'waiting-takeover',
+            'unread_for_admin' => 0,
+            'assigned_to_user_id' => $adminA->id,
+            'assigned_at' => now(),
+        ]);
+
+        $this->actingAs($adminB, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $response = $this->postJson('api/admin/support/tickets/'.$ticket->id.'/assign-me')
+            ->assertOk();
+        $data = $response->json('data');
+
+        $this->assertSame($adminB->id, (int) $data['assigned_to_user_id']);
+        $this->assertSame($adminB->id, (int) $data['assigned_to']['id']);
     }
 
     public function test_admin_reply_returns_forbidden_when_ticket_assigned_to_another_admin(): void
