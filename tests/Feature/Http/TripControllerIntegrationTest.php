@@ -185,6 +185,7 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonPath('data.0.id', $visible->id);
 
         // Guests must also get the driver-status filter.
+        $this->app['auth']->forgetGuards();
         $this->getJson('/api/trips')
             ->assertOk()
             ->assertJsonPath('meta.pagination.total', 1)
@@ -203,6 +204,7 @@ class TripControllerIntegrationTest extends TestCase
         $this->assertContains($hiddenBanned->id, $returnedIds);
 
         // Query param is_admin=true must not bypass hidden-driver filter for guests or non-admins.
+        $this->app['auth']->forgetGuards();
         $this->getJson('/api/trips?is_admin=true')
             ->assertOk()
             ->assertJsonPath('meta.pagination.total', 1)
@@ -214,6 +216,7 @@ class TripControllerIntegrationTest extends TestCase
             ->assertJsonPath('meta.pagination.total', 1)
             ->assertJsonPath('data.0.id', $visible->id);
 
+        $this->app['auth']->forgetGuards();
         $guestBypassIds = collect($this->getJson('/api/trips?is_admin=true')->json('data'))->pluck('id')->all();
         $this->assertNotContains($hiddenAnonymized->id, $guestBypassIds);
         $this->assertNotContains($hiddenBanned->id, $guestBypassIds);
