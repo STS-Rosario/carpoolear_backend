@@ -43,6 +43,7 @@ Route::get('/test', [HomeController::class, 'test']);
 Route::get('/encuentrocarpoolero', [HomeController::class, 'encuentrocarpoolero']);
 Route::get('/data-web', [DataController::class, 'data']);
 Route::get('/aportar', [HomeController::class, 'aportar']);
+Route::get('/donate', [HomeController::class, 'aportar']);
 Route::redirect('/donar', '/aportar', 301);
 Route::get('/donar-compartir', [HomeController::class, 'donarcompartir']);
 Route::get('/datos', [HomeController::class, 'datos']);

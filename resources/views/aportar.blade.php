@@ -4,49 +4,149 @@
 @section('body-class', 'body-difusion')
 
 @section('content')
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&display=swap" rel="stylesheet">
 <style>
-    .body-donar {
-        min-height: 80vh;
+    .public-donate {
+        --ds-text-primary: #22211F;
+        --ds-text-secondary: #404040;
+        --ds-header-donate-bg: #5cb85c;
+        color: var(--ds-text-primary);
+        padding-bottom: 4rem;
     }
-    .donation {
-        margin-top: 4em;
-        margin-bottom: 1em;
+    .public-donate__hero {
+        display: grid;
+        gap: 1.5rem;
+        margin: 1.5rem 0 2rem;
     }
-    .donation-top {
-        margin-top: 0;
+    .public-donate__hero-copy {
+        padding: 0 1rem;
+        text-align: center;
     }
-    .radio {
+    .public-donate__title {
+        margin: 0;
+        font-family: 'Dela Gothic One', sans-serif;
+        font-weight: 400;
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+    }
+    .public-donate__title-line {
+        display: block;
+        font-size: clamp(1.75rem, 8vw, 4.5rem);
+        color: var(--ds-text-secondary);
+    }
+    .public-donate__title-accent {
+        color: var(--ds-header-donate-bg);
+    }
+    .public-donate__mission {
+        margin: 1.25rem 0 0;
+        font-size: 1.2rem;
+        line-height: 1.45;
+        text-align: left;
+        color: var(--ds-text-secondary);
+    }
+    .public-donate__hero-media {
+        width: 100%;
+    }
+    .public-donate__image-frame {
+        position: relative;
+        width: 85vw;
+        max-width: 450px;
+        margin: 0 auto;
+        aspect-ratio: 4 / 3;
+    }
+    .public-donate__image-backdrop,
+    .public-donate__image {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 1.25rem;
+    }
+    .public-donate__image-backdrop {
+        background: var(--ds-header-donate-bg);
+    }
+    .public-donate__image {
+        object-fit: cover;
+        transform: rotate(-4deg);
+        z-index: 1;
+    }
+    .public-donate__cta {
+        padding: 0 1rem 2rem;
+        text-align: center;
+    }
+    .public-donate__cta-title {
+        margin: 0 0 1rem;
+        font-family: 'Dela Gothic One', sans-serif;
+        font-size: clamp(1.75rem, 8vw, 3rem);
+        font-weight: 400;
+        line-height: 1.05;
+        text-transform: uppercase;
+        color: var(--ds-text-secondary);
+    }
+    .public-donate__cta-title-accent {
+        display: block;
+        color: var(--ds-header-donate-bg);
+    }
+    .public-donate__benefits {
+        max-width: 42rem;
+        margin: 1.25rem auto 0;
+        padding-inline-start: 2rem;
+        text-align: left;
+        list-style: disc;
+    }
+    .public-donate__benefits li {
+        margin: 0 0 0.75rem;
+        font-size: 1.05rem;
+        line-height: 1.45;
+    }
+    .public-donate__form {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 0 1rem 2rem;
+        text-align: center;
+    }
+    .public-donate__usage {
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        line-height: 1.45;
+    }
+    .public-donate .radio {
         margin-bottom: 1.5em;
     }
-    .btn-donar {
-        min-height: 5em;
-        vertical-align: middle;
+    .public-donate .btn-donar,
+    .club-login-modal .btn-donar {
+        display: block;
+        width: fit-content;
+        max-width: 100%;
+        margin: 1rem auto 0;
+        min-height: auto;
+        padding: 0.85em 1.5em;
         border: 0;
-        padding: 1em 2em;
-        min-width: 250px;
         border-radius: 10px;
-        margin-right: 10px;
-    }
-    .btn-donar:hover,
-    .btn-donar:active,
-    .btn-donar:focus {
-        opacity: 0.90;
-    }
-    .btn-unica-vez {    
         color: #fff;
-        background-color: #5cb85c;
-        border-color: #4cae4c;
+        background: var(--ds-header-donate-bg);
     }
-    .btn-mensualmente {    
-        color: #fff;
-        background-color: #5bc0de;
-        border-color: #46b8da;
+    .public-donate .btn-once,
+    .public-donate .btn-qr {
+        background: transparent;
+        border: 2px solid var(--ds-header-donate-bg);
+        color: var(--ds-text-primary);
     }
-    .btn-qr {
-        color: #fff;
-        background-color: #337ab7;
-        border-color: #2e6da4;
+    .public-donate .btn-qr {
         display: none;
+        margin-top: 0.75rem;
+    }
+    .public-donate__once {
+        margin-top: 9rem;
+    }
+    .public-donate__alt {
+        margin-top: 3rem;
+        text-align: left;
+        font-size: 1.05rem;
+        line-height: 1.45;
     }
     .qr-payment-panel {
         display: none;
@@ -57,6 +157,8 @@
         background: #fff;
         text-align: center;
         max-width: 360px;
+        margin-left: auto;
+        margin-right: auto;
     }
     .qr-payment-panel.is-open {
         display: block;
@@ -66,72 +168,128 @@
         height: auto;
         margin: 1em 0;
     }
+    .club-login-modal {
+        display: none;
+        position: fixed;
+        z-index: 9998;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    .club-login-modal.is-open {
+        display: flex;
+    }
+    .club-login-modal__dialog {
+        background: #fff;
+        border-radius: 10px;
+        max-width: 28rem;
+        width: 100%;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    .club-login-modal__dialog h3 {
+        margin-top: 0;
+    }
+    @media (min-width: 768px) {
+        .public-donate__hero {
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 4rem;
+            padding: 0 2.5rem;
+        }
+        .public-donate__hero-copy {
+            padding: 0;
+            text-align: left;
+        }
+        .public-donate__image-frame {
+            width: 100%;
+            max-width: 100%;
+        }
+    }
 </style>
-<section>
-    <div class="container">
-        <div class="row">
-            <div class="col-sm-12 pt48 body-donar">
-                <img src="/img/economia-colaborativa.jpg" style="float: right; width: 100%; max-width: 450px;" class="hidden-xs" />
-                <div class="donation donation-top">
-                    <h3>Aportar</h3>
-                    <div class="radio" data-donation-tiers>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" value="5000"><span>$ 5000</span>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" value="7500"><span>$ 7500</span>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" value="12000"><span>$ 12000</span>
-                        </label>
-                    </div>
-                    <div>
-                        <button class="btn-unica-vez btn-donar btn-unica" id="btn-unica">ÚNICA VEZ</button>
-                        <button class="btn-qr btn-donar" type="button">Pagar con QR</button>
-                        <button class="btn-mensualmente btn-donar" id="btn-mensual">MENSUALMENTE <br />(cancelá cuando quieras)</button>
-                    </div>
-                    <div class="qr-payment-panel" data-qr-panel>
-                        <p><strong>Escanéa con una billetera virtual</strong></p>
-                        <img class="qr-image" alt="QR" hidden />
-                        <p class="qr-expiry">El QR expira en 15 minutos.</p>
-                        <button type="button" data-qr-close>Cerrar</button>
-                    </div>
-                </div>
-                <p>¡Hola Carpooler@s!</p>
-
-                <p>En el 2013 pusimos en marcha a Carpoolear y desde ese momento estamos en ruta llevando adelante la plataforma bajo USO GRATUITO tanto en su versión web como app. Somos un proyecto SIN FINES DE LUCRO, COLABORATIVO y de CÓDIGO LIBRE. Queremos seguir siéndolo y para eso NECESITAMOS tu APOYO.</p>
-
-                <p>Quienes nos acompañan desde el comienzo saben que avanzamos un montón con muy pocos recursos esporádicos, pero esto es cada vez más difícil. Hoy en día la plataforma tiene más de 100 mil personas registradas, requiere mucho trabajo y coordinación, que son llevados adelante mediante esfuerzo de un EQUIPO VOLUNTARIO pero también tenemos gastos de servidores, legales y administrativos como cualquier proyecto.</p>
-
-                <p>Por eso necesitamos tu APORTE para poder avanzar con el desarrollo de la plataforma más rápido manteniendo nuestra filosofía de trabajo. Si Carpoolear es útil para vos, te gusta lo que hacemos, querés cuidar el medio ambiente, tomate 1 MINUTO y COLABORÁ :D
-                Podés aportar $1000, $2000 y más allá también. O sea, que nos podés invitar un café con leche, una pinta o por qué no, salir a comer.</p>
-
-                <p>Carpoolear es un proyecto de STS Rosario, una ONG sin fines de lucro, constituida como asociación civil desde el 2014. A través de proyectos concretos, divulga las problemáticas socioambientales actuales y genera herramientas, para provocar un cambio cultural hacia una sociedad sustentable, resiliente y equitativa. Del total del aporte realizado a nosotros, un 10% será destinada al sostenimiento de nuestra organización, para que pueda haber más proyectos como Carpoolear. Podés enterarte más acerca de <a href="https://www.stsrosario.org.ar" target="_blank">STS en www.stsrosario.org.ar</a></p>
-
-                <div class="donation hidden-sm hidden-md hidden-lg">
-                    <div class="radio" data-donation-tiers>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" value="5000"><span>$ 5000</span>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" value="7500"><span>$ 7500</span>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="donationValor" value="12000"><span>$ 12000</span>
-                        </label>
-                    </div>
-                    <div>
-                        <button class="btn-unica-vez btn-donar btn-unica" id="btn-unica">ÚNICA VEZ</button>
-                        <button class="btn-qr btn-donar" type="button">Pagar con QR</button>
-                        <button class="btn-mensualmente btn-donar" id="btn-mensual">MENSUALMENTE <br />(cancelá cuando quieras)</button>
-                    </div>
-                </div>
-                <p>Cualquier duda, escribinos a nuestras redes sociales o a <a href="mailto:carpoolear@stsrosario.org.ar">carpoolear@stsrosario.org.ar</a></p>
-                <img src="/img/economia-colaborativa.jpg" style="float: right; width: 100%; max-width: 450px;" class="hidden-sm hidden-md hidden-lg" />
+<section class="public-donate">
+    <div class="public-donate__hero">
+        <div class="public-donate__hero-copy">
+            <h1 class="public-donate__title">
+                <span class="public-donate__title-line">Tu aporte</span>
+                <span class="public-donate__title-line public-donate__title-accent">es fundamental</span>
+            </h1>
+            <div class="public-donate__mission">
+                <p><strong>Queremos seguir siendo la mejor comunidad de carpooling de Argentina.</strong></p>
+                <p>Carpoolear es un proyecto colaborativo sin fines de lucro de la ONG STS Rosario. En ruta desde el 2013, hoy día es la comunidad de Carpooling más grande de Argentina, integrada por más de 450.000 personas y más de 1500 viajes mensuales. Se requiere mucho trabajo, ya no es suficiente sólo con voluntariado. Por eso, es importante tu aporte para poder mantener y mejorar Carpoolear tal como lo venimos haciendo desde que salimos de “Zona de derrumbe” en 2025.</p>
+            </div>
+        </div>
+        <div class="public-donate__hero-media">
+            <div class="public-donate__image-frame">
+                <div class="public-donate__image-backdrop" aria-hidden="true"></div>
+                <img class="public-donate__image" src="/img/carpoolear-grupal-1.jpg" alt="">
             </div>
         </div>
     </div>
+
+    <section class="public-donate__cta">
+        <h2 class="public-donate__cta-title">
+            Sumate al
+            <span class="public-donate__cta-title-accent">Club Carpoolear</span>
+        </h2>
+        <p>Con tu aporte mensual podemos mantener y seguir mejorando Carpoolear, a cambio obtenés los siguientes beneficios por ser parte:</p>
+        <ul class="public-donate__benefits">
+            <li><strong>Soporte prioritario:</strong> tus tickets de Mesa de Ayuda tendrán prioridad.</li>
+            <li><strong>Acceso anticipado:</strong> vas a poder probar funcionalidades nuevas antes que salgan.</li>
+            <li><strong>Informe semestral:</strong> cada 6 meses te vamos a mandar un mail contándote lo que logramos gracias a tu aporte.</li>
+            <li><strong>Pin:</strong> tu perfil tendrá una insignia y vas a aparecer en una lista de personas que forman parte del Club Carpoolear (si así lo querés).</li>
+        </ul>
+    </section>
+
+    <div class="public-donate__form">
+        <p class="public-donate__usage">Puedo aportar cada mes con el equivalente a...</p>
+        <div class="radio" data-donation-tiers>
+            <label class="radio-inline"><input type="radio" name="donationValor" value="5000"><span>$ 5000 (café)</span></label>
+            <label class="radio-inline"><input type="radio" name="donationValor" value="7500"><span>$ 7500 (pinta de cerveza)</span></label>
+            <label class="radio-inline"><input type="radio" name="donationValor" value="12000"><span>$ 12000 (comida)</span></label>
+        </div>
+        <button class="btn-donar" type="button" data-club>Quiero formar parte del Club Carpoolear<br />(cancelá cuando quieras)</button>
+
+        <section class="public-donate__once">
+            <p>¿No podés comprometerte a aportar cada mes? Podés hacerlo por única vez:</p>
+            <div class="radio" data-donation-tiers>
+                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="5000"><span>$ 5000 (café)</span></label>
+                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="7500"><span>$ 7500 (pinta de cerveza)</span></label>
+                <label class="radio-inline"><input type="radio" name="donationValorOnce" value="12000"><span>$ 12000 (comida)</span></label>
+            </div>
+            <button class="btn-donar btn-once btn-unica" type="button">Quiero aportar por única vez</button>
+            <button class="btn-donar btn-qr" type="button">Pagar con QR</button>
+            <div class="qr-payment-panel" data-qr-panel>
+                <p><strong>Escanéa con una billetera virtual</strong></p>
+                <img class="qr-image" alt="QR" hidden />
+                <p class="qr-expiry">El QR expira en 15 minutos.</p>
+                <button type="button" data-qr-close>Cerrar</button>
+            </div>
+        </section>
+
+        <div class="public-donate__alt">
+            <p>¿No estás en condiciones de aportar económicamente? ¿Simplemente te gusta meter las manos en el barro? Podés aportar tu tiempo <strong><a href="https://carpoolear.com.ar/colabora-como-colaborar" target="_blank" rel="noopener noreferrer">sumándote al voluntariado</a></strong>, siempre necesitamos una mano en las distintas áreas del proyecto.</p>
+            <p>Siempre recordá que el aporte más sencillo y fundamental es hacer correr la voz. Sí, el boca en boca es fundamental para que crezca la comunidad Carpoolear y se compartan más viajes:</p>
+            <ul>
+                <li>Si usas las redes sociales virtuales <strong><a href="https://instagram.com/carpoolear" target="_blank" rel="noopener noreferrer">Instagram</a></strong>, <strong><a href="https://facebook.com/carpoolear" target="_blank" rel="noopener noreferrer">Facebook</a></strong> y compartí nuestras publicaciones/historias.</li>
+                <li>Mejor aún, la red social del cara a cara… contale a tus amistades y familia sobre Carpoolear, contales de ese viaje que compartiste, de la gente que conociste, contales que compartir no es una locura.</li>
+            </ul>
+            <p>Buen viaje!</p>
+            <p><strong>Equipo Carpoolear</strong> (también conocido como “La gente de Carpu”)</p>
+        </div>
+    </div>
 </section>
+
+<div class="club-login-modal" data-club-modal>
+    <div class="club-login-modal__dialog">
+        <h3>Club Carpoolear</h3>
+        <p>Para ser miembro del Club Carpoolear tenés que estar logueado en la app, te vamos a redirigir</p>
+        <button type="button" class="btn-donar" data-club-login-ok>Ok</button>
+    </div>
+</div>
+
 <script>
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
@@ -154,11 +312,8 @@
         }
         return payload;
     }
-    function startAportarCheckout(type, amount) {
-        var path = type === 'monthly'
-            ? '/api/donations/checkout/monthly'
-            : '/api/donations/checkout/once';
-        fetch(path, {
+    function startAportarCheckout(amount) {
+        fetch('/api/donations/checkout/once', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify(donationPayload(amount))
@@ -177,8 +332,8 @@
         });
     }
     var qrPollId = null;
-    function selectedAmount() {
-        var rdb = document.querySelector('input[name="donationValor"]:checked');
+    function selectedAmount(groupName) {
+        var rdb = document.querySelector('input[name="' + groupName + '"]:checked');
         return rdb ? rdb.value : null;
     }
     function qrPanel() {
@@ -243,12 +398,17 @@
         });
     }
     function renderDonationTiers(tiers) {
-        document.querySelectorAll('[data-donation-tiers]').forEach(function (container) {
+        document.querySelectorAll('[data-donation-tiers]').forEach(function (container, index) {
+            var name = index === 0 ? 'donationValor' : 'donationValorOnce';
             container.innerHTML = tiers.map(function (tier) {
-                return '<label class="radio-inline"><input type="radio" name="donationValor" value="'
-                    + tier.amount + '"><span>$ ' + tier.amount + '</span></label>';
+                return '<label class="radio-inline"><input type="radio" name="'
+                    + name + '" value="' + tier.amount + '"><span>$ '
+                    + tier.amount + '</span></label>';
             }).join('');
         });
+    }
+    function clubModal() {
+        return document.querySelector('[data-club-modal]');
     }
     fetch('/api/donation-tiers').then(function (response) {
         return response.json();
@@ -262,7 +422,7 @@
     }).then(function (config) {
         if (config && config.platform_donations_qr_enabled) {
             document.querySelectorAll('.btn-qr').forEach(function (btn) {
-                btn.style.display = 'inline-block';
+                btn.style.display = 'block';
             });
         }
     }).catch(function () {});
@@ -272,17 +432,24 @@
                 closeQrPanel();
                 return;
             }
-            var amount = selectedAmount();
+            if (event.currentTarget.hasAttribute('data-club')) {
+                clubModal().classList.add('is-open');
+                return;
+            }
+            if (event.currentTarget.hasAttribute('data-club-login-ok')) {
+                window.location.href = '/app/donate';
+                return;
+            }
+            var amount = selectedAmount('donationValorOnce') || selectedAmount('donationValor');
             if (!amount) {
-                alert('Debes seleccionar un monto de donación. Gracias!');
+                alert('Tienes que seleccionar un valor de aporte');
                 return;
             }
             if (event.currentTarget.className.indexOf('btn-qr') >= 0) {
                 startAportarQrCheckout(amount);
                 return;
             }
-            var type = event.currentTarget.className.indexOf('btn-unica') >= 0 ? 'once' : 'monthly';
-            startAportarCheckout(type, amount);
+            startAportarCheckout(amount);
         });
     });
     var closeQr = document.querySelector('[data-qr-close]');
