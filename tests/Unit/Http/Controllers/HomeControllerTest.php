@@ -43,6 +43,7 @@ class HomeControllerTest extends TestCase
             'mesa de ayuda' => ['mesadeayuda', 'mesadeayuda'],
             'contacto' => ['contacto', 'contacto'],
             'encuentro carpoolero' => ['encuentrocarpoolero', 'encuentrocarpoolero'],
+            'aportar' => ['aportar', 'aportar'],
             'covid' => ['covid', 'covid'],
             'freelance' => ['freelance', 'freelance'],
             'derrumbe' => ['derrumbe', 'derrumbe'],
@@ -77,9 +78,10 @@ class HomeControllerTest extends TestCase
         $this->assertSame('home', $response->getName());
     }
 
-    public function test_aportar_page_redirects_to_in_app_donate_and_legacy_donar_redirects(): void
+    public function test_aportar_and_donate_render_the_public_donation_page(): void
     {
-        $this->get('/aportar')->assertRedirect('/app/donate');
+        $this->get('/aportar')->assertOk();
+        $this->get('/donate')->assertOk();
         $this->get('/donar')->assertRedirect('/aportar');
     }
 

@@ -2,25 +2,44 @@
 
 namespace Tests\Feature\Http;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AportarPageTest extends TestCase
 {
-    public function test_aportar_redirects_to_in_app_donate_page(): void
+    #[DataProvider('publicDonationPaths')]
+    public function test_public_donation_page_shows_in_app_copy_without_redirecting(string $path): void
     {
-        $this->get('/aportar')
-            ->assertRedirect('/app/donate')
-            ->assertStatus(301);
+        $html = $this->get($path)->assertOk()->getContent();
+
+        $this->assertStringContainsString('Tu aporte', $html);
+        $this->assertStringContainsString('es fundamental', $html);
+        $this->assertStringContainsString('Quiero formar parte del Club Carpoolear', $html);
+        $this->assertStringContainsString('Quiero aportar por única vez', $html);
+        $this->assertStringContainsString('/api/donations/checkout/once', $html);
+        $this->assertStringContainsString('/api/donations/checkout/qr-order', $html);
+        $this->assertStringContainsString('source', $html);
+        $this->assertStringContainsString('aportar', $html);
+        $this->assertStringNotContainsString('mpago.la', $html);
+        $this->assertStringNotContainsString('/api/users/donation', $html);
+        $this->assertStringNotContainsString('¡Hola Carpooler@s!', $html);
     }
 
-    public function test_aportar_preserves_query_string_when_redirecting(): void
+    #[DataProvider('publicDonationPaths')]
+    public function test_club_carpoolear_asks_guests_to_log_in_inside_the_app(string $path): void
     {
-        $this->get('/aportar?u=42')
-            ->assertRedirect('/app/donate?u=42')
-            ->assertStatus(301);
+        $html = $this->get($path)->assertOk()->getContent();
+
+        $this->assertStringContainsString(
+            'Para ser miembro del Club Carpoolear tenés que estar logueado en la app, te vamos a redirigir',
+            $html
+        );
+        $this->assertStringContainsString('data-club-login-ok', $html);
+        $this->assertStringContainsString('/app/donate', $html);
+        $this->assertStringNotContainsString('/api/donations/checkout/monthly', $html);
     }
 
-    public function test_legacy_donar_still_redirects_through_aportar(): void
+    public function test_legacy_donar_still_redirects_to_aportar(): void
     {
         $this->get('/donar')->assertRedirect('/aportar');
     }
@@ -33,5 +52,13 @@ class AportarPageTest extends TestCase
         $this->assertStringContainsString('/api/donations/checkout/monthly', $html);
         $this->assertStringNotContainsString('mpago.la', $html);
         $this->assertStringNotContainsString('/api/users/donation', $html);
+    }
+
+    public static function publicDonationPaths(): array
+    {
+        return [
+            'donate' => ['/donate'],
+            'aportar' => ['/aportar'],
+        ];
     }
 }
