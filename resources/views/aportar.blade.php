@@ -725,8 +725,8 @@
         }
         startAportarCheckout(amount);
     }
-    function redirectToAppDonate() {
-        window.location.href = '/app/donate';
+    function redirectToAppLogin() {
+        window.location.href = '/app/login';
     }
     fetch('/api/donation-tiers').then(function (response) {
         return response.json();
@@ -755,11 +755,11 @@
                 return;
             }
             if (event.currentTarget.hasAttribute('data-club-login-ok')) {
-                redirectToAppDonate();
+                redirectToAppLogin();
                 return;
             }
             if (event.currentTarget.hasAttribute('data-guest-donate-login')) {
-                redirectToAppDonate();
+                redirectToAppLogin();
                 return;
             }
             if (event.currentTarget.hasAttribute('data-guest-donate-continue')) {
