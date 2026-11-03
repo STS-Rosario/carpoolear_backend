@@ -68,6 +68,23 @@ class AportarPageTest extends TestCase
         $this->assertStringContainsString('var(--ds-header-donate-bg, #5cb85c)', $html);
     }
 
+    #[DataProvider('publicDonationPaths')]
+    public function test_guest_regular_donation_warns_it_will_not_be_associated(string $path): void
+    {
+        $html = $this->get($path)->assertOk()->getContent();
+
+        $this->assertStringContainsString(
+            'No estás logueado, por lo que tu donación no quedará asociada a tu usuario. Te recomendamos loguearte así podemos identificarte como donante :)',
+            $html
+        );
+        $this->assertStringContainsString('Donar sin ingresar', $html);
+        $this->assertStringContainsString('Ingresar a Carpoolear', $html);
+        $this->assertStringContainsString('data-guest-donate-modal', $html);
+        $this->assertStringContainsString('data-guest-donate-continue', $html);
+        $this->assertStringContainsString('data-guest-donate-login', $html);
+        $this->assertStringContainsString('data-guest-donate-close', $html);
+    }
+
     public function test_legacy_donar_still_redirects_to_aportar(): void
     {
         $this->get('/donar')->assertRedirect('/aportar');
