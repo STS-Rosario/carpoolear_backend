@@ -176,20 +176,13 @@ class SupportTicket extends Model
 
     public function isAssignmentExpired(?int $timeoutMinutes = null): bool
     {
-        if ($this->assigned_to_user_id === null || $this->assigned_at === null) {
-            return false;
-        }
-
-        $minutes = $timeoutMinutes ?? (int) config('carpoolear.support_ticket_assignment_timeout_minutes', 10);
-
-        return $this->assigned_at->lte(now()->subMinutes($minutes));
+        return false;
     }
 
     public function hasActiveAssignment(?int $timeoutMinutes = null): bool
     {
         return $this->assigned_to_user_id !== null
-            && $this->assigned_at !== null
-            && ! $this->isAssignmentExpired($timeoutMinutes);
+            && $this->assigned_at !== null;
     }
 
     public static function countForUser(?int $userId): int

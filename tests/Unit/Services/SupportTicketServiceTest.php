@@ -12,7 +12,6 @@ use STS\Models\User;
 use STS\Services\SupportTicketService;
 use STS\Support\SupportTicketOpeningAutoReply;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 use Tests\TestCase;
 
@@ -210,20 +209,21 @@ class SupportTicketServiceTest extends TestCase
         $this->assertNotNull($ticket->last_reply_at);
     }
 
-    public function test_apply_admin_reply_transition_clears_active_assignment(): void
+    public function test_apply_admin_reply_transition_keeps_active_assignment(): void
     {
+        $assignedAt = now();
         $ticket = new SupportTicket([
             'status' => 'Open',
             'unread_for_user' => 0,
             'unread_for_admin' => 1,
             'assigned_to_user_id' => 12,
-            'assigned_at' => now(),
+            'assigned_at' => $assignedAt,
         ]);
 
         $this->service()->applyAdminReplyTransition($ticket, 99);
 
-        $this->assertNull($ticket->assigned_to_user_id);
-        $this->assertNull($ticket->assigned_at);
+        $this->assertSame(12, (int) $ticket->assigned_to_user_id);
+        $this->assertSame($assignedAt->format('Y-m-d H:i:s'), $ticket->assigned_at?->format('Y-m-d H:i:s'));
     }
 
     public function test_apply_admin_reply_transition_when_waiting_for_user_stays_esperando_respuesta(): void
@@ -531,7 +531,7 @@ class SupportTicketServiceTest extends TestCase
         $this->service()->assignTicketToAdmin($ticket->fresh(), $admin);
     }
 
-    public function test_assign_ticket_to_admin_rejects_ticket_assigned_to_another_admin(): void
+    public function test_assign_ticket_to_admin_reassigns_when_ticket_assigned_to_another_admin(): void
     {
         Carbon::setTestNow('2026-07-19 12:00:00');
         $owner = User::factory()->create();
@@ -547,14 +547,16 @@ class SupportTicketServiceTest extends TestCase
             'assigned_at' => now(),
         ]);
 
-        $this->expectException(ConflictHttpException::class);
         $this->service()->assignTicketToAdmin($ticket->fresh(), $adminB);
+
+        $fresh = $ticket->fresh();
+        $this->assertSame($adminB->id, (int) $fresh->assigned_to_user_id);
+        $this->assertSame('2026-07-19 12:00:00', $fresh->assigned_at?->format('Y-m-d H:i:s'));
     }
 
-    public function test_assign_ticket_to_admin_succeeds_when_prior_assignment_expired(): void
+    public function test_assign_ticket_to_admin_allows_takeover_when_ticket_not_otherwise_assignable(): void
     {
         Carbon::setTestNow('2026-07-19 12:00:00');
-        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
         $owner = User::factory()->create();
         $adminA = User::factory()->create(['is_admin' => true]);
         $adminB = User::factory()->create(['is_admin' => true]);
@@ -562,17 +564,37 @@ class SupportTicketServiceTest extends TestCase
             'user_id' => $owner->id,
             'type' => 'contact',
             'subject' => 'Help',
-            'status' => 'Open',
+            'status' => 'Esperando respuesta',
             'priority' => 'normal',
+            'unread_for_admin' => 0,
             'assigned_to_user_id' => $adminA->id,
-            'assigned_at' => now()->subMinutes(11),
+            'assigned_at' => now(),
         ]);
 
         $this->service()->assignTicketToAdmin($ticket->fresh(), $adminB);
 
+        $this->assertSame($adminB->id, (int) $ticket->fresh()->assigned_to_user_id);
+    }
+
+    public function test_assignment_stays_active_after_timeout_window(): void
+    {
+        Carbon::setTestNow('2026-07-19 12:00:00');
+        config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
+        $owner = User::factory()->create();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $ticket = SupportTicket::query()->create([
+            'user_id' => $owner->id,
+            'type' => 'contact',
+            'subject' => 'Help',
+            'status' => 'Esperando respuesta',
+            'priority' => 'normal',
+            'assigned_to_user_id' => $admin->id,
+            'assigned_at' => now()->subMinutes(11),
+        ]);
+
         $fresh = $ticket->fresh();
-        $this->assertSame($adminB->id, (int) $fresh->assigned_to_user_id);
-        $this->assertSame('2026-07-19 12:00:00', $fresh->assigned_at?->format('Y-m-d H:i:s'));
+        $this->assertTrue($fresh->hasActiveAssignment());
+        $this->assertSame($admin->id, (int) $fresh->assigned_to_user_id);
     }
 
     public function test_unassign_ticket_from_admin_clears_assignment_for_assignee(): void
@@ -631,25 +653,16 @@ class SupportTicketServiceTest extends TestCase
         $this->service()->unassignTicketFromAdmin($ticket->fresh(), $admin);
     }
 
-    public function test_release_expired_assignments_clears_stale_claims(): void
+    public function test_release_expired_assignments_is_no_op(): void
     {
         Carbon::setTestNow('2026-07-19 12:00:00');
         config()->set('carpoolear.support_ticket_assignment_timeout_minutes', 10);
         $owner = User::factory()->create();
         $admin = User::factory()->create(['is_admin' => true]);
-        $active = SupportTicket::query()->create([
+        $ticket = SupportTicket::query()->create([
             'user_id' => $owner->id,
             'type' => 'contact',
-            'subject' => 'Active',
-            'status' => 'Open',
-            'priority' => 'normal',
-            'assigned_to_user_id' => $admin->id,
-            'assigned_at' => now()->subMinutes(5),
-        ]);
-        $expired = SupportTicket::query()->create([
-            'user_id' => $owner->id,
-            'type' => 'contact',
-            'subject' => 'Expired',
+            'subject' => 'Old assignment',
             'status' => 'Open',
             'priority' => 'normal',
             'assigned_to_user_id' => $admin->id,
@@ -658,10 +671,8 @@ class SupportTicketServiceTest extends TestCase
 
         $released = $this->service()->releaseExpiredAssignments();
 
-        $this->assertSame(1, $released);
-        $this->assertSame($admin->id, (int) $active->fresh()->assigned_to_user_id);
-        $this->assertNull($expired->fresh()->assigned_to_user_id);
-        $this->assertNull($expired->fresh()->assigned_at);
+        $this->assertSame(0, $released);
+        $this->assertSame($admin->id, (int) $ticket->fresh()->assigned_to_user_id);
     }
 
     public function test_admin_can_reply_to_ticket_when_assigned_to_them(): void
