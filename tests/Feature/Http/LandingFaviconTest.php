@@ -32,7 +32,6 @@ class LandingFaviconTest extends TestCase
             'root' => ['/'],
             'home' => ['/home'],
             'auto rojo' => ['/autorojo'],
-            'aportar' => ['/aportar'],
         ];
     }
 }

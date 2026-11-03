@@ -78,9 +78,9 @@ class HomeControllerTest extends TestCase
         $this->assertSame('home', $response->getName());
     }
 
-    public function test_aportar_page_is_reachable_and_legacy_donar_redirects(): void
+    public function test_aportar_page_redirects_to_in_app_donate_and_legacy_donar_redirects(): void
     {
-        $this->get('/aportar')->assertOk();
+        $this->get('/aportar')->assertRedirect('/app/donate');
         $this->get('/donar')->assertRedirect('/aportar');
     }
 
