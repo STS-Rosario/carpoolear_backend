@@ -1203,6 +1203,19 @@ class TripsManagerTest extends TestCase
         $this->assertTrue($this->manager()->userCanSeeTrip($stranger, $trip->id));
     }
 
+    public function test_owner_can_see_own_trip_when_driver_is_hidden_from_public(): void
+    {
+        $driver = User::factory()->create(['active' => false]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'needs_sellado' => false,
+            'state' => Trip::STATE_READY,
+        ]);
+
+        $this->assertTrue($this->manager()->userCanSeeTrip($driver, $trip));
+    }
+
     public function test_user_cannot_see_public_trip_from_anonymized_driver(): void
     {
         $driver = User::factory()->create(['active' => false]);

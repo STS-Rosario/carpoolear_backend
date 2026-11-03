@@ -715,11 +715,13 @@ class TripsManager extends BaseManager
             return true;
         }
 
-        if ($user && $user->id == $trip->user->id) {
+        if ($user && (int) $user->id === (int) $trip->user_id) {
             return true;
         }
 
         $driver = $trip->user;
+        // Accepted passengers may see detail when the driver is hidden from public search.
+        // Private/friends trips still follow friendship_type_id below; not expanded here.
         if ($driver && $this->driverIsHiddenFromPublic($driver)) {
             if (! $user || ! $this->userIsAcceptedPassengerOnTrip($user, $trip)) {
                 return false;
@@ -752,6 +754,10 @@ class TripsManager extends BaseManager
 
     private function userIsAcceptedPassengerOnTrip(User $user, Trip $trip): bool
     {
+        if ($trip->relationLoaded('passengerAccepted')) {
+            return $trip->isPassenger($user);
+        }
+
         return Passenger::query()
             ->where('trip_id', $trip->id)
             ->where('user_id', $user->id)
