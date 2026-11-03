@@ -43,7 +43,6 @@ class HomeControllerTest extends TestCase
             'mesa de ayuda' => ['mesadeayuda', 'mesadeayuda'],
             'contacto' => ['contacto', 'contacto'],
             'encuentro carpoolero' => ['encuentrocarpoolero', 'encuentrocarpoolero'],
-            'aportar' => ['aportar', 'aportar'],
             'covid' => ['covid', 'covid'],
             'freelance' => ['freelance', 'freelance'],
             'derrumbe' => ['derrumbe', 'derrumbe'],
