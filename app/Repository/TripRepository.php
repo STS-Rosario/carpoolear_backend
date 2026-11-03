@@ -549,6 +549,13 @@ class TripRepository
 
         $this->applyUnpaidSelladoVisibilityFilter($trips, $user);
 
+        $isAdminSearch = isset($data['is_admin']) && strval($data['is_admin']) === 'true';
+        if (! $isAdminSearch && ! ($user && $user->is_admin)) {
+            $trips->whereHas('user', function ($q) {
+                $q->where('active', true)->where('banned', false);
+            });
+        }
+
         if ($user && ! $user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 // only show trips that are ready (paid by driver) or have no state

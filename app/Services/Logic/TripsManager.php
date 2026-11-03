@@ -711,12 +711,23 @@ class TripsManager extends BaseManager
             return false;
         }
 
-        if ($user->id == $trip->user->id) {
+        if ($user && $user->is_admin) {
             return true;
         }
 
+        if ($user && $user->id == $trip->user->id) {
+            return true;
+        }
+
+        $driver = $trip->user;
+        if ($driver && $this->driverIsHiddenFromPublic($driver)) {
+            if (! $user || ! $this->userIsAcceptedPassengerOnTrip($user, $trip)) {
+                return false;
+            }
+        }
+
         if ($trip->needs_sellado == true && $trip->state !== Trip::STATE_READY) {
-            return (bool) $user->is_admin;
+            return (bool) ($user && $user->is_admin);
         }
 
         if ($trip->friendship_type_id == Trip::PRIVACY_PUBLIC) {
@@ -731,9 +742,21 @@ class TripsManager extends BaseManager
             return $friendsManager->areFriend($user, $trip->user, true);
         }
 
-        // [TODO] Faltaría saber si sos pasajero
-
         return false;
+    }
+
+    private function driverIsHiddenFromPublic(User $driver): bool
+    {
+        return ! $driver->active || $driver->banned;
+    }
+
+    private function userIsAcceptedPassengerOnTrip(User $user, Trip $trip): bool
+    {
+        return Passenger::query()
+            ->where('trip_id', $trip->id)
+            ->where('user_id', $user->id)
+            ->where('request_state', Passenger::STATE_ACCEPTED)
+            ->exists();
     }
 
     public function inviteFriends($user, $tripId, $friendIds)
