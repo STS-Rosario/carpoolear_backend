@@ -53,7 +53,8 @@ class AportarPageTest extends TestCase
             $html
         );
         $this->assertStringContainsString('data-club-login-ok', $html);
-        $this->assertStringContainsString('/app/donate', $html);
+        $this->assertStringContainsString('/app/login', $html);
+        $this->assertStringNotContainsString('/app/donate', $html);
         $this->assertStringNotContainsString('/api/donations/checkout/monthly', $html);
     }
 
@@ -83,6 +84,8 @@ class AportarPageTest extends TestCase
         $this->assertStringContainsString('data-guest-donate-continue', $html);
         $this->assertStringContainsString('data-guest-donate-login', $html);
         $this->assertStringContainsString('data-guest-donate-close', $html);
+        $this->assertStringContainsString("window.location.href = '/app/login'", $html);
+        $this->assertStringNotContainsString("window.location.href = '/app/donate'", $html);
     }
 
     public function test_legacy_donar_still_redirects_to_aportar(): void
