@@ -386,6 +386,22 @@
         margin-left: auto;
         margin-right: auto;
     }
+    .club-login-modal__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75em;
+        justify-content: center;
+        margin-top: 0.5em;
+    }
+    .club-login-modal__actions .btn-donar {
+        margin: 0;
+    }
+    .club-login-modal .btn-once {
+        background: transparent;
+        border: 2px solid var(--ds-header-donate-bg, #5cb85c);
+        color: var(--ds-text-primary, #22211F);
+        flex-direction: row;
+    }
     @media (max-width: 767px) {
         .public-donate__benefits {
             padding-left: 1.75em;
@@ -529,6 +545,20 @@
     </div>
 </div>
 
+<div class="club-login-modal" data-guest-donate-modal>
+    <div class="club-login-modal__dialog">
+        <div class="club-login-modal__header">
+            <h3>Aportar</h3>
+            <button type="button" class="club-login-modal__close" data-guest-donate-close aria-label="Cerrar">&times;</button>
+        </div>
+        <p>No estás logueado, por lo que tu donación no quedará asociada a tu usuario. Te recomendamos loguearte así podemos identificarte como donante :)</p>
+        <div class="club-login-modal__actions">
+            <button type="button" class="btn-donar btn-once" data-guest-donate-continue>Donar sin ingresar</button>
+            <button type="button" class="btn-donar" data-guest-donate-login>Ingresar a Carpoolear</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function getParameterByName(name, url) {
         if (!url) url = window.location.href;
@@ -663,6 +693,41 @@
             modal.classList.remove('is-open');
         }
     }
+    var pendingDonateKind = null;
+    function guestDonateModal() {
+        return document.querySelector('[data-guest-donate-modal]');
+    }
+    function closeGuestDonateModal() {
+        var modal = guestDonateModal();
+        if (modal) {
+            modal.classList.remove('is-open');
+        }
+    }
+    function dismissGuestDonateModal() {
+        pendingDonateKind = null;
+        closeGuestDonateModal();
+    }
+    function openGuestDonateModal(kind) {
+        pendingDonateKind = kind;
+        guestDonateModal().classList.add('is-open');
+    }
+    function startPendingDonation() {
+        var kind = pendingDonateKind;
+        var amount = selectedAmount('donationValorOnce') || selectedAmount('donationValor');
+        pendingDonateKind = null;
+        closeGuestDonateModal();
+        if (!amount) {
+            return;
+        }
+        if (kind === 'qr') {
+            startAportarQrCheckout(amount);
+            return;
+        }
+        startAportarCheckout(amount);
+    }
+    function redirectToAppDonate() {
+        window.location.href = '/app/donate';
+    }
     fetch('/api/donation-tiers').then(function (response) {
         return response.json();
     }).then(function (tiers) {
@@ -690,7 +755,15 @@
                 return;
             }
             if (event.currentTarget.hasAttribute('data-club-login-ok')) {
-                window.location.href = '/app/donate';
+                redirectToAppDonate();
+                return;
+            }
+            if (event.currentTarget.hasAttribute('data-guest-donate-login')) {
+                redirectToAppDonate();
+                return;
+            }
+            if (event.currentTarget.hasAttribute('data-guest-donate-continue')) {
+                startPendingDonation();
                 return;
             }
             var amount = selectedAmount('donationValorOnce') || selectedAmount('donationValor');
@@ -698,7 +771,12 @@
                 alert('Tienes que seleccionar un valor de aporte');
                 return;
             }
-            if (event.currentTarget.className.indexOf('btn-qr') >= 0) {
+            var donateKind = event.currentTarget.className.indexOf('btn-qr') >= 0 ? 'qr' : 'once';
+            if (!checkoutUserId()) {
+                openGuestDonateModal(donateKind);
+                return;
+            }
+            if (donateKind === 'qr') {
                 startAportarQrCheckout(amount);
                 return;
             }
@@ -720,9 +798,21 @@
     document.querySelectorAll('[data-club-login-close]').forEach(function (btn) {
         btn.addEventListener('click', closeClubModal);
     });
+    var guestDonateModalEl = guestDonateModal();
+    if (guestDonateModalEl) {
+        guestDonateModalEl.addEventListener('click', function (event) {
+            if (event.target === event.currentTarget) {
+                dismissGuestDonateModal();
+            }
+        });
+    }
+    document.querySelectorAll('[data-guest-donate-close]').forEach(function (btn) {
+        btn.addEventListener('click', dismissGuestDonateModal);
+    });
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             closeClubModal();
+            dismissGuestDonateModal();
         }
     });
 </script>
