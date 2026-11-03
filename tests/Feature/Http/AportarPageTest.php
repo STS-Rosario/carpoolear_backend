@@ -57,6 +57,17 @@ class AportarPageTest extends TestCase
         $this->assertStringNotContainsString('/api/donations/checkout/monthly', $html);
     }
 
+    #[DataProvider('publicDonationPaths')]
+    public function test_club_login_modal_can_be_closed_without_leaving_the_page(string $path): void
+    {
+        $html = $this->get($path)->assertOk()->getContent();
+
+        $this->assertStringContainsString('data-club-login-close', $html);
+        $this->assertStringContainsString('aria-label="Cerrar"', $html);
+        $this->assertStringContainsString("classList.remove('is-open')", $html);
+        $this->assertStringContainsString('var(--ds-header-donate-bg, #5cb85c)', $html);
+    }
+
     public function test_legacy_donar_still_redirects_to_aportar(): void
     {
         $this->get('/donar')->assertRedirect('/aportar');
