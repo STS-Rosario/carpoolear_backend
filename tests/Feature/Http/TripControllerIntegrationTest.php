@@ -555,25 +555,17 @@ class TripControllerIntegrationTest extends TestCase
 
     public function test_show_returns_autoaccept_friends_requests_for_edit_prefill(): void
     {
-        Carbon::setTestNow('2028-04-01 12:00:00');
-        $this->seedRouteCacheForMinimalCreatePoints();
-
         $owner = User::factory()->create();
-        $create = $this->actingAs($owner, 'api')
-            ->postJson('/api/trips', array_merge($this->minimalCreatePayload(), [
-                'trip_date' => '2028-05-15 10:00:00',
-                'autoaccept_friends_requests' => true,
-            ]))
-            ->assertCreated();
-
-        $tripId = $create->json('data.id');
+        $trip = Trip::factory()->create([
+            'user_id' => $owner->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'autoaccept_friends_requests' => true,
+        ]);
 
         $this->actingAs($owner, 'api')
-            ->getJson("/api/trips/{$tripId}")
+            ->getJson("/api/trips/{$trip->id}")
             ->assertOk()
             ->assertJsonPath('data.autoaccept_friends_requests', 1);
-
-        Carbon::setTestNow();
     }
 
     public function test_update_persists_punto_partida_and_punto_llegada_and_returns_them_in_payload(): void
