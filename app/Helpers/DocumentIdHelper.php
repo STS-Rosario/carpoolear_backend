@@ -79,6 +79,13 @@ class DocumentIdHelper
         ];
     }
 
+    public static function isValidPassport(string $cleaned): bool
+    {
+        $length = strlen($cleaned);
+
+        return $length >= 5 && $length <= 9;
+    }
+
     public static function isValid(?string $value): bool
     {
         $cleaned = self::cleanValue($value);
@@ -93,7 +100,7 @@ class DocumentIdHelper
             }
         }
 
-        return false;
+        return self::isValidPassport($cleaned);
     }
 
     public static function normalizeForStorage(?string $value): ?string
