@@ -34,9 +34,24 @@ class DocumentIdHelperTest extends TestCase
         $this->assertSame('A33070219', DocumentIdHelper::normalizeForStorage('a33070219'));
     }
 
-    public function test_normalize_for_storage_rejects_values_outside_allowed_masks(): void
+    public function test_normalize_for_storage_accepts_flexible_passport_values(): void
     {
-        $this->assertNull(DocumentIdHelper::normalizeForStorage('ABC123'));
+        $this->assertSame('ABC123', DocumentIdHelper::normalizeForStorage('ab-c12 3'));
+        $this->assertSame('12345', DocumentIdHelper::normalizeForStorage('12345'));
+        $this->assertSame('ABCDEFGHI', DocumentIdHelper::normalizeForStorage('ABCDEFGHI'));
+    }
+
+    public function test_normalize_for_storage_rejects_passport_values_outside_5_to_9_characters(): void
+    {
+        $this->assertNull(DocumentIdHelper::normalizeForStorage('AB12'));
+        $this->assertNull(DocumentIdHelper::normalizeForStorage('ABCDEFGHIJ'));
+    }
+
+    public function test_is_valid_accepts_dni_and_flexible_passport_values(): void
+    {
+        $this->assertTrue(DocumentIdHelper::isValid('30.123.456'));
+        $this->assertTrue(DocumentIdHelper::isValid('ABC123'));
+        $this->assertFalse(DocumentIdHelper::isValid('AB12'));
     }
 
     public function test_normalize_for_ban_check_keeps_passport_prefix(): void
