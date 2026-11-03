@@ -22,6 +22,7 @@ use STS\Services\Logic\ConversationsManager;
 use STS\Services\Logic\TripsManager;
 use STS\Services\MercadoPagoService;
 use STS\Services\PlatformDonationService;
+use STS\Services\SelladoPaymentApplier;
 
 class MercadoPagoWebhookController extends Controller
 {
@@ -171,10 +172,6 @@ class MercadoPagoWebhookController extends Controller
             }
 
             if (stripos($decodedReference, 'sellado') !== false) {
-                if ($action !== 'payment.created') {
-                    return response()->json(['status' => 'success']);
-                }
-
                 return $this->handleTripPayment($mpPayment);
             } elseif (stripos($decodedReference, 'campaña') !== false) {
                 if ($action !== 'payment.created') {
@@ -473,6 +470,10 @@ class MercadoPagoWebhookController extends Controller
             return $this->handleTripPayment($approvedPayload);
         }
 
+        if (app(SelladoPaymentApplier::class)->tripIdFromExternalReference($externalReference) !== null) {
+            return $this->handleTripPayment($approvedPayload);
+        }
+
         return response()->json(['status' => 'success']);
     }
 
@@ -648,27 +649,20 @@ class MercadoPagoWebhookController extends Controller
 
     protected function handleTripPayment($mpPayment)
     {
-        // parse tripId from external reference
-        $externalReference = $mpPayment['external_reference'];
-        $tripId = $this->tripIdFromSelladoQrExternalReference($externalReference);
+        $applier = app(SelladoPaymentApplier::class);
+        $externalReference = $mpPayment['external_reference'] ?? '';
+        $tripId = $applier->tripIdFromExternalReference($externalReference);
 
         if ($tripId === null) {
-            $decodedReference = $this->parseExternalReference($externalReference);
+            Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
 
-            if (! $decodedReference) {
-                Log::error('Failed to parse trip payment external reference', ['external_reference' => $externalReference]);
-
-                return response()->json(['error' => 'Invalid external reference'], 400);
-            }
-
-            $tripId = explode('Sellado de Viaje ID: ', $decodedReference)[1];
+            return response()->json(['error' => 'Invalid external reference'], 400);
         }
 
-        // get the trip for this payment
         $trip = Trip::where('id', $tripId)->first();
         if (! $trip) {
             Log::error('Trip not found', [
-                'payment_id' => $mpPayment['id'],
+                'payment_id' => $mpPayment['id'] ?? null,
                 'external_reference' => $externalReference,
                 'trip_id' => $tripId,
             ]);
@@ -676,20 +670,7 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['error' => 'Trip not found'], 404);
         }
 
-        // create the payment attempt in the database
-        $paymentAttempt = new PaymentAttempt;
-        $paymentAttempt->payment_id = $mpPayment['id'];
-        $paymentAttempt->payment_status = $this->mapMercadoPagoStatusToPaymentAttemptStatus($mpPayment['status']);
-        $paymentAttempt->payment_data = $mpPayment;
-        $paymentAttempt->trip_id = $trip->id;
-        $paymentAttempt->user_id = $trip->user_id;
-        $paymentAttempt->save();
-
-        // Update payment status
-        $newStatus = $this->updatePaymentStatus($paymentAttempt, $mpPayment);
-
-        // Update trip status based on payment status
-        $this->updateTripStatus($trip, $newStatus);
+        $applier->record($trip, $mpPayment);
 
         return response()->json(['status' => 'success']);
     }

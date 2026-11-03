@@ -3,6 +3,8 @@
 namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
+use MercadoPago\Client\Payment\PaymentClient;
+use MercadoPago\MercadoPagoConfig;
 use STS\Helpers\IdentityValidationHelper;
 use STS\Helpers\OldCordovaAppHelper;
 use STS\Helpers\SelladoQrPayment;
@@ -12,6 +14,7 @@ use STS\Models\Trip;
 use STS\Repository\TripSearchRepository;
 use STS\Services\Logic\TripsManager;
 use STS\Services\MercadoPagoService;
+use STS\Services\SelladoPaymentApplier;
 use STS\Transformers\TripTransformer;
 
 class TripController extends Controller
@@ -282,6 +285,70 @@ class TripController extends Controller
         );
 
         return response()->json($result);
+    }
+
+    public function syncSelladoPayment($id, Request $request, SelladoPaymentApplier $applier)
+    {
+        $this->user = auth()->user();
+        $trip = $this->tripsLogic->show($this->user, $id);
+        if (! $trip) {
+            throw new ExceptionWithErrors('Could not found trip.', $this->tripsLogic->getErrors());
+        }
+        if ((int) $trip->user_id !== (int) $this->user->id) {
+            throw new ExceptionWithErrors('Could not found trip.', []);
+        }
+
+        $paymentId = $request->input('payment_id');
+        if (! $paymentId) {
+            throw new ExceptionWithErrors('payment_id is required.', []);
+        }
+
+        $mpPayment = $this->fetchMercadoPagoPayment($paymentId);
+        if (! $mpPayment) {
+            throw new ExceptionWithErrors('Could not fetch payment.', []);
+        }
+
+        $paymentTripId = $applier->tripIdFromExternalReference($mpPayment['external_reference'] ?? '');
+        if ($paymentTripId !== (int) $trip->id) {
+            throw new ExceptionWithErrors('This payment does not belong to the trip.', []);
+        }
+
+        $applier->record($trip, $mpPayment);
+
+        return $this->item($trip->fresh(), new TripTransformer($this->user));
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function fetchMercadoPagoPayment($paymentId): ?array
+    {
+        MercadoPagoConfig::setAccessToken(config('services.mercadopago.access_token'));
+        try {
+            $payment = (new PaymentClient)->get($paymentId);
+            $content = $payment?->getResponse()?->getContent();
+            $decoded = is_array($content) ? $content : json_decode((string) $content, true);
+            if (is_array($decoded) && isset($decoded['id'])) {
+                return [
+                    'id' => $decoded['id'],
+                    'status' => $decoded['status'] ?? 'pending',
+                    'status_detail' => $decoded['status_detail'] ?? null,
+                    'transaction_amount' => $decoded['transaction_amount'] ?? ($decoded['amount'] ?? 0),
+                    'amount' => $decoded['transaction_amount'] ?? ($decoded['amount'] ?? 0),
+                    'currency_id' => $decoded['currency_id'] ?? null,
+                    'payment_method_id' => $decoded['payment_method_id'] ?? null,
+                    'payment_type_id' => $decoded['payment_type_id'] ?? null,
+                    'external_reference' => $decoded['external_reference'] ?? '',
+                    'date_created' => $decoded['date_created'] ?? null,
+                    'date_approved' => $decoded['date_approved'] ?? null,
+                    'date_last_updated' => $decoded['date_last_updated'] ?? null,
+                ];
+            }
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        return null;
     }
 
     public function changeVisibility($id, Request $request)
