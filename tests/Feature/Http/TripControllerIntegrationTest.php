@@ -561,6 +561,7 @@ class TripControllerIntegrationTest extends TestCase
         $owner = User::factory()->create();
         $create = $this->actingAs($owner, 'api')
             ->postJson('/api/trips', array_merge($this->minimalCreatePayload(), [
+                'trip_date' => '2028-05-15 10:00:00',
                 'autoaccept_friends_requests' => true,
             ]))
             ->assertCreated();
