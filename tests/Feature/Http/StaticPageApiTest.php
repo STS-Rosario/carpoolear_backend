@@ -40,7 +40,25 @@ class StaticPageApiTest extends TestCase
         $response->assertOk();
         $decoded = json_decode($response->getContent(), true);
         $this->assertStringContainsString('Verificación de cuenta', $decoded['content']);
+        $this->assertStringNotContainsString('Version 2', $decoded['content']);
+        $this->assertStringContainsString('+Seguro+Justo+Simple', $decoded['content']);
         $this->assertStringContainsString(
+            'Una verificación opcional no iba a resolver el tema',
+            $decoded['content']
+        );
+        $this->assertLessThan(
+            strpos($decoded['content'], 'Verificación por Mercado Pago'),
+            strpos($decoded['content'], 'Verificación manual')
+        );
+        $this->assertStringContainsString(
+            'al vincular la app de Mercado Pago con la app Carpoolear',
+            $decoded['content']
+        );
+        $this->assertStringContainsString(
+            'Carpoolear NO obtiene NI obtendremos otros datos',
+            $decoded['content']
+        );
+        $this->assertStringNotContainsString(
             'es un tema de Mercado Pago ese otorgamiento',
             $decoded['content']
         );
@@ -54,6 +72,10 @@ class StaticPageApiTest extends TestCase
         );
         $this->assertStringContainsString(
             'www.carpoolear.com.ar/app',
+            $decoded['content']
+        );
+        $this->assertStringContainsString(
+            'en un navegador',
             $decoded['content']
         );
         $this->assertStringContainsString(
