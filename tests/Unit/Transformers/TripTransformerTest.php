@@ -88,6 +88,7 @@ class TripTransformerTest extends TestCase
             'allow_animals',
             'allow_smoking',
             'rear_max_two_passengers',
+            'autoaccept_friends_requests',
             'payment_id',
             'needs_sellado',
             'sellado_complimentary',
@@ -282,6 +283,18 @@ class TripTransformerTest extends TestCase
         $payload = (new TripTransformer(null))->transform($trip->fresh());
 
         $this->assertSame(1, $payload['rear_max_two_passengers']);
+    }
+
+    public function test_transform_includes_autoaccept_friends_requests(): void
+    {
+        $enabled = $this->makeTrip(['autoaccept_friends_requests' => true]);
+        $disabled = $this->makeTrip(['autoaccept_friends_requests' => false]);
+
+        $enabledPayload = (new TripTransformer(null))->transform($enabled->fresh());
+        $disabledPayload = (new TripTransformer(null))->transform($disabled->fresh());
+
+        $this->assertSame(1, $enabledPayload['autoaccept_friends_requests']);
+        $this->assertSame(0, $disabledPayload['autoaccept_friends_requests']);
     }
 
     public function test_transform_includes_punto_partida_and_punto_llegada(): void
