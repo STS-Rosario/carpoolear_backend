@@ -549,6 +549,14 @@ class TripRepository
 
         $this->applyUnpaidSelladoVisibilityFilter($trips, $user);
 
+        // Hidden-driver visibility: authenticated admin only. Query param is_admin=true
+        // is legacy (withTrashed above), not a substitute for $user->is_admin.
+        if (! ($user && $user->is_admin)) {
+            $trips->whereHas('user', function ($q) {
+                $q->where('active', true)->where('banned', false);
+            });
+        }
+
         if ($user && ! $user->is_admin) {
             $trips->where(function ($q) use ($user) {
                 // only show trips that are ready (paid by driver) or have no state
