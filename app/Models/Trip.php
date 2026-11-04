@@ -82,6 +82,7 @@ class Trip extends Model
             'total_seats',
             'friendship_type_id',
             'distance',
+            'selected_route_index',
             'seat_price_cents',
             'recommended_trip_price_cents',
             'total_price',
