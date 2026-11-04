@@ -701,6 +701,121 @@ class TripRepositoryTest extends TestCase
         Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($expectedCoords): bool {
             return str_contains($request->url(), '/route/v1/driving/'.$expectedCoords.'?overview=false&alternatives=true&steps=true');
         });
+        $this->assertCount(1, $result['data']['route_options']);
+    }
+
+    public function test_get_trip_info_returns_route_options_for_multiple_osrm_routes(): void
+    {
+        Config::set('carpoolear.trip_route_cache_bypass', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Config::set('carpoolear.module_max_price_fuel_price', 1300);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_tolls', 0);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $points = [
+            ['lat' => -37.11, 'lng' => -56.85],
+            ['lat' => -38.0, 'lng' => -57.55],
+        ];
+
+        Http::fake([
+            '*' => Http::response([
+                'code' => 'Ok',
+                'routes' => [
+                    ['distance' => 100000.0, 'duration' => 3600.0],
+                    ['distance' => 120000.0, 'duration' => 4200.0],
+                ],
+            ], 200),
+        ]);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+        $mapboxService->shouldReceive('isEnabled')->andReturn(false);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points, 1);
+
+        $this->assertTrue($result['status']);
+        $this->assertCount(2, $result['data']['route_options']);
+        $this->assertSame(120000.0, (float) $result['data']['distance']);
+        $this->assertSame(4200.0, (float) $result['data']['duration']);
+        $this->assertSame(1, $result['data']['route_options'][1]['route_index']);
+    }
+
+    public function test_get_trip_info_applies_route_index_on_cache_hit_without_new_http(): void
+    {
+        Config::set('carpoolear.trip_route_cache_bypass', false);
+
+        $points = [
+            ['lat' => -37.11, 'lng' => -56.85],
+            ['lat' => -38.0, 'lng' => -57.55],
+        ];
+        $hashedPoints = hash('sha256', json_encode($points));
+        $routeData = [
+            'status' => true,
+            'data' => [
+                'distance' => 100000.0,
+                'duration' => 3600.0,
+                'co2' => 15000.0,
+                'route_needs_payment' => false,
+                'recommended_trip_price_cents' => 100,
+                'maximum_trip_price_cents' => 200,
+                'pricing_breakdown' => null,
+                'route_options' => [
+                    [
+                        'route_index' => 0,
+                        'distance' => 100000.0,
+                        'duration' => 3600.0,
+                        'co2' => 15000.0,
+                        'route_needs_payment' => false,
+                        'recommended_trip_price_cents' => 100,
+                        'maximum_trip_price_cents' => 200,
+                        'pricing_breakdown' => null,
+                    ],
+                    [
+                        'route_index' => 1,
+                        'distance' => 120000.0,
+                        'duration' => 4200.0,
+                        'co2' => 18000.0,
+                        'route_needs_payment' => false,
+                        'recommended_trip_price_cents' => 110,
+                        'maximum_trip_price_cents' => 220,
+                        'pricing_breakdown' => null,
+                    ],
+                ],
+            ],
+            'message' => 'Route found',
+        ];
+
+        \DB::table('route_cache')->insert([
+            'points' => json_encode($points),
+            'route_data' => json_encode($routeData),
+            'expires_at' => now()->addDay(),
+            'hashed_points' => $hashedPoints,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Http::fake(function () {
+            $this->fail('OSRM should not be called on cache hit when selecting route index');
+        });
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        $repo = new TripRepository($geoService, $mercadoPagoService, $mapboxService);
+
+        $result = $repo->getTripInfo($points, 1);
+
+        $this->assertSame(120000.0, (float) $result['data']['distance']);
+        $this->assertSame(110, $result['data']['recommended_trip_price_cents']);
     }
 
     public function test_get_trip_info_uses_mapbox_fallback_when_osrm_has_no_route(): void
