@@ -754,6 +754,39 @@ class UserRepositoryTest extends TestCase
         );
     }
 
+    public function test_unanswered_conversation_does_not_count_reused_thread_when_latest_message_predates_the_trip(): void
+    {
+        $driver = User::factory()->create();
+        $passenger = User::factory()->create();
+
+        Carbon::setTestNow('2026-08-02 00:27:03');
+        $oldTrip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation = Conversation::factory()->create([
+            'trip_id' => $oldTrip->id,
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $conversation->users()->attach($driver->id, ['read' => true, 'notifications_enabled' => true]);
+        $conversation->users()->attach($passenger->id, ['read' => true, 'notifications_enabled' => true]);
+        Message::create([
+            'user_id' => $passenger->id,
+            'conversation_id' => $conversation->id,
+            'text' => 'hola',
+            'estado' => Message::STATE_NOLEIDO,
+        ]);
+
+        Carbon::setTestNow('2026-11-04 10:15:01');
+        $newTrip = Trip::factory()->create(['user_id' => $driver->id]);
+        $conversation->trip_id = $newTrip->id;
+        $conversation->save();
+
+        $this->assertSame(
+            0,
+            $this->repo()->unansweredConversationOrRequestsByTrip($driver->id, $newTrip->id)
+        );
+
+        Carbon::setTestNow();
+    }
+
     public function test_unanswered_conversation_does_not_count_reused_thread_when_driver_already_replied_latest(): void
     {
         $driver = User::factory()->create();
