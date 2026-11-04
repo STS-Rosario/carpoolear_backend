@@ -100,7 +100,10 @@ class TripRepository
         unset($data['points']);
 
         // Get trip info for price calculations and route data
-        $tripInfo = $this->getTripInfo($points);
+        $selectedRouteIndex = (int) ($data['selected_route_index'] ?? 0);
+        $tripInfo = $this->getTripInfo($points, $selectedRouteIndex);
+
+        $this->warnIfClientDistanceMismatch($data, $tripInfo, $selectedRouteIndex);
 
         $data = $this->capSeatPriceAtMaximum($data, $tripInfo, $data['rear_max_two_passengers'] ?? false);
 
@@ -184,7 +187,10 @@ class TripRepository
         // Get trip info for price calculations and route data if points are being updated
         $tripInfo = null;
         if ($points) {
-            $tripInfo = $this->getTripInfo($points);
+            $selectedRouteIndex = (int) ($data['selected_route_index'] ?? $trip->selected_route_index ?? 0);
+            $tripInfo = $this->getTripInfo($points, $selectedRouteIndex);
+
+            $this->warnIfClientDistanceMismatch($data, $tripInfo, $selectedRouteIndex);
 
             $data = $this->capSeatPriceAtMaximum(
                 $data,
@@ -1118,6 +1124,23 @@ class TripRepository
         }
 
         return (float) config('carpoolear.module_max_price_price_variance_tolls', 0);
+    }
+
+    private function warnIfClientDistanceMismatch(array $data, array $tripInfo, int $selectedRouteIndex): void
+    {
+        if (! ($tripInfo['status'] ?? false) || ! isset($data['distance'])) {
+            return;
+        }
+
+        $expectedDistance = (float) ($tripInfo['data']['distance'] ?? 0);
+        $clientDistance = (float) $data['distance'];
+        if (abs($clientDistance - $expectedDistance) > 500) {
+            \Log::warning('[trip_route|create_or_update] Client distance differs from selected route option', [
+                'selected_route_index' => $selectedRouteIndex,
+                'client_distance' => $clientDistance,
+                'expected_distance' => $expectedDistance,
+            ]);
+        }
     }
 
     private function routingServiceUnavailableResponse(): array
