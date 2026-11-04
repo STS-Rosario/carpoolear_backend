@@ -84,6 +84,7 @@ class TripTransformerTest extends TestCase
             'seats_available',
             'points',
             'ratings',
+            'created_at',
             'updated_at',
             'allow_kids',
             'allow_animals',
@@ -103,6 +104,7 @@ class TripTransformerTest extends TestCase
         $this->assertSame('Rosario', $payload['from_town']);
         $this->assertSame('Cordoba', $payload['to_town']);
         $this->assertSame('2026-04-30 18:30:00', $payload['trip_date']);
+        $this->assertSame($trip->fresh()->created_at->toDateTimeString(), $payload['created_at']);
         $this->assertEquals(400, $payload['distance']);
         $this->assertSame(15000, $payload['seat_price_cents']);
         $this->assertSame(false, $payload['sellado_pending']);

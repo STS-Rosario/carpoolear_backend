@@ -12,6 +12,8 @@ use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
 use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
+use STS\Models\Conversation;
+use STS\Models\Message;
 use STS\Models\Passenger;
 use STS\Models\Trip;
 use STS\Models\User;
@@ -39,6 +41,7 @@ class PassengersManagerTest extends TestCase
         Config::set('carpoolear.module_user_request_limited_hours_range', 2);
         Config::set('carpoolear.module_trip_seats_payment', false);
         Config::set('carpoolear.module_send_full_trip_message', false);
+        Config::set('carpoolear.module_coordinate_by_message', false);
     }
 
     private function manager(): PassengersManager
@@ -754,5 +757,221 @@ class PassengersManagerTest extends TestCase
         ]);
 
         $this->assertTrue($m->isUserRequestPending($trip->id, $user->id));
+    }
+
+    public function test_new_request_requires_passenger_message_when_coordinate_by_message_is_enabled(): void
+    {
+        Event::fake([RequestEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        [$driver, $trip, $requester] = $this->openPublicTripPair();
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($trip->id, $requester, []));
+        $this->assertSame('message_required', $manager->getErrors()['error']);
+        $this->assertSame(0, Passenger::query()->where('trip_id', $trip->id)->where('user_id', $requester->id)->count());
+        Event::assertNotDispatched(RequestEvent::class);
+    }
+
+    public function test_new_request_links_unused_passenger_message_when_coordinate_by_message_is_enabled(): void
+    {
+        Event::fake([RequestEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        [$driver, $trip, $requester] = $this->openPublicTripPair();
+        $message = $this->privateConversationMessage($requester, $driver, 'Hola, me sumo al viaje');
+
+        $row = $this->manager()->newRequest($trip->id, $requester, []);
+
+        $this->assertInstanceOf(Passenger::class, $row);
+        $this->assertSame(Passenger::STATE_PENDING, (int) $row->fresh()->request_state);
+        $this->assertSame($message->id, (int) $row->fresh()->message_id);
+        Event::assertDispatched(RequestEvent::class);
+    }
+
+    public function test_new_request_ignores_messages_written_before_the_trip_exists(): void
+    {
+        Event::fake([RequestEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $requester = User::factory()->create();
+        $this->privateConversationMessage(
+            $requester,
+            $driver,
+            'Mensaje de un viaje anterior',
+            Carbon::now()->subDay()
+        );
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($trip->id, $requester, []));
+        $this->assertSame('message_required', $manager->getErrors()['error']);
+        Event::assertNotDispatched(RequestEvent::class);
+    }
+
+    public function test_new_request_requires_a_new_message_after_cancel(): void
+    {
+        Event::fake([RequestEvent::class, CancelEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        [$driver, $trip, $requester] = $this->openPublicTripPair();
+        $firstMessage = $this->privateConversationMessage($requester, $driver, 'Quiero ir');
+
+        $this->assertNotNull($this->manager()->newRequest($trip->id, $requester, []));
+        $this->manager()->cancelRequest($trip->id, (string) $requester->id, $requester, []);
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($trip->id, $requester, []));
+        $this->assertSame('message_required', $manager->getErrors()['error']);
+
+        $secondMessage = $this->privateConversationMessage($requester, $driver, 'Confirmo de nuevo');
+        $row = $this->manager()->newRequest($trip->id, $requester, []);
+
+        $this->assertNotNull($row);
+        $this->assertSame($secondMessage->id, (int) $row->fresh()->message_id);
+        $this->assertNotSame($firstMessage->id, (int) $row->fresh()->message_id);
+    }
+
+    public function test_new_request_cannot_reuse_a_message_already_linked_to_another_trip(): void
+    {
+        Event::fake([RequestEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $requester = User::factory()->create();
+        $outbound = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $returnTrip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDays(2),
+        ]);
+        $this->privateConversationMessage($requester, $driver, 'Me sirve la ida');
+
+        $this->assertNotNull($this->manager()->newRequest($outbound->id, $requester, []));
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($returnTrip->id, $requester, []));
+        $this->assertSame('message_required', $manager->getErrors()['error']);
+
+        $returnMessage = $this->privateConversationMessage($requester, $driver, 'Y también la vuelta');
+        $row = $this->manager()->newRequest($returnTrip->id, $requester, []);
+
+        $this->assertNotNull($row);
+        $this->assertSame($returnMessage->id, (int) $row->fresh()->message_id);
+    }
+
+    public function test_new_request_autoaccept_still_requires_a_message_when_coordinate_by_message_is_enabled(): void
+    {
+        Event::fake([RequestEvent::class, AcceptEvent::class, AutoRequestEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        $driver = User::factory()->create(['autoaccept_requests' => true]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+            'total_seats' => 4,
+        ]);
+        $requester = User::factory()->create();
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($trip->id, $requester, []));
+        $this->assertSame('message_required', $manager->getErrors()['error']);
+        Event::assertNotDispatched(RequestEvent::class);
+        Event::assertNotDispatched(AcceptEvent::class);
+        Event::assertNotDispatched(AutoRequestEvent::class);
+
+        $message = $this->privateConversationMessage($requester, $driver, 'Voy con ustedes');
+        $row = $this->manager()->newRequest($trip->id, $requester, []);
+
+        $this->assertNotNull($row);
+        $this->assertSame(Passenger::STATE_ACCEPTED, (int) $row->fresh()->request_state);
+        $this->assertSame($message->id, (int) $row->fresh()->message_id);
+        Event::assertDispatched(AutoRequestEvent::class);
+        Event::assertDispatched(AcceptEvent::class);
+    }
+
+    public function test_new_request_ignores_system_and_driver_messages(): void
+    {
+        Event::fake([RequestEvent::class]);
+        Config::set('carpoolear.module_coordinate_by_message', true);
+        [$driver, $trip, $requester] = $this->openPublicTripPair();
+        $conversation = $this->privateConversation($requester, $driver);
+        $this->addConversationMessage($conversation, $requester, ' ', false);
+        $system = $this->addConversationMessage($conversation, $requester, 'Aviso del sistema', true);
+        $system->forceFill(['is_system' => true])->saveQuietly();
+        $this->addConversationMessage($conversation, $driver, 'Hola, hay lugar');
+
+        $manager = $this->manager();
+        $this->assertNull($manager->newRequest($trip->id, $requester, []));
+        $this->assertSame('message_required', $manager->getErrors()['error']);
+        Event::assertNotDispatched(RequestEvent::class);
+    }
+
+    /**
+     * @return array{0: User, 1: Trip, 2: User}
+     */
+    private function openPublicTripPair(): array
+    {
+        $driver = User::factory()->create(['autoaccept_requests' => false]);
+        $trip = Trip::factory()->create([
+            'user_id' => $driver->id,
+            'friendship_type_id' => Trip::PRIVACY_PUBLIC,
+            'trip_date' => Carbon::now()->addDay(),
+        ]);
+        $requester = User::factory()->create();
+
+        return [$driver, $trip, $requester];
+    }
+
+    private function privateConversation(User $userA, User $userB): Conversation
+    {
+        $conversation = Conversation::factory()->create([
+            'type' => Conversation::TYPE_PRIVATE_CONVERSATION,
+        ]);
+        $conversation->users()->attach($userA->id, ['read' => true]);
+        $conversation->users()->attach($userB->id, ['read' => true]);
+
+        return $conversation;
+    }
+
+    private function addConversationMessage(
+        Conversation $conversation,
+        User $author,
+        string $text,
+        bool $isSystem = false
+    ): Message {
+        return Message::query()->create([
+            'user_id' => $author->id,
+            'conversation_id' => $conversation->id,
+            'text' => $text,
+            'estado' => Message::STATE_NOLEIDO,
+            'is_system' => $isSystem,
+        ]);
+    }
+
+    private function privateConversationMessage(
+        User $author,
+        User $peer,
+        string $text,
+        ?Carbon $createdAt = null
+    ): Message {
+        $conversation = $this->conversationBetween($author, $peer)
+            ?? $this->privateConversation($author, $peer);
+        $message = $this->addConversationMessage($conversation, $author, $text);
+        if ($createdAt) {
+            $message->forceFill(['created_at' => $createdAt])->saveQuietly();
+        }
+
+        return $message->fresh();
+    }
+
+    private function conversationBetween(User $userA, User $userB): ?Conversation
+    {
+        return app(\STS\Repository\ConversationRepository::class)
+            ->matchUser($userA->id, $userB->id);
     }
 }

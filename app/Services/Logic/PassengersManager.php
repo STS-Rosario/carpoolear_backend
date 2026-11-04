@@ -7,7 +7,11 @@ use STS\Events\Passenger\AutoRequest as AutoRequestEvent;
 use STS\Events\Passenger\Cancel as CancelEvent;
 use STS\Events\Passenger\Reject as RejectEvent;
 use STS\Events\Passenger\Request as RequestEvent;
+use STS\Models\Message;
 use STS\Models\Passenger;
+use STS\Models\Trip;
+use STS\Models\User;
+use STS\Repository\ConversationRepository;
 use STS\Repository\PassengersRepository;
 use STS\Repository\UserRepository;
 use Validator;
@@ -132,6 +136,17 @@ class PassengersManager extends BaseManager
 
                     return;
                 }
+            }
+
+            $requestMessage = null;
+            if ($this->isCoordinateByMessageEnabled()) {
+                $requestMessage = $this->findUnusedQualifyingSeatRequestMessage($trip, $user);
+                if (! $requestMessage) {
+                    $this->setErrors(['error' => 'message_required']);
+
+                    return;
+                }
+                $data['message_id'] = $requestMessage->id;
             }
 
             if ($result = $this->passengerRepository->newRequest($tripId, $user, $data)) {
@@ -351,5 +366,34 @@ class PassengersManager extends BaseManager
     public function isUserRequestPending($tripId, $userId)
     {
         return $this->passengerRepository->isUserRequestPending($tripId, $userId);
+    }
+
+    private function isCoordinateByMessageEnabled(): bool
+    {
+        return filter_var(config('carpoolear.module_coordinate_by_message'), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    private function findUnusedQualifyingSeatRequestMessage(Trip $trip, User $user): ?Message
+    {
+        $conversation = app(ConversationRepository::class)->matchUser($user->id, $trip->user_id);
+        if (! $conversation) {
+            return null;
+        }
+
+        $usedMessageIds = Passenger::query()
+            ->whereNotNull('message_id')
+            ->pluck('message_id');
+
+        return Message::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('user_id', $user->id)
+            ->where(function ($query) {
+                $query->where('is_system', false)->orWhereNull('is_system');
+            })
+            ->whereRaw('TRIM(text) != ?', [''])
+            ->where('created_at', '>=', $trip->created_at)
+            ->when($usedMessageIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $usedMessageIds))
+            ->orderByDesc('id')
+            ->first();
     }
 }

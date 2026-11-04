@@ -256,6 +256,11 @@ class UserRepository
                 '(select m.user_id from messages m where m.conversation_id = conversations.id order by m.id desc limit 1) <> ?',
                 [$userId]
             )
+            // Opening a reused DM attaches trip_id before anyone writes about this trip.
+            // Only a message dated on/after the trip counts as an inquiry for this trip.
+            ->whereRaw(
+                '(select m.created_at from messages m where m.conversation_id = conversations.id order by m.id desc limit 1) >= (select t.created_at from trips t where t.id = conversations.trip_id)'
+            )
             ->count();
     }
 }
