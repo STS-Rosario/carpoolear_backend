@@ -795,7 +795,7 @@ class TripRepository
         return $distance * config('carpoolear.fuel_price') / 1000;
     }
 
-    public function getTripInfo($points)
+    public function getTripInfo($points, int $routeIndex = 0)
     {
         $hashedPoints = hash('sha256', json_encode($points));
         $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
@@ -810,7 +810,7 @@ class TripRepository
                 ->first();
 
             if ($cachedRoute) {
-                return $cachedRoute->route_data;
+                return $this->applyRouteIndexToTripInfoResponse($cachedRoute->route_data, $routeIndex);
             }
         }
 
@@ -827,28 +827,26 @@ class TripRepository
 
         if ($osrmOutcome['status'] === 'route') {
             $payload = $osrmOutcome['payload'];
-            $route = $payload['routes'][0];
-            $distanceInMeters = $route['distance'];
-            $duration = $route['duration'];
 
-            return $this->storeTripInfoSuccess(
+            return $this->storeTripInfoSuccessFromOsrmRoutes(
                 $points,
                 $hashedPoints,
-                (float) $distanceInMeters,
-                (float) $duration,
-                'osrm'
+                $payload['routes'],
+                $routeIndex
             );
         }
 
         if ($this->mapboxDirectionsRouteService->isEnabled()) {
             $mapboxMetrics = $this->mapboxDirectionsRouteService->drivingDistanceAndDuration($points);
             if ($mapboxMetrics !== null) {
-                return $this->storeTripInfoSuccess(
+                return $this->storeTripInfoSuccessFromOsrmRoutes(
                     $points,
                     $hashedPoints,
-                    (float) $mapboxMetrics['distance'],
-                    (float) $mapboxMetrics['duration'],
-                    'mapbox_directions'
+                    [[
+                        'distance' => (float) $mapboxMetrics['distance'],
+                        'duration' => (float) $mapboxMetrics['duration'],
+                    ]],
+                    0
                 );
             }
         }
@@ -955,17 +953,70 @@ class TripRepository
     }
 
     /**
+     * @param  array<int, array{distance?: mixed, duration?: mixed}>  $osrmRoutes
      * @return array{status: bool, data: array|null, message: string}
      */
-    private function storeTripInfoSuccess(
+    private function storeTripInfoSuccessFromOsrmRoutes(
         array $points,
         string $hashedPoints,
-        float $distanceInMeters,
-        float $duration,
-        string $provider
+        array $osrmRoutes,
+        int $selectedRouteIndex
     ): array {
-        $co2 = $distanceInMeters * 0.15;
+        $routeOptions = [];
+        foreach ($osrmRoutes as $index => $route) {
+            if (! is_array($route)) {
+                continue;
+            }
+            $distanceInMeters = (float) ($route['distance'] ?? 0);
+            $duration = (float) ($route['duration'] ?? 0);
+            $metrics = $this->buildTripInfoMetricsForRoute($distanceInMeters, $duration, $points);
+            $routeOptions[] = array_merge(['route_index' => $index], $metrics);
+        }
+
+        if ($routeOptions === []) {
+            return [
+                'status' => false,
+                'data' => null,
+                'message' => 'Route not found',
+            ];
+        }
+
+        $selectedIndex = $this->clampRouteIndex($selectedRouteIndex, count($routeOptions));
+        $selectedMetrics = $routeOptions[$selectedIndex];
+        unset($selectedMetrics['route_index']);
+
+        $data = array_merge($selectedMetrics, [
+            'route_options' => $routeOptions,
+        ]);
+
+        $response = [
+            'status' => true,
+            'data' => $data,
+            'message' => 'Route found',
+        ];
+
         $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
+        if (! $cacheBypass) {
+            $ttl = max(3600, (int) config('carpoolear.trip_route_cache_ttl_success_seconds', 31536000));
+            RouteCache::updateOrCreate(
+                ['hashed_points' => $hashedPoints],
+                [
+                    'points' => $points,
+                    'route_data' => $this->applyRouteIndexToTripInfoResponse($response, 0),
+                    'expires_at' => now()->addSeconds($ttl),
+                ]
+            );
+        }
+
+        return $this->applyRouteIndexToTripInfoResponse($response, $selectedRouteIndex);
+    }
+
+    /**
+     * @return array{distance: float, duration: float, co2: float, route_needs_payment: bool, recommended_trip_price_cents: int, maximum_trip_price_cents: int, pricing_breakdown: array}
+     */
+    private function buildTripInfoMetricsForRoute(float $distanceInMeters, float $duration, array $points): array
+    {
+        $co2 = $distanceInMeters * 0.15;
 
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
@@ -992,7 +1043,7 @@ class TripRepository
         $maximumTripPriceCents = (int) round($fuelAndTollsCents * (1 + $maxPriceVariancePercent / 100))
             + $pricingBreakdown['sellado_cents'];
 
-        $data = [
+        return [
             'distance' => $distanceInMeters,
             'duration' => $duration,
             'co2' => $co2,
@@ -1001,27 +1052,60 @@ class TripRepository
             'maximum_trip_price_cents' => $maximumTripPriceCents,
             'pricing_breakdown' => $pricingBreakdown,
         ];
+    }
 
-        $response = [
-            'status' => true,
-            'data' => $data,
-            'message' => 'Route found',
-        ];
-
-        if (! $cacheBypass) {
-            $ttl = max(3600, (int) config('carpoolear.trip_route_cache_ttl_success_seconds', 31536000));
-            RouteCache::updateOrCreate(
-                ['hashed_points' => $hashedPoints],
-                [
-                    'points' => $points,
-                    'route_data' => $response,
-                    'expires_at' => now()->addSeconds($ttl),
-                ]
-            );
-
+    private function clampRouteIndex(int $routeIndex, int $routeCount): int
+    {
+        if ($routeCount <= 0) {
+            return 0;
         }
 
+        return max(0, min($routeIndex, $routeCount - 1));
+    }
+
+    /**
+     * @param  array{status?: bool, data?: array|null, message?: string}  $response
+     * @return array{status: bool, data: array|null, message: string}
+     */
+    private function applyRouteIndexToTripInfoResponse(array $response, int $routeIndex): array
+    {
+        if (! ($response['status'] ?? false) || ! is_array($response['data'] ?? null)) {
+            return $response;
+        }
+
+        $routeOptions = $response['data']['route_options'] ?? null;
+        if (! is_array($routeOptions) || $routeOptions === []) {
+            return $response;
+        }
+
+        $selectedIndex = $this->clampRouteIndex($routeIndex, count($routeOptions));
+        $selected = $routeOptions[$selectedIndex];
+        $metrics = $selected;
+        unset($metrics['route_index']);
+
+        $response['data'] = array_merge($metrics, [
+            'route_options' => $routeOptions,
+        ]);
+
         return $response;
+    }
+
+    /**
+     * @return array{status: bool, data: array|null, message: string}
+     */
+    private function storeTripInfoSuccess(
+        array $points,
+        string $hashedPoints,
+        float $distanceInMeters,
+        float $duration,
+        string $provider
+    ): array {
+        return $this->storeTripInfoSuccessFromOsrmRoutes(
+            $points,
+            $hashedPoints,
+            [['distance' => $distanceInMeters, 'duration' => $duration]],
+            0
+        );
     }
 
     /**

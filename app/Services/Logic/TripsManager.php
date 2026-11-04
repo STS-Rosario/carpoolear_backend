@@ -664,9 +664,9 @@ class TripsManager extends BaseManager
         }
     }
 
-    public function getTripInfo($points)
+    public function getTripInfo($points, int $routeIndex = 0)
     {
-        return $this->tripRepo->getTripInfo($points);
+        return $this->tripRepo->getTripInfo($points, $routeIndex);
     }
 
     public function selladoViaje($user)
