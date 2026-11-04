@@ -51,6 +51,7 @@ class TripTransformer extends TransformerAbstract
             'total_seats' => $trip->total_seats,
             'friendship_type_id' => $trip->friendship_type_id,
             'distance' => $trip->distance,
+            'selected_route_index' => (int) ($trip->selected_route_index ?? 0),
             'estimated_time' => $trip->estimated_time,
             'seat_price_cents' => $trip->seat_price_cents,
             'recommended_trip_price_cents' => $trip->recommended_trip_price_cents,

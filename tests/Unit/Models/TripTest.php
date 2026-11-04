@@ -49,6 +49,7 @@ class TripTest extends TestCase
             'total_seats',
             'friendship_type_id',
             'distance',
+            'selected_route_index',
             'seat_price_cents',
             'recommended_trip_price_cents',
             'total_price',
@@ -404,6 +405,20 @@ class TripTest extends TestCase
         $array = $trip->fresh()->toArray();
 
         $this->assertArrayNotHasKey('enc_path', $array);
+    }
+
+    public function test_factory_defaults_selected_route_index_to_zero(): void
+    {
+        $trip = Trip::factory()->create();
+
+        $this->assertSame(0, (int) $trip->fresh()->selected_route_index);
+    }
+
+    public function test_persists_selected_route_index_on_create(): void
+    {
+        $trip = Trip::factory()->create(['selected_route_index' => 1]);
+
+        $this->assertSame(1, (int) $trip->fresh()->selected_route_index);
     }
 
     public function test_core_constants(): void

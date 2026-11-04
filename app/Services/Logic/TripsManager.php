@@ -45,6 +45,7 @@ class TripsManager extends BaseManager
                 'friendship_type_id' => 'required|integer|in:0,1,2',
                 'estimated_time' => 'required|string',
                 'distance' => 'required|numeric',
+                'selected_route_index' => 'nullable|integer|min:0|max:5',
                 'co2' => 'required|numeric',
                 'description' => 'string',
                 'return_trip_id' => 'exists:trips,id',
@@ -72,6 +73,7 @@ class TripsManager extends BaseManager
                 'friendship_type_id' => 'integer|in:0,1,2',
                 'estimated_time' => 'string',
                 'distance' => 'numeric',
+                'selected_route_index' => 'nullable|integer|min:0|max:5',
                 'co2' => 'numeric',
                 'return_trip_id' => 'exists:trips,id',
                 'parent_trip_id' => 'exists:trips,id',
@@ -662,9 +664,9 @@ class TripsManager extends BaseManager
         }
     }
 
-    public function getTripInfo($points)
+    public function getTripInfo($points, int $routeIndex = 0)
     {
-        return $this->tripRepo->getTripInfo($points);
+        return $this->tripRepo->getTripInfo($points, $routeIndex);
     }
 
     public function selladoViaje($user)

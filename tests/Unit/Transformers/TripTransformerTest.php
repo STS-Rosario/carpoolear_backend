@@ -72,6 +72,7 @@ class TripTransformerTest extends TestCase
             'total_seats',
             'friendship_type_id',
             'distance',
+            'selected_route_index',
             'estimated_time',
             'seat_price_cents',
             'recommended_trip_price_cents',
@@ -113,6 +114,25 @@ class TripTransformerTest extends TestCase
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
         $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_includes_selected_route_index(): void
+    {
+        $trip = $this->makeTrip(['selected_route_index' => 2]);
+
+        $payload = (new TripTransformer(null))->transform($trip->fresh());
+
+        $this->assertSame(2, $payload['selected_route_index']);
+    }
+
+    public function test_transform_defaults_selected_route_index_to_zero_when_null(): void
+    {
+        $trip = $this->makeTrip();
+        $trip->selected_route_index = null;
+
+        $payload = (new TripTransformer(null))->transform($trip);
+
+        $this->assertSame(0, $payload['selected_route_index']);
     }
 
     public function test_transform_marks_trip_as_sellado_complimentary_when_empty_trip_credit_was_applied(): void

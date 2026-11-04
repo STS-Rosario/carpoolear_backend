@@ -29,6 +29,7 @@ class TripFactory extends Factory
             'friendship_type_id' => 2,
             'estimated_time' => '05:00',
             'distance' => 365,
+            'selected_route_index' => 0,
             'co2' => 50,
             'description' => 'hola mundo',
             'mail_send' => false,
