@@ -5288,6 +5288,49 @@ class TripRepositoryTest extends TestCase
         Queue::assertNotPushed(CheckTripContributionWithLlm::class);
     }
 
+    public function test_create_passes_selected_route_index_to_get_trip_info(): void
+    {
+        Config::set('carpoolear.module_max_price_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_enabled', false);
+        Queue::fake();
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(false);
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
+        $mercadoPagoService = Mockery::mock(MercadoPagoService::class);
+        $mapboxService = Mockery::mock(MapboxDirectionsRouteService::class);
+
+        /** @var TripRepository $repo */
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, $mercadoPagoService, $mapboxService]
+        )->makePartial();
+
+        $repo->shouldReceive('getTripInfo')
+            ->once()
+            ->with(Mockery::type('array'), 1)
+            ->andReturn([
+                'status' => true,
+                'data' => [
+                    'maximum_trip_price_cents' => 220,
+                    'recommended_trip_price_cents' => 110,
+                ],
+            ]);
+        $repo->shouldReceive('addPoints')->andReturnNull();
+        $repo->shouldReceive('generateTripPath')->andReturnNull();
+        $repo->shouldReceive('generateTripFriendVisibility')->andReturnNull();
+
+        $user = User::factory()->create();
+        $trip = $repo->create($this->createTripPayload($user, [
+            'selected_route_index' => 1,
+            'distance' => 120000,
+        ]));
+
+        $this->assertSame(1, (int) $trip->fresh()->selected_route_index);
+        $this->assertSame(220, (int) $trip->fresh()->maximum_trip_price_cents);
+    }
+
     public function test_create_stores_maximum_trip_price_cents_from_trip_info(): void
     {
         Config::set('carpoolear.module_max_price_enabled', true);
