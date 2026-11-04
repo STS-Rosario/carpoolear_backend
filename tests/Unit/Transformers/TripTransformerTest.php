@@ -72,6 +72,7 @@ class TripTransformerTest extends TestCase
             'total_seats',
             'friendship_type_id',
             'distance',
+            'selected_route_index',
             'estimated_time',
             'seat_price_cents',
             'recommended_trip_price_cents',
