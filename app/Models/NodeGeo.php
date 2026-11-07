@@ -13,6 +13,7 @@ class NodeGeo extends Model
     protected $fillable = [
         'id',
         'name',
+        'alt_name',
         'lat',
         'lng',
         'type',

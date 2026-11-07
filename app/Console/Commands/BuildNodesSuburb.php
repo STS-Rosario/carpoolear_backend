@@ -152,6 +152,9 @@ class BuildNodesSuburb extends Command
                 if (isset($feature['tags']['name'])) {
                     $node = new NodeGeo;
                     $node->name = $feature['tags']['name'];
+                    if (! empty($feature['tags']['alt_name'])) {
+                        $node->alt_name = $feature['tags']['alt_name'];
+                    }
                     $node->type = $feature['tags']['place'];
                     $node->lng = $feature['lat'];
                     $node->lat = $feature['lon'];

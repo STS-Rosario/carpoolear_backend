@@ -155,6 +155,9 @@ class BuildNodes extends Command
                 if (isset($props['name'])) {
                     $node = new NodeGeo;
                     $node->name = $props['name'];
+                    if (! empty($props['alt_name'])) {
+                        $node->alt_name = $props['alt_name'];
+                    }
                     $node->type = $props['place'];
                     $node->lng = $geo['coordinates'][0];
                     $node->lat = $geo['coordinates'][1];

@@ -30,7 +30,10 @@ class RoutesRepository
     {
         // sometime someone will implement full text search
         $query = NodeGeo::query();
-        $query->whereRaw("CONCAT(name, ' ', state, ' ', country) like ?", '%'.$name.'%');
+        $query->whereRaw(
+            "CONCAT_WS(' ', name, alt_name, state, country) like ?",
+            '%'.$name.'%'
+        );
 
         if (! $multicountry) {
             $query->where('country', $country);
