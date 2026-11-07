@@ -21,6 +21,20 @@ class SupportTicketAutoCloseMessageTest extends TestCase
         $this->assertStringNotContainsString('volvemos a abrir', $markdown);
     }
 
+    public function test_project_footer_uses_italic_markdown_not_nested_bracket_links(): void
+    {
+        $markdown = SupportTicketAutoCloseMessage::MARKDOWN;
+
+        $this->assertStringContainsString(
+            '*Carpoolear es un proyecto de gestión colectiva',
+            $markdown
+        );
+        $this->assertStringNotContainsString(
+            '[Carpoolear es un proyecto de gestión colectiva',
+            $markdown
+        );
+    }
+
     public function test_for_user_substitutes_name_or_default(): void
     {
         $this->assertStringContainsString('Buenas Ana', SupportTicketAutoCloseMessage::forUser('Ana'));
