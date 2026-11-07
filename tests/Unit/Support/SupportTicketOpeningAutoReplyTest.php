@@ -18,4 +18,18 @@ class SupportTicketOpeningAutoReplyTest extends TestCase
         $this->assertStringContainsString('[APORTAR]', $markdown);
         $this->assertStringNotContainsString('carpoolear.com.ar/donar', $markdown);
     }
+
+    public function test_project_footer_uses_italic_markdown_not_nested_bracket_links(): void
+    {
+        $markdown = SupportTicketOpeningAutoReply::MARKDOWN;
+
+        $this->assertStringContainsString(
+            '*Proyecto de gestión colectiva',
+            $markdown
+        );
+        $this->assertStringNotContainsString(
+            '[Proyecto de gestión colectiva',
+            $markdown
+        );
+    }
 }

@@ -14,7 +14,7 @@ No te preocupes: si todavía necesitás ayuda, podés abrir un nuevo ticket, sea
 ¡Abrazo!
 Equipo Carpoolear
 
-[Carpoolear es un proyecto de gestión colectiva, sin fines de lucro y [código libre](https://github.com/sts-rosario) de la asociación civil [STS Rosario](https://stsrosario.org.ar/) en marcha desde el 2013. Vos también podés [sumarte](https://carpoolear.com.ar/colabora-como-colaborar) o [APORTAR](https://carpoolear.com.ar/aportar) para que siga adelante :D]
+*Carpoolear es un proyecto de gestión colectiva, sin fines de lucro y [código libre](https://github.com/sts-rosario) de la asociación civil [STS Rosario](https://stsrosario.org.ar/) en marcha desde el 2013. Vos también podés [sumarte](https://carpoolear.com.ar/colabora-como-colaborar) o [APORTAR](https://carpoolear.com.ar/aportar) para que siga adelante :D*
 MARKDOWN;
 
     public static function forUser(?string $name): string
