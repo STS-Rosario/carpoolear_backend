@@ -165,6 +165,30 @@ class RoutesRepositoryTest extends TestCase
         $this->assertSame(6, (int) $rows->first()->importance);
     }
 
+    public function test_autocomplete_matches_alt_name_when_primary_name_lacks_query_substring(): void
+    {
+        $suffix = substr(uniqid('', true), 0, 8);
+        $altNeedle = 'Villa de Las Rosas '.$suffix;
+        $match = $this->makeNode([
+            'name' => 'Villa Las Rosas '.$suffix,
+            'alt_name' => $altNeedle,
+            'state' => 'Córdoba',
+            'country' => 'ARG',
+            'importance' => 50,
+        ]);
+        $this->makeNode([
+            'name' => 'Unrelated '.$suffix,
+            'state' => 'Buenos Aires',
+            'country' => 'ARG',
+            'importance' => 100,
+        ]);
+
+        $rows = $this->repo()->autocomplete($altNeedle, 'ARG', false);
+
+        $this->assertCount(1, $rows);
+        $this->assertSame($match->id, $rows->first()->id);
+    }
+
     public function test_autocomplete_matches_state_country_concat_and_logs_query_context(): void
     {
         // Mutation intent: guard whereRaw(CONCAT(name, state, country) like ?) and Log::info($name.' '.$country).

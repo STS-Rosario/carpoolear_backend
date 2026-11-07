@@ -68,6 +68,51 @@ class BuildNodesTest extends TestCase
         $this->assertSame(0, $command->geocodeState(-31.4, -64.2));
     }
 
+    public function test_handle_persists_alt_name_from_geojson_properties(): void
+    {
+        $tmpDir = sys_get_temp_dir().'/buildnodes_'.uniqid();
+        mkdir($tmpDir, 0777, true);
+
+        file_put_contents($tmpDir.'/ARG.json', json_encode([
+            'features' => [[
+                'properties' => [
+                    'name' => 'Villa Las Rosas',
+                    'alt_name' => 'Villa de Las Rosas',
+                    'place' => 'village',
+                ],
+                'geometry' => [
+                    'coordinates' => [-65.0520865, -31.9471009],
+                ],
+            ]],
+        ]));
+
+        $command = new class($tmpDir) extends BuildNodes
+        {
+            private string $fixtureDir;
+
+            public function __construct(string $fixtureDir)
+            {
+                $this->fixtureDir = $fixtureDir;
+                parent::__construct();
+                $this->dir = rtrim($fixtureDir, '/').'/';
+                $this->files = ['ARG.json'];
+            }
+
+            public function geocodeState($lat, $long)
+            {
+                return 'Córdoba';
+            }
+
+            public function info($string, $verbosity = null): void {}
+        };
+
+        $command->handle();
+
+        $node = NodeGeo::query()->where('name', 'Villa Las Rosas')->first();
+        $this->assertNotNull($node);
+        $this->assertSame('Villa de Las Rosas', $node->alt_name);
+    }
+
     public function test_handle_creates_node_and_maps_arg_state_short_code(): void
     {
         $tmpDir = sys_get_temp_dir().'/buildnodes_'.uniqid();
