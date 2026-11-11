@@ -40,12 +40,7 @@
     .un-litro *::after {
         box-sizing: border-box;
     }
-    .un-litro h1,
-    .un-litro h2,
-    .un-litro h3,
-    .un-litro p,
-    .un-litro ul,
-    .un-litro li {
+    .un-litro :where(h1, h2, h3, p, ul, li) {
         margin: 0;
         padding: 0;
         font-family: inherit;
