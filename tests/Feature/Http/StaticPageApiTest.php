@@ -19,6 +19,10 @@ class StaticPageApiTest extends TestCase
             '<a href="/division-de-gastos">cómo se calcula la contribución por persona para un viaje</a>',
             $decoded['content']
         );
+        $this->assertStringContainsString(
+            '<a href="/un-litro-para-carpoolear">más detalles sobre Un litro para Carpoolear acá</a>',
+            $decoded['content']
+        );
     }
 
     public function test_division_de_gastos_static_page_returns_html_content(): void

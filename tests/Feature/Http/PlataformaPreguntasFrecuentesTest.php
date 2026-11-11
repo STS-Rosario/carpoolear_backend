@@ -6,6 +6,18 @@ use Tests\TestCase;
 
 class PlataformaPreguntasFrecuentesTest extends TestCase
 {
+    public function test_un_litro_faq_links_to_un_litro_page(): void
+    {
+        $response = $this->get('/plataforma-preguntas-frecuentes');
+
+        $response->assertOk();
+        $response->assertSee('¿Qué es Un litro para Carpoolear?', false);
+        $response->assertSee(
+            'Conocé <a href="/un-litro-para-carpoolear">más detalles sobre Un litro para Carpoolear acá</a>.',
+            false
+        );
+    }
+
     public function test_contribucion_faq_links_to_division_de_gastos_page(): void
     {
         $response = $this->get('/plataforma-preguntas-frecuentes');
