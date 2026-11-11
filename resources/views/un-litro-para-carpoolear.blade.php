@@ -4,16 +4,7 @@
 @section('body-class', 'body-plataforma un-litro-para-carpoolear-page')
 
 @section('content')
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    body.un-litro-para-carpoolear-page {
-        background: #F8F9FB;
-    }
-    body.un-litro-para-carpoolear-page .main-container {
-        background: #F8F9FB;
-    }
     .un-litro {
         --ul-red: #D32F2F;
         --ul-red-soft: #FDE7E7;
@@ -31,7 +22,7 @@
         margin: 0 auto;
         padding: 2.5em 1.25em 4em;
         color: var(--ul-text);
-        font-family: 'Barlow', sans-serif;
+        font-family: inherit;
         font-size: 16px;
         line-height: 1.45;
     }
@@ -142,11 +133,6 @@
         color: var(--ul-blue);
         font-size: 14px;
     }
-    .un-litro__icon--red {
-        background: var(--ul-red-soft);
-        color: var(--ul-red);
-    }
-
     /* Peaje */
     .un-litro__peaje {
         display: flex;
