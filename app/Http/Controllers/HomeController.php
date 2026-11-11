@@ -73,6 +73,11 @@ class HomeController extends Controller
         return view('division-de-gastos');
     }
 
+    public function unLitroParaCarpoolear()
+    {
+        return view('un-litro-para-carpoolear');
+    }
+
     public function verificacionCuenta()
     {
         return view('verificacion-cuenta');
