@@ -67,7 +67,7 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         $response->assertSee('un-litro__seat--driver', false);
         $response->assertSee('un-litro__seat-meta', false);
         $response->assertSee('un-litro__seat-label', false);
-        $response->assertSee('background: #f4f3f1', false);
+        $response->assertSee('background: #e7e7e7', false);
         $response->assertSee('background: #E7F1FB', false);
         $response->assertSee('border: 2px solid #1e609d', false);
         $response->assertSee(
