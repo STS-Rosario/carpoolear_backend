@@ -297,12 +297,25 @@
     }
     .un-litro__note {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         gap: 1em;
         margin-top: 1.25em;
     }
+    .un-litro__note-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25em;
+        min-width: 0;
+    }
     .un-litro__note strong {
         font-weight: 700;
+        color: var(--ul-text);
+    }
+    .un-litro__note-desc {
+        font-weight: 400;
+        font-size: 0.95em;
+        line-height: 1.4;
+        color: var(--ul-muted);
     }
 
     /* Free trips */
@@ -578,7 +591,10 @@
         </div>
         <div class="un-litro__card un-litro__note">
             <span class="un-litro__icon"><i class="ti ti-money"></i></span>
-            <strong>Si nadie se sube a tu viaje, se aplica para el siguiente</strong>
+            <span class="un-litro__note-copy">
+                <strong>Si nadie se sube a tu viaje, se aplica para el siguiente</strong>
+                <span class="un-litro__note-desc">Si nadie reservó un lugar, no tenés que volver a pagarlo: el litro se traslada directo a tu siguiente viaje publicado.</span>
+            </span>
         </div>
     </section>
 
