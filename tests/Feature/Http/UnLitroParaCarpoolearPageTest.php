@@ -63,6 +63,10 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             false
         );
         $response->assertSee(
+            'Si nadie reservó un lugar, no tenés que volver a pagarlo: el litro se traslada directo a tu siguiente viaje publicado.',
+            false
+        );
+        $response->assertSee(
             'es y va a seguir siendo un proyecto sin fines de lucro',
             false
         );
