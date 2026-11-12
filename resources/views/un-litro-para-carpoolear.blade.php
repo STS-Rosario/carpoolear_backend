@@ -255,10 +255,31 @@
     .un-litro__seats-explainer {
         flex: 1 1 40%;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.65em;
     }
-    .un-litro__seats-explainer p {
-        font-size: 1.1em;
-        font-weight: 600;
+    .un-litro__seats-explainer-title {
+        font-size: 1.05em;
+        font-weight: 700;
+        line-height: 1.35;
+        color: var(--ul-text);
+        margin: 0;
+    }
+    .un-litro__seats-explainer-body {
+        font-size: 0.95em;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--ul-muted);
+        margin: 0;
+    }
+    .un-litro__seats-explainer-footnote {
+        font-size: 0.85em;
+        font-weight: 400;
+        line-height: 1.35;
+        color: var(--ul-muted);
+        margin: 0.35em 0 0;
     }
     .un-litro__note {
         display: flex;
@@ -531,7 +552,14 @@
                 </div>
             </div>
             <div class="un-litro__card un-litro__seats-explainer">
-                <p>Quien conduce lo paga al publicar el viaje y después lo comparte, igual que la nafta y los peajes.</p>
+                <span class="un-litro__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 14c-2.67 0-8 1.33-8 4v2h16v-2c0-2.67-5.33-4-8-4m-9-4V7H4v3H1v2h3v3h2v-3h3v-2m6 2a4 4 0 0 0 4-4 4 4 0 0 0-4-4 4 4 0 0 0-4 4 4 4 0 0 0 4 4z"/>
+                    </svg>
+                </span>
+                <p class="un-litro__seats-explainer-title">Quien maneja lo paga al publicar y lo comparte, como la nafta y los peajes.</p>
+                <p class="un-litro__seats-explainer-body">Es decir: el litro se adelanta al crear el viaje y después se divide entre todas las personas que viajan, conductor incluido.</p>
+                <p class="un-litro__seats-explainer-footnote">* Ejemplo con 4 personas viajando.</p>
             </div>
         </div>
         <div class="un-litro__card un-litro__note">
