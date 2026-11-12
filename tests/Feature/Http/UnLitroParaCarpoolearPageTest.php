@@ -55,7 +55,9 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             'Se cobra en los trayectos más viajados y compartidos.',
             false
         );
-        $response->assertSee('1/4 L', false);
+        $response->assertSee('¼ L', false);
+        $response->assertSee('un-litro__seat--driver', false);
+        $response->assertSee('un-litro__seat-label', false);
         $response->assertSee(
             'Si nadie se sube a tu viaje, se aplica para el siguiente',
             false
