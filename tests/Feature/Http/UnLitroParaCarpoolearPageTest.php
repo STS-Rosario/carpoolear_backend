@@ -16,6 +16,19 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         $response->assertSee('Un peaje más, para la comunidad', false);
         $response->assertSee('Se divide entre todas las personas que viajan', false);
         $response->assertSee('Tus 2 primeros viajes son sin cargo', false);
+        $response->assertSee('Para probar la plataforma.', false);
+        $response->assertSee(
+            'Es el valor de 1 litro de nafta, dentro de los gastos compartidos del viaje.',
+            false
+        );
+        $response->assertSee(
+            'Quien maneja lo paga al publicar y lo comparte con las demás personas.',
+            false
+        );
+        $response->assertSee(
+            'Se cobra en los trayectos más viajados y compartidos.',
+            false
+        );
         $response->assertSee('1/4 L', false);
         $response->assertSee(
             'Si nadie se sube a tu viaje, se aplica para el siguiente',
