@@ -12,6 +12,10 @@ class UnLitroParaCarpoolearPageTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('¿Qué es 1 litro para Carpoolear?', false);
+        $response->assertSee(
+            'Carpoolear es un proyecto colaborativo <strong>sin fines de lucro</strong> de la asociación civil STS Rosario. Ese litro ayuda a mantener la plataforma, la mesa de ayuda y las mejoras.',
+            false
+        );
         $response->assertSee('Así funciona', false);
         $response->assertSee('Un peaje más, para la comunidad', false);
         $response->assertSee('Se divide entre todas las personas que viajan', false);
