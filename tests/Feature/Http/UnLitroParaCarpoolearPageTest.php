@@ -31,6 +31,16 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             false
         );
         $response->assertSee('Se divide entre todas las personas que viajan', false);
+        $response->assertSee(
+            'Quien maneja lo paga al publicar y lo comparte, como la nafta y los peajes.',
+            false
+        );
+        $response->assertSee(
+            'Es decir: el litro se adelanta al crear el viaje y después se divide entre todas las personas que viajan, conductor incluido.',
+            false
+        );
+        $response->assertSee('* Ejemplo con 4 personas viajando.', false);
+        $response->assertSee('un-litro__seats-explainer', false);
         $response->assertSee('Tus 2 primeros viajes son sin cargo', false);
         $response->assertSee('Para probar la plataforma.', false);
         $response->assertSee(
