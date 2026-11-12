@@ -19,6 +19,8 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         $response->assertSee('Así funciona', false);
         $response->assertSee('M50.06,47.98', false);
         $response->assertSee('viewBox="0 0 64 80"', false);
+        $response->assertSee('width: 20px', false);
+        $response->assertSee('width: 14px', false);
         $response->assertSee('Un peaje más, para la comunidad', false);
         $response->assertSee(
             'Mantener en funcionamiento el sitio y la app para que sigas encontrando y compartiendo viajes.',
