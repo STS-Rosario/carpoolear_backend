@@ -485,21 +485,21 @@
                         <span class="un-litro__icon"><i class="ti ti-layout-grid2"></i></span>
                         <span>
                             <strong>Plataforma</strong>
-                            <span class="un-litro__use-text">Mantener el sitio y la app</span>
+                            <span class="un-litro__use-text">Mantener en funcionamiento el sitio y la app para que sigas encontrando y compartiendo viajes.</span>
                         </span>
                     </li>
                     <li class="un-litro__use">
                         <span class="un-litro__icon"><i class="ti ti-headphone-alt"></i></span>
                         <span>
                             <strong>Mesa de ayuda</strong>
-                            <span class="un-litro__use-text">Acompañar a las personas usuarias</span>
+                            <span class="un-litro__use-text">Responder las consultas y resolver los problemas de quienes usan Carpoolear.</span>
                         </span>
                     </li>
                     <li class="un-litro__use">
                         <span class="un-litro__icon"><i class="ti ti-star"></i></span>
                         <span>
                             <strong>Mejoras</strong>
-                            <span class="un-litro__use-text">Nuevas funciones y mejoras</span>
+                            <span class="un-litro__use-text">Desarrollar nuevas funcionalidades y mejorar las que ya existen.</span>
                         </span>
                     </li>
                 </ul>
