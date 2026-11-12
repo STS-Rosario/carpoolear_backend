@@ -66,6 +66,13 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             'Si nadie reservó un lugar, no tenés que volver a pagarlo: el litro se traslada directo a tu siguiente viaje publicado.',
             false
         );
+        $response->assertSee('No se suma ningún litro.', false);
+        $response->assertSee('Tampoco se suma ningún litro.', false);
+        $response->assertSee(
+            'Desde acá se suma el equivalente a 1 litro de nafta.',
+            false
+        );
+        $response->assertSee('color: #8B2129', false);
         $response->assertSee(
             'es y va a seguir siendo un proyecto sin fines de lucro',
             false
