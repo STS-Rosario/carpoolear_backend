@@ -235,32 +235,37 @@
         justify-content: space-between;
         align-items: center;
         gap: 0.75em;
-        min-height: 72px;
-        padding: 1em 1.15em;
+        min-height: 96px;
+        padding: 1.1em 1.2em;
         border-radius: 14px;
-        border: 1.5px solid var(--ul-blue);
-        background: var(--ul-blue-soft);
-        color: var(--ul-blue);
+        border: 1.5px solid #93B3D0;
+        background: #E7F1FB;
+        color: #2D5C88;
         font-weight: 700;
     }
     .un-litro__seat--driver {
         border-color: transparent;
-        background: var(--ul-grey);
+        background: #F4F3F1;
         color: var(--ul-text);
     }
-    .un-litro__seat-label {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45em;
+    .un-litro__seat-meta {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4em;
         min-width: 0;
+    }
+    .un-litro__seat-icon {
+        font-size: 1.45em;
+        line-height: 1;
         color: inherit;
     }
-    .un-litro__seat-label i {
+    .un-litro__seat-label {
         color: inherit;
     }
     .un-litro__seat-amount {
         flex: 0 0 auto;
-        color: var(--ul-red);
+        color: #CD0F2D;
         font-size: 1.85em;
         font-weight: 700;
         line-height: 1;
@@ -574,19 +579,31 @@
         <div class="un-litro__seats-wrap">
             <div class="un-litro__seats">
                 <div class="un-litro__seat un-litro__seat--driver">
-                    <span class="un-litro__seat-label"><i class="ti ti-car"></i> Conductor</span>
+                    <span class="un-litro__seat-meta">
+                        <i class="ti ti-car un-litro__seat-icon"></i>
+                        <span class="un-litro__seat-label">Conductor</span>
+                    </span>
                     <span class="un-litro__seat-amount">¼ L</span>
                 </div>
                 <div class="un-litro__seat">
-                    <span class="un-litro__seat-label"><i class="ti ti-user"></i> Acompañante</span>
+                    <span class="un-litro__seat-meta">
+                        <i class="ti ti-user un-litro__seat-icon"></i>
+                        <span class="un-litro__seat-label">Acompañante</span>
+                    </span>
                     <span class="un-litro__seat-amount">¼ L</span>
                 </div>
                 <div class="un-litro__seat">
-                    <span class="un-litro__seat-label"><i class="ti ti-user"></i> Trasero 1</span>
+                    <span class="un-litro__seat-meta">
+                        <i class="ti ti-user un-litro__seat-icon"></i>
+                        <span class="un-litro__seat-label">Trasero 1</span>
+                    </span>
                     <span class="un-litro__seat-amount">¼ L</span>
                 </div>
                 <div class="un-litro__seat">
-                    <span class="un-litro__seat-label"><i class="ti ti-user"></i> Trasero 2</span>
+                    <span class="un-litro__seat-meta">
+                        <i class="ti ti-user un-litro__seat-icon"></i>
+                        <span class="un-litro__seat-label">Trasero 2</span>
+                    </span>
                     <span class="un-litro__seat-amount">¼ L</span>
                 </div>
             </div>
