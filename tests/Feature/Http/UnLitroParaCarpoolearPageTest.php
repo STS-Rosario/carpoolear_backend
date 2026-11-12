@@ -57,7 +57,11 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         );
         $response->assertSee('¼ L', false);
         $response->assertSee('un-litro__seat--driver', false);
+        $response->assertSee('un-litro__seat-meta', false);
         $response->assertSee('un-litro__seat-label', false);
+        $response->assertSee('background: #F4F3F1', false);
+        $response->assertSee('background: #E7F1FB', false);
+        $response->assertSee('border: 1.5px solid #93B3D0', false);
         $response->assertSee(
             'Si nadie se sube a tu viaje, se aplica para el siguiente',
             false
