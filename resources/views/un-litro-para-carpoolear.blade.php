@@ -316,10 +316,14 @@
     .un-litro__banner p {
         color: #fff;
     }
-    .un-litro__banner img {
+    .un-litro__banner-logo {
         height: 28px;
         width: auto;
         flex: 0 0 auto;
+        display: block;
+    }
+    .un-litro__fuel-pump {
+        display: block;
     }
 
     @media (max-width: 767px) {
@@ -391,7 +395,11 @@
                     <span>Tus 2 primeros viajes son sin cargo</span>
                 </li>
                 <li class="un-litro__how-item">
-                    <span class="un-litro__icon"><i class="ti ti-plus"></i></span>
+                    <span class="un-litro__icon" aria-hidden="true">
+                        <svg class="un-litro__fuel-pump" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 3h8a1 1 0 0 1 1 1v14h1v-6.17A3 3 0 0 1 16 9h1.5A2.5 2.5 0 0 1 20 11.5V16a1 1 0 1 0 2 0v-4.76a1 1 0 0 0-.29-.7l-2.5-2.5a1 1 0 0 0-1.42 1.42L18.59 10H17a1 1 0 0 0-1 1v6h2a1 1 0 0 1 1 1v1H3v-1a1 1 0 0 1 1-1h1V4a1 1 0 0 1 1-1zm2 2v12h4V5H6z"/>
+                        </svg>
+                    </span>
                     <span>Desde el tercero se suma 1 litro</span>
                 </li>
                 <li class="un-litro__how-item">
@@ -519,7 +527,12 @@
 
     {{-- 5. Banner --}}
     <div class="un-litro__banner">
-        <img src="{{ asset('img/logo-light.png') }}" alt="Carpoolear">
+        <img
+            class="un-litro__banner-logo"
+            src="{{ asset('img/logo2.svg') }}"
+            alt="Carpoolear"
+            height="28"
+        />
         <p>es y va a seguir siendo un proyecto sin fines de lucro, que se sostiene con trabajo voluntario.</p>
     </div>
 </div>
