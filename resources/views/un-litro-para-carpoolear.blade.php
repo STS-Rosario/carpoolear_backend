@@ -252,7 +252,7 @@
     }
     .un-litro__seat--driver {
         border-color: transparent;
-        background: #f4f3f1;
+        background: #e7e7e7;
         color: var(--ul-text);
     }
     .un-litro__seat-meta {
