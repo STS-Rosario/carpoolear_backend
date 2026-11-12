@@ -18,6 +18,18 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         );
         $response->assertSee('Así funciona', false);
         $response->assertSee('Un peaje más, para la comunidad', false);
+        $response->assertSee(
+            'Mantener en funcionamiento el sitio y la app para que sigas encontrando y compartiendo viajes.',
+            false
+        );
+        $response->assertSee(
+            'Responder las consultas y resolver los problemas de quienes usan Carpoolear.',
+            false
+        );
+        $response->assertSee(
+            'Desarrollar nuevas funcionalidades y mejorar las que ya existen.',
+            false
+        );
         $response->assertSee('Se divide entre todas las personas que viajan', false);
         $response->assertSee('Tus 2 primeros viajes son sin cargo', false);
         $response->assertSee('Para probar la plataforma.', false);
