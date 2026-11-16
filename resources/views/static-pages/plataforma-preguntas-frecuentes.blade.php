@@ -18,6 +18,9 @@
 <h3>¿Cómo se calcula la contribución para un viaje?</h3>
 <p>En este artículo te explicamos <a href="/division-de-gastos">cómo se calcula la contribución por persona para un viaje</a>.</p>
 
+<h3>¿Qué es Un litro para Carpoolear?</h3>
+<p>Conocé <a href="/un-litro-para-carpoolear">más detalles sobre Un litro para Carpoolear acá</a>.</p>
+
 
 <h3>¿Por qué sólo se consideran el gasto de combustible utilizado y peajes?</h3>
 <p>Son los únicos gastos comprobables en un viaje a través de tickets (en caso de requerirse su verificación). El resto de los gastos que pudiesen existir (desgaste del auto o seguros) corren a cuenta del conductor ya que aporta su automóvil de forma desinteresada para el viaje y no se dedica profesionalmente al transporte de personas. </p>

@@ -34,6 +34,7 @@ class StaticPageNavigationTest extends TestCase
             'contacto' => ['/contacto'],
             'acerca de proyecto' => ['/acerca-de-proyecto'],
             'division de gastos' => ['/division-de-gastos'],
+            'un litro para carpoolear' => ['/un-litro-para-carpoolear'],
             'plataforma preguntas frecuentes' => ['/plataforma-preguntas-frecuentes'],
             'verificacion cuenta' => ['/verificacion-cuenta'],
         ];

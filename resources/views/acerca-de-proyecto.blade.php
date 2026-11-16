@@ -35,7 +35,7 @@
 
                 </ul>
 
-                <p>Para lograr esto, hemos desarrollado una plataforma gratuita, colaborativa y sin fines de lucro donde las personas pueden compartir con otras sus viajes en auto. </p>
+                <p>Para lograr esto, hemos desarrollado una plataforma colaborativa y sin fines de lucro donde las personas pueden compartir con otras sus viajes en auto. </p>
                             
                 <h3>¿Cómo impacta Carpoolear a nuestras vidas?</h3>
                 
