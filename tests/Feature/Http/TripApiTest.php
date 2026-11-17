@@ -462,7 +462,10 @@ class TripApiTest extends TestCase
 
         $points = [['lat' => -34.0, 'lng' => -58.0]];
         $expected = ['distance_m' => 1000];
-        $this->tripsLogic->shouldReceive('getTripInfo')->once()->with($points, 0)->andReturn($expected);
+        $this->tripsLogic->shouldReceive('getTripInfo')
+            ->once()
+            ->with($points, 0, m::on(fn ($authUser) => $authUser instanceof User && (int) $authUser->id === (int) $user->id))
+            ->andReturn($expected);
 
         $this->postJson('api/trips/trip-info', ['points' => $points])
             ->assertOk()

@@ -5464,9 +5464,14 @@ class TripRepositoryTest extends TestCase
             [$geoService, $mercadoPagoService, $mapboxService]
         )->makePartial();
 
+        $user = User::factory()->create();
         $repo->shouldReceive('getTripInfo')
             ->once()
-            ->with(Mockery::type('array'), 1)
+            ->with(
+                Mockery::type('array'),
+                1,
+                Mockery::on(fn ($owner) => $owner instanceof User && (int) $owner->id === (int) $user->id)
+            )
             ->andReturn([
                 'status' => true,
                 'data' => [
@@ -5478,7 +5483,6 @@ class TripRepositoryTest extends TestCase
         $repo->shouldReceive('generateTripPath')->andReturnNull();
         $repo->shouldReceive('generateTripFriendVisibility')->andReturnNull();
 
-        $user = User::factory()->create();
         $trip = $repo->create($this->createTripPayload($user, [
             'selected_route_index' => 1,
             'distance' => 120000,
