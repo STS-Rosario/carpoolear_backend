@@ -20,9 +20,11 @@ use STS\Models\RouteCache;
 use STS\Models\Trip;
 use STS\Models\TripPoint;
 use STS\Models\User;
+use STS\Services\ClubCarpoolearMembershipService;
 use STS\Services\GeoService;
 use STS\Services\MapboxDirectionsRouteService;
 use STS\Services\MercadoPagoService;
+use STS\Services\Sellado\SelladoChargePolicy;
 
 class TripRepository
 {
@@ -101,7 +103,8 @@ class TripRepository
 
         // Get trip info for price calculations and route data
         $selectedRouteIndex = (int) ($data['selected_route_index'] ?? 0);
-        $tripInfo = $this->getTripInfo($points, $selectedRouteIndex);
+        $owner = isset($data['user_id']) ? User::query()->find($data['user_id']) : null;
+        $tripInfo = $this->getTripInfo($points, $selectedRouteIndex, $owner);
 
         $this->warnIfClientDistanceMismatch($data, $tripInfo, $selectedRouteIndex);
 
@@ -188,7 +191,8 @@ class TripRepository
         $tripInfo = null;
         if ($points) {
             $selectedRouteIndex = (int) ($data['selected_route_index'] ?? $trip->selected_route_index ?? 0);
-            $tripInfo = $this->getTripInfo($points, $selectedRouteIndex);
+            $owner = User::query()->find($trip->user_id);
+            $tripInfo = $this->getTripInfo($points, $selectedRouteIndex, $owner);
 
             $this->warnIfClientDistanceMismatch($data, $tripInfo, $selectedRouteIndex);
 
@@ -215,13 +219,15 @@ class TripRepository
                 $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
                 $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-                $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id, (int) $trip->id);
+                $owner = User::query()->find($trip->user_id);
+                $shouldChargeSellado = $owner
+                    && $this->selladoChargePolicy()
+                        ->decide($owner, $routeNeedsPayment, (int) $trip->id)
+                        ->shouldCharge();
 
                 // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
-                if (config('carpoolear.module_trip_creation_payment_enabled') &&
-                    $routeNeedsPayment &&
+                if ($shouldChargeSellado &&
                     ! $oldRouteNeedsPayment &&
-                    $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold') &&
                     $trip->state !== Trip::STATE_AWAITING_PAYMENT) {
 
                     // User already paid Sellado for this trip (check payment record, not just state + payment_id)
@@ -801,7 +807,7 @@ class TripRepository
         return $distance * config('carpoolear.fuel_price') / 1000;
     }
 
-    public function getTripInfo($points, int $routeIndex = 0)
+    public function getTripInfo($points, int $routeIndex = 0, ?User $user = null)
     {
         $hashedPoints = hash('sha256', json_encode($points));
         $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
@@ -816,7 +822,10 @@ class TripRepository
                 ->first();
 
             if ($cachedRoute) {
-                return $this->applyRouteIndexToTripInfoResponse($cachedRoute->route_data, $routeIndex);
+                return $this->applySelladoPricingForUser(
+                    $this->applyRouteIndexToTripInfoResponse($cachedRoute->route_data, $routeIndex),
+                    $user
+                );
             }
         }
 
@@ -834,25 +843,31 @@ class TripRepository
         if ($osrmOutcome['status'] === 'route') {
             $payload = $osrmOutcome['payload'];
 
-            return $this->storeTripInfoSuccessFromOsrmRoutes(
-                $points,
-                $hashedPoints,
-                $payload['routes'],
-                $routeIndex
+            return $this->applySelladoPricingForUser(
+                $this->storeTripInfoSuccessFromOsrmRoutes(
+                    $points,
+                    $hashedPoints,
+                    $payload['routes'],
+                    $routeIndex
+                ),
+                $user
             );
         }
 
         if ($this->mapboxDirectionsRouteService->isEnabled()) {
             $mapboxMetrics = $this->mapboxDirectionsRouteService->drivingDistanceAndDuration($points);
             if ($mapboxMetrics !== null) {
-                return $this->storeTripInfoSuccessFromOsrmRoutes(
-                    $points,
-                    $hashedPoints,
-                    [[
-                        'distance' => (float) $mapboxMetrics['distance'],
-                        'duration' => (float) $mapboxMetrics['duration'],
-                    ]],
-                    0
+                return $this->applySelladoPricingForUser(
+                    $this->storeTripInfoSuccessFromOsrmRoutes(
+                        $points,
+                        $hashedPoints,
+                        [[
+                            'distance' => (float) $mapboxMetrics['distance'],
+                            'duration' => (float) $mapboxMetrics['duration'],
+                        ]],
+                        0
+                    ),
+                    $user
                 );
             }
         }
@@ -1020,15 +1035,14 @@ class TripRepository
     /**
      * @return array{distance: float, duration: float, co2: float, route_needs_payment: bool, recommended_trip_price_cents: int, maximum_trip_price_cents: int, pricing_breakdown: array}
      */
-    private function buildTripInfoMetricsForRoute(float $distanceInMeters, float $duration, array $points): array
+    private function buildTripInfoMetricsForRoute(float $distanceInMeters, float $duration, array $points, ?User $user = null): array
     {
         $co2 = $distanceInMeters * 0.15;
 
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
         $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-        $includesSellado = (bool) config('carpoolear.module_trip_creation_payment_enabled')
-            && $routeNeedsPayment;
+        $includesSellado = $this->selladoChargePolicy()->includesSelladoInPricing($user, $routeNeedsPayment);
         $selladoViajePrice = $includesSellado
             ? (int) config('carpoolear.module_trip_creation_payment_amount_cents')
             : 0;
@@ -1153,23 +1167,30 @@ class TripRepository
         ];
     }
 
+    private function selladoChargePolicy(): SelladoChargePolicy
+    {
+        return app(SelladoChargePolicy::class);
+    }
+
     private function maybeRequireSelladoPayment(Trip $trip, bool $routeNeedsPayment): void
     {
-        if (! config('carpoolear.module_trip_creation_payment_enabled') || ! $routeNeedsPayment) {
+        $owner = User::query()->find($trip->user_id);
+        if (! $owner) {
             return;
         }
 
-        $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id, (int) $trip->id);
-        if ($tripsCreatedByUser < config('carpoolear.module_trip_creation_payment_trips_threshold')) {
-            return;
-        }
+        $decision = $this->selladoChargePolicy()->decide($owner, $routeNeedsPayment, (int) $trip->id);
 
-        if (SelladoEmptyTripCredit::userHasUnusedCredit((int) $trip->user_id)) {
+        if ($decision->reason() === SelladoChargePolicy::REASON_COMPLIMENTARY_CREDIT) {
             if (SelladoEmptyTripCredit::redeemOldestUnusedCredit((int) $trip->user_id)) {
                 $trip->sellado_empty_trip_credit_applied_at = Carbon::now();
                 $trip->save();
             }
 
+            return;
+        }
+
+        if (! $decision->shouldCharge()) {
             return;
         }
 
@@ -1190,6 +1211,8 @@ class TripRepository
         $tripsCreatedByUser = SelladoTripCount::forUser((int) $user->id);
         $freeTripsAmount = config('carpoolear.module_trip_creation_payment_trips_threshold');
         $userOverFreeLimit = $tripsCreatedByUser >= $freeTripsAmount;
+        $clubMemberExempt = app(ClubCarpoolearMembershipService::class)
+            ->isActiveMember($user);
 
         return [
             'trip_creation_payment_enabled' => config('carpoolear.module_trip_creation_payment_enabled'),
@@ -1197,7 +1220,57 @@ class TripRepository
             'trips_created_by_user_amount' => $tripsCreatedByUser,
             'user_over_free_limit' => $userOverFreeLimit,
             'has_complimentary_sellado' => SelladoEmptyTripCredit::userHasUnusedCredit($user->id),
+            'club_member_exempt' => $clubMemberExempt,
         ];
+    }
+
+    /**
+     * @param  array{status?: bool, data?: array|null, message?: string}  $response
+     * @return array{status: bool, data: array|null, message: string}|array
+     */
+    private function applySelladoPricingForUser(array $response, ?User $user): array
+    {
+        if (! $user || ! ($response['status'] ?? false) || ! is_array($response['data'] ?? null)) {
+            return $response;
+        }
+
+        $routeNeedsPayment = (bool) ($response['data']['route_needs_payment'] ?? false);
+        if ($this->selladoChargePolicy()->includesSelladoInPricing($user, $routeNeedsPayment)) {
+            return $response;
+        }
+
+        $response['data'] = $this->stripSelladoFromTripInfoMetrics($response['data']);
+        if (isset($response['data']['route_options']) && is_array($response['data']['route_options'])) {
+            $response['data']['route_options'] = array_map(
+                fn ($option) => is_array($option) ? $this->stripSelladoFromTripInfoMetrics($option) : $option,
+                $response['data']['route_options']
+            );
+        }
+
+        return $response;
+    }
+
+    private function stripSelladoFromTripInfoMetrics(array $metrics): array
+    {
+        $breakdown = $metrics['pricing_breakdown'] ?? null;
+        if (! is_array($breakdown) || empty($breakdown['includes_sellado'])) {
+            return $metrics;
+        }
+
+        $selladoCents = (int) ($breakdown['sellado_cents'] ?? 0);
+        $totalCents = (int) ($breakdown['total_cents'] ?? 0) - $selladoCents;
+        $breakdown['sellado_cents'] = 0;
+        $breakdown['includes_sellado'] = false;
+        $breakdown['total_cents'] = $totalCents;
+        if (isset($breakdown['occupants']) && $breakdown['occupants']) {
+            $breakdown['per_person_cents'] = (int) round($totalCents / $breakdown['occupants']);
+        }
+
+        $metrics['pricing_breakdown'] = $breakdown;
+        $metrics['recommended_trip_price_cents'] = $totalCents;
+        $metrics['maximum_trip_price_cents'] = (int) ($metrics['maximum_trip_price_cents'] ?? 0) - $selladoCents;
+
+        return $metrics;
     }
 
     public function getTripByTripPassenger($transaction_id)
