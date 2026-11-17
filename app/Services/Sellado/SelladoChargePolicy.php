@@ -50,4 +50,17 @@ class SelladoChargePolicy
 
         return new SelladoChargeDecision(true, self::REASON_CHARGE);
     }
+
+    public function includesSelladoInPricing(?User $user, bool $routeNeedsPayment): bool
+    {
+        if (! config('carpoolear.module_trip_creation_payment_enabled') || ! $routeNeedsPayment) {
+            return false;
+        }
+
+        if ($user && $this->clubMembership->isActiveMember($user)) {
+            return false;
+        }
+
+        return true;
+    }
 }

@@ -1059,14 +1059,13 @@ class TripRepositoryTest extends TestCase
         $geoService = Mockery::mock(GeoService::class);
         $geoService->shouldReceive('getPaidRegions')->andReturn([]);
         $geoService->shouldReceive('doStopsRequireSellado')->andReturn(true);
-        $geoService->shouldReceive('resolveTollsVariancePercent')->andReturn(0)->byDefault();
+        $geoService->shouldReceive('hasExactlyOneStopInCostaAtlanticaZone')->andReturn(false);
 
-        $repo = Mockery::mock(
-            TripRepository::class,
-            [$geoService, Mockery::mock(MercadoPagoService::class), Mockery::mock(MapboxDirectionsRouteService::class)]
-        )->makePartial();
-        $repo->shouldAllowMockingProtectedMethods();
-        $repo->shouldReceive('resolveTollsVariancePercent')->andReturn(0);
+        $repo = new TripRepository(
+            $geoService,
+            Mockery::mock(MercadoPagoService::class),
+            Mockery::mock(MapboxDirectionsRouteService::class)
+        );
 
         $member = User::factory()->create(['monthly_donate' => true]);
         $points = [
