@@ -23,6 +23,7 @@ use STS\Models\User;
 use STS\Services\GeoService;
 use STS\Services\MapboxDirectionsRouteService;
 use STS\Services\MercadoPagoService;
+use STS\Services\Sellado\SelladoChargePolicy;
 
 class TripRepository
 {
@@ -215,13 +216,15 @@ class TripRepository
                 $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
                 $routeNeedsPayment = $this->geoService->doStopsRequireSellado($allPointsToCheck);
 
-                $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id, (int) $trip->id);
+                $owner = User::query()->find($trip->user_id);
+                $shouldChargeSellado = $owner
+                    && $this->selladoChargePolicy()
+                        ->decide($owner, $routeNeedsPayment, (int) $trip->id)
+                        ->shouldCharge();
 
                 // Check if route changed from non-paid to paid route and trip wasn't already awaiting payment
-                if (config('carpoolear.module_trip_creation_payment_enabled') &&
-                    $routeNeedsPayment &&
+                if ($shouldChargeSellado &&
                     ! $oldRouteNeedsPayment &&
-                    $tripsCreatedByUser >= config('carpoolear.module_trip_creation_payment_trips_threshold') &&
                     $trip->state !== Trip::STATE_AWAITING_PAYMENT) {
 
                     // User already paid Sellado for this trip (check payment record, not just state + payment_id)
@@ -1153,23 +1156,30 @@ class TripRepository
         ];
     }
 
+    private function selladoChargePolicy(): SelladoChargePolicy
+    {
+        return app(SelladoChargePolicy::class);
+    }
+
     private function maybeRequireSelladoPayment(Trip $trip, bool $routeNeedsPayment): void
     {
-        if (! config('carpoolear.module_trip_creation_payment_enabled') || ! $routeNeedsPayment) {
+        $owner = User::query()->find($trip->user_id);
+        if (! $owner) {
             return;
         }
 
-        $tripsCreatedByUser = SelladoTripCount::forUser((int) $trip->user_id, (int) $trip->id);
-        if ($tripsCreatedByUser < config('carpoolear.module_trip_creation_payment_trips_threshold')) {
-            return;
-        }
+        $decision = $this->selladoChargePolicy()->decide($owner, $routeNeedsPayment, (int) $trip->id);
 
-        if (SelladoEmptyTripCredit::userHasUnusedCredit((int) $trip->user_id)) {
+        if ($decision->reason() === SelladoChargePolicy::REASON_COMPLIMENTARY_CREDIT) {
             if (SelladoEmptyTripCredit::redeemOldestUnusedCredit((int) $trip->user_id)) {
                 $trip->sellado_empty_trip_credit_applied_at = Carbon::now();
                 $trip->save();
             }
 
+            return;
+        }
+
+        if (! $decision->shouldCharge()) {
             return;
         }
 
