@@ -133,4 +133,23 @@ class SelladoChargePolicyTest extends TestCase
         $this->assertFalse($decision->shouldCharge());
         $this->assertSame(SelladoChargePolicy::REASON_UNDER_THRESHOLD, $decision->reason());
     }
+
+    public function test_includes_sellado_in_pricing_for_non_member_on_eligible_route(): void
+    {
+        $user = User::factory()->create(['monthly_donate' => false]);
+
+        $this->assertTrue($this->policy->includesSelladoInPricing($user, true));
+    }
+
+    public function test_omits_sellado_from_pricing_for_club_member(): void
+    {
+        $user = User::factory()->create(['monthly_donate' => true]);
+
+        $this->assertFalse($this->policy->includesSelladoInPricing($user, true));
+    }
+
+    public function test_includes_sellado_in_pricing_when_user_unknown_on_eligible_route(): void
+    {
+        $this->assertTrue($this->policy->includesSelladoInPricing(null, true));
+    }
 }

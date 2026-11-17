@@ -1036,6 +1036,52 @@ class TripRepositoryTest extends TestCase
         $this->assertFalse($info['has_complimentary_sellado']);
     }
 
+    public function test_sellado_viaje_flags_club_member_exempt_for_active_members(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_trips_threshold', 2);
+
+        $member = User::factory()->create(['monthly_donate' => true]);
+        $nonMember = User::factory()->create(['monthly_donate' => false]);
+
+        $this->assertTrue($this->repo()->selladoViaje($member)['club_member_exempt']);
+        $this->assertFalse($this->repo()->selladoViaje($nonMember)['club_member_exempt']);
+    }
+
+    public function test_build_trip_info_metrics_omits_sellado_for_club_member(): void
+    {
+        Config::set('carpoolear.module_trip_creation_payment_enabled', true);
+        Config::set('carpoolear.module_trip_creation_payment_amount_cents', 1800);
+        Config::set('carpoolear.module_max_price_fuel_price', 1000);
+        Config::set('carpoolear.module_max_price_kilometer_by_liter', 10);
+        Config::set('carpoolear.module_max_price_price_variance_max_extra', 15);
+
+        $geoService = Mockery::mock(GeoService::class);
+        $geoService->shouldReceive('getPaidRegions')->andReturn([]);
+        $geoService->shouldReceive('doStopsRequireSellado')->andReturn(true);
+        $geoService->shouldReceive('resolveTollsVariancePercent')->andReturn(0)->byDefault();
+
+        $repo = Mockery::mock(
+            TripRepository::class,
+            [$geoService, Mockery::mock(MercadoPagoService::class), Mockery::mock(MapboxDirectionsRouteService::class)]
+        )->makePartial();
+        $repo->shouldAllowMockingProtectedMethods();
+        $repo->shouldReceive('resolveTollsVariancePercent')->andReturn(0);
+
+        $member = User::factory()->create(['monthly_donate' => true]);
+        $points = [
+            ['lat' => -34.6, 'lng' => -58.4],
+            ['lat' => -32.9, 'lng' => -60.7],
+        ];
+
+        $method = new \ReflectionMethod(TripRepository::class, 'buildTripInfoMetricsForRoute');
+        $method->setAccessible(true);
+        $metrics = $method->invoke($repo, 100000.0, 3600.0, $points, $member);
+
+        $this->assertFalse($metrics['pricing_breakdown']['includes_sellado']);
+        $this->assertSame(0, $metrics['pricing_breakdown']['sellado_cents']);
+    }
+
     public function test_sellado_viaje_counts_canceled_driver_trips_only_when_they_had_passengers(): void
     {
         Config::set('carpoolear.module_trip_creation_payment_enabled', true);
