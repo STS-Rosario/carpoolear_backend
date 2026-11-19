@@ -23,6 +23,8 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         );
         $response->assertSee('un-litro-page-club-card', false);
         $response->assertSee('data-testid="un-litro-page-club-join"', false);
+        $response->assertSee('un-litro-page-club-card--link .un-litro-page-club-card__title', false);
+        $response->assertSee('align-items: center', false);
         $response->assertDontSee('un-litro-card--large', false);
         $response->assertSee(
             'Si sos parte del Club Carpoolear, no pagás 1L para Carpoolear, ¡sumate!',

@@ -116,7 +116,7 @@
     }
     .un-litro-page-club-card {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         gap: 0.85rem;
         margin-top: 1.25rem;
         padding: 1.2rem 1.35rem;
@@ -138,7 +138,6 @@
         flex: 0 0 auto;
         width: 28px;
         height: 28px;
-        margin-top: 0.1rem;
     }
     .un-litro-page-club-card__copy {
         display: flex;
@@ -151,6 +150,10 @@
         font-size: 1.05rem;
         font-weight: 700;
         line-height: 1.35;
+    }
+    .un-litro-page-club-card--link .un-litro-page-club-card__title {
+        font-size: 1.2rem;
+        line-height: 1.3;
     }
     .un-litro-page-club-card__thanks {
         margin: 0;
