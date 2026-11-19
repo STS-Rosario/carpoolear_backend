@@ -5470,7 +5470,8 @@ class TripRepositoryTest extends TestCase
             ->with(
                 Mockery::type('array'),
                 1,
-                Mockery::on(fn ($owner) => $owner instanceof User && (int) $owner->id === (int) $user->id)
+                Mockery::on(fn ($owner) => $owner instanceof User && (int) $owner->id === (int) $user->id),
+                null
             )
             ->andReturn([
                 'status' => true,
