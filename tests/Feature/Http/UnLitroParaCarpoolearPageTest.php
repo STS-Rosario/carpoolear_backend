@@ -119,7 +119,7 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             false
         );
         $response->assertSee(
-            '¡Gracias por ser parte del Club Carpoolear!',
+            '¡Gracias por aportar!',
             false
         );
         $response->assertDontSee('data-testid="un-litro-page-club-join"', false);

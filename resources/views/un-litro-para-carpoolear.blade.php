@@ -548,7 +548,7 @@
                     />
                     <div class="un-litro-page-club-card__copy">
                         <p class="un-litro-page-club-card__title">Por ser parte del Club Carpoolear no pagás Un litro para Carpoolear</p>
-                        <p class="un-litro-page-club-card__thanks">¡Gracias por ser parte del Club Carpoolear!</p>
+                        <p class="un-litro-page-club-card__thanks">¡Gracias por aportar!</p>
                     </div>
                 </div>
             @else
