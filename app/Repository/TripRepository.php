@@ -6,12 +6,15 @@ use Carbon\Carbon;
 use DB;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use STS\Exceptions\TripCarFuelMissingException;
+use STS\Helpers\FuelPricingResolver;
 use STS\Helpers\OngoingTripHelper;
 use STS\Helpers\SelladoEmptyTripCredit;
 use STS\Helpers\SelladoTripCount;
 use STS\Helpers\TripPriceHelper;
 use STS\Helpers\TripPricingBreakdown;
 use STS\Jobs\CheckTripContributionWithLlm;
+use STS\Models\Car;
 use STS\Models\NodeGeo;
 use STS\Models\Passenger;
 use STS\Models\PaymentAttempt;
@@ -101,10 +104,17 @@ class TripRepository
         $points = $data['points'];
         unset($data['points']);
 
+        // The fuel snapshot is always derived server-side from the trip's car.
+        $data = $this->withoutFuelSnapshot($data);
+        $fuel = $this->resolveFuelForCarId($data['car_id'] ?? null);
+        if ($fuel !== null) {
+            $data = array_merge($data, $this->fuelSnapshotAttributes($fuel));
+        }
+
         // Get trip info for price calculations and route data
         $selectedRouteIndex = (int) ($data['selected_route_index'] ?? 0);
         $owner = isset($data['user_id']) ? User::query()->find($data['user_id']) : null;
-        $tripInfo = $this->getTripInfo($points, $selectedRouteIndex, $owner);
+        $tripInfo = $this->getTripInfo($points, $selectedRouteIndex, $owner, $fuel);
 
         $this->warnIfClientDistanceMismatch($data, $tripInfo, $selectedRouteIndex);
 
@@ -176,6 +186,9 @@ class TripRepository
             unset($data['points']);
         }
 
+        // The fuel snapshot taken at creation time is never overwritten.
+        $data = $this->withoutFuelSnapshot($data);
+
         // Store old points to compare if route changed from non-paid to paid
         $oldPoints = null;
         $oldRouteNeedsPayment = false;
@@ -192,7 +205,7 @@ class TripRepository
         if ($points) {
             $selectedRouteIndex = (int) ($data['selected_route_index'] ?? $trip->selected_route_index ?? 0);
             $owner = User::query()->find($trip->user_id);
-            $tripInfo = $this->getTripInfo($points, $selectedRouteIndex, $owner);
+            $tripInfo = $this->getTripInfo($points, $selectedRouteIndex, $owner, $this->fuelInputsFromTripSnapshot($trip));
 
             $this->warnIfClientDistanceMismatch($data, $tripInfo, $selectedRouteIndex);
 
@@ -287,6 +300,82 @@ class TripRepository
         }
 
         return $trip;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function withoutFuelSnapshot(array $data): array
+    {
+        unset(
+            $data['fuel_type'],
+            $data['fuel_consumption'],
+            $data['fuel_price_per_unit'],
+            $data['fuel_consumption_per_100'],
+            $data['fuel_unit']
+        );
+
+        return $data;
+    }
+
+    /**
+     * Resolve the fuel inputs for a trip's car. Returns null when the trip has no car.
+     *
+     * @return array{fuel_type: string, fuel_consumption: string, price_per_unit: float, consumption_per_100: float, unit: string, kilometers_per_unit: float}|null
+     *
+     * @throws TripCarFuelMissingException when the car has no fuel type/consumption.
+     */
+    private function resolveFuelForCarId($carId): ?array
+    {
+        if (empty($carId)) {
+            return null;
+        }
+
+        $car = Car::withTrashed()->find($carId);
+        if (! $car) {
+            return null;
+        }
+
+        if (! $car->hasFuelProfile()) {
+            throw new TripCarFuelMissingException('The trip car must have fuel type and consumption.');
+        }
+
+        return FuelPricingResolver::resolve($car->fuel_type, $car->fuel_consumption);
+    }
+
+    /**
+     * @param  array{fuel_type: string, fuel_consumption: string, price_per_unit: float, consumption_per_100: float, unit: string}  $fuel
+     * @return array<string, mixed>
+     */
+    private function fuelSnapshotAttributes(array $fuel): array
+    {
+        return [
+            'fuel_type' => $fuel['fuel_type'],
+            'fuel_consumption' => $fuel['fuel_consumption'],
+            'fuel_price_per_unit' => $fuel['price_per_unit'],
+            'fuel_consumption_per_100' => $fuel['consumption_per_100'],
+            'fuel_unit' => $fuel['unit'],
+        ];
+    }
+
+    /**
+     * Fuel inputs from the snapshot stored on the trip, or null for legacy trips.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function fuelInputsFromTripSnapshot(Trip $trip): ?array
+    {
+        if ($trip->fuel_price_per_unit === null || $trip->fuel_consumption_per_100 === null) {
+            return null;
+        }
+
+        return TripPricingBreakdown::resolveFuelInputs(
+            $trip->fuel_type,
+            $trip->fuel_consumption,
+            (float) $trip->fuel_price_per_unit,
+            (float) $trip->fuel_consumption_per_100,
+            $trip->fuel_unit
+        );
     }
 
     /**
@@ -807,7 +896,63 @@ class TripRepository
         return $distance * config('carpoolear.fuel_price') / 1000;
     }
 
-    public function getTripInfo($points, int $routeIndex = 0, ?User $user = null)
+    /**
+     * @param  array{fuel_type: string, fuel_consumption: string, price_per_unit: float, consumption_per_100: float, unit: string, kilometers_per_unit: float}|null  $fuel  When given, prices are computed with these fuel inputs instead of the legacy default.
+     */
+    public function getTripInfo($points, int $routeIndex = 0, ?User $user = null, ?array $fuel = null)
+    {
+        $response = $this->fetchTripInfo($points, $routeIndex, $user);
+
+        if ($fuel === null) {
+            return $response;
+        }
+
+        return $this->repriceTripInfoForFuel($response, $points, $routeIndex, $user, $fuel);
+    }
+
+    /**
+     * Route cache stores prices for the legacy default fuel, so re-price every
+     * route option from its distance with the requested fuel inputs.
+     *
+     * @param  array{status?: bool, data?: array|null, message?: string}  $response
+     * @return array<string, mixed>
+     */
+    private function repriceTripInfoForFuel(array $response, array $points, int $routeIndex, ?User $user, array $fuel): array
+    {
+        if (! ($response['status'] ?? false) || ! is_array($response['data'] ?? null)) {
+            return $response;
+        }
+
+        $sourceOptions = $response['data']['route_options'] ?? null;
+        if (! is_array($sourceOptions) || $sourceOptions === []) {
+            $sourceOptions = [array_merge(['route_index' => 0], $response['data'])];
+        }
+
+        $routeOptions = [];
+        foreach ($sourceOptions as $index => $option) {
+            if (! is_array($option)) {
+                continue;
+            }
+            $metrics = $this->buildTripInfoMetricsForRoute(
+                (float) ($option['distance'] ?? 0),
+                (float) ($option['duration'] ?? 0),
+                $points,
+                $user,
+                $fuel
+            );
+            $routeOptions[] = array_merge(['route_index' => $option['route_index'] ?? $index], $metrics);
+        }
+
+        if ($routeOptions === []) {
+            return $response;
+        }
+
+        $response['data'] = ['route_options' => $routeOptions];
+
+        return $this->applyRouteIndexToTripInfoResponse($response, $routeIndex);
+    }
+
+    private function fetchTripInfo($points, int $routeIndex = 0, ?User $user = null)
     {
         $hashedPoints = hash('sha256', json_encode($points));
         $cacheBypass = (bool) config('carpoolear.trip_route_cache_bypass', false);
@@ -1035,8 +1180,9 @@ class TripRepository
     /**
      * @return array{distance: float, duration: float, co2: float, route_needs_payment: bool, recommended_trip_price_cents: int, maximum_trip_price_cents: int, pricing_breakdown: array}
      */
-    private function buildTripInfoMetricsForRoute(float $distanceInMeters, float $duration, array $points, ?User $user = null): array
+    private function buildTripInfoMetricsForRoute(float $distanceInMeters, float $duration, array $points, ?User $user = null, ?array $fuel = null): array
     {
+        $fuel ??= FuelPricingResolver::legacyDefault();
         $co2 = $distanceInMeters * 0.15;
 
         $allPointsToCheck = array_map(fn ($p) => [$p['lat'], $p['lng']], $points);
@@ -1052,11 +1198,19 @@ class TripRepository
 
         $pricingBreakdown = TripPricingBreakdown::calculate(
             $distanceInMeters,
-            (float) config('carpoolear.module_max_price_fuel_price'),
-            (float) config('carpoolear.module_max_price_kilometer_by_liter'),
+            $fuel['price_per_unit'],
+            $fuel['kilometers_per_unit'],
             $tollsVariancePercent,
             $selladoViajePrice,
-            $includesSellado
+            $includesSellado,
+            null,
+            [
+                'fuel_type' => $fuel['fuel_type'],
+                'fuel_consumption' => $fuel['fuel_consumption'],
+                'unit' => $fuel['unit'],
+                'consumption_per_100' => $fuel['consumption_per_100'],
+                'price_per_unit' => $fuel['price_per_unit'],
+            ]
         );
         $recommendedTripPriceCents = $pricingBreakdown['total_cents'];
         $fuelAndTollsCents = $pricingBreakdown['fuel_cents'] + $pricingBreakdown['tolls_cents'];
