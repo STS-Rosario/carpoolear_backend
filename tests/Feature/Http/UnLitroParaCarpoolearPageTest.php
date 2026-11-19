@@ -21,7 +21,9 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             'Carpoolear es un proyecto colaborativo <strong>sin fines de lucro</strong> de la asociación civil STS Rosario. Ese litro ayuda a mantener la plataforma, la mesa de ayuda y las mejoras.',
             false
         );
+        $response->assertSee('un-litro-page-club-card', false);
         $response->assertSee('data-testid="un-litro-page-club-join"', false);
+        $response->assertDontSee('un-litro-card--large', false);
         $response->assertSee(
             'Si sos parte del Club Carpoolear, no pagás 1L para Carpoolear, ¡sumate!',
             false
@@ -107,7 +109,9 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         $response = $this->actingAs($member)->get('/un-litro-para-carpoolear');
 
         $response->assertOk();
+        $response->assertSee('un-litro-page-club-card', false);
         $response->assertSee('data-testid="un-litro-page-club-member"', false);
+        $response->assertDontSee('un-litro-card--large', false);
         $response->assertSee(
             'Por ser parte del Club Carpoolear no pagás Un litro para Carpoolear',
             false

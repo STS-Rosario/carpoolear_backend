@@ -114,96 +114,49 @@
         line-height: 1.45;
         color: var(--ul-text);
     }
-    .un-litro-card {
+    .un-litro-page-club-card {
         display: flex;
-        gap: 0.75rem;
-        margin: 1.25rem 0 0;
-        padding: 1rem;
-        border-radius: 0.75rem;
-        background: #e8f2fb;
-        color: #22211f;
-    }
-    .un-litro-card--large {
-        margin-top: 1.25rem;
-        padding: 1.35rem 1.5rem;
-        gap: 1rem;
-    }
-    .un-litro-card__icon {
-        flex: 0 0 auto;
-        color: #1e5f9e;
-        font-size: 1.15rem;
-        line-height: 1.4;
-    }
-    .un-litro-card--large .un-litro-card__icon {
-        font-size: 1.45rem;
-    }
-    .un-litro-card__content {
-        min-width: 0;
-        flex: 1;
-    }
-    .un-litro-card__title {
-        margin: 0 0 0.4rem;
-        font-size: 1rem;
-        font-weight: 700;
-        line-height: 1.3;
-    }
-    .un-litro-card--large .un-litro-card__title {
-        font-size: 1.2rem;
-        margin-bottom: 0.75rem;
-    }
-    .un-litro-card__actions {
-        display: flex;
-        flex-direction: column;
         align-items: flex-start;
-    }
-    .un-litro-card__club-promo {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        margin-top: 0.65rem;
-        padding: 0.35rem 0.7rem;
-        border-radius: 999px;
+        gap: 0.85rem;
+        margin-top: 1.25rem;
+        padding: 1.2rem 1.35rem;
+        border-radius: 0.75rem;
         background: #fef5f6;
         color: #ce0f2c;
-        font-size: 0.85rem;
-        font-weight: 700;
-        line-height: 1.35;
+        line-height: 1.4;
         text-decoration: none;
     }
-    .un-litro-card--large .un-litro-card__club-promo {
-        margin-top: 0.25rem;
-        padding: 0.55rem 1rem;
-        font-size: 1rem;
-    }
-    .un-litro-card__club-promo:hover,
-    .un-litro-card__club-promo:focus,
-    .un-litro-card__club-promo:focus-visible {
+    .un-litro-page-club-card--link:hover,
+    .un-litro-page-club-card--link:focus,
+    .un-litro-page-club-card--link:focus-visible {
         color: #ce0f2c;
         background: #fde8eb;
         text-decoration: none;
     }
-    .un-litro-card__club-badge {
+    .un-litro-page-club-card__badge {
         display: block;
-        flex-shrink: 0;
-        width: 20px;
-        height: 20px;
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+        margin-top: 0.1rem;
     }
-    .un-litro-card--large .un-litro-card__club-badge {
-        width: 24px;
-        height: 24px;
+    .un-litro-page-club-card__copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-width: 0;
     }
-    .un-litro-page-club-join {
-        margin-top: 1.25rem;
+    .un-litro-page-club-card__title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.35;
     }
-    .un-litro-card__club-promo--page-large {
-        margin-top: 0;
-        padding: 0.6rem 1.05rem;
+    .un-litro-page-club-card__thanks {
+        margin: 0;
         font-size: 1rem;
-    }
-    @media (min-width: 768px) {
-        .un-litro-card__club-promo {
-            margin-top: 0;
-        }
+        font-weight: 700;
+        line-height: 1.35;
     }
     .un-litro__how {
         flex: 0 1 38%;
@@ -582,39 +535,34 @@
             <p class="un-litro__lead">Es el valor de 1 litro de nafta que se suma a los gastos compartidos del viaje, para sostener la comunidad.</p>
             <p class="un-litro__body">Carpoolear es un proyecto colaborativo <strong>sin fines de lucro</strong> de la asociación civil STS Rosario. Ese litro ayuda a mantener la plataforma, la mesa de ayuda y las mejoras.</p>
             @if ($clubMemberExempt)
-                <div class="un-litro-card un-litro-card--large un-litro-page-club-member" data-testid="un-litro-page-club-member">
-                    <div class="un-litro-card__icon" aria-hidden="true">
-                        <i class="ti ti-pulse"></i>
-                    </div>
-                    <div class="un-litro-card__content">
-                        <h4 class="un-litro-card__title">Por ser parte del Club Carpoolear no pagás Un litro para Carpoolear</h4>
-                        <div class="un-litro-card__actions">
-                            <div class="un-litro-card__club-promo">
-                                <img
-                                    class="un-litro-card__club-badge"
-                                    src="{{ asset('img/badges/club-carpoolear.png') }}"
-                                    alt="Integrante del Club Carpoolear"
-                                    width="24"
-                                    height="24"
-                                />
-                                <span>¡Gracias por ser parte del Club Carpoolear!</span>
-                            </div>
-                        </div>
+                <div class="un-litro-page-club-card" data-testid="un-litro-page-club-member">
+                    <img
+                        class="un-litro-page-club-card__badge"
+                        src="{{ asset('img/badges/club-carpoolear.png') }}"
+                        alt="Integrante del Club Carpoolear"
+                        width="28"
+                        height="28"
+                    />
+                    <div class="un-litro-page-club-card__copy">
+                        <p class="un-litro-page-club-card__title">Por ser parte del Club Carpoolear no pagás Un litro para Carpoolear</p>
+                        <p class="un-litro-page-club-card__thanks">¡Gracias por ser parte del Club Carpoolear!</p>
                     </div>
                 </div>
             @else
-                <div class="un-litro-page-club-join" data-testid="un-litro-page-club-join">
-                    <a href="/aportar" class="un-litro-card__club-promo un-litro-card__club-promo--page-large">
-                        <img
-                            class="un-litro-card__club-badge"
-                            src="{{ asset('img/badges/club-carpoolear.png') }}"
-                            alt="Integrante del Club Carpoolear"
-                            width="24"
-                            height="24"
-                        />
-                        <span>Si sos parte del Club Carpoolear, no pagás 1L para Carpoolear, ¡sumate!</span>
-                    </a>
-                </div>
+                <a
+                    href="/aportar"
+                    class="un-litro-page-club-card un-litro-page-club-card--link"
+                    data-testid="un-litro-page-club-join"
+                >
+                    <img
+                        class="un-litro-page-club-card__badge"
+                        src="{{ asset('img/badges/club-carpoolear.png') }}"
+                        alt="Integrante del Club Carpoolear"
+                        width="28"
+                        height="28"
+                    />
+                    <p class="un-litro-page-club-card__title">Si sos parte del Club Carpoolear, no pagás 1L para Carpoolear, ¡sumate!</p>
+                </a>
             @endif
         </div>
 
