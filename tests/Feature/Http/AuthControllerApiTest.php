@@ -114,7 +114,7 @@ class AuthControllerApiTest extends TestCase
         $this->assertArrayHasKey('module_max_price_fuel_price_nafta_premium', $response->json());
         $response->assertJsonPath('fuel_types', FuelPricingResolver::FUEL_TYPES);
         $response->assertJsonPath('fuel_consumption_levels', FuelPricingResolver::CONSUMPTION_LEVELS);
-        $response->assertJsonPath('fuel_consumption_tables', FuelPricingResolver::consumptionTables());
+        $this->assertEquals(FuelPricingResolver::consumptionTables(), $response->json('fuel_consumption_tables'));
         $response->assertJsonPath('fuel_consumption_tables.gnc.high', 11);
     }
 
