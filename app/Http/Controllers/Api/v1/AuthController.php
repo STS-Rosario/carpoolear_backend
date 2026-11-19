@@ -4,6 +4,7 @@ namespace STS\Http\Controllers\Api\v1;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use STS\Helpers\FuelPricingResolver;
 use STS\Helpers\OldCordovaAppHelper;
 use STS\Helpers\SelladoQrPayment;
 use STS\Http\Controllers\Controller;
@@ -72,6 +73,9 @@ class AuthController extends Controller
         foreach ($allConfigs as $key => $value) {
             $config->$key = $value;
         }
+        $config->fuel_types = FuelPricingResolver::FUEL_TYPES;
+        $config->fuel_consumption_levels = FuelPricingResolver::CONSUMPTION_LEVELS;
+        $config->fuel_consumption_tables = FuelPricingResolver::consumptionTables();
         $config->identity_validation_manual_qr_enabled = config('carpoolear.identity_validation_manual_enabled')
             && config('carpoolear.identity_validation_manual_qr_enabled')
             && ! empty(config('services.mercadopago.qr_payment_access_token'))
