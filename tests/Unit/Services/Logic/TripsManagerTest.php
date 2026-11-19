@@ -867,6 +867,68 @@ class TripsManagerTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_create_rejects_driver_car_without_fuel_profile(): void
+    {
+        Carbon::setTestNow('2028-02-01 10:00:00');
+        $user = $this->completeUser();
+        $this->carWithPlateFor($user, ['fuel_type' => null, 'fuel_consumption' => null]);
+
+        $manager = $this->manager();
+        $result = $manager->create($user, $this->minimalCreatePayload());
+
+        $this->assertNull($result);
+        $this->assertTrue($manager->getErrors()->has('car_fuel_incomplete'));
+        Carbon::setTestNow();
+    }
+
+    public function test_get_trip_info_passes_car_fuel_inputs_to_repository(): void
+    {
+        $user = User::factory()->create();
+        $car = Car::factory()->create([
+            'user_id' => $user->id,
+            'fuel_type' => 'gnc',
+            'fuel_consumption' => 'high',
+        ]);
+        $points = [['lat' => -34.0, 'lng' => -58.0]];
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('getTripInfo')
+            ->once()
+            ->with($points, 2, Mockery::type(User::class), Mockery::on(
+                fn ($fuel) => is_array($fuel)
+                    && $fuel['fuel_type'] === 'gnc'
+                    && $fuel['fuel_consumption'] === 'high'
+                    && $fuel['unit'] === 'm3'
+            ))
+            ->andReturn(['status' => true]);
+
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+
+        $this->assertSame(['status' => true], $manager->getTripInfo($points, 2, $user, $car->id));
+    }
+
+    public function test_get_trip_info_uses_legacy_default_when_car_has_no_fuel_or_is_not_owned(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $noFuelCar = Car::factory()->create(['user_id' => $user->id]);
+        $foreignCar = Car::factory()->withFuel()->create(['user_id' => $other->id]);
+        $points = [['lat' => -34.0, 'lng' => -58.0]];
+
+        $repo = Mockery::mock(TripRepository::class);
+        $repo->shouldReceive('getTripInfo')->times(4)
+            ->with($points, 0, Mockery::type(User::class), null)
+            ->andReturn(['status' => true]);
+
+        $manager = new TripsManager($repo, $this->app->make(UsersManager::class));
+
+        $manager->getTripInfo($points, 0, $user, $noFuelCar->id);
+        $manager->getTripInfo($points, 0, $user, $foreignCar->id);
+        $manager->getTripInfo($points, 0, $user, 999999);
+        $manager->getTripInfo($points, 0, $user);
+        $this->addToAssertionCount(1);
+    }
+
     public function test_create_driver_trip_requires_car_id_when_user_has_multiple_active_cars(): void
     {
         Carbon::setTestNow('2028-02-01 10:00:00');
