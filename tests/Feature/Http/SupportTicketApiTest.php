@@ -395,6 +395,39 @@ class SupportTicketApiTest extends TestCase
         ])->assertStatus(200);
     }
 
+    public function test_user_can_create_fuel_abuse_ticket_with_high_priority(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $response = $this->postJson('api/support/tickets', [
+            'type' => 'fuel_abuse',
+            'subject' => 'Combustible declarado incorrecto',
+            'message_markdown' => 'El conductor declaró nafta y usa GNC',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.type', 'fuel_abuse')
+            ->assertJsonPath('data.priority', 'high');
+        $this->assertDatabaseHas('support_tickets', [
+            'user_id' => $user->id,
+            'type' => 'fuel_abuse',
+            'priority' => 'high',
+        ]);
+    }
+
+    public function test_create_rejects_unknown_ticket_type(): void
+    {
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $this->postJson('api/support/tickets', [
+            'type' => 'not_a_type',
+            'subject' => 'Unknown type',
+            'message_markdown' => 'Should fail',
+        ])->assertStatus(422);
+    }
+
     public function test_create_rejects_non_image_attachment_mime(): void
     {
         $user = $this->createUser();

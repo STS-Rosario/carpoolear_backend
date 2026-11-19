@@ -17,6 +17,13 @@ class SupportTicketTest extends TestCase
         $this->assertContains('excess_contribution', SupportTicket::TYPES);
     }
 
+    public function test_fuel_abuse_is_a_valid_type_with_high_default_priority(): void
+    {
+        $this->assertContains('fuel_abuse', SupportTicket::TYPES);
+        $this->assertSame('high', SupportTicket::TYPE_DEFAULT_PRIORITIES['fuel_abuse']);
+        $this->assertStringContainsString('fuel_abuse', SupportTicket::typeValidationRule());
+    }
+
     public function test_statuses_include_needs_review(): void
     {
         $this->assertContains(SupportTicket::STATUS_NEEDS_REVIEW, SupportTicket::STATUSES);
