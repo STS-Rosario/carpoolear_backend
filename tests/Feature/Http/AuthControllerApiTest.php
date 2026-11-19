@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Mockery;
+use STS\Helpers\FuelPricingResolver;
 use STS\Http\Controllers\Api\v1\AuthController;
 use STS\Http\Middleware\BlockImpersonationDestructiveActions;
 use STS\Jobs\SendPasswordResetEmail;
@@ -92,6 +93,29 @@ class AuthControllerApiTest extends TestCase
         $this->assertNull($maintenance['message']);
         $this->assertNull($maintenance['ends_at']);
         $this->assertSame(config('carpoolear.maintenance_admin_path'), $maintenance['admin_path']);
+    }
+
+    public function test_get_config_exposes_fuel_prices_and_consumption_tables(): void
+    {
+        config([
+            'carpoolear.module_max_price_fuel_price_nafta_super' => 1111.0,
+            'carpoolear.module_max_price_fuel_price_diesel' => 2222.0,
+            'carpoolear.module_max_price_fuel_price_diesel_premium' => 3333.0,
+            'carpoolear.module_max_price_fuel_price_gnc' => 444.0,
+        ]);
+
+        $response = $this->getJson('api/config');
+
+        $response->assertOk();
+        $response->assertJsonPath('module_max_price_fuel_price_nafta_super', 1111);
+        $response->assertJsonPath('module_max_price_fuel_price_diesel', 2222);
+        $response->assertJsonPath('module_max_price_fuel_price_diesel_premium', 3333);
+        $response->assertJsonPath('module_max_price_fuel_price_gnc', 444);
+        $this->assertArrayHasKey('module_max_price_fuel_price_nafta_premium', $response->json());
+        $response->assertJsonPath('fuel_types', FuelPricingResolver::FUEL_TYPES);
+        $response->assertJsonPath('fuel_consumption_levels', FuelPricingResolver::CONSUMPTION_LEVELS);
+        $response->assertJsonPath('fuel_consumption_tables', FuelPricingResolver::consumptionTables());
+        $response->assertJsonPath('fuel_consumption_tables.gnc.high', 11);
     }
 
     public function test_get_config_exposes_facebook_profile_module_flag_defaulting_to_false(): void
