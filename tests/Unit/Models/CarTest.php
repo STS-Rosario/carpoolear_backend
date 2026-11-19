@@ -193,4 +193,38 @@ class CarTest extends TestCase
 
         $this->assertFalse($car->isComplete());
     }
+
+    public function test_fuel_fields_are_fillable_and_persisted(): void
+    {
+        $user = User::factory()->create();
+        $car = new Car;
+        $car->fill([
+            'patente' => 'FUEL123',
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'high',
+        ]);
+        $car->user_id = $user->id;
+        $car->save();
+
+        $fresh = $car->fresh();
+        $this->assertSame('nafta_super', $fresh->fuel_type);
+        $this->assertSame('high', $fresh->fuel_consumption);
+    }
+
+    public function test_fuel_fields_default_to_null_for_existing_cars(): void
+    {
+        $car = Car::factory()->create(['user_id' => User::factory()->create()->id]);
+
+        $this->assertNull($car->fresh()->fuel_type);
+        $this->assertNull($car->fresh()->fuel_consumption);
+    }
+
+    public function test_has_fuel_profile_requires_both_fields(): void
+    {
+        $car = new Car(['fuel_type' => 'gnc']);
+        $this->assertFalse($car->hasFuelProfile());
+
+        $car->fuel_consumption = 'low';
+        $this->assertTrue($car->hasFuelProfile());
+    }
 }

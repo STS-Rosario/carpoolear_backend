@@ -22,6 +22,8 @@ class CarApiTest extends TestCase
             'car_model_id' => $model->id,
             'car_color_id' => $color->id,
             'year' => (int) date('Y') - 4,
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ], $overrides);
     }
 
@@ -136,6 +138,8 @@ class CarApiTest extends TestCase
             'year' => 2011,
             'car_brand_id' => $brand->id,
             'model_other' => 'MiModelo',
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ])
             ->assertOk()
             ->assertJsonPath('data.car_brand_id', $brand->id)
@@ -184,5 +188,60 @@ class CarApiTest extends TestCase
             'patente' => 'DUP1',
             'description' => 'Duplicate patente',
         ]))->assertStatus(422);
+    }
+
+    public function test_create_returns_unprocessable_without_fuel_fields(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
+
+        $payload = $this->catalogPayload(['patente' => 'NOFUEL']);
+        unset($payload['fuel_type'], $payload['fuel_consumption']);
+
+        $this->postJson('api/cars', $payload)->assertStatus(422);
+    }
+
+    public function test_create_returns_unprocessable_with_invalid_fuel_type(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
+
+        $this->postJson('api/cars', $this->catalogPayload([
+            'patente' => 'BADFUEL',
+            'fuel_type' => 'kerosene',
+        ]))->assertStatus(422);
+    }
+
+    public function test_create_and_show_expose_fuel_fields(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        $this->actingAs($user, 'api');
+
+        $create = $this->postJson('api/cars', $this->catalogPayload([
+            'patente' => 'FUELOK',
+            'fuel_type' => 'diesel_premium',
+            'fuel_consumption' => 'low',
+        ]));
+        $create->assertOk()
+            ->assertJsonPath('data.fuel_type', 'diesel_premium')
+            ->assertJsonPath('data.fuel_consumption', 'low');
+
+        $this->getJson('api/cars/'.$create->json('data.id'))
+            ->assertOk()
+            ->assertJsonPath('data.fuel_type', 'diesel_premium')
+            ->assertJsonPath('data.fuel_consumption', 'low');
+    }
+
+    public function test_index_exposes_null_fuel_fields_for_legacy_cars(): void
+    {
+        $user = User::factory()->create(['active' => true, 'banned' => false]);
+        Car::factory()->create(['user_id' => $user->id, 'patente' => 'LEGACY1']);
+        $this->actingAs($user, 'api');
+
+        $payload = $this->getJson('api/cars')->assertOk()->json();
+
+        $this->assertArrayHasKey('fuel_type', $payload[0]);
+        $this->assertNull($payload[0]['fuel_type']);
+        $this->assertNull($payload[0]['fuel_consumption']);
     }
 }
