@@ -29,6 +29,8 @@ class Car extends Model
         'model_other',
         'car_color_id',
         'year',
+        'fuel_type',
+        'fuel_consumption',
     ];
 
     protected $hidden = ['created_at', 'updated_at'];
@@ -90,6 +92,11 @@ class Car extends Model
         }
 
         return null;
+    }
+
+    public function hasFuelProfile(): bool
+    {
+        return $this->hasValue($this->fuel_type) && $this->hasValue($this->fuel_consumption);
     }
 
     public function isComplete(): bool

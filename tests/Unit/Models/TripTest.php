@@ -78,6 +78,11 @@ class TripTest extends TestCase
             'suspected_contribution',
             'phone_in_description',
             'maximum_trip_price_cents',
+            'fuel_type',
+            'fuel_consumption',
+            'fuel_price_per_unit',
+            'fuel_consumption_per_100',
+            'fuel_unit',
         ];
 
         $this->assertSame($expected, (new Trip)->getFillable());
@@ -117,12 +122,39 @@ class TripTest extends TestCase
             'phone_in_description' => 'boolean',
             'maximum_trip_price_cents' => 'integer',
             'state' => 'string',
+            'fuel_price_per_unit' => 'float',
+            'fuel_consumption_per_100' => 'float',
         ];
 
         $casts = (new Trip)->getCasts();
         foreach ($expected as $key => $type) {
             $this->assertSame($type, $casts[$key] ?? null, 'casts['.$key.']');
         }
+    }
+
+    public function test_fuel_snapshot_columns_default_to_null_and_persist(): void
+    {
+        $trip = Trip::factory()->create()->fresh();
+        $this->assertNull($trip->fuel_type);
+        $this->assertNull($trip->fuel_consumption);
+        $this->assertNull($trip->fuel_price_per_unit);
+        $this->assertNull($trip->fuel_consumption_per_100);
+        $this->assertNull($trip->fuel_unit);
+
+        $trip->update([
+            'fuel_type' => 'gnc',
+            'fuel_consumption' => 'high',
+            'fuel_price_per_unit' => 650.5,
+            'fuel_consumption_per_100' => 11.0,
+            'fuel_unit' => 'm3',
+        ]);
+
+        $fresh = $trip->fresh();
+        $this->assertSame('gnc', $fresh->fuel_type);
+        $this->assertSame('high', $fresh->fuel_consumption);
+        $this->assertSame(650.5, $fresh->fuel_price_per_unit);
+        $this->assertSame(11.0, $fresh->fuel_consumption_per_100);
+        $this->assertSame('m3', $fresh->fuel_unit);
     }
 
     public function test_llm_contribution_check_columns_default_to_unflagged(): void

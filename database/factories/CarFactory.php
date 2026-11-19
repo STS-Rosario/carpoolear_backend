@@ -23,6 +23,14 @@ class CarFactory extends Factory
         ];
     }
 
+    public function withFuel(string $fuelType = 'nafta_super', string $consumption = 'medium'): static
+    {
+        return $this->state(fn () => [
+            'fuel_type' => $fuelType,
+            'fuel_consumption' => $consumption,
+        ]);
+    }
+
     public function withCatalog(): static
     {
         return $this->state(function () {
@@ -35,6 +43,8 @@ class CarFactory extends Factory
                 'car_model_id' => $model->id,
                 'car_color_id' => $color->id,
                 'year' => (int) date('Y') - 3,
+                'fuel_type' => 'nafta_super',
+                'fuel_consumption' => 'medium',
             ];
         });
     }

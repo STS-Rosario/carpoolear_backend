@@ -10,6 +10,7 @@ use STS\Admin\AdminPermission;
 use STS\Events\Trip\Create as CreateEvent;
 use STS\Events\Trip\Delete as DeleteEvent;
 use STS\Events\Trip\Update as UpdateEvent;
+use STS\Helpers\FuelPricingResolver;
 use STS\Models\Car as CarModel;
 use STS\Models\Passenger;
 use STS\Models\Trip;
@@ -119,6 +120,14 @@ class TripsManager extends BaseManager
             if ($this->isDriverTrip($data) && ! $this->driverTripHasCompleteCar($user, $data)) {
                 $messageBag = new MessageBag;
                 $messageBag->add('car_incomplete', 'The driver car must have brand and model.');
+                $this->setErrors($messageBag);
+
+                return;
+            }
+
+            if ($this->isDriverTrip($data) && ! $this->driverTripCarHasFuelProfile($user, $data)) {
+                $messageBag = new MessageBag;
+                $messageBag->add('car_fuel_incomplete', 'The driver car must have fuel type and consumption.');
                 $this->setErrors($messageBag);
 
                 return;
@@ -318,6 +327,13 @@ class TripsManager extends BaseManager
         }
 
         return $this->activeCarsWithPlate($user)->count() === 1;
+    }
+
+    private function driverTripCarHasFuelProfile($user, array $data): bool
+    {
+        $car = $this->resolveDriverCarForCompleteness($user, $data);
+
+        return $car && $car->hasFuelProfile();
     }
 
     private function driverTripHasCompleteCar($user, array $data, ?Trip $existingTrip = null): bool
@@ -664,9 +680,26 @@ class TripsManager extends BaseManager
         }
     }
 
-    public function getTripInfo($points, int $routeIndex = 0, $user = null)
+    public function getTripInfo($points, int $routeIndex = 0, $user = null, $carId = null)
     {
-        return $this->tripRepo->getTripInfo($points, $routeIndex, $user);
+        return $this->tripRepo->getTripInfo($points, $routeIndex, $user, $this->fuelInputsForCar($user, $carId));
+    }
+
+    /**
+     * Fuel inputs for the user's own car, or null so the legacy default applies.
+     */
+    private function fuelInputsForCar($user, $carId): ?array
+    {
+        if (! $user || empty($carId)) {
+            return null;
+        }
+
+        $car = $user->cars()->whereKey($carId)->first();
+        if (! $car || ! $car->hasFuelProfile()) {
+            return null;
+        }
+
+        return FuelPricingResolver::resolve($car->fuel_type, $car->fuel_consumption);
     }
 
     public function selladoViaje($user)

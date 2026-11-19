@@ -18,6 +18,7 @@ class SupportTicket extends Model
         'account_verification',
         'account_recovery',
         'excess_contribution',
+        'fuel_abuse',
     ];
 
     /** @var array<string, string> */
@@ -29,6 +30,7 @@ class SupportTicket extends Model
         'account_verification' => 'high',
         'account_recovery' => 'high',
         'excess_contribution' => 'normal',
+        'fuel_abuse' => 'high',
     ];
 
     public const STATUS_NEEDS_REVIEW = 'Necesita revisión';

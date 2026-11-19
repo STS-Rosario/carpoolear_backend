@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Helpers;
 
-use PHPUnit\Framework\TestCase;
 use STS\Helpers\TripPricingBreakdown;
+use Tests\TestCase;
 
 class TripPricingBreakdownTest extends TestCase
 {
@@ -111,5 +111,62 @@ class TripPricingBreakdownTest extends TestCase
         $this->assertSame(1000000, $breakdown['fuel_cents']);
         $this->assertSame(250000, $breakdown['tolls_cents']);
         $this->assertSame(1250000, $breakdown['total_cents']);
+    }
+
+    public function test_resolve_fuel_inputs_uses_legacy_default_when_snapshot_missing(): void
+    {
+        $inputs = TripPricingBreakdown::resolveFuelInputs(null, null, null, null, null);
+
+        $this->assertSame('nafta_premium', $inputs['fuel_type']);
+        $this->assertSame('medium', $inputs['fuel_consumption']);
+        $this->assertSame('liter', $inputs['unit']);
+        $this->assertSame(10.0, $inputs['consumption_per_100']);
+        $this->assertEqualsWithDelta(10.0, $inputs['kilometers_per_unit'], 0.0001);
+    }
+
+    public function test_resolve_fuel_inputs_prefers_snapshot_values(): void
+    {
+        $inputs = TripPricingBreakdown::resolveFuelInputs(
+            'gnc',
+            'high',
+            500.0,
+            11.0,
+            'm3'
+        );
+
+        $this->assertSame('gnc', $inputs['fuel_type']);
+        $this->assertSame('high', $inputs['fuel_consumption']);
+        $this->assertSame(500.0, $inputs['price_per_unit']);
+        $this->assertSame(11.0, $inputs['consumption_per_100']);
+        $this->assertSame('m3', $inputs['unit']);
+        $this->assertEqualsWithDelta(100 / 11, $inputs['kilometers_per_unit'], 0.0001);
+    }
+
+    public function test_calculate_includes_fuel_meta_and_keeps_liters_alias(): void
+    {
+        $breakdown = TripPricingBreakdown::calculate(
+            100000.0,
+            500.0,
+            100 / 9,
+            10.0,
+            0,
+            false,
+            null,
+            [
+                'fuel_type' => 'gnc',
+                'fuel_consumption' => 'medium',
+                'unit' => 'm3',
+                'consumption_per_100' => 9.0,
+                'price_per_unit' => 500.0,
+            ]
+        );
+
+        $this->assertSame('gnc', $breakdown['fuel_type']);
+        $this->assertSame('medium', $breakdown['fuel_consumption']);
+        $this->assertSame('m3', $breakdown['fuel_unit']);
+        $this->assertSame(9.0, $breakdown['fuel_consumption_per_100']);
+        $this->assertSame(500.0, $breakdown['fuel_price_per_unit']);
+        $this->assertEqualsWithDelta(9.0, $breakdown['liters'], 0.0001);
+        $this->assertEqualsWithDelta(9.0, $breakdown['fuel_quantity'], 0.0001);
     }
 }

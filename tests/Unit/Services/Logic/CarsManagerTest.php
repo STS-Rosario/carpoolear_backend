@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Logic;
 
 use Mockery;
+use STS\Helpers\FuelPricingResolver;
 use STS\Models\Car;
 use STS\Models\CarBrand;
 use STS\Models\CarColor;
@@ -39,6 +40,8 @@ class CarsManagerTest extends TestCase
             'car_model_id' => $model->id,
             'car_color_id' => $color->id,
             'year' => (int) date('Y') - 1,
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ];
     }
 
@@ -50,6 +53,80 @@ class CarsManagerTest extends TestCase
         $this->assertTrue($v->errors()->has('car_color_id'));
         $this->assertTrue($v->errors()->has('car_brand_id'));
         $this->assertTrue($v->errors()->has('year'));
+    }
+
+    public function test_validator_requires_fuel_type_and_consumption_on_create(): void
+    {
+        $data = $this->validCarData();
+        unset($data['fuel_type'], $data['fuel_consumption']);
+
+        $v = $this->manager()->validator($data, 1, null, true);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('fuel_type'));
+        $this->assertTrue($v->errors()->has('fuel_consumption'));
+    }
+
+    public function test_validator_requires_fuel_type_and_consumption_on_update(): void
+    {
+        $data = $this->validCarData();
+        unset($data['fuel_type'], $data['fuel_consumption']);
+
+        $v = $this->manager()->validator($data, 1, 99, false);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('fuel_type'));
+        $this->assertTrue($v->errors()->has('fuel_consumption'));
+    }
+
+    public function test_validator_rejects_unknown_fuel_type_and_consumption(): void
+    {
+        $v = $this->manager()->validator(array_merge($this->validCarData(), [
+            'fuel_type' => 'kerosene',
+            'fuel_consumption' => 'extreme',
+        ]), 1, null, true);
+
+        $this->assertTrue($v->fails());
+        $this->assertTrue($v->errors()->has('fuel_type'));
+        $this->assertTrue($v->errors()->has('fuel_consumption'));
+    }
+
+    public function test_validator_accepts_every_supported_fuel_type_and_consumption(): void
+    {
+        foreach (FuelPricingResolver::FUEL_TYPES as $fuelType) {
+            foreach (FuelPricingResolver::CONSUMPTION_LEVELS as $level) {
+                $v = $this->manager()->validator(array_merge($this->validCarData(), [
+                    'fuel_type' => $fuelType,
+                    'fuel_consumption' => $level,
+                ]), 1, null, true);
+
+                $this->assertFalse($v->fails(), "$fuelType/$level should be valid");
+            }
+        }
+    }
+
+    public function test_create_and_update_persist_fuel_fields(): void
+    {
+        $user = User::factory()->create();
+        $manager = $this->manager();
+
+        $car = $manager->create($user, array_merge($this->validCarData('FUEL1'), [
+            'fuel_type' => 'gnc',
+            'fuel_consumption' => 'high',
+        ]));
+
+        $this->assertNotNull($car);
+        $this->assertSame('gnc', $car->fresh()->fuel_type);
+        $this->assertSame('high', $car->fresh()->fuel_consumption);
+
+        $updated = $manager->update($user, $car->id, array_merge($this->validCarData('FUEL1'), [
+            'fuel_type' => 'diesel',
+            'fuel_consumption' => 'low',
+        ]));
+
+        $this->assertNotNull($updated);
+        $this->assertSame('diesel', $updated->fresh()->fuel_type);
+        $this->assertSame('low', $updated->fresh()->fuel_consumption);
     }
 
     public function test_validator_rejects_year_outside_allowed_range(): void
@@ -264,6 +341,8 @@ class CarsManagerTest extends TestCase
             'year' => 2011,
             'car_brand_id' => $brand->id,
             'model_other' => 'MiModelo',
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ]);
 
         $this->assertNotNull($updated);
@@ -290,6 +369,8 @@ class CarsManagerTest extends TestCase
             'model_other' => 'MiModelo',
             'car_color_id' => $color->id,
             'year' => 2011,
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ]);
 
         $this->assertNotNull($created);
@@ -313,6 +394,8 @@ class CarsManagerTest extends TestCase
             'description' => 'Updated description',
             'brand_other' => 'Custom',
             'model_other' => 'Model',
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ], $user->id, $car->id);
 
         $this->assertFalse($v->fails());
@@ -444,6 +527,8 @@ class CarsManagerTest extends TestCase
             'year' => (int) date('Y') - 5,
             'brand_other' => 'Custom Make',
             'model_other' => 'Custom Model',
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ]);
 
         $this->assertInstanceOf(Car::class, $car);
