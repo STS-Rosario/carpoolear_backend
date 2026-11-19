@@ -124,6 +124,11 @@ class UnLitroParaCarpoolearPageTest extends TestCase
         $response->assertDontSee('¡sumate!', false);
     }
 
+    public function test_club_badge_exists_under_public_img(): void
+    {
+        $this->assertFileExists(public_path('img/badges/club-carpoolear.png'));
+    }
+
     public function test_plataforma_nav_includes_un_litro_link(): void
     {
         $response = $this->get('/un-litro-para-carpoolear');
