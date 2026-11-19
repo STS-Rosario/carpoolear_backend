@@ -114,6 +114,53 @@
         line-height: 1.45;
         color: var(--ul-text);
     }
+    .un-litro-page-club-card {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-top: 1.25rem;
+        padding: 1.2rem 1.35rem;
+        border-radius: 0.75rem;
+        background: #fef5f6;
+        color: #ce0f2c;
+        line-height: 1.4;
+        text-decoration: none;
+    }
+    .un-litro-page-club-card--link:hover,
+    .un-litro-page-club-card--link:focus,
+    .un-litro-page-club-card--link:focus-visible {
+        color: #ce0f2c;
+        background: #fde8eb;
+        text-decoration: none;
+    }
+    .un-litro-page-club-card__badge {
+        display: block;
+        flex: 0 0 auto;
+        width: 28px;
+        height: 28px;
+    }
+    .un-litro-page-club-card__copy {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-width: 0;
+    }
+    .un-litro-page-club-card__title {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
+    .un-litro-page-club-card--link .un-litro-page-club-card__title {
+        font-size: 1.2rem;
+        line-height: 1.3;
+    }
+    .un-litro-page-club-card__thanks {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1.35;
+    }
     .un-litro__how {
         flex: 0 1 38%;
         min-width: 0;
@@ -490,6 +537,36 @@
             </div>
             <p class="un-litro__lead">Es el valor de 1 litro de nafta que se suma a los gastos compartidos del viaje, para sostener la comunidad.</p>
             <p class="un-litro__body">Carpoolear es un proyecto colaborativo <strong>sin fines de lucro</strong> de la asociación civil STS Rosario. Ese litro ayuda a mantener la plataforma, la mesa de ayuda y las mejoras.</p>
+            @if ($clubMemberExempt)
+                <div class="un-litro-page-club-card" data-testid="un-litro-page-club-member">
+                    <img
+                        class="un-litro-page-club-card__badge"
+                        src="{{ asset('img/badges/club-carpoolear.png') }}"
+                        alt="Integrante del Club Carpoolear"
+                        width="28"
+                        height="28"
+                    />
+                    <div class="un-litro-page-club-card__copy">
+                        <p class="un-litro-page-club-card__title">Por ser parte del Club Carpoolear no pagás Un litro para Carpoolear</p>
+                        <p class="un-litro-page-club-card__thanks">¡Gracias por aportar!</p>
+                    </div>
+                </div>
+            @else
+                <a
+                    href="/aportar"
+                    class="un-litro-page-club-card un-litro-page-club-card--link"
+                    data-testid="un-litro-page-club-join"
+                >
+                    <img
+                        class="un-litro-page-club-card__badge"
+                        src="{{ asset('img/badges/club-carpoolear.png') }}"
+                        alt="Integrante del Club Carpoolear"
+                        width="28"
+                        height="28"
+                    />
+                    <p class="un-litro-page-club-card__title">Si sos parte del Club Carpoolear, no pagás 1L para Carpoolear, ¡sumate!</p>
+                </a>
+            @endif
         </div>
 
         <aside class="un-litro__card un-litro__how">

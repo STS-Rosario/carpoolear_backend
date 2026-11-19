@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http;
 
+use STS\Models\User;
 use Tests\TestCase;
 
 class UnLitroParaCarpoolearPageTest extends TestCase
@@ -20,6 +21,18 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             'Carpoolear es un proyecto colaborativo <strong>sin fines de lucro</strong> de la asociación civil STS Rosario. Ese litro ayuda a mantener la plataforma, la mesa de ayuda y las mejoras.',
             false
         );
+        $response->assertSee('un-litro-page-club-card', false);
+        $response->assertSee('data-testid="un-litro-page-club-join"', false);
+        $response->assertSee('un-litro-page-club-card--link .un-litro-page-club-card__title', false);
+        $response->assertSee('align-items: center', false);
+        $response->assertDontSee('un-litro-card--large', false);
+        $response->assertSee(
+            'Si sos parte del Club Carpoolear, no pagás 1L para Carpoolear, ¡sumate!',
+            false
+        );
+        $response->assertSee('img/badges/club-carpoolear.png', false);
+        $response->assertSee('href="/aportar"', false);
+        $response->assertDontSee('data-testid="un-litro-page-club-member"', false);
         $response->assertSee('Así funciona', false);
         $response->assertSee('M50.06,47.98', false);
         $response->assertSee('viewBox="0 0 64 80"', false);
@@ -89,6 +102,33 @@ class UnLitroParaCarpoolearPageTest extends TestCase
             'es y va a seguir siendo un proyecto sin fines de lucro',
             false
         );
+    }
+
+    public function test_club_members_see_thank_you_card_instead_of_join_promo(): void
+    {
+        $member = User::factory()->create(['monthly_donate' => true]);
+
+        $response = $this->actingAs($member)->get('/un-litro-para-carpoolear');
+
+        $response->assertOk();
+        $response->assertSee('un-litro-page-club-card', false);
+        $response->assertSee('data-testid="un-litro-page-club-member"', false);
+        $response->assertDontSee('un-litro-card--large', false);
+        $response->assertSee(
+            'Por ser parte del Club Carpoolear no pagás Un litro para Carpoolear',
+            false
+        );
+        $response->assertSee(
+            '¡Gracias por aportar!',
+            false
+        );
+        $response->assertDontSee('data-testid="un-litro-page-club-join"', false);
+        $response->assertDontSee('¡sumate!', false);
+    }
+
+    public function test_club_badge_exists_under_public_img(): void
+    {
+        $this->assertFileExists(public_path('img/badges/club-carpoolear.png'));
     }
 
     public function test_plataforma_nav_includes_un_litro_link(): void

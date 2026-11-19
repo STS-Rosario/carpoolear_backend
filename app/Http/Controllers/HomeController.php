@@ -3,6 +3,7 @@
 namespace STS\Http\Controllers;
 
 use Illuminate\Http\Request;
+use STS\Services\ClubCarpoolearMembershipService;
 use STS\Services\Logic\UsersManager;
 
 class HomeController extends Controller
@@ -75,7 +76,12 @@ class HomeController extends Controller
 
     public function unLitroParaCarpoolear()
     {
-        return view('un-litro-para-carpoolear');
+        $clubMemberExempt = auth()->check()
+            && app(ClubCarpoolearMembershipService::class)->isActiveMember(auth()->user());
+
+        return view('un-litro-para-carpoolear', [
+            'clubMemberExempt' => $clubMemberExempt,
+        ]);
     }
 
     public function verificacionCuenta()
