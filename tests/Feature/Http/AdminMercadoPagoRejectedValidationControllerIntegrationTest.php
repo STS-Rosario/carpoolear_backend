@@ -62,6 +62,52 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
         $this->assertArrayHasKey('created_at', $first);
     }
 
+    public function test_index_filters_by_user_name_email_dni_and_rejection_id(): void
+    {
+        $admin = $this->admin();
+        $match = User::factory()->create([
+            'name' => 'Ana Mercado Pago',
+            'email' => 'ana.mp.search@example.com',
+            'nro_doc' => '30999888',
+        ]);
+        $other = User::factory()->create(['name' => 'Otro Usuario']);
+
+        $hit = MercadoPagoRejectedValidation::create([
+            'user_id' => $match->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['k' => 'hit'],
+        ]);
+        MercadoPagoRejectedValidation::create([
+            'user_id' => $other->id,
+            'reject_reason' => 'name_mismatch',
+            'mp_payload' => ['k' => 'miss'],
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $byName = $this->getJson('api/admin/mercado-pago-rejected-validations?q='.urlencode('Mercado Pago'))
+            ->assertOk();
+        $this->assertCount(1, $byName->json('data'));
+        $this->assertSame($hit->id, (int) $byName->json('data.0.id'));
+
+        $byEmail = $this->getJson('api/admin/mercado-pago-rejected-validations?q=ana.mp.search@example.com')
+            ->assertOk();
+        $this->assertCount(1, $byEmail->json('data'));
+
+        $byDoc = $this->getJson('api/admin/mercado-pago-rejected-validations?q=30999888')
+            ->assertOk();
+        $this->assertCount(1, $byDoc->json('data'));
+
+        $byRejectionId = $this->getJson('api/admin/mercado-pago-rejected-validations?q='.$hit->id)
+            ->assertOk();
+        $this->assertCount(1, $byRejectionId->json('data'));
+
+        $this->getJson('api/admin/mercado-pago-rejected-validations?q=sin-coincidencias-xyz')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_index_paginates_with_default_hundred_per_page(): void
     {
         $admin = $this->admin();

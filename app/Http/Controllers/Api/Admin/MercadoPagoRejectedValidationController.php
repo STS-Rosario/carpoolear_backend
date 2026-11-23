@@ -12,20 +12,24 @@ use STS\Services\AdminActionLogger;
 use STS\Services\IdentityVerificationOutcome;
 use STS\Services\UserIdentityVerificationSuccessService;
 use STS\Support\AdminPagination;
+use STS\Support\UserSearchFilter;
 
 class MercadoPagoRejectedValidationController extends Controller
 {
     /**
      * GET /api/admin/mercado-pago-rejected-validations - list, newest first (user_id, name, nro_doc, reject_reason, created_at).
+     * Optional q: user name, email, nro_doc, phone (via UserSearchFilter); numeric q also matches rejection id or user_id.
      */
     public function index(Request $request): JsonResponse
     {
         $perPage = AdminPagination::resolvePerPage($request->query('per_page'));
         $page = AdminPagination::resolvePage($request->query('page'));
 
-        $paginator = MercadoPagoRejectedValidation::with('user:id,name,nro_doc,identity_validated')
-            ->orderBy('created_at', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+        $query = MercadoPagoRejectedValidation::with('user:id,name,nro_doc,identity_validated')
+            ->orderBy('created_at', 'desc');
+        $this->applySearchFilter($query, $request->query('q'));
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         $items = collect($paginator->items())->map(function ($item) {
             return [
@@ -159,6 +163,24 @@ class MercadoPagoRejectedValidationController extends Controller
             'related_type' => 'mercado_pago_rejected_validations',
             'related_id' => $item->id,
         ]);
+    }
+
+    private function applySearchFilter($query, mixed $q): void
+    {
+        if (! is_string($q) || trim($q) === '') {
+            return;
+        }
+
+        $search = trim($q);
+        $query->where(function ($builder) use ($query, $search) {
+            $builder->whereHas('user', function ($userQuery) use ($search) {
+                UserSearchFilter::apply($userQuery, $search);
+            });
+            if (ctype_digit($search)) {
+                $builder->orWhere($query->qualifyColumn('id'), (int) $search)
+                    ->orWhere($query->qualifyColumn('user_id'), (int) $search);
+            }
+        });
     }
 
     private function serializeItem(MercadoPagoRejectedValidation $item): array
