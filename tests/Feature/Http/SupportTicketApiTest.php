@@ -642,6 +642,50 @@ class SupportTicketApiTest extends TestCase
         $ticket->assertJsonPath('data.priority', 'high');
     }
 
+    public function test_create_accepts_up_to_six_attachments(): void
+    {
+        Storage::fake('local');
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $files = [];
+        for ($i = 0; $i < 6; $i++) {
+            $files[] = UploadedFile::fake()->image("proof{$i}.jpg");
+        }
+
+        $response = $this->postJson('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Six images',
+            'message_markdown' => 'See attach',
+            'attachments' => $files,
+        ])->assertOk();
+
+        $ticketId = (int) $response->json('data.id');
+        $this->assertSame(
+            6,
+            SupportTicketAttachment::query()->where('ticket_id', $ticketId)->count()
+        );
+    }
+
+    public function test_create_rejects_more_than_six_attachments(): void
+    {
+        Storage::fake('local');
+        $user = $this->createUser();
+        $this->actingAs($user, 'api');
+
+        $files = [];
+        for ($i = 0; $i < 7; $i++) {
+            $files[] = UploadedFile::fake()->image("proof{$i}.jpg");
+        }
+
+        $this->postJson('api/support/tickets', [
+            'type' => 'contact',
+            'subject' => 'Too many',
+            'message_markdown' => 'See attach',
+            'attachments' => $files,
+        ])->assertUnprocessable();
+    }
+
     public function test_user_can_stream_own_ticket_attachment_image(): void
     {
         Storage::fake('local');

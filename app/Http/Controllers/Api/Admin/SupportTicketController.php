@@ -21,6 +21,7 @@ use STS\Services\Logic\UsersManager;
 use STS\Services\SupportTicketService;
 use STS\Support\AdminPagination;
 use STS\Support\ImageAttachmentRules;
+use STS\Support\SupportTicketAttachmentRules;
 use STS\Support\SupportTicketAdminListSort;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -258,7 +259,7 @@ class SupportTicketController extends Controller
     {
         $validated = $request->validate([
             'message_markdown' => 'required|string|min:1',
-            'attachments' => 'nullable|array|max:3',
+            'attachments' => SupportTicketAttachmentRules::attachmentsArrayRule(),
             'attachments.*' => ImageAttachmentRules::FILE,
         ]);
 

@@ -1381,7 +1381,7 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->assertSame($admin->id, (int) $fresh->closed_by);
     }
 
-    public function test_reply_rejects_more_than_three_attachments(): void
+    public function test_reply_accepts_up_to_six_attachments(): void
     {
         Storage::fake('local');
 
@@ -1392,16 +1392,40 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
         $this->actingAs($admin, 'api');
         $this->withoutMiddleware(UserAdmin::class);
 
-        $files = [
-            UploadedFile::fake()->image('a.png', 10, 10),
-            UploadedFile::fake()->image('b.png', 10, 10),
-            UploadedFile::fake()->image('c.png', 10, 10),
-            UploadedFile::fake()->image('d.png', 10, 10),
-        ];
+        $files = [];
+        for ($i = 0; $i < 6; $i++) {
+            $files[] = UploadedFile::fake()->image("img{$i}.png", 10, 10);
+        }
 
         $this->withHeaders(['Accept' => 'application/json'])
             ->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
-                'message_markdown' => 'Four files.',
+                'message_markdown' => 'Six files.',
+                'attachments' => $files,
+            ])
+            ->assertOk();
+
+        $this->assertSame(6, \STS\Models\SupportTicketAttachment::query()->where('ticket_id', $ticket->id)->count());
+    }
+
+    public function test_reply_rejects_more_than_max_attachments(): void
+    {
+        Storage::fake('local');
+
+        $admin = $this->adminUser();
+        $owner = User::factory()->create();
+        $ticket = $this->makeTicket($owner);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $files = [];
+        for ($i = 0; $i < 7; $i++) {
+            $files[] = UploadedFile::fake()->image("img{$i}.png", 10, 10);
+        }
+
+        $this->withHeaders(['Accept' => 'application/json'])
+            ->post('api/admin/support/tickets/'.$ticket->id.'/replies', [
+                'message_markdown' => 'Seven files.',
                 'attachments' => $files,
             ])
             ->assertUnprocessable();
