@@ -31,6 +31,8 @@ class IdentityVerificationOutcome
 
     public const NAME_CLOSED_AFTER_MP_SUCCESS = 'closed_after_mp_success';
 
+    public const NAME_CLOSED_AFTER_USER_VERIFIED = 'closed_after_user_verified';
+
     public const NAME_UPLOAD_REJECTED = 'upload_rejected';
 
     public const NAME_CONFIRM_MODAL_SHOWN = 'confirm_modal_shown';

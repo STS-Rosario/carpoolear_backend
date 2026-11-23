@@ -5,6 +5,7 @@ namespace Tests\Feature\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use STS\Http\Middleware\UserAdmin;
+use STS\Models\ManualIdentityValidation;
 use STS\Models\MercadoPagoRejectedValidation;
 use STS\Models\SupportTicket;
 use STS\Models\User;
@@ -175,6 +176,37 @@ class AdminMercadoPagoRejectedValidationControllerIntegrationTest extends TestCa
         $this->assertTrue((bool) $user->identity_validated);
         $this->assertSame('manual', (string) $user->identity_validation_type);
         $this->assertNotNull($user->identity_validated_at);
+    }
+
+    public function test_review_approve_closes_open_manual_identity_validations_for_user(): void
+    {
+        $admin = $this->admin();
+        $user = User::factory()->create([
+            'identity_validated' => false,
+        ]);
+
+        $openManual = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+
+        $row = MercadoPagoRejectedValidation::create([
+            'user_id' => $user->id,
+            'reject_reason' => 'dni_mismatch',
+            'mp_payload' => ['sub' => 'mp-2'],
+        ]);
+
+        $this->actingAs($admin, 'api');
+        $this->withoutMiddleware(UserAdmin::class);
+
+        $this->postJson('api/admin/mercado-pago-rejected-validations/'.$row->id.'/review', [
+            'action' => 'approve',
+        ])->assertOk();
+
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $openManual->fresh()->review_status);
     }
 
     public function test_index_maps_identity_validated_true_when_user_is_validated(): void

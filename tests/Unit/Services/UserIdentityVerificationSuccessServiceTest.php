@@ -140,7 +140,34 @@ class UserIdentityVerificationSuccessServiceTest extends TestCase
         $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $otherUserPending->fresh()->review_status);
     }
 
-    public function test_apply_verification_with_manual_does_not_close_open_manual_validations(): void
+    public function test_apply_verification_with_manual_closes_other_open_manual_validations(): void
+    {
+        $user = User::factory()->create(['identity_validated' => false]);
+
+        $pending = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_PENDING,
+        ]);
+        $sibling = ManualIdentityValidation::create([
+            'user_id' => $user->id,
+            'paid' => true,
+            'paid_at' => now(),
+            'submitted_at' => now(),
+            'review_status' => ManualIdentityValidation::REVIEW_STATUS_AWAITING_PHOTOS,
+        ]);
+
+        app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual', [
+            'except_manual_validation_ids' => [$pending->id],
+        ]);
+
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $pending->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $sibling->fresh()->review_status);
+    }
+
+    public function test_apply_verification_with_manual_closes_open_manual_when_none_excluded(): void
     {
         $user = User::factory()->create(['identity_validated' => false]);
 
@@ -154,6 +181,6 @@ class UserIdentityVerificationSuccessServiceTest extends TestCase
 
         app(UserIdentityVerificationSuccessService::class)->applyVerification($user, 'manual');
 
-        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_PENDING, $pending->fresh()->review_status);
+        $this->assertSame(ManualIdentityValidation::REVIEW_STATUS_CLOSED, $pending->fresh()->review_status);
     }
 }

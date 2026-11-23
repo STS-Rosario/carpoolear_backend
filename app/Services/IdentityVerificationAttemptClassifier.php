@@ -89,6 +89,7 @@ class IdentityVerificationAttemptClassifier
         IdentityVerificationOutcome::NAME_SUCCEEDED => self::APPROVED,
         IdentityVerificationOutcome::NAME_FAILED => self::REJECTED,
         IdentityVerificationOutcome::NAME_CLOSED_AFTER_MP_SUCCESS => self::INCONCLUSIVE,
+        IdentityVerificationOutcome::NAME_CLOSED_AFTER_USER_VERIFIED => self::INCONCLUSIVE,
         IdentityVerificationOutcome::NAME_ADMIN_STATE_CHANGED => [
             'approved' => self::APPROVED,
             'rejected' => self::REJECTED,

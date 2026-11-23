@@ -19,33 +19,53 @@ class UserIdentityVerificationSuccessService
         $user->identity_validation_reject_reason = null;
         $user->save();
 
-        if ($validationType === 'mercado_pago') {
-            $this->closeOpenManualIdentityValidationsForUser($user);
-        }
+        $outcomeName = $validationType === 'mercado_pago'
+            ? IdentityVerificationOutcome::NAME_CLOSED_AFTER_MP_SUCCESS
+            : IdentityVerificationOutcome::NAME_CLOSED_AFTER_USER_VERIFIED;
+
+        $this->closeOpenManualIdentityValidationsForUser($user, array_merge($options, [
+            'outcome_name' => $outcomeName,
+        ]));
     }
 
-    private function closeOpenManualIdentityValidationsForUser(User $user): void
+    /**
+     * @param  array{except_manual_validation_ids?: list<int>, outcome_name?: string}  $options
+     * @return int Number of manual rows closed
+     */
+    public function closeOpenManualIdentityValidationsForUser(User $user, array $options = []): int
     {
+        $exceptIds = array_map('intval', $options['except_manual_validation_ids'] ?? []);
+        $outcomeName = $options['outcome_name'] ?? IdentityVerificationOutcome::NAME_CLOSED_AFTER_USER_VERIFIED;
+
         $open = ManualIdentityValidation::query()
             ->where('user_id', $user->id)
+            ->when($exceptIds !== [], fn ($query) => $query->whereNotIn('id', $exceptIds))
             ->where(function ($query) {
                 $query->whereNull('review_status')
                     ->orWhereNotIn('review_status', ManualIdentityValidation::resolvedReviewStatusAliases());
             })
             ->get();
 
+        if (! empty($options['dry_run'])) {
+            return $open->count();
+        }
+
         $outcome = app(IdentityVerificationOutcome::class);
+        $closed = 0;
         foreach ($open as $item) {
             $item->review_status = ManualIdentityValidation::REVIEW_STATUS_CLOSED;
             $item->save();
             $outcome->emit([
                 'user_id' => $user->id,
                 'method' => IdentityVerificationOutcome::METHOD_MANUAL,
-                'name' => IdentityVerificationOutcome::NAME_CLOSED_AFTER_MP_SUCCESS,
+                'name' => $outcomeName,
                 'related_type' => 'manual_identity_validations',
                 'related_id' => $item->id,
             ]);
+            $closed++;
         }
+
+        return $closed;
     }
 
     public function clearPriorRejectionState(User $user, array $options = []): void
