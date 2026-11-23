@@ -1404,7 +1404,8 @@ class AdminSupportTicketControllerIntegrationTest extends TestCase
             ])
             ->assertOk();
 
-        $this->assertSame(6, \STS\Models\SupportTicketAttachment::query()->where('ticket_id', $ticket->id)->count());
+        $replyIds = SupportTicketReply::query()->where('ticket_id', $ticket->id)->pluck('id');
+        $this->assertSame(6, \STS\Models\SupportTicketAttachment::query()->whereIn('reply_id', $replyIds)->count());
     }
 
     public function test_reply_rejects_more_than_max_attachments(): void

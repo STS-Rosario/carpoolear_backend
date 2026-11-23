@@ -653,7 +653,7 @@ class SupportTicketApiTest extends TestCase
             $files[] = UploadedFile::fake()->image("proof{$i}.jpg");
         }
 
-        $response = $this->postJson('api/support/tickets', [
+        $response = $this->post('api/support/tickets', [
             'type' => 'contact',
             'subject' => 'Six images',
             'message_markdown' => 'See attach',
@@ -661,9 +661,10 @@ class SupportTicketApiTest extends TestCase
         ])->assertOk();
 
         $ticketId = (int) $response->json('data.id');
+        $replyIds = SupportTicketReply::query()->where('ticket_id', $ticketId)->pluck('id');
         $this->assertSame(
             6,
-            SupportTicketAttachment::query()->where('ticket_id', $ticketId)->count()
+            SupportTicketAttachment::query()->whereIn('reply_id', $replyIds)->count()
         );
     }
 
@@ -678,12 +679,14 @@ class SupportTicketApiTest extends TestCase
             $files[] = UploadedFile::fake()->image("proof{$i}.jpg");
         }
 
-        $this->postJson('api/support/tickets', [
-            'type' => 'contact',
-            'subject' => 'Too many',
-            'message_markdown' => 'See attach',
-            'attachments' => $files,
-        ])->assertUnprocessable();
+        $this->withHeaders(['Accept' => 'application/json'])
+            ->post('api/support/tickets', [
+                'type' => 'contact',
+                'subject' => 'Too many',
+                'message_markdown' => 'See attach',
+                'attachments' => $files,
+            ])
+            ->assertUnprocessable();
     }
 
     public function test_user_can_stream_own_ticket_attachment_image(): void

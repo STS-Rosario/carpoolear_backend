@@ -10,7 +10,12 @@ final class SupportTicketAttachmentRules
 
     public static function maxAttachments(): int
     {
-        $configured = (int) config('carpoolear.support_ticket_max_attachments', self::DEFAULT_MAX);
+        $raw = config('carpoolear.support_ticket_max_attachments');
+        if ($raw === null || $raw === false || $raw === '') {
+            $configured = self::DEFAULT_MAX;
+        } else {
+            $configured = (int) $raw;
+        }
 
         return max(1, min(self::HARD_CAP, $configured));
     }
