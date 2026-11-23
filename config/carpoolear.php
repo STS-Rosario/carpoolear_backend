@@ -136,6 +136,7 @@ return [
     'support_ticket_auto_reply_user_id' => env('SUPPORT_TICKET_AUTO_REPLY_USER_ID')
         ? (int) env('SUPPORT_TICKET_AUTO_REPLY_USER_ID')
         : null,
+    'support_ticket_max_attachments' => (int) env('SUPPORT_TICKET_MAX_ATTACHMENTS', 6),
 
     // OSRM (trip-info + public map proxy). Primary = demo or self-hosted base URL without trailing slash.
     'osrm_router_base_url' => rtrim(env('OSRM_ROUTER_BASE_URL', 'https://router.project-osrm.org'), '/'),
