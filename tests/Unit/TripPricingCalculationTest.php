@@ -30,7 +30,7 @@ class TripPricingCalculationTest extends TestCase
         bool $routeNeedsPayment
     ): void {
         config()->set('carpoolear.module_max_price_fuel_price', $fuelPrice);
-        config()->set('carpoolear.module_max_price_kilometer_by_liter', $kilometersPerLiter);
+        config()->set('carpoolear.module_max_price_fuel_price_nafta_premium', null);
         config()->set('carpoolear.module_max_price_price_variance_tolls', $tollsVariancePercent);
         config()->set('carpoolear.module_max_price_price_variance_max_extra', $maxPriceVariancePercent);
         config()->set('carpoolear.module_trip_creation_payment_enabled', $selladoEnabled);
@@ -85,7 +85,7 @@ class TripPricingCalculationTest extends TestCase
         $maxPriceVariancePercent = 15.0;
 
         config()->set('carpoolear.module_max_price_fuel_price', $fuelPrice);
-        config()->set('carpoolear.module_max_price_kilometer_by_liter', $kilometersPerLiter);
+        config()->set('carpoolear.module_max_price_fuel_price_nafta_premium', null);
         config()->set('carpoolear.module_max_price_price_variance_tolls', $defaultTollsVariancePercent);
         config()->set('carpoolear.module_max_price_price_variance_tolls_costa_atlantica', $costaAtlanticaTollsVariancePercent);
         config()->set('carpoolear.module_max_price_price_variance_max_extra', $maxPriceVariancePercent);
@@ -223,20 +223,20 @@ class TripPricingCalculationTest extends TestCase
                 0,
                 false,
             ],
-            'rosario-bsas-with-sellado-km12.5-fuel2178' => [
+            'rosario-bsas-with-sellado-km10-fuel2178' => [
                 291088.8,
                 2178.0,
-                12.5,
+                10.0,
                 10.0,
                 15.0,
                 true,
                 12000,
                 true,
             ],
-            'short-route-with-sellado-km12.5-fuel2378.5' => [
+            'short-route-with-sellado-km10-fuel2378.5' => [
                 12650.4,
                 2378.5,
-                12.5,
+                10.0,
                 10.0,
                 15.0,
                 true,
@@ -246,7 +246,7 @@ class TripPricingCalculationTest extends TestCase
             'same-polygon-module-on-does-not-include-sellado' => [
                 12650.4,
                 2378.5,
-                12.5,
+                10.0,
                 10.0,
                 15.0,
                 true,

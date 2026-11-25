@@ -33,6 +33,8 @@ class CarsTest extends TestCase
             'car_model_id' => $model->id,
             'car_color_id' => $color->id,
             'year' => (int) date('Y') - 2,
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ], $overrides);
     }
 
@@ -59,6 +61,8 @@ class CarsTest extends TestCase
         $data = [
             'patente' => 'SOF034',
             'description' => 'Sandero RS',
+            'fuel_type' => 'nafta_super',
+            'fuel_consumption' => 'medium',
         ];
 
         $updatedCar = $this->carManager->update($user, $car->id, $data);

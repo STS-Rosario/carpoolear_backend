@@ -464,12 +464,28 @@ class TripApiTest extends TestCase
         $expected = ['distance_m' => 1000];
         $this->tripsLogic->shouldReceive('getTripInfo')
             ->once()
-            ->with($points, 0, m::on(fn ($authUser) => $authUser instanceof User && (int) $authUser->id === (int) $user->id))
+            ->with($points, 0, m::on(fn ($authUser) => $authUser instanceof User && (int) $authUser->id === (int) $user->id), null)
             ->andReturn($expected);
 
         $this->postJson('api/trips/trip-info', ['points' => $points])
             ->assertOk()
             ->assertExactJson($expected);
+    }
+
+    public function test_trip_info_endpoint_forwards_car_id_to_trips_manager(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user, 'api');
+
+        $points = [['lat' => -34.0, 'lng' => -58.0]];
+        $this->tripsLogic->shouldReceive('getTripInfo')
+            ->once()
+            ->with($points, 1, m::type(User::class), 77)
+            ->andReturn(['ok' => true]);
+
+        $this->postJson('api/trips/trip-info', ['points' => $points, 'route_index' => 1, 'car_id' => 77])
+            ->assertOk()
+            ->assertExactJson(['ok' => true]);
     }
 
     public function test_sellado_viaje_returns_success_envelope(): void

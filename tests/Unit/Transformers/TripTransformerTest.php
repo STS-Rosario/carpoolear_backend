@@ -77,6 +77,11 @@ class TripTransformerTest extends TestCase
             'seat_price_cents',
             'recommended_trip_price_cents',
             'pricing_breakdown',
+            'fuel_type',
+            'fuel_consumption',
+            'fuel_price_per_unit',
+            'fuel_consumption_per_100',
+            'fuel_unit',
             'total_price',
             'state',
             'is_passenger',
@@ -116,6 +121,40 @@ class TripTransformerTest extends TestCase
         $this->assertSame('', $payload['request']);
         $this->assertSame([], $payload['passenger']);
         $this->assertArrayNotHasKey('car', $payload);
+    }
+
+    public function test_transform_exposes_fuel_snapshot_and_uses_it_in_pricing_breakdown(): void
+    {
+        $trip = $this->makeTrip([
+            'distance' => 100000,
+            'fuel_type' => 'gnc',
+            'fuel_consumption' => 'high',
+            'fuel_price_per_unit' => 500.0,
+            'fuel_consumption_per_100' => 11.0,
+            'fuel_unit' => 'm3',
+        ]);
+
+        $payload = (new TripTransformer(null))->transform($trip->fresh());
+
+        $this->assertSame('gnc', $payload['fuel_type']);
+        $this->assertSame('high', $payload['fuel_consumption']);
+        $this->assertSame(500.0, $payload['fuel_price_per_unit']);
+        $this->assertSame(11.0, $payload['fuel_consumption_per_100']);
+        $this->assertSame('m3', $payload['fuel_unit']);
+        $this->assertSame('gnc', $payload['pricing_breakdown']['fuel_type']);
+        $this->assertSame('m3', $payload['pricing_breakdown']['fuel_unit']);
+        $this->assertSame(500.0, $payload['pricing_breakdown']['fuel_price_per_unit']);
+    }
+
+    public function test_transform_exposes_null_fuel_snapshot_for_legacy_trips(): void
+    {
+        $payload = (new TripTransformer(null))->transform($this->makeTrip()->fresh());
+
+        $this->assertNull($payload['fuel_type']);
+        $this->assertNull($payload['fuel_consumption']);
+        $this->assertNull($payload['fuel_price_per_unit']);
+        $this->assertNull($payload['fuel_consumption_per_100']);
+        $this->assertNull($payload['fuel_unit']);
     }
 
     public function test_transform_includes_selected_route_index(): void

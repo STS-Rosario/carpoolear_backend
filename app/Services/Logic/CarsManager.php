@@ -4,6 +4,7 @@ namespace STS\Services\Logic;
 
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use STS\Helpers\FuelPricingResolver;
 use STS\Models\Car as CarModel;
 use STS\Models\CarModel as CatalogCarModel;
 use STS\Models\User as UserModel;
@@ -29,6 +30,8 @@ class CarsManager extends BaseManager
             'model_other' => ['nullable', 'string', 'max:100'],
             'car_color_id' => ['nullable', 'integer', Rule::exists('car_colors', 'id')->where('is_active', true)],
             'year' => ['nullable', 'integer', 'min:1900', 'max:'.(int) date('Y')],
+            'fuel_type' => ['required', 'string', Rule::in(FuelPricingResolver::FUEL_TYPES)],
+            'fuel_consumption' => ['required', 'string', Rule::in(FuelPricingResolver::CONSUMPTION_LEVELS)],
         ];
 
         if ($isCreate) {
@@ -186,6 +189,8 @@ class CarsManager extends BaseManager
             'model_other' => $this->hasValue($data['model_other'] ?? null) ? trim($data['model_other']) : null,
             'car_color_id' => $data['car_color_id'] ?? null,
             'year' => isset($data['year']) ? (int) $data['year'] : null,
+            'fuel_type' => $data['fuel_type'] ?? null,
+            'fuel_consumption' => $data['fuel_consumption'] ?? null,
         ];
 
         if ($payload['car_brand_id']) {

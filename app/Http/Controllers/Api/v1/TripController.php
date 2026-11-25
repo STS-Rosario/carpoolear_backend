@@ -248,7 +248,9 @@ class TripController extends Controller
 
         $routeIndex = isset($data['route_index']) ? (int) $data['route_index'] : 0;
 
-        return $this->tripsLogic->getTripInfo($points, $routeIndex, auth()->user());
+        $carId = ! empty($data['car_id']) ? (int) $data['car_id'] : null;
+
+        return $this->tripsLogic->getTripInfo($points, $routeIndex, auth()->user(), $carId);
     }
 
     public function selladoViaje(Request $request)

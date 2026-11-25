@@ -111,6 +111,11 @@ class Trip extends Model
             'suspected_contribution',
             'phone_in_description',
             'maximum_trip_price_cents',
+            'fuel_type',
+            'fuel_consumption',
+            'fuel_price_per_unit',
+            'fuel_consumption_per_100',
+            'fuel_unit',
         ];
     }
 
@@ -173,6 +178,8 @@ class Trip extends Model
             'phone_in_description' => 'boolean',
             'maximum_trip_price_cents' => 'integer',
             'state' => 'string',
+            'fuel_price_per_unit' => 'float',
+            'fuel_consumption_per_100' => 'float',
         ];
     }
 
